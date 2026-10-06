@@ -273,10 +273,12 @@
       if (dv.getUint32(0, true) === 0xe011cfd0) {
         /* OLE compound file: an encrypted OOXML package or a legacy binary .ppt */
         const probe = new TextDecoder('utf-16le').decode(u8.subarray(0, Math.min(u8.length, 1 << 20)));
-        const err = new Error(/EncryptedPackage/.test(probe)
-          ? 'This presentation is password-protected. Remove the password in PowerPoint (File ▸ Info ▸ Protect Presentation), save it, then open it here.'
+        const enc = /EncryptedPackage/.test(probe);
+        const err = new Error(enc
+          ? 'This presentation is password-protected.'
           : 'This is an older binary PowerPoint 97–2003 file (.ppt) with a .pptx name. Save it as .pptx in PowerPoint, Keynote, Google Slides or LibreOffice first.');
         err.code = 'ole';
+        err.encrypted = enc;
         throw err;
       }
     }

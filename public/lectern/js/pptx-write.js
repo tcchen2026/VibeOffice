@@ -64,7 +64,7 @@
         if (stops.length < 2) stops = [stops[0] || { p: 0, c: '#FFFFFF' }, Object.assign({}, stops[0] || { c: '#000000' }, { p: 1 })];
         const gs = stops.map((s) => `<a:gs pos="${Math.round(L.clamp(s.p, 0, 1) * 100000)}">${clr(s.c, s.a, design)}</a:gs>`).join('');
         const shade = f.path && f.path !== 'lin'
-          ? `<a:path path="${f.path === 'rect' ? 'rect' : f.path === 'shape' ? 'shape' : 'circle'}"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path>`
+          ? `<a:path path="${f.path === 'rect' ? 'rect' : f.path === 'shape' ? 'shape' : 'circle'}">${(() => { const [fx, fy] = f.focus || [0.5, 0.5]; return `<a:fillToRect l="${Math.round(fx * 100000)}" t="${Math.round(fy * 100000)}" r="${Math.round((1 - fx) * 100000)}" b="${Math.round((1 - fy) * 100000)}"/>`; })()}</a:path>`
           : `<a:lin ang="${Math.round((((f.ang || 0) % 360) + 360) % 360 * 60000)}" scaled="1"/>`;
         return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst>${shade}</a:gradFill>`;
       }
@@ -72,7 +72,7 @@
       case 'img': {
         const rid = ctx.media(f.media);
         if (!rid) return '<a:noFill/>';
-        return `<a:blipFill dpi="0" rotWithShape="1"><a:blip r:embed="${rid}"${f.a != null && f.a < 1 ? `><a:alphaModFix amt="${Math.round(f.a * 100000)}"/></a:blip>` : '/>'}<a:srcRect/>${f.tile ? '<a:tile tx="0" ty="0" sx="100000" sy="100000" flip="none" algn="tl"/>' : '<a:stretch><a:fillRect/></a:stretch>'}</a:blipFill>`;
+        return `<a:blipFill dpi="0" rotWithShape="1"><a:blip r:embed="${rid}"${f.a != null && f.a < 1 ? `><a:alphaModFix amt="${Math.round(f.a * 100000)}"/></a:blip>` : '/>'}${f.crop && !f.tile ? `<a:srcRect l="${Math.round(f.crop.l * 100000)}" t="${Math.round(f.crop.t * 100000)}" r="${Math.round(f.crop.r * 100000)}" b="${Math.round(f.crop.b * 100000)}"/>` : '<a:srcRect/>'}${f.tile ? tileXML(f.tileOpts) : f.fillRect ? `<a:stretch><a:fillRect l="${Math.round(f.fillRect.l * 100000)}" t="${Math.round(f.fillRect.t * 100000)}" r="${Math.round(f.fillRect.r * 100000)}" b="${Math.round(f.fillRect.b * 100000)}"/></a:stretch>` : '<a:stretch><a:fillRect/></a:stretch>'}</a:blipFill>`;
       }
       default: return '';
     }
@@ -148,7 +148,7 @@
     if (r.ln) kids += lineXML(r.ln, design);
     if (r.fill) kids += fillXML(r.fill, ctx, design);
     else if (r.color) kids += `<a:solidFill>${clr(r.color, null, design)}</a:solidFill>`;
-    if (r.shdX) kids += shadowXML(r.shdX, design);
+    if (r.shd && r.shdX) kids += shadowXML(r.shdX, design);
     else if (r.shd) kids += `<a:effectLst><a:outerShdw blurRad="38100" dist="38100" dir="2700000" algn="tl"><a:srgbClr val="000000"><a:alpha val="43137"/></a:srgbClr></a:outerShdw></a:effectLst>`;
     if (r.hl) kids += `<a:highlight>${clr(r.hl, null, design)}</a:highlight>`;
     if (r.font) { const f = X(fontRef(r.font)); kids += `<a:latin typeface="${f}"/><a:ea typeface="${f}"/><a:cs typeface="${f}"/>`; }
@@ -202,7 +202,7 @@
       x += pPrXML(p.pp || {}, 'a:pPr', p.lvl || 0, ctx, design, false) || '';
       for (const r of p.rs) {
         const props = L.txt.runProps(r);
-        if (r.fld) { x += `<a:fld id="${guid()}" type="${r.fld}">${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:fld>`; continue; }
+        if (r.fld) { x += `<a:fld id="${guid()}" type="${X(r.fld)}">${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:fld>`; continue; }
         const parts = String(r.t).split('\n');
         parts.forEach((t, i) => {
           if (i) x += `<a:br>${rPrXML(Object.assign({}, props, { link: undefined }), 'a:rPr', ctx, design)}</a:br>`;
@@ -263,18 +263,22 @@
       case 'line':
         return `<p:cxnSp><p:nvCxnSpPr>${cNvPr(id, sh, ctx)}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr>${xfrm(sh)}<a:prstGeom prst="${sh.geom || 'line'}"><a:avLst/></a:prstGeom>${lineXML(sh.line || { c: 'tx1', w: 0.75 }, design)}${shadowXML(sh.shadow, design)}</p:spPr></p:cxnSp>`;
       case 'image': {
-        const rid = ctx.media(sh.media);
-        if (!rid) return '';
+        /* a picture whose image is missing or linked from outside keeps its frame (PowerPoint shows its own placeholder) */
+        const rid = ctx.media(sh.media) || (sh.linkUrl ? ctx.rels.add(RT('image'), sh.linkUrl, true) : null);
+        const blipAttr = !rid ? '' : ctx.media(sh.media) ? ` r:embed="${rid}"` : ` r:link="${rid}"`;
+        const svgRid = rid && ctx.svg ? ctx.svg(sh.svgMedia || sh.media) : null;
         const c = sh.crop || {};
         const crop = c.l || c.t || c.r || c.b ? `<a:srcRect${c.l ? ` l="${Math.round(c.l * 100000)}"` : ''}${c.t ? ` t="${Math.round(c.t * 100000)}"` : ''}${c.r ? ` r="${Math.round(c.r * 100000)}"` : ''}${c.b ? ` b="${Math.round(c.b * 100000)}"` : ''}/>` : '';
         const im = sh.img || {};
         let fx = '';
         if (im.alpha != null && im.alpha < 1) fx += `<a:alphaModFix amt="${Math.round(im.alpha * 100000)}"/>`;
+        if (im.clear) fx += `<a:clrChange><a:clrFrom>${clr(im.clear, null, design)}</a:clrFrom><a:clrTo>${clr(im.clear, 0, design)}</a:clrTo></a:clrChange>`;
         if (im.mode === 'gray') fx += '<a:grayscl/>';
         if (im.mode === 'bw') fx += '<a:biLevel thresh="50000"/>';
         if (im.mode === 'wash') fx += '<a:lum bright="70000" contrast="-70000"/>';
         else if (im.bright || im.contrast) fx += `<a:lum bright="${Math.round((im.bright || 0) * 100000)}" contrast="${Math.round((im.contrast || 0) * 100000)}"/>`;
-        const blip = fx ? `<a:blip r:embed="${rid}">${fx}</a:blip>` : `<a:blip r:embed="${rid}"/>`;
+        if (svgRid) fx += `<a:extLst><a:ext uri="{96DAC541-7B7A-43D3-8B79-37D633B846F1}"><asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" r:embed="${svgRid}"/></a:ext></a:extLst>`;
+        const blip = fx ? `<a:blip${blipAttr}>${fx}</a:blip>` : `<a:blip${blipAttr}/>`;
         return `<p:pic><p:nvPicPr>${cNvPr(id, sh, ctx)}<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>${phXML(sh.ph)}</p:nvPicPr><p:blipFill>${blip}${crop}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${xfrm(sh)}${geomXML(sh)}${sh.line && sh.line.t !== 'none' && sh.line.c ? lineXML(sh.line, design) : ''}${shadowXML(sh.shadow, design)}</p:spPr></p:pic>`;
       }
       case 'table': return tableXML(sh, id, ctx, design);
@@ -287,7 +291,7 @@
         const ln = sh.line ? lineXML(sh.line, design) : '';
         const geom = !sh.ph || (sh.geom && sh.geom !== 'rect') || (sh.fill && sh.fill.t !== 'none') ? geomXML(sh) : '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>';
         const tx = sh.tx ? txBodyXML(sh.tx, ctx, design) : '';
-        return `<p:sp><p:nvSpPr>${cNvPr(id, sh, ctx)}${spLocks}${phXML(sh.ph)}</p:nvSpPr><p:spPr>${xfrm(sh)}${geom}${fill}${ln}${shadowXML(sh.shadow, design)}</p:spPr>${tx}</p:sp>`;
+        return `<p:sp${sh.fill && sh.fill.t === 'bg' ? ' useBgFill="1"' : ''}><p:nvSpPr>${cNvPr(id, sh, ctx)}${spLocks}${phXML(sh.ph)}</p:nvSpPr><p:spPr>${xfrm(sh)}${geom}${fill}${ln}${shadowXML(sh.shadow, design)}</p:spPr>${tx}</p:sp>`;
       }
     }
   }
@@ -323,67 +327,146 @@
 
   /* ---------- charts ---------- */
   function chartFrameXML(sh, id, ctx, design) {
-    const n = ctx.addChart(chartXML(sh.chart || L.chart.sample(), design));
+    const c = sh.chart || L.chart.sample();
+    /* a chart read from a file and not edited here is written back as it came, with its workbook and styles */
+    const src = c.srcId && !c.edited && L.chart.src ? L.chart.src.get(c.srcId) : null;
+    const n = src ? ctx.addChart(HEAD + String(src.xml).replace(/^﻿/, '').replace(/^<\?xml[^>]*\?>\s*/, ''), src.parts) : ctx.addChart(chartXML(c, design));
     const rid = ctx.rels.add(RT('chart'), `../charts/chart${n}.xml`);
     return `<p:graphicFrame><p:nvGraphicFramePr>${cNvPr(id, sh, ctx)}<p:cNvGraphicFramePr/>${phXML(sh.ph)}</p:nvGraphicFramePr>${xfrm(sh, 'p:xfrm')}<a:graphic><a:graphicData uri="${NS_C}"><c:chart xmlns:c="${NS_C}" r:id="${rid}"/></a:graphicData></a:graphic></p:graphicFrame>`;
   }
+  /** chart XML from the chart model: charts made or edited in Lectern */
   function chartXML(c, design) {
+    const v2 = c.v === 2;
     const v = (x) => `<c:v>${X(x)}</c:v>`;
     const cats = c.cats || [];
-    const strLit = (arr) => `<c:strLit><c:ptCount val="${arr.length}"/>${arr.map((x, i) => `<c:pt idx="${i}">${v(x)}</c:pt>`).join('')}</c:strLit>`;
-    const numLit = (arr) => `<c:numLit><c:formatCode>${X(c.numFmt || 'General')}</c:formatCode><c:ptCount val="${arr.length}"/>${arr.map((x, i) => `<c:pt idx="${i}">${v(+x || 0)}</c:pt>`).join('')}</c:numLit>`;
-    const sp = (col, isLine) => (isLine ? `<c:spPr><a:ln w="28575"><a:solidFill>${clr(col, null, design)}</a:solidFill></a:ln></c:spPr>` : `<c:spPr><a:solidFill>${clr(col, null, design)}</a:solidFill><a:ln w="6350"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></c:spPr>`);
+    const nctx = { media: () => null };
+    const strLit = (arr) => `<c:strLit><c:ptCount val="${arr.length}"/>${arr.map((x, i) => `<c:pt idx="${i}">${v(x == null ? '' : x)}</c:pt>`).join('')}</c:strLit>`;
+    const numLit = (arr, fmt) => `<c:numLit><c:formatCode>${X(fmt || 'General')}</c:formatCode><c:ptCount val="${arr.length}"/>${arr.map((x, i) => (x == null || x === '' || !isFinite(+x) ? '' : `<c:pt idx="${i}">${v(+x)}</c:pt>`)).join('')}</c:numLit>`;
     const pal = L.chart.PALETTE;
     const series = c.series || [];
-    const dl = c.labels ? `<c:dLbls>${c.numFmt ? `<c:numFmt formatCode="${X(c.numFmt)}" sourceLinked="0"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${c.kind === 'pie' || c.kind === 'doughnut' ? 0 : 1}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${c.kind === 'pie' || c.kind === 'doughnut' ? 1 : 0}"/><c:showBubbleSize val="0"/></c:dLbls>` : '';
+    const pie = c.kind === 'pie' || c.kind === 'doughnut';
+    const g0 = (v2 && c.groups && c.groups[0]) || {};
+    const font = c.font === '+mn' ? '+mn-lt' : c.font === '+mj' ? '+mj-lt' : c.font || (v2 ? '+mn-lt' : 'Arial');
+    /* series formatting: Lectern's own charts keep the 2003 look (black outlines); imported ones keep theirs */
+    const colOf = (s, i) => s.color || pal[i % pal.length];
+    const spFill = (s, i) => {
+      if (!v2) return `<c:spPr><a:solidFill>${clr(colOf(s, i), null, design)}</a:solidFill><a:ln w="6350"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></c:spPr>`;
+      const f = s.fill && s.fill.t !== 'img' ? fillXML(s.fill, nctx, design) : `<a:solidFill>${clr(colOf(s, i), null, design)}</a:solidFill>`;
+      const ln = s.line ? lineXML(Object.assign({ c: colOf(s, i), w: 0.75 }, s.line), design) : '';
+      return `<c:spPr>${f}${ln}</c:spPr>`;
+    };
+    const spLine = (s, i) => {
+      if (s.line && s.line.t === 'none') return '<c:spPr><a:ln w="28575"><a:noFill/></a:ln></c:spPr>';
+      const ln = Object.assign({ c: colOf(s, i), w: 2.25 }, s.line && s.line.t !== 'none' ? s.line : {});
+      delete ln.t;
+      return `<c:spPr>${lineXML(ln, design)}</c:spPr>`;
+    };
+    const markerXML = (s, i, sym) => {
+      if (sym === 'none') return '<c:marker><c:symbol val="none"/></c:marker>';
+      const m = s.marker || {};
+      const f = m.fill && m.fill.t !== 'img' ? fillXML(m.fill, nctx, design) : `<a:solidFill>${clr(colOf(s, i), null, design)}</a:solidFill>`;
+      const ln = lineXML(Object.assign({ c: colOf(s, i), w: 0.75 }, m.line && m.line.t !== 'none' ? m.line : {}), design);
+      return `<c:marker><c:symbol val="${m.sym && m.sym !== 'auto' ? m.sym : sym || 'square'}"/><c:size val="${L.clamp(Math.round(m.size || (v2 ? 7 : 6)), 2, 72)}"/><c:spPr>${f}${ln}</c:spPr></c:marker>`;
+    };
+    const lblXML = (s) => {
+      const on = v2 ? s.lbl : c.labels ? (pie ? { showPercent: true } : { showVal: true }) : null;
+      if (!on) return '';
+      const fmt = on.fmt || (!v2 && c.numFmt) || null;
+      const b = (k) => `<c:${k} val="${on[k] ? 1 : 0}"/>`;
+      /* label positions each chart type accepts */
+      const POS = { col: 'ctr inEnd inBase outEnd', bar: 'ctr inEnd inBase outEnd', colStacked: 'ctr inEnd inBase', barStacked: 'ctr inEnd inBase', colPct: 'ctr inEnd inBase', barPct: 'ctr inEnd inBase', line: 't b l r ctr', lineMarkers: 't b l r ctr', scatter: 't b l r ctr', bubble: 't b l r ctr', pie: 'bestFit ctr inEnd outEnd' }[c.kind] || '';
+      const pos = on.pos && POS.split(' ').includes(on.pos) ? on.pos : null;
+      return `<c:dLbls>${fmt ? `<c:numFmt formatCode="${X(fmt)}" sourceLinked="0"/>` : ''}<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${pos ? `<c:dLblPos val="${pos}"/>` : ''}${b('showLegendKey')}${b('showVal')}${b('showCatName')}${b('showSerName')}${b('showPercent')}${b('showBubbleSize')}</c:dLbls>`;
+    };
+    const head = (s, i) => `<c:idx val="${i}"/><c:order val="${i}"/><c:tx>${v(s.name || 'Series ' + (i + 1))}</c:tx>`;
+    const catVal = (s) => `<c:cat>${strLit(cats)}</c:cat><c:val>${numLit(s.vals, s.fmt || (!v2 && c.numFmt))}</c:val>`;
+    const xsOf = (s) => (s.xs && s.xs.length ? s.xs : cats.map((x, k) => (isFinite(parseFloat(x)) ? parseFloat(x) : k + 1)));
     const sers = (kind, keep) => series.map((s, i) => {
       if (keep && !keep(s)) return '';
-      const col = s.color || pal[i % pal.length];
-      if (kind === 'overlay') {
-        const line = s.overlay === 'markers' ? '<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>' : sp(col, true);
-        return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/><c:tx>${v(s.name || 'Series ' + (i + 1))}</c:tx>${line}<c:marker><c:symbol val="${s.overlay === 'line' ? 'none' : 'square'}"/>${s.overlay === 'line' ? '' : `<c:size val="6"/><c:spPr><a:solidFill>${clr(col, null, design)}</a:solidFill></c:spPr>`}</c:marker>${dl}<c:cat>${strLit(cats)}</c:cat><c:val>${numLit(s.vals)}</c:val><c:smooth val="0"/></c:ser>`;
-      }
-      const head = `<c:idx val="${i}"/><c:order val="${i}"/><c:tx>${v(s.name || 'Series ' + (i + 1))}</c:tx>`;
+      if (kind === 'overlay') return `<c:ser>${head(s, i)}${s.overlay === 'markers' ? '<c:spPr><a:ln w="28575"><a:noFill/></a:ln></c:spPr>' : spLine(s, i)}${markerXML(s, i, s.overlay === 'line' ? 'none' : 'square')}${lblXML(s)}${catVal(s)}<c:smooth val="0"/></c:ser>`;
       if (kind === 'pie') {
-        const dpts = cats.map((_, k) => `<c:dPt><c:idx val="${k}"/><c:bubble3D val="0"/>${sp((c.pieColors && c.pieColors[k]) || pal[k % pal.length])}</c:dPt>`).join('');
-        return `<c:ser>${head}${dpts}${dl}<c:cat>${strLit(cats)}</c:cat><c:val>${numLit(s.vals)}</c:val></c:ser>`;
+        const dpts = cats.map((_, k) => {
+          const pt = s.pts && s.pts[k];
+          const f = pt && pt.fill && pt.fill.t !== 'img' ? fillXML(pt.fill, nctx, design) : `<a:solidFill>${clr((c.pieColors && c.pieColors[k]) || pal[k % pal.length], null, design)}</a:solidFill>`;
+          const ln = v2 ? (s.line ? lineXML(Object.assign({ c: '#FFFFFF', w: 0.75 }, s.line), design) : '') : '<a:ln w="6350"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>';
+          return `<c:dPt><c:idx val="${k}"/><c:bubble3D val="0"/>${pt && pt.expl ? `<c:explosion val="${Math.round(pt.expl)}"/>` : ''}<c:spPr>${f}${ln}</c:spPr></c:dPt>`;
+        }).join('');
+        return `<c:ser>${head(s, i)}${s.expl ? `<c:explosion val="${Math.round(s.expl)}"/>` : ''}${dpts}${lblXML(s)}${catVal(s)}</c:ser>`;
       }
-      if (kind === 'line') return `<c:ser>${head}${sp(col, true)}<c:marker><c:symbol val="${c.kind === 'lineMarkers' ? 'square' : 'none'}"/>${c.kind === 'lineMarkers' ? '<c:size val="6"/>' : ''}</c:marker>${dl}<c:cat>${strLit(cats)}</c:cat><c:val>${numLit(s.vals)}</c:val><c:smooth val="0"/></c:ser>`;
-      if (kind === 'scatter') return `<c:ser>${head}${sp(col, true)}<c:marker><c:symbol val="square"/><c:size val="6"/></c:marker>${dl}<c:xVal>${numLit(cats.map((x) => +x || 0))}</c:xVal><c:yVal>${numLit(s.vals)}</c:yVal><c:smooth val="0"/></c:ser>`;
-      if (kind === 'area') return `<c:ser>${head}${sp(col)}${dl}<c:cat>${strLit(cats)}</c:cat><c:val>${numLit(s.vals)}</c:val></c:ser>`;
-      return `<c:ser>${head}${sp(col)}<c:invertIfNegative val="0"/>${dl}<c:cat>${strLit(cats)}</c:cat><c:val>${numLit(s.vals)}</c:val></c:ser>`;
+      if (kind === 'line') return `<c:ser>${head(s, i)}${spLine(s, i)}${markerXML(s, i, c.kind === 'lineMarkers' ? (v2 ? 'circle' : 'square') : 'none')}${lblXML(s)}${catVal(s)}<c:smooth val="${s.smooth ? 1 : 0}"/></c:ser>`;
+      if (kind === 'radar') return `<c:ser>${head(s, i)}${c.kind === 'radarFilled' ? spFill(s, i) : spLine(s, i)}${markerXML(s, i, c.kind === 'radarFilled' ? 'none' : 'circle')}${lblXML(s)}${catVal(s)}</c:ser>`;
+      if (kind === 'scatter') return `<c:ser>${head(s, i)}${spLine(s, i)}${markerXML(s, i, 'square')}${lblXML(s)}<c:xVal>${numLit(xsOf(s))}</c:xVal><c:yVal>${numLit(s.vals, s.fmt)}</c:yVal><c:smooth val="${s.smooth ? 1 : 0}"/></c:ser>`;
+      if (kind === 'bubble') return `<c:ser>${head(s, i)}${spFill(s, i)}<c:invertIfNegative val="0"/>${lblXML(s)}<c:xVal>${numLit(xsOf(s))}</c:xVal><c:yVal>${numLit(s.vals, s.fmt)}</c:yVal><c:bubbleSize>${numLit(s.sizes || s.vals.map(() => 1))}</c:bubbleSize><c:bubble3D val="0"/></c:ser>`;
+      if (kind === 'area') return `<c:ser>${head(s, i)}${spFill(s, i)}${lblXML(s)}${catVal(s)}</c:ser>`;
+      return `<c:ser>${head(s, i)}${spFill(s, i)}<c:invertIfNegative val="0"/>${lblXML(s)}${catVal(s)}</c:ser>`;
     }).join('');
     const AX1 = 50010001, AX2 = 50010002;
     const axIds = `<c:axId val="${AX1}"/><c:axId val="${AX2}"/>`;
-    const grid = c.gridY !== false ? '<c:majorGridlines/>' : '';
-    const catAx = (pos) => `<c:catAx><c:axId val="${AX1}"/><c:scaling><c:orientation val="${pos === 'l' ? 'maxMin' : 'minMax'}"/></c:scaling><c:delete val="0"/><c:axPos val="${pos}"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="out"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>${c.catRot ? `<c:txPr><a:bodyPr rot="${Math.round(c.catRot * 60000)}" vert="horz"/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>` : ''}<c:crossAx val="${AX2}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>`;
-    const valAx = (pos, id, cross, g) => `<c:valAx><c:axId val="${id}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="${pos}"/>${g ? grid : ''}<c:numFmt formatCode="${X(c.axisFmt || (c.kind === 'colPct' ? '0%' : 'General'))}" sourceLinked="0"/><c:majorTickMark val="out"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${cross}"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>`;
+    const ax = (v2 && c.ax) || {};
+    const gridXML = (gl) => (gl && (gl.c || gl.w) ? `<c:majorGridlines><c:spPr>${lineXML(Object.assign({ c: '#D9D9D9', w: 0.75 }, gl), design)}</c:spPr></c:majorGridlines>` : '<c:majorGridlines/>');
+    const grid = c.gridY !== false ? gridXML(ax.v && ax.v.grid) : '';
+    const txPrXML = (o, rot) => {
+      if (!o && rot == null) return '';
+      o = o || {};
+      const attrs = [];
+      if (o.sz) attrs.push(`sz="${Math.round(o.sz * 100)}"`);
+      if (o.b != null) attrs.push(`b="${o.b ? 1 : 0}"`);
+      if (o.i != null) attrs.push(`i="${o.i ? 1 : 0}"`);
+      const inner = o.color ? `<a:solidFill>${clr(o.color, null, design)}</a:solidFill>` : '';
+      return `<c:txPr><a:bodyPr${rot != null ? ` rot="${Math.round(rot * 60000)}" vert="horz"` : ''}/><a:lstStyle/><a:p><a:pPr><a:defRPr${attrs.length ? ' ' + attrs.join(' ') : ''}${inner ? `>${inner}</a:defRPr>` : '/>'}</a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>`;
+    };
+    const axLine = (a) => (v2 && a && a.line ? `<c:spPr>${lineXML(Object.assign({ c: '#868686', w: 0.75 }, a.line), design)}</c:spPr>` : '');
+    const catAx = (pos, rev) => { const a = ax.c || {}; return `<c:catAx><c:axId val="${AX1}"/><c:scaling><c:orientation val="${rev ? 'maxMin' : 'minMax'}"/></c:scaling><c:delete val="${a.del ? 1 : 0}"/><c:axPos val="${pos}"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="${a.tick || 'out'}"/><c:minorTickMark val="none"/><c:tickLblPos val="${a.lblPos || 'nextTo'}"/>${axLine(a)}${txPrXML(v2 ? a.tx : null, c.catRot ? c.catRot : null)}<c:crossAx val="${AX2}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>`; };
+    const valAx = (pos, id, cross, g, fmtDef, a, crossBetween) => {
+      a = a || {};
+      const sc = (a.max != null ? `<c:max val="${a.max}"/>` : '') + (a.min != null ? `<c:min val="${a.min}"/>` : '');
+      return `<c:valAx><c:axId val="${id}"/><c:scaling>${a.log ? `<c:logBase val="${a.log}"/>` : ''}<c:orientation val="${a.rev ? 'maxMin' : 'minMax'}"/>${sc}</c:scaling><c:delete val="${a.del ? 1 : 0}"/><c:axPos val="${pos}"/>${g ? grid : ''}<c:numFmt formatCode="${X(c.axisFmt || fmtDef || 'General')}" sourceLinked="0"/><c:majorTickMark val="${a.tick || 'out'}"/><c:minorTickMark val="none"/><c:tickLblPos val="${a.lblPos || 'nextTo'}"/>${axLine(a)}${txPrXML(v2 ? a.tx : null)}<c:crossAx val="${cross}"/><c:crosses val="autoZero"/><c:crossBetween val="${crossBetween || 'between'}"/>${a.major ? `<c:majorUnit val="${a.major}"/>` : ''}</c:valAx>`;
+    };
+    const gap = g0.type === 'bar' && g0.gap != null ? Math.round(g0.gap) : 150;
+    const ovl = (st) => (st ? 100 : g0.type === 'bar' && g0.overlap ? Math.round(g0.overlap) : 0);
+    const firstPie = sers('pie').split('</c:ser>')[0] + (series.length ? '</c:ser>' : '');
     let plot;
     switch (c.kind) {
-      case 'bar': case 'barStacked':
-        plot = `<c:barChart><c:barDir val="bar"/><c:grouping val="${c.kind === 'barStacked' ? 'stacked' : 'clustered'}"/><c:varyColors val="0"/>${sers('bar', (x) => !x.overlay)}<c:gapWidth val="150"/>${c.kind === 'barStacked' ? '<c:overlap val="100"/>' : ''}${axIds}</c:barChart>${catAx('l')}${valAx('b', AX2, AX1, true)}`;
+      case 'bar': case 'barStacked': case 'barPct': {
+        const grp = c.kind === 'barPct' ? 'percentStacked' : c.kind === 'barStacked' ? 'stacked' : 'clustered';
+        plot = `<c:barChart><c:barDir val="bar"/><c:grouping val="${grp}"/><c:varyColors val="0"/>${sers('bar', (x) => !x.overlay)}<c:gapWidth val="${gap}"/>${grp !== 'clustered' ? '<c:overlap val="100"/>' : ovl(false) ? `<c:overlap val="${ovl(false)}"/>` : ''}${axIds}</c:barChart>${catAx('l', v2 ? !!(ax.c && ax.c.rev) : true)}${valAx('b', AX2, AX1, true, c.kind === 'barPct' ? '0%' : null, ax.v)}`;
         break;
+      }
       case 'line': case 'lineMarkers':
-        plot = `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${sers('line')}<c:marker val="1"/>${axIds}</c:lineChart>${catAx('b')}${valAx('l', AX2, AX1, true)}`;
+        plot = `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${sers('line')}<c:marker val="1"/>${axIds}</c:lineChart>${catAx('b', ax.c && ax.c.rev)}${valAx('l', AX2, AX1, true, null, ax.v)}`;
         break;
-      case 'area': case 'areaStacked':
-        plot = `<c:areaChart><c:grouping val="${c.kind === 'areaStacked' ? 'stacked' : 'standard'}"/><c:varyColors val="0"/>${sers('area')}${axIds}</c:areaChart>${catAx('b')}${valAx('l', AX2, AX1, true)}`;
+      case 'area': case 'areaStacked': case 'areaPct':
+        plot = `<c:areaChart><c:grouping val="${c.kind === 'areaPct' ? 'percentStacked' : c.kind === 'areaStacked' ? 'stacked' : 'standard'}"/><c:varyColors val="0"/>${sers('area')}${axIds}</c:areaChart>${catAx('b', ax.c && ax.c.rev)}${valAx('l', AX2, AX1, true, c.kind === 'areaPct' ? '0%' : null, ax.v, 'midCat')}`;
         break;
       case 'pie':
-        plot = `<c:pieChart><c:varyColors val="1"/>${sers('pie').split('</c:ser>')[0] + (series.length ? '</c:ser>' : '')}<c:firstSliceAng val="0"/></c:pieChart>`;
+        plot = `<c:pieChart><c:varyColors val="1"/>${firstPie}<c:firstSliceAng val="${Math.round(g0.firstAng || 0)}"/></c:pieChart>`;
         break;
       case 'doughnut':
-        plot = `<c:doughnutChart><c:varyColors val="1"/>${sers('pie').split('</c:ser>')[0] + (series.length ? '</c:ser>' : '')}<c:firstSliceAng val="0"/><c:holeSize val="50"/></c:doughnutChart>`;
+        plot = `<c:doughnutChart><c:varyColors val="1"/>${firstPie}<c:firstSliceAng val="${Math.round(g0.firstAng || 0)}"/><c:holeSize val="${L.clamp(Math.round(g0.hole || 50), 10, 90)}"/></c:doughnutChart>`;
+        break;
+      case 'radar': case 'radarFilled':
+        plot = `<c:radarChart><c:radarStyle val="${c.kind === 'radarFilled' ? 'filled' : 'marker'}"/><c:varyColors val="0"/>${sers('radar')}${axIds}</c:radarChart>${catAx('b')}${valAx('l', AX2, AX1, true, null, ax.v, 'between')}`;
+        break;
+      case 'bubble':
+        plot = `<c:bubbleChart><c:varyColors val="0"/>${sers('bubble')}<c:bubbleScale val="${Math.round(g0.bubbleScale || 100)}"/><c:showNegBubbles val="0"/>${axIds}</c:bubbleChart>${valAx('b', AX1, AX2, false, null, ax.c, 'midCat')}${valAx('l', AX2, AX1, true, null, ax.v, 'midCat')}`;
         break;
       case 'scatter':
-        plot = `<c:scatterChart><c:scatterStyle val="lineMarker"/><c:varyColors val="0"/>${sers('scatter')}${axIds}</c:scatterChart>${valAx('b', AX1, AX2, false)}${valAx('l', AX2, AX1, true)}`;
+        plot = `<c:scatterChart><c:scatterStyle val="lineMarker"/><c:varyColors val="0"/>${sers('scatter')}${axIds}</c:scatterChart>${valAx('b', AX1, AX2, false, null, ax.c, 'midCat')}${valAx('l', AX2, AX1, true, null, ax.v, 'midCat')}`;
         break;
-      default:
-        plot = `<c:barChart><c:barDir val="col"/><c:grouping val="${c.kind === 'colStacked' ? 'stacked' : c.kind === 'colPct' ? 'percentStacked' : 'clustered'}"/><c:varyColors val="0"/>${sers('bar', (x) => !x.overlay)}<c:gapWidth val="150"/>${c.kind === 'colStacked' || c.kind === 'colPct' ? '<c:overlap val="100"/>' : ''}${axIds}</c:barChart>${series.some((x) => x.overlay) ? `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${sers('overlay', (x) => x.overlay)}<c:marker val="1"/>${axIds}</c:lineChart>` : ''}${catAx('b')}${valAx('l', AX2, AX1, true)}`;
+      default: {
+        const grp = c.kind === 'colStacked' ? 'stacked' : c.kind === 'colPct' ? 'percentStacked' : 'clustered';
+        plot = `<c:barChart><c:barDir val="col"/><c:grouping val="${grp}"/><c:varyColors val="0"/>${sers('bar', (x) => !x.overlay)}<c:gapWidth val="${gap}"/>${grp !== 'clustered' ? '<c:overlap val="100"/>' : ovl(false) ? `<c:overlap val="${ovl(false)}"/>` : ''}${axIds}</c:barChart>${series.some((x) => x.overlay) ? `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${sers('overlay', (x) => x.overlay)}<c:marker val="1"/>${axIds}</c:lineChart>` : ''}${catAx('b', ax.c && ax.c.rev)}${valAx('l', AX2, AX1, true, c.kind === 'colPct' ? '0%' : null, ax.v)}`;
+      }
     }
-    const title = c.title ? `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="${Math.round((c.fsz || 12) * 140)}" b="1"/></a:pPr><a:r><a:rPr lang="en-US" sz="${Math.round((c.fsz || 12) * 140)}" b="1"/><a:t>${X(c.title)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>` : '<c:autoTitleDeleted val="1"/>';
-    const legend = c.legend && c.legend !== 'none' ? `<c:legend><c:legendPos val="${c.legend}"/><c:overlay val="0"/></c:legend>` : '';
-    return HEAD + `<c:chartSpace xmlns:c="${NS_C}" xmlns:a="${NS_A}" xmlns:r="${NS_R}"><c:date1904 val="0"/><c:lang val="en-US"/><c:roundedCorners val="0"/><c:chart>${title}<c:plotArea><c:layout/>${plot}</c:plotArea>${legend}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="${Math.round((c.fsz || 12) * 100)}"><a:latin typeface="${X(c.font || 'Arial')}"/></a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr></c:chartSpace>`;
+    const tsz = v2 ? (c.titleTx && c.titleTx.sz) || (c.fsz || 10) * 1.2 : (c.fsz || 12) * 1.4;
+    const tb = v2 && c.titleTx && c.titleTx.b === false ? 0 : 1;
+    const tcol = v2 && c.titleTx && c.titleTx.color ? `<a:solidFill>${clr(c.titleTx.color, null, design)}</a:solidFill>` : '';
+    const titleLines = String(c.title || '').split('\n');
+    const title = c.title ? `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/>${titleLines.map((t) => `<a:p><a:pPr><a:defRPr sz="${Math.round(tsz * 100)}" b="${tb}"/></a:pPr><a:r><a:rPr lang="en-US" sz="${Math.round(tsz * 100)}" b="${tb}"${tcol ? `>${tcol}</a:rPr>` : '/>'}<a:t>${X(t)}</a:t></a:r></a:p>`).join('')}</c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>` : '<c:autoTitleDeleted val="1"/>';
+    const legend = c.legend && c.legend !== 'none' ? `<c:legend><c:legendPos val="${c.legend}"/><c:overlay val="0"/>${v2 ? txPrXML(c.legendTx) : ''}</c:legend>` : '';
+    const area = v2 ? `<c:spPr>${c.bg ? fillXML(c.bg, nctx, design) : '<a:noFill/>'}${c.border ? lineXML(Object.assign({ c: '#868686', w: 0.75 }, c.border), design) : '<a:ln><a:noFill/></a:ln>'}</c:spPr>` : '';
+    const tcolor = v2 && c.textColor ? `<a:solidFill>${clr(c.textColor, null, design)}</a:solidFill>` : '';
+    return HEAD + `<c:chartSpace xmlns:c="${NS_C}" xmlns:a="${NS_A}" xmlns:r="${NS_R}"><c:date1904 val="0"/><c:lang val="en-US"/><c:roundedCorners val="0"/><c:chart>${title}<c:plotArea><c:layout/>${plot}</c:plotArea>${legend}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart>${area}<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="${Math.round((c.fsz || 12) * 100)}">${tcolor}<a:latin typeface="${X(font)}"/></a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr></c:chartSpace>`;
   }
 
   /* ---------- animation timing ---------- */
@@ -597,6 +680,7 @@
     const m = L.media.get(id);
     if (!m) return null;
     let blob = m.blob, type = blob.type || m.type || 'image/png';
+    const svg = /svg/.test(type) ? new Uint8Array(await L.readAsArrayBuffer(blob)) : null;
     if (/svg|webp|avif/.test(type)) {
       try {
         const img = await L.loadImage(m.url);
@@ -609,7 +693,7 @@
         type = 'image/png';
       } catch (e) { /* keep original */ }
     }
-    return { bytes: new Uint8Array(await L.readAsArrayBuffer(blob)), ext: L.mimeToExt(type), type };
+    return { bytes: new Uint8Array(await L.readAsArrayBuffer(blob)), ext: L.mimeToExt(type), type, svg };
   }
 
   /* ---------- main ---------- */
@@ -650,6 +734,7 @@
     const scanFill = (f) => { if (f && f.t === 'img' && f.media) usedMedia.add(f.media); };
     const scanShape = (s) => {
       if (s.type === 'image' && s.media) usedMedia.add(s.media);
+      if (s.type === 'image' && s.svgMedia) usedMedia.add(s.svgMedia);
       scanFill(s.fill);
       if (s.tbl) s.tbl.rows.forEach((r) => r.cells.forEach((c) => scanFill(c.fill)));
       if (s.kids) s.kids.forEach(scanShape);
@@ -672,6 +757,20 @@
       return m ? rels.add(RT('image'), '../media/' + m.name) : null;
     };
     void mediaRef;
+    /* SVG pictures: the PNG copy goes in r:embed, the vector original in the svgBlip extension */
+    const svgMap = new Map();
+    let svgN = 0;
+    const svgSync = (rels) => (id) => {
+      const mb = id ? preloaded.get(id) : null;
+      if (!mb || !mb.svg) return null;
+      if (!svgMap.has(id)) {
+        const name = `vector${++svgN}.svg`;
+        add('ppt/media/' + name, mb.svg);
+        defaults.set('svg', 'image/svg+xml');
+        svgMap.set(id, name);
+      }
+      return rels.add(RT('image'), '../media/' + svgMap.get(id));
+    };
 
     /* masters & layouts */
     let nextMasterId = 2147483648;
@@ -735,11 +834,11 @@
       let sid = 1;
       const idMap = new Map();
       const ctx = {
-        rels: sRels, media: mediaSync(sRels), slideIndex,
+        rels: sRels, media: mediaSync(sRels), svg: svgSync(sRels), slideIndex,
         nextId: (mid) => { const v = ++sid; if (mid) idMap.set(mid, v); return v; },
         idOf: (mid) => idMap.get(mid),
         findShape: (mid) => L.model.shapeById(s, mid),
-        addChart: (xml) => { chartN++; charts.push({ n: chartN, xml }); return chartN; },
+        addChart: (xml, parts) => { chartN++; charts.push({ n: chartN, xml, parts }); return chartN; },
       };
       let tree = s.shapes.map((sh) => shapeXML(sh, ctx, d)).join('');
       /* header & footer placeholders */
@@ -776,7 +875,34 @@
       overrides.push([`/ppt/slides/slide${n}.xml`, CT.slide]);
       sldIds.push({ id: 256 + i, rid: presRels.add(RT('slide'), `slides/slide${n}.xml`) });
     });
-    for (const c of charts) { add(`ppt/charts/chart${c.n}.xml`, c.xml); overrides.push([`/ppt/charts/chart${c.n}.xml`, CT.chart]); }
+    /* charts, and the parts an unedited imported chart brings with it (workbook, style, colours, theme override) */
+    let embN = 0;
+    const PART_CT = { xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', xlsm: 'application/vnd.ms-excel.sheet.macroEnabled.12', xlsb: 'application/vnd.ms-excel.sheet.binary.macroEnabled.main', xls: 'application/vnd.ms-excel', bin: 'application/vnd.openxmlformats-officedocument.oleObject', xml: 'application/xml', png: 'image/png', jpeg: 'image/jpeg', jpg: 'image/jpeg', gif: 'image/gif', emf: 'image/x-emf', wmf: 'image/x-wmf' };
+    for (const c of charts) {
+      add(`ppt/charts/chart${c.n}.xml`, c.xml);
+      overrides.push([`/ppt/charts/chart${c.n}.xml`, CT.chart]);
+      if (!c.parts || !c.parts.length) continue;
+      const rels = [];
+      c.parts.forEach((p, k) => {
+        if (p.external) { rels.push(`<Relationship Id="${X(p.id)}" Type="${X(p.fullType)}" Target="${X(p.target)}" TargetMode="External"/>`); return; }
+        const ext = (String(p.name || '').split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+        let part;
+        if (p.type === 'package' || p.type === 'oleObject') part = `ppt/embeddings/${p.type === 'package' ? 'Microsoft_Excel_Worksheet' : 'oleObject'}${++embN}.${ext}`;
+        else if (p.type === 'chartStyle') part = `ppt/charts/style${c.n}.xml`;
+        else if (p.type === 'chartColorStyle') part = `ppt/charts/colors${c.n}.xml`;
+        else if (p.type === 'themeOverride') part = `ppt/theme/themeOverride${c.n}.xml`;
+        else if (p.type === 'image') part = `ppt/media/chart${c.n}_${k + 1}.${ext}`;
+        else part = `ppt/charts/chart${c.n}_part${k + 1}.${ext}`;
+        add(part, p.bytes);
+        /* binary parts are typed by extension (as PowerPoint writes them), XML parts by name */
+        const ct = p.ct || PART_CT[ext] || 'application/octet-stream';
+        if (ext !== 'xml' && (!defaults.has(ext) || defaults.get(ext) === ct)) defaults.set(ext, ct);
+        else overrides.push(['/' + part, ct]);
+        const target = part.startsWith('ppt/charts/') ? part.slice('ppt/charts/'.length) : '../' + part.slice('ppt/'.length);
+        rels.push(`<Relationship Id="${X(p.id)}" Type="${X(p.fullType)}" Target="${X(target)}"/>`);
+      });
+      add(`ppt/charts/_rels/chart${c.n}.xml.rels`, HEAD + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`);
+    }
 
     /* presentation-level parts */
     presRels.add(RT('presProps'), 'presProps.xml');
@@ -820,10 +946,21 @@
     const mime = opts.format === 'ppsx' ? 'application/vnd.openxmlformats-officedocument.presentationml.slideshow'
       : opts.format === 'potx' ? 'application/vnd.openxmlformats-officedocument.presentationml.template'
         : 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-    return L.zip.write(files, mime);
+    const blob = await L.zip.write(files, mime);
+    /* a password to open: the package is encrypted (AES-256) inside a compound file, as PowerPoint 2013 and later do */
+    if (pres.password && L.officeCrypto) {
+      const enc = await L.officeCrypto.encrypt(new Uint8Array(await blob.arrayBuffer()), pres.password);
+      return new Blob([enc], { type: mime });
+    }
+    return blob;
   }
 
   L.pptx = L.pptx || {};
+  function tileXML(o) {
+    o = o || {};
+    const ALG = ['tl', 't', 'tr', 'l', 'ctr', 'r', 'bl', 'b', 'br'], FL = ['none', 'x', 'y', 'xy'];
+    return `<a:tile tx="${Math.round((o.tx || 0) * 12700)}" ty="${Math.round((o.ty || 0) * 12700)}" sx="${Math.round((o.sx || 1) * 100000)}" sy="${Math.round((o.sy || 1) * 100000)}" flip="${FL.includes(o.flip) ? o.flip : 'none'}" algn="${ALG.includes(o.algn) ? o.algn : 'tl'}"/>`;
+  }
   L.pptx.write = write;
   L.pptx._internal = { chartXML, themeXML, transitionXML };
 })();

@@ -22,7 +22,8 @@
   const wholeRows = () => rgs().every((x) => G().isWholeRows(x));
 
   /* ------------------------------------------------------------ File */
-  cmd('newBook', { label: '&New...', menuLabel: '&New...', tip: 'New', icon: 'new', key: 'Ctrl+N', run: () => A().newWorkbook() });
+  /* the toolbar button makes a blank workbook; the menu and Ctrl+N show Blank and the templates */
+  cmd('newBook', { label: '&New...', menuLabel: '&New...', tip: 'New', icon: 'new', key: 'Ctrl+N', run: (arg, ev) => { if ((ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) || !window.VO) A().newWorkbook(); else VO.newDialog('ledger', (id) => (id ? L.panes.newFromTemplate(id) : A().newWorkbook())); } });
   cmd('newBlank', { label: 'New Blank Workbook', icon: 'new', run: () => A().newWorkbook() });
   cmd('open', { label: '&Open...', icon: 'open', key: 'Ctrl+O', run: () => A().openDialog() });
   cmd('close', { label: '&Close', run: () => A().closeWorkbook() });

@@ -848,13 +848,25 @@
     const c = (label, key) => ui.check(label, !!o[key], (v) => { o[key] = v; });
     const undo = ui.spin({ value: L.hist.limit, min: 3, max: 150, step: 1, dec: 0 });
     const user = h('input', { type: 'text', id: 'op-user', value: L.pres.props.author || '', style: 'width:220px' });
+    const pwOpen = h('input', { type: 'password', id: 'op-pw', value: L.pres.password || '', autocomplete: 'new-password', style: 'width:180px' });
     const tabs = ui.tabs([
       { label: 'View', body: h('div', { class: 'col' }, ui.group('Show', c('Startup &Task Pane', 'startupPane'), c('&Slide Layout task pane when inserting new slides', 'layoutPaneOnNew'), c('Stat&us bar', 'statusBar'), c('&Vertical ruler', 'ruler')), ui.group('Slide show', c('&Popup menu on right mouse click', 'showPopup'), c('Show popup menu &button', 'showPopbar'), c('&End with black slide', 'endBlack'))) },
       { label: 'General', body: h('div', { class: 'col' }, ui.group('User information', ui.field('&Name:', user)), c('Recently used file &list', 'recent')) },
       { label: 'Edit', body: h('div', { class: 'col' }, ui.group('Text', c('Replace straight &quotes with smart quotes', 'smartQuotes'), c('&AutoCorrect as you type', 'autocorrect'), c('Capitalize first letter of &sentences', 'capSentence')), ui.group('Undo', ui.field('&Maximum number of undos:', undo, { cls: 'wide' }))) },
       { label: 'Spelling and Style', body: h('div', { class: 'col' }, ui.group('Spelling', c('Check spelling as you &type', 'spell')), h('div', { class: 'tp-note', text: 'Spelling suggestions come from your browser. Hold Shift while right-clicking a word to see them.' })) },
+      { label: 'Security', body: h('div', { class: 'col' }, ui.group('File encryption settings for this document', ui.field('Password to &open:', pwOpen, { cls: 'wide' })), h('div', { class: 'tp-note', text: 'The presentation is encrypted (AES-256) the next time you save it as a PowerPoint file, the way PowerPoint 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.' })) },
     ]);
-    ui.dialog({ title: 'Options', body: tabs, width: 460, buttons: [{ label: 'OK', primary: true, onClick: () => { L.hist.limit = undo.get(); L.pres.props.author = user.value; L.app.saveOpts(); L.app.applyOpts(); } }, { label: 'Cancel', onClick: () => { L.app.loadOpts(); } }] });
+    const applyPw = () => {
+      const pw = pwOpen.value || '';
+      if (pw === (L.pres.password || '')) return true;
+      if (!pw) { delete L.pres.password; L.hist.dirty = true; return true; }
+      /* confirm a new password, as PowerPoint does */
+      const p2 = h('input', { type: 'password', id: 'pw-confirm', autocomplete: 'new-password', style: 'width:100%' });
+      ui.dialog({ title: 'Confirm Password', width: 320, body: h('div', { class: 'col' }, h('label', { for: 'pw-confirm', text: 'Reenter password to open:' }), p2, h('div', { class: 'tp-note', text: 'Caution: If you lose or forget the password, it cannot be recovered.' })), buttons: [{ label: 'OK', primary: true, onClick: () => { if (p2.value !== pw) { ui.msg('Confirmation password is not identical.', { icon: 'warn' }); return false; } L.pres.password = pw; L.hist.dirty = true; } }, { label: 'Cancel' }] });
+      setTimeout(() => p2.focus(), 0);
+      return true;
+    };
+    ui.dialog({ title: 'Options', body: tabs, width: 460, buttons: [{ label: 'OK', primary: true, onClick: () => { L.hist.limit = undo.get(); L.pres.props.author = user.value; L.app.saveOpts(); L.app.applyOpts(); applyPw(); } }, { label: 'Cancel', onClick: () => { L.app.loadOpts(); } }] });
   };
 
   /* ---------- AutoCorrect ---------- */

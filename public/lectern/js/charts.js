@@ -14,6 +14,27 @@
     ['area', 'Area'], ['areaStacked', 'Stacked Area'],
     ['pie', 'Pie'], ['doughnut', 'Doughnut'], ['scatter', 'XY (Scatter)'],
   ];
+  CH.KINDS.splice(5, 0, ['barPct', '100% Stacked Bar']);
+  CH.KINDS.splice(10, 0, ['areaPct', '100% Stacked Area']);
+  CH.KINDS.push(['bubble', 'Bubble'], ['radar', 'Radar'], ['radarFilled', 'Filled Radar']);
+
+  /* charts read from a file keep their original part (with the embedded workbook and style parts) until they
+     are edited here, so that saving does not lose what Lectern does not model */
+  CH.src = new Map();
+  CH.keep = (o) => { const id = L.uid('cs'); CH.src.set(id, o); return id; };
+
+  /** the series colour Office picks when a series has no fill of its own (c:style 1–48: grey, colourful, or one accent) */
+  CH.autoColor = function (i, n, style, design) {
+    const acc = (k) => L.model.resolveColor('accent' + k, design);
+    const col = ((style || 2) - 1) % 8;
+    const VAR = [[], [['lumMod', 60000]], [['lumMod', 80000], ['lumOff', 20000]], [['lumMod', 80000]], [['lumMod', 60000], ['lumOff', 40000]], [['lumMod', 50000]], [['lumMod', 70000], ['lumOff', 30000]], [['lumMod', 70000]], [['lumMod', 50000], ['lumOff', 50000]]];
+    if (col === 1) return L.color.applyMods(acc((i % 6) + 1), VAR[Math.floor(i / 6) % VAR.length].map(([name, val]) => ({ name, val })));
+    const t = n > 1 ? i / (n - 1) : 0.5;
+    if (col === 0) return L.color.mix('#3F3F3F', '#D9D9D9', t);
+    const base = acc(col - 1);
+    return t < 0.5 ? L.color.darken(base, (0.5 - t) * 0.7) : L.color.lighten(base, (t - 0.5) * 0.9);
+  };
+
   CH.sample = () => ({
     kind: 'col', title: '', legend: 'r', gridY: true, labels: false, fsz: 12,
     cats: ['1st Qtr', '2nd Qtr', '3rd Qtr', '4th Qtr'],
@@ -67,6 +88,7 @@
   /** Render chart into an <svg> of w×h user units */
   CH.render = function (c, w, hh, design) {
     c = c || CH.sample();
+    if (c.v === 2 && CH.renderV2) return CH.renderV2(c, w, hh, design);
     w = Math.max(w, 20); hh = Math.max(hh, 20);
     const fsz = c.fsz || 12;
     const textCol = design ? L.model.resolveColor('tx1', design) : '#000';
@@ -279,19 +301,78 @@
   };
 
   /* ---------- datasheet & chart options dialog ---------- */
+  /** chart type → the chart group of a v2 model */
+  const groupOf = (kind, old) => {
+    const g = { si: [] };
+    if (/^(col|bar)/.test(kind)) Object.assign(g, { type: 'bar', dir: /^bar/.test(kind) ? 'bar' : 'col', grouping: /Pct$/.test(kind) ? 'percentStacked' : /Stacked$/.test(kind) ? 'stacked' : 'clustered', gap: old && old.type === 'bar' ? old.gap : 150, overlap: /Pct$|Stacked$/.test(kind) ? 100 : old && old.type === 'bar' && !/stacked/i.test(old.grouping) ? old.overlap : 0 });
+    else if (/^line/.test(kind)) Object.assign(g, { type: 'line', grouping: 'standard', marker: kind === 'lineMarkers' });
+    else if (/^area/.test(kind)) Object.assign(g, { type: 'area', grouping: kind === 'areaPct' ? 'percentStacked' : kind === 'areaStacked' ? 'stacked' : 'standard' });
+    else if (kind === 'pie' || kind === 'doughnut') Object.assign(g, { type: kind, vary: true, firstAng: old && old.firstAng || 0, hole: kind === 'doughnut' ? (old && old.hole) || 50 : 0 });
+    else if (/^radar/.test(kind)) Object.assign(g, { type: 'radar', radarStyle: kind === 'radarFilled' ? 'filled' : 'marker' });
+    else if (kind === 'bubble') Object.assign(g, { type: 'bubble', bubbleScale: 100 });
+    else Object.assign(g, { type: 'scatter', scatterStyle: 'lineMarker' });
+    return g;
+  };
+  /** after the datasheet or options change, bring the v2 drawing model in line with the simple fields */
+  CH.syncV2 = function (c, prevKind) {
+    if (c.v !== 2) return c;
+    const n = c.series.length;
+    if (prevKind !== undefined && prevKind !== c.kind) {
+      const g = groupOf(c.kind, c.groups && c.groups[0]);
+      g.si = c.series.map((_, i) => i);
+      c.groups = [g];
+      c.series.forEach((sr, i) => { sr.g = 0; delete sr.overlay; if (c.kind === 'line') { sr.marker = Object.assign({}, sr.marker || {}, { sym: 'none' }); } else if (c.kind === 'lineMarkers' && sr.marker && sr.marker.sym === 'none') delete sr.marker.sym; void i; });
+      if (c.ax && c.ax.v2) delete c.ax.v2;
+      if (c.kind === 'pie' || c.kind === 'doughnut') c.pieColors = c.cats.map((_, k) => CH.autoColor(k, c.cats.length, c.style, L.ed ? L.model.design(L.pres, L.ed.slide()) : null));
+    }
+    /* series added or removed in the datasheet */
+    for (const g of c.groups) g.si = g.si.filter((i) => i < n);
+    const known = new Set(c.groups.flatMap((g) => g.si));
+    for (let i = 0; i < n; i++) if (!known.has(i)) { c.series[i].g = 0; c.groups[0].si.push(i); if (c.series[i].idx == null) c.series[i].idx = i; }
+    if ((c.kind === 'scatter' || c.kind === 'bubble')) {
+      const xs = c.cats.map((x) => parseFloat(x));
+      if (xs.every((x) => isFinite(x))) for (const sr of c.series) { sr.xs = xs.slice(); if (c.kind === 'bubble' && !sr.sizes) sr.sizes = sr.vals.map(() => 1); }
+    }
+    for (const sr of c.series) if (sr.sizes && sr.sizes.length < sr.vals.length) while (sr.sizes.length < sr.vals.length) sr.sizes.push(1);
+    c.ax = c.ax || {};
+    if (c.gridY === false) { if (c.ax.v) delete c.ax.v.grid; } else if (c.ax.v && !c.ax.v.grid) c.ax.v.grid = {};
+    else if (!c.ax.v && c.gridY) c.ax.v = { grid: {} };
+    const pie = c.kind === 'pie' || c.kind === 'doughnut';
+    if (!c.labels) for (const sr of c.series) delete sr.lbl;
+    else for (const sr of c.series) if (!sr.lbl) sr.lbl = pie ? { showPercent: true } : { showVal: true };
+    if (!c.title) delete c.titleTx;
+    return c;
+  };
+  const isLineKind = (k) => /^(line|scatter|radar$)/.test(k);
+  CH.setSeriesColor = function (c, sr, col) {
+    sr.color = col;
+    if (c.v !== 2) return;
+    const solidC = { t: 'solid', c: col, a: 1 };
+    if (isLineKind(c.kind)) { sr.line = Object.assign({}, sr.line && sr.line.t !== 'none' ? sr.line : {}, { c: col }); delete sr.line.t; if (sr.marker) { sr.marker.fill = solidC; sr.marker.line = { c: col }; } }
+    else sr.fill = solidC;
+  };
+
   CH.edit = function (shape, onDone) {
     const c = L.clone(shape.chart || CH.sample());
     const ui = L.ui;
     const sheet = h('div', { class: 'datasheet' });
     const preview = h('div', { class: 'chart-preview' });
-    const kind = ui.select(CH.KINDS.map(([k, n]) => [k, n]), c.kind, (v) => { c.kind = v; draw(); });
+    const kind = ui.select(CH.KINDS.map(([k, n]) => [k, n]), c.kind, (v) => { const prev = c.kind; c.kind = v; CH.syncV2(c, prev); draw(); });
     const title = h('input', { type: 'text', id: 'chart-title', value: c.title || '', oninput: (e) => { c.title = e.target.value; draw(); } });
     const legend = ui.select([['r', 'Right'], ['b', 'Bottom'], ['t', 'Top'], ['l', 'Left'], ['none', 'None']], c.legend || 'r', (v) => { c.legend = v; draw(); });
     const grid = ui.check('Major gridlines', c.gridY !== false, (v) => { c.gridY = v; draw(); });
     const labels = ui.check('Show values', !!c.labels, (v) => { c.labels = v; draw(); });
     function draw() {
       L.clear(preview);
-      preview.appendChild(CH.render(c, 300, 190, L.ed ? L.model.design(L.pres, L.ed.slide()) : null));
+      const design = L.ed ? L.model.design(L.pres, L.ed.slide()) : null;
+      if (c.v === 2) {
+        /* imported charts are drawn at their real size and scaled into the preview */
+        CH.syncV2(c);
+        const W = shape.w || 300, H = shape.h || 190, k = Math.min(300 / W, 190 / H);
+        const svg = CH.render(c, W, H, design);
+        svg.setAttribute('width', L.round(W * k, 2)); svg.setAttribute('height', L.round(H * k, 2));
+        preview.appendChild(svg);
+      } else preview.appendChild(CH.render(c, 300, 190, design));
     }
     function buildSheet() {
       L.clear(sheet);
@@ -300,7 +381,7 @@
       t.appendChild(head);
       c.series.forEach((sr, si) => {
         const sw = h('span', { class: 'sw', style: `background:${sr.color || CH.PALETTE[si % 12]}` });
-        sw.addEventListener('click', () => ui.colorMenu(sw, { mode: 'plain' }, (col) => { sr.color = col; sw.style.background = col; draw(); }));
+        sw.addEventListener('click', () => ui.colorMenu(sw, { mode: 'plain' }, (col) => { CH.setSeriesColor(c, sr, col); sw.style.background = col; draw(); }));
         t.appendChild(h('tr', null,
           h('th', null, sw, h('input', { value: sr.name, oninput: (e) => { sr.name = e.target.value; draw(); } })),
           ...c.cats.map((_, ci) => h('td', null, h('input', { value: sr.vals[ci] == null ? '' : sr.vals[ci], inputmode: 'decimal', oninput: (e) => { const v = parseFloat(e.target.value); sr.vals[ci] = isNaN(v) ? 0 : v; draw(); } })))));
@@ -321,6 +402,6 @@
         h('fieldset', null, h('legend', { text: 'Datasheet' }), sheet, tools)),
       h('div', { class: 'cd-right' }, h('div', { class: 'cd-cap', text: 'Preview' }), preview));
     buildSheet(); draw();
-    ui.dialog({ title: 'Chart', body, width: 720, buttons: [{ label: 'OK', primary: true, onClick: () => { onDone(c); } }, { label: 'Cancel' }] });
+    ui.dialog({ title: 'Chart', body, width: 720, buttons: [{ label: 'OK', primary: true, onClick: () => { CH.syncV2(c); c.edited = true; onDone(c); } }, { label: 'Cancel' }] });
   };
 })();

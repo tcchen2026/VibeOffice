@@ -13,6 +13,22 @@
   const ph = (label, r) => { const f = fid(); return [D.item('fb', { fid: f, instr: ' MACROBUTTON  DoFieldClick [' + label + '] ' }, r || {}), D.item('fs', { fid: f }, r || {}), D.text('[' + label + ']', r || {}), D.item('fe', { fid: f }, r || {})]; };
   const field = (instr, result, r) => { const f = fid(); return [D.item('fb', { fid: f, instr: ' ' + instr + ' ' }, r || {}), D.item('fs', { fid: f }, r || {}), D.text(result, r || {}), D.item('fe', { fid: f }, r || {})]; };
   const today = () => L.fields ? L.fields.formatDate(new Date(), 'MMMM d, yyyy') : new Date().toDateString();
+  /** DATE field in the given format, showing today */
+  const dateField = (fmt, r) => field(`DATE \\@ "${fmt}"`, L.fields ? L.fields.formatDate(new Date(), fmt) : new Date().toDateString(), r);
+  /** a table with a shaded header row; '' cells are left empty to fill in */
+  const table = (rows, widths, fill, pStyle) => {
+    const tb = D.simpleTable(rows.length, widths.length, widths.reduce((a, b) => a + b, 0));
+    rows.forEach((r, ri) => r.forEach((v, ci) => {
+      const p = tb.rows[ri].cells[ci].blocks[0];
+      p.runs = v ? [t(v, ri === 0 ? { b: true, color: 'FFFFFF' } : {})] : [];
+      if (pStyle) p.pPr.style = pStyle;
+      if (ri === 0) tb.rows[ri].cells[ci].tcPr.shd = { val: 'clear', fill };
+    }));
+    tb.rows[0].trPr.header = true;
+    tb.grid = widths;
+    L.tables && L.tables.fixWidths(tb);
+    return tb;
+  };
   const style = (d, id, name, o) => { d.styles[id] = Object.assign({ id, name, type: 'paragraph', basedOn: 'Normal', next: null, pPr: {}, rPr: {}, custom: true, q: true }, o); };
   const LIST = [
     { id: 'letter', name: 'Contemporary Letter', cat: 'Letters & Faxes' },
@@ -21,6 +37,10 @@
     { id: 'resume', name: 'Contemporary Résumé', cat: 'Other Documents' },
     { id: 'report', name: 'Professional Report', cat: 'Reports' },
     { id: 'agenda', name: 'Meeting Agenda', cat: 'Other Documents' },
+    { id: 'minutes', name: 'Meeting Minutes', cat: 'Other Documents' },
+    { id: 'todo', name: 'To-Do Checklist', cat: 'Other Documents' },
+    { id: 'flyer', name: 'Event Flyer', cat: 'Other Documents' },
+    { id: 'recipe', name: 'Recipe', cat: 'Other Documents' },
   ];
   T.list = () => LIST;
   T.categories = () => ['General', 'Letters & Faxes', 'Memos', 'Reports', 'Other Documents'];
@@ -143,6 +163,84 @@
       tb.grid = [72, 252, 108];
       L.tables && L.tables.fixWidths(tb);
       d.main.blocks.push(tb, P([t('Additional Instructions:', { b: true })], { style: 'AgendaItem', sp: { b: 18 } }), P(ph('Type any notes or preparation needed'), { style: 'AgendaItem' }));
+    },
+    minutes(d) {
+      style(d, 'MinutesTitle', 'Minutes Title', { pPr: { sp: { a: 2 } }, rPr: { font: 'Tahoma', sz: 24, b: true, color: '1F3864' } });
+      style(d, 'MinutesHeading', 'Minutes Heading', { pPr: { sp: { b: 16, a: 6 }, keepNext: true, borders: { bottom: { val: 'single', sz: 0.75, color: '8EAADB', space: 2 } } }, rPr: { font: 'Tahoma', sz: 11, b: true, color: '1F3864' } });
+      style(d, 'MinutesText', 'Minutes Text', { pPr: { sp: { a: 4 }, tabs: [{ pos: 90, al: 'left' }] }, rPr: { font: 'Tahoma', sz: 10 } });
+      const absId = D.addNum(d, D.makeBulletAbs('•', 'Symbol', ''));
+      const head = (s) => P([t(s)], { style: 'MinutesHeading' });
+      const line = (label, runs) => P([t(label, { b: true }), D.item('tab'), ...runs], { style: 'MinutesText' });
+      const topic = (n) => P([t(n + '.  ', { b: true }), ...ph('Topic', { b: true })], { style: 'MinutesText', sp: { b: 8, a: 2 } });
+      const point = (s) => P(ph(s), { style: 'MinutesText', num: { id: absId, lvl: 0 } });
+      d.main.blocks = [
+        P(ph('Meeting Name'), { style: 'MinutesTitle' }),
+        P([t('Minutes of the meeting', { color: '595959' })], { style: 'MinutesText', sp: { a: 12 } }),
+        line('Date:', dateField('dddd, MMMM d, yyyy')), line('Time:', ph('Start – End')), line('Location:', ph('Room or video link')),
+        line('Chair:', ph('Name')), line('Minutes by:', ph('Name')),
+        head('Attendees'), P(ph('Names of everyone present'), { style: 'MinutesText' }), line('Apologies:', ph('Names')),
+        head('Discussion'),
+        topic(1), point('What was discussed'), point('What was decided'),
+        topic(2), point('What was discussed'), point('What was decided'),
+        head('Action Items'),
+        table([['Action', 'Owner', 'Due'], ['', '', ''], ['', '', ''], ['', '', ''], ['', '', '']], [276, 96, 72], '1F3864', 'MinutesText'),
+        head('Next Meeting'), line('Date:', ph('Date and time')), line('Location:', ph('Room or video link')),
+      ];
+    },
+    todo(d) {
+      style(d, 'ListTitle', 'List Title', { pPr: { sp: { a: 0 } }, rPr: { font: 'Trebuchet MS', sz: 28, b: true, color: '2A64C8' } });
+      style(d, 'ListHeading', 'List Heading', { pPr: { sp: { b: 18, a: 6 }, keepNext: true, borders: { bottom: { val: 'single', sz: 1.5, color: '2A64C8', space: 2 } } }, rPr: { font: 'Trebuchet MS', sz: 13, b: true, color: '2A64C8' } });
+      style(d, 'Checklist', 'Checklist', { pPr: { ind: { l: 24, fl: -24 }, tabs: [{ pos: 24, al: 'left' }], sp: { a: 7 } }, rPr: { font: 'Trebuchet MS', sz: 11 } });
+      const box = (label) => P([t('☐', { font: 'Segoe UI Symbol', sz: 13 }), D.item('tab'), ...ph(label)], { style: 'Checklist' });
+      const head = (s) => P([t(s)], { style: 'ListHeading' });
+      d.main.blocks = [
+        P([t('To-Do List')], { style: 'ListTitle' }),
+        P(dateField('dddd, MMMM d, yyyy', { font: 'Trebuchet MS', sz: 11, color: '595959' }), { sp: { a: 6 } }),
+        head('Today'), box('Most important task'), box('Task'), box('Task'), box('Task'),
+        head('This Week'), box('Task'), box('Task'), box('Task'),
+        head('Calls and Errands'), box('Call or errand'), box('Call or errand'),
+        head('Notes'), P(ph('Anything to remember', { font: 'Trebuchet MS', sz: 11 }), { sp: { a: 6 } }),
+        P([t('Tip: select a ☐ and type ☒ (Insert ▸ Symbol) to tick it off, or strike the line through with Format ▸ Font.', { i: true, color: '7F7F7F', sz: 9, font: 'Trebuchet MS' })], { sp: { b: 18 } }),
+      ];
+    },
+    flyer(d) {
+      d.sect.mt = d.sect.mb = 54;
+      style(d, 'FlyerKicker', 'Flyer Kicker', { pPr: { jc: 'center', sp: { b: 36, a: 6 } }, rPr: { font: 'Trebuchet MS', sz: 16, caps: true, spacing: 3, color: 'E0682D', b: true } });
+      style(d, 'FlyerTitle', 'Flyer Title', { pPr: { jc: 'center', sp: { a: 12 } }, rPr: { font: 'Arial Black', sz: 48, color: '1F3864', spacing: -1 } });
+      style(d, 'FlyerTagline', 'Flyer Tagline', { pPr: { jc: 'center', sp: { a: 30 } }, rPr: { font: 'Georgia', sz: 18, i: true, color: '595959' } });
+      style(d, 'FlyerWhen', 'Flyer When', { pPr: { jc: 'center', sp: { b: 6, a: 6 } }, rPr: { font: 'Trebuchet MS', sz: 22, b: true, color: '1F3864' } });
+      style(d, 'FlyerText', 'Flyer Text', { pPr: { jc: 'center', sp: { a: 10, line: 1.2, rule: 'auto' }, ind: { l: 36, r: 36 } }, rPr: { font: 'Georgia', sz: 13 } });
+      const rule = { val: 'single', sz: 3, color: 'E0682D', space: 12 };
+      d.main.blocks = [
+        P(ph('You are invited'), { style: 'FlyerKicker' }),
+        P(ph('Event Name'), { style: 'FlyerTitle' }),
+        P(ph('A short line that makes people want to come'), { style: 'FlyerTagline' }),
+        P(ph('Saturday, June 6'), { style: 'FlyerWhen', borders: { top: rule } }),
+        P(ph('2:00 pm – 6:00 pm'), { style: 'FlyerWhen' }),
+        P(ph('Place name, street address, city', { sz: 16, b: false }), { style: 'FlyerWhen', borders: { bottom: rule }, sp: { a: 30 } }),
+        P(ph('Describe the event: what will happen, who it is for, and what to bring. Two or three sentences are enough.'), { style: 'FlyerText' }),
+        P(ph('Food • Music • Games for the kids', { b: true, color: 'E0682D' }), { style: 'FlyerText', sp: { a: 36 } }),
+        P([t('RSVP: ', { b: true }), ...ph('name, phone or e-mail, by a date')], { style: 'FlyerText' }),
+        P(ph('Free entry · Everyone welcome', { sz: 11, color: '7F7F7F' }), { style: 'FlyerText' }),
+      ];
+    },
+    recipe(d) {
+      style(d, 'RecipeTitle', 'Recipe Title', { pPr: { sp: { a: 4 } }, rPr: { font: 'Georgia', sz: 28, b: true, color: '7A3B10' } });
+      style(d, 'RecipeHeading', 'Recipe Heading', { pPr: { sp: { b: 16, a: 6 }, keepNext: true }, rPr: { font: 'Georgia', sz: 14, b: true, color: '7A3B10' } });
+      style(d, 'RecipeText', 'Recipe Text', { pPr: { sp: { a: 4, line: 1.15, rule: 'auto' } }, rPr: { font: 'Georgia', sz: 11 } });
+      const bullets = D.addNum(d, D.makeBulletAbs('•', 'Symbol', ''));
+      const steps = D.addNum(d, D.makeNumberAbs('decimal', '%1.'));
+      const ing = (s) => P(ph(s), { style: 'RecipeText', num: { id: bullets, lvl: 0 } });
+      const step = (s) => P(ph(s), { style: 'RecipeText', num: { id: steps, lvl: 0 }, sp: { a: 6 } });
+      const head = (s) => P([t(s)], { style: 'RecipeHeading' });
+      d.main.blocks = [
+        P(ph('Recipe Name'), { style: 'RecipeTitle' }),
+        P(ph('One line about the dish: where it comes from, when you make it', { i: true, color: '595959' }), { style: 'RecipeText', sp: { a: 10 } }),
+        table([['Serves', 'Prep time', 'Cook time', 'Oven'], ['4', '15 min', '30 min', '180 °C / 350 °F']], [108, 108, 108, 108], '7A3B10', 'RecipeText'),
+        head('Ingredients'), ing('Quantity and ingredient'), ing('Quantity and ingredient'), ing('Quantity and ingredient'), ing('Quantity and ingredient'), ing('Quantity and ingredient'),
+        head('Method'), step('First step'), step('Next step'), step('Next step'), step('Serve'),
+        head('Notes'), P(ph('Variations, what to serve it with, how long it keeps'), { style: 'RecipeText' }),
+      ];
     },
   };
   T.build = function (id) {

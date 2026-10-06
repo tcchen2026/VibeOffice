@@ -106,15 +106,17 @@
     const rowsVis = Math.max(1, fr.panes.length ? fr.panes[fr.panes.length - 1].rEnd - fr.sR : 1);
     const colsVis = Math.max(1, fr.panes.length ? fr.panes[fr.panes.length - 1].cEnd - fr.sC : 1);
     const vs = G.vs(sh);
-    const totR = Math.min(MAXR, Math.max(sh.maxR + 1 + 2, vs.scrollR + rowsVis * 2, 100));
-    const totC = Math.min(MAXC, Math.max(sh.maxC + 1 + 2, vs.scrollC + colsVis * 2, 26));
-    vbar.set(vs.scrollR - fr.sR + fr.sR, rowsVis, totR, fr.sR);
-    hbar.set(vs.scrollC, colsVis, totC, fr.sC);
+    /* the range of LibreOffice Calc (lcl_GetScrollRange in sc/source/ui/view/tabview4.cxx), which is Excel's too:
+       the used area or the window's bottom, whichever is further, plus one window (a part-shown row counts),
+       starting at the first row (column) below (right of) frozen panes; a blank sheet gets a half-size box */
+    const range = (used, pos, vis, max) => Math.min(max, Math.max(used, pos + vis) + vis);
+    vbar.set(vs.scrollR, rowsVis + 1, range(sh.maxR, vs.scrollR, rowsVis + 1, MAXR), fr.oR + fr.fr);
+    hbar.set(vs.scrollC, colsVis + 1, range(sh.maxC, vs.scrollC, colsVis + 1, MAXC), fr.oC + fr.fc);
     void g;
   }
   function scrollTo(axis, pos, how) {
     const sh = G.sheet(), vs = G.vs(sh), fr = lastFrame;
-    const min = axis === 'v' ? fr.sR : fr.sC;
+    const min = axis === 'v' ? fr.oR + fr.fr : fr.oC + fr.fc;   // the first scrollable row (column), below frozen panes
     const g = LY.geo(sh);
     if (axis === 'v') { let r = Math.max(min, Math.min(MAXR - 1, Math.round(pos))); r = g.rows.visible(r, how === 'up' ? -1 : 1); vs.scrollR = r; }
     else { let c = Math.max(min, Math.min(MAXC - 1, Math.round(pos))); c = g.cols.visible(c, how === 'up' ? -1 : 1); vs.scrollC = c; }
@@ -163,46 +165,40 @@
   };
 
   /* ------------------------------------------------------------ scrollbars */
+  /** The browser's own scrollbar, as in Quire and Lectern: el scrolls a spacer sized so the thumb shows
+   *  page out of total rows (or columns); the scroll position maps back to the first row or column shown. */
   class Scrollbar {
     constructor(el, orient, onScroll) {
       this.el = el; this.v = orient === 'v'; this.onScroll = onScroll;
       this.pos = 0; this.page = 10; this.total = 100; this.min = 0;
-      const arrow = (d) => `<svg width="7" height="7" viewBox="0 0 7 7"><path d="${{ up: 'M0.5 5.5L3.5 1.5 6.5 5.5', dn: 'M0.5 1.5L3.5 5.5 6.5 1.5', lt: 'M5.5 0.5L1.5 3.5 5.5 6.5', rt: 'M1.5 0.5L5.5 3.5 1.5 6.5' }[d]}" fill="none" stroke="#4d6185" stroke-width="1.6"/></svg>`;
-      this.b1 = h('button', { class: 'sb-btn ' + (this.v ? 'sb-up' : 'sb-lt'), type: 'button', tabindex: '-1', 'aria-label': this.v ? 'Scroll up' : 'Scroll left', html: arrow(this.v ? 'up' : 'lt') });
-      this.b2 = h('button', { class: 'sb-btn ' + (this.v ? 'sb-dn' : 'sb-rt'), type: 'button', tabindex: '-1', 'aria-label': this.v ? 'Scroll down' : 'Scroll right', html: arrow(this.v ? 'dn' : 'rt') });
-      this.thumb = h('div', { class: 'sb-thumb' }, h('i'));
-      el.append(this.b1, this.thumb, this.b2);
-      const repeat = (fn) => (e) => { e.preventDefault(); fn(); let t = setTimeout(function tick() { fn(); t = setTimeout(tick, 50); }, 350); const stop = () => { clearTimeout(t); window.removeEventListener('pointerup', stop); }; window.addEventListener('pointerup', stop); G.focus(); };
-      this.b1.addEventListener('pointerdown', repeat(() => this.onScroll(this.pos - 1, 'up')));
-      this.b2.addEventListener('pointerdown', repeat(() => this.onScroll(this.pos + 1, 'down')));
-      el.addEventListener('pointerdown', (e) => {
-        if (e.target !== el) return;
-        e.preventDefault();
-        const r = this.thumb.getBoundingClientRect();
-        const before = this.v ? e.clientY < r.top : e.clientX < r.left;
-        repeat(() => this.onScroll(this.pos + (before ? -1 : 1) * Math.max(1, this.page - 1), before ? 'up' : 'down'))(e);
+      this.spacer = h('i');
+      el.appendChild(this.spacer);
+      el.addEventListener('scroll', () => {
+        if (this.quiet) { this.quiet = false; return; }        // our own set(), not the user
+        const p = Math.round(this.fromScroll());
+        if (p !== this.pos) this.onScroll(p, p < this.pos ? 'up' : 'down');
       });
-      this.thumb.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        this.thumb.setPointerCapture(e.pointerId);
-        const start = this.v ? e.clientY : e.clientX, p0 = this.pos;
-        const track = this.trackLen(), tl = this.thumbLen();
-        const span = Math.max(1, this.total - this.min);
-        const mv = (ev) => { const d = (this.v ? ev.clientY : ev.clientX) - start; this.onScroll(p0 + (d / Math.max(1, track - tl)) * Math.max(1, span - this.page), 'drag'); if (L.ui.tipFor) L.ui.tipFor(this.thumb, this.v ? 'Row: ' + (this.pos + 1) : 'Column: ' + L.formula.colName(this.pos)); };
-        const up = () => { this.thumb.removeEventListener('pointermove', mv); this.thumb.removeEventListener('pointerup', up); G.focus(); };
-        this.thumb.addEventListener('pointermove', mv);
-        this.thumb.addEventListener('pointerup', up);
-      });
+      el.addEventListener('pointerup', () => G.focus());
     }
-    trackLen() { const r = this.el.getBoundingClientRect(); return (this.v ? r.height : r.width) - 34; }
-    thumbLen() { const span = Math.max(1, this.total - this.min); return Math.max(9, Math.min(this.trackLen(), (this.trackLen() * this.page) / span)); }
+    len() { return this.v ? this.el.clientHeight : this.el.clientWidth; }
+    /** the row (column) the current scroll offset stands for */
+    fromScroll() {
+      const room = (this.v ? this.el.scrollHeight : this.el.scrollWidth) - this.len();
+      const at = this.v ? this.el.scrollTop : this.el.scrollLeft;
+      return this.min + (room > 0 ? at / room : 0) * Math.max(0, this.total - this.min - this.page);
+    }
     set(pos, page, total, min) {
       this.pos = pos; this.page = page; this.total = Math.max(total, pos + page); this.min = min || 0;
-      const track = this.trackLen(), tl = this.thumbLen();
-      const span = Math.max(1, this.total - this.min - this.page);
-      const off = 17 + (track - tl) * Math.min(1, Math.max(0, (pos - this.min) / span));
-      if (this.v) { this.thumb.style.top = off + 'px'; this.thumb.style.height = tl + 'px'; }
-      else { this.thumb.style.left = off + 'px'; this.thumb.style.width = tl + 'px'; }
+      const span = Math.max(1, this.total - this.min);
+      const size = Math.min(1e7, Math.max(this.len() + 1, Math.round(this.len() * span / Math.max(1, page))));
+      this.spacer.style.cssText = this.v ? `display:block;width:1px;height:${size}px` : `display:block;height:1px;width:${size}px`;
+      /* leave the offset alone while it already shows this row, so dragging the thumb stays smooth */
+      if (Math.round(this.fromScroll()) === Math.round(pos)) return;
+      const room = size - this.len();
+      const off = Math.round(room * Math.min(1, Math.max(0, (pos - this.min) / Math.max(1, this.total - this.min - this.page))));
+      if (off === (this.v ? this.el.scrollTop : this.el.scrollLeft)) return;
+      this.quiet = true;
+      if (this.v) this.el.scrollTop = off; else this.el.scrollLeft = off;
     }
   }
 

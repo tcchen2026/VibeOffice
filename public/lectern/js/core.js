@@ -255,6 +255,39 @@
   }[String(ext || '').toLowerCase()] || 'application/octet-stream');
   L.mimeToExt = (m) => ({ 'image/png': 'png', 'image/jpeg': 'jpeg', 'image/gif': 'gif', 'image/bmp': 'bmp', 'image/svg+xml': 'svg', 'image/webp': 'webp', 'image/tiff': 'tiff', 'image/x-emf': 'emf', 'image/x-wmf': 'wmf' }[m] || 'png');
 
+  /** pixel size and resolution of a PNG / JPEG / GIF / BMP from its header: {w, h, dpiX, dpiY} or null */
+  L.imageSize = function (b) {
+    try {
+      const u32 = (o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
+      const u16 = (o) => (b[o] << 8) | b[o + 1];
+      const le16 = (o) => b[o] | (b[o + 1] << 8), le32 = (o) => (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0;
+      if (b[0] === 0x89 && b[1] === 0x50) {
+        const r = { w: u32(16), h: u32(20), dpiX: 96, dpiY: 96 };
+        for (let o = 8; o + 12 <= b.length && o < 4096;) {
+          const len = u32(o), type = String.fromCharCode(b[o + 4], b[o + 5], b[o + 6], b[o + 7]);
+          if (type === 'pHYs' && b[o + 16] === 1) { r.dpiX = Math.round(u32(o + 8) * 0.0254) || 96; r.dpiY = Math.round(u32(o + 12) * 0.0254) || 96; }
+          if (type === 'IDAT') break;
+          o += 12 + len;
+        }
+        return r;
+      }
+      if (b[0] === 0xff && b[1] === 0xd8) {
+        let dpiX = 96, dpiY = 96;
+        for (let o = 2; o + 9 < b.length;) {
+          if (b[o] !== 0xff) { o++; continue; }
+          const m = b[o + 1], len = u16(o + 2);
+          if (m === 0xe0 && b[o + 4] === 0x4a && b[o + 11] >= 1) { const k = b[o + 11] === 2 ? 2.54 : 1; dpiX = Math.round(u16(o + 12) * k) || 96; dpiY = Math.round(u16(o + 14) * k) || 96; }
+          if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { w: u16(o + 7), h: u16(o + 5), dpiX, dpiY };
+          o += 2 + len;
+        }
+        return null;
+      }
+      if (b[0] === 0x47 && b[1] === 0x49) return { w: le16(6), h: le16(8), dpiX: 96, dpiY: 96 };
+      if (b[0] === 0x42 && b[1] === 0x4d) { const px = le32(38), py = le32(42); return { w: le32(18), h: Math.abs(le32(22) | 0), dpiX: px ? Math.round(px * 0.0254) : 96, dpiY: py ? Math.round(py * 0.0254) : 96 }; }
+    } catch (e) { /* unknown */ }
+    return null;
+  };
+
   /* ---------- media store (binary assets live outside undo snapshots) ---------- */
   const media = new Map();
   L.media = {
@@ -269,6 +302,33 @@
     has: (id) => media.has(id),
     all: () => media,
     clear() { for (const m of media.values()) URL.revokeObjectURL(m.url); media.clear(); },
+  };
+
+  /** a copy of a picture with one colour made transparent (Set Transparent Color, a:clrChange); cached per colour */
+  const clearCache = new Map();
+  L.media.withTransparent = function (id, hex, tol) {
+    const key = id + '|' + hex + '|' + (tol || 0);
+    if (!clearCache.has(key)) clearCache.set(key, (async () => {
+      try {
+        const im = await L.loadImage(L.media.url(id));
+        const c = document.createElement('canvas');
+        c.width = im.naturalWidth || 1; c.height = im.naturalHeight || 1;
+        const g = c.getContext('2d');
+        g.drawImage(im, 0, 0);
+        const data = g.getImageData(0, 0, c.width, c.height);
+        const [tr, tg, tb] = L.color.hexToRgb(hex);
+        const t = tol || 0, d = data.data;
+        for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - tr) <= t && Math.abs(d[i + 1] - tg) <= t && Math.abs(d[i + 2] - tb) <= t) d[i + 3] = 0;
+        g.putImageData(data, 0, 0);
+        const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+        if (!blob) return null;
+        const nid = L.media.add(blob, 'transparent.png');
+        const o = L.media.get(id);
+        if (o && o.size) L.media.get(nid).size = o.size;
+        return nid;
+      } catch (e) { return null; }
+    })());
+    return clearCache.get(key);
   };
 
   /* ---------- text helpers ---------- */
@@ -347,6 +407,15 @@
   /* Wingdings / Symbol bullet glyphs mapped to Unicode so imported decks look right */
   L.mapSymbolChar = function (ch, font) {
     const f = String(font || '').toLowerCase();
+    const code = ch ? ch.charCodeAt(0) & 0xff : 0;
+    /* Wingdings 2 and 3 carry the round, square and triangular bullets of many Office themes */
+    if (/^wingdings\s*2/.test(f)) {
+      if (code >= 0x96 && code <= 0x9d) return '●';
+      if (code >= 0x9e && code <= 0xa5) return '■';
+      if (code >= 0xa6 && code <= 0xad) return '◆';
+      return { 0x50: '✓', 0x4f: '✗', 0x51: '☒', 0x52: '☑', 0xe9: '★', 0xea: '★' }[code] || '•';
+    }
+    if (/^wingdings\s*3/.test(f)) return { 0x7d: '►', 0x84: '►', 0x75: '►', 0x71: '◄', 0x70: '▲', 0x72: '▼', 0xc6: '➔', 0xc7: '⬅' }[code] || '▸';
     if (f.startsWith('wingdings')) {
       const m = { 'l': '●', 'n': '■', 'q': '❑', 'u': '◆', 'v': '❖', 'Ø': '➢', 'ü': '✓', '§': '▪', 'o': '❍', 'p': '□', 'w': '⬥', 'Ü': '➢', 'à': '➔', 'è': '➜', 'Þ': '➝', 'ð': '⇨', 'ª': '✦', '¨': '◻', '\uF06E': '■', '\uF06C': '●', '\uF075': '◆', '\uF0FC': '✓', '\uF0D8': '➢', '\uF0A7': '▪' };
       return m[ch] || '•';

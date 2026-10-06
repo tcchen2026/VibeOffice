@@ -404,6 +404,14 @@
     const d = ui.dialog({ title: o.title || L.APP, body, width: o.width || 380, buttons: labels.map((l, i) => ({ label: l, primary: i === (o.def || 0), cancel: /cancel|^no$/i.test(stripAmp(l)) })) });
     return d.done;
   };
+  /** the password to open a protected file: resolves to the password, or null when cancelled */
+  ui.password = function (fileName, wrong) {
+    const inp = h('input', { type: 'password', id: 'pw-in', value: '', style: 'width:100%', autocomplete: 'off' });
+    let val = null;
+    const d = ui.dialog({ title: 'Password', width: 340, body: h('div', { class: 'col' }, h('div', { text: wrong ? 'The password is incorrect. Try again.' : `'${fileName}' is protected.` }), h('label', { for: 'pw-in', text: 'Enter password to open file' }), inp), buttons: [{ label: 'OK', primary: true, onClick: () => { val = inp.value; } }, { label: 'Cancel' }] });
+    setTimeout(() => inp.focus(), 0);
+    return d.done.then(() => val);
+  };
   ui.prompt = function (label, value, title) {
     const inp = h('input', { type: 'text', id: 'prompt-in', value: value || '', style: 'width:100%' });
     let val = null;

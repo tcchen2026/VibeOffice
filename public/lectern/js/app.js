@@ -253,7 +253,7 @@
     const d = E.design();
     A.sbDesign.textContent = d ? d.name : '';
   };
-  A.updateTitle = () => { L.$('#titletext').textContent = `${L.APP} - [${A.fileName}]`; document.title = `${A.fileName} - Lectern 2003`; };
+  A.updateTitle = () => { document.title = `${A.fileName} - Lectern 2003`; };
 
   /* ================= views ================= */
   A.setView = function (v) {
@@ -328,6 +328,13 @@
     A.loadPres(M.newPresentation(Object.assign({ design: 'default' }, A.newSize())), 'Presentation' + A.untitled);
     if (A.opts.startupPane) L.panes.task.show('layout');
   };
+  /** a new presentation from one of the content templates (templates.js) */
+  A.newFromTemplate = async function (id) {
+    const pres = L.templates && L.templates.build(id, A.newSize());
+    if (!pres || !(await confirmDiscard())) return;
+    A.untitled = (A.untitled || 1) + 1;
+    A.loadPres(pres, 'Presentation' + A.untitled);
+  };
   /** slide size for new presentations (Page Setup ▸ "Use for new presentations") */
   A.newSize = () => { const z = A.opts.slideSize; return z && z.w > 0 && z.h > 0 ? { w: z.w, h: z.h } : {}; };
   A.closePresentation = async function () {
@@ -345,10 +352,23 @@
     ui.busy(true, `Opening ${file.name}...`);
     try {
       const buf = await L.readAsArrayBuffer(file);
-      const pres = await L.pptx.read(buf, { progress: (i, n) => ui.busy(true, `Opening ${file.name}... (slide ${i} of ${n})`) });
+      const progress = (i, n) => ui.busy(true, `Opening ${file.name}... (slide ${i} of ${n})`);
+      let pres = null, password, wrong = false;
+      for (;;) {
+        try { pres = await L.pptx.read(buf, { progress, password }); break; } catch (e) {
+          if (!(e && (e.code === 'password' || e.code === 'badpassword'))) throw e;
+          /* a password to open: ask for it, as PowerPoint does */
+          ui.busy(false);
+          wrong = e.code === 'badpassword';
+          password = await ui.password(file.name, wrong);
+          if (password == null) return;
+          ui.busy(true, `Opening ${file.name}...`);
+        }
+      }
       if (!pres.slides.length) pres.slides.push(M.newSlide(pres, 'title', Object.keys(pres.designs)[0]));
       A.loadPres(pres, file.name.replace(/\.(pptx|ppsx|potx|pptm|ppsm|potm)$/i, ''), { saved: true });
       A.fileType = /\.ppsx$/i.test(file.name) ? 'ppsx' : /\.potx$/i.test(file.name) ? 'potx' : 'pptx';
+      if (window.VO) VO.opened(file);
       ui.busy(false);
       if (pres.repaired) {
         const lost = pres.repaired.parts.filter((p) => /slides\/slide\d+\.xml$/.test(p)).length;
@@ -381,7 +401,7 @@
       ui.busy(false);
       if (!blob) return;
       const r = await L.saveFile(`${name}.${ext}`, blob);
-      if (r === 'saved' && ['pptx', 'ppsx', 'potx'].includes(type)) { L.hist.dirty = false; A.status(`Saved ${name}.${ext}`); }
+      if (r === 'saved' && ['pptx', 'ppsx', 'potx'].includes(type)) { L.hist.dirty = false; A.status(`Saved ${name}.${ext}`); if (window.VO) VO.saved(`${name}.${ext}`, blob); }
     } catch (e) {
       ui.busy(false);
       console.error(e);
@@ -1236,11 +1256,11 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
       let data;
       try { data = g.getImageData(0, 0, c.width, c.height); } catch (er) { ui.msg('This picture cannot be edited.'); return; }
       const px = (Math.floor(ny * c.height) * c.width + Math.floor(nx * c.width)) * 4;
-      const [tr, tg, tb] = [data.data[px], data.data[px + 1], data.data[px + 2]];
-      for (let i = 0; i < data.data.length; i += 4) if (Math.abs(data.data[i] - tr) < 12 && Math.abs(data.data[i + 1] - tg) < 12 && Math.abs(data.data[i + 2] - tb) < 12) data.data[i + 3] = 0;
-      g.putImageData(data, 0, 0);
-      const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
-      E.commit('Set Transparent Color', () => { s.media = L.media.add(blob, 'picture.png'); });
+      const hex = L.color.rgbToHex(data.data[px], data.data[px + 1], data.data[px + 2]);
+      /* as in PowerPoint the picture itself is kept; the colour is recorded and shows through */
+      const view = await L.media.withTransparent(s.media, hex, 8);
+      if (!view) return;
+      E.commit('Set Transparent Color', () => { s.img = Object.assign({}, s.img, { clear: hex, view }); });
     };
     E.scroller.addEventListener('pointerdown', once, true);
   };
@@ -2056,11 +2076,14 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
   /* ================= init ================= */
   A.init = async function () {
     A.loadOpts();
-    L.$('#appicon').innerHTML = L.icons.app(16);
+    if (window.VO) VO.setIcon(L.icons.app(32));
     buildMenus();
     buildToolbars();
     buildStatus();
-    L.pres = buildSample();
+    /* opened from the Start Center: a template, or blank (a new presentation, or to open a file into); else the sample */
+    const launch = window.VO && VO.launch;
+    const blank = !!launch;
+    L.pres = (launch && launch.template && L.templates && L.templates.build(launch.template, A.newSize())) || (blank ? M.newPresentation(Object.assign({ design: 'default' }, A.newSize())) : buildSample());
     L.panes.left.mount(L.$('#leftpane'));
     L.panes.notes.mount(L.$('#notes'));
     L.panes.task.mount(L.$('#taskpane'));
@@ -2078,7 +2101,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     setupSplitters();
     setupDrop();
     wire();
-    A.loadPres(L.pres, 'Harbor & Pine — 2027 Expansion (sample)');
+    A.loadPres(L.pres, blank ? 'Presentation1' : 'Harbor & Pine — 2027 Expansion (sample)');
     const wantTask = A.opts.taskOpen;
     L.panes.task.show('getting-started');
     if (!wantTask) { L.$('#taskpane').hidden = true; A.opts.taskOpen = false; }
@@ -2088,6 +2111,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     void prompt;
     setTimeout(() => { offerRecovery(); }, 600);
     ui.refresh();
+    if (window.VO) VO.attach('lectern', { open: (f) => A.openFile(f), thumb: () => L.pres.slides[0] && A.slideCanvas(L.pres.slides[0], 480), message: (t) => ui.msg(t, { icon: 'warn' }), templates: () => L.templates.list().map(({ id, name }) => ({ id, name })) });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => A.init());

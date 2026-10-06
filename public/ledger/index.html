@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ledger 2003</title>
+<meta name="theme-color" content="#2a64c8">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&family=Cousine:ital,wght@0,400;0,700;1,400;1,700&family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=Caladea:ital,wght@0,400;0,700;1,400;1,700&display=swap">
@@ -35,11 +38,6 @@ input, select, textarea { font: inherit; color: var(--ink); }
 
 .app { display: flex; flex-direction: column; height: 100%; min-width: 0; }
 /* ---------- title bar ---------- */
-.titlebar { flex: none; height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 8px; color: #fff; font: bold 12px/1 "Trebuchet MS", var(--ui-font);
-  text-shadow: 1px 1px 0 #0a1a4a; background: linear-gradient(#0058EE 0%, #3593FF 4%, #288EFF 6%, #127DFF 8%, #036FFC 10%, #0262EE 14%, #0057E5 20%, #0054E3 24%, #0055EB 56%, #005BF5 66%, #026AFE 76%, #0062EF 86%, #0052D6 92%, #0040AB 94%, #003092 100%);
-  border-bottom: 1px solid #00238a; white-space: nowrap; overflow: hidden; }
-.titlebar .title-text { overflow: hidden; text-overflow: ellipsis; }
-.titlebar .appico { flex: none; filter: drop-shadow(0 0 1px rgba(255,255,255,.6)); }
 /* ---------- command bars ---------- */
 .cmdbars { flex: none; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-bottom: 1px solid #6f93cf; }
 .menurow { display: flex; align-items: center; gap: 8px; padding: 2px 4px 1px; min-height: 24px; overflow-x: auto; scrollbar-width: none; }
@@ -186,8 +184,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .sb-cell.grow { flex: 1; min-width: 0; border-right: 0; box-shadow: none; }
 .sb-cell.flag { color: #7e8ba3; cursor: default; font-weight: bold; padding: 0 5px; }
 .sb-cell.flag.on { color: #000; }
-.sb-cell.btn { cursor: default; }
-.sb-cell.btn:hover { background: var(--menu-hot); }
+.sb-cell.act { cursor: default; }
+.sb-cell.act:hover { background: var(--menu-hot); }
 .sb-spell { display: inline-flex; align-items: center; }
 
 /* floating toolbars */
@@ -397,24 +395,10 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .dv-tip b { display: block; margin-bottom: 2px; }
 .outline-btn { position: absolute; width: 13px; height: 13px; border: 1px solid #333; background: #fff; padding: 0; font: bold 10px/9px Arial, sans-serif; color: #000; display: flex; align-items: center; justify-content: center; z-index: 3; }
 .trace-svg { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 4; }
-/* ---------- custom scrollbars (Luna) ---------- */
-.sb { position: absolute; background: #F4F4F0; user-select: none; touch-action: none; }
-.vscroll { right: 0; top: 0; bottom: 0; width: 17px; border-left: 1px solid #e3e3db; }
-.hscroll { position: relative; flex: 1; min-width: 40px; height: 17px; }
-.sb-btn { position: absolute; width: 17px; height: 17px; border: 1px solid #b8cdf6; border-radius: 2px; background: linear-gradient(#e3ecfe, #c3d4fd 50%, #b4c8fb); display: flex; align-items: center; justify-content: center; padding: 0; }
-.sb-btn:hover { background: linear-gradient(#f0f5ff, #d5e2ff 50%, #c7d8ff); border-color: #9cb6ec; }
-.sb-btn:active { background: linear-gradient(#a8bdf0, #c3d4fd); }
-.sb-btn svg { display: block; }
-.vscroll .sb-up { left: 0; top: 0; } .vscroll .sb-dn { left: 0; bottom: 0; }
-.hscroll .sb-lt { left: 0; top: 0; } .hscroll .sb-rt { right: 0; top: 0; }
-.sb-thumb { position: absolute; border: 1px solid #a6bdf3; border-radius: 2px; background: linear-gradient(90deg, #c7d7fd, #b9cdfc 50%, #a9c0f8); display: flex; align-items: center; justify-content: center; }
-.vscroll .sb-thumb { left: 0; width: 17px; min-height: 9px; }
-.hscroll .sb-thumb { top: 0; height: 17px; min-width: 9px; background: linear-gradient(#c7d7fd, #b9cdfc 50%, #a9c0f8); }
-.sb-thumb:hover { background: linear-gradient(90deg, #dbe6ff, #cddcff 50%, #bccffc); }
-.hscroll .sb-thumb:hover { background: linear-gradient(#dbe6ff, #cddcff 50%, #bccffc); }
-.sb-thumb i { display: block; }
-.vscroll .sb-thumb i { width: 7px; height: 7px; background: repeating-linear-gradient(#eef3ff 0 1px, #8cabe6 1px 2px); }
-.hscroll .sb-thumb i { width: 7px; height: 7px; background: repeating-linear-gradient(90deg, #eef3ff 0 1px, #8cabe6 1px 2px); }
+/* ---------- scrollbars: the browser's own, as in Quire and Lectern (grid.js sizes the spacer inside) ---------- */
+.sb { position: absolute; background: #F4F4F0; }
+.vscroll { right: 0; top: 0; bottom: 0; width: 17px; overflow-x: hidden; overflow-y: scroll; }
+.hscroll { position: relative; flex: 1; min-width: 40px; height: 17px; overflow-x: scroll; overflow-y: hidden; }
 .sb-corner { flex: none; width: 17px; height: 17px; background: #F4F4F0; }
 /* ---------- sheet tabs ---------- */
 .tabrow { flex: none; display: flex; align-items: stretch; height: 18px; background: #ECE9D8; border-top: 1px solid #a0a0a0; position: relative; }
@@ -713,7 +697,7 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .help-fn b { display: block; }
 /* status / name box while filtering */
 .grid-menu .border-grid { grid-template-columns: repeat(4, 24px); }
-.app.fullscreen .cmdbars, .app.fullscreen .fbar, .app.fullscreen .statusbar, .app.fullscreen .titlebar { display: none; }
+.app.fullscreen .cmdbars, .app.fullscreen .fbar, .app.fullscreen .statusbar { display: none; }
 @media (max-width: 700px) {
   .fc-num, .fc-align, .fc-border, .fc-pat, .cw-cols, .sp-grid { flex-direction: column; }
   .fc-f3 { grid-template-columns: 1fr; }
@@ -731,7 +715,6 @@ input, select, textarea { font: inherit; color: var(--ink); }
 
 </style>
 <div id="app" class="app" aria-label="Ledger 2003 spreadsheet">
-  <div class="titlebar" id="titlebar"><span id="appicon"></span><span class="title-text" id="titletext">Ledger 2003</span></div>
   <div class="cmdbars">
     <div class="menurow" id="menurow"></div>
     <div class="toolbars" id="toolbars"></div>
@@ -760,6 +743,7 @@ input, select, textarea { font: inherit; color: var(--ink); }
   <div class="drawrow" id="drawrow" hidden></div>
   <div class="statusbar" id="statusbar"></div>
 </div>
+<script src="../common/suite.js"></script>
 <script src="js/core.js"></script>
 <script src="js/xml.js"></script>
 <script src="js/zip.js"></script>

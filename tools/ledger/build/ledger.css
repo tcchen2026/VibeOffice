@@ -66,24 +66,10 @@
 .dv-tip b { display: block; margin-bottom: 2px; }
 .outline-btn { position: absolute; width: 13px; height: 13px; border: 1px solid #333; background: #fff; padding: 0; font: bold 10px/9px Arial, sans-serif; color: #000; display: flex; align-items: center; justify-content: center; z-index: 3; }
 .trace-svg { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 4; }
-/* ---------- custom scrollbars (Luna) ---------- */
-.sb { position: absolute; background: #F4F4F0; user-select: none; touch-action: none; }
-.vscroll { right: 0; top: 0; bottom: 0; width: 17px; border-left: 1px solid #e3e3db; }
-.hscroll { position: relative; flex: 1; min-width: 40px; height: 17px; }
-.sb-btn { position: absolute; width: 17px; height: 17px; border: 1px solid #b8cdf6; border-radius: 2px; background: linear-gradient(#e3ecfe, #c3d4fd 50%, #b4c8fb); display: flex; align-items: center; justify-content: center; padding: 0; }
-.sb-btn:hover { background: linear-gradient(#f0f5ff, #d5e2ff 50%, #c7d8ff); border-color: #9cb6ec; }
-.sb-btn:active { background: linear-gradient(#a8bdf0, #c3d4fd); }
-.sb-btn svg { display: block; }
-.vscroll .sb-up { left: 0; top: 0; } .vscroll .sb-dn { left: 0; bottom: 0; }
-.hscroll .sb-lt { left: 0; top: 0; } .hscroll .sb-rt { right: 0; top: 0; }
-.sb-thumb { position: absolute; border: 1px solid #a6bdf3; border-radius: 2px; background: linear-gradient(90deg, #c7d7fd, #b9cdfc 50%, #a9c0f8); display: flex; align-items: center; justify-content: center; }
-.vscroll .sb-thumb { left: 0; width: 17px; min-height: 9px; }
-.hscroll .sb-thumb { top: 0; height: 17px; min-width: 9px; background: linear-gradient(#c7d7fd, #b9cdfc 50%, #a9c0f8); }
-.sb-thumb:hover { background: linear-gradient(90deg, #dbe6ff, #cddcff 50%, #bccffc); }
-.hscroll .sb-thumb:hover { background: linear-gradient(#dbe6ff, #cddcff 50%, #bccffc); }
-.sb-thumb i { display: block; }
-.vscroll .sb-thumb i { width: 7px; height: 7px; background: repeating-linear-gradient(#eef3ff 0 1px, #8cabe6 1px 2px); }
-.hscroll .sb-thumb i { width: 7px; height: 7px; background: repeating-linear-gradient(90deg, #eef3ff 0 1px, #8cabe6 1px 2px); }
+/* ---------- scrollbars: the browser's own, as in Quire and Lectern (grid.js sizes the spacer inside) ---------- */
+.sb { position: absolute; background: #F4F4F0; }
+.vscroll { right: 0; top: 0; bottom: 0; width: 17px; overflow-x: hidden; overflow-y: scroll; }
+.hscroll { position: relative; flex: 1; min-width: 40px; height: 17px; overflow-x: scroll; overflow-y: hidden; }
 .sb-corner { flex: none; width: 17px; height: 17px; background: #F4F4F0; }
 /* ---------- sheet tabs ---------- */
 .tabrow { flex: none; display: flex; align-items: stretch; height: 18px; background: #ECE9D8; border-top: 1px solid #a0a0a0; position: relative; }
@@ -382,7 +368,7 @@
 .help-fn b { display: block; }
 /* status / name box while filtering */
 .grid-menu .border-grid { grid-template-columns: repeat(4, 24px); }
-.app.fullscreen .cmdbars, .app.fullscreen .fbar, .app.fullscreen .statusbar, .app.fullscreen .titlebar { display: none; }
+.app.fullscreen .cmdbars, .app.fullscreen .fbar, .app.fullscreen .statusbar { display: none; }
 @media (max-width: 700px) {
   .fc-num, .fc-align, .fc-border, .fc-pat, .cw-cols, .sp-grid { flex-direction: column; }
   .fc-f3 { grid-template-columns: 1fr; }

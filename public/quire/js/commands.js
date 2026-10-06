@@ -217,7 +217,7 @@
   const selectedObjIs = (pred) => { const it = L.drawing && L.drawing.selectedItem(); return !!it && pred(it); };
 
   /* ================= File ================= */
-  C('new', { label: '&New...', menuLabel: '&New...', icon: 'new', key: 'Ctrl+N', tip: 'New Blank Document', run: (arg, ev) => { if (ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) A.newDocument(); else pane('new')(); } });
+  C('new', { label: '&New...', menuLabel: '&New...', icon: 'new', key: 'Ctrl+N', tip: 'New Blank Document', run: (arg, ev) => { if (ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) A.newDocument(); else if (window.VO) VO.newDialog('quire', (id) => (id ? L.templates.create(id) : A.newDocument())); else pane('new')(); } });
   C('newBlank', { label: '&Blank document', icon: 'new', run: () => A.newDocument() });
   C('open', { label: '&Open...', icon: 'open', key: 'Ctrl+O', run: () => A.openDialog() });
   C('close', { label: '&Close', icon: 'close', run: () => A.closeDocument() });

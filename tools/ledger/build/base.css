@@ -25,11 +25,6 @@ input, select, textarea { font: inherit; color: var(--ink); }
 
 .app { display: flex; flex-direction: column; height: 100%; min-width: 0; }
 /* ---------- title bar ---------- */
-.titlebar { flex: none; height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 8px; color: #fff; font: bold 12px/1 "Trebuchet MS", var(--ui-font);
-  text-shadow: 1px 1px 0 #0a1a4a; background: linear-gradient(#0058EE 0%, #3593FF 4%, #288EFF 6%, #127DFF 8%, #036FFC 10%, #0262EE 14%, #0057E5 20%, #0054E3 24%, #0055EB 56%, #005BF5 66%, #026AFE 76%, #0062EF 86%, #0052D6 92%, #0040AB 94%, #003092 100%);
-  border-bottom: 1px solid #00238a; white-space: nowrap; overflow: hidden; }
-.titlebar .title-text { overflow: hidden; text-overflow: ellipsis; }
-.titlebar .appico { flex: none; filter: drop-shadow(0 0 1px rgba(255,255,255,.6)); }
 /* ---------- command bars ---------- */
 .cmdbars { flex: none; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-bottom: 1px solid #6f93cf; }
 .menurow { display: flex; align-items: center; gap: 8px; padding: 2px 4px 1px; min-height: 24px; overflow-x: auto; scrollbar-width: none; }
@@ -176,8 +171,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .sb-cell.grow { flex: 1; min-width: 0; border-right: 0; box-shadow: none; }
 .sb-cell.flag { color: #7e8ba3; cursor: default; font-weight: bold; padding: 0 5px; }
 .sb-cell.flag.on { color: #000; }
-.sb-cell.btn { cursor: default; }
-.sb-cell.btn:hover { background: var(--menu-hot); }
+.sb-cell.act { cursor: default; }
+.sb-cell.act:hover { background: var(--menu-hot); }
 .sb-spell { display: inline-flex; align-items: center; }
 
 /* floating toolbars */

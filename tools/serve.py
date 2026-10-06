@@ -96,7 +96,7 @@ def save_feedback(body, now=None):
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
-                      '.js': 'text/javascript', '.mjs': 'text/javascript',
+                      '.js': 'text/javascript', '.mjs': 'text/javascript', '.webmanifest': 'application/manifest+json',
                       '.glb': 'model/gltf-binary', '.wasm': 'application/wasm'}
 
     def __init__(self, *args, **kwargs):

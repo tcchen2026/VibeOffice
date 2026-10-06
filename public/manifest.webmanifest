@@ -1,0 +1,140 @@
+{
+  "id": "./",
+  "name": "VibeOffice",
+  "short_name": "VibeOffice",
+  "description": "A free office suite that runs in your browser: a word processor, a spreadsheet and a presentation editor. Your files never leave your computer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef3fb",
+  "theme_color": "#2a64c8",
+  "categories": [
+    "productivity",
+    "business"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New document",
+      "short_name": "Document",
+      "description": "A blank document in Quire",
+      "url": "quire/?new"
+    },
+    {
+      "name": "New spreadsheet",
+      "short_name": "Spreadsheet",
+      "description": "A blank workbook in Ledger",
+      "url": "ledger/?new"
+    },
+    {
+      "name": "New presentation",
+      "short_name": "Presentation",
+      "description": "A blank presentation in Lectern",
+      "url": "lectern/?new"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "quire/preview.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Quire, the word processor"
+    },
+    {
+      "src": "ledger/preview.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Ledger, the spreadsheet"
+    },
+    {
+      "src": "lectern/preview.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Lectern, the presentation editor"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+          ".docx"
+        ],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.template": [
+          ".dotx"
+        ],
+        "application/vnd.ms-word.document.macroEnabled.12": [
+          ".docm"
+        ],
+        "application/rtf": [
+          ".rtf"
+        ]
+      }
+    },
+    {
+      "action": "./",
+      "accept": {
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+          ".xlsx"
+        ],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.template": [
+          ".xltx"
+        ],
+        "application/vnd.ms-excel.sheet.macroEnabled.12": [
+          ".xlsm"
+        ],
+        "text/csv": [
+          ".csv"
+        ]
+      }
+    },
+    {
+      "action": "./",
+      "accept": {
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
+          ".pptx"
+        ],
+        "application/vnd.openxmlformats-officedocument.presentationml.slideshow": [
+          ".ppsx"
+        ],
+        "application/vnd.openxmlformats-officedocument.presentationml.template": [
+          ".potx"
+        ]
+      }
+    }
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "focus-existing",
+      "auto"
+    ]
+  }
+}

@@ -1,0 +1,133 @@
+{
+ "quire": [
+  {
+   "id": "",
+   "name": "Blank Document",
+   "img": "quire/templates/blank.jpg"
+  },
+  {
+   "id": "letter",
+   "name": "Contemporary Letter",
+   "img": "quire/templates/letter.jpg"
+  },
+  {
+   "id": "memo",
+   "name": "Professional Memo",
+   "img": "quire/templates/memo.jpg"
+  },
+  {
+   "id": "fax",
+   "name": "Elegant Fax",
+   "img": "quire/templates/fax.jpg"
+  },
+  {
+   "id": "resume",
+   "name": "Contemporary Résumé",
+   "img": "quire/templates/resume.jpg"
+  },
+  {
+   "id": "report",
+   "name": "Professional Report",
+   "img": "quire/templates/report.jpg"
+  },
+  {
+   "id": "agenda",
+   "name": "Meeting Agenda",
+   "img": "quire/templates/agenda.jpg"
+  },
+  {
+   "id": "minutes",
+   "name": "Meeting Minutes",
+   "img": "quire/templates/minutes.jpg"
+  },
+  {
+   "id": "todo",
+   "name": "To-Do Checklist",
+   "img": "quire/templates/todo.jpg"
+  },
+  {
+   "id": "flyer",
+   "name": "Event Flyer",
+   "img": "quire/templates/flyer.jpg"
+  },
+  {
+   "id": "recipe",
+   "name": "Recipe",
+   "img": "quire/templates/recipe.jpg"
+  }
+ ],
+ "ledger": [
+  {
+   "id": "",
+   "name": "Blank Workbook",
+   "img": "ledger/templates/blank.jpg"
+  },
+  {
+   "id": "loan",
+   "name": "Loan Amortization",
+   "img": "ledger/templates/loan.jpg"
+  },
+  {
+   "id": "expense",
+   "name": "Expense Statement",
+   "img": "ledger/templates/expense.jpg"
+  },
+  {
+   "id": "invoice",
+   "name": "Sales Invoice",
+   "img": "ledger/templates/invoice.jpg"
+  },
+  {
+   "id": "timecard",
+   "name": "Timecard",
+   "img": "ledger/templates/timecard.jpg"
+  },
+  {
+   "id": "budget",
+   "name": "Personal Monthly Budget",
+   "img": "ledger/templates/budget.jpg"
+  },
+  {
+   "id": "tasks",
+   "name": "Task Tracker",
+   "img": "ledger/templates/tasks.jpg"
+  },
+  {
+   "id": "shopping",
+   "name": "Shopping List",
+   "img": "ledger/templates/shopping.jpg"
+  },
+  {
+   "id": "schedule",
+   "name": "Weekly Schedule",
+   "img": "ledger/templates/schedule.jpg"
+  }
+ ],
+ "lectern": [
+  {
+   "id": "",
+   "name": "Blank Presentation",
+   "img": "lectern/templates/blank.jpg"
+  },
+  {
+   "id": "status",
+   "name": "Project Status Report",
+   "img": "lectern/templates/status.jpg"
+  },
+  {
+   "id": "meeting",
+   "name": "Team Meeting",
+   "img": "lectern/templates/meeting.jpg"
+  },
+  {
+   "id": "lesson",
+   "name": "Lesson",
+   "img": "lectern/templates/lesson.jpg"
+  },
+  {
+   "id": "event",
+   "name": "Event Announcement",
+   "img": "lectern/templates/event.jpg"
+  }
+ ]
+}

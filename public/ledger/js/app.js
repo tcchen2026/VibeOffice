@@ -96,8 +96,6 @@
   };
   function updateTitle() {
     const b = book();
-    const t = L.APP.replace(' 2003', '') + ' 2003' + (b ? ' - ' + b.name + (b.dirty ? '' : '') : '');
-    L.$('#titletext').textContent = t;
     document.title = (b ? b.name + ' - ' : '') + 'Ledger 2003';
   }
 
@@ -154,6 +152,7 @@
       const b = A.addBook(w, name, { type });
       if (/^xlt/.test(ext)) { b.untitled = true; b.name = name.replace(/\.xlt[xm]$/i, '') + '1'; }
       A.addRecent(name);
+      if (window.VO && file.name) VO.opened(file);
       updateTitle();
     } finally { ui.busy(false); }
   };
@@ -258,6 +257,7 @@
         if (type !== 'csv' && type !== 'txt' && type !== 'html') { b.name = name; b.type = type; b.untitled = false; b.dirty = false; w.fileName = name; }
         else if (b.untitled) b.dirty = false;
         A.addRecent(name);
+        if (window.VO && type !== 'html') VO.saved(name, blob);
         updateTitle();
         A.status('');
         return true;
@@ -1374,8 +1374,11 @@
   /* ------------------------------------------------------------ init */
   A.init = function () {
     A.loadOpts();
-    L.$('#appicon').innerHTML = L.icons.app(16);
-    const w = A.sampleWorkbook();
+    if (window.VO) VO.setIcon(L.icons.app(32));
+    /* opened from the Start Center: a template, or blank (a new workbook, or to open a file into); else the sample */
+    const launch = window.VO && VO.launch;
+    const tpl = launch && launch.template && L.panes && L.panes.TEMPLATES[launch.template];
+    const w = tpl ? L.panes.buildTemplate(launch.template) : launch ? A.blankWorkbook() : A.sampleWorkbook();
     untitled = 1;
     A.prepare(w);
     G().init(w);
@@ -1387,7 +1390,7 @@
     buildTabNav();
     buildNameBox();
     if (L.panes) L.panes.task.mount(L.$('#taskpane'));
-    A.addBook(w, 'Book1', { type: 'xlsx', untitled: true });
+    A.addBook(w, tpl ? tpl.name.replace(/\s+/g, '') + '1' : 'Book1', { type: 'xlsx', untitled: true });
     setupDrop();
     L.bus.on('selection', () => { updateStatus(); ui.refresh(); A.updateToolbars(); });
     L.bus.on('changed', () => { updateStatus(); ui.refresh(); renderTabsSoon(); });
@@ -1400,7 +1403,17 @@
     ui.refresh();
     G().focus();
     L.bus.emit('app-ready');
+    if (window.VO) VO.attach('ledger', { open: (f) => A.openFiles([f]), thumb: gridThumb, message: (t) => ui.msg(t, { icon: 'warn' }), templates: () => Object.entries(L.panes.TEMPLATES).map(([id, t]) => ({ id, name: t.name })) });
   };
+  /** Recent Files picture: the top left of the sheet as it is drawn, 4:3 */
+  function gridThumb() {
+    const c = L.$('canvas.gcv');
+    if (!c || !c.width || !c.height) return null;
+    const w = Math.min(600, c.width, Math.round(c.height * 4 / 3)), hh = Math.round(w * 3 / 4);   // about A1:G25 at 100 %
+    const out = h('canvas', { width: w, height: hh });
+    out.getContext('2d').drawImage(c, 0, 0, w, hh, 0, 0, w, hh);
+    return out;
+  }
   const renderTabsSoon = L.debounce(() => renderTabs(), 30);
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => A.init());

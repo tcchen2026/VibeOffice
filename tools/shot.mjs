@@ -2,7 +2,7 @@
 // and report console errors, exceptions and any request that leaves 127.0.0.1.
 //
 //   node tools/shot.mjs <page> [steps.json | 'inline json'] [--w 1280 --h 800]
-//                       [--qs query] [--ready 'expr'] [--out dir] [--keep]
+//                       [--qs query] [--ready 'expr'] [--out dir] [--keep] [--transparent]
 //
 // page   path under public/, e.g. ledger/ (served by tools/serve.py on :8760; started if needed)
 // steps  [{ "js": "...", "wait": ms, "shot": "a.jpg" }, ...]
@@ -11,6 +11,7 @@
 // --qs     query string appended to the page URL
 // --ready  JS expression to wait for (default: the document has loaded; then 500 ms for the app to start)
 // --keep   leave the tab open (brought to the front) instead of closing it
+// --transparent  no default white page background, so .png shots keep transparency (e.g. icons)
 // --inject a.js,b.js  evaluate helper scripts in the page once it is ready
 // --timeout ms      longest a single step (or CDP call) may take, default 120000. A hung or crashed
 //                   page still gets its tab closed (also on Ctrl-C / SIGTERM).
@@ -29,7 +30,7 @@ const ready = opt('--ready', "document.readyState === 'complete'");
 const out = opt('--out', '/tmp/shots');
 const inject = opt('--inject', '');
 const stepMs = +opt('--timeout', 120000);
-const keep = flag('--keep');
+const keep = flag('--keep'), transparent = flag('--transparent');
 const [page = '', stepsArg = '[]'] = argv;
 const steps = stepsArg.trim().startsWith('[') ? JSON.parse(stepsArg) : JSON.parse(fs.readFileSync(stepsArg, 'utf8'));
 const CDP = process.env.CDP || 'http://127.0.0.1:9222';
@@ -85,6 +86,7 @@ try {
   // the page keeps focus while the browser window is in the background
   await send('Emulation.setFocusEmulationEnabled', { enabled: true });
   await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+  if (transparent) await send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } });
 
   const t0 = Date.now();
   await send('Page.navigate', { url: `${BASE}/${page}${qs ? '?' + qs : ''}` });

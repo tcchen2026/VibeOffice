@@ -409,8 +409,8 @@
     const cell = (cls, tip) => h('div', { class: 'sb-cell ' + (cls || ''), 'data-tip': tip || null });
     A.sb = {
       page: cell('', 'Page'), sec: cell('', 'Section'), pages: cell('', 'Page / pages'), at: cell('', 'Vertical position'), ln: cell('', 'Line'), col: cell('', 'Column'),
-      rec: cell('flag', 'Record macro'), trk: cell('flag btn', 'Track Changes (double-click to toggle)'), ext: cell('flag btn', 'Extend selection'), ovr: cell('flag btn', 'Overtype (double-click to toggle)'),
-      lang: cell('btn', 'Language'), spell: cell('btn sb-spell', 'Spelling and grammar status'), msg: cell('grow'),
+      rec: cell('flag', 'Record macro'), trk: cell('flag act', 'Track Changes (double-click to toggle)'), ext: cell('flag act', 'Extend selection'), ovr: cell('flag act', 'Overtype (double-click to toggle)'),
+      lang: cell('act', 'Language'), spell: cell('act sb-spell', 'Spelling and grammar status'), msg: cell('grow'),
     };
     A.sb.rec.textContent = 'REC'; A.sb.trk.textContent = 'TRK'; A.sb.ext.textContent = 'EXT'; A.sb.ovr.textContent = 'OVR';
     A.sb.lang.textContent = 'English (U.S.)';
@@ -485,7 +485,7 @@
     }
     return { ln, col };
   };
-  A.updateTitle = () => { L.$('#titletext').textContent = `${A.fileName} - ${L.APP}`; document.title = `${A.fileName} - Quire 2003`; };
+  A.updateTitle = () => { document.title = `${A.fileName} - Quire 2003`; };
 
   /* ================= rulers ================= */
   A.updateRulers = function () {
@@ -689,6 +689,7 @@
       A.loadDoc(d, name, { saved: /\.docx$/i.test(file.name), type: 'docx', newWindow: !reuse });
       A.opts.recent = [file.name].concat((A.opts.recent || []).filter((x) => x !== file.name)).slice(0, 4);
       A.saveOpts();
+      if (window.VO) VO.opened(file);
       ui.busy(false);
       if (d.isTemplate) A.status('Opened a template: saving creates a new document.');
       if (d.wasEncrypted) A.status('This document is protected with a password to open; saving keeps the protection (Tools ▸ Options ▸ Security).');
@@ -775,7 +776,7 @@
       ui.busy(false);
       if (!blob) return;
       const r = await L.saveFile(`${name}.${ext}`, blob);
-      if (r === 'saved' && (type === 'docx' || type === 'dotx')) { d.dirty = false; A.status(`Saved ${name}.${ext}`); ui.refresh(); }
+      if (r === 'saved' && (type === 'docx' || type === 'dotx')) { d.dirty = false; A.status(`Saved ${name}.${ext}`); ui.refresh(); if (window.VO) VO.saved(`${name}.${ext}`, blob); }
       return r;
     } catch (e) {
       ui.busy(false);
@@ -1197,7 +1198,7 @@
   /* ================= init ================= */
   A.init = async function () {
     A.loadOpts();
-    L.$('#appicon').innerHTML = L.icons.app ? L.icons.app(16) : '';
+    if (window.VO && L.icons.app) VO.setIcon(L.icons.app(32));
     buildMenus();
     buildToolbars();
     buildStatus();
@@ -1213,7 +1214,9 @@
     if (narrow) A.opts.taskOpen = false;
     L.$('#taskpane').hidden = !A.opts.taskOpen;
     LY.zoom = narrow ? Math.max(0.4, (window.innerWidth - 40) / 816) : A.opts.zoom || 1;
-    A.loadDoc(A.buildSample(), 'Document1');
+    /* opened from the Start Center: a template, or blank (a new document, or to open a file into); else the sample */
+    const launch = window.VO && VO.launch;
+    A.loadDoc(launch && launch.template && L.templates ? L.templates.build(launch.template) : launch ? D.newDoc() : A.buildSample(), 'Document1');
     A.view = 'x';
     A.setView(A.opts.view && ['print', 'normal', 'web', 'outline'].includes(A.opts.view) ? A.opts.view : 'print');
     if (L.panes && A.opts.taskOpen) L.panes.task.show('getting-started');
@@ -1221,7 +1224,13 @@
     if (A.opts.docMap) A.toggleDocMap(true);
     setTimeout(() => offerRecovery(), 700);
     ui.refresh();
+    if (window.VO) VO.attach('quire', { open: (f) => A.openFile(f), thumb: pageThumb, message: (t) => ui.msg(t, { icon: 'warn' }), templates: () => (L.templates ? L.templates.list().map(({ id, name }) => ({ id, name })) : []) });
   };
+  /** Recent Files picture: the first page, drawn as for PDF (print layout only) */
+  async function pageThumb() {
+    const p = LY.view === 'print' && LY.pages && LY.pages[0];
+    return p ? A.rasterizePage(p.el, 400 / p.el.offsetWidth, docCSS(), await mediaDataMap()) : null;
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => A.init());
   else A.init();
 })();

@@ -10,8 +10,19 @@
     const d = new DOMParser().parseFromString(s, 'application/xml');
     if (d.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
     resolveAlternateContent(d);
+    if (s.indexOf('%"') >= 0) percentsToThousandths(d);
     return d.documentElement;
   };
+  const PCT_ATTRS = new Set(['val', 'pos', 'amt', 'lim', 'l', 't', 'r', 'b', 'sx', 'sy', 'thresh', 'fontScale', 'lnSpcReduction', 'stA', 'stPos', 'endA', 'endPos', 'sat', 'lum', 'bright', 'contrast']);
+  /** Strict OOXML (and some generators) write percentages as "90%"; the transitional form is 90000 */
+  function percentsToThousandths(d) {
+    for (const el of d.getElementsByTagName('*')) {
+      for (const a of Array.from(el.attributes)) {
+        const v = a.value;
+        if (v.length > 1 && v.charCodeAt(v.length - 1) === 37 && PCT_ATTRS.has(a.localName) && /^-?\d+(\.\d+)?%$/.test(v)) el.setAttribute(a.name, String(Math.round(parseFloat(v) * 1000)));
+      }
+    }
+  }
   /** Markup Compatibility: replace every mc:AlternateContent with its Fallback (or its first Choice when there is no fallback). */
   function resolveAlternateContent(d) {
     const acs = Array.from(d.getElementsByTagName('*')).filter((e) => e.localName === 'AlternateContent').reverse();
@@ -97,6 +108,13 @@
         const stops = kids(kid(el, 'gsLst'), 'gs').map((g) => { const c = colorOf(g, ctx) || { c: '#000000', a: 1 }; return { p: num(g, 'pos', 0) / 100000, c: c.c, a: c.a }; });
         const lin = kid(el, 'lin'), p = kid(el, 'path');
         const f = { t: 'grad', stops: stops.length ? stops : [{ p: 0, c: '#FFFFFF', a: 1 }, { p: 1, c: '#000000', a: 1 }], ang: lin ? num(lin, 'ang', 0) / 60000 : 90, path: p ? (at(p, 'path') === 'rect' ? 'rect' : at(p, 'path') === 'shape' ? 'shape' : 'circle') : 'lin' };
+        /* path gradients radiate from the focus rectangle (insets from the edges, in %) */
+        const ftr = p && kid(p, 'fillToRect');
+        if (ftr) {
+          const l = num(ftr, 'l', 0) / 100000, t = num(ftr, 't', 0) / 100000, r = num(ftr, 'r', 0) / 100000, b = num(ftr, 'b', 0) / 100000;
+          const cx = L.round((l + 1 - r) / 2, 4), cy = L.round((t + 1 - b) / 2, 4);
+          if (Math.abs(cx - 0.5) > 0.001 || Math.abs(cy - 0.5) > 0.001) f.focus = [cx, cy];
+        }
         return f;
       }
       case 'blipFill': {
@@ -104,7 +122,19 @@
         const id = blip ? ctx.media(rid(blip, 'embed')) : null;
         if (!id) return { t: 'none' };
         const amt = desc(blip, 'alphaModFix');
-        return { t: 'img', media: id, tile: !!kid(el, 'tile'), a: amt ? num(amt, 'amt', 100000) / 100000 : 1 };
+        const tl = kid(el, 'tile');
+        const f = { t: 'img', media: id, tile: !!tl, a: amt ? num(amt, 'amt', 100000) / 100000 : 1 };
+        /* duotone: the picture recoloured between two colours (theme background textures use it) */
+        const duo = kid(blip, 'duotone');
+        if (duo) { const cs = kids(duo).filter((x) => COLOR_TAGS.has(x.localName)).map((x) => color(x, Object.assign({}, ctx, { keepScheme: false }))); if (cs.length === 2 && cs[0] && cs[1]) f.duotone = [cs[0].c, cs[1].c]; }
+        /* tiling: the picture at its own size scaled by sx/sy, offset by tx/ty from the alignment corner */
+        if (tl) f.tileOpts = { sx: num(tl, 'sx', 100000) / 100000, sy: num(tl, 'sy', 100000) / 100000, tx: pt(num(tl, 'tx', 0)), ty: pt(num(tl, 'ty', 0)), algn: at(tl, 'algn') || 'tl', flip: at(tl, 'flip') || 'none' };
+        const sr = kid(el, 'srcRect');
+        if (!tl && sr && (num(sr, 'l', 0) || num(sr, 't', 0) || num(sr, 'r', 0) || num(sr, 'b', 0))) f.crop = { l: num(sr, 'l', 0) / 100000, t: num(sr, 't', 0) / 100000, r: num(sr, 'r', 0) / 100000, b: num(sr, 'b', 0) / 100000 };
+        /* stretched into a rectangle inset from (or, negative, reaching past) the edges: "fill" cropping */
+        const fr = !tl && path(el, 'stretch', 'fillRect');
+        if (fr && (num(fr, 'l', 0) || num(fr, 't', 0) || num(fr, 'r', 0) || num(fr, 'b', 0))) f.fillRect = { l: num(fr, 'l', 0) / 100000, t: num(fr, 't', 0) / 100000, r: num(fr, 'r', 0) / 100000, b: num(fr, 'b', 0) / 100000 };
+        return f;
       }
       case 'pattFill': {
         const fg = colorOf(kid(el, 'fgClr'), ctx), bg = colorOf(kid(el, 'bgClr'), ctx);
@@ -166,7 +196,7 @@
         case 'noFill': r.fill = { t: 'none' }; break;
         case 'pattFill': { const f = fill(c, ctx); r.color = f.fg; break; }
         case 'ln': { const l = line(c, ctx); if (l && l.t !== 'none') r.ln = l; break; }
-        case 'effectLst': { const s = shadow(c, ctx); if (s) r.shd = true; break; }
+        case 'effectLst': { const s = shadow(c, ctx); if (s) { r.shd = true; r.shdX = s; } break; }
         case 'highlight': { const v = colorOf(c, ctx); if (v) r.hl = v.c; break; }
         case 'latin': { const f = fontName(at(c, 'typeface')); if (f) r.font = f; break; }
         case 'hlinkClick': { const l = ctx.link(c); if (l) r.link = l; break; }
@@ -381,10 +411,347 @@
     return { geom: 'rect' };
   }
 
+  /* ---------- charts (c:chartSpace → chart model v2, drawn by L.chart.render) ---------- */
+  const CHART_TYPES = /^(bar|bar3D|line|line3D|pie|pie3D|ofPie|doughnut|area|area3D|scatter|radar|bubble|stock|surface|surface3D)Chart$/;
+  const autoSeriesColor = (i, n, style, design) => L.chart.autoColor(i, n, style, design);
+  function chartModel(cx, ctx) {
+    const chart = kid(cx, 'chart');
+    const plot = kid(chart, 'plotArea');
+    if (!plot) return null;
+    const cctx = Object.assign({}, ctx, { keepScheme: false, media: () => null, link: () => null, phClr: null });
+    const design = ctx.design;
+    const style = num(kid(cx, 'style'), 'val', 2);
+    const yes = (el, d) => { if (!el) return d; const v = at(el, 'val'); return v == null ? true : v === '1' || v === 'true'; };
+    const val = (el, n) => at(kid(el, n), 'val');
+    const nval = (el, n, d) => { const v = val(el, n); return v == null || v === '' || isNaN(+v) ? d : +v; };
+    const fillOf = (sp) => (sp ? fillIn(sp, cctx) : undefined);
+    /* a line without its own colour or width keeps Office's automatic one (c and w left out) */
+    const lineOf = (sp) => {
+      const ln = sp && kid(sp, 'ln');
+      if (!ln) return undefined;
+      const l = line(ln, cctx, {});
+      if (l && l.t !== 'none') { if (!fillIn(ln, cctx)) delete l.c; if (at(ln, 'w') == null) delete l.w; }
+      return l;
+    };
+    const textOf = (tx) => {
+      if (!tx) return null;
+      const o = {};
+      const d = path(tx, 'p', 'pPr', 'defRPr') || (kid(tx, 'p') && desc(kid(tx, 'p'), 'rPr'));
+      if (d) { const r = runProps(d, cctx); if (r.sz) o.sz = r.sz; if (r.b != null) o.b = r.b; if (r.i != null) o.i = r.i; if (r.color) o.color = r.color; if (r.font) o.font = r.font; }
+      const bp = kid(tx, 'bodyPr');
+      if (bp && at(bp, 'rot') != null && +at(bp, 'rot') !== -60000000) o.rot = +at(bp, 'rot') / 60000;
+      if (bp && /^(vert|vert270|wordArtVert|eaVert)$/.test(at(bp, 'vert') || '')) o.rot = at(bp, 'vert') === 'vert270' ? -90 : 90;
+      return o;
+    };
+    const richText = (el) => {
+      const rich = el && path(el, 'tx', 'rich');
+      if (!rich) return null;
+      const lines = kids(rich, 'p').map((p) => kids(p).filter((r) => r.localName === 'r' || r.localName === 'fld').map((r) => (kid(r, 't') || { textContent: '' }).textContent).join(''));
+      const t = textOf(rich) || {};
+      const r1 = desc(rich, 'r') && kid(desc(rich, 'r'), 'rPr');
+      if (r1) { const r = runProps(r1, cctx); if (r.sz) t.sz = r.sz; if (r.b != null) t.b = r.b; if (r.i != null) t.i = r.i; if (r.color) t.color = r.color; if (r.font) t.font = r.font; }
+      return { text: lines.join('\n'), tx: t };
+    };
+    /* cached values of a reference or literal: strings, numbers (null when absent) and the format code */
+    const cacheOf = (el) => {
+      if (!el) return null;
+      const ml = desc(el, 'multiLvlStrCache');
+      const cache = ml || desc(el, 'numCache') || desc(el, 'strCache') || desc(el, 'numLit') || desc(el, 'strLit');
+      if (!cache) { const v = kid(el, 'v') || desc(el, 'v'); return v ? { str: [v.textContent], num: [+v.textContent], fmt: null, isNum: false } : null; }
+      const isNum = /^num/.test(cache.localName);
+      const lvl = ml ? kid(cache, 'lvl') || cache : cache;
+      const pts = kids(lvl, 'pt');
+      let n = num(kid(cache, 'ptCount'), 'val', 0);
+      for (const p of pts) n = Math.max(n, num(p, 'idx', 0) + 1);
+      const str = new Array(n).fill(''), nums = new Array(n).fill(null);
+      const fmt = (kid(cache, 'formatCode') || { textContent: '' }).textContent || null;
+      for (const p of pts) {
+        const i = num(p, 'idx', 0), t = (kid(p, 'v') || { textContent: '' }).textContent;
+        str[i] = t;
+        const x = parseFloat(t);
+        nums[i] = t !== '' && isFinite(x) ? x : null;
+        if (isNum && at(p, 'formatCode')) (str.fmts = str.fmts || [])[i] = at(p, 'formatCode');
+      }
+      /* the outer levels of a multi-level category axis, innermost first */
+      let outer = null;
+      if (ml) outer = kids(cache, 'lvl').slice(1).map((lv) => { const a = new Array(n).fill(null); for (const p of kids(lv, 'pt')) a[num(p, 'idx', 0)] = (kid(p, 'v') || { textContent: '' }).textContent; return a; });
+      return { str, num: nums, fmt: fmt && fmt !== 'General' ? fmt : null, isNum, outer };
+    };
+    const fmtCat = (c) => {
+      if (!c) return [];
+      if (c.isNum && c.fmt && L.numfmt) return c.num.map((v, i) => (v == null ? c.str[i] : L.numfmt.text((c.str.fmts && c.str.fmts[i]) || c.fmt, v)));
+      return c.str.slice();
+    };
+    const lblsOf = (el, inherit) => {
+      if (!el) return inherit || null;
+      if (yes(kid(el, 'delete'), false)) return { del: true };
+      const o = Object.assign({}, inherit && !inherit.del ? inherit : {});
+      delete o.pts;
+      for (const k of ['showVal', 'showPercent', 'showCatName', 'showSerName', 'showLegendKey', 'showBubbleSize']) { const e = kid(el, k); if (e) o[k] = yes(e, false); }
+      if (val(el, 'dLblPos')) o.pos = val(el, 'dLblPos');
+      const nf = kid(el, 'numFmt');
+      if (nf && at(nf, 'formatCode') && at(nf, 'sourceLinked') !== '1') o.fmt = at(nf, 'formatCode');
+      if (kid(el, 'separator')) o.sep = kid(el, 'separator').textContent;
+      const rng = kids(path(el, 'extLst')).map((x) => kid(x, 'showDataLabelsRange')).find(Boolean);
+      if (rng) o.showRange = yes(rng, false);
+      const tx = textOf(kid(el, 'txPr')); if (tx) o.tx = tx;
+      const sp = kid(el, 'spPr');
+      if (sp) { const f = fillOf(sp), l = lineOf(sp); if (f && f.t !== 'none') o.fill = f; if (l && l.t !== 'none') o.line = l; }
+      for (const d of kids(el, 'dLbl')) {
+        const i = nval(d, 'idx', -1);
+        if (i < 0) continue;
+        o.pts = o.pts || {};
+        if (yes(kid(d, 'delete'), false)) { o.pts[i] = { del: true }; continue; }
+        const one = lblsOf(d, o);
+        /* custom label text; fields ([VALUE], [SERIES NAME], [CELLRANGE]…) are filled in when drawn */
+        const rich = path(d, 'tx', 'rich');
+        if (rich) {
+          const runs = [];
+          kids(rich, 'p').forEach((p, pi) => {
+            if (pi) runs.push('\n');
+            for (const r of kids(p)) {
+              if (r.localName === 'r') runs.push((kid(r, 't') || { textContent: '' }).textContent);
+              else if (r.localName === 'fld') { const ty = String(at(r, 'type') || '').toUpperCase(); runs.push(/^(VALUE|SERIESNAME|CATEGORYNAME|PERCENTAGE|XVALUE|YVALUE|BUBBLESIZE|CELLRANGE)$/.test(ty) ? '\u0001' + ty + '\u0001' : (kid(r, 't') || { textContent: '' }).textContent); }
+            }
+          });
+          one.text = runs.join('');
+          const r1 = desc(rich, 'rPr') || path(rich, 'p', 'pPr', 'defRPr');
+          if (r1) { const rp = runProps(r1, cctx); one.tx = Object.assign({}, one.tx || {}); if (rp.sz) one.tx.sz = rp.sz; if (rp.b != null) one.tx.b = rp.b; if (rp.i != null) one.tx.i = rp.i; if (rp.color) one.tx.color = rp.color; }
+        }
+        o.pts[i] = one;
+      }
+      return o;
+    };
+    const markerOf = (m) => {
+      if (!m) return null;
+      const o = {};
+      if (val(m, 'symbol')) o.sym = val(m, 'symbol');
+      if (val(m, 'size')) o.size = +val(m, 'size');
+      const sp = kid(m, 'spPr');
+      if (sp) { const f = fillOf(sp), l = lineOf(sp); if (f) o.fill = f; if (l) o.line = l; }
+      return o;
+    };
+    /* axes by id */
+    const axes = new Map();
+    for (const a of kids(plot)) {
+      if (!/^(valAx|catAx|dateAx|serAx)$/.test(a.localName)) continue;
+      const o = { kind: a.localName === 'valAx' ? 'val' : a.localName === 'serAx' ? 'ser' : 'cat', id: val(a, 'axId'), cross: val(a, 'crossAx'), date: a.localName === 'dateAx' };
+      o.del = yes(kid(a, 'delete'), false);
+      o.pos = val(a, 'axPos') || 'b';
+      const scl = kid(a, 'scaling');
+      if (scl) {
+        if (val(scl, 'orientation') === 'maxMin') o.rev = true;
+        if (val(scl, 'min') != null) o.min = nval(scl, 'min');
+        if (val(scl, 'max') != null) o.max = nval(scl, 'max');
+        if (val(scl, 'logBase') != null) o.log = nval(scl, 'logBase', 10);
+      }
+      if (val(a, 'majorUnit') != null) o.major = nval(a, 'majorUnit');
+      const nf = kid(a, 'numFmt');
+      if (nf && at(nf, 'formatCode')) { o.fmt = at(nf, 'formatCode'); o.linked = at(nf, 'sourceLinked') === '1'; }
+      const gl = kid(a, 'majorGridlines');
+      if (gl) { const l = lineOf(kid(gl, 'spPr')); o.grid = l || {}; }
+      const gm = kid(a, 'minorGridlines');
+      if (gm) { const l = lineOf(kid(gm, 'spPr')); o.minorGrid = l || {}; }
+      o.tick = val(a, 'majorTickMark') || 'cross';
+      o.lblPos = val(a, 'tickLblPos') || 'nextTo';
+      o.crosses = val(a, 'crosses') || (kid(a, 'crossesAt') ? 'at' : 'autoZero');
+      if (kid(a, 'crossesAt')) o.crossesAt = nval(a, 'crossesAt', 0);
+      if (val(a, 'crossBetween')) o.between = val(a, 'crossBetween') !== 'midCat';
+      const sp = kid(a, 'spPr');
+      const l = lineOf(sp); if (l) o.line = l;
+      const tx = textOf(kid(a, 'txPr')); if (tx) o.tx = tx;
+      if (val(a, 'tickLblSkip')) o.skip = nval(a, 'tickLblSkip', 1);
+      const t = kid(a, 'title');
+      if (t) { const rt = richText(t); o.title = rt ? rt.text : a.localName === 'valAx' ? 'Axis Title' : 'Axis Title'; o.titleTx = (rt && rt.tx) || textOf(kid(t, 'txPr')) || {}; }
+      const du = kid(a, 'dispUnits');
+      if (du) { const bu = val(du, 'builtInUnit'); const U = { hundreds: 1e2, thousands: 1e3, tenThousands: 1e4, hundredThousands: 1e5, millions: 1e6, tenMillions: 1e7, hundredMillions: 1e8, billions: 1e9, trillions: 1e12 }; o.unit = U[bu] || nval(du, 'custUnit', 1); }
+      axes.set(o.id, o);
+    }
+    /* chart groups */
+    const groups = [];
+    const series = [];
+    let catCache = null;
+    for (const ct of kids(plot).filter((c) => CHART_TYPES.test(c.localName))) {
+      const ln = ct.localName.replace(/3D|Chart$/g, '').replace('Chart', '');
+      let type = { bar: 'bar', line: 'line', pie: 'pie', ofPie: 'pie', doughnut: 'doughnut', area: 'area', scatter: 'scatter', radar: 'radar', bubble: 'bubble', stock: 'stock', surface: 'area' }[ln] || 'bar';
+      const g = { type, d3: /3D/.test(ct.localName) };
+      g.grouping = val(ct, 'grouping') || (type === 'line' || type === 'area' ? 'standard' : 'clustered');
+      if (type === 'bar') {
+        g.dir = val(ct, 'barDir') || 'col';
+        /* 3-D "standard" columns stand in rows one behind the other */
+        if (g.grouping === 'standard') { g.grouping = 'clustered'; if (g.d3) g.deep = true; }
+        g.gap = nval(ct, 'gapWidth', 150);
+        g.overlap = /stacked/i.test(g.grouping) ? 100 : nval(ct, 'overlap', 0);
+      }
+      g.vary = yes(kid(ct, 'varyColors'), type === 'pie' || type === 'doughnut');
+      if (type === 'pie' || type === 'doughnut') { g.firstAng = nval(ct, 'firstSliceAng', 0); g.hole = type === 'doughnut' ? nval(ct, 'holeSize', 50) : 0; }
+      if (type === 'scatter') g.scatterStyle = val(ct, 'scatterStyle') || 'marker';
+      if (type === 'radar') g.radarStyle = val(ct, 'radarStyle') || 'standard';
+      if (type === 'bubble') { g.bubbleScale = nval(ct, 'bubbleScale', 100); g.sizeArea = val(ct, 'sizeRepresents') !== 'w'; }
+      if (type === 'line' || type === 'stock') { g.marker = yes(kid(ct, 'marker'), true); if (kid(ct, 'hiLowLines')) g.hiLow = lineOf(kid(kid(ct, 'hiLowLines'), 'spPr')) || {}; if (kid(ct, 'dropLines')) g.drop = lineOf(kid(kid(ct, 'dropLines'), 'spPr')) || {}; if (kid(ct, 'upDownBars')) g.upDown = true; }
+      const ax = kids(ct, 'axId').map((e) => at(e, 'val'));
+      g.axIds = ax;
+      const gl = lblsOf(kid(ct, 'dLbls'), null);
+      g.si = [];
+      for (const s of kids(ct, 'ser')) {
+        const i = series.length;
+        const sr = { g: groups.length, idx: nval(s, 'idx', i), order: nval(s, 'order', i) };
+        const tx = kid(s, 'tx');
+        const nc = cacheOf(tx);
+        sr.name = (nc && nc.str[0]) || (tx && kid(tx, 'v') ? kid(tx, 'v').textContent : '') || 'Series ' + (sr.idx + 1);
+        const cEl = kid(s, 'cat') || kid(s, 'xVal');
+        const cc = cacheOf(cEl);
+        if (cc && (!catCache || cc.str.length > catCache.str.length)) catCache = cc;
+        if (kid(s, 'xVal')) sr.xs = cc ? (cc.isNum ? cc.num.slice() : cc.str.map((_, k) => k + 1)) : null;
+        const vc = cacheOf(kid(s, 'val') || kid(s, 'yVal'));
+        sr.vals = vc ? vc.num.slice() : [];
+        if (vc && vc.fmt) sr.fmt = vc.fmt;
+        if (type === 'bubble') { const bc = cacheOf(kid(s, 'bubbleSize')); sr.sizes = bc ? bc.num.slice() : sr.vals.map(() => 1); }
+        const sp = kid(s, 'spPr');
+        const f = fillOf(sp), l = lineOf(sp);
+        if (f) sr.fill = f;
+        if (l) sr.line = l;
+        const mk = markerOf(kid(s, 'marker')); if (mk) sr.marker = mk;
+        if (kid(s, 'smooth')) sr.smooth = yes(kid(s, 'smooth'), false);
+        if (kid(s, 'explosion')) sr.expl = nval(s, 'explosion', 0);
+        if (yes(kid(s, 'invertIfNegative'), false)) sr.invNeg = true;
+        for (const dp of kids(s, 'dPt')) {
+          const k = nval(dp, 'idx', -1);
+          if (k < 0) continue;
+          const o = {};
+          const dsp = kid(dp, 'spPr');
+          const df = fillOf(dsp), dl = lineOf(dsp);
+          if (df) o.fill = df; if (dl) o.line = dl;
+          if (kid(dp, 'explosion')) o.expl = nval(dp, 'explosion', 0);
+          const dm = markerOf(kid(dp, 'marker')); if (dm) o.marker = dm;
+          (sr.pts = sr.pts || {})[k] = o;
+        }
+        const sl = lblsOf(kid(s, 'dLbls'), gl);
+        /* labels taken from a cell range (Office 2013 "Value From Cells") */
+        const dr = desc(s, 'dlblRangeCache');
+        if (sl && dr) { const rc = cacheOf(dr.parentNode); if (rc) sl.range = rc.str; }
+        if (sl && !sl.del && (sl.showVal || sl.showPercent || sl.showCatName || sl.showSerName || sl.showBubbleSize || sl.pts)) sr.lbl = sl;
+        /* the colour that stands for the series: legend, datasheet, editing */
+        const solid = (x) => (x && x.t === 'solid' ? x.c : x && x.t === 'grad' && x.stops[0] ? x.stops[0].c : x && x.t === 'patt' ? x.fg : null);
+        const lineType = type === 'line' || type === 'scatter' || type === 'radar' && g.radarStyle !== 'filled' || type === 'stock';
+        sr.color = (lineType ? (l && l.t !== 'none' && l.c && l.c[0] === '#' ? l.c : null) || solid(mk && mk.fill) : solid(f)) || null;
+        g.si.push(i);
+        series.push(sr);
+      }
+      groups.push(g);
+    }
+    if (!groups.length) return null;
+    /* secondary axes: a group whose value axis is not the first group's */
+    /* XY charts list the horizontal value axis first */
+    const isXY = (g) => g.type === 'scatter' || g.type === 'bubble';
+    const valAxOf = (g) => (isXY(g) ? axes.get(g.axIds[1]) || null : g.axIds.map((id) => axes.get(id)).find((a) => a && a.kind === 'val') || null);
+    const catAxOf = (g) => (isXY(g) ? axes.get(g.axIds[0]) || null : g.axIds.map((id) => axes.get(id)).find((a) => a && a.kind === 'cat') || null);
+    const v1 = valAxOf(groups[0]), c1 = catAxOf(groups[0]);
+    let v2 = null, c2 = null;
+    for (const g of groups) {
+      const va = valAxOf(g);
+      if (va && v1 && va !== v1) { g.sec = true; v2 = va; c2 = catAxOf(g); }
+    }
+    const nSer = series.length;
+    /* colours left to Office's automatic choice */
+    for (const sr of series) {
+      const auto = autoSeriesColor(sr.idx, Math.max(nSer, sr.idx + 1), style, design);
+      if (!sr.color) sr.color = auto;
+      sr.auto = auto;
+    }
+    const cats = catCache ? fmtCat(catCache) : (series[0] ? series[0].vals.map((_, i) => String(i + 1)) : []);
+    const main = groups[0];
+    const m = { v: 2, style, groups, series, cats };
+    if (catCache && catCache.outer && catCache.outer.length) m.catOuter = catCache.outer;
+    if (catCache && catCache.isNum) m.catNums = catCache.num.slice();
+    /* legacy fields: chart type, datasheet and editing */
+    const k = main.type;
+    if (k === 'bar') m.kind = main.dir === 'bar' ? (main.grouping === 'percentStacked' ? 'barPct' : main.grouping === 'stacked' ? 'barStacked' : 'bar') : main.grouping === 'percentStacked' ? 'colPct' : main.grouping === 'stacked' ? 'colStacked' : 'col';
+    else if (k === 'line' || k === 'stock') m.kind = series.some((s) => s.g === 0 && (!s.marker || s.marker.sym !== 'none')) && main.marker !== false ? 'lineMarkers' : 'line';
+    else if (k === 'area') m.kind = main.grouping === 'percentStacked' ? 'areaPct' : main.grouping === 'stacked' ? 'areaStacked' : 'area';
+    else if (k === 'pie') m.kind = 'pie';
+    else if (k === 'doughnut') m.kind = 'doughnut';
+    else if (k === 'radar') m.kind = main.radarStyle === 'filled' ? 'radarFilled' : 'radar';
+    else if (k === 'bubble') m.kind = 'bubble';
+    else m.kind = 'scatter';
+    for (const sr of series) if (sr.g !== 0) sr.overlay = groups[sr.g].type === 'line' || groups[sr.g].type === 'scatter' ? (sr.line && sr.line.t === 'none' ? 'markers' : sr.marker && sr.marker.sym === 'none' ? 'line' : 'lineMarkers') : groups[sr.g].type;
+    m.ax = {};
+    if (c1) m.ax.c = c1; if (v1) m.ax.v = v1; if (v2) m.ax.v2 = v2; if (c2 && c2 !== c1) m.ax.c2 = c2;
+    m.gridY = !!(v1 && v1.grid);
+    if (c1 && c1.grid) m.gridX = true;
+    /* text: chart-wide default, title, legend */
+    const tx0 = textOf(kid(cx, 'txPr')) || {};
+    m.fsz = tx0.sz || 10; if (tx0.font) m.font = tx0.font; if (tx0.color) m.textColor = tx0.color; if (tx0.b) m.bold = true;
+    const title = kid(chart, 'title');
+    const autoDel = yes(kid(chart, 'autoTitleDeleted'), false);
+    m.title = '';
+    if (title) {
+      const rt = richText(title);
+      m.title = rt ? rt.text : series.length === 1 ? series[0].name : 'Chart Title';
+      m.titleTx = (rt && rt.tx) || textOf(kid(title, 'txPr')) || {};
+      if (yes(kid(title, 'overlay'), false)) m.titleOverlay = true;
+      const tsp = kid(title, 'spPr'); if (tsp) { const f = fillOf(tsp), l = lineOf(tsp); if (f && f.t !== 'none') m.titleFill = f; if (l && l.t !== 'none') m.titleLine = l; }
+    } else if (!autoDel && series.length === 1) { m.title = series[0].name; m.titleTx = {}; } /* Office's automatic title for a single series */
+    const leg = kid(chart, 'legend');
+    m.legend = 'none';
+    if (leg) {
+      m.legend = val(leg, 'legendPos') || 'r';
+      const lt = textOf(kid(leg, 'txPr')); if (lt) m.legendTx = lt;
+      if (yes(kid(leg, 'overlay'), false)) m.legendOverlay = true;
+      const lsp = kid(leg, 'spPr'); if (lsp) { const f = fillOf(lsp), l = lineOf(lsp); if (f && f.t !== 'none') m.legendFill = f; if (l && l.t !== 'none') m.legendLine = l; }
+      const del = kids(leg, 'legendEntry').filter((e) => yes(kid(e, 'delete'), false)).map((e) => nval(e, 'idx', -1));
+      if (del.length) m.legendDel = del;
+      const ml = path(leg, 'layout', 'manualLayout');
+      if (ml && val(ml, 'x') != null && val(ml, 'w') != null) m.legendBox = { x: nval(ml, 'x', 0), y: nval(ml, 'y', 0), w: nval(ml, 'w', 0), h: nval(ml, 'h', 0), edge: (val(ml, 'xMode') || 'factor') === 'edge' };
+    }
+    /* chart area and plot area */
+    const csp = kid(cx, 'spPr');
+    if (csp) { const f = fillOf(csp), l = lineOf(csp); if (f && f.t !== 'none') m.bg = f; if (l && l.t !== 'none') m.border = l; }
+    const psp = kid(plot, 'spPr');
+    if (psp) { const f = fillOf(psp), l = lineOf(psp); if (f && f.t !== 'none') m.plotBg = f; if (l && l.t !== 'none') m.plotBorder = l; }
+    const pml = path(plot, 'layout', 'manualLayout');
+    if (pml && val(pml, 'w') != null && val(pml, 'h') != null) m.plotBox = { x: nval(pml, 'x', 0), y: nval(pml, 'y', 0), w: nval(pml, 'w', 1), h: nval(pml, 'h', 1), inner: val(pml, 'layoutTarget') === 'inner', edge: (val(pml, 'xMode') || 'factor') === 'edge' };
+    if (val(chart, 'dispBlanksAs')) m.blanks = val(chart, 'dispBlanksAs');
+    /* 3-D charts: the view angles and the walls */
+    if (groups.some((g) => g.d3)) {
+      const v3 = kid(chart, 'view3D');
+      m.view3D = { rotX: nval(v3, 'rotX', groups[0].type === 'pie' ? 30 : 15), rotY: nval(v3, 'rotY', groups[0].type === 'pie' ? 0 : 20), depth: nval(v3, 'depthPercent', 100), rAng: yes(kid(v3, 'rAngAx'), false) };
+      const wall = (n) => { const w = kid(chart, n); const sp = w && kid(w, 'spPr'); if (!sp) return null; const f = fillOf(sp), l = lineOf(sp); return { fill: f, line: l }; };
+      m.walls = { back: wall('backWall'), side: wall('sideWall'), floor: wall('floor') };
+    }
+    /* legacy summary fields */
+    const anyLbl = series.find((s) => s.lbl);
+    m.labels = !!anyLbl;
+    const fmt1 = series[0] && series[0].fmt;
+    if (anyLbl && anyLbl.lbl.fmt) m.numFmt = anyLbl.lbl.fmt; else if (fmt1) m.numFmt = fmt1;
+    if (v1 && v1.fmt && (!v1.linked || !fmt1) && v1.fmt !== 'General') m.axisFmt = v1.fmt; else if (v1 && v1.linked && fmt1) m.axisFmt = fmt1;
+    if (c1 && c1.tx && c1.tx.rot != null) m.catRot = c1.tx.rot;
+    if (k === 'pie' || k === 'doughnut') {
+      const s0 = series.find((s) => s.g === 0);
+      if (s0) m.pieColors = cats.map((_, i) => { const p = s0.pts && s0.pts[i]; const f = p && p.fill; return f && f.t === 'solid' ? f.c : main.vary ? autoSeriesColor(i, cats.length, style, design) : s0.color; });
+    }
+    return m;
+  }
+
   /* ---------- reader ---------- */
   async function read(buffer, opts) {
     opts = opts || {};
-    const zip = await L.zip.read(buffer);
+    let zip;
+    let password = null;
+    try { zip = await L.zip.read(buffer); } catch (e) {
+      if (!(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
+      /* a presentation with a password to open: decrypt it here, in the browser */
+      if (!opts.password) { const err = new Error('This presentation is password-protected.'); err.code = 'password'; throw err; }
+      let inner;
+      try { inner = await L.officeCrypto.decrypt(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer), opts.password); } catch (e2) {
+        const unsup = e2 && e2.message === 'unsupported';
+        const err = new Error(unsup ? 'This presentation is encrypted with a method that is not supported (only the AES encryption of PowerPoint 2007 and later is).' : e2 && /secure/.test(e2.message) ? e2.message : 'The password is incorrect. PowerPoint cannot open the file.');
+        err.code = unsup ? 'unsupported' : /secure/.test(String(e2 && e2.message)) ? 'insecure' : 'badpassword';
+        throw err;
+      }
+      zip = await L.zip.read(inner);
+      password = opts.password;
+    }
     const damaged = [];
     const textCache = new Map();
     const getText = async (p) => {
@@ -397,6 +764,19 @@
       return t;
     };
     const xml = async (p) => { const t = await getText(p); if (!t) return null; try { return parse(t); } catch (e) { damaged.push(p); return null; } };
+    /* content types, for parts that are carried over unchanged (chart workbooks, chart styles) */
+    let ctTable = null;
+    const contentType = async (part) => {
+      if (!ctTable) {
+        ctTable = { ext: {}, over: {} };
+        const ct = await xml('[Content_Types].xml');
+        if (ct) for (const e of kids(ct)) {
+          if (e.localName === 'Default') ctTable.ext[String(at(e, 'Extension') || '').toLowerCase()] = at(e, 'ContentType');
+          else if (e.localName === 'Override') ctTable.over[String(at(e, 'PartName') || '').replace(/^\//, '').toLowerCase()] = at(e, 'ContentType');
+        }
+      }
+      return ctTable.over[part.toLowerCase()] || ctTable.ext[part.split('.').pop().toLowerCase()] || null;
+    };
     const relsCache = new Map();
     const rels = async (p) => {
       if (relsCache.has(p)) return relsCache.get(p);
@@ -404,7 +784,7 @@
       const map = {};
       if (r) for (const e of kids(r, 'Relationship')) {
         const ext = at(e, 'TargetMode') === 'External';
-        map[at(e, 'Id')] = { type: (at(e, 'Type') || '').split('/').pop(), target: ext ? at(e, 'Target') : resolvePath(p, at(e, 'Target')), external: ext };
+        map[at(e, 'Id')] = { type: (at(e, 'Type') || '').split('/').pop(), fullType: at(e, 'Type') || '', target: ext ? at(e, 'Target') : resolvePath(p, at(e, 'Target')), external: ext };
       }
       relsCache.set(p, map);
       return map;
@@ -420,6 +800,8 @@
       let view = null;
       if ((ext === 'wmf' || ext === 'emf') && L.metafile) view = await L.metafile.toPNG(bytes, ext);
       const id = L.media.add(new Blob([bytes], { type: L.extToMime(ext) }), p.split('/').pop(), view);
+      const dims = L.imageSize ? L.imageSize(bytes) : null;
+      if (dims) L.media.get(id).size = dims;
       mediaCache.set(p, id);
       return id;
     };
@@ -482,6 +864,7 @@
       const t = await xml(p);
       const theme = { colors: Object.assign({}, L.model.COLOR_SCHEMES[0]), fonts: { major: 'Arial', minor: 'Arial' }, fills: [], lines: [], bgFills: [], name: t ? at(t, 'name') : 'Theme' };
       if (!t) return theme;
+      theme.rels = await rels(p);
       const cs = desc(t, 'clrScheme');
       if (cs) for (const c of cs.children) { const v = color(colorEl(c), { design: null }); if (v) theme.colors[c.localName] = v.c[0] === '#' ? v.c : theme.colors[v.c] || '#000000'; }
       const fs = desc(t, 'fontScheme');
@@ -500,6 +883,13 @@
       for (const k of ['bg1', 'tx1', 'bg2', 'tx2', 'accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink']) if (at(el, k)) m[k] = at(el, k);
       return m;
     }
+    /** fill and line styles of the theme refer to pictures through the theme part's own relationships */
+    function themeCtx(ctx, theme, phClr) {
+      const trels = (theme && theme.rels) || {};
+      const c = Object.assign({}, ctx, { phClr });
+      c.media = (id) => { const r = trels[id]; if (!r || r.external) return null; const m = mediaCache.get(r.target); if (m) return m; ctx.pendingMedia.add(r.target); return '__pending__:' + r.target; };
+      return c;
+    }
     function bgOf(cSld, ctx, theme) {
       const bg = kid(cSld, 'bg');
       if (!bg) return undefined;
@@ -511,7 +901,7 @@
         const c = colorOf(br, ctx);
         const list = idx >= 1001 ? theme.bgFills : theme.fills;
         const el = list[(idx >= 1001 ? idx - 1001 : idx - 1)];
-        if (el) return fill(el, Object.assign({}, ctx, { phClr: c }));
+        if (el) return fill(el, themeCtx(ctx, theme, c));
         if (c) return { t: 'solid', c: c.c, a: c.a };
       }
       return undefined;
@@ -678,7 +1068,7 @@
         const c = colorOf(fr, ctx);
         const idx = num(fr, 'idx', 1);
         const el = idx >= 1001 ? ctx.theme.bgFills[idx - 1001] : ctx.theme.fills[idx - 1];
-        out.fill = el ? fill(el, Object.assign({}, ctx, { phClr: c })) : c ? { t: 'solid', c: c.c, a: c.a } : undefined;
+        out.fill = el ? fill(el, themeCtx(ctx, ctx.theme, c)) : c ? { t: 'solid', c: c.c, a: c.a } : undefined;
         if (out.fill && out.fill.t === 'grad' && c) out.fill = { t: 'solid', c: c.c, a: c.a };
       }
       void er;
@@ -718,6 +1108,14 @@
       };
       scan(obj);
       for (const [o, k, part] of refs) { if (!mediaCache.has(part)) await loadMedia(part); o[k] = mediaCache.get(part) || null; }
+      /* an SVG picture whose PNG copy is missing shows the SVG itself */
+      const fix = (o) => {
+        if (!o || typeof o !== 'object') return;
+        if (o.type === 'image' && !o.media && o.svgMedia) { o.media = o.svgMedia; delete o.svgMedia; delete o.missingLabel; }
+        if (o.type === 'image' && !o.media && !o.missingLabel) o.missingLabel = 'Picture';
+        for (const k in o) { const v = o[k]; if (v && typeof v === 'object') fix(v); }
+      };
+      fix(obj);
     }
     async function shapeFrom(el, ctx, opts) {
       const ln = el.localName;
@@ -785,8 +1183,15 @@
       if (ln === 'pic') {
         const bf = kid(el, 'blipFill');
         const blip = bf && kid(bf, 'blip');
-        const mid = blip ? ctx.media(rid(blip, 'embed')) || ctx.media(rid(blip, 'link')) : null;
+        /* Office 2016 SVG pictures: the vector original sits in an extension, a PNG copy in r:embed (sometimes left out) */
+        const svgEl = blip && desc(blip, 'svgBlip');
+        const svgId = svgEl ? ctx.media(rid(svgEl, 'embed')) : null;
+        const mid = blip ? ctx.media(rid(blip, 'embed')) || svgId || ctx.media(rid(blip, 'link')) : null;
         sh = Object.assign(base, { type: 'image', geom: 'rect', media: mid, crop: { l: 0, t: 0, r: 0, b: 0 }, lockAspect: true, img: {} });
+        if (svgId && svgId !== mid) sh.svgMedia = svgId;
+        /* a picture linked to a file outside the presentation keeps its link */
+        const lrel = blip && rid(blip, 'link') ? ctx.rels[rid(blip, 'link')] : null;
+        if (lrel && lrel.external) sh.linkUrl = lrel.target;
         const sr = bf && kid(bf, 'srcRect');
         if (sr) sh.crop = { l: num(sr, 'l', 0) / 100000, t: num(sr, 't', 0) / 100000, r: num(sr, 'r', 0) / 100000, b: num(sr, 'b', 0) / 100000 };
         if (blip) {
@@ -796,6 +1201,13 @@
           if (lum) { const br = num(lum, 'bright', 0) / 100000, co = num(lum, 'contrast', 0) / 100000; if (br >= 0.6 && co <= -0.6) sh.img.mode = 'wash'; else { if (br) sh.img.bright = br; if (co) sh.img.contrast = co; } }
           const am = desc(blip, 'alphaModFix');
           if (am) sh.img.alpha = num(am, 'amt', 100000) / 100000;
+          /* Set Transparent Color: one colour of the picture shows through */
+          const cc = kid(blip, 'clrChange');
+          if (cc) {
+            const kctx = Object.assign({}, ctx, { keepScheme: false });
+            const from = colorOf(kid(cc, 'clrFrom'), kctx), to = colorOf(kid(cc, 'clrTo'), kctx);
+            if (from && to && to.a < 0.5) sh.img.clear = from.c;
+          }
         }
         const g = geometry(spPr);
         sh.geom = g.geom; if (g.adj) sh.adj = g.adj; if (g.path) sh.path = g.path;
@@ -803,7 +1215,7 @@
         const ef = spPr && kid(spPr, 'effectLst');
         const shd = shadow(ef, ctx); if (shd) sh.shadow = shd;
         if (ph) sh.ph = ph;
-        if (!mid) sh.missingLabel = 'Picture';
+        if (!mid) sh.missingLabel = sh.linkUrl ? 'Linked picture: ' + decodeURIComponent(String(sh.linkUrl).split(/[\\/]/).pop() || '') : 'Picture';
         return sh;
       }
       if (ln === 'graphicFrame') {
@@ -814,7 +1226,8 @@
           const c = kids(gd).find((x) => x.localName === 'chart');
           const r = c ? ctx.rels[rid(c)] : null;
           const model = r ? await chartFrom(r.target, ctx) : null;
-          return Object.assign(base, { type: 'chart', chart: model || L.chart.sample() });
+          /* a chart whose part is missing is kept as an empty frame rather than shown with made-up data */
+          return Object.assign(base, { type: 'chart', chart: model || { v: 2, kind: 'col', empty: true, title: '', legend: 'none', cats: [], series: [], groups: [] } });
         }
         if (/diagram/.test(uri)) {
           const g = await smartArtFrom(gd, base, ctx);
@@ -834,7 +1247,8 @@
           const vr = Object.values(ctx.rels).find((r) => r.type === 'vmlDrawing' && !r.external);
           const vml = vr ? await getText(vr.target) : null;
           if (vml) {
-            const re = new RegExp('<v:shape\\b[^>]*o:spid="' + spid.replace(/[^\w]/g, '') + '"[\\s\\S]*?</v:shape>');
+            /* PowerPoint's VML names the shape by id="_x0000_s1038"; Word-style VML uses o:spid */
+            const re = new RegExp('<v:shape\\b[^>]*\\b(?:o:spid|id)="' + spid.replace(/[^\w]/g, '') + '"[\\s\\S]*?</v:shape>');
             const m = re.exec(vml);
             const relid = m && /<v:imagedata\b[^>]*o:relid="([^"]+)"/.exec(m[0]);
             if (relid) {
@@ -873,6 +1287,8 @@
       if (g.path) sh.path = g.path;
       /* precedence: own spPr > own p:style > layout placeholder > master placeholder */
       let f = fillIn(spPr, ctx);
+      /* "Background" fill: the shape shows the slide background */
+      if (f === undefined && bool(at(el, 'useBgFill'))) f = { t: 'bg' };
       if (f === undefined && refs.fill) f = refs.fill;
       if (f === undefined && ph && lay && lay.spPr) f = fillIn(lay.spPr, ctx);
       if (f === undefined && ph && mas && mas.spPr) f = fillIn(mas.spPr, ctx);
@@ -1071,94 +1487,51 @@
     async function chartFrom(p, ctx) {
       const cx = await xml(p);
       if (!cx) return null;
-      const chart = kid(cx, 'chart');
-      const plot = kid(chart, 'plotArea');
-      if (!plot) return null;
-      const types = ['barChart', 'bar3DChart', 'lineChart', 'line3DChart', 'pieChart', 'pie3DChart', 'ofPieChart', 'doughnutChart', 'areaChart', 'area3DChart', 'scatterChart', 'radarChart', 'bubbleChart', 'stockChart'];
-      const ct = kids(plot).find((c) => types.includes(c.localName));
-      if (!ct) return null;
-      const t = ct.localName;
-      const grouping = at(kid(ct, 'grouping'), 'val') || 'clustered';
-      const barDir = at(kid(ct, 'barDir'), 'val') || 'col';
-      let kind = 'col';
-      if (/bar/.test(t)) kind = barDir === 'bar' ? (grouping === 'clustered' ? 'bar' : 'barStacked') : grouping === 'percentStacked' ? 'colPct' : grouping === 'stacked' ? 'colStacked' : 'col';
-      else if (/line|radar|stock/.test(t)) kind = 'lineMarkers';
-      else if (/pie/i.test(t)) kind = 'pie';
-      else if (/doughnut/.test(t)) kind = 'doughnut';
-      else if (/area/.test(t)) kind = grouping === 'stacked' ? 'areaStacked' : 'area';
-      else if (/scatter|bubble/.test(t)) kind = 'scatter';
-      if (kind === 'lineMarkers' && /line/.test(t)) {
-        const s0 = kid(ct, 'ser');
-        const mk = s0 && path(s0, 'marker', 'symbol');
-        if (mk && at(mk, 'val') === 'none') kind = 'line';
-      }
-      const strVals = (el) => {
-        if (!el) return [];
-        const ml = desc(el, 'multiLvlStrCache');
-        const cache = ml || desc(el, 'strCache') || desc(el, 'numCache') || desc(el, 'strLit') || desc(el, 'numLit');
-        if (!cache) { const v = desc(el, 'v'); return v ? [v.textContent] : []; }
-        const n = num(kid(cache, 'ptCount'), 'val', 0);
-        const out = new Array(n).fill('');
-        for (const p2 of kids(ml ? kid(cache, 'lvl') || cache : cache, 'pt')) out[num(p2, 'idx', 0)] = (kid(p2, 'v') || { textContent: '' }).textContent;
-        return out;
-      };
-      const pal = ['accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6'].map((k) => L.model.resolveColor(k, ctx.design));
-      /* combo charts: series from the other chart groups are overlaid as lines / markers */
-      const others = kids(plot).filter((c) => types.includes(c.localName) && c !== ct);
-      const sers = kids(ct, 'ser').concat(...others.map((o) => kids(o, 'ser').map((x) => Object.assign(x, { __group: o }))));
-      let cats = [];
-      const series = sers.map((s, i) => {
-        const name = strVals(kid(s, 'tx'))[0] || 'Series ' + (i + 1);
-        const c = kid(s, 'cat') || kid(s, 'xVal');
-        const v = kid(s, 'val') || kid(s, 'yVal');
-        const cv = strVals(c);
-        if (cv.length > cats.length) cats = cv;
-        const vals = strVals(v).map((x) => +x || 0);
-        const sp = kid(s, 'spPr');
-        let col = null;
-        const sf = sp && kid(sp, 'solidFill');
-        if (sf) { const cc = colorOf(sf, Object.assign({}, ctx, { keepScheme: false })); if (cc) col = cc.c; }
-        else if (sp && kid(sp, 'ln') && kid(kid(sp, 'ln'), 'solidFill')) { const cc = colorOf(kid(kid(sp, 'ln'), 'solidFill'), Object.assign({}, ctx, { keepScheme: false })); if (cc) col = cc.c; }
-        const out = { name, vals, color: col || pal[i % pal.length] };
-        if (s.__group) {
-          const gt = s.__group.localName;
-          const noLine = sp && kid(sp, 'ln') && kid(kid(sp, 'ln'), 'noFill');
-          const mk = path(s, 'marker', 'symbol');
-          const mkCol = path(s, 'marker', 'spPr', 'solidFill');
-          if (mkCol) { const cc = colorOf(mkCol, Object.assign({}, ctx, { keepScheme: false })); if (cc) out.color = cc.c; }
-          out.overlay = /line|scatter|radar/.test(gt) ? (noLine ? 'markers' : mk && at(mk, 'val') === 'none' ? 'line' : 'lineMarkers') : 'line';
+      let model = null;
+      /* a chart pasted with its source formatting carries its own theme colours and fonts */
+      let cctx = ctx;
+      try {
+        const tov = Object.values(await rels(p)).find((x) => x.type === 'themeOverride' && !x.external);
+        if (tov) {
+          const tx = await xml(tov.target);
+          const th = tx ? await loadTheme(tov.target) : null;
+          if (th) {
+            const d = Object.assign({}, ctx.design, { colors: Object.assign({}, (ctx.design && ctx.design.colors) || {}, desc(tx, 'clrScheme') ? th.colors : {}) });
+            if (desc(tx, 'fontScheme')) d.fonts = Object.assign({}, (ctx.design && ctx.design.fonts) || {}, th.fonts);
+            cctx = Object.assign({}, ctx, { design: d });
+          }
         }
-        return out;
-      });
-      if (!cats.length && series[0]) cats = series[0].vals.map((_, i) => String(i + 1));
-      const model = { kind, title: '', legend: 'none', gridY: !!desc(plot, 'majorGridlines'), labels: false, fsz: 10, cats, series };
-      const title = kid(chart, 'title');
-      /* an explicit (possibly empty) rich title wins; only a title without text falls back to the series name */
-      if (title) model.title = kid(title, 'tx') ? descAll(title, 't').map((x) => x.textContent).join('').trim() : series.length === 1 ? series[0].name : '';
-      const leg = kid(chart, 'legend');
-      if (leg) model.legend = at(kid(leg, 'legendPos'), 'val') || 'r';
-      const dl = desc(ct, 'dLbls');
-      if (dl && (at(kid(dl, 'showVal'), 'val') === '1' || at(kid(dl, 'showPercent'), 'val') === '1')) model.labels = true;
-      /* number formats: data labels, value axis; category label rotation */
-      const fmtOf = (el) => { const nf = el && kid(el, 'numFmt'); return nf && at(nf, 'formatCode') && at(nf, 'formatCode') !== 'General' ? at(nf, 'formatCode') : null; };
-      const cacheFmt = (() => { const s0 = kid(ct, 'ser'); const fc = s0 && desc(kid(s0, 'val') || kid(s0, 'yVal'), 'formatCode'); return fc && fc.textContent !== 'General' ? fc.textContent : null; })();
-      const lblFmt = fmtOf(dl) || cacheFmt;
-      if (lblFmt) model.numFmt = lblFmt;
-      const valAx = kid(plot, 'valAx'), catAx = kid(plot, 'catAx') || kid(plot, 'dateAx');
-      const axFmt = fmtOf(valAx) || (valAx && kid(valAx, 'numFmt') && at(kid(valAx, 'numFmt'), 'sourceLinked') === '1' ? cacheFmt : null);
-      if (axFmt) model.axisFmt = axFmt;
-      const rotEl = catAx && path(catAx, 'txPr', 'bodyPr');
-      if (rotEl && at(rotEl, 'rot') && +at(rotEl, 'rot')) model.catRot = +at(rotEl, 'rot') / 60000;
-      if ((kind === 'pie' || kind === 'doughnut') && sers[0]) {
-        model.pieColors = cats.map((_, k) => {
-          const dp = kids(sers[0], 'dPt').find((d) => num(kid(d, 'idx'), 'val', -1) === k);
-          const sf = dp && path(dp, 'spPr', 'solidFill');
-          if (sf) { const cc = colorOf(sf, Object.assign({}, ctx, { keepScheme: false })); if (cc) return cc.c; }
-          return pal[k % pal.length];
-        });
+      } catch (e) { /* keep the slide's theme */ }
+      try { model = chartModel(cx, cctx); } catch (e) { console.warn('chart', p, e); }
+      if (model && cctx !== ctx && cctx.design.fonts !== (ctx.design && ctx.design.fonts)) {
+        /* theme fonts of the override are resolved here, the slide's theme would give others */
+        const f = cctx.design.fonts;
+        const res = (o) => { if (o && (o.font === '+mn' || o.font === '+mj')) o.font = o.font === '+mj' ? f.major : f.minor; };
+        if (!model.font) model.font = f.minor; else res(model);
+        [model.titleTx, model.legendTx].forEach(res);
+        Object.values(model.ax || {}).forEach((a) => { res(a.tx); res(a.titleTx); });
+        model.series.forEach((sr) => sr.lbl && res(sr.lbl.tx));
       }
-      const txPr = desc(cx, 'defRPr');
-      if (txPr && at(txPr, 'sz')) model.fsz = +at(txPr, 'sz') / 100;
+      if (!model) return null;
+      /* keep the chart part with its embedded workbook, style and colour parts, so that a chart that is not
+         edited here is saved exactly as it came (PowerPoint can still open its data in Excel) */
+      try {
+        let text = await getText(p);
+        const r = await rels(p);
+        const parts = [];
+        for (const [id, rel] of Object.entries(r)) {
+          const ref = new RegExp('<(\\w+:)?(userShapes|externalData)\\b[^>]*?r:id="' + id.replace(/[^\w-]/g, '') + '"[^>]*?(?:/>|>[\\s\\S]*?</(\\w+:)?(userShapes|externalData)>)');
+          if (rel.type === 'chartUserShapes') { text = text.replace(ref, ''); continue; }
+          if (rel.external) { parts.push({ id, fullType: rel.fullType, target: rel.target, external: true }); continue; }
+          const f = zip.get(rel.target);
+          if (!f) { text = text.replace(ref, ''); continue; }
+          let bytes;
+          try { bytes = await f.bytes(); } catch (e) { text = text.replace(ref, ''); continue; }
+          parts.push({ id, fullType: rel.fullType, type: rel.type, name: rel.target.split('/').pop(), bytes, ct: await contentType(rel.target) });
+        }
+        /* Strict OOXML charts are rewritten in the transitional form the rest of the file is saved in */
+        if (text && text.indexOf('purl.oclc.org/ooxml') < 0) model.srcId = L.chart.keep({ xml: text, parts });
+      } catch (e) { /* the chart is then written from its model */ }
       return model;
     }
 
@@ -1173,18 +1546,194 @@
         if (ext && at(ext, 'relId') && ctx.rels[at(ext, 'relId')]) drawingPath = ctx.rels[at(ext, 'relId')].target;
       }
       if (!drawingPath) { const r = Object.values(ctx.rels).find((x) => x.type === 'diagramDrawing'); if (r) drawingPath = r.target; }
-      if (!drawingPath) return null;
+      if (!drawingPath) return smartArtFromData(relIds, base, ctx);
       const dx = await xml(drawingPath);
       const tree = dx && desc(dx, 'spTree');
-      if (!tree) return null;
+      if (!tree) return smartArtFromData(relIds, base, ctx);
       const dRels = await rels(drawingPath);
       const dctx = Object.assign({}, ctx, { rels: dRels, partPath: drawingPath, map: (b) => ({ x: base.x + b.x, y: base.y + b.y, w: b.w, h: b.h }), layout: null, pendingMedia: ctx.pendingMedia });
       dctx.media = (id) => { const r = dRels[id]; if (!r || r.external) return null; const m = mediaCache.get(r.target); if (m) return m; ctx.pendingMedia.add(r.target); return '__pending__:' + r.target; };
       const kidsS = await shapesFrom(tree, dctx, {});
       /* dsp shapes may carry a separate text frame */
       for (const sp of kids(tree, 'sp')) void sp;
-      if (!kidsS.length) return null;
+      if (!kidsS.length) return smartArtFromData(relIds, base, ctx);
       return Object.assign(base, { type: 'group', kids: kidsS, name: base.name || 'Diagram' });
+    }
+    /**
+     * SmartArt saved without its drawing (PowerPoint 2007 and some generators keep only the data model):
+     * lay the nodes out ourselves — chevrons or boxes joined by arrows for processes, a ring for cycles,
+     * a tree for hierarchies, stacked bands for pyramids, otherwise a column of boxes with each node's
+     * children as bullet text — in the theme's accent colour, as PowerPoint's default style draws them.
+     */
+    async function smartArtFromData(relIds, base, ctx) {
+      const dmRel = ctx.rels[rid(relIds, 'dm')], loRel = ctx.rels[rid(relIds, 'lo')];
+      const dm = dmRel ? await xml(dmRel.target) : null;
+      if (!dm) return null;
+      const lo = loRel ? await xml(loRel.target) : null;
+      const kind = String((lo && at(lo, 'uniqueId')) || '').toLowerCase();
+      const pts = new Map();
+      for (const p of descAll(dm, 'pt')) {
+        const type = at(p, 'type') || 'node';
+        if (type !== 'node' && type !== 'doc') continue;
+        const tEl = kid(p, 't');
+        const text = tEl ? kids(tEl, 'p').map((ap) => descAll(ap, 't').map((t) => t.textContent).join('')).join(' ').trim() : '';
+        pts.set(at(p, 'modelId'), { id: at(p, 'modelId'), type, text, kids: [] });
+      }
+      const parent = new Map();
+      for (const c of descAll(dm, 'cxn')) {
+        if ((at(c, 'type') || 'parOf') !== 'parOf') continue;
+        const a = pts.get(at(c, 'srcId')), b = pts.get(at(c, 'destId'));
+        if (a && b) { a.kids.push({ n: b, ord: num(c, 'srcOrd', 0) }); parent.set(b.id, a); }
+      }
+      for (const p of pts.values()) p.kids = p.kids.sort((x, y) => x.ord - y.ord).map((k) => k.n);
+      const root = [...pts.values()].find((p) => p.type === 'doc');
+      const tops = root ? root.kids : [...pts.values()].filter((p) => !parent.has(p.id));
+      if (!tops.length) return null;
+      const W = base.w, H = base.h, X = base.x, Y = base.y;
+      /* colours of the diagram's colour style (node1: the main shapes) */
+      const csRel = ctx.rels[rid(relIds, 'cs')];
+      const cs = csRel ? await xml(csRel.target) : null;
+      const lbl = (name) => cs && kids(cs, 'styleLbl').find((e) => at(e, 'name') === name);
+      const clrList = (st, list) => (st ? kids(kid(st, list)).map((e) => color(e, ctx)).filter(Boolean) : []);
+      const node1 = lbl('node1');
+      const fills = clrList(node1, 'fillClrLst'), lines = clrList(node1, 'linClrLst'), txs = clrList(node1, 'txFillClrLst');
+      const cycle = fills.length > 1;
+      const fillOf = (i) => { const c = fills.length ? fills[cycle ? i % fills.length : 0] : { c: 'accent1', a: 1 }; return { t: 'solid', c: c.c, a: c.a }; };
+      const lineC = lines.length ? lines[0].c : 'bg1';
+      const textC = txs.length ? txs[0].c : 'bg1';
+      const out = [];
+      /* one text size per role, the largest at which every node of that role fits its box (as SmartArt does) */
+      const fits = (text, w, h, sz, bullets) => {
+        const cw = sz * 0.5, lh = sz * 1.2;
+        let lines = 0;
+        const perLine = Math.max(1, (w - 8) / cw - (bullets ? 2 : 0));
+        for (const t of text) {
+          const words = String(t).split(/\s+/);
+          lines++;
+          let line = 0;
+          for (const wd of words) {
+            /* words are not broken: the size must let the longest word fit on a line */
+            if (wd.length > perLine) return false;
+            const add = (line ? 1 : 0) + wd.length;
+            if (line + add > perLine && line) { lines++; line = wd.length; } else line += add;
+          }
+        }
+        return lines * lh <= h - 6;
+      };
+      const fitSize = (items, max) => {
+        let sz = max;
+        for (const it of items) { while (sz > 6 && !fits(it.lines, it.w, it.h, sz, it.bullets)) sz -= 0.5; }
+        return sz;
+      };
+      const pending = [];
+      const box = (x, y, bw, bh, text, sub, geom, o) => {
+        o = o || {};
+        const sh = { id: L.uid('s'), name: 'Diagram shape', type: 'shape', geom: geom || 'roundRect', x: X + x, y: Y + y, w: bw, h: bh, rot: 0, fill: o.fill || fillOf(o.i || 0), line: o.noLine ? { t: 'none' } : { c: lineC, w: 1.5 } };
+        if (geom === 'roundRect' || !geom) sh.adj = { adj: 10000 };
+        pending.push({ sh, text, sub: sub || [], role: o.role || 'node', color: o.color || textC, w: bw * (o.textW || 1), h: o.textH || bh, algn: o.algn || 'ctr', anchor: o.anchor || 'ctr' });
+        out.push(sh);
+        return sh;
+      };
+      const arrow = (x, y, aw, ah) => out.push({ id: L.uid('s'), name: 'Diagram arrow', type: 'shape', geom: 'rightArrow', x: X + x, y: Y + y, w: aw, h: ah, rot: 0, fill: Object.assign(fillOf(0), { a: 0.5 }), line: { t: 'none' } });
+      const connector = (x1, y1, x2, y2) => out.push({ id: L.uid('s'), name: 'Diagram connector', type: 'line', geom: 'line', x: X + Math.min(x1, x2), y: Y + Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1), rot: 0, flipH: x2 < x1, fill: { t: 'none' }, line: { c: fills.length ? fills[0].c : 'accent1', w: 1.5 } });
+      const light = (i) => ({ t: 'solid', c: L.color.lighten(L.model.resolveColor(fillOf(i).c, ctx.design), 0.8), a: 1 });
+      const n = tops.length;
+      const kidsText = (p) => p.kids.map((k) => k.text);
+      const fam = kind.replace(/^.*\//, '').replace(/#.*$/, '');
+      if (/chevron/.test(fam)) {
+        const bw = W / (n - (n - 1) * 0.15), bh = Math.min(H, bw * 0.45), y = (H - bh) / 2;
+        tops.forEach((p, i) => box(i * bw * 0.85, y, bw, bh, p.text, kidsText(p), i === 0 && !/chevron2/.test(fam) ? 'homePlate' : 'chevron', { i, textW: 0.7 }));
+      } else if (/^(hlist|lprocess|hprocess)/.test(fam)) {
+        /* columns: a heading box with the children below it */
+        const gap = Math.min(W / (n * 8), 16), bw = (W - gap * (n - 1)) / n;
+        const grouped = /^lprocess/.test(fam);
+        tops.forEach((p, i) => {
+          const x = i * (bw + gap);
+          if (grouped) {
+            const kidsP = p.kids, hh = H * 0.2, ch = (H - hh - gap * (kidsP.length + 1)) / Math.max(1, kidsP.length);
+            box(x, 0, bw, H, p.text, null, 'roundRect', { i, fill: light(i), color: 'dk1', role: 'head', anchor: 't', textH: hh });
+            kidsP.forEach((k, j) => box(x + bw * 0.1, hh + gap + j * (ch + gap), bw * 0.8, ch, k.text, null, 'roundRect', { i, role: 'child' }));
+          } else {
+            /* the body box is drawn even when it has no text, as Office does */
+            const hh = H * 0.2;
+            box(x, 0, bw, hh, p.text, null, 'rect', { i, role: 'head' });
+            box(x, hh, bw, H - hh, '', kidsText(p), 'rect', { i, fill: light(i), color: 'dk1', role: 'child', algn: 'l', anchor: 't', noLine: true });
+          }
+        });
+      } else if (/^vlist(2|5)/.test(fam) || /^vlist/.test(fam) && tops.some((p) => p.kids.length)) {
+        /* a heading per row with its children beside (vList5) or under (vList2) it */
+        const gap = Math.min(H / (n * 8), 8), bh = (H - gap * (n - 1)) / n;
+        tops.forEach((p, i) => {
+          const y = i * (bh + gap);
+          if (/^vlist5/.test(fam)) {
+            const hw = W * 0.3;
+            box(0, y, hw, bh, p.text, null, 'roundRect', { i, role: 'head' });
+            if (p.kids.length) box(hw, y + bh * 0.08, W - hw, bh * 0.84, '', kidsText(p), 'rect', { i, fill: light(i), color: 'dk1', role: 'child', algn: 'l' });
+          } else {
+            const hh = p.kids.length ? bh * 0.45 : bh;
+            box(0, y, W, hh, p.text, null, 'roundRect', { i, role: 'head', algn: 'l' });
+            if (p.kids.length) box(W * 0.03, y + hh, W * 0.97, bh - hh, '', kidsText(p), 'rect', { i, fill: { t: 'none' }, noLine: true, color: 'dk1', role: 'child', algn: 'l', anchor: 't' });
+          }
+        });
+      } else if (/process|arrow/.test(fam)) {
+        const gap = Math.min(W / (n * 4), 40), bw = (W - gap * (n - 1)) / n, bh = Math.min(H, bw * 0.75), y = (H - bh) / 2;
+        tops.forEach((p, i) => { box(i * (bw + gap), y, bw, bh, p.text, kidsText(p), 'roundRect', { i }); if (i < n - 1) arrow(i * (bw + gap) + bw + gap * 0.15, H / 2 - gap * 0.35, gap * 0.7, gap * 0.7); });
+      } else if (/cycle|radial|target/.test(fam)) {
+        const r = Math.min(W, H) / 2, bw = Math.min(r * 0.8, (2 * Math.PI * r * 0.55) / n), bh = bw * 0.6;
+        tops.forEach((p, i) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; box(W / 2 + (r - bw / 2) * Math.cos(a) - bw / 2, H / 2 + (r - bh / 2) * Math.sin(a) - bh / 2, bw, bh, p.text, null, 'ellipse', { i }); });
+      } else if (/hierarchy|orgchart/.test(fam)) {
+        const levels = [];
+        const pos = new Map();
+        const walk = (p, d) => { (levels[d] = levels[d] || []).push(p); for (const k of p.kids) walk(k, d + 1); };
+        for (const t of tops) walk(t, 0);
+        const lh = H / levels.length;
+        levels.forEach((row, d) => { const bw = Math.min((W / row.length) * 0.85, W * 0.3), gap = (W - bw * row.length) / (row.length + 1); row.forEach((p, i) => { const x = gap + i * (bw + gap), y = d * lh + lh * 0.12; box(x, y, bw, lh * 0.7, p.text, null, 'rect', { i: d, role: 'node' }); pos.set(p, { cx: x + bw / 2, top: y, bottom: y + lh * 0.7 }); }); });
+        /* connectors: down from the parent, across, and down to each child */
+        for (const [p, pp] of pos) for (const k of p.kids) { const kp = pos.get(k); if (!kp) continue; const mid = (pp.bottom + kp.top) / 2; connector(pp.cx, pp.bottom, pp.cx, mid); connector(pp.cx, mid, kp.cx, mid); connector(kp.cx, mid, kp.cx, kp.top); }
+        out.unshift(...out.splice(out.length - [...pos].reduce((a, [p]) => a + p.kids.filter((k) => pos.has(k)).length * 3, 0)));
+      } else if (/pyramid/.test(fam)) {
+        const bh = H / n;
+        tops.forEach((p, i) => { const bw = W * (i + 1) / n; box((W - bw) / 2, i * bh, bw, bh * 0.94, p.text, kidsText(p), 'rect', { i }); });
+      } else if (/matrix/.test(fam)) {
+        const cols = 2, rows = Math.ceil(n / 2), gap = Math.min(W, H) * 0.04, bw = (W - gap) / cols, bh = (H - gap * (rows - 1)) / rows;
+        tops.forEach((p, i) => box((i % cols) * (bw + gap), Math.floor(i / cols) * (bh + gap), bw, bh, p.text, kidsText(p), 'roundRect', { i, algn: p.kids.length ? 'l' : 'ctr' }));
+      } else if (/^(default|blist|snake)/.test(fam) || (!/^vlist/.test(fam) && n > 3 && tops.every((p) => !p.kids.length))) {
+        /* Basic Block List: rows of 3:2 boxes, the last row centred */
+        let best = null;
+        for (let cols = 1; cols <= n; cols++) {
+          const rows = Math.ceil(n / cols);
+          const bw = Math.min(W / (cols + (cols - 1) * 0.1), (H / (rows + (rows - 1) * 0.1)) / 0.6);
+          if (!best || bw > best.bw) best = { cols, rows, bw };
+        }
+        const { cols, rows, bw } = best, bh = bw * 0.6, gx = bw * 0.1, gy = bh * 0.1 / 0.6;
+        const top0 = (H - (rows * bh + (rows - 1) * gy)) / 2;
+        tops.forEach((p, i) => {
+          const r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols), c = i % cols;
+          const left0 = (W - (inRow * bw + (inRow - 1) * gx)) / 2;
+          box(left0 + c * (bw + gx), top0 + r * (bh + gy), bw, bh, p.text, kidsText(p), 'rect', { i, algn: p.kids.length ? 'l' : 'ctr' });
+        });
+      } else {
+        const gap = Math.min(H / (n * 6), 8), bh = (H - gap * (n - 1)) / n;
+        tops.forEach((p, i) => box(0, i * (bh + gap), W, bh, p.text, kidsText(p), 'roundRect', { i }));
+      }
+      /* the diagram's own background and outline (dgm:bg, dgm:whole) */
+      const dbg = kid(dm, 'bg'), dwhole = kid(dm, 'whole');
+      const bgFill = dbg ? fillIn(dbg, ctx) : undefined, bgLine = dwhole ? line(kid(dwhole, 'ln'), ctx) : undefined;
+      if ((bgFill && bgFill.t !== 'none') || (bgLine && bgLine.t !== 'none')) out.unshift({ id: L.uid('s'), name: 'Diagram background', type: 'shape', geom: 'rect', x: X, y: Y, w: W, h: H, rot: 0, fill: bgFill || { t: 'none' }, line: bgLine && bgLine.t !== 'none' ? bgLine : { t: 'none' } });
+      /* text: a common size per role */
+      const roles = new Map();
+      for (const it of pending) { const r = roles.get(it.role) || []; r.push(it); roles.set(it.role, r); }
+      const sizes = new Map();
+      for (const [role, items] of roles) sizes.set(role, fitSize(items.map((it) => ({ lines: [it.text].concat(it.sub).filter((t) => t), w: it.w, h: it.h, bullets: it.sub.length > 0 })), role === 'child' ? 24 : 36));
+      for (const it of pending) {
+        const sz = Math.round(sizes.get(it.role) * 2) / 2;
+        const lines = [];
+        if (it.text) lines.push(L.txt.para(it.text, { algn: it.algn }, { sz, color: it.color }));
+        for (const t of it.sub) lines.push(L.txt.para(t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, { sz: Math.round(sz * (it.text ? 0.85 : 1) * 2) / 2, color: it.color }));
+        if (!lines.length) lines.push(L.txt.para('', { algn: 'ctr' }, { color: it.color }));
+        it.sh.tx = L.txt.body(lines, { anchor: it.anchor === 't' ? 't' : 'ctr', ins: [5, 4, 5, 4] });
+      }
+      return Object.assign(base, { type: 'group', kids: out, name: base.name || 'Diagram' });
     }
 
     /* ---- slides ---- */
@@ -1224,6 +1773,31 @@
       const bg = bgOf(cSld, ctx, master.theme);
       if (bg) slide.bg = bg;
       slide.shapes = await shapesFrom(kid(cSld, 'spTree'), ctx, {});
+      /* ActiveX controls are shown by their preview pictures (they are not run here) */
+      const ctrls = kid(cSld, 'controls');
+      if (ctrls) for (const c of kids(ctrls, 'control')) {
+        try {
+          const pic = kid(c, 'pic');
+          let sh = pic ? await shapeFrom(pic, ctx, {}) : null;
+          if (!sh && at(c, 'spid')) {
+            /* the 2007 form: the preview lives in the legacy VML drawing */
+            const vr = Object.values(ctx.rels).find((r) => r.type === 'vmlDrawing' && !r.external);
+            const vml = vr ? await getText(vr.target) : null;
+            const m = vml && new RegExp('<v:shape\\b[^>]*\\b(?:o:spid|id)="_x0000_s' + String(at(c, 'spid')).replace(/[^\w]/g, '') + '"[\\s\\S]*?</v:shape>').exec(vml);
+            const im = m && /<v:imagedata\b[^>]*o:relid="([^"]+)"/.exec(m[0]);
+            const st = m && /style="([^"]*)"/.exec(m[0]);
+            if (im && st) {
+              const vrels = await rels(vr.target);
+              const r = vrels[im[1]];
+              const mid = r && !r.external ? await loadMedia(r.target) : null;
+              const css = {}; st[1].split(';').forEach((kv) => { const [k, v] = kv.split(':'); if (k && v) css[k.trim()] = v.trim(); });
+              const ptv = (v) => (/pt$/.test(v) ? parseFloat(v) : /in$/.test(v) ? parseFloat(v) * 72 : /px$/.test(v) ? parseFloat(v) * 0.75 : parseFloat(v) || 0);
+              if (mid) sh = { id: L.uid('s'), name: at(c, 'name') || 'Control', type: 'image', geom: 'rect', media: mid, x: ptv(css['margin-left'] || css.left), y: ptv(css['margin-top'] || css.top), w: ptv(css.width), h: ptv(css.height), rot: 0, crop: { l: 0, t: 0, r: 0, b: 0 }, line: { t: 'none' }, lockAspect: true, img: {} };
+            }
+          }
+          if (sh && !Array.isArray(sh)) { if (!sh.name) sh.name = at(c, 'name') || 'Control'; slide.shapes.push(sh); }
+        } catch (e) { /* skip the control */ }
+      }
       await finalizeMedia(ctx, slide);
       /* slide-level text that is a dt/ftr/sldNum placeholder stays as shapes */
       /* notes */
@@ -1264,7 +1838,63 @@
     }
     if (!Object.keys(pres.designs).length) { const d = L.model.buildDesign('default', W, H); pres.designs[d.id] = d; }
     if (zip.repaired || damaged.length) pres.repaired = { rebuilt: !!zip.repaired, parts: damaged.slice(0, 20) };
+    /* saved again with the same password to open, as PowerPoint does */
+    if (password) pres.password = password;
+    await applyDuotones(pres);
+    /* pictures with a transparent colour get a display copy; the original is what is saved */
+    const clearPics = [];
+    const pick = (sh) => { if (sh.type === 'image' && sh.img && sh.img.clear && sh.media) clearPics.push(sh); return true; };
+    for (const s of pres.slides) L.model.walk(s.shapes, pick);
+    for (const d of Object.values(pres.designs)) [d.deco, d.titleDeco].concat(d.layoutDecos ? Object.values(d.layoutDecos) : []).forEach((list) => list && L.model.walk(list, pick));
+    for (const sh of clearPics) { const v = await L.media.withTransparent(sh.media, sh.img.clear, 3); if (v) sh.img.view = v; }
     return pres;
+  }
+
+  /** duotone pictures (theme background textures) are recoloured once, after loading */
+  async function applyDuotones(root) {
+    const jobs = [];
+    const seen = new Set();
+    const scan = (o) => {
+      if (!o || typeof o !== 'object' || seen.has(o)) return;
+      seen.add(o);
+      if (o.t === 'img' && o.duotone && o.media) jobs.push(o);
+      for (const k in o) { const v = o[k]; if (v && typeof v === 'object') scan(v); }
+    };
+    scan(root);
+    const cache = new Map();
+    for (const f of jobs) {
+      const key = f.media + '|' + f.duotone.join('|');
+      if (!cache.has(key)) cache.set(key, duotone(f.media, f.duotone));
+      const id = await cache.get(key);
+      if (id) f.media = id;
+      delete f.duotone;
+    }
+  }
+  async function duotone(mediaId, cols) {
+    try {
+      if (typeof document === 'undefined') return null;
+      const img = await L.loadImage(L.media.url(mediaId));
+      const k = Math.min(1, 1024 / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      const w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const g = cv.getContext('2d');
+      g.drawImage(img, 0, 0, w, h);
+      const d = g.getImageData(0, 0, w, h);
+      const [a, b] = cols.map((c) => L.color.hexToRgb(L.model.resolveColor(c)));
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const t = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
+        px[i] = a[0] + (b[0] - a[0]) * t; px[i + 1] = a[1] + (b[1] - a[1]) * t; px[i + 2] = a[2] + (b[2] - a[2]) * t;
+      }
+      g.putImageData(d, 0, 0);
+      const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+      if (!blob) return null;
+      const id = L.media.add(blob, 'duotone.png');
+      const o = L.media.get(mediaId).size;
+      L.media.get(id).size = { w, h, dpiX: ((o && o.dpiX) || 96) * k, dpiY: ((o && o.dpiY) || 96) * k };
+      return id;
+    } catch (e) { return null; }
   }
 
   /* ---------- transitions ---------- */

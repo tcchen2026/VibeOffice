@@ -18,7 +18,8 @@
   const slideCtx = () => A().focusArea === 'slides' || A().view === 'sorter';
 
   /* ---------- File ---------- */
-  C('new', { label: '&New...', menuLabel: '&New...', icon: 'new', key: 'Ctrl+N', tip: 'New', run: () => A().newPresentation() });
+  /* the toolbar button makes a blank presentation; the menu and Ctrl+N show Blank and the templates */
+  C('new', { label: '&New...', menuLabel: '&New...', icon: 'new', key: 'Ctrl+N', tip: 'New', run: (arg, ev) => { if ((ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) || !window.VO) A().newPresentation(); else VO.newDialog('lectern', (id) => (id ? A().newFromTemplate(id) : A().newPresentation())); } });
   C('open', { label: '&Open...', icon: 'open', key: 'Ctrl+O', tip: 'Open', run: () => A().openDialog() });
   C('close', { label: '&Close', run: () => A().closePresentation() });
   C('save', { label: '&Save', icon: 'save', key: 'Ctrl+S', tip: 'Save', run: () => A().save() });

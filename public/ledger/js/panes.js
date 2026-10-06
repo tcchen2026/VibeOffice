@@ -295,6 +295,69 @@
         return { sheets: [{ name: 'Budget', cells, cols: { A: 24 }, freeze: [3, 1], sel: 'B4' }] };
       },
     },
+    tasks: {
+      name: 'Task Tracker',
+      spec: () => {
+        const DAY = { nf: 'm/d/yyyy' };
+        const cells = [
+          ['A1', 'Task Tracker', TITLE],
+          ['A2', 'Open', B], ['B2', '=COUNTIFS(A5:A104,"<>",E5:E104,"<>Done")', { font: { b: true } }],
+          ['C2', 'Overdue', B], ['D2', '=COUNTIFS(A5:A104,"<>",E5:E104,"<>Done",D5:D104,"<"&TODAY())', { font: { b: true, color: M.rgb('#C00000') } }],
+          ['A4', 'Task', HDR], ['B4', 'Owner', HDR], ['C4', 'Priority', HDR], ['D4', 'Due', HDR], ['E4', 'Status', HDR], ['F4', 'Days left', HDR], ['G4', 'Notes', HDR],
+          ['A5', 'Book the venue'], ['B5', 'Sam'], ['C5', 'High'], ['D5', '=TODAY()+2', DAY], ['E5', 'In progress'],
+          ['A6', 'Send invitations'], ['B6', 'Alex'], ['C6', 'Medium'], ['D6', '=TODAY()+7', DAY], ['E6', 'Not started'],
+          ['A7', 'Order supplies'], ['B7', 'Sam'], ['C7', 'Low'], ['D7', '=TODAY()-1', DAY], ['E7', 'Waiting'], ['G7', 'Quote requested'],
+          ['A8', 'Draft the budget'], ['B8', 'Alex'], ['C8', 'High'], ['D8', '=TODAY()-3', DAY], ['E8', 'Done'],
+        ];
+        for (let r = 5; r <= 104; r++) {
+          cells.push(['F' + r, `=IF(OR(A${r}="",D${r}="",E${r}="Done"),"",D${r}-TODAY())`, { nf: '0;[Red]-0', align: { h: 'center' } }]);
+          if (r > 8) cells.push(['D' + r, null, DAY]);
+        }
+        return { sheets: [{ name: 'Tasks', cells, cols: { A: 32, B: 12, C: 10, D: 11, E: 13, F: 10, G: 30 }, freeze: [4, 0],
+          dv: [{ ref: 'C5:C104', type: 'list', f1: '"High,Medium,Low"' }, { ref: 'E5:E104', type: 'list', f1: '"Not started,In progress,Waiting,Done"', prompt: 'Pick a status', promptTitle: 'Status' }],
+          sel: 'A9' }] };
+      },
+    },
+    shopping: {
+      name: 'Shopping List',
+      spec: () => {
+        const cells = [
+          ['A1', 'Shopping List', TITLE],
+          ['A2', 'Budget', B], ['B2', 80, Object.assign({}, MONEY, INPUT, BOX)], ['D2', 'List total', B], ['E2', '=SUM(F5:F44)', MONEY], ['D3', 'Still to buy', B], ['E3', '=SUMIF(A5:A44,"",F5:F44)', MONEY],
+          ['F2', '=IF(B2="","",IF(E2>B2,"Over budget by "&TEXT(E2-B2,"$0.00"),TEXT(B2-E2,"$0.00")&" left"))', { font: { i: true } }],
+          ['A4', '✓', HDR], ['B4', 'Item', HDR], ['C4', 'Category', HDR], ['D4', 'Qty', HDR], ['E4', 'Price each', HDR], ['F4', 'Total', HDR],
+        ];
+        const items = [['Apples', 'Produce', 6, 0.5], ['Milk', 'Dairy', 2, 1.29], ['Bread', 'Bakery', 1, 2.99], ['Eggs (dozen)', 'Dairy', 1, 3.49], ['Chicken breast', 'Meat & fish', 1, 7.5], ['Pasta', 'Pantry', 2, 1.19], ['Coffee', 'Pantry', 1, 8.99], ['Dish soap', 'Household', 1, 2.49]];
+        items.forEach(([n, c, q, p], i) => { const r = 5 + i; cells.push(['B' + r, n], ['C' + r, c], ['D' + r, q], ['E' + r, p, MONEY]); });
+        for (let r = 5; r <= 44; r++) {
+          cells.push(['F' + r, `=IF(B${r}="","",IF(D${r}="",1,D${r})*E${r})`, MONEY], ['A' + r, null, { align: { h: 'center' }, font: { b: true, color: M.rgb('#1F8A4C') } }]);
+          if (r >= 5 + items.length) cells.push(['E' + r, null, MONEY]);
+        }
+        return { sheets: [{ name: 'Shopping', cells, cols: { A: 5, B: 28, C: 14, D: 7, E: 12, F: 12 }, freeze: [4, 0],
+          dv: [{ ref: 'A5:A44', type: 'list', f1: '"✓"', prompt: 'Tick what is in the basket', promptTitle: 'Bought' },
+            { ref: 'C5:C44', type: 'list', f1: '"Produce,Dairy,Bakery,Meat & fish,Pantry,Frozen,Drinks,Household,Other"' }],
+          sel: 'B13' }] };
+      },
+    },
+    schedule: {
+      name: 'Weekly Schedule',
+      spec: () => {
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const cols = 'BCDEFGH';
+        const SLOT = Object.assign({ align: { v: 'center', wrap: true } }, BOX);
+        const cells = [['A1', 'Weekly Schedule', TITLE], ['A2', 'Week of', B], ['B2', '=TODAY()-WEEKDAY(TODAY(),3)', Object.assign({ nf: 'mmmm d, yyyy' }, INPUT)], ['A4', 'Time', HDR]];
+        days.forEach((d, i) => cells.push([cols[i] + '4', d, HDR], [cols[i] + '5', `=$B$2+${i}`, { nf: 'mmm d', align: { h: 'center' }, font: { color: M.rgb('#595959') } }]));
+        for (let k = 0; k <= 15; k++) {
+          const r = 6 + k;
+          cells.push(['A' + r, (7 + k) / 24, { nf: 'h:mm AM/PM', font: { b: true }, align: { v: 'center' } }]);
+          for (const c of cols) cells.push([c + r, null, SLOT]);
+        }
+        const plan = [['B8', 'Team stand-up'], ['D8', 'Team stand-up'], ['F8', 'Team stand-up'], ['C11', 'Lunch with Sam'], ['E17', 'Swimming'], ['G10', 'Groceries'], ['H11', 'Family brunch'], ['B19', 'Piano lesson']];
+        for (const [a, v] of plan) cells.push([a, v, Object.assign({ fill: { pattern: 'solid', fg: M.rgb('#DDEBF7') } }, SLOT)]);
+        cells.push(['A23', 'Notes', B], ['B23', '', INPUT]);
+        return { sheets: [{ name: 'Schedule', cells, cols: { A: 10, B: 15, C: 15, D: 15, E: 15, F: 15, G: 15, H: 15 }, freeze: [5, 1], print: { orientation: 'landscape' }, sel: 'C6' }] };
+      },
+    },
   };
   P.TEMPLATES = TPL;
   P.buildTemplate = (k) => build(TPL[k].spec());

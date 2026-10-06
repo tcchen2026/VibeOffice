@@ -16,7 +16,7 @@ Plain HTML and JavaScript, no build step. Serve `public/` with any static web se
 
     python3 tools/serve.py
 
-and open http://127.0.0.1:8760/.
+and open http://127.0.0.1:8760/, the Start Center: open a file, pick one from Recent Files, or create a document, spreadsheet or presentation. In Chromium-based browsers it can be installed as an app, which also lets it open .docx, .xlsx and .pptx files from your computer's file manager.
 
 ## Contributing
 

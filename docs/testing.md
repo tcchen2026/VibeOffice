@@ -15,9 +15,22 @@ Drives a page in the Chromium listening on CDP 127.0.0.1:9222 (start one with `c
 
 Each step is `{ "js": "...", "wait": ms, "shot": "name.png|jpg" }`; `js` is an async function body run in the page, and its return value is printed. The app's namespace is `window.L`. At the end the tool lists console errors, exceptions and every request that left 127.0.0.1 (today: the Google Fonts requests). It opens and closes its own tab; never close the browser's other tabs.
 
-Card previews for the landing page are 1280×720:
+The install screenshots in the manifest (`public/<app>/preview.jpg`) are 1280×720:
 
     node tools/shot.mjs quire/ '[{"wait":1500,"shot":"preview.jpg"}]' --h 720 --out public/quire
+
+The PWA icons are drawn from `public/icons/icon.svg` and `icon-maskable.svg` (see docs/suite.md).
+
+## The Start Center and app launch
+
+The browser profile keeps IndexedDB between runs of `shot.mjs`, so a test can hand a file to an app and then look at the Start Center:
+
+    node tools/shot.mjs quire/ '[{"js":"const b = await L.docx.write(L.D.doc, { stats: L.app.docStats() }); setTimeout(() => VO.handoff(new File([b], \"t.docx\")), 50)"},{"wait":3500,"js":"return document.title"}]'
+    node tools/shot.mjs "" '[{"wait":800,"shot":"start.png"}]'
+
+Check after a change to `suite.js` or to an app's start, open or save code: `<app>/?new` starts blank; a handed-over file opens in place of the blank document (one window); the file and a thumbnail appear under Recent Files; clicking it reopens it. Clear the list with `await VO.recent.clear()`.
+
+Templates: `node tools/templates.mjs` opens every template (`<app>/?template=<id>`) and fails on a script error or a missing preview; look at the new previews in the Create File view.
 
 ## Ledger: tools/ledger/test/
 
@@ -33,6 +46,10 @@ The engine and the file readers and writers load in Node through `load.js`, so m
 | `lo-compare.js ourDir loDir` | compare our saved files with LibreOffice's re-saved copies cell by cell |
 | `pool.js script.js dir out.jsonl`, `recalc-all.js`, `summ.js` | run a per-file script over a corpus with a process pool, summarise the results |
 | `ui/*.js` | Playwright checks in Chromium against http://127.0.0.1:8760/ledger/: `smoke`, `flows` (44 end-to-end flows), `allcmds` (every menu and toolbar command), `password`, `perf`, `shots`. Need Playwright (`npm install --no-save playwright`) |
+
+## Lectern: tools/lectern/test/
+
+`corpus.js` opens real decks in Chromium (open, render every slide, save, reopen, compare), `summarize.js` sums up its results, `ui-features.js` drives the password dialog, Tools ▸ Options ▸ Security and the chart dialog, `chartedit.js` writes every chart for validation, `decrypt.py` checks encrypted saves independently, `viscompare.py` / `triptych.py` / `stack.py` compare renderings. They need Playwright; how to run them is in docs/lectern.md.
 
 ## Corpora
 

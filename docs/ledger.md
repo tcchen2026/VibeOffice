@@ -30,8 +30,8 @@ script list in `tools/ledger/build/make.py`, then run `python3 tools/ledger/buil
 
 ## What is in it
 
-**File.** New (blank, or from five built-in templates: Loan Amortization, Expense Statement, Sales
-Invoice, Timecard, Personal Monthly Budget), Open, Close, Save, Save As with every format listed under
+**File.** New (blank, or from eight built-in templates: Loan Amortization, Expense Statement, Sales
+Invoice, Timecard, Personal Monthly Budget, Task Tracker, Shopping List, Weekly Schedule), Open, Close, Save, Save As with every format listed under
 *File formats*, Save as Web Page, Page Setup, Print Area, Print Preview, Print (to PDF), Send To,
 Properties. Several workbooks can be open at once (Window menu).
 

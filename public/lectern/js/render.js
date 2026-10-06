@@ -49,30 +49,53 @@
   /* ---------- colours & fills ---------- */
   R.col = (c, design, fb) => L.model.resolveColor(c, design, fb);
   /** CSS background declaration for a Fill (backgrounds, table cells, pane swatches) */
-  R.fillCSS = function (fill, design) {
+  /** tile geometry of a tiled picture fill inside a box {w, h}: the picture at its own size (pixels at its
+   *  resolution) scaled by sx/sy, placed from the alignment corner plus the tx/ty offset */
+  R.tileGeom = function (fill, box) {
+    const o = fill.tileOpts || { sx: 1, sy: 1, tx: 0, ty: 0, algn: 'tl', flip: 'none' };
+    const m = L.media.get(fill.media), z = m && m.size;
+    const iw = z ? (z.w * 72) / (z.dpiX || 96) : 64, ih = z ? (z.h * 72) / (z.dpiY || 96) : 64;
+    const w = Math.max(0.5, iw * (o.sx || 1)), h = Math.max(0.5, ih * (o.sy || 1));
+    const a = o.algn || 'tl', bw = (box && box.w) || 0, bh = (box && box.h) || 0;
+    let x = o.tx || 0, y = o.ty || 0;
+    if (/r$/.test(a)) x += bw - w; else if (!/l$/.test(a)) x += (bw - w) / 2;
+    if (/^b/.test(a)) y += bh - h; else if (!/^t/.test(a)) y += (bh - h) / 2;
+    return { x, y, w, h, flip: o.flip || 'none' };
+  };
+  R.fillCSS = function (fill, design, box) {
+    if (fill && fill.t === 'bg') fill = R.curBg || { t: 'solid', c: 'bg1' };
     if (!fill || fill.t === 'none') return 'transparent';
     if (fill.t === 'solid') return L.color.rgba(R.col(fill.c, design), fill.a);
     if (fill.t === 'grad') {
       const stops = (fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => `${L.color.rgba(R.col(st.c, design), st.a)} ${L.round(st.p * 100, 1)}%`).join(', ');
-      if (fill.path === 'circle' || fill.path === 'shape') return `radial-gradient(circle farthest-side at 50% 50%, ${stops})`;
-      if (fill.path === 'rect') return `radial-gradient(ellipse farthest-corner at 50% 50%, ${stops})`;
+      const at = fill.focus ? `${L.round(fill.focus[0] * 100, 2)}% ${L.round(fill.focus[1] * 100, 2)}%` : '50% 50%';
+      if (fill.path === 'circle' || fill.path === 'shape') return `radial-gradient(circle farthest-side at ${at}, ${stops})`;
+      if (fill.path === 'rect') return `radial-gradient(ellipse farthest-corner at ${at}, ${stops})`;
       return `linear-gradient(${L.round((fill.ang || 0) + 90, 2)}deg, ${stops})`;
     }
     if (fill.t === 'img') {
       const u = L.media.url(fill.media);
-      return fill.tile ? `url("${u}") repeat` : `url("${u}") center / 100% 100% no-repeat`;
+      if (fill.tile) { const g = R.tileGeom(fill, box); return `url("${u}") ${L.round(g.x, 2)}px ${L.round(g.y, 2)}px / ${L.round(g.w, 2)}px ${L.round(g.h, 2)}px repeat`; }
+      if (fill.crop) { const c = fill.crop, kw = 1 - c.l - c.r || 1, kh = 1 - c.t - c.b || 1; return `url("${u}") ${L.round((c.l / (c.l + c.r || 1)) * 100, 3)}% ${L.round((c.t / (c.t + c.b || 1)) * 100, 3)}% / ${L.round(100 / kw, 3)}% ${L.round(100 / kh, 3)}% no-repeat`; }
+      if (fill.fillRect) { const c = fill.fillRect, kw = 1 - c.l - c.r || 1, kh = 1 - c.t - c.b || 1; return `url("${u}") ${L.round(c.l + c.r ? (c.l / (c.l + c.r)) * 100 : 0, 3)}% ${L.round(c.t + c.b ? (c.t / (c.t + c.b)) * 100 : 0, 3)}% / ${L.round(kw * 100, 3)}% ${L.round(kh * 100, 3)}% no-repeat`; }
+      return `url("${u}") center / 100% 100% no-repeat`;
     }
     if (fill.t === 'patt') return R.patternURL(fill.prst, R.col(fill.fg, design, '#000000'), R.col(fill.bg, design, '#FFFFFF'));
     return 'transparent';
   };
   /** SVG paint for a Fill; adds defs to the given <defs>. Returns {paint, opacity} */
   R.svgPaint = function (fill, design, defs, box) {
+    if (fill && fill.t === 'bg') fill = R.curBg || { t: 'solid', c: 'bg1' };
     if (!fill || fill.t === 'none') return { paint: 'none', opacity: 1 };
     if (fill.t === 'solid') return { paint: R.col(fill.c, design), opacity: fill.a == null ? 1 : fill.a };
     if (fill.t === 'grad') {
       const id = nid('gr');
       let g;
-      if (fill.path === 'circle' || fill.path === 'rect' || fill.path === 'shape') g = s('radialGradient', { id, cx: '50%', cy: '50%', r: fill.path === 'rect' ? '71%' : '50%' });
+      if (fill.path === 'circle' || fill.path === 'rect' || fill.path === 'shape') {
+        const [fx, fy] = fill.focus || [0.5, 0.5];
+        const far = Math.max(fx, 1 - fx, fy, 1 - fy);
+        g = s('radialGradient', { id, cx: L.round(fx * 100, 2) + '%', cy: L.round(fy * 100, 2) + '%', r: L.round((fill.path === 'rect' ? Math.hypot(Math.max(fx, 1 - fx), Math.max(fy, 1 - fy)) : far) * 100, 2) + '%' });
+      }
       else {
         /* gradient vector in bounding-box space spanning the whole box (PowerPoint 'scaled' gradients) */
         const a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a);
@@ -87,9 +110,26 @@
     }
     if (fill.t === 'img') {
       const id = nid('im');
-      const p = fill.tile
-        ? s('pattern', { id, patternUnits: 'userSpaceOnUse', width: 64, height: 64 }, s('image', { href: L.media.url(fill.media), width: 64, height: 64, preserveAspectRatio: 'none' }))
-        : s('pattern', { id, patternContentUnits: 'objectBoundingBox', width: 1, height: 1 }, s('image', { href: L.media.url(fill.media), width: 1, height: 1, preserveAspectRatio: 'none' }));
+      const href = L.media.url(fill.media);
+      let p;
+      if (fill.tile) {
+        const g = R.tileGeom(fill, box);
+        const fx = /x/.test(g.flip), fy = /y/.test(g.flip);
+        const pw = g.w * (fx ? 2 : 1), ph = g.h * (fy ? 2 : 1);
+        p = s('pattern', { id, patternUnits: 'userSpaceOnUse', x: L.round(g.x, 3), y: L.round(g.y, 3), width: L.round(pw, 3), height: L.round(ph, 3) });
+        for (const [mx, my] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          if ((mx && !fx) || (my && !fy)) continue;
+          /* flipped tiles mirror their neighbours */
+          const tr = `translate(${mx ? 2 * g.w : 0} ${my ? 2 * g.h : 0}) scale(${mx ? -1 : 1} ${my ? -1 : 1})`;
+          p.appendChild(s('image', { href, width: L.round(g.w, 3), height: L.round(g.h, 3), preserveAspectRatio: 'none', transform: tr }));
+        }
+      } else if (fill.crop) {
+        const c = fill.crop, kw = 1 - c.l - c.r || 1, kh = 1 - c.t - c.b || 1;
+        p = s('pattern', { id, patternContentUnits: 'objectBoundingBox', width: 1, height: 1 }, s('image', { href, x: L.round(-c.l / kw, 5), y: L.round(-c.t / kh, 5), width: L.round(1 / kw, 5), height: L.round(1 / kh, 5), preserveAspectRatio: 'none' }));
+      } else if (fill.fillRect) {
+        const c = fill.fillRect;
+        p = s('pattern', { id, patternContentUnits: 'objectBoundingBox', width: 1, height: 1 }, s('image', { href, x: L.round(c.l, 5), y: L.round(c.t, 5), width: L.round(1 - c.l - c.r || 1, 5), height: L.round(1 - c.t - c.b || 1, 5), preserveAspectRatio: 'none' }));
+      } else p = s('pattern', { id, patternContentUnits: 'objectBoundingBox', width: 1, height: 1 }, s('image', { href, width: 1, height: 1, preserveAspectRatio: 'none' }));
       defs.appendChild(p);
       return { paint: `url(#${id})`, opacity: fill.a == null ? 1 : fill.a };
     }
@@ -137,7 +177,7 @@
   /* ---------- background ---------- */
   R.background = function (fill, design, W, H) {
     const el = h('div', { class: 'sl-bg', style: `position:absolute;left:0;top:0;width:${W}px;height:${H}px` });
-    el.style.background = R.fillCSS(fill || { t: 'solid', c: 'bg1' }, design);
+    el.style.background = R.fillCSS(fill || { t: 'solid', c: 'bg1' }, design, { w: W, h: H });
     if (fill && fill.t === 'patt') el.style.backgroundRepeat = 'repeat';
     return el;
   };
@@ -195,7 +235,12 @@
     if (rp.cap === 'all') st.textTransform = 'uppercase';
     else if (rp.cap === 'small') st.fontVariant = 'small-caps';
     const shadows = [];
-    if (rp.shd) shadows.push(`${L.round(sz * 0.06, 2)}px ${L.round(sz * 0.06, 2)}px 0 rgba(0,0,0,0.35)`);
+    if (rp.shd) {
+      /* the file's own shadow when there is one; a shadow fades with semi-transparent text, as in PowerPoint */
+      const x = rp.shdX, ta = rp.fill && rp.fill.t === 'solid' && rp.fill.a != null ? rp.fill.a : 1;
+      if (x) shadows.push(`${L.round((x.dx || 0) * scale, 2)}px ${L.round((x.dy || 0) * scale, 2)}px ${L.round((x.blur || 0) * scale * 0.5, 2)}px ${L.color.rgba(R.col(x.c || '#000000', design), (x.a == null ? 0.5 : x.a) * ta)}`);
+      else shadows.push(`${L.round(sz * 0.06, 2)}px ${L.round(sz * 0.06, 2)}px 0 rgba(0,0,0,${L.round(0.35 * ta, 3)})`);
+    }
     if (rp.emb) shadows.push(`-1px -1px 0 rgba(255,255,255,0.7), 1px 1px 0 rgba(0,0,0,0.4)`);
     if (shadows.length) st.textShadow = shadows.join(',');
     if (rp.hl) st.backgroundColor = R.col(rp.hl, design);
@@ -209,7 +254,9 @@
   };
   function fieldText(r, ctx) {
     if (r.fld === 'slidenum') return String(ctx.num != null ? ctx.num : '‹#›');
-    if (r.fld && r.fld.startsWith('datetime')) return L.fmtDate(new Date(), r.fld);
+    /* the standard date formats update; a custom one (think-cell writes datetime'2''0''2''1' to pin literal
+       text) keeps the text saved with the file */
+    if (r.fld && /^datetime([1-9]|1[0-3])?$/.test(r.fld)) return L.fmtDate(new Date(), r.fld === 'datetime' ? 'datetime1' : r.fld);
     return r.t || '';
   }
   function appendText(el, text) {
@@ -400,7 +447,7 @@
     const wrap = h('div', { class: 'pic' });
     const c = sh.crop || { l: 0, t: 0, r: 0, b: 0 };
     const iw = sh.w / Math.max(0.01, 1 - c.l - c.r), ih = sh.h / Math.max(0.01, 1 - c.t - c.b);
-    const img = h('img', { src: L.media.url(sh.media), alt: sh.alt || '', draggable: 'false' });
+    const img = h('img', { src: L.media.url(sh.img && sh.img.view && L.media.has(sh.img.view) ? sh.img.view : sh.media), alt: sh.alt || '', draggable: 'false' });
     img.style.cssText = `position:absolute;left:${L.round(-c.l * iw, 2)}px;top:${L.round(-c.t * ih, 2)}px;width:${L.round(iw, 2)}px;height:${L.round(ih, 2)}px;max-width:none`;
     const f = [];
     const im = sh.img || {};
@@ -592,7 +639,9 @@
       }
       default: {
         const hasGeom = (sh.fill && sh.fill.t !== 'none') || (sh.line && sh.line.t !== 'none' && sh.line.c) || (sh.geom && sh.geom !== 'rect' && sh.type === 'shape');
-        if (hasGeom) el.appendChild(geomSVG(sh, design, ctx, { interactive }));
+        /* an empty placeholder is only an editing aid: thumbnails, the slide show and printouts leave it out */
+        const emptyPh = sh.ph && (!sh.tx || L.txt.isEmpty(sh.tx)) && ctx.mode !== 'edit' && !opts.deco;
+        if (hasGeom && !emptyPh) el.appendChild(geomSVG(sh, design, ctx, { interactive }));
         if (sh.tx) {
           const empty = L.txt.isEmpty(sh.tx);
           const rect = L.geom.textRect(sh);
@@ -660,7 +709,10 @@
     const isTitle = slide.layout === 'title';
     const lkDeco = slide.lkey && design.layoutDecos ? design.layoutDecos[slide.lkey] : null;
     const lkBg = slide.lkey && design.layoutBgs ? design.layoutBgs[slide.lkey] : null;
-    root.appendChild(R.background(slide.bg || lkBg || (isTitle && design.titleBg) || design.bg, design, W, H));
+    const bgFill = slide.bg || lkBg || (isTitle && design.titleBg) || design.bg;
+    /* shapes filled with "Background" take this slide's background */
+    R.curBg = bgFill && bgFill.t !== 'bg' ? bgFill : null;
+    root.appendChild(R.background(bgFill, design, W, H));
     if (!slide.hideMaster) {
       const layer = h('div', { class: 'sl-master' });
       const deco = lkDeco || (isTitle && design.titleDeco ? design.titleDeco : design.deco) || [];

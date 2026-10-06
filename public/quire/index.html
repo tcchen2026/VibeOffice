@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif;background:#fafafa}[hidden]{display:none!important}img{max-width:100%}</style>
 <title>Quire 2003</title>
+<meta name="theme-color" content="#2a64c8">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&family=Cousine:ital,wght@0,400;0,700;1,400;1,700&family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=Caladea:ital,wght@0,400;0,700;1,400;1,700&family=Gelasio:ital,wght@0,400;0,700;1,400;1,700&display=swap">
@@ -38,11 +41,6 @@ input, select, textarea { font: inherit; color: var(--ink); }
 
 .app { display: flex; flex-direction: column; height: 100%; min-width: 0; }
 /* ---------- title bar ---------- */
-.titlebar { flex: none; height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 8px; color: #fff; font: bold 12px/1 "Trebuchet MS", var(--ui-font);
-  text-shadow: 1px 1px 0 #0a1a4a; background: linear-gradient(#0058EE 0%, #3593FF 4%, #288EFF 6%, #127DFF 8%, #036FFC 10%, #0262EE 14%, #0057E5 20%, #0054E3 24%, #0055EB 56%, #005BF5 66%, #026AFE 76%, #0062EF 86%, #0052D6 92%, #0040AB 94%, #003092 100%);
-  border-bottom: 1px solid #00238a; white-space: nowrap; overflow: hidden; }
-.titlebar .title-text { overflow: hidden; text-overflow: ellipsis; }
-.titlebar .appico { flex: none; filter: drop-shadow(0 0 1px rgba(255,255,255,.6)); }
 /* ---------- command bars ---------- */
 .cmdbars { flex: none; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-bottom: 1px solid #6f93cf; }
 .menurow { display: flex; align-items: center; gap: 8px; padding: 2px 4px 1px; min-height: 24px; overflow-x: auto; scrollbar-width: none; }
@@ -366,8 +364,8 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 .sb-cell.grow { flex: 1; min-width: 0; border-right: 0; box-shadow: none; }
 .sb-cell.flag { color: #7e8ba3; cursor: default; font-weight: bold; padding: 0 5px; }
 .sb-cell.flag.on { color: #000; }
-.sb-cell.btn { cursor: default; }
-.sb-cell.btn:hover { background: var(--menu-hot); }
+.sb-cell.act { cursor: default; }
+.sb-cell.act:hover { background: var(--menu-hot); }
 .sb-spell { display: inline-flex; align-items: center; }
 /* floating toolbars */
 .floatbar { position: absolute; z-index: 60; background: linear-gradient(var(--tb-a), var(--tb-b)); border: 1px solid var(--tb-border); border-radius: 3px; box-shadow: 2px 2px 5px rgba(0,0,0,.35); display: flex; flex-direction: column; }
@@ -523,7 +521,7 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 .app.reading .scroller { background: #fff; }
 .app.reading .pages .pg { box-shadow: 0 0 0 1px #c9c9c9, 2px 2px 6px rgba(0,0,0,.2); }
 .app.reading .pages .pg-hdr, .app.reading .pages .pg-ftr { opacity: 1; }
-.app.fullscreen .titlebar, .app.fullscreen .cmdbars, .app.fullscreen .drawrow, .app.fullscreen .viewbar, .app.fullscreen .statusbar, .app.fullscreen .taskpane, .app.fullscreen .r-corner, .app.fullscreen .ruler-h, .app.fullscreen .ruler-v { display: none !important; }
+.app.fullscreen .cmdbars, .app.fullscreen .drawrow, .app.fullscreen .viewbar, .app.fullscreen .statusbar, .app.fullscreen .taskpane, .app.fullscreen .r-corner, .app.fullscreen .ruler-h, .app.fullscreen .ruler-v { display: none !important; }
 .app.fullscreen .work { grid-template-rows: 0 1fr; grid-template-columns: 0 1fr; }
 .closefs { position: fixed; right: 10px; top: 10px; z-index: 70; }
 /* ---------- printing (standalone tab) ---------- */
@@ -552,7 +550,6 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
   .helpbox { display: none; }
   .tb-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .tb-row::-webkit-scrollbar { display: none; }
-  .titlebar { font-size: 11px; }
   .work.rulers { grid-template-rows: 0 1fr; }
   .work.rulers.vruler { grid-template-columns: 0 1fr; }
 }
@@ -609,7 +606,6 @@ body.bluebg .pages .pc, body.bluebg .pages .pc span { color: #fff !important; }
 </head>
 <body>
 <div id="app" class="app" aria-label="Quire 2003 word processor">
-  <div class="titlebar" id="titlebar"><span id="appicon"></span><span class="title-text" id="titletext">Quire 2003</span></div>
   <div class="cmdbars">
     <div class="menurow" id="menurow"></div>
     <div class="toolbars" id="toolbars"></div>
@@ -632,6 +628,7 @@ body.bluebg .pages .pc, body.bluebg .pages .pc span { color: #fff !important; }
   <div class="drawrow" id="drawrow"></div>
   <div class="statusbar" id="statusbar"></div>
 </div>
+<script src="../common/suite.js"></script>
 <script src="js/core.js"></script>
 <script src="js/zip.js"></script>
 <script src="js/crypto.js"></script>
