@@ -739,6 +739,7 @@
     let zip;
     let password = null;
     try { zip = await L.zip.read(buffer); } catch (e) {
+      if (e && e.code === 'ole' && !e.encrypted) e.message = 'This is an older binary PowerPoint 97–2003 file (.ppt) with a .pptx name. Save it as .pptx in PowerPoint, Keynote, Google Slides or LibreOffice first.';
       if (!(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
       /* a presentation with a password to open: decrypt it here, in the browser */
       if (!opts.password) { const err = new Error('This presentation is password-protected.'); err.code = 'password'; throw err; }

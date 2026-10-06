@@ -59,6 +59,33 @@ Placeholder text says what goes where (Quire's are click-to-replace fields). The
 
 which opens every app and template in Chromium and writes `public/common/templates.json` and `public/<app>/templates/<id>.jpg` (`blank.jpg` for Blank).
 
+## Shared code (public/common/)
+
+One copy of everything the three apps share; a change here is a change in every app, so check all three. Classic scripts like the apps' own, attaching to `window.L`, with the Node-safe wrapper `(function (root) { const L = root.L || (root.L = {}); … })(typeof window !== 'undefined' ? window : globalThis)` (Ledger's tests load some of them in Node).
+
+| File | What | Loaded by |
+|---|---|---|
+| `luna.css` | the Office 2003 Luna Blue look: palette, chrome, menus, toolbars, panes, dialogs, controls; each app's CSS follows and wins | all |
+| `core.js` | DOM helpers, colours, units, events, storage, file saving, PDF writer, media store, fonts and substitutes, symbol bullets | all |
+| `ui.js` | commands, menus, toolbars, combo boxes, dialogs, colour menus, password and prompt boxes | all |
+| `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |
+| `zip.js`, `sha.js`, `crypto.js` | ZIP read/write; SHA; ECMA-376 encryption (password-protected files) | all |
+| `geometry.js`, `metafile.js` | AutoShape presets; WMF/EMF player | all |
+| `charts.js` | chart model, SVG renderer, chart data dialog (Lectern's `chart-draw.js` adds the v2 renderer) | all |
+| `numfmt.js` | Excel number formats | Ledger, Lectern |
+| `dml.js` | DrawingML helpers | Quire, Ledger |
+| `spell.js` | spelling engine: word lists (`dict/`), checking, suggestions, custom dictionary, Ignore All | Quire, Ledger |
+| `clipart.js` | built-in clip art | Quire, Lectern |
+| `suite.js`, `dict/`, `templates.json` | the suite: Start Center services; word lists; template gallery | — |
+
+What each app provides:
+
+- before `core.js`: `<script>window.L = { APP_ID: 'quire', APP_NAME: 'Quire', APP: 'Quire 2003' };</script>`. `APP_ID` prefixes the app's settings in localStorage (`quire.…`), so it must never change.
+- in its `app.js`, at load: `L.icons.app` (its icon), `ui.hooks = { beforeExec, refocus, commitEdit }` (its editor around commands, toolbar boxes and dialogs); Lectern also `ui.schemeColors` / `ui.currentDesign` (theme colours in colour menus) and PowerPoint's `L.SIZE_LIST`.
+- a spelling UI sets `L.spell.refreshSoon` if it draws underlines (Quire).
+
+Script order: `suite.js`, the app config, `core.js`, then the libraries and the app's own scripts as listed in each `index.html` (Ledger's from `tools/ledger/build/make.py`, where `'common/x'` means `public/common/x.js`).
+
 ## Recent Files
 
 IndexedDB database `vibeoffice`, store `recent`, keyed `<app>:<file name>`: `{ key, app, name, size, time, file: Blob, thumb: Blob }`. The browser has no file paths, so the list keeps a **copy of the file**: the one opened, then the one last saved. Two files with the same name in different folders share an entry. At most 30 entries; files over 50 MB are not kept. All other pages are told about changes over the `BroadcastChannel` `vibeoffice`.

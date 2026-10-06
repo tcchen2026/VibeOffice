@@ -5,6 +5,18 @@
   const { h } = L;
   const ui = L.ui;
 
+  /* original application icon: a folded quire of pages with a ribbon marker */
+  L.icons.app = function (size) {
+    const sz = size || 16;
+    return `<svg class="appico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h7l3 3v10h-10z" fill="#fff" stroke="#1c4a9c"/><path d="M10.5 1.5v3h3" fill="#d6e2f7" stroke="#1c4a9c"/><path d="M1.5 4.5h7v9h-7z" fill="#2b5fbf" stroke="#173f86"/><circle cx="5" cy="8.8" r="2.2" fill="none" stroke="#fff" stroke-width="1.1"/><path d="M5.7 9.8l1.6 1.9" stroke="#fff" stroke-width="1.2"/><path d="M10 7.5h2.5M10 9.5h2.5M10 11.5h2.5" stroke="#7a8aa6"/></svg>`;
+  };
+  /* the editor around commands, toolbar boxes and dialogs (common/ui.js) */
+  ui.hooks = {
+    beforeExec() { if (L.ed && L.ed.syncSel && !L.ed.objSel) L.ed.syncSel(); },
+    refocus() { if (L.ed) L.ed.refocus(); },
+    commitEdit() { if (L.ed && L.ed.textSave) L.ed.textSave(); },
+  };
+
   const DEFAULT_OPTS = {
     statusBar: true, ruler: true, vruler: true, taskOpen: true, startupPane: true, docMap: false, thumbs: false,
     toolbars: { standard: true, formatting: true, drawing: true, tables: false, reviewing: 'auto', picture: 'auto', outlining: 'auto', headerFooter: 'auto', mailMerge: false, wordart: 'auto' },

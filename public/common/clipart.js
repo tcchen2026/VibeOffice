@@ -1,7 +1,7 @@
-/* Quire — built-in clip art (original vector drawings, 64×64). */
-(function () {
+/* VibeOffice — built-in clip art (original vector drawings, 64×64), used by Quire and Lectern. */
+(function (root) {
   'use strict';
-  const L = window.L;
+  const L = root.L || (root.L = {});
   const O = 'stroke="#222" stroke-width="2" stroke-linejoin="round"';
   const items = [
     ['Light bulb', 'idea light bulb think innovation creative', `<path d="M32 6c-11 0-19 8-19 18 0 7 4 11 7 15 2 3 3 5 3 8h18c0-3 1-5 3-8 3-4 7-8 7-15 0-10-8-18-19-18z" fill="#ffe259" ${O}/><path d="M24 22a9 9 0 0 1 8-8" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><rect x="23" y="47" width="18" height="5" fill="#b9c2cc" ${O}/><rect x="24" y="52" width="16" height="4" fill="#9aa3ad" ${O}/><path d="M28 56h8l-2 4h-4z" fill="#555" ${O}/>`],
@@ -48,4 +48,4 @@
       return new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
     },
   };
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

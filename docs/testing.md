@@ -34,7 +34,7 @@ Templates: `node tools/templates.mjs` opens every template (`<app>/?template=<id
 
 ## Ledger: tools/ledger/test/
 
-The engine and the file readers and writers load in Node through `load.js`, so most checks run without a browser.
+The engine and the file readers and writers load in Node through `load.js` (the shared ones from `public/common/`; a missing file is an error), so most checks run without a browser.
 
 | | |
 |---|---|

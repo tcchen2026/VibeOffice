@@ -1,6 +1,6 @@
-/* SHA implementations in js/sha.js against WebCrypto. Usage: node sha.test.js */
+/* SHA implementations in public/common/sha.js against WebCrypto. Usage: node sha.test.js */
 globalThis.L = globalThis.L || {};
-require('../../../public/ledger/js/sha.js');
+require('../../../public/common/sha.js');
 const L = globalThis.L;
 const hex = (u) => Buffer.from(u).toString('hex');
 (async () => {

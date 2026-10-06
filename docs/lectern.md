@@ -9,17 +9,17 @@ The app is `public/lectern/` (`python3 tools/serve.py`, then http://127.0.0.1:87
 | File | Responsibility |
 |---|---|
 | `index.html` | Window chrome, Luna CSS, slide rendering styles, script order |
-| `js/core.js` | Utilities, colors, fonts, file I/O, media store, PDF writer |
-| `js/sha.js`, `js/crypto.js` | Password-protected presentations: ECMA-376 Agile and Standard encryption (AES, SHA-1/SHA-2), read and write |
-| `js/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
-| `js/geometry.js` | 92 AutoShape presets, adjust handles, text rectangles, connectors |
+| `../common/core.js` | Utilities, colors, fonts, file I/O, media store, PDF writer (shared, see docs/suite.md) |
+| `../common/sha.js`, `../common/crypto.js` | Password-protected presentations: ECMA-376 Agile and Standard encryption (AES, SHA-1/SHA-2), read and write |
+| `../common/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
+| `../common/geometry.js` | 92 AutoShape presets, adjust handles, text rectangles, connectors |
 | `js/model.js` | Presentation model, 14 design templates, 21 slide layouts, undo history |
 | `js/render.js` | DOM/SVG renderer for slides, fills, patterns, gradients, WordArt |
-| `js/metafile.js` | WMF/EMF player, so old clip art, logos and pasted Excel/Visio graphics display |
-| `js/numfmt.js` | Excel number formats (dates, currency, percentages, sections) for chart axes and data labels |
-| `js/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types) |
+| `../common/metafile.js` | WMF/EMF player, so old clip art, logos and pasted Excel/Visio graphics display |
+| `../common/numfmt.js` | Excel number formats (dates, currency, percentages, sections) for chart axes and data labels |
+| `../common/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types with `js/chart-draw.js`) |
 | `js/chart-draw.js` | Drawing of charts that come from PowerPoint 2007 and later (see *Charts* below) |
-| `js/ui.js` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips |
+| `../common/ui.js`, `../common/icons.js`, `../common/clipart.js`, `../common/luna.css` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips |
 | `js/editor.js` | Slide editing surface: select, move, resize, rotate, crop, draw, grid |
 | `js/textedit.js` | Rich text editing, bullets, levels, AutoCorrect, tables |
 | `js/dialogs.js` | Font, Bullets, Format AutoShape, Fill Effects, Header & Footer, Options (with Security), etc. |

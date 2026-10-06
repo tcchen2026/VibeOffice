@@ -1,11 +1,19 @@
-/* Lectern — UI toolkit: commands, menus, toolbars, dialogs, pickers.
+/* VibeOffice — UI toolkit shared by Quire, Ledger and Lectern: commands, menus, toolbars, dialogs, pickers.
  * Styled after the Office 2003 "Luna" command bars.
  */
-(function () {
+(function (root) {
   'use strict';
-  const L = window.L;
+  const L = root.L || (root.L = {});
   const { h } = L;
   const ui = (L.ui = {});
+
+  /* What the app's editor does around commands, toolbar boxes and dialogs; each app fills these in (app.js).
+   * beforeExec: bring the selection model up to date; refocus: give the keyboard back to the document;
+   * commitEdit: finish an edit in progress before a toolbar box takes the focus. */
+  ui.hooks = { beforeExec() {}, refocus() {}, commitEdit() {} };
+  /* Theme colours for the colour menus (Lectern): schemeColors(design) -> [{ ref, hex, tip }], currentDesign() */
+  ui.schemeColors = null;
+  ui.currentDesign = null;
 
   /* ---------- command registry ---------- */
   ui.cmds = {};
@@ -14,13 +22,17 @@
     const c = ui.cmds[id];
     if (!c) { console.warn('unknown command', id); return; }
     if (c.enabled && !c.enabled()) return;
-    try { c.run(arg, ev); } catch (e) { console.error(e); ui.msg('That action could not be completed: ' + (e && e.message ? e.message : e), { icon: 'warn' }); }
+    ui.hooks.beforeExec();
+    let r;
+    try { r = c.run(arg, ev); } catch (e) { console.error(e); ui.msg('That action could not be completed: ' + (e && e.message ? e.message : e), { icon: 'warn' }); }
     ui.refresh();
+    return r;
   };
   ui.enabled = (id) => { const c = ui.cmds[id]; return !!c && (!c.enabled || !!c.enabled()); };
   ui.checked = (id) => { const c = ui.cmds[id]; return !!c && !!c.checked && !!c.checked(); };
-  const stripAmp = (s) => String(s || '').replace(/&(.)/g, '$1');
-  const ampHTML = (s) => L.esc(s || '').replace(/&amp;(.)/g, '<u>$1</u>');
+  const stripAmp = (s) => String(s || '').replace(/&&/g, '\u0000').replace(/&(\S)/g, '$1').replace(/\u0000/g, '&');
+  /* "&x" marks the access key; "&&" and "& " stay a literal ampersand */
+  const ampHTML = (s) => L.esc(s || '').replace(/&amp;&amp;/g, '\u0000').replace(/&amp;(\S)/g, '<u>$1</u>').replace(/\u0000/g, '&amp;');
   ui.stripAmp = stripAmp;
 
   /* ---------- tooltips ---------- */
@@ -39,17 +51,19 @@
     tipEl.style.top = Math.max(2, top) + 'px';
   }
   function hideTip() { clearTimeout(tipTimer); tipTarget = null; if (tipEl) tipEl.hidden = true; }
-  document.addEventListener('pointerover', (e) => {
-    const t = e.target.closest && e.target.closest('[data-tip]');
-    if (t === tipTarget) return;
-    hideTip();
-    if (!t || e.pointerType === 'touch') return;
-    tipTarget = t;
-    const x = e.clientX, y = e.clientY;
-    tipTimer = setTimeout(() => showTip(t, x, y), 650);
-  });
-  document.addEventListener('pointerdown', hideTip, true);
-  document.addEventListener('keydown', hideTip, true);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('pointerover', (e) => {
+      const t = e.target.closest && e.target.closest('[data-tip]');
+      if (t === tipTarget) return;
+      hideTip();
+      if (!t || e.pointerType === 'touch') return;
+      tipTarget = t;
+      const x = e.clientX, y = e.clientY;
+      tipTimer = setTimeout(() => showTip(t, x, y), 650);
+    });
+    document.addEventListener('pointerdown', hideTip, true);
+    document.addEventListener('keydown', hideTip, true);
+  }
   ui.hideTip = hideTip;
 
   /* ---------- menus ---------- */
@@ -93,7 +107,7 @@
       if (it.custom) { const c = it.custom(() => ui.closeMenus()); el.appendChild(c); return; }
       const disabled = it.disabled || (it.enabled && !it.enabled());
       const checked = it.checked && it.checked();
-      const row = h('div', { class: 'm-item' + (disabled ? ' dis' : '') + (checked ? ' chk' : '') + (it.sub ? ' has-sub' : ''), role: 'menuitem', 'aria-disabled': disabled ? 'true' : null });
+      const row = h('div', { class: 'm-item' + (disabled ? ' dis' : '') + (checked ? ' chk' : '') + (it.sub ? ' has-sub' : '') + (it.bold ? ' bold' : ''), role: 'menuitem', 'aria-disabled': disabled ? 'true' : null });
       const icoHTML = it.html ? it.html : it.icon ? L.icons.get(it.icon) : checked ? (it.radio ? '<span class="m-radio">●</span>' : '<span class="m-check">✓</span>') : '';
       row.appendChild(h('span', { class: 'm-ico' + (checked && it.icon ? ' on' : ''), html: icoHTML }));
       row.appendChild(h('span', { class: 'm-lbl', html: ampHTML(it.label) }));
@@ -153,13 +167,15 @@
     return el;
   };
   ui.contextMenu = (e, items) => { e.preventDefault(); ui.openMenu(items, { x: e.clientX, y: e.clientY }); };
-  document.addEventListener('pointerdown', (e) => {
-    if (!openStack.length) return;
-    if (e.target.closest('.menu') || e.target.closest('.mb-item')) return;
-    ui.closeMenus();
-  }, true);
-  window.addEventListener('blur', () => ui.closeMenus());
-  window.addEventListener('resize', () => ui.closeMenus());
+  if (typeof document !== 'undefined') {
+    document.addEventListener('pointerdown', (e) => {
+      if (!openStack.length) return;
+      if (e.target.closest('.menu') || e.target.closest('.mb-item')) return;
+      ui.closeMenus();
+    }, true);
+    window.addEventListener('blur', () => ui.closeMenus());
+    window.addEventListener('resize', () => ui.closeMenus());
+  }
   ui.menuOpen = () => openStack.length > 0;
   /* menu keyboard routing; returns true if handled */
   ui.menuKey = (e) => {
@@ -215,7 +231,7 @@
     const label = opts.label != null ? opts.label : c.tbLabel;
     const b = h('button', { class: 'tb-btn' + (label ? ' with-label' : ''), type: 'button', 'data-cmd': id, 'aria-label': stripAmp(c.label || id), 'data-tip': stripAmp(c.tip || c.label || id) + (c.key ? ` (${c.key})` : '') });
     b.innerHTML = (c.icon || opts.icon ? L.icons.get(opts.icon || c.icon) : '') + (label ? `<span class="tb-lbl">${ampHTML(label)}</span>` : '');
-    b.addEventListener('pointerdown', (e) => e.preventDefault()); /* keep text selection in the slide */
+    b.addEventListener('pointerdown', (e) => e.preventDefault()); /* keep the focus and selection where they are */
     b.addEventListener('click', (e) => ui.exec(id, opts.arg, e));
     tbButtons.push(b);
     return b;
@@ -249,20 +265,20 @@
     wrap.append(inp, btn);
     const commit = () => { o.onChange(inp.value); inp.blur(); };
     inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); commit(); if (L.ed) L.ed.refocus(); }
-      if (e.key === 'Escape') { e.preventDefault(); inp.value = o.value(); inp.blur(); if (L.ed) L.ed.refocus(); }
+      if (e.key === 'Enter') { e.preventDefault(); commit(); ui.hooks.refocus(); }
+      if (e.key === 'Escape') { e.preventDefault(); inp.value = o.value(); inp.blur(); ui.hooks.refocus(); }
       e.stopPropagation();
     });
-    inp.addEventListener('focus', () => { inp.select(); wrap.classList.add('focus'); if (L.ed && L.ed.textSave) L.ed.textSave(); });
+    inp.addEventListener('focus', () => { inp.select(); wrap.classList.add('focus'); ui.hooks.commitEdit(); });
     inp.addEventListener('blur', () => wrap.classList.remove('focus'));
     btn.addEventListener('pointerdown', (e) => e.preventDefault());
     btn.addEventListener('click', () => {
-      if (L.ed && L.ed.textSave) L.ed.textSave();
+      ui.hooks.commitEdit();
       const r = wrap.getBoundingClientRect();
       const opts = o.options();
       ui.openMenu(opts.map((v) => ({
         label: String(v).replace(/&/g, '&&'),
-        html: '', run: () => { inp.value = v; o.onChange(String(v)); if (L.ed) L.ed.refocus(); },
+        html: '', run: () => { inp.value = v; o.onChange(String(v)); ui.hooks.refocus(); },
         checked: () => String(v) === String(o.value()),
         style: o.preview ? o.preview(v) : null,
       })), { left: r.left, bottom: r.bottom }, { cls: 'combo-list' + (o.listCls ? ' ' + o.listCls : '') });
@@ -354,7 +370,10 @@
       titleBar.addEventListener('pointerup', up);
     });
     const entry = { overlay, dlg, keys: null };
-    dlgStack.push(entry);
+    if (opts.modeless) {
+      overlay.classList.add('modeless');
+      dlg.addEventListener('keydown', (e) => { entry.keys(e); e.stopPropagation(); });   // keys stay in a modeless dialog
+    } else dlgStack.push(entry);
     entry.keys = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); const ci = (opts.buttons || []).findIndex((b) => b.cancel || /^cancel$|^close$/i.test(stripAmp(b.label))); if (ci >= 0) btns[ci].click(); else close(null); return true; }
       if (e.key === 'Enter' && !e.shiftKey && !(e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.isContentEditable || e.target.tagName === 'SELECT'))) {
@@ -377,7 +396,7 @@
       if (opts.onClose) opts.onClose(i);
       result(i);
       if (prevFocus && prevFocus.focus && document.contains(prevFocus)) { try { prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
-      else if (L.ed) L.ed.refocus();
+      else ui.hooks.refocus();
     }
     setTimeout(() => {
       const first = opts.focus ? (typeof opts.focus === 'string' ? L.$(opts.focus, dlg) : opts.focus) : L.$('input:not([type=checkbox]):not([type=radio]),select,textarea', body) || btns.find((b, i) => opts.buttons && opts.buttons[i] && opts.buttons[i].primary) || btns[0];
@@ -404,18 +423,19 @@
     const d = ui.dialog({ title: o.title || L.APP, body, width: o.width || 380, buttons: labels.map((l, i) => ({ label: l, primary: i === (o.def || 0), cancel: /cancel|^no$/i.test(stripAmp(l)) })) });
     return d.done;
   };
-  /** the password to open a protected file: resolves to the password, or null when cancelled */
+  ui.prompt = function (label, value, title) {
+    const inp = h('input', { type: 'text', id: 'prompt-in', value: value || '', style: 'width:100%' });
+    let val = null;
+    const d = ui.dialog({ title: title || L.APP, body: h('div', { class: 'col' }, h('label', { for: 'prompt-in', text: label }), inp), buttons: [{ label: 'OK', primary: true, onClick: () => { val = inp.value; } }, { label: 'Cancel' }] });
+    return d.done.then(() => val);
+  };
+
+  /** the "Password" box for opening a protected file; resolves to the password or null. wrong: after a wrong one */
   ui.password = function (fileName, wrong) {
     const inp = h('input', { type: 'password', id: 'pw-in', value: '', style: 'width:100%', autocomplete: 'off' });
     let val = null;
     const d = ui.dialog({ title: 'Password', width: 340, body: h('div', { class: 'col' }, h('div', { text: wrong ? 'The password is incorrect. Try again.' : `'${fileName}' is protected.` }), h('label', { for: 'pw-in', text: 'Enter password to open file' }), inp), buttons: [{ label: 'OK', primary: true, onClick: () => { val = inp.value; } }, { label: 'Cancel' }] });
     setTimeout(() => inp.focus(), 0);
-    return d.done.then(() => val);
-  };
-  ui.prompt = function (label, value, title) {
-    const inp = h('input', { type: 'text', id: 'prompt-in', value: value || '', style: 'width:100%' });
-    let val = null;
-    const d = ui.dialog({ title: title || L.APP, body: h('div', { class: 'col' }, h('label', { for: 'prompt-in', text: label }), inp), buttons: [{ label: 'OK', primary: true, onClick: () => { val = inp.value; } }, { label: 'Cancel' }] });
     return d.done.then(() => val);
   };
 
@@ -499,35 +519,39 @@
   const recent = [];
   ui.addRecentColor = (c) => { if (!c || c[0] !== '#') return; const i = recent.indexOf(c); if (i >= 0) recent.splice(i, 1); recent.unshift(c); recent.length = Math.min(recent.length, 8); };
   /**
-   * Colour drop-down. o: {mode:'fill'|'line'|'font'|'plain', design, noneLabel, effects:bool, automatic:bool}
+   * Colour drop-down. o: {mode:'fill'|'line'|'font'|'plain', design, noneLabel, effects:bool, automatic:bool,
+   *   scheme:bool (theme colours; on when the app provides ui.schemeColors), grid:bool (the standard colours too)}
    * onPick(value) where value is a colour ('#hex' or scheme ref), {none:true}, {auto:true}, {more:true}, {effects:true}
    */
   ui.colorMenu = function (anchor, o, onPick) {
     o = o || {};
-    const design = o.design || (L.ed ? L.model.design(L.pres, L.ed.slide()) : null);
+    const design = o.design || (ui.currentDesign ? ui.currentDesign() : null);
+    const scheme = o.scheme != null ? !!o.scheme : !!ui.schemeColors;
     const r = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : anchor;
     const panel = (close) => {
       const el = h('div', { class: 'color-panel' });
       if (o.mode === 'fill' || o.mode === 'line') el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'fill' ? 'No Fill' : 'No Line', onclick: () => { close(); onPick({ none: true }); } }));
       if (o.mode === 'font' || o.automatic) el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: 'Automatic', onclick: () => { close(); onPick({ auto: true }); } }));
       el.appendChild(h('div', { class: 'cp-sep' }));
-      const row = h('div', { class: 'cp-row' });
-      for (const sc of L.model.schemeRow(design)) {
-        const b = h('button', { class: 'cp-sw', type: 'button', style: `background:${sc.hex}`, 'data-tip': L.model.SCHEME_SLOTS.find((x) => x[0] === ({ bg1: 'lt1', tx1: 'dk1', bg2: 'lt2', tx2: 'dk2' }[sc.ref] || sc.ref))[1], 'aria-label': sc.ref });
-        b.addEventListener('click', () => { close(); onPick(sc.ref); });
-        row.appendChild(b);
+      if (scheme && ui.schemeColors) {
+        const row = h('div', { class: 'cp-row' });
+        for (const sc of ui.schemeColors(design)) {
+          const b = h('button', { class: 'cp-sw', type: 'button', style: `background:${sc.hex}`, 'data-tip': sc.tip || null, 'aria-label': sc.tip || sc.ref });
+          b.addEventListener('click', () => { close(); onPick(sc.ref); });
+          row.appendChild(b);
+        }
+        el.appendChild(row);
       }
-      el.appendChild(row);
       if (recent.length) {
         el.appendChild(h('div', { class: 'cp-sep' }));
         const rr = h('div', { class: 'cp-row' });
         for (const c of recent) rr.appendChild(h('button', { class: 'cp-sw', type: 'button', style: `background:${c}`, 'aria-label': c, onclick: () => { close(); onPick(c); } }));
         el.appendChild(rr);
       }
-      if (o.mode === 'plain' || o.grid) {
-        el.appendChild(h('div', { class: 'cp-sep' }));
+      if (o.mode === 'plain' || o.grid || !scheme) {
+        if (scheme) el.appendChild(h('div', { class: 'cp-sep' }));
         const g = h('div', { class: 'cp-grid' });
-        for (const c of L.color.STANDARD) g.appendChild(h('button', { class: 'cp-sw', type: 'button', style: `background:${c}`, 'aria-label': c, onclick: () => { close(); ui.addRecentColor(c); onPick(c); } }));
+        for (const c of L.color.STANDARD) g.appendChild(h('button', { class: 'cp-sw', type: 'button', style: `background:${c}`, 'aria-label': c, 'data-tip': ui.colorName(c), onclick: () => { close(); ui.addRecentColor(c); onPick(c); } }));
         el.appendChild(g);
       }
       el.appendChild(h('div', { class: 'cp-sep' }));
@@ -537,6 +561,8 @@
     };
     ui.openMenu([{ custom: panel }], { left: r.left, bottom: r.bottom }, { cls: 'color-menu' });
   };
+  const CNAMES = { '#000000': 'Black', '#993300': 'Brown', '#333300': 'Olive Green', '#003300': 'Dark Green', '#003366': 'Dark Teal', '#000080': 'Dark Blue', '#333399': 'Indigo', '#333333': 'Gray-80%', '#800000': 'Dark Red', '#FF6600': 'Orange', '#808000': 'Dark Yellow', '#008000': 'Green', '#008080': 'Teal', '#0000FF': 'Blue', '#666699': 'Blue-Gray', '#808080': 'Gray-50%', '#FF0000': 'Red', '#FF9900': 'Light Orange', '#99CC00': 'Lime', '#339966': 'Sea Green', '#33CCCC': 'Aqua', '#3366FF': 'Light Blue', '#800080': 'Violet', '#969696': 'Gray-40%', '#FF00FF': 'Pink', '#FFCC00': 'Gold', '#FFFF00': 'Yellow', '#00FF00': 'Bright Green', '#00FFFF': 'Turquoise', '#00CCFF': 'Sky Blue', '#993366': 'Plum', '#C0C0C0': 'Gray-25%', '#FF99CC': 'Rose', '#FFCC99': 'Tan', '#FFFF99': 'Light Yellow', '#CCFFCC': 'Light Green', '#CCFFFF': 'Light Turquoise', '#99CCFF': 'Pale Blue', '#CC99FF': 'Lavender', '#FFFFFF': 'White' };
+  ui.colorName = (c) => CNAMES[String(c).toUpperCase()] || String(c).toUpperCase();
   /** "Colors" dialog with Standard and Custom tabs. cb(hex|null) */
   ui.moreColors = function (initial, cb) {
     let cur = initial && initial[0] === '#' ? initial : '#3366FF';
@@ -593,4 +619,4 @@
     if (on) { if (!b) { b = h('div', { class: 'busy' }, h('div', { class: 'busy-box' }, h('span', { class: 'busy-spin' }), h('span', { class: 'busy-t' }))); document.body.appendChild(b); } b.querySelector('.busy-t').textContent = text || 'Working...'; b.hidden = false; }
     else if (b) b.hidden = true;
   };
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

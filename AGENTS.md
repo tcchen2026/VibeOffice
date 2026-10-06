@@ -8,7 +8,7 @@ A static web office suite in the style of Office 2003 (Luna Blue) that opens and
 | Ledger | `public/ledger/` | Spreadsheet | .xlsx/.xlsm/.xltx, CSV/text, XML Spreadsheet 2003, HTML; PDF out |
 | Lectern | `public/lectern/` | Presentations | .pptx/.ppsx/.potx; PDF, PNG, HTML out |
 
-Each app is classic `<script>` files (no ES modules) that attach to one global namespace, `window.L` (also `window.Quire` / `window.Ledger` / `window.Lectern`), loaded in the order listed in its `index.html`. `public/common/` holds what the apps share: `suite.js` (`window.VO`: which app opens which file, handing files from the Start Center to an app, Recent Files, the service worker; see docs/suite.md) and the offline proofing dictionaries (`common/dict/`).
+Each app is classic `<script>` files (no ES modules) that attach to one global namespace, `window.L` (also `window.Quire` / `window.Ledger` / `window.Lectern`), loaded in the order listed in its `index.html`. `public/common/` holds what the apps share: the libraries and the Luna stylesheet (one copy each: core, ui, icons, zip, sha, crypto, geometry, metafile, charts, numfmt, dml, spell engine, clipart, `luna.css`), `suite.js` (`window.VO`: launching apps, Recent Files, the service worker) and the proofing dictionaries (`common/dict/`). See docs/suite.md.
 
 ## Docs
 
@@ -29,7 +29,7 @@ Keep them current: a change to an app's features, formats or source layout updat
 - Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`. (Open gap: the three apps still load the metric-compatible fonts from Google Fonts.)
 - Compatibility is measured against files other people wrote (public test corpora), compared with outside references (the page or cell values the authoring application stored, LibreOffice, openpyxl, python-pptx), and the result is written down in the app's doc with numbers.
 - Saved files must open in the authoring application's newer versions and in LibreOffice; what an app cannot edit it keeps and writes back unchanged.
-- Shared modules (`core`, `zip`, `geometry`, `metafile`, `charts`, `ui`, `icons`, `dml`, `crypto`, `sha`, `numfmt`, `spell`, …) exist as one copy per app and have drifted slightly. A fix to one copy is checked against the others; the direction is to merge them into `public/common/`.
+- Shared code lives once, in `public/common/`; never copy it into an app. A change there is checked in all three apps (load each, and screenshot what it touches). What stays app-specific goes through the hooks in docs/suite.md (app config, `ui.hooks`, `L.icons.app`, …), not through app names inside common code.
 
 ## Tools (details in docs/testing.md)
 

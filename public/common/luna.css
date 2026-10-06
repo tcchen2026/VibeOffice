@@ -1,3 +1,5 @@
+/* VibeOffice — the Office 2003 Luna Blue look shared by Quire, Ledger and Lectern: palette, window chrome,
+ * menus, toolbars, task panes, dialogs, form controls, status bar. Each app's own CSS comes after it and wins. */
 [hidden] { display: none !important; }
 :root {
   color-scheme: light;
@@ -211,7 +213,6 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .field > label:first-child { min-width: 78px; }
 .field.wide > label:first-child { min-width: 110px; }
 .field.narrow > label:first-child { min-width: 50px; }
-.field > input[type=text], .field > input:not([type]), .field > textarea { flex: 1 1 140px; min-width: 0; width: auto !important; }
 .row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
 .row > * { min-width: 0; }
 .col { display: flex; flex-direction: column; gap: 4px; }

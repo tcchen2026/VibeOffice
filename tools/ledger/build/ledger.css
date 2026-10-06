@@ -1,3 +1,5 @@
+/* text boxes in a field stretch to the dialog's width (Ledger's and Quire's dialogs; Lectern's set their own widths) */
+.field > input[type=text], .field > input:not([type]), .field > textarea { flex: 1 1 140px; min-width: 0; width: auto !important; }
 /* ---------- Ledger: formula bar ---------- */
 .fbar { flex: none; display: flex; align-items: stretch; gap: 0; min-height: 22px; padding: 2px 3px 2px 2px; background: linear-gradient(var(--dock-a), var(--dock-b)); border-bottom: 1px solid #6f93cf; position: relative; z-index: 20; }
 .namebox { flex: none; display: flex; width: 120px; height: 20px; border: 1px solid #7B9EBD; background: #fff; }

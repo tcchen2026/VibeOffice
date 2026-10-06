@@ -1,10 +1,10 @@
-/* Quire — ZIP container engine (read + write), no dependencies.
- * Uses the browser's Compression Streams when present and ships a small
- * pure-JS inflater so .docx files open in any modern browser.
+/* VibeOffice — ZIP container engine (read + write), no dependencies; shared by Quire, Ledger and Lectern.
+ * Uses the browser's Compression Streams when present and ships a small pure-JS inflater, so Office
+ * Open XML packages open in any modern browser (and in Node, for the tests).
  */
-(function () {
+(function (root) {
   'use strict';
-  const L = window.L;
+  const L = root.L || (root.L = {});
   const te = new TextEncoder();
   const td = new TextDecoder('utf-8');
 
@@ -275,7 +275,7 @@
         const probe = new TextDecoder('utf-16le').decode(u8.subarray(0, Math.min(u8.length, 1 << 20)));
         const enc = /EncryptedPackage/.test(probe);
         const err = new Error(enc
-          ? 'This document is password-protected. Remove the password in Word (Tools ▸ Options ▸ Security, or File ▸ Info ▸ Protect Document), save it, then open it here.'
+          ? 'This file is password-protected.'
           : 'This is a binary Office 97–2003 file, not an Office Open XML package.');
         err.code = 'ole';
         err.encrypted = enc;
@@ -358,4 +358,4 @@
   }
 
   L.zip = { read, write, crc32, inflateRawJS, encode: (s) => te.encode(s), decode: (b) => td.decode(b) };
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

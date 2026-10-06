@@ -1,11 +1,12 @@
-/* Quire — opening password-protected Word documents (ECMA-376 Part 2 "Office Document Cryptography").
- * An encrypted .docx is an OLE compound file holding EncryptionInfo and EncryptedPackage streams.
- * Supported: Agile encryption (Word 2010 and later, AES with SHA-1/SHA-256/SHA-384/SHA-512) and
- * Standard encryption (Word 2007, AES-ECB with SHA-1). Hashing uses WebCrypto; AES is done here so
- * that unpadded CBC and ECB blocks can be decrypted directly. Nothing leaves the browser. */
-(function () {
+/* VibeOffice — password-protected Office files (ECMA-376 Part 2 "Office Document Cryptography"):
+ * .docx, .xlsx and .pptx alike. An encrypted package is an OLE compound file holding EncryptionInfo and
+ * EncryptedPackage streams. Supported: Agile encryption (Office 2010 and later, AES with SHA-1/SHA-256/
+ * SHA-384/SHA-512) and Standard encryption (Office 2007, AES-ECB with SHA-1). The password hashing loop uses
+ * sha.js when it is loaded (fast), else WebCrypto; AES is done here so that unpadded CBC and ECB blocks can
+ * be decrypted directly. Nothing leaves the browser. */
+(function (root) {
   'use strict';
-  const L = window.L;
+  const L = root.L || (root.L = {});
   const OC = (L.officeCrypto = {});
 
   /* ================= compound file (CFB) reader ================= */
@@ -50,11 +51,11 @@
       const ed = new DataView(dirBytes.buffer, dirBytes.byteOffset + p, 128);
       entries.push({ name, type, start: ed.getUint32(116, true), size: ed.getUint32(120, true) });
     }
-    const root = entries[0];
+    const rootEntry = entries[0];   // the compound file's root storage
     let mini = null, miniFat = null;
     const getMini = () => {
       if (!mini) {
-        mini = readChain(root.start, root.size);
+        mini = readChain(rootEntry.start, rootEntry.size);
         const mf = miniFatStart < 0xfffffffa ? readChain(miniFatStart, null) : new Uint8Array(0);
         miniFat = new Uint32Array(mf.buffer, mf.byteOffset, mf.byteLength >> 2);
       }
@@ -149,6 +150,13 @@
   /** the password hash iterated spinCount times (the slow part, by design) */
   async function spin(alg, salt, password, count) {
     let h = await digest(alg, salt, utf16(password));
+    /* the synchronous hashes in sha.js run the loop several times faster than a promise per round */
+    const f = L.sha && L.sha.get(alg);
+    if (f) {
+      const b = new Uint8Array(4 + h.length);
+      for (let i = 0; i < count; i++) { b[0] = i & 255; b[1] = (i >>> 8) & 255; b[2] = (i >>> 16) & 255; b[3] = i >>> 24; b.set(h, 4); h = f(b); }
+      return h;
+    }
     for (let i = 0; i < count; i++) h = await digest(alg, u32(i), h);
     return h;
   }
@@ -156,11 +164,16 @@
   /* ================= the two encryption schemes ================= */
   async function agile(info, pkg, password) {
     const xml = new TextDecoder('utf-8').decode(info.subarray(8));
-    const x = new DOMParser().parseFromString(xml, 'application/xml');
+    const x = L.xml ? L.xml.parse(xml).parentNode : new DOMParser().parseFromString(xml, 'application/xml');
     const byName = (n) => Array.from(x.getElementsByTagName('*')).find((e) => e.localName === n);
     const kd = byName('keyData');
     const ek = Array.from(x.getElementsByTagName('*')).find((e) => e.localName === 'encryptedKey' && e.getAttribute('spinCount'));
     if (!kd || !ek) throw new Error('unsupported');
+    /* Office writes AES with SHA-1 / SHA-2; other ciphers (DES, 3DES, RC2) and MD5 are not supported */
+    for (const e of [ek, kd]) {
+      if (!/^AES$/i.test(e.getAttribute('cipherAlgorithm') || 'AES')) throw new Error('unsupported');
+      if (e.getAttribute('hashAlgorithm') && !HASH[e.getAttribute('hashAlgorithm')]) throw new Error('unsupported');
+    }
     const alg = HASH[ek.getAttribute('hashAlgorithm')] || 'SHA-1';
     const keyBytes = (+ek.getAttribute('keyBits') || 128) / 8;
     const salt = b64(ek.getAttribute('saltValue'));
@@ -217,14 +230,14 @@
 
   /* ================= writing: Agile encryption (AES-256, SHA-512) in a compound file ================= */
   const hex = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)));
-  /* the \x06DataSpaces streams Word writes for its standard encryption transform (constant) */
+  /* the \x06DataSpaces streams Office writes for its standard encryption transform (constant) */
   const DS = {
     Version: '3c0000004d006900630072006f0073006f00660074002e0043006f006e007400610069006e00650072002e004400610074006100530070006100630065007300010000000100000001000000',
     DataSpaceMap: '08000000010000006800000001000000000000002000000045006e0063007200790070007400650064005000610063006b00610067006500320000005300740072006f006e00670045006e006300720079007000740069006f006e004400610074006100530070006100630065000000',
     StrongEncryptionDataSpace: '0800000001000000320000005300740072006f006e00670045006e006300720079007000740069006f006e005400720061006e00730066006f0072006d000000',
     Primary: '58000000010000004c0000007b00460046003900410033004600300033002d0035003600450046002d0034003600310033002d0042004400440035002d003500410034003100430031004400300037003200340036007d004e0000004d006900630072006f0073006f00660074002e0043006f006e007400610069006e00650072002e0045006e006300720079007000740069006f006e005400720061006e00730066006f0072006d00000001000000010000000100000000000000000000000000000004000000',
   };
-  /** a version-3 compound file with Word's directory layout for an encrypted package */
+  /** a version-3 compound file with Office's directory layout for an encrypted package */
   function cfbWrite(info, pkg) {
     const SS = 512, MS = 64, CUT = 4096, END = 0xfffffffe, FREE = 0xffffffff, FATSEC = 0xfffffffd, DIFSEC = 0xfffffffc, NONE = 0xffffffff;
     /* entries: name, type (1 storage, 2 stream, 5 root), data, left, right, child */
@@ -316,9 +329,9 @@
     return new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, k, padded)).slice(0, padded.length); /* drop WebCrypto's padding block */
   };
   const b64e = (u) => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
-  /** encrypt .docx bytes with a password to open, as Word 2013+ does; resolves to the file bytes */
+  /** encrypt package bytes with a password to open, as Office 2013+ does (AES-256, SHA-512); resolves to the file bytes */
   OC.encrypt = async function (pkgBytes, password) {
-    if (!(window.crypto && crypto.subtle)) throw new Error('Saving with a password needs a secure (https) page.');
+    if (!(root.crypto && root.crypto.subtle)) throw new Error('Saving with a password needs a secure (https) page.');
     const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
     const alg = 'SHA-512', keyDataSalt = rnd(16), pwSalt = rnd(16), secret = rnd(32), verifier = rnd(16), hmacKey = rnd(64);
     /* the package: an 8-byte size, then 4096-byte segments, each with its own IV */
@@ -353,9 +366,9 @@
     return cfbWrite(info, enc);
   };
 
-  /** decrypt an encrypted Office package; resolves to the inner .docx bytes */
+  /** decrypt an encrypted Office package; resolves to the inner .xlsx bytes */
   OC.decrypt = async function (u8, password) {
-    if (!(window.crypto && crypto.subtle)) throw new Error('Opening password-protected documents needs a secure (https) page.');
+    if (!(root.crypto && root.crypto.subtle)) throw new Error('Opening password-protected files needs a secure (https) page.');
     const c = cfb(u8);
     const info = c.stream('EncryptionInfo'), pkg = c.stream('EncryptedPackage');
     if (!info || !pkg) throw new Error('unsupported');
@@ -364,4 +377,4 @@
     if ((major === 3 || major === 4) && minor === 2) return standard(info, pkg, password);
     throw new Error('unsupported');
   };
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

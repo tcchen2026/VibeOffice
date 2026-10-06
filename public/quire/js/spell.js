@@ -1,6 +1,5 @@
 /* Quire — offline Spelling and Grammar.
- * Words are checked against Hunspell's English dictionaries (SCOWL-derived word lists shipped in dict/),
- * suggestions come from edit distance ranked by how common a word is, and grammar is a set of
+ * The words come from the shared engine (common/spell.js); this file adds what Quire shows: grammar, a set of
  * rules in the spirit of Word 2003's checker. Misspellings get red wavy underlines and grammar
  * problems green ones (CSS Custom Highlight API); right-click one for suggestions.
  */
@@ -9,153 +8,12 @@
   const L = window.L, D = L.D, O = L.O, E = L.ed, LY = L.layout;
   const { h } = L;
   const ui = L.ui;
-  const SP = (L.spell = {});
+  const SP = L.spell;   // the engine: common/spell.js
   const doc = () => D.doc;
   const A = () => L.app;
   const opt = (k, def) => { const o = A() && A().opts; return o && o[k] !== undefined ? o[k] !== false : def !== false; };
 
-  /* ================= lexicon ================= */
-  const LEX = (L.lex = { lists: {}, loading: {}, failed: {} });
-  const LEVEL = '0123456789';
-  /** load a front-coded list: "<prefix-length char><rest><level digit>" per line */
-  LEX.load = function (name) {
-    if (LEX.lists[name]) return Promise.resolve(LEX.lists[name]);
-    if (LEX.loading[name]) return LEX.loading[name];
-    LEX.loading[name] = fetch('../common/dict/' + name + '.words').then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).then((txt) => {
-      const map = new Map();
-      let prev = '';
-      const P = '0123456789abcdefghijklmnopqrstuvwxyz';
-      for (const ln of txt.split('\n')) {
-        if (!ln) continue;
-        const k = P.indexOf(ln[0]);
-        const w = prev.slice(0, k) + ln.slice(1, -1);
-        map.set(w, LEVEL.indexOf(ln[ln.length - 1]));
-        prev = w;
-      }
-      /* lower-case index so "Paris" at sentence start and "PARIS" both resolve */
-      const lower = new Map();
-      for (const [w, lv] of map) { const l = w.toLowerCase(); if (!lower.has(l) || lower.get(l).lv > lv) lower.set(l, { w, lv }); }
-      LEX.lists[name] = { map, lower };
-      L.bus.emit('lexicon-loaded', name);
-      return LEX.lists[name];
-    }).catch((e) => { LEX.failed[name] = String(e && e.message || e); LEX.loading[name] = null; throw e; });
-    return LEX.loading[name];
-  };
-  /** which word list a language tag uses (null: no English proofing tools for it) */
-  LEX.listFor = function (lang) {
-    lang = String(lang || 'en-US').toLowerCase();
-    if (!/^en\b/.test(lang)) return null;
-    return /^en-(gb|au|nz|ie|za|in|sg|hk|jm|bz|tt|zw|ph|my)/.test(lang) ? 'en_GB' : 'en_US';
-  };
-  LEX.ready = (name) => !!LEX.lists[name];
-
-  /* ================= checking words ================= */
-  const custom = () => { if (!SP._custom) SP._custom = new Set((L.store.get('customDict', []) || []).map((x) => String(x).toLowerCase())); return SP._custom; };
-  SP.reloadCustom = () => { SP._custom = null; SP.refreshSoon(); };
-  const ignoredAll = new Set();
-  const cache = new Map();
-  const isUpper = (w) => w === w.toUpperCase() && w !== w.toLowerCase();
-  const isCap = (w) => w[0] === w[0].toUpperCase() && w.slice(1) === w.slice(1).toLowerCase();
-  /** true when the word is spelled correctly (or should not be checked) */
-  SP.okWord = function (word, list) {
-    const lex = LEX.lists[list];
-    if (!lex) return true;
-    let w = word.replace(/’/g, "'");
-    if (w.length < 2) return true;
-    if (/\d/.test(w)) return opt('ignoreNum', true) || /^\d/.test(w);
-    if (isUpper(w) && opt('ignoreUpper', true)) return true;
-    const key = list + '\u0000' + w;
-    if (cache.has(key)) return cache.get(key);
-    const r = checkWord(w, lex);
-    cache.set(key, r);
-    return r;
-  };
-  function checkWord(w, lex) {
-    const lw = w.toLowerCase();
-    if (custom().has(lw) || ignoredAll.has(lw)) return true;
-    if (lex.map.has(w)) return true;
-    /* sentence-initial capitals and ALL CAPS accept the lower-case entry; a capitalised entry ("Paris") needs its capital */
-    if ((isCap(w) || isUpper(w)) && lex.map.has(lw)) return true;
-    if (isUpper(w)) { const e = lex.lower.get(lw); if (e) return true; }
-    if (isCap(w)) { const e = lex.lower.get(lw); if (e && isCap(e.w)) return true; }
-    /* possessive of a known word (James's, CEO's) */
-    const m = /^(.+?)'s?$/i.exec(w);
-    if (m && m[1].length > 1 && (lex.map.has(m[1]) || lex.lower.has(m[1].toLowerCase()))) return true;
-    /* hyphenated compounds are fine when every part is */
-    if (w.includes('-')) return w.split('-').every((part) => !part || part.length < 2 || checkWord(part, lex));
-    /* accented spellings of listed words: café, naïve, résumé, façade */
-    const plain = w.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    if (plain !== w) return checkWord(plain, lex);
-    /* AutoCorrect replacements the user taught are accepted words too */
-    return false;
-  }
-
-  /* ================= suggestions ================= */
-  const ALPHA = "abcdefghijklmnopqrstuvwxyz'";
-  function edits1(w) {
-    const out = new Set();
-    for (let i = 0; i <= w.length; i++) {
-      const a = w.slice(0, i), b = w.slice(i);
-      if (b) out.add(a + b.slice(1));
-      if (b.length > 1) out.add(a + b[1] + b[0] + b.slice(2));
-      for (const c of ALPHA) { if (b) out.add(a + c + b.slice(1)); out.add(a + c + b); }
-    }
-    out.delete(w);
-    return out;
-  }
-  const KEYS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
-  const keyPos = {};
-  KEYS.forEach((row, r) => { for (let c = 0; c < row.length; c++) keyPos[row[c]] = [r, c + r * 0.5]; });
-  const near = (a, b) => { const p = keyPos[a], q = keyPos[b]; return p && q && Math.abs(p[0] - q[0]) <= 1 && Math.abs(p[1] - q[1]) <= 1.5; };
-  /** Damerau-Levenshtein distance with cheaper adjacent-key and doubled-letter mistakes */
-  function dist(a, b) {
-    const n = a.length, m = b.length;
-    const d = [];
-    for (let i = 0; i <= n; i++) { d[i] = [i]; }
-    for (let j = 0; j <= m; j++) d[0][j] = j;
-    for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) {
-      const sub = a[i - 1] === b[j - 1] ? 0 : near(a[i - 1], b[j - 1]) ? 0.8 : 1;
-      let v = Math.min(d[i - 1][j] + (i > 1 && a[i - 1] === a[i - 2] ? 0.6 : 1), d[i][j - 1] + (j > 1 && b[j - 1] === b[j - 2] ? 0.6 : 1), d[i - 1][j - 1] + sub);
-      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) v = Math.min(v, d[i - 2][j - 2] + 0.7);
-      d[i][j] = v;
-    }
-    return d[n][m];
-  }
-  const restoreCase = (sugg, orig) => (isUpper(orig) && orig.length > 1 ? sugg.toUpperCase() : /^\p{Lu}/u.test(orig) && !/^\p{Lu}/u.test(sugg) ? sugg[0].toUpperCase() + sugg.slice(1) : sugg);
-  SP.suggest = function (word, list, max) {
-    max = max || 8;
-    const lex = LEX.lists[list];
-    if (!lex) return [];
-    const w = word.replace(/’/g, "'");
-    const lw = w.toLowerCase();
-    const found = new Map();
-    const consider = (cand, base) => {
-      const e = lex.lower.get(cand);
-      if (!e) return;
-      const real = e.w;
-      if (real === w) return;
-      const score = dist(lw, cand) * 10 + e.lv * 1.6 + base + (real.length < 3 ? 4 : 0);
-      if (!found.has(real) || found.get(real) > score) found.set(real, score);
-    };
-    /* AutoCorrect knows many typical slips */
-    const ac = L.autocorrect ? L.autocorrect.list() : null;
-    if (ac && ac.has(lw)) { const r = ac.get(lw); if (!/\s/.test(r)) found.set(r, -100); else found.set(r, -50); }
-    const e1 = edits1(lw);
-    for (const c of e1) consider(c, 0);
-    if (found.size < 6 && lw.length <= 14) {
-      for (const c of e1) { if (lex.lower.has(c)) continue; for (const c2 of edits1(c)) if (c2.length > 1) consider(c2, 6); }
-    }
-    /* run-together words: "alot" → "a lot", "infact" → "in fact" */
-    for (let i = 1; i < lw.length; i++) {
-      const a = lw.slice(0, i), b = lw.slice(i);
-      if ((a.length > 1 || a === 'a' || a === 'i') && b.length > 1 && lex.lower.has(a) && lex.lower.has(b) && lex.lower.get(a).lv <= 4 && lex.lower.get(b).lv <= 5) {
-        const score = 5 + (lex.lower.get(a).lv + lex.lower.get(b).lv) * 1.2;
-        const s = (a === 'i' ? 'I' : lex.lower.get(a).w) + ' ' + lex.lower.get(b).w;
-        if (!found.has(s) || found.get(s) > score) found.set(s, score);
-      }
-    }
-    return Array.from(found.entries()).sort((x, y) => x[1] - y[1]).slice(0, max).map(([s]) => (/^\p{Lu}/u.test(s) && !isUpper(w) ? s : restoreCase(s, w)));
-  };
+  const LEX = L.lex;
 
   /* ================= tokenising ================= */
   /** words of a text: [{w, a, b}] (letters with inner apostrophes and hyphens) */
@@ -415,7 +273,7 @@
       const sugg = SP.suggest(hit.word, list, 5);
       const items = sugg.length ? sugg.map((s) => ({ label: s.replace(/&/g, '&&'), bold: true, run: () => replace(s) })) : [{ label: '(no spelling suggestions)', disabled: true }];
       items.push('-',
-        { label: 'I&gnore All', run: () => { ignoredAll.add(hit.word.toLowerCase()); cache.clear(); SP.refreshSoon(0); } },
+        { label: 'I&gnore All', run: () => { SP.ignoreAll(hit.word); SP.refreshSoon(0); } },
         { label: '&Add to Dictionary', run: () => SP.addWord(hit.word) },
         { label: 'AutoCorr&ect', disabled: !sugg.length, sub: sugg.map((s) => ({ label: s.replace(/&/g, '&&'), run: () => { if (L.autocorrect) L.autocorrect.setEntry(hit.word, s); replace(s); } })).concat(['-', { label: '&AutoCorrect Options...', run: () => L.dlg.autocorrect() }]) },
         { label: '&Language', sub: [{ label: '&Set Language...', run: () => L.dlg.language && L.dlg.language() }] },
@@ -426,13 +284,6 @@
     const items = (hit.suggestions || []).map((s) => ({ label: (s === ' ' ? '(single space)' : s).replace(/&/g, '&&'), bold: true, run: () => replace(s === 'Delete Repeated Word' ? '' : s) }));
     items.push('-', { label: '&Ignore Once', run: () => { SP.ignoredOnce.add(p.id + ':g:' + hit.word); SP.refreshSoon(0); } }, { label: '&Grammar...', run: () => { E.setSel(D.pos(p, hit.a)); SP.check(); } }, { label: '&About This Sentence', run: () => ui.msg(hit.rule + '\n\n' + (hit.explain || ''), { icon: 'info', title: 'Grammar' }) });
     return items;
-  };
-  SP.addWord = function (w) {
-    const s = custom();
-    s.add(String(w).toLowerCase());
-    L.store.set('customDict', Array.from(s));
-    cache.clear();
-    SP.refreshSoon(0);
   };
 
   /* ================= the Spelling and Grammar dialog ================= */
@@ -529,7 +380,7 @@
     };
     const pick = () => (sugg.selectedIndex >= 0 && sugg.value ? sugg.value : null);
     const btnIgnore = ui.button('&Ignore Once', () => { SP.ignoredOnce.add(cur.p.id + ':' + (cur.kind === 'spelling' ? '' : 'g:') + cur.word); next(); });
-    const btnIgnoreAll = ui.button('I&gnore All', () => { if (cur.kind === 'spelling') { ignoredAll.add(cur.word.toLowerCase()); cache.clear(); } else ignoreRules.add(cur.rule); next(); });
+    const btnIgnoreAll = ui.button('I&gnore All', () => { if (cur.kind === 'spelling') SP.ignoreAll(cur.word); else ignoreRules.add(cur.rule); next(); });
     const btnAdd = ui.button('&Add to Dictionary', () => { if (cur.kind === 'spelling') SP.addWord(cur.word); else { const p = cur.p; while (idx + 1 < issues.length && issues[idx + 1].p === p) idx++; } next(); });
     const btnChange = ui.button('&Change', () => { const v = pick(); if (v == null && cur.kind !== 'repeat') return; apply(v === 'Delete Repeated Word' ? '' : v); next(); });
     const btnChangeAll = ui.button('Change A&ll', () => { const v = pick(); if (v == null) return; changes.set(cur.word, v); apply(v); next(); });

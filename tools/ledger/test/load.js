@@ -1,7 +1,8 @@
 /* load the engine + readers in Node */
 const path = require('path');
+const PUBLIC = path.join(__dirname, '..', '..', '..', 'public');
+const COMMON = new Set(['core', 'zip', 'sha', 'crypto', 'numfmt']);   // public/common/, shared by the suite
 for (const f of ['core', 'xml', 'zip', 'sha', 'crypto', 'numfmt', 'formula', 'model', 'calc', 'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng', 'xlsx-read', 'xlsx-write', 'csv', 'xmlss']) {
-  const p = path.join(__dirname, '..', '..', '..', 'public', 'ledger', 'js', f + '.js');
-  try { require(p); } catch (e) { if (e.code !== 'MODULE_NOT_FOUND') throw e; }
+  require(path.join(PUBLIC, COMMON.has(f) ? 'common' : path.join('ledger', 'js'), f + '.js'));
 }
 module.exports = globalThis.L;

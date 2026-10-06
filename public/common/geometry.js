@@ -1,10 +1,10 @@
-/* Quire — AutoShape geometry.
- * Preset names follow the OOXML prstGeom vocabulary so shapes round-trip
- * through .docx unchanged. Each preset returns SVG path parts in a w×h box.
+/* VibeOffice — AutoShape geometry, shared by Quire, Ledger and Lectern.
+ * Preset names follow the OOXML prstGeom vocabulary so shapes round-trip unchanged.
+ * Each preset returns SVG path parts in a w×h box.
  */
-(function () {
+(function (root) {
   'use strict';
-  const L = window.L;
+  const L = root.L || (root.L = {});
   const n = (v) => (Math.abs(v) < 1e-9 ? 0 : Math.round(v * 100) / 100);
   const P = (pts) => 'M' + pts.map((p) => n(p[0]) + ',' + n(p[1])).join(' L') + ' Z';
   const ell = (cx, cy, rx, ry) => `M${n(cx - rx)},${n(cy)} A${n(rx)},${n(ry)} 0 1 1 ${n(cx + rx)},${n(cy)} A${n(rx)},${n(ry)} 0 1 1 ${n(cx - rx)},${n(cy)} Z`;
@@ -673,4 +673,4 @@
       return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${body}</svg>`;
     },
   };
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

@@ -1,9 +1,10 @@
-/* Lectern — synchronous SHA-1 / SHA-256 / SHA-384 / SHA-512 for the password key derivation of encrypted
- * presentations. Office hashes the password 100,000 times; doing that through WebCrypto costs a promise per
- * round (seconds), while these run the loop in a fraction of a second. Checked against WebCrypto in test/sha.test.js. */
+/* VibeOffice — synchronous SHA-1 / SHA-256 / SHA-384 / SHA-512 for the password key derivation of encrypted
+ * Office files (crypto.js). Office hashes the password 100,000 times; doing that through WebCrypto costs a
+ * promise per round (seconds), while these run the loop in a fraction of a second.
+ * Checked against WebCrypto in tools/ledger/test/sha.test.js. */
 (function (root) {
   'use strict';
-  const L = root.L;
+  const L = root.L || (root.L = {});
   const SHA = (L.sha = {});
 
   /** message → padded big-endian 32-bit words; blockBytes 64 (SHA-1/256) or 128 (SHA-384/512) */

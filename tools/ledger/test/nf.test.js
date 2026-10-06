@@ -1,4 +1,4 @@
-require('../../../public/ledger/js/numfmt.js');
+require('../../../public/common/numfmt.js');
 const NF = globalThis.L.numfmt;
 let fail = 0, n = 0;
 const t = (code, v, exp, opts) => { n++; const r = NF.text(code, v, opts); if (r !== exp) { fail++; console.log('FAIL', JSON.stringify(code), v, '=>', JSON.stringify(r), 'expected', JSON.stringify(exp)); } };

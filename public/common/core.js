@@ -1,12 +1,16 @@
-/* Quire 2003 Web Edition — core utilities
- * Shared namespace, DOM helpers, units, colors, events, file I/O.
- * Every other script attaches itself to window.L.
+/* VibeOffice — core utilities, shared by Quire, Ledger and Lectern.
+ * Shared namespace, DOM helpers, units, colors, events, file I/O, media store, PDF writer.
+ * Every other script attaches itself to window.L. Each page names its app before loading this file:
+ *   <script>window.L = { APP_ID: 'quire', APP_NAME: 'Quire', APP: 'Quire 2003' };</script>
+ * APP_ID keeps each app's saved settings apart (localStorage 'quire.…'); APP_NAME and APP appear in messages.
  */
-(function () {
+(function (root) {
   'use strict';
-  const L = (window.L = window.Quire = {});
+  const L = root.L || (root.L = {});
   L.VERSION = '1.0.0';
-  L.APP = 'Quire 2003';
+  L.APP_ID = L.APP_ID || 'vibeoffice';
+  L.APP_NAME = L.APP_NAME || 'VibeOffice';
+  L.APP = L.APP || L.APP_NAME;
 
   /* ---------- DOM ---------- */
   L.h = function h(tag, attrs, ...kids) {
@@ -65,7 +69,7 @@
   L.xesc = (s) => String(s == null ? '' : s)
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '')
     .replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  L.isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  L.isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   L.deepMerge = function deepMerge(a, b) {
     if (b == null) return a;
     if (a == null || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(b)) return L.clone(b);
@@ -180,9 +184,9 @@
 
   /* ---------- storage (never relied on) ---------- */
   L.store = {
-    get(k, d) { try { const v = localStorage.getItem('quire.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem('quire.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
-    del(k) { try { localStorage.removeItem('quire.' + k); } catch (e) { /* ignore */ } },
+    get(k, d) { try { const v = localStorage.getItem(L.APP_ID + '.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(L.APP_ID + '.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(L.APP_ID + '.' + k); } catch (e) { /* ignore */ } },
   };
 
   /* ---------- file I/O ---------- */
@@ -214,7 +218,7 @@
     });
     const d = new Date();
     const pad = (v) => String(v).padStart(2, '0');
-    obj(infoId, `<< /Title ${pdfStr(info && info.title)} /Author ${pdfStr(info && info.author)} /Producer ${pdfStr(L.APP || 'Quire')} /CreationDate (D:${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}) >>`);
+    obj(infoId, `<< /Title ${pdfStr(info && info.title)} /Author ${pdfStr(info && info.author)} /Producer ${pdfStr(L.APP)} /CreationDate (D:${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}) >>`);
     const xref = len;
     const total = infoId + 1;
     push(`xref\n0 ${total}\n0000000000 65535 f \n`);
@@ -255,6 +259,39 @@
   }[String(ext || '').toLowerCase()] || 'application/octet-stream');
   L.mimeToExt = (m) => ({ 'image/png': 'png', 'image/jpeg': 'jpeg', 'image/gif': 'gif', 'image/bmp': 'bmp', 'image/svg+xml': 'svg', 'image/webp': 'webp', 'image/tiff': 'tiff', 'image/x-emf': 'emf', 'image/x-wmf': 'wmf' }[m] || 'png');
 
+  /** pixel size and resolution of a PNG / JPEG / GIF / BMP from its header: {w, h, dpiX, dpiY} or null */
+  L.imageSize = function (b) {
+    try {
+      const u32 = (o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
+      const u16 = (o) => (b[o] << 8) | b[o + 1];
+      const le16 = (o) => b[o] | (b[o + 1] << 8), le32 = (o) => (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0;
+      if (b[0] === 0x89 && b[1] === 0x50) {
+        const r = { w: u32(16), h: u32(20), dpiX: 96, dpiY: 96 };
+        for (let o = 8; o + 12 <= b.length && o < 4096;) {
+          const len = u32(o), type = String.fromCharCode(b[o + 4], b[o + 5], b[o + 6], b[o + 7]);
+          if (type === 'pHYs' && b[o + 16] === 1) { r.dpiX = Math.round(u32(o + 8) * 0.0254) || 96; r.dpiY = Math.round(u32(o + 12) * 0.0254) || 96; }
+          if (type === 'IDAT') break;
+          o += 12 + len;
+        }
+        return r;
+      }
+      if (b[0] === 0xff && b[1] === 0xd8) {
+        let dpiX = 96, dpiY = 96;
+        for (let o = 2; o + 9 < b.length;) {
+          if (b[o] !== 0xff) { o++; continue; }
+          const m = b[o + 1], len = u16(o + 2);
+          if (m === 0xe0 && b[o + 4] === 0x4a && b[o + 11] >= 1) { const k = b[o + 11] === 2 ? 2.54 : 1; dpiX = Math.round(u16(o + 12) * k) || 96; dpiY = Math.round(u16(o + 14) * k) || 96; }
+          if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { w: u16(o + 7), h: u16(o + 5), dpiX, dpiY };
+          o += 2 + len;
+        }
+        return null;
+      }
+      if (b[0] === 0x47 && b[1] === 0x49) return { w: le16(6), h: le16(8), dpiX: 96, dpiY: 96 };
+      if (b[0] === 0x42 && b[1] === 0x4d) { const px = le32(38), py = le32(42); return { w: le32(18), h: Math.abs(le32(22) | 0), dpiX: px ? Math.round(px * 0.0254) : 96, dpiY: py ? Math.round(py * 0.0254) : 96 }; }
+    } catch (e) { /* unknown */ }
+    return null;
+  };
+
   /* ---------- media store (binary assets live outside undo snapshots) ---------- */
   const media = new Map();
   L.media = {
@@ -269,6 +306,33 @@
     has: (id) => media.has(id),
     all: () => media,
     clear() { for (const m of media.values()) URL.revokeObjectURL(m.url); media.clear(); },
+  };
+
+  /** a copy of a picture with one colour made transparent (Set Transparent Color, a:clrChange); cached per colour */
+  const clearCache = new Map();
+  L.media.withTransparent = function (id, hex, tol) {
+    const key = id + '|' + hex + '|' + (tol || 0);
+    if (!clearCache.has(key)) clearCache.set(key, (async () => {
+      try {
+        const im = await L.loadImage(L.media.url(id));
+        const c = document.createElement('canvas');
+        c.width = im.naturalWidth || 1; c.height = im.naturalHeight || 1;
+        const g = c.getContext('2d');
+        g.drawImage(im, 0, 0);
+        const data = g.getImageData(0, 0, c.width, c.height);
+        const [tr, tg, tb] = L.color.hexToRgb(hex);
+        const t = tol || 0, d = data.data;
+        for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - tr) <= t && Math.abs(d[i + 1] - tg) <= t && Math.abs(d[i + 2] - tb) <= t) d[i + 3] = 0;
+        g.putImageData(data, 0, 0);
+        const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+        if (!blob) return null;
+        const nid = L.media.add(blob, 'transparent.png');
+        const o = L.media.get(id);
+        if (o && o.size) L.media.get(nid).size = o.size;
+        return nid;
+      } catch (e) { return null; }
+    })());
+    return clearCache.get(key);
   };
 
   /* ---------- text helpers ---------- */
@@ -346,11 +410,21 @@
   };
   L.FONT_LIST = ['Arial', 'Arial Black', 'Arial Narrow', 'Book Antiqua', 'Bookman Old Style', 'Calibri', 'Calibri Light', 'Cambria', 'Century Gothic', 'Comic Sans MS', 'Courier New',
     'Franklin Gothic Medium', 'Garamond', 'Georgia', 'Impact', 'Lucida Console', 'Palatino Linotype', 'Segoe UI', 'Symbol', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana', 'Wingdings'];
+  /* the Font Size box of Word and Excel; Lectern sets PowerPoint's list in its app.js */
   L.SIZE_LIST = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
 
-  /* Wingdings / Symbol bullet glyphs mapped to Unicode so imported decks look right */
+  /* Wingdings / Symbol bullet glyphs mapped to Unicode so imported documents look right */
   L.mapSymbolChar = function (ch, font) {
     const f = String(font || '').toLowerCase();
+    const code = ch ? ch.charCodeAt(0) & 0xff : 0;
+    /* Wingdings 2 and 3 carry the round, square and triangular bullets of many Office themes */
+    if (/^wingdings\s*2/.test(f)) {
+      if (code >= 0x96 && code <= 0x9d) return '●';
+      if (code >= 0x9e && code <= 0xa5) return '■';
+      if (code >= 0xa6 && code <= 0xad) return '◆';
+      return { 0x50: '✓', 0x4f: '✗', 0x51: '☒', 0x52: '☑', 0xe9: '★', 0xea: '★' }[code] || '•';
+    }
+    if (/^wingdings\s*3/.test(f)) return { 0x7d: '►', 0x84: '►', 0x75: '►', 0x71: '◄', 0x70: '▲', 0x72: '▼', 0xc6: '➔', 0xc7: '⬅' }[code] || '▸';
     if (f.startsWith('wingdings')) {
       const m = { 'l': '●', 'n': '■', 'q': '❑', 'u': '◆', 'v': '❖', 'Ø': '➢', 'ü': '✓', '§': '▪', 'o': '❍', 'p': '□', 'w': '⬥', 'Ü': '➢', 'à': '➔', 'è': '➜', 'Þ': '➝', 'ð': '⇨', 'ª': '✦', '¨': '◻', '\uF06E': '■', '\uF06C': '●', '\uF075': '◆', '\uF0FC': '✓', '\uF0D8': '➢', '\uF0A7': '▪' };
       return m[ch] || '•';
@@ -382,4 +456,4 @@
     for (const b of list) { x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); }
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   };
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

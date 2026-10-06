@@ -1,7 +1,7 @@
-/* Ledger — DrawingML helpers (shared with Quire): colours, fills, lines, geometry, charts. */
+/* VibeOffice — DrawingML helpers shared by Quire's .docx reader and Ledger: colours, fills, lines, geometry, charts. */
 (function (root) {
   'use strict';
-  const L = root.L;
+  const L = root.L || (root.L = {});
   const X = (L.dml = {});
   const emu = (v) => (+v || 0) / 12700;
   X.emu = emu;
@@ -9,10 +9,21 @@
   /* ---------- XML helpers ---------- */
   X.parse = function (s) {
     if (s && s.charCodeAt(0) === 0xFEFF) s = s.slice(1); /* byte-order mark left in by some writers */
-    let el;
-    try { el = L.xml.parse(s); } catch (e) { el = L.xml.parse(s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')); }
-    X.resolveAC(el.parentNode);
-    return el.parentNode.children[0];
+    /* characters XML 1.0 forbids are stripped and the parse retried (seen in damaged files) */
+    const strip = (t) => t.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+    if (L.xml) {   // Ledger's own parser (also in Node)
+      let el;
+      try { el = L.xml.parse(s); } catch (e) { el = L.xml.parse(strip(s)); }
+      X.resolveAC(el.parentNode);
+      return el.parentNode.children[0];
+    }
+    let d = new DOMParser().parseFromString(s, 'application/xml');
+    if (d.getElementsByTagName('parsererror').length) {
+      d = new DOMParser().parseFromString(strip(s), 'application/xml');
+      if (d.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
+    }
+    X.resolveAC(d);
+    return d.documentElement;
   };
   /** Markup Compatibility: keep the Choice we understand (wps/wpg/wpc/w14), else the Fallback */
   const UNDERSTOOD = /^(wps|wpg|wp14|w14|w15|a14|wpc|v|o|w10|mc|wne|m)$/;

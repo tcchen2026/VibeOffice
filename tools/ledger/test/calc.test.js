@@ -1,5 +1,6 @@
 /* Engine sanity tests: formulas with values known from Excel. */
-for (const f of ['numfmt', 'formula', 'model', 'calc', 'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng']) require('../../../public/ledger/js/' + f + '.js');
+require('../../../public/common/numfmt.js');
+for (const f of ['formula', 'model', 'calc', 'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng']) require('../../../public/ledger/js/' + f + '.js');
 const L = globalThis.L, M = L.model, C = L.calc;
 const wb = new M.Workbook();
 const sh = wb.addSheet('Sheet1');

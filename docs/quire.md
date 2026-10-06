@@ -118,23 +118,23 @@ rich text, and RC4-encrypted files from Office 97–2003.
 | File | What it does |
 | --- | --- |
 | `index.html` | Window chrome, CSS (Office 2003 Luna Blue), script order |
-| `js/core.js`, `js/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF writer, downloads |
-| `js/crypto.js` | Password-protected documents: compound-file reader/writer, AES, ECMA-376 agile and standard encryption |
+| `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF writer, downloads |
+| `../common/sha.js`, `../common/crypto.js` | Password-protected documents: compound-file reader/writer, AES, ECMA-376 agile and standard encryption |
 | `js/dmodel.js`, `js/ops.js` | Document model (paragraphs, runs, tables, sections, styles, numbering), undo history, editing operations |
 | `js/render.js`, `js/layout.js` | Paragraph/run rendering, pagination, headers/footers, footnotes, columns, floats |
 | `js/editor.js` | contentEditable bridge: selection mapping, typing, IME, clipboard, keyboard |
-| `js/docx-read.js`, `js/docx-write.js`, `js/dml.js` | `.docx` import/export, DrawingML/VML shapes, charts, themes |
+| `js/docx-read.js`, `js/docx-write.js`, `../common/dml.js` | `.docx` import/export, DrawingML/VML shapes, charts, themes |
 | `js/rtf.js`, `js/htmlio.js` | RTF and HTML import/export |
 | `js/fields.js` | Field engine (PAGE, DATE, REF, SEQ, TOC, INDEX, IF, formulas, …), footnotes and endnotes |
 | `js/review.js` | Track changes, comments, balloons, Reviewing pane, compare documents |
 | `js/tables.js` | Tables and Borders toolbar, table styles, draw/erase, merge/split, sort, formulas |
-| `js/drawing.js`, `js/drawtool.js`, `js/geometry.js`, `js/charts.js`, `js/metafile.js`, `js/clipart.js` | Pictures, AutoShapes, WordArt, diagrams, charts, WMF/EMF, clip art |
-| `js/autocorrect.js`, `js/spell.js` | AutoCorrect, AutoFormat as you type, AutoText, Spelling and Grammar (offline) |
+| `js/drawing.js`, `js/drawtool.js`, `../common/geometry.js`, `../common/charts.js`, `../common/metafile.js`, `../common/clipart.js` | Pictures, AutoShapes, WordArt, diagrams, charts, WMF/EMF, clip art |
+| `js/autocorrect.js`, `../common/spell.js`, `js/spell.js` | AutoCorrect, AutoFormat as you type, AutoText; the shared spelling engine and Quire's Spelling and Grammar (offline) |
 | `js/omml.js` | Office Math (OMML) to MathML for equations |
 | `../common/dict/` | Spelling word lists, thesaurus, licences (shared with Ledger) |
 | `js/outline.js`, `js/rulers.js`, `js/panes.js` | Outline view, rulers, task panes (Research/Thesaurus, Clip Art, Styles…), Document Map, thumbnails, Print Preview, Reading Layout |
 | `js/mailmerge.js`, `js/templates.js` | Mail Merge wizard and toolbar, document templates |
-| `js/ui.js`, `js/icons.js` | Menus, toolbars, dialogs, colour pickers, original 16×16 icon set |
+| `../common/ui.js`, `../common/icons.js`, `../common/luna.css` | Menus, toolbars, dialogs, colour pickers, original 16×16 icon set, the Luna look (shared) |
 | `js/commands.js`, `js/dialogs*.js`, `js/find.js`, `js/app.js` | Command registry, all dialogs, Find and Replace, application controller |
 
 Quire is an independent program. Microsoft, Word and Office are trademarks of Microsoft Corporation;

@@ -6,6 +6,18 @@
   const { h } = L;
   const ui = L.ui;
   const G = () => L.grid;
+
+  /* original application icon: a green ledger sheet with a bound spine */
+  L.icons.app = function (size) {
+    const sz = size || 16;
+    return `<svg class="appico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h8l3 3v10h-11z" fill="#fff" stroke="#1e6b2e"/><path d="M11.5 1.5v3h3" fill="#d8eedc" stroke="#1e6b2e"/><rect x="1.5" y="4.5" width="7" height="8" fill="#2f8f45" stroke="#1a5a28"/><path d="M3.3 6.3v4.4h3.2" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M10 7.5h3M10 9.5h3M10 11.5h3M9.5 6.5v6" stroke="#7aa886"/></svg>`;
+  };
+  /* the grid around commands, toolbar boxes and dialogs (common/ui.js) */
+  ui.hooks = {
+    beforeExec() {},
+    refocus() { if (L.grid) L.grid.focus(); },
+    commitEdit() { if (L.editor && L.editor.active) L.editor.commit(); },
+  };
   const MAXR = M.MAXR, MAXC = M.MAXC;
 
   const DEFAULT_OPTS = {

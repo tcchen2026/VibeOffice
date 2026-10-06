@@ -1,4 +1,4 @@
-/* Lectern — number formats (shared with Ledger).
+/* VibeOffice — number formats (Ledger's cells, Lectern's chart labels).
  * Excel format codes (sections, conditions, colours, dates, elapsed time, fractions, scientific, text),
  * the built-in format table, the General format, and parsing of typed input into values.
  * Works in the browser and in Node (tests): attaches to the global L.

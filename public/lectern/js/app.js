@@ -9,6 +9,26 @@
   const E = L.ed;
   const TE = L.te;
 
+  /* original application icon: a lectern carrying a slide */
+  L.icons.app = function (size) {
+    const sz = size || 16;
+    return `<svg class="appico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 1.5h12v8H2z" fill="#fff8e1" stroke="#b5651d"/><path d="M3 3h10v2.2H3z" fill="#e8641c"/><path d="M4 6.6h5M4 8h7" stroke="#b5651d" stroke-width=".8"/><path d="M5 10h6l1 4.5H4z" fill="#8c5a2b" stroke="#5a3a1a"/><path d="M3 14.5h10" stroke="#5a3a1a" stroke-width="1.2"/></svg>`;
+  };
+  /* the slide editor around commands, toolbar boxes and dialogs (common/ui.js) */
+  ui.hooks = {
+    beforeExec() {},
+    refocus() { if (L.ed) L.ed.refocus(); },
+    commitEdit() { if (L.ed && L.ed.textSave) L.ed.textSave(); },
+  };
+  /* colour menus offer the design's theme colours first */
+  ui.currentDesign = () => (L.ed && L.ed.slide && L.pres ? M.design(L.pres, L.ed.slide()) : null);
+  ui.schemeColors = (design) => M.schemeRow(design).map((sc) => {
+    const slot = M.SCHEME_SLOTS.find((x) => x[0] === ({ bg1: 'lt1', tx1: 'dk1', bg2: 'lt2', tx2: 'dk2' }[sc.ref] || sc.ref));
+    return { ref: sc.ref, hex: sc.hex, tip: slot ? slot[1] : sc.ref };
+  });
+  /* PowerPoint's Font Size list (Grow / Shrink Font step through it) */
+  L.SIZE_LIST = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 44, 48, 54, 60, 66, 72, 80, 88, 96];
+
   const DEFAULT_OPTS = {
     startupPane: true, layoutPaneOnNew: true, statusBar: true, ruler: false, showPopup: true, showPopbar: true, endBlack: true,
     smartQuotes: true, autocorrect: true, capSentence: true, spell: true, autoPreview: true, gray: false, bw: false, outlinePlain: false, alignToSlide: false,

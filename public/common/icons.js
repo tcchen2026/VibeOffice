@@ -1,7 +1,7 @@
-/* Quire — toolbar & menu icons (original 16×16 artwork, Luna palette). */
-(function () {
+/* VibeOffice — toolbar & menu icons for Quire, Ledger and Lectern (original 16×16 artwork, Luna palette). */
+(function (root) {
   'use strict';
-  const L = window.L;
+  const L = root.L || (root.L = {});
   const B = '#1d4f9e', B2 = '#3a74d6', LB = '#cfe0fb', Y = '#f5c842', YD = '#9a7a12', R = '#d33a2c', G = '#2f9a3a', K = '#333', GR = '#6b6b6b';
   const page = (x, y, w, hh, fill) => `<path d="M${x + 0.5} ${y + 0.5}h${w - 3}l3 3v${hh - 3}h-${w}z" fill="${fill || '#fff'}" stroke="#5a6f8f"/><path d="M${x + w - 2.5} ${y + 0.5}v3h3" fill="#dfe8f5" stroke="#5a6f8f"/>`;
   const txt = (x, y, t, size, col, weight, style) => `<text x="${x}" y="${y}" font-size="${size}" font-family="Arial,Helvetica,sans-serif" font-weight="${weight || 'bold'}" ${style ? `font-style="${style}"` : ''} fill="${col || K}">${t}</text>`;
@@ -187,7 +187,7 @@
     ct_table: '', ct_chart: '', ct_clipart: '', ct_picture: '', ct_diagram: '', ct_media: '',
   };
 
-  /* Word-specific artwork */
+  /* document artwork (Quire, and some in Ledger) */
   const pg = (extra) => page(2, 1, 12, 14) + (extra || '');
   const tl = (x, y, w, n, gap) => lines(x, y, w, n, gap, '#7a8aa6');
   Object.assign(I, {
@@ -269,6 +269,66 @@
     multiPage: `<rect x="1.5" y="1.5" width="6" height="6" fill="#fff" stroke="#5a6f8f"/><rect x="8.5" y="1.5" width="6" height="6" fill="#fff" stroke="#5a6f8f"/><rect x="1.5" y="8.5" width="6" height="6" fill="#fff" stroke="#5a6f8f"/><rect x="8.5" y="8.5" width="6" height="6" fill="#fff" stroke="#5a6f8f"/>`,
     shrink: `${page(1, 1, 10, 12)}<path d="M9 9.5l5 5M14 11.5v3h-3" fill="none" stroke="${B}" stroke-width="1.4"/><path d="M3 4.5h5M3 6.5h5M3 8.5h3" stroke="#7a8aa6"/>`,
   });
+
+  /* ---------- spreadsheet icons ---------- */
+  const cellGrid = (x, y, w, hh, n, m, col) => { let o = `<rect x="${x + 0.5}" y="${y + 0.5}" width="${w}" height="${hh}" fill="#fff" stroke="${col || '#5a6f8f'}"/>`; for (let i = 1; i < n; i++) o += `<path d="M${x + 0.5} ${y + 0.5 + (hh * i) / n}h${w}" stroke="#9fb0cc"/>`; for (let j = 1; j < m; j++) o += `<path d="M${x + 0.5 + (w * j) / m} ${y + 0.5}v${hh}" stroke="#9fb0cc"/>`; return o; };
+  Object.assign(I, {
+    mergeCenter: `<rect x="1.5" y="3.5" width="13" height="9" fill="#fff" stroke="#556"/>${txt(5.2, 11, 'a', 8, K, 'bold')}<path d="M1.5 8h2.5M12 8h2.5M3 6.5L4.5 8 3 9.5M13 6.5L11.5 8 13 9.5" fill="none" stroke="${B}"/>`,
+    currency: `${txt(3.5, 13, '$', 13, '#2a6a2a', 'bold')}`,
+    percent: `${txt(1.5, 12.5, '%', 12, K, 'bold')}`,
+    comma: `${txt(5.5, 10, ',', 16, K, 'bold')}`,
+    incDecimal: `${txt(0, 7, '.0', 6.5, K, 'bold')}${txt(5, 15, '.00', 6.5, K, 'bold')}<path d="M10 3.5h5M13 2l2 1.5-2 1.5" fill="none" stroke="${B}" stroke-width="1.2"/>`,
+    decDecimal: `${txt(0, 7, '.00', 6.5, K, 'bold')}${txt(7, 15, '.0', 6.5, K, 'bold')}<path d="M1 12h5M4 10.5L6 12l-2 1.5" fill="none" stroke="${B}" stroke-width="1.2"/>`,
+    fx: `<text x="1" y="12.5" font-size="13" font-family="Times New Roman,Tinos,serif" font-style="italic" fill="#1a3f8a">f</text><text x="6.5" y="12.5" font-size="10.5" font-family="Times New Roman,Tinos,serif" font-style="italic" fill="#1a3f8a">x</text>`,
+    filter: `<path d="M1.5 2.5h13l-5 6v5l-3 1.5v-6.5z" fill="${LB}" stroke="${B}"/>`,
+    filterOn: `<path d="M1.5 2.5h13l-5 6v5l-3 1.5v-6.5z" fill="#ffd36b" stroke="#a07c08"/>`,
+    freeze: `${cellGrid(1, 1, 13, 13, 4, 4)}<path d="M1.5 5.5h13M5.5 1.5v13" stroke="#000" stroke-width="1.6"/>`,
+    split: `${cellGrid(1, 1, 13, 13, 4, 4)}<path d="M1.5 8h13M8 1.5v13" stroke="#6a6a6a" stroke-width="2"/>`,
+    insertRows: `${cellGrid(1, 1, 13, 13, 3, 3)}<rect x="2" y="6" width="12" height="4" fill="#ffd36b" stroke="#a07c08"/>`,
+    insertCols: `${cellGrid(1, 1, 13, 13, 3, 3)}<rect x="6" y="2" width="4" height="12" fill="#ffd36b" stroke="#a07c08"/>`,
+    insertCells: `${cellGrid(1, 1, 13, 13, 3, 3)}<rect x="5.8" y="5.8" width="4.6" height="4.6" fill="#ffd36b" stroke="#a07c08"/>`,
+    insertSheet: `<path d="M2.5 1.5h8l3 3v10h-11z" fill="#fff" stroke="#3a7a3a"/>${cellGrid(4, 6, 8, 6, 2, 2, '#3a7a3a')}<path d="M12 0.5v4M10 2.5h4" stroke="#d33" stroke-width="1.4"/>`,
+    deleteSheet: `<path d="M2.5 1.5h8l3 3v10h-11z" fill="#fff" stroke="#3a7a3a"/>${cellGrid(4, 6, 8, 6, 2, 2, '#3a7a3a')}<path d="M9 9l5 5M14 9l-5 5" stroke="#d33" stroke-width="1.6"/>`,
+    formatCells: `${cellGrid(1, 1, 13, 13, 3, 3)}<rect x="5.8" y="5.8" width="4.6" height="4.6" fill="${B2}"/>`,
+    protect: `<rect x="3.5" y="7.5" width="9" height="7" rx="1" fill="#e8c048" stroke="#8a6a10"/><path d="M5.5 7.5v-2a2.5 2.5 0 015 0v2" fill="none" stroke="#555" stroke-width="1.5"/>`,
+    tracePrec: `<circle cx="3.5" cy="4" r="2" fill="${B2}"/><path d="M5 5.2l7 6" stroke="${B}" stroke-width="1.3"/><path d="M12.5 12.5l-3.4-.6 1.5-2.2z" fill="${B}"/>${cellGrid(10, 10, 5, 5, 1, 1)}`,
+    traceDep: `${cellGrid(1, 1, 5, 5, 1, 1)}<path d="M5.5 5.5l6 6" stroke="${B}" stroke-width="1.3"/><circle cx="12.5" cy="12.5" r="2" fill="${B2}"/><path d="M11.8 11.8l-3.2-.8 1-2.1z" fill="${B}"/>`,
+    removeArrows: `<path d="M2 4l9 9" stroke="${B}" stroke-width="1.3"/><path d="M11.5 13.5l-3.2-.6 1.5-2.2z" fill="${B}"/><path d="M8 2l6 6M14 2L8 8" stroke="#d33" stroke-width="1.5"/>`,
+    circleInvalid: `<rect x="4" y="5.5" width="8" height="5" fill="#fff" stroke="#889"/><ellipse cx="8" cy="8" rx="7" ry="4.5" fill="none" stroke="#e00" stroke-width="1.3"/>`,
+    clearCircles: `<ellipse cx="7" cy="8" rx="6" ry="4" fill="none" stroke="#e00" stroke-width="1.2"/><path d="M10 10l5 5M15 10l-5 5" stroke="${B}" stroke-width="1.6"/>`,
+    traceError: `<circle cx="8" cy="8" r="6" fill="#ffe1df" stroke="#d33"/>${txt(6.3, 12, '!', 10, '#d33', 'bold')}`,
+    evaluate: `${txt(0.5, 11, '(fx)', 7, '#1a3f8a', 'bold')}<path d="M3 13.5h10" stroke="${B}"/>`,
+    watch: `<circle cx="8" cy="8" r="6" fill="#fff" stroke="#555"/><path d="M8 8V4M8 8h3" stroke="#000" stroke-width="1.3"/><circle cx="8" cy="8" r=".9" fill="#000"/>`,
+    textToCols: `<rect x="1.5" y="2.5" width="13" height="11" fill="#fff" stroke="#5a6f8f"/><path d="M8 2.5v11" stroke="${B}" stroke-dasharray="1.5 1"/>${txt(2.5, 10, 'ab', 6.5, K, 'normal')}${txt(9.5, 10, 'cd', 6.5, K, 'normal')}`,
+    subtotal: `${cellGrid(1, 1, 13, 13, 4, 2)}${txt(7.6, 14, 'Σ', 6.5, '#d33', 'bold')}`,
+    validation: `${cellGrid(1, 3, 10, 9, 2, 1)}<path d="M9 9.5l2 2.5 4-6" fill="none" stroke="${G}" stroke-width="1.8"/>`,
+    goalSeek: `<circle cx="8" cy="8" r="6" fill="#fff" stroke="#d33"/><circle cx="8" cy="8" r="3.5" fill="#fff" stroke="#d33"/><circle cx="8" cy="8" r="1.3" fill="#d33"/>`,
+    chartWizard: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#888"/><rect x="3" y="8" width="2.6" height="6" fill="#9999ff" stroke="#336"/><rect x="6.6" y="4" width="2.6" height="10" fill="#993366" stroke="#336"/><rect x="10.2" y="6" width="2.6" height="8" fill="#ffffcc" stroke="#336"/><path d="M12 0.8l.8 1.6 1.7.2-1.2 1.2.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.2 1.7-.2z" fill="#f5c842" stroke="#9a7a12" stroke-width=".5"/>`,
+    calcNow: `<rect x="2.5" y="1.5" width="11" height="13" rx="1" fill="#dfe6f1" stroke="#5a6f8f"/><rect x="4" y="3" width="8" height="3" fill="#fff" stroke="#5a6f8f"/><path d="M4.5 8.5h2M8.5 8.5h3M4.5 11h2M8.5 11h3" stroke="#555" stroke-width="1.4"/>`,
+    nameBox: `<rect x="1.5" y="4.5" width="13" height="7" fill="#fff" stroke="#5a6f8f"/>${txt(3, 10.5, 'A1', 6, K, 'bold')}`,
+    autoFilter: `<path d="M1.5 2.5h13l-5 6v5l-3 1.5v-6.5z" fill="${LB}" stroke="${B}"/>`,
+    sortDlg: `${txt(0.5, 7, 'A', 6.5, B)}${txt(0.5, 15, 'Z', 6.5, B)}<rect x="8" y="2" width="7" height="12" fill="#fff" stroke="#5a6f8f"/><path d="M9 5h5M9 8h5M9 11h5" stroke="#9fb0cc"/>`,
+    pivot: `${cellGrid(1, 1, 13, 13, 3, 3)}<rect x="1.5" y="1.5" width="13" height="4" fill="${LB}"/><rect x="1.5" y="1.5" width="4" height="13" fill="${LB}"/>`,
+    dataForm: `<rect x="1.5" y="1.5" width="13" height="13" fill="#ECE9D8" stroke="#5a6f8f"/><rect x="6" y="3.5" width="7" height="2.5" fill="#fff" stroke="#7f9db9"/><rect x="6" y="7" width="7" height="2.5" fill="#fff" stroke="#7f9db9"/><rect x="6" y="10.5" width="7" height="2.5" fill="#fff" stroke="#7f9db9"/><path d="M3 4.8h2M3 8.3h2M3 11.8h2" stroke="#555"/>`,
+    pageBreak: `${page(2, 0, 12, 7)}${page(2, 9, 12, 7)}<path d="M0.5 8h15" stroke="${B}" stroke-dasharray="2 1"/>`,
+    pageBreakView: `${page(1, 1, 14, 14)}<path d="M1.5 8h13M8 1.5v13" stroke="${B}" stroke-width="1.5" stroke-dasharray="3 1.5"/>`,
+    normalGrid: `${cellGrid(1, 1, 13, 13, 4, 3)}`,
+    showFormulas: `${cellGrid(1, 1, 13, 13, 2, 2)}${txt(2.2, 7, '=', 6, B, 'bold')}`,
+    tabColor: `<path d="M1.5 4.5h9l3 4-3 4h-9z" fill="#fff" stroke="#555"/><rect x="1" y="13" width="14" height="2.5" fill="var(--icon-swatch,#3a6ad6)"/>`,
+    bordersBottomDouble: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#b5b5b5" stroke-dasharray="1 1"/><path d="M1 12.5h14M1 14.5h14" stroke="${K}"/>`,
+    bordersThickBottom: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#b5b5b5" stroke-dasharray="1 1"/><path d="M1 14h14" stroke="${K}" stroke-width="2"/>`,
+    bordersTopBottom: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#b5b5b5" stroke-dasharray="1 1"/><path d="M1 1.5h14M1 14.5h14" stroke="${K}"/>`,
+    bordersTopThickBottom: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#b5b5b5" stroke-dasharray="1 1"/><path d="M1 1.5h14" stroke="${K}"/><path d="M1 14h14" stroke="${K}" stroke-width="2"/>`,
+    bordersTopDoubleBottom: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#b5b5b5" stroke-dasharray="1 1"/><path d="M1 1.5h14M1 12.5h14M1 14.5h14" stroke="${K}"/>`,
+    bordersThickBox: `<rect x="2" y="2" width="12" height="12" fill="#fff" stroke="${K}" stroke-width="2"/>`,
+    drawBorder: `<path d="M3 13l8-8 2 2-8 8H3z" fill="#fff" stroke="${K}"/><rect x="1.5" y="1.5" width="6" height="6" fill="none" stroke="${K}"/>`,
+    sheetIcon: `<path d="M2.5 1.5h8l3 3v10h-11z" fill="#fff" stroke="#3a7a3a"/>${cellGrid(4, 5, 8, 8, 3, 2, '#3a7a3a')}`,
+    rowHeight: `${cellGrid(3, 1, 11, 13, 3, 1)}<path d="M1.5 3v10M0.5 4.5L1.5 3l1 1.5M0.5 11.5l1 1.5 1-1.5" fill="none" stroke="${B}"/>`,
+    colWidth: `${cellGrid(1, 3, 13, 11, 1, 3)}<path d="M3 1.5h10M4.5 0.5L3 1.5l1.5 1M11.5 0.5l1.5 1-1.5 1" fill="none" stroke="${B}"/>`,
+    hyperlinkCell: `<path d="M6 10l4-4" stroke="${B}" stroke-width="1.6"/><path d="M7 5l1.5-1.5a2.5 2.5 0 013.5 3.5L10.5 8.5M9 11l-1.5 1.5a2.5 2.5 0 01-3.5-3.5L5.5 7.5" fill="none" stroke="#555" stroke-width="1.4"/>`,
+    wrapText: `${lines(2, 3, 12, 1, 0)}<path d="M2 7.5h9a2 2 0 010 4H8" fill="none" stroke="${K}"/><path d="M9 10l-1.5 1.5L9 13" fill="none" stroke="${K}"/>${lines(2, 13, 5, 1, 0)}`,
+    orientation: `${txt(2, 14, 'ab', 7, K, 'normal')}<path d="M6 12L13 3" stroke="${B}" stroke-width="1.3"/><path d="M13.5 2.3l-.3 3-2.4-1.6z" fill="${B}"/>`,
+  });
   /* content-placeholder palette icons are the toolbar icons drawn larger */
   I.ct_table = I.table; I.ct_chart = I.chart; I.ct_clipart = I.clipart; I.ct_picture = I.picture; I.ct_diagram = I.diagram; I.ct_media = I.movie;
   I.resetPicture = `${I.picture}<path d="M11.5 1.5a3.5 3.5 0 103.5 3.5" fill="none" stroke="${R}" stroke-width="1.3"/>`;
@@ -281,10 +341,14 @@
       const sz = size || 16;
       return `<svg class="ico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true" focusable="false">${body}</svg>`;
     },
-    /* original application icon: a folded quire of pages with a ribbon marker */
+    /** the application's own icon; each app sets L.icons.app in its app.js (this is the suite's) */
     app(size) {
       const sz = size || 16;
-      return `<svg class="appico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h7l3 3v10h-10z" fill="#fff" stroke="#1c4a9c"/><path d="M10.5 1.5v3h3" fill="#d6e2f7" stroke="#1c4a9c"/><path d="M1.5 4.5h7v9h-7z" fill="#2b5fbf" stroke="#173f86"/><circle cx="5" cy="8.8" r="2.2" fill="none" stroke="#fff" stroke-width="1.1"/><path d="M5.7 9.8l1.6 1.9" stroke="#fff" stroke-width="1.2"/><path d="M10 7.5h2.5M10 9.5h2.5M10 11.5h2.5" stroke="#7a8aa6"/></svg>`;
+      return `<svg class="appico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true">${page(2, 1, 12, 14)}${lines(4.5, 5, 7, 4, 2, B2)}</svg>`;
     },
+    /** more icons: { name: '<svg body, 16×16 user units>' } */
+    add(icons) { Object.assign(I, icons); },
+    /** drawing helpers and the Luna palette, for apps that add icons */
+    kit: { page, txt, lines, arrow, pg, tl, cellGrid, B, B2, LB, Y, YD, R, G, K, GR },
   };
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

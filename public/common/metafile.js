@@ -1,7 +1,7 @@
-/* Ledger — Windows metafile (WMF / EMF) renderer (shared with Quire).
- * Browsers cannot display .wmf/.emf, yet older workbooks are full of them (clip art, logos,
+/* VibeOffice — Windows metafile (WMF / EMF) renderer, shared by Quire, Ledger and Lectern.
+ * Browsers cannot display .wmf/.emf, yet older documents are full of them (clip art, logos,
  * pasted Visio/Excel graphics). This plays the GDI records onto a canvas so the picture
- * shows on the sheet; the original metafile bytes are kept for saving.
+ * shows; the original metafile bytes are kept for saving.
  * Covered: pens, brushes (solid, hatched, DIB pattern), fonts and text, polygons, polylines,
  * Béziers, paths, rectangles, ellipses, arcs/pies/chords, DIB bitmaps, window/viewport mapping,
  * world transforms, SaveDC/RestoreDC and rectangular clipping. EMF+ comments are skipped; the
@@ -9,7 +9,7 @@
  */
 (function (root) {
   'use strict';
-  const L = root.L;
+  const L = root.L || (root.L = {});
 
   /* ---------- shared helpers ---------- */
   const rgb = (cr) => `rgb(${cr & 255},${(cr >> 8) & 255},${(cr >> 16) & 255})`;
