@@ -1,0 +1,84 @@
+/* Engine sanity tests: formulas with values known from Excel. */
+for (const f of ['numfmt', 'formula', 'model', 'calc', 'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng']) require('../../../public/ledger/js/' + f + '.js');
+const L = globalThis.L, M = L.model, C = L.calc;
+const wb = new M.Workbook();
+const sh = wb.addSheet('Sheet1');
+const s2 = wb.addSheet('Data');
+const put = (s, a, v) => { const p = L.formula.parseCell(a); const cell = s.cell(p.r, p.c); if (typeof v === 'string' && v[0] === '=') { cell.f = v.slice(1); cell.dirty = true; } else cell.v = v; };
+/* data */
+[['Name', 'Dept', 'Sales', 'Date'], ['Ann', 'East', 100, 45292], ['Bob', 'West', 250, 45300], ['Cy', 'East', 175, 45310], ['Di', 'North', 50, 45320], ['Ed', 'West', 300, 45330]].forEach((row, i) => row.forEach((v, j) => put(s2, L.formula.cellName(i, j), v)));
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((v, i) => put(sh, 'A' + (i + 1), v));
+['apple', 'banana', 'cherry', 'date', 'elder'].forEach((v, i) => put(sh, 'B' + (i + 1), v));
+put(sh, 'C1', '=SUM(A1:A10)');
+put(sh, 'C2', '=C1*2');
+/* criteria block for D-functions */
+put(sh, 'H1', 'Dept'); put(sh, 'H2', 'West'); put(sh, 'I1', 'Sales'); put(sh, 'I2', '>200');
+put(sh, 'J1', 'Dept'); put(sh, 'J2', 'East'); put(sh, 'J3', 'North');
+C.recalcAll(wb);
+let n = 0, fail = 0;
+const eq = (a, b, tol) => {
+  if (typeof a === 'number' && typeof b === 'number') return a === b || Math.abs(a - b) <= (tol || 1e-9) * Math.max(1, Math.abs(b));
+  return String(a) === String(b);
+};
+const t = (f, exp, tol) => {
+  n++;
+  let v;
+  try { v = C.evalScalar(wb, sh, 19, 19, f); } catch (e) { v = 'THROW ' + e.message; }
+  if (M.isErr(v)) v = v.e;
+  if (!eq(v, exp, tol)) { fail++; console.log('FAIL', f, '=>', v, 'expected', exp); }
+};
+t('C1', 55); t('C2', 110);
+t('SUM(A1:A10)/COUNT(A1:A10)', 5.5); t('AVERAGE(A1:A10)', 5.5); t('MEDIAN(A1:A10)', 5.5); t('STDEV(A1:A10)', 3.0276503540974917);
+t('SUMPRODUCT((A1:A10>5)*A1:A10)', 40); t('SUMIF(A1:A10,">5")', 40); t('COUNTIF(B1:B5,"*e*")', 4); t('COUNTIFS(A1:A10,">2",A1:A10,"<8")', 5);
+t('AVERAGEIFS(Data!C2:C6,Data!B2:B6,"West")', 275); t('SUMIFS(Data!C2:C6,Data!B2:B6,"East",Data!C2:C6,">100")', 175);
+t('VLOOKUP("Cy",Data!A1:D6,3,FALSE)', 175); t('VLOOKUP("Zed",Data!A1:D6,3,FALSE)', '#N/A'); t('HLOOKUP("Sales",Data!A1:D6,3,FALSE)', 250);
+t('INDEX(Data!A1:D6,MATCH("Di",Data!A1:A6,0),2)', 'North'); t('MATCH(7,A1:A10,1)', 7); t('MATCH(7.5,A1:A10)', 7); t('LOOKUP(6.5,A1:A10,A1:A10)', 6);
+t('XLOOKUP("Ed",Data!A2:A6,Data!C2:C6)', 300); t('XMATCH("cherry",B1:B5)', 3);
+t('IFERROR(1/0,"x")', 'x'); t('ISNA(MATCH("q",B1:B5,0))', true); t('IF(A1>0,"pos","neg")', 'pos'); t('IFS(A3=1,"a",A3=3,"c")', 'c');
+t('CHOOSE(2,"a","b","c")', 'b'); t('SWITCH(2,1,"one",2,"two","other")', 'two');
+t('ROUND(2.345,2)', 2.35); t('ROUND(-2.5,0)', -3); t('ROUNDUP(2.341,2)', 2.35); t('ROUNDDOWN(-2.349,2)', -2.34); t('MROUND(10,3)', 9); t('CEILING(2.5,1)', 3); t('FLOOR(-2.5,-1)', -2);
+t('INT(-1.5)', -2); t('TRUNC(-1.5)', -1); t('MOD(-3,2)', 1); t('MOD(3,-2)', -1); t('POWER(2,10)', 1024); t('SQRT(16)', 4); t('ABS(-3)', 3); t('SIGN(-2)', -1);
+t('PRODUCT(1,2,3,4)', 24); t('FACT(5)', 120); t('COMBIN(10,3)', 120); t('PERMUT(5,2)', 20); t('GCD(12,18)', 6); t('LCM(4,6)', 12);
+t('0.1+0.2=0.3', true); t('1-0.9', 0.1); t('LEN("hello")', 5); t('LEFT("hello",2)', 'he'); t('MID("hello",2,3)', 'ell'); t('RIGHT("hello",3)', 'llo');
+t('UPPER("abc")', 'ABC'); t('PROPER("hello WORLD")', 'Hello World'); t('TRIM("  a   b  ")', 'a b'); t('SUBSTITUTE("aaa","a","b",2)', 'aba'); t('REPLACE("abcdef",2,3,"X")', 'aXef');
+t('FIND("l","hello")', 3); t('SEARCH("L*O","hello")', 3); t('TEXT(1234.567,"#,##0.00")', '1,234.57'); t('TEXT(45292,"yyyy-mm-dd")', '2024-01-01'); t('TEXT(0.5,"h:mm AM/PM")', '12:00 PM');
+t('VALUE("1,234.5")', 1234.5); t('VALUE("12%")', 0.12); t('"3"+4', 7); t('CONCATENATE("a",1,TRUE)', 'a1TRUE'); t('TEXTJOIN(",",TRUE,B1:B3)', 'apple,banana,cherry');
+t('REPT("ab",3)', 'ababab'); t('EXACT("a","A")', false); t('"a"="A"', true); t('CHAR(65)', 'A'); t('CODE("a")', 97); t('DOLLAR(1234.5)', '$1,234.50'); t('FIXED(1234.567,1)', '1,234.6');
+t('DATE(2024,2,29)', 45351); t('DATE(2023,14,1)', 45323); t('YEAR(45351)', 2024); t('MONTH(45351)', 2); t('DAY(45351)', 29); t('WEEKDAY(45351)', 5); t('WEEKDAY(45351,2)', 4);
+t('EOMONTH(45292,1)', 45351); t('EDATE(45322,1)', 45351); t('DATEDIF(DATE(2020,1,15),DATE(2024,3,10),"y")', 4); t('DATEDIF(DATE(2020,1,15),DATE(2024,3,10),"md")', 24);
+t('NETWORKDAYS(DATE(2024,1,1),DATE(2024,1,31))', 23); t('WORKDAY(DATE(2024,1,1),10)', 45306); t('WEEKNUM(DATE(2024,3,15))', 11); t('ISOWEEKNUM(DATE(2024,1,1))', 1);
+t('YEARFRAC(DATE(2024,1,1),DATE(2024,7,1))', 0.5); t('YEARFRAC(DATE(2024,1,1),DATE(2024,7,1),1)', 0.4972677595628415); t('DAYS360(DATE(2024,1,31),DATE(2024,3,31))', 60);
+t('TIME(12,30,0)', 0.5208333333333334); t('HOUR(0.75)', 18); t('MINUTE(TIME(1,45,0))', 45); t('DATEVALUE("2024-03-01")', 45352); t('TIMEVALUE("6:00 PM")', 0.75);
+t('PMT(0.05/12,360,200000)', -1073.6432460242795); t('FV(0.06/12,10,-200,-500,1)', 2581.4033740601185); t('PV(0.08/12,240,500)', -59777.14585118727);
+t('NPER(0.01,-100,-1000,10000)', 60.08212285376166); t('NPER(0.01,-100,-1000,10000,1)', 59.67386567429457, 1e-7); t('RATE(48,-200,8000)', 0.007701472488246008); t('NPV(0.1,-10000,3000,4200,6800)', 1188.4434123352207);
+t('IRR({-70000,12000,15000,18000,21000,26000})', 0.08663094803653171); t('SLN(30000,7500,10)', 2250); t('DDB(2400,300,10,1)', 480); t('SYD(30000,7500,10,1)', 4090.909090909091);
+t('DB(1000000,100000,6,1,7)', 186083.33333333334); t('VDB(2400,300,10,0,1)', 480); t('VDB(2400,300,120,0,1)', 40); t('VDB(2400,300,10,6,10,2,FALSE)', 2400*0.8**6-300 - 0, 1e-6); t('IPMT(0.1/12,1,36,8000)', -66.66666666666667); t('PPMT(0.1/12,1,24,2000)', -75.62318600836664);
+t('EFFECT(0.0525,4)', 0.053542667370758365); t('NOMINAL(0.053543,4)', 0.0525003198683560, 1e-9); t('CUMIPMT(0.09/12,360,125000,13,24,0)', -11135.232130750845);
+t('XNPV(0.09,{-10000,2750,4250,3250,2750},{39448,39508,39751,39859,39904})', 2086.647602031535); t('XIRR({-10000,2750,4250,3250,2750},{39448,39508,39751,39859,39904})', 0.3733625335188315);
+t('NORMSDIST(1.96)', 0.9750021048517795); t('NORMSINV(0.975)', 1.959963984540054); t('NORMDIST(42,40,1.5,TRUE)', 0.9087887802741321); t('TDIST(1.96,60,2)', 0.054644929975921);
+t('CHIDIST(18.307,10)', 0.0500005890537296); t('BINOMDIST(6,10,0.5,FALSE)', 0.205078125); t('POISSON(2,5,TRUE)', 0.12465201948308113); t('EXPONDIST(0.2,10,TRUE)', 0.8646647167633873);
+t('CORREL({3,2,4,5,6},{9,7,12,15,17})', 0.9970544855015815); t('SLOPE({2,3,9,1,8,7,5},{6,5,11,7,5,4,4})', 0.3055555555555556); t('INTERCEPT({2,3,9,1,8},{6,5,11,7,5})', 0.0483870967741935, 1e-7);
+t('RSQ({2,3,9,1,8,7,5},{6,5,11,7,5,4,4})', 0.05795019157088122); t('FORECAST(30,{6,7,9,15,21},{20,28,31,38,40})', 10.607253086419755);
+t('LARGE(A1:A10,3)', 8); t('SMALL(A1:A10,3)', 3); t('RANK(7,A1:A10)', 4); t('PERCENTILE(A1:A10,0.3)', 3.7); t('QUARTILE(A1:A10,1)', 3.25); t('MODE({1,2,2,3,3,3})', 3);
+t('PERCENTRANK({1,2,3,4,5,6,7,8,9,10},4)', 0.333); t('VAR({1,2,3,4})', 1.6666666666666667); t('KURT({3,4,5,2,3,4,5,6,4,7})', -0.15179963720841627); t('SKEW({3,4,5,2,3,4,5,6,4,7})', 0.3595430714067974);
+t('GEOMEAN(4,5,8,7,11,4,3)', 5.476986969656962); t('HARMEAN(4,5,8,7,11,4,3)', 5.028375962061728); t('TRIMMEAN({4,5,6,7,2,3,4,5,1,2,3},0.2)', 3.7777777777777777); t('AVEDEV(4,5,6,7,5,4,3)', 1.0204081632653061);
+t('GAMMALN(4)', 1.791759469228055); t('BETADIST(2,8,10,1,3)', 0.6854705810117458); t('FDIST(15.2069,6,4)', 0.01, 1e-4); t('TINV(0.05,10)', 2.2281388519649385);
+t('CONFIDENCE(0.05,2.5,50)', 0.6929519121748391); t('STANDARDIZE(42,40,1.5)', 1.3333333333333333); t('ZTEST({3,6,7,8,6,5,4,2,1,9},4)', 0.09057419685136381);
+t('BIN2DEC("1111111111")', -1); t('DEC2BIN(9,4)', '1001'); t('DEC2HEX(-54)', 'FFFFFFFFCA'); t('HEX2DEC("A5")', 165); t('OCT2BIN("3")', '11'); t('HEX2BIN("F",8)', '00001111'); t('DEC2OCT(58,3)', '072');
+t('BITAND(13,25)', 9); t('BITOR(23,10)', 31); t('BITXOR(5,3)', 6); t('BITLSHIFT(4,2)', 16); t('DELTA(5,5)', 1); t('GESTEP(-4,-5)', 1); t('ERF(1)', 0.8427007929497149);
+t('COMPLEX(3,4)', '3+4i'); t('IMABS("3+4i")', 5); t('IMSUM("3+4i","5-3i")', '8+i'); t('IMPRODUCT("3+4i","5-3i")', '27+11i'); t('IMDIV("-238+240i","10+24i")', '5+12i'); t('IMSQRT("-4")', '1.22464679914735E-16+2i');
+t('IMREAL("6-9i")', 6); t('IMAGINARY("-j")', -1); t('IMPOWER("2+3i",3)', '-46+9.00000000000001i'); t('IMEXP("1+i")', '1.46869393991589+2.28735528717884i'); t('IMLN("3+4i")', '1.6094379124341+0.927295218001612i');
+t('BESSELJ(1.9,2)', 0.329925727692387, 1e-13); t('BESSELJ(30,3)', 0.129211228759725, 1e-12); t('BESSELJ(-5,1)', 0.327579137591465, 1e-13); t('BESSELI(1.5,1)', 0.9816664285779078, 1e-13); t('BESSELI(80,2)', 2.4136869148449818e+33, 1e-12); t('BESSELK(1.5,1)', 0.2773878004568438, 1e-13); t('BESSELK(0.01,0)', 4.721244730161095, 1e-12); t('BESSELY(2.5,1)', 0.145918137966786, 1e-12); t('BESSELY(0.1,0)', -1.53423865135037, 1e-12); t('BESSELY(40,2)', -0.12622609234933843, 1e-11);
+t('CONVERT(1,"lbm","kg")', 0.45359237); t('CONVERT(68,"F","C")', 20); t('CONVERT(2.5,"ft","sec")', '#N/A'); t('CONVERT(CONVERT(100,"ft","m"),"ft","m")', 9.290304); t('CONVERT(1,"km","mi")', 0.621371192237334); t('CONVERT(1,"Gbyte","Mbit")', 8000); t('CONVERT(1,"kibyte","bit")', 8192); t('CONVERT(1,"m^2","ft2")', 10.763910416709722);
+t('DSUM(Data!A1:D6,"Sales",H1:H2)', 550); t('DSUM(Data!A1:D6,3,H1:I2)', 550); t('DAVERAGE(Data!A1:D6,"Sales",J1:J3)', 108.33333333333333); t('DCOUNT(Data!A1:D6,"Sales",J1:J3)', 3); t('DMAX(Data!A1:D6,"Sales",H1:H2)', 300); t('DGET(Data!A1:D6,"Name",I1:I2)', '#NUM!');
+t('DCOUNTA(Data!A1:D6,"Name",J1:J2)', 2); t('DMIN(Data!A1:D6,"Sales",J1:J3)', 50); t('DPRODUCT(Data!A1:D6,"Sales",H1:H2)', 75000); t('DSTDEV(Data!A1:D6,"Sales",J1:J3)', 62.91528696058958);
+t('ROWS(A1:B10)', 10); t('COLUMNS(A1:C1)', 3); t('ROW(C5)', 5); t('COLUMN(D1)', 4); t('ADDRESS(2,3)', '$C$2'); t('ADDRESS(2,3,4,FALSE,"Sheet 2")', "'Sheet 2'!R[2]C[3]"); t('ADDRESS(2,3,4)', 'C2'); t('ADDRESS(2,3,2)', 'C$2');
+t('INDIRECT("A"&3)', 3); t('SUM(OFFSET(A1,2,0,3,1))', 12); t('SUM(INDEX(A1:A10,3):A5)', 12); t('TRANSPOSE({1,2,3})', 1); t('SUM(TRANSPOSE({1,2,3}))', 6);
+t('ISNUMBER(A1)', true); t('ISTEXT(B1)', true); t('ISBLANK(Z99)', true); t('ISERROR(1/0)', true); t('ISEVEN(4)', true); t('ISODD(3)', true); t('N("a")', 0); t('T(1)', ''); t('TYPE("a")', 2); t('ERROR.TYPE(1/0)', 2);
+t('AND(TRUE,1)', true); t('OR(FALSE,0)', false); t('XOR(TRUE,TRUE,TRUE)', true); t('NOT(1)', false);
+t('SUM(SEQUENCE(4))', 10); t('ROWS(UNIQUE({1;2;2;3}))', 3); t('SUM(FILTER(A1:A10,A1:A10>7))', 27); t('INDEX(SORT({3;1;2}),1)', 1); t('LET(x,5,y,x*2,x+y)', 15); t('LAMBDA(x,x*x)(4)', 16);
+t('MAX(A1:A10)', 10); t('MIN(A1:A10,-1)', -1); t('MAXIFS(Data!C2:C6,Data!B2:B6,"East")', 175); t('COUNTA(B1:B10)', 5); t('COUNTBLANK(B1:B10)', 5); t('SUBTOTAL(9,A1:A10)', 55); t('AGGREGATE(14,6,A1:A10,2)', 9);
+t('ROMAN(1999)', 'MCMXCIX'); t('ARABIC("MCMXCIX")', 1999); t('BASE(255,16,4)', '00FF'); t('DECIMAL("FF",16)', 255); t('SUMSQ(3,4)', 25); t('SUMX2MY2({2,3},{1,1})', 11); t('MMULT({1,2;3,4},{5;6})', 17); t('MDETERM({1,2;3,4})', -2);
+t('1/0', '#DIV/0!'); t('SQRT(-1)', '#NUM!'); t('"a"+1', '#VALUE!'); t('NA()', '#N/A'); t('UNKNOWNFN(1)', '#NAME?'); t('A1:A3 B1:B3', '#NULL!');
+t('2^-1', 0.5); t('-2^2', 4); t('10%', 0.1); t('5&"%"', '5%'); t('1E+308*10', '#NUM!'); t('(1+2)*3', 9); t('3>2>1', true);
+console.log(n - fail + '/' + n);

@@ -1,0 +1,17 @@
+require('../../../public/ledger/js/formula.js');
+const F = globalThis.L.formula;
+let n = 0, fail = 0;
+const rt = (src, exp) => { n++; try { const a = F.parse(src); const out = F.toText(a); if (out !== (exp || src)) { fail++; console.log('RT FAIL', src, '=>', out); } } catch (e) { fail++; console.log('PARSE FAIL', src, e.message); } };
+rt('A1+B2*3'); rt('SUM(A1:B10)'); rt('Sheet1!A1'); rt("'My Sheet'!$A$1:B$3"); rt('SUM(Sheet1:Sheet3!A1)'); rt('A:A'); rt('$1:$3'); rt('-2^2'); rt('2^3^2'); rt('A1%'); rt('IF(A1>0,"yes","no")');
+rt('{1,2;3,4}'); rt('SUM((A1,B2))'); rt('A1:B5 B2:C6'); rt('VLOOKUP(A1,Data!$A$1:$D$100,2,FALSE)'); rt('_xlfn.STDEV.S(A1:A9)', 'STDEV.S(A1:A9)'); rt('Table1[Sales]'); rt('[@Price]*[@Qty]'); rt('Table1[[#This Row],[Price]]');
+rt('#REF!+1'); rt('Sheet2!#REF!'); rt('TRUE+FALSE'); rt('"a""b"&C1'); rt('1E+20'); rt('.5', '0.5'); rt('[1]Sheet1!A1'); rt("'[Book 2.xlsx]Data'!B3"); rt('SUM(A1, B1)', 'SUM(A1,B1)'); rt('IF(,1,)');
+rt('MyName*2'); rt('Sheet1!MyName'); rt('OFFSET(A1,1,1):B5'); rt('INDEX(A1:C3,2,2):C3'); rt('-A1'); rt('+A1'); rt('A1<>B1'); rt('A1>=1'); rt('LET(x,1,x+1)');
+rt('XFD1048576'); rt('ROUND(A1,2)&" units"'); rt("'Q1-2024'!A1"); rt('A1 :B2', 'A1:B2');
+const ast = F.parse('A1+$B$2+C$3+$D4+SUM(E1:F2)');
+console.log(F.toText(F.shift(ast, 2, 1)));
+console.log(F.translate('A1*2', -1, 0));
+console.log(F.toText(F.adjust(F.parse('SUM(A1:A10)+B5+Sheet2!A3'), { sheet: 'Sheet1', axis: 'r', at: 2, n: 3 }, 'Sheet1').ast));
+console.log(F.toText(F.adjust(F.parse('SUM(A1:A10)+B5+A3'), { sheet: 'Sheet1', axis: 'r', at: 2, n: -3 }, 'Sheet1').ast));
+console.log(F.toText(F.parse('_xlfn.LET(_xlpm.x,5,_xlpm.x*2)')), F.toText(F.parse('_xlfn.LET(_xlpm.x,5,_xlpm.x*2)'), { store: true }));
+console.log(JSON.stringify(F.parse('-2^2')), JSON.stringify(F.parse('2^3^2')));
+console.log(n - fail + '/' + n);

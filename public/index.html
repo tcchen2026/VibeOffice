@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VibeOffice</title>
+<meta name="description" content="A free office suite that runs in your browser: a word processor, a spreadsheet and a presentation editor. Your files never leave your computer.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #eef3fb; --panel: #fff; --line: #c9d6ea;
+    --text: #1b2433; --muted: #5a6577; --accent: #1f5fbf;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: inherit; }
+  .wrap { width: min(1120px, 100% - 40px); margin: 0 auto; }
+
+  header {
+    text-align: center; padding: 80px 0 56px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #2a64c8 0%, #3d7be0 55%, #eef3fb 100%);
+  }
+  h1 { margin: 0 0 12px; font-size: clamp(40px, 7vw, 64px); line-height: 1.05; letter-spacing: -.02em; color: #fff; }
+  header p { margin: 0 auto; max-width: 620px; font-size: 19px; color: #e8f0ff; }
+
+  main { padding: 48px 0 64px; }
+  .apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+  .card {
+    display: flex; flex-direction: column; text-decoration: none;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .card:hover, .card:focus-visible { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(30,60,120,.16); outline: none; }
+  .card img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-bottom: 1px solid var(--line); }
+  .card .body { padding: 18px 20px 22px; }
+  .card h2 { margin: 0; font-size: 24px; }
+  .card .sub { margin: 2px 0 10px; color: var(--accent); font-weight: 600; }
+  .card p { margin: 0; color: var(--muted); }
+
+  footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; text-align: center; }
+  footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>VibeOffice</h1>
+    <p>A free office suite that runs in your browser. Nothing to install, no account, and your files never leave your computer.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="apps">
+    <a class="card" href="quire/">
+      <img src="quire/preview.jpg" alt="Quire with a document open" width="1280" height="720">
+      <div class="body">
+        <h2>Quire</h2>
+        <div class="sub">Word processor</div>
+        <p>Write letters, reports and theses with styles, tables, footnotes and tracked changes. Opens and saves .docx, RTF and web pages. Spelling and a thesaurus work offline.</p>
+      </div>
+    </a>
+    <a class="card" href="ledger/">
+      <img src="ledger/preview.jpg" alt="Ledger with a sales table open" width="1280" height="720">
+      <div class="body">
+        <h2>Ledger</h2>
+        <div class="sub">Spreadsheet</div>
+        <p>Over 500 functions, charts, sorting, filters and pivot summaries. Opens and saves .xlsx and CSV, password-protected workbooks included. Prints to PDF.</p>
+      </div>
+    </a>
+    <a class="card" href="lectern/">
+      <img src="lectern/preview.jpg" alt="Lectern with a slide deck open" width="1280" height="720">
+      <div class="body">
+        <h2>Lectern</h2>
+        <div class="sub">Presentations</div>
+        <p>Build slides with design templates, shapes, charts and tables. Present full screen with transitions and animations. Opens and saves .pptx.</p>
+      </div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Open source under the Apache License 2.0.</p>
+    <p>VibeOffice is an independent project. Product names mentioned in its documentation are trademarks of their owners; VibeOffice is not affiliated with them.</p>
+  </div>
+</footer>
+</body>
+</html>

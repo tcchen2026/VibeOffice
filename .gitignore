@@ -1,0 +1,7 @@
+__pycache__
+node_modules
+*.zip
+.*
+!.gitignore
+/issues/*.png
+/issues/*/*.png
