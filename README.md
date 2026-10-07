@@ -4,7 +4,7 @@ A free office suite that runs in your browser, in the style of Office 2003. Noth
 
 | App | | Opens and saves |
 |---|---|---|
-| [Quire](docs/quire.md) | Word processor | .docx, .dotx, .rtf, .htm, .txt; PDF |
+| [Quire](docs/quire.md) | Word processor | .docx, .dotx, .rtf, .htm, .txt, Markdown (.md, or .zip with pictures); PDF |
 | [Ledger](docs/ledger.md) | Spreadsheet | .xlsx, .xlsm, .xltx, .csv, XML Spreadsheet 2003, .htm; PDF |
 | [Lectern](docs/lectern.md) | Presentations | .pptx, .ppsx, .potx; PDF, PNG, .htm |
 

@@ -89,8 +89,9 @@
     const s = window.getSelection();
     if (!s.rangeCount || !isEditableNode(s.focusNode)) return;
     const m = E.readDom();
-    if (!m) {
-      /* caret landed somewhere unmapped (page gap, margin) — snap to the nearest paragraph */
+    /* caret landed somewhere unmapped (page gap, margin), or a drag reached the empty part of a page (the
+       browser puts it at the page's first position) — snap to the nearest paragraph */
+    if (!m || (pointer && !settingDom && !overText(pointer))) {
       if (!settingDom) snapCaret();
       return;
     }
@@ -114,23 +115,59 @@
     E.pending = null; D.breakMerge();
     E.sel = m; E.objSel = null; E.selChanged();
   };
+  /* where the pointer is while a button is held: a drag that leaves the text is placed by the pointer */
+  let pointer = null, textDrag = false, snapQueued = false;
+  document.addEventListener('pointerdown', (e) => { const t = e.target; textDrag = e.button === 0 && !!(t.closest && t.closest('.p') && LY.root && LY.root.contains(t)); }, true);
+  document.addEventListener('pointermove', (e) => {
+    pointer = e.buttons & 1 ? { x: e.clientX, y: e.clientY } : null;
+    /* outside the page (grey area, other panes) the browser stops extending the selection: follow the pointer */
+    if (pointer && textDrag && !overText(pointer) && !snapQueued) { snapQueued = true; requestAnimationFrame(() => { snapQueued = false; if (pointer && textDrag) snapCaret(); }); }
+  }, true);
+  document.addEventListener('pointerup', () => { pointer = null; textDrag = false; }, true);
+  /** the selection's moving end landed where there is no text (page gap, margins): put it at the nearest
+      paragraph — its end when the point is below it, its start when above — and, when a selection is being
+      dragged out, keep where it started */
+  const overText = (pt) => { const e = document.elementFromPoint(pt.x, pt.y); return !!(e && e.closest && e.closest('.p')); };
   function snapCaret() {
     const s = window.getSelection();
     const n = s.focusNode;
     if (!n) return;
-    const e = n.nodeType === 3 ? n.parentNode : n;
-    let frag = null;
-    const pg = e.closest && e.closest('.pg');
-    if (pg) {
-      const r = s.getRangeAt(0).getBoundingClientRect();
-      const frs = pg.querySelectorAll('.pg-body .p');
-      let best = null, bd = Infinity;
-      for (const f of frs) { const fr = f.getBoundingClientRect(); const dd = r.top < fr.top ? fr.top - r.top : r.top > fr.bottom ? r.top - fr.bottom : 0; if (dd < bd) { bd = dd; best = f; } }
-      frag = best;
-    } else frag = LY.root.querySelector('.p');
+    let pt = pointer;
+    if (!pt) {
+      let r = null;
+      try { const rg = document.createRange(); rg.setStart(n, s.focusOffset); rg.collapse(true); r = rg.getClientRects()[0] || rg.getBoundingClientRect(); } catch (err) { r = null; }
+      if (!r || (!r.top && !r.height)) { const e = n.nodeType === 3 ? n.parentNode : n; r = e.getBoundingClientRect ? e.getBoundingClientRect() : null; }
+      if (!r) return;
+      pt = { x: r.left, y: r.top + r.height / 2 };
+    }
+    /* a selection being dragged stays in the story it started in (body, a header, a text box…) */
+    const anchor = !s.isCollapsed && isEditableNode(s.anchorNode) ? LY.domToPos(s.anchorNode, s.anchorOffset) : null;
+    const story = anchor ? D.storyOf(doc(), anchor.p) : null;
+    let frag = null, bd = Infinity, below = false, level = false, box = null;
+    for (const f of LY.root.querySelectorAll(story ? '.p' : '.pg-body .p, .pg-hdr .p, .pg-ftr .p')) {
+      if (story) { const q = D.byId(doc(), +f.dataset.pid); if (!q || D.storyOf(doc(), q) !== story) continue; }
+      const fr = f.getBoundingClientRect();
+      if (!fr.height) continue;
+      const dy = pt.y < fr.top ? fr.top - pt.y : pt.y > fr.bottom ? pt.y - fr.bottom : 0;
+      const dx = pt.x < fr.left ? fr.left - pt.x : pt.x > fr.right ? pt.x - fr.right : 0;
+      const dd = dy * 4 + dx;
+      if (dd < bd) { bd = dd; frag = f; below = pt.y > fr.bottom; level = !dy; box = fr; }
+    }
+    if (!frag) frag = LY.root.querySelector('.p');
     if (!frag) return;
     const p = D.byId(doc(), +frag.dataset.pid);
-    if (p) E.setSel({ p, o: +frag.dataset.from });
+    if (!p) return;
+    const to = parseFloat(frag.dataset.to);
+    let at = { p, o: below && isFinite(to) ? to : +frag.dataset.from || 0 };
+    /* beside a paragraph (in the margin): the start or end of the line at that height, as Word does */
+    if (level && box && document.caretRangeFromPoint) {
+      const pc = frag.querySelector('.pc') || frag, cb = pc.getBoundingClientRect();
+      const rg = document.caretRangeFromPoint(L.clamp(pt.x, cb.left + 1, cb.right - 1), L.clamp(pt.y, cb.top + 1, cb.bottom - 1));
+      const q = rg && frag.contains(rg.startContainer) ? LY.domToPos(rg.startContainer, rg.startOffset) : null;
+      if (q) at = q;
+    }
+    if (anchor && D.storyOf(doc(), anchor.p) === D.storyOf(doc(), at.p)) E.setSel(anchor, at, { noScroll: true });
+    else E.setSel(at, null, pointer ? { noScroll: true } : undefined);
   }
   /** notify UI (debounced through rAF) */
   E.selChanged = L.rafThrottle(() => { L.bus.emit('sel', E.sel); });
@@ -870,6 +907,12 @@
     }
     const nr = t.closest && t.closest('.nref');
     if (nr && L.app && L.app.gotoNote && e.detail === 2) L.app.gotoNote(nr.dataset.note);
+    /* a check box (task lists, form fields) ticks on click */
+    const cb = t.closest && t.closest('.ffcb');
+    if (cb && !E.readOnly) {
+      const f = D.fields(D.doc).find((x) => x.it.fid === cb.dataset.fid && x.it.ff);
+      if (f) E.edit('Check Box', () => { D.touch(f.p); f.it.ff = Object.assign({}, f.it.ff, { checked: !f.it.ff.checked }); return E.sel; });
+    }
   }
   function onDblClick(e) {
     const t = e.target;

@@ -509,6 +509,8 @@
   const link = (icon, label, fn) => h('button', { class: 'tp-link', type: 'button', onclick: fn }, icon ? h('span', { html: L.icons.get(icon) }) : null, h('span', { text: label }));
 
   /* --- Getting Started --- */
+  /* ---------- Document Recovery: unsaved versions kept by common/suite.js ---------- */
+  TP.register({ id: 'recovery', title: 'Document Recovery', render(b) { if (window.VO) VO.recoveryPane(b); } });
   TP.register({
     id: 'getting-started', title: 'Getting Started',
     render(b) {
@@ -517,7 +519,7 @@
       b.append(
         h('div', { class: 'tp-row' }, h('span', { html: L.icons.app(32) }), h('b', { text: 'Lectern 2003 Web Edition', style: 'color:var(--pane-ink)' })),
         sec('Search for:', h('div', { class: 'tp-row' }, q, ui.button('Go', () => { P.helpQuery = q.value; TP.show('help'); }, { class: 'btn small' }))),
-        sec('Open', link('open', 'Open a presentation (.pptx)...', () => ui.exec('open')), link('new', 'Create a new presentation...', () => TP.show('new')), link('slideshow', 'View the sample presentation', () => L.app.loadSample())),
+        sec('Open', window.VO ? VO.recentLinks(4) : null, link('open', 'Open a presentation (.pptx)...', () => ui.exec('open')), link('new', 'Create a new presentation...', () => TP.show('new')), link('slideshow', 'View the sample presentation', () => L.app.loadSample())),
         sec('Learn', link('help', 'Keyboard shortcuts and help', () => TP.show('help')), link('design', 'Apply a design template', () => TP.show('design')), link('animation', 'Animate your slides', () => TP.show('customAnim'))));
     },
   });

@@ -4,7 +4,7 @@ A static web office suite in the style of Office 2003 (Luna Blue) that opens and
 
 | App | Folder | Kind | Files |
 |---|---|---|---|
-| Quire | `public/quire/` | Word processor | .docx/.dotx, RTF, HTML, text; PDF out |
+| Quire | `public/quire/` | Word processor | .docx/.dotx, RTF, HTML, text, Markdown (GitHub flavour; .zip with pictures); PDF out |
 | Ledger | `public/ledger/` | Spreadsheet | .xlsx/.xlsm/.xltx, CSV/text, XML Spreadsheet 2003, HTML; PDF out |
 | Lectern | `public/lectern/` | Presentations | .pptx/.ppsx/.potx; PDF, PNG, HTML out |
 

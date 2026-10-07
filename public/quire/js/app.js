@@ -50,9 +50,9 @@
 
   /* ================= menus ================= */
   function buildMenus() {
-    const recentItems = () => (A.opts.recent || []).slice(0, 4).map((r, i) => ({ label: `&${i + 1} ${r.replace(/&/g, '&&')}`, run: () => ui.msg(`To reopen ${r}, choose File ▸ Open and pick it again. Browsers don't let pages reopen files by themselves.`, { icon: 'info' }) }));
+    const recentItems = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['sendMail', 'exportPDF'] }, 'properties', ...(A.opts.recent && A.opts.recent.length ? ['-', ...recentItems()] : []), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['sendMail', 'exportPDF'] }, 'properties', ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'Cle&ar', sub: ['clearFormats', 'clearContents'] }, 'selectAll', '-', 'find', 'replace', 'goTo', '-', 'links', 'editObject'],
@@ -431,7 +431,21 @@
     A.sb.ovr.addEventListener('dblclick', () => { E.overtype = !E.overtype; A.updateStatus(); });
     A.sb.ext.addEventListener('dblclick', () => { E.extend = !E.extend; A.updateStatus(); });
     A.sb.lang.addEventListener('dblclick', () => ui.exec('setLanguage'));
-    A.sb.spell.addEventListener('dblclick', () => ui.exec('spelling'));
+    /* click: check this document's spelling and grammar as you type, or stop (off when a document opens) */
+    A.sb.spell.addEventListener('click', () => {
+      if (!L.spell) return;
+      if (!A.opts.spell) { A.opts.spell = true; A.saveOpts && A.saveOpts(); }
+      L.spell.hidden = !L.spell.hidden;
+      A.status(L.spell.hidden ? 'Spelling and grammar are no longer marked in this document.' : 'Checking spelling and grammar as you type in this document.');
+    });
+    const spellIcon = () => {
+      const on = L.spell && !L.spell.hidden && A.opts.spell !== false;
+      A.sb.spell.classList.toggle('off', !on);
+      A.sb.spell.dataset.tip = on ? 'Spelling and grammar are checked as you type. Click to stop.' : 'Spelling and grammar are not checked as you type. Click to check this document.';
+    };
+    L.bus.on('proof-state', spellIcon);
+    L.bus.on('doc-loaded', spellIcon);
+    spellIcon();
     A.sb.page.addEventListener('dblclick', () => ui.exec('goTo'));
     sb.append(A.sb.page, A.sb.sec, A.sb.pages, A.sb.at, A.sb.ln, A.sb.col, A.sb.rec, A.sb.trk, A.sb.ext, A.sb.ovr, A.sb.lang, A.sb.spell, A.sb.msg);
   }
@@ -661,6 +675,7 @@
     if (!doc() || !doc().dirty) return true;
     const r = await ui.msg(`Do you want to save the changes to ${A.fileName}?`, { icon: 'warn', buttons: ['&Yes', '&No', 'Cancel'] });
     if (r === 0) { await A.save(); return true; }
+    if (r === 1 && window.VO) VO.discard(doc());   // its unsaved version goes too
     return r === 1;
   }
   A.confirmDiscard = confirmDiscard;
@@ -680,17 +695,19 @@
     A.switchTo(Math.max(0, i - 1));
   };
   A.openDialog = async function () {
-    const files = await L.pickFiles('.docx,.docm,.dotx,.dotm,.doc,.txt,.htm,.html,.rtf,.xml,application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const files = await L.pickFiles('.docx,.docm,.dotx,.dotm,.doc,.txt,.htm,.html,.rtf,.xml,.md,.markdown,.zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     if (files[0]) A.openFile(files[0]);
   };
-  A.openFiles = (files) => { const f = files.find((x) => /\.(docx|docm|dotx|dotm|doc|txt|html?|rtf)$/i.test(x.name)); if (f) A.openFile(f); };
+  A.openFiles = (files) => { const f = files.find((x) => /\.(docx|docm|dotx|dotm|doc|txt|html?|rtf|md|markdown|zip)$/i.test(x.name)); if (f) A.openFile(f); };
   A.openFile = async function (file) {
     const reuse = pristine();
-    const name = file.name.replace(/\.(docx|docm|dotx|dotm|doc|txt|html?|rtf|xml)$/i, '');
+    const name = file.name.replace(/\.(docx|docm|dotx|dotm|doc|txt|html?|rtf|xml|md|markdown|mdown|mkd|zip)$/i, '');
     ui.busy(true, `Opening ${file.name}...`);
     try {
-      let d, warnings = [];
+      let d, warnings = [], type = 'docx';
       if (/\.txt$/i.test(file.name)) d = A.docFromText(await L.readAsText(file));
+      else if (L.mdio && L.mdio.isMarkdown(file.name)) { d = await L.mdio.read(await L.readAsText(file)); type = 'md'; }
+      else if (L.mdio && L.mdio.isPackage(file.name)) { d = await L.mdio.readZip(await L.readAsArrayBuffer(file)); type = 'mdzip'; }
       else if (/\.html?$/i.test(file.name) && L.htmlio) d = await L.htmlio.docFromHTML(await L.readAsText(file));
       else if (/\.rtf$/i.test(file.name) && L.rtf) d = L.rtf.read(await L.readAsArrayBuffer(file));
       else {
@@ -698,14 +715,13 @@
         const res = await A.readDocx(buf, file.name);
         d = res.doc; warnings = res.warnings || [];
       }
-      A.loadDoc(d, name, { saved: /\.docx$/i.test(file.name), type: 'docx', newWindow: !reuse });
-      A.opts.recent = [file.name].concat((A.opts.recent || []).filter((x) => x !== file.name)).slice(0, 4);
-      A.saveOpts();
-      if (window.VO) VO.opened(file);
+      A.loadDoc(d, name, { saved: /\.docx$/i.test(file.name) || type !== 'docx', type, newWindow: !reuse });
+      if (window.VO) VO.opened(file, doc());
       ui.busy(false);
       if (d.isTemplate) A.status('Opened a template: saving creates a new document.');
       if (d.wasEncrypted) A.status('This document is protected with a password to open; saving keeps the protection (Tools ▸ Options ▸ Security).');
       if (warnings.length) ui.msg(warnings.join('\n'), { icon: 'warn' });
+      if (type === 'md') { const n = L.mdio.missingPictures(d); if (n) A.status(`${n === 1 ? 'A picture is' : n + ' pictures are'} not in the .md file and show${n === 1 ? 's' : ''} as a box. Open a .zip holding the file and its pictures to see them.`); }
       if (d.settings.protect && d.settings.protect.on) A.status('This document is protected: ' + ({ readOnly: 'no changes (read only)', comments: 'comments only', tracked: 'tracked changes', forms: 'filling in forms' }[d.settings.protect.kind] || 'restricted'));
     } catch (e) {
       ui.busy(false);
@@ -760,7 +776,7 @@
     if (!A.saved) return A.saveAs();
     return A.exportAs(A.fileType || 'docx', A.fileName);
   };
-  A.saveAs = function () { return new Promise((res) => (L.dlg && L.dlg.saveAs ? L.dlg.saveAs(async (name, type) => { if (type === 'docx' || type === 'dotx') { A.fileName = name; A.fileType = type; A.saved = true; A.updateTitle(); } await A.exportAs(type, name); res(); }) : A.exportAs('docx', A.fileName).then(res))); };
+  A.saveAs = function () { return new Promise((res) => (L.dlg && L.dlg.saveAs ? L.dlg.saveAs(async (name, type) => { if (['docx', 'dotx', 'md', 'mdzip'].includes(type)) { A.fileName = name; A.fileType = type; A.saved = true; A.updateTitle(); } await A.exportAs(type, name); res(); }) : A.exportAs('docx', A.fileName).then(res))); };
   A.docStats = function () {
     const d = doc();
     const st = D.stats(D.allParas(d));
@@ -781,6 +797,18 @@
         /* a password to open: encrypt the package (Agile encryption, readable by Word 2010+ and LibreOffice) */
         if (d.openPassword && L.officeCrypto) blob = new Blob([await L.officeCrypto.encrypt(new Uint8Array(await blob.arrayBuffer()), d.openPassword)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
       }
+      else if (type === 'md') {
+        /* pictures need the .zip form: a .md file only refers to them */
+        if (L.mdio.newPictures(d)) {
+          ui.busy(false);
+          const r = await ui.msg('This document has pictures that a .md file cannot hold. Save it as Markdown with pictures (.zip), which holds the .md file and its pictures?', { icon: 'warn', buttons: ['Save as .&zip', 'Save .md &without them', 'Cancel'] });
+          if (r !== 0 && r !== 1) return;
+          if (r === 0) { type = ext = 'mdzip'; if (A.fileType === 'md') A.fileType = 'mdzip'; }
+          ui.busy(true, 'Saving...');
+        }
+        if (type === 'md') blob = new Blob([L.mdio.write(d).text], { type: 'text/markdown;charset=utf-8' });
+      }
+      if (type === 'mdzip') { blob = await L.mdio.writeZip(d, name); ext = 'zip'; }
       else if (type === 'html') blob = await L.htmlio.webPage(d, name);
       else if (type === 'txt') blob = new Blob([L.htmlio ? L.htmlio.plainText(d) : ''], { type: 'text/plain;charset=utf-8' });
       else if (type === 'pdf') blob = await A.buildPDF();
@@ -788,7 +816,7 @@
       ui.busy(false);
       if (!blob) return;
       const r = await L.saveFile(`${name}.${ext}`, blob);
-      if (r === 'saved' && (type === 'docx' || type === 'dotx')) { d.dirty = false; A.status(`Saved ${name}.${ext}`); ui.refresh(); if (window.VO) VO.saved(`${name}.${ext}`, blob); }
+      if (r === 'saved' && ['docx', 'dotx', 'md', 'mdzip'].includes(type)) { d.dirty = false; A.status(`Saved ${name}.${ext}`); ui.refresh(); if (window.VO) VO.saved(`${name}.${ext}`, blob, d); }
       return r;
     } catch (e) {
       ui.busy(false);
@@ -930,6 +958,11 @@
         let o = 0;
         for (const it of p.runs) { if (it.t === 'bs' && it.name === name) { A.gotoPos(D.pos(p, o)); return true; } o += D.ilen(it); }
       }
+    }
+    /* a Markdown link to a heading uses GitHub's anchor for it ("#getting-started") */
+    if (L.md) {
+      const used = new Set();
+      for (const p of D.allParas(d)) if (D.headingLevel(d, p) && L.md.slug(D.plainText(p), used) === name.toLowerCase()) { A.gotoPos(D.pos(p, 0)); return true; }
     }
     A.status(`Bookmark "${name}" not found.`);
     return false;
@@ -1104,36 +1137,11 @@
     });
   }
 
-  /* ================= recovery (per-browser convenience) ================= */
-  const autosave = L.debounce(async () => {
-    const d = doc();
-    if (!d || !d.dirty) return;
-    try {
-      const blob = await L.docx.write(d, { stats: A.docStats() });
-      if (blob.size > 4e6) { L.store.del('recover'); return; }
-      const data = await L.blobToDataURL(blob);
-      L.store.set('recover', { at: Date.now(), name: A.fileName, data });
-    } catch (e) { /* storage is optional */ }
-  }, 15000);
-  async function offerRecovery() {
-    const snap = L.store.get('recover', null);
-    if (!snap || !snap.data) return false;
-    const r = await ui.msg(`Quire found an unsaved version of "${snap.name}" from ${new Date(snap.at).toLocaleString()}.\nDo you want to restore it?`, { title: 'Document Recovery', icon: 'question', buttons: ['&Restore', '&Discard'] });
-    if (r !== 0) { L.store.del('recover'); return false; }
-    try {
-      const bytes = await (await fetch(snap.data)).arrayBuffer();
-      const res = await L.docx.read(bytes);
-      A.loadDoc(res.doc, snap.name + ' (Recovered)');
-      doc().dirty = true;
-      return true;
-    } catch (e) { L.store.del('recover'); return false; }
-  }
-
   /* ================= wiring ================= */
   function wire() {
     L.bus.on('sel', () => { A.updateStatus(); ui.refresh(); if (L.rulers) L.rulers.drawSoon(); if (A.highlighter && !E.collapsed() && !A.hlBusy) { A.hlBusy = true; setTimeout(() => { if (!E.collapsed()) E.formatRun({ hl: A.highlighter === 'none' ? undefined : A.highlighter }, 'Highlight'); A.hlBusy = false; }, 0); } if (A.painter && !E.collapsed()) A.applyPainter(); });
     L.bus.on('objsel', () => { A.updateToolbars(); ui.refresh(); });
-    L.bus.on('doc-changed', () => { autosave(); A.updateStatus(); ui.refresh(); if (doc().settings.track || Object.keys(doc().comments).length) A.updateToolbars(); });
+    L.bus.on('doc-changed', () => { if (window.VO) VO.changed(doc()); A.updateStatus(); ui.refresh(); if (doc().settings.track || Object.keys(doc().comments).length) A.updateToolbars(); });
     L.bus.on('layout-done', () => { A.updateStatus(); if (L.rulers) L.rulers.drawSoon(); if (L.drawing) L.drawing.placeHandles(); E.placeHandles(); });
     L.bus.on('zoom', () => { ui.refresh(); if (L.rulers) L.rulers.draw(); if (L.drawing) L.drawing.placeHandles(); E.placeHandles(); });
     LY.scroller.addEventListener('scroll', () => { if (L.rulers) L.rulers.drawSoon(); });
@@ -1180,7 +1188,7 @@
     bl.push(P('A word processor in the spirit of Word 2003 — it opens and saves real .docx files.', { style: 'Subtitle' }, { i: true }));
     bl.push(P('Getting around', { style: 'Heading1' }));
     bl.push(D.para([D.text('Type anywhere on this page. Everything works the way you remember: '), D.text('bold', { b: true }), D.text(', '), D.text('italic', { i: true }), D.text(', '), D.text('underline', { u: 'single' }), D.text(', '), D.text('highlighting', { hl: 'yellow' }), D.text(', '), D.text('colors', { color: 'C00000' }), D.text(', styles, bullets, numbering, tables, headers and footers, footnotes, comments, tracked changes, fields and more.')], { jc: 'both' }));
-    bl.push(P('Open a document with File ▸ Open, or drop a .docx onto the window. Save with File ▸ Save (Ctrl+S); File ▸ Save As offers Word Document, Word Template, Web Page, Plain Text and PDF.', { num: { id: '1', lvl: 0 } }));
+    bl.push(P('Open a document with File ▸ Open, or drop a .docx onto the window. Save with File ▸ Save (Ctrl+S); File ▸ Save As offers Word Document, Word Template, Web Page, Plain Text, Markdown and PDF.', { num: { id: '1', lvl: 0 } }));
     bl.push(P('Switch views with the buttons in the lower-left corner: Normal, Web Layout, Print Layout, Outline and Reading Layout.', { num: { id: '1', lvl: 0 } }));
     bl.push(P('Right-click for the shortcut menu; the task pane (Ctrl+F1) holds Styles and Formatting, Reveal Formatting, Clip Art and the Mail Merge wizard.', { num: { id: '1', lvl: 0 } }));
     bl.push(P('A small table', { style: 'Heading2' }));
@@ -1234,10 +1242,31 @@
     if (L.panes && A.opts.taskOpen) L.panes.task.show('getting-started');
     A.applyOpts();
     if (A.opts.docMap) A.toggleDocMap(true);
-    setTimeout(() => offerRecovery(), 700);
     ui.refresh();
-    if (window.VO) VO.attach('quire', { open: (f) => A.openFile(f), thumb: pageThumb, message: (t) => ui.msg(t, { icon: 'warn' }), templates: () => (L.templates ? L.templates.list().map(({ id, name }) => ({ id, name })) : []) });
+    if (window.VO) VO.attach('quire', {
+      async open(f, o) {
+        await A.openFile(f);
+        /* an unsaved version: the changes are not saved yet, and a never-saved document still needs Save As */
+        if (o && o.draft && doc()) { doc().dirty = true; A.saved = !!o.saved; A.fileName = o.name.replace(/\.(docx|docm|dotx|dotm|md|markdown|zip)$/i, ''); A.updateTitle(); A.status('Recovered the unsaved changes. Save the document to keep them.'); ui.refresh(); }
+      },
+      /* a Markdown document's unsaved version is Markdown too, so recovering it loses nothing */
+      snapshot(d) {
+        const t = winOf(d).fileType;
+        if (t === 'md' && L.mdio) return new Blob([L.mdio.write(d).text], { type: 'text/markdown' });
+        if (t === 'mdzip' && L.mdio) return L.mdio.writeZip(d, winOf(d).fileName);
+        return L.docx.write(d, { stats: A.docStats() });
+      },
+      docInfo(d) { const w = winOf(d); const ext = { md: '.md', mdzip: '.zip' }[w.fileType] || '.docx'; return { name: (w.fileName || 'Document') + ext }; },
+      isDirty: (d) => !!(d && d.dirty),
+      current: () => doc(),
+      autosave: () => A.opts.autoRecover !== false,
+      showRecovery() { if (!L.panes) return; A.opts.taskOpen = true; L.$('#taskpane').hidden = false; L.panes.task.show('recovery'); },
+      thumb: pageThumb,
+      message: (t) => ui.msg(t, { icon: 'warn' }),
+      templates: () => (L.templates ? L.templates.list().map(({ id, name }) => ({ id, name })) : []),
+    });
   };
+  const winOf = (d) => (d === doc() ? A : A.docs.find((x) => x && x.doc === d) || A);
   /** Recent Files picture: the first page, drawn as for PDF (print layout only) */
   async function pageThumb() {
     const p = LY.view === 'print' && LY.pages && LY.pages[0];

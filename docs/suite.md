@@ -37,9 +37,10 @@ The query is removed from the address once read, so a reload starts clean. Openi
 
 Each app, in its `A.init`, picks template, blank or sample from `VO.launch` and finishes with
 
-    VO.attach('<app>', { open(file), thumb() -> canvas | null, message(text), templates() -> [{ id, name }] })
+    VO.attach('<app>', { open(file, { draft, name, saved }), thumb(), message(text), templates(),
+                         snapshot(doc), docInfo(doc), isDirty(doc), current(), autosave(), showRecovery() })
 
-and reports `VO.opened(file)` after any successful open (File ▸ Open, drop, Start Center) and `VO.saved(name, blob)` after a save in its own format (Quire `.docx/.dotx`; Ledger everything but web pages and PDF; Lectern `.pptx/.ppsx/.potx`). Every call is guarded with `if (window.VO)`, so an app page still runs on its own.
+and reports `VO.opened(file, doc)` after any successful open (File ▸ Open, drop, Start Center), `VO.saved(name, blob, doc)` after a save in its own format, `VO.changed(doc)` after an edit and `VO.discard(doc)` when the user drops the changes (Quire `.docx/.dotx`; Ledger everything but web pages and PDF; Lectern `.pptx/.ppsx/.potx`). Every call is guarded with `if (window.VO)`, so an app page still runs on its own.
 
 ## Templates
 
@@ -86,15 +87,21 @@ What each app provides:
 
 Script order: `suite.js`, the app config, `core.js`, then the libraries and the app's own scripts as listed in each `index.html` (Ledger's from `tools/ledger/build/make.py`, where `'common/x'` means `public/common/x.js`).
 
-## Recent Files
+## Recent Files and unsaved versions
 
-IndexedDB database `vibeoffice`, store `recent`, keyed `<app>:<file name>`: `{ key, app, name, size, time, file: Blob, thumb: Blob }`. The browser has no file paths, so the list keeps a **copy of the file**: the one opened, then the one last saved. Two files with the same name in different folders share an entry. At most 30 entries; files over 50 MB are not kept. All other pages are told about changes over the `BroadcastChannel` `vibeoffice`.
+One list for everything a user worked on, shown in four places: the Start Center (cards), each app's File menu (1–4), its Getting Started pane (Open) and its Document Recovery pane. Every entry really reopens.
 
-Thumbnails are JPEG, at most 320 px, made 0.6 s after an open or save from `hooks.thumb()`: Quire rasterizes its first page as for PDF (print layout only), Ledger crops the top left of its grid canvas (4:3, at most 600 px wide), Lectern draws slide 1. Without one, the card shows the app's page picture and the extension.
+IndexedDB database `vibeoffice`, store `recent`: `{ key, app, name, size, time, file, thumb, draft }`, keyed `<app>:<file name>`, or `<app>:~<id>` for a document that was never saved. The browser has no file paths, so the list keeps a **copy of the file**: `file` is the one opened or last saved; `draft` (`{ file, name, time }`) is the **unsaved version**. Two files with the same name in different folders share an entry. At most 30 entries, but an entry with unsaved changes is never dropped; files over 50 MB are not kept. Every page hears about changes over the `BroadcastChannel` `vibeoffice` (`VO.onRecentChange`); `VO.recent.cache` is the list for menus.
+
+**Autosave.** The app calls `VO.changed(doc)` when a document changes; 15 s later (longer for documents that are slow to write: 30 × the time the last write took) `hooks.snapshot(doc)` writes it in the app's own format (.docx, .xlsx/.xlsm, .pptx; a workbook with a password stays encrypted) into the entry's `draft`. `VO.opened(file, doc)` and `VO.saved(name, blob, doc)` tie the document to its entry; saving clears the draft (and retires the `~` entry of a never-saved document); No in "Do you want to save the changes…?" calls `VO.discard(doc)`, which throws the draft away. Closing the tab or a crash leaves it. Quire's Tools ▸ Options ▸ Save ▸ "Save AutoRecover info" turns it off.
+
+**Recovery.** When an app starts and other documents of it have unsaved versions, it opens the **Document Recovery** task pane (as in Office 2003): each one with *Open the unsaved version* and *Discard the changes*. Opening one (`VO.openRecent(key, { draft: true })`, or `<app>/?recent=<key>&draft` from the Start Center) restores the changes as unsaved, so the document still has to be saved; a never-saved one then asks for a name. On the Start Center such a card is marked *Unsaved changes* (or *Never saved*), opens the unsaved version, offers *Saved version* when there is one, and × discards the changes.
+
+Thumbnails are JPEG, at most 320 px, made 0.6 s after an open, a save or an autosave of the current document from `hooks.thumb()`: Quire rasterizes its first page as for PDF (print layout only), Ledger crops the top left of its grid canvas (4:3, at most 600 px wide), Lectern draws slide 1. Without one, the card shows the app's page picture and the extension.
 
 ## PWA
 
-The manifest's `id`, `start_url` and `scope` are `./`, so the suite installs from any folder it is served from. Shortcuts create a new document, spreadsheet or presentation (`<app>/?new`). File handlers (`.docx .dotx .docm .rtf`, `.xlsx .xltx .xlsm .csv`, `.pptx .ppsx .potx`) all go to the Start Center, which hands the file on; `launch_handler` `focus-existing` reuses an open Start Center window. App pages link the same manifest, so installing from inside an app installs the suite.
+The manifest's `id`, `start_url` and `scope` are `./`, so the suite installs from any folder it is served from. Shortcuts create a new document, spreadsheet or presentation (`<app>/?new`). File handlers (`.docx .dotx .docm .rtf .md .markdown`, `.xlsx .xltx .xlsm .csv`, `.pptx .ppsx .potx`) all go to the Start Center, which hands the file on; `launch_handler` `focus-existing` reuses an open Start Center window. App pages link the same manifest, so installing from inside an app installs the suite.
 
 Icons: edit the SVGs, then render the PNGs in Chromium:
 

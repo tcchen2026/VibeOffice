@@ -69,7 +69,7 @@
     o = o || {};
     w.fileName = name;
     const b = { wb: w, name, type: o.type || 'xlsx', untitled: !!o.untitled, saved: !o.untitled, dirty: false };
-    w.undo.onChange = () => { b.dirty = true; updateTitle(); ui.refresh(); };
+    w.undo.onChange = () => { b.dirty = true; updateTitle(); ui.refresh(); if (window.VO) VO.changed(b); };
     /* replace a pristine untitled workbook (like Excel does with Book1) */
     const cur = book();
     if (cur && cur.untitled && !cur.dirty && !o.untitled && A.books.length === 1) { A.books[A.cur] = b; }
@@ -99,6 +99,7 @@
       const r = await ui.msg(`Do you want to save the changes you made to '${b.name}'?`, { icon: 'warn', buttons: ['&Yes', '&No', 'Cancel'] });
       if (r === 2 || r == null) return;
       if (r === 0) { const ok = await A.save(); if (!ok) return; }
+      if (r === 1 && window.VO) VO.discard(b);   // its unsaved version goes too
     }
     A.books.splice(A.cur, 1);
     if (!A.books.length) { A.newWorkbook(); return; }
@@ -163,8 +164,7 @@
       A.prepare(w);
       const b = A.addBook(w, name, { type });
       if (/^xlt/.test(ext)) { b.untitled = true; b.name = name.replace(/\.xlt[xm]$/i, '') + '1'; }
-      A.addRecent(name);
-      if (window.VO && file.name) VO.opened(file);
+      if (window.VO && file.name) VO.opened(file, b);
       updateTitle();
     } finally { ui.busy(false); }
   };
@@ -223,10 +223,8 @@
     G().select(0, 0);
     w.undo.clear();
     b.dirty = false;
-    A.addRecent(name);
     updateTitle();
   };
-  A.addRecent = (name) => { const r = (A.opts.recent || []).filter((x) => x !== name); r.unshift(name); A.opts.recent = r.slice(0, 4); A.saveOpts(); };
 
   /* ------------------------------------------------------------ save */
   A.save = async function () {
@@ -268,8 +266,7 @@
       if (res === 'saved') {
         if (type !== 'csv' && type !== 'txt' && type !== 'html') { b.name = name; b.type = type; b.untitled = false; b.dirty = false; w.fileName = name; }
         else if (b.untitled) b.dirty = false;
-        A.addRecent(name);
-        if (window.VO && type !== 'html') VO.saved(name, blob);
+        if (window.VO && type !== 'html') VO.saved(name, blob, b);
         updateTitle();
         A.status('');
         return true;
@@ -464,9 +461,9 @@
 
   /* ------------------------------------------------------------ menus */
   function buildMenus() {
-    const recent = () => (A.opts.recent || []).slice(0, 4).map((r, i) => ({ label: `&${i + 1} ${r.replace(/&/g, '&&')}`, run: () => ui.msg(`To reopen ${r}, choose File ▸ Open and pick it again. Browsers don't let pages reopen files by themselves.`, { icon: 'info' }) }));
+    const recent = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['exportPDF', 'exportCSV'] }, 'properties', ...(A.opts.recent && A.opts.recent.length ? ['-', ...recent()] : []), '-', 'exitApp'] },
+      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['exportPDF', 'exportCSV'] }, 'properties', ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'F&ill', sub: ['fillDown', 'fillRight', 'fillUp', 'fillLeft', 'fillAcross', 'fillSeries', 'fillJustify'] },
@@ -1415,7 +1412,25 @@
     ui.refresh();
     G().focus();
     L.bus.emit('app-ready');
-    if (window.VO) VO.attach('ledger', { open: (f) => A.openFiles([f]), thumb: gridThumb, message: (t) => ui.msg(t, { icon: 'warn' }), templates: () => Object.entries(L.panes.TEMPLATES).map(([id, t]) => ({ id, name: t.name })) });
+    if (window.VO) VO.attach('ledger', {
+      async open(f, o) {
+        await A.openFiles([f]);
+        /* an unsaved version: the changes are not saved yet, and a never-saved workbook still needs Save As */
+        const b = book();
+        if (o && o.draft && b) { b.dirty = true; b.name = o.saved ? o.name : o.name.replace(/\.xlsx$/i, ''); b.untitled = !o.saved; b.saved = !!o.saved; updateTitle(); A.status('Recovered the unsaved changes. Save the workbook to keep them.'); ui.refresh(); }
+      },
+      snapshot: (b) => L.xlsxWrite.write(b.wb, { type: b.type === 'xlsm' || b.wb.macroEnabled ? 'xlsm' : 'xlsx', password: b.password }),
+      docInfo(b) {
+        const name = /\.\w+$/.test(b.name) ? b.name : b.name + '.xlsx';
+        return { name, draftName: name.replace(/\.(csv|txt|tsv|prn|xml|html?|xltx|xltm)$/i, '.xlsx') };
+      },
+      isDirty: (b) => !!(b && b.dirty),
+      current: () => book(),
+      showRecovery() { A.opts.taskOpen = true; L.$('#taskpane').hidden = false; L.panes.task.show('recovery'); },
+      thumb: gridThumb,
+      message: (t) => ui.msg(t, { icon: 'warn' }),
+      templates: () => Object.entries(L.panes.TEMPLATES).map(([id, t]) => ({ id, name: t.name })),
+    });
   };
   /** Recent Files picture: the top left of the sheet as it is drawn, 4:3 */
   function gridThumb() {

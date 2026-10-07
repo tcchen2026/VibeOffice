@@ -132,6 +132,46 @@ printer itself.
 Passwords are handled in the browser (WebCrypto plus Ledger's own AES and SHA code), so the page must
 be served over https or from localhost. A workbook opened with its password keeps it when saved.
 
+## What a save keeps, converts and drops
+
+Ledger reads a workbook into its own model and writes a new file from it. Anything the model has no
+place for is left out of the saved file, and today there is no warning when that happens.
+`tools/ledger/test/loss-audit.py` measures it: for each of 2,941 test workbooks it counts every feature in the
+original and in Ledger's saved copy, and reads every cell of both with openpyxl, an independent reader,
+comparing value, formula, number format, font, fill, borders and alignment
+(`python3 tools/ledger/test/loss-audit.py originals/ saved/ out.json`).
+
+**Kept.** Of 3,092,390 cells in 2,875 workbooks, every value and formula is unchanged in 2,861
+workbooks. The other 14 are malformed test files (strings of a million characters, cells beyond column
+XFD), dates written as text that Ledger stores as real dates, and spilled dynamic-array cells that
+openpyxl reports differently in the two files. Number formats, fonts, fills, borders and alignment agree
+except where a file leaves the font unspecified. Merged cells, column widths and row heights, hidden and
+grouped rows and columns, frozen panes, defined names, tables, filters, data validation, conditional
+formatting, notes, hyperlinks, sparklines, charts and chart sheets, pictures (linked ones keep their
+link), shapes and text boxes, page setup, print headers and footers, sheet and workbook protection,
+external links, custom document properties, scenarios and the VBA project of an `.xlsm` are all written
+back.
+
+**Converted.**
+
+- Pivot tables (118 workbooks) keep their last values as ordinary cells; the pivot table itself — layout,
+  fields and cache — is not saved, so Excel sees a plain range that cannot be refreshed.
+- Threaded comments (6) survive as the classic notes Excel stores alongside them; the thread structure
+  and @mentions do not.
+- Excel 2010 data bars and icon sets (12 of 15 workbooks) fall back to their Excel 2007 form: negative-bar
+  colours, solid fills, bar borders and the newer icon sets are lost.
+
+**Dropped.**
+
+| What | Workbooks in the test set |
+| --- | --- |
+| Form controls and ActiveX controls (buttons, check boxes, drop-downs) | 25 |
+| Data connections and Power Query queries (the data stays, refreshing it does not) | 31 |
+| Custom XML data parts (document-management metadata) | 41 |
+| Sensitivity labels in the newer `docMetadata/LabelInfo.xml` form (labels kept as `MSIP_Label` custom properties survive: 35 of 35) | 27 |
+| Embedded OLE objects | 5 |
+| Slicers and timelines | 1 |
+
 ## Compatibility testing
 
 Ledger was tested against workbooks other people wrote — the test suites of sixteen spreadsheet
@@ -187,8 +227,9 @@ at A1, which freezes nothing, is not written.
 ## Known limitations
 
 - Macros are kept in `.xlsm` files but never run; there is no VBA editor.
-- PivotTables: Data ▸ PivotTable builds a static summary report; pivot tables in opened files keep
-  their last values and are saved back, but cannot be refreshed or rearranged.
+- PivotTables: Data ▸ PivotTable builds a static summary report. Pivot tables in opened files keep
+  their last values, but only as ordinary cells: the pivot table itself (layout, fields, cache) is not
+  saved, so after a save Excel sees a plain range that cannot be refreshed.
 - Power Pivot data models and Power Query connections are not loaded and are not saved back.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.

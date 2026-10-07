@@ -41,9 +41,12 @@
 
   const esc = XML.esc;
   /* lone surrogates cannot appear in XML: they are written as _xHHHH_ escapes */
-  const escT = (s) => XML.escText(String(s)).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, (m) => '_x' + m.charCodeAt(0).toString(16).toUpperCase() + '_');
+  /* ST_Xstring text (cells, shared strings, comments, header/footer codes): control characters, carriage returns
+     included, become _xHHHH_ escapes as Excel writes them; elsewhere a carriage return is written as it is */
+  const escX = (s) => XML.escText(String(s)).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, (m) => '_x' + m.charCodeAt(0).toString(16).toUpperCase() + '_');
+  const escT = (s) => XML.escText(String(s), true).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, (m) => '_x' + m.charCodeAt(0).toString(16).toUpperCase() + '_');
   /** a text node that keeps its leading / trailing spaces */
-  const tEl = (s, tag) => { s = String(s); tag = tag || 't'; return /^\s|\s$|\n/.test(s) ? `<${tag} xml:space="preserve">${escT(s)}</${tag}>` : `<${tag}>${escT(s)}</${tag}>`; };
+  const tEl = (s, tag) => { s = String(s); tag = tag || 't'; return /^\s|\s$|\n/.test(s) ? `<${tag} xml:space="preserve">${escX(s)}</${tag}>` : `<${tag}>${escX(s)}</${tag}>`; };
   const attrs = (o) => { let s = ''; for (const k in o) { const v = o[k]; if (v === undefined || v === null || v === false) continue; s += ' ' + k + '="' + esc(v === true ? '1' : v) + '"'; } return s; };
   const numStr = (v) => { if (!isFinite(v)) return null; if (Object.is(v, -0)) return '0'; return String(v); };
 
@@ -163,6 +166,9 @@
       code = code == null ? 'General' : String(code);
       if (code === 'General') return 0;
       const b = NF.builtinId(code);
+      /* the currency and accounting formats (5–8, 41–44) follow the reader's locale unless they are spelled out,
+         which is why Excel always writes them: keep the "$" the file was made with */
+      if (b >= 5 && b <= 8 || b >= 41 && b <= 44) { if (!nfIdx.has(code)) { nfIdx.set(code, b); numFmts.push(`<numFmt numFmtId="${b}" formatCode="${esc(code)}"/>`); } return b; }
       if (b >= 0) return b;
       let id = nfIdx.get(code);
       if (id == null) { id = nextNf++; nfIdx.set(code, id); numFmts.push(`<numFmt numFmtId="${id}" formatCode="${esc(code)}"/>`); }
@@ -326,7 +332,7 @@
       } else body += `<f${cell.ca ? ' ca="1"' : ''}>${esc(cell.f)}</f>`;
       if (v == null) { /* never calculated: Excel computes it on load */ }
       else if (typeof v === 'number') { const n = numStr(v); if (n == null) { t = 'e'; body += '<v>#NUM!</v>'; } else body += '<v>' + n + '</v>'; }
-      else if (typeof v === 'string') { t = 'str'; body += '<v>' + escT(v) + '</v>'; }
+      else if (typeof v === 'string') { t = 'str'; body += '<v>' + escX(v) + '</v>'; }
       else if (typeof v === 'boolean') { t = 'b'; body += '<v>' + (v ? 1 : 0) + '</v>'; }
       else if (M.isErr(v)) { t = 'e'; body += '<v>' + esc(v.e) + '</v>'; }
     } else {
@@ -481,7 +487,7 @@
     const ps = { paperSize: p.paper && p.paper !== 1 ? p.paper : undefined, scale: p.scale && p.scale !== 100 ? Math.round(p.scale) : undefined, firstPageNumber: p.firstPage != null ? p.firstPage : undefined, fitToWidth: p.fit && p.fitW !== 1 ? (p.fitW == null ? 0 : p.fitW) : undefined, fitToHeight: p.fit && p.fitH !== 1 ? (p.fitH == null ? 0 : p.fitH) : undefined, pageOrder: p.pageOrder === 'overThenDown' ? 'overThenDown' : undefined, orientation: p.orientation === 'landscape' ? 'landscape' : 'portrait', blackAndWhite: p.bw ? '1' : undefined, draft: p.draft ? '1' : undefined, cellComments: p.comments && p.comments !== 'none' ? p.comments : undefined, useFirstPageNumber: p.firstPage != null ? '1' : undefined, errors: p.errors && p.errors !== 'displayed' ? p.errors : undefined };
     s += `<pageSetup${attrs(ps)}/>`;
     const hf = [['oddHeader', p.header], ['oddFooter', p.footer], ['evenHeader', p.diffOddEven && p.evenHeader], ['evenFooter', p.diffOddEven && p.evenFooter], ['firstHeader', p.diffFirst && p.firstHeader], ['firstFooter', p.diffFirst && p.firstFooter]].filter(([, v]) => v);
-    if (hf.length || p.diffFirst || p.diffOddEven) s += `<headerFooter${attrs({ differentOddEven: p.diffOddEven ? '1' : undefined, differentFirst: p.diffFirst ? '1' : undefined, scaleWithDoc: p.hfScale === false ? '0' : undefined, alignWithMargins: p.hfAlign === false ? '0' : undefined })}>` + hf.map(([k, v]) => `<${k}>${escT(v)}</${k}>`).join('') + '</headerFooter>';
+    if (hf.length || p.diffFirst || p.diffOddEven) s += `<headerFooter${attrs({ differentOddEven: p.diffOddEven ? '1' : undefined, differentFirst: p.diffFirst ? '1' : undefined, scaleWithDoc: p.hfScale === false ? '0' : undefined, alignWithMargins: p.hfAlign === false ? '0' : undefined })}>` + hf.map(([k, v]) => `<${k}>${escX(v)}</${k}>`).join('') + '</headerFooter>';
     const rb = (p.rowBreaks || []).filter((b) => b > 0), cb = (p.colBreaks || []).filter((b) => b > 0);
     if (rb.length) s += `<rowBreaks count="${rb.length}" manualBreakCount="${rb.length}">` + rb.map((b) => `<brk id="${b}" max="16383" man="1"/>`).join('') + '</rowBreaks>';
     if (cb.length) s += `<colBreaks count="${cb.length}" manualBreakCount="${cb.length}">` + cb.map((b) => `<brk id="${b}" max="1048575" man="1"/>`).join('') + '</colBreaks>';
@@ -506,7 +512,7 @@
       return `<comment ref="${cellName(cm.r, cm.c)}" authorId="${id}"><text>${text}</text></comment>`;
     });
     if (!authors.length) aid('');
-    return HDR + `<comments xmlns="${NS_MAIN}"><authors>` + authors.map((a) => `<author>${escT(a)}</author>`).join('') + '</authors><commentList>' + items.join('') + '</commentList></comments>';
+    return HDR + `<comments xmlns="${NS_MAIN}"><authors>` + authors.map((a) => `<author>${escX(a)}</author>`).join('') + '</authors><commentList>' + items.join('') + '</commentList></comments>';
   }
   function vmlXml(sh, idmap) {
     const list = Array.from(sh.comments.values()).filter((c) => c.r < M.MAXR && c.c < M.MAXC);
@@ -536,7 +542,7 @@
       s += autoFilterXml(t.filter || { cols: [] }, afRef);
     }
     s += `<tableColumns count="${t.columns.length}">` + t.columns.map((c, i) => {
-      const ca = { id: i + 1, name: c.name, totalsRowFunction: t.totals && c.totalsFn && c.totalsFn !== 'none' ? c.totalsFn : undefined, totalsRowLabel: t.totals && c.totalsLabel != null ? c.totalsLabel : undefined, dataDxfId: c.dataDxf };
+      const ca = { id: i + 1, name: String(c.name).replace(/_x([0-9A-Fa-f]{4})_/g, '_x005F_x$1_').replace(/[\r\n\t]/g, (ch) => '_x' + ch.charCodeAt(0).toString(16).padStart(4, '0') + '_'), totalsRowFunction: t.totals && c.totalsFn && c.totalsFn !== 'none' ? c.totalsFn : undefined, totalsRowLabel: t.totals && c.totalsLabel != null ? c.totalsLabel : undefined, dataDxfId: c.dataDxf };
       const inner = (c.calc ? `<calculatedColumnFormula>${esc(c.calc)}</calculatedColumnFormula>` : '') + (t.totals && c.totalsFn === 'custom' && c.totalsFormula ? `<totalsRowFormula>${esc(c.totalsFormula)}</totalsRowFormula>` : '');
       return `<tableColumn${attrs(ca)}${inner ? '>' + inner + '</tableColumn>' : '/>'}`;
     }).join('') + '</tableColumns>';
@@ -560,7 +566,7 @@
           const v = sh.val(t.ref.r1, t.ref.c1 + i);
           name = v == null || v === '' ? '' : M.isErr(v) ? v.e : typeof v === 'number' ? L.editor && L.editor.cellText ? String(L.editor.cellText(sh, t.ref.r1, t.ref.c1 + i)) : String(v) : String(v);
         }
-        name = String(name || '').replace(/[\r\n]+/g, ' ');
+        name = String(name || '');
         if (!name) name = 'Column' + (i + 1);
         let n = name, k = 2;
         while (used.has(n.toLowerCase())) n = name + k++;
@@ -751,7 +757,7 @@
     }
 
     async function drawingPart(sh, rels) {
-      const list = sh.drawings.filter((d) => d && d.anchor && (d.kind === 'image' ? wb.media && wb.media.get(d.media) : d.kind === 'chart' ? d.xml || d.chart : d.kind === 'shape'));
+      const list = sh.drawings.filter((d) => d && d.anchor && (d.kind === 'image' ? (wb.media && wb.media.get(d.media)) || d.imgLink : d.kind === 'chart' ? d.xml || d.chart : d.kind === 'shape'));
       if (!list.length) return null;
       const dPart = `xl/drawings/drawing${++nDrawing}.xml`;
       const drels = new Rels();
@@ -771,11 +777,12 @@
         let obj = '';
         const nameAttr = esc(d.name || (d.kind === 'chart' ? 'Chart ' : d.kind === 'image' ? 'Picture ' : 'Shape ') + (id - 1));
         if (d.kind === 'image') {
-          const mp = mediaPart(d.media);
-          const rid = drels.add('image', '../media/' + mp.split('/').pop());
+          let blipRefs = '';
+          if (d.media && wb.media && wb.media.get(d.media)) { const mp = mediaPart(d.media); blipRefs += ` r:embed="${drels.add('image', '../media/' + mp.split('/').pop())}"`; }
+          if (d.imgLink) blipRefs += ` r:link="${drels.add('image', d.imgLink, true)}"`;
           const crop = d.crop ? `<a:srcRect${attrs({ l: d.crop.l ? Math.round(d.crop.l * 1000) : undefined, t: d.crop.t ? Math.round(d.crop.t * 1000) : undefined, r: d.crop.r ? Math.round(d.crop.r * 1000) : undefined, b: d.crop.b ? Math.round(d.crop.b * 1000) : undefined })}/>` : '';
           obj = `<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${id}" name="${nameAttr}"${d.descr ? ` descr="${esc(d.descr)}"` : ''}/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>` +
-            `<xdr:blipFill><a:blip xmlns:r="${NS_R}" r:embed="${rid}"/>${crop}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>` +
+            `<xdr:blipFill><a:blip xmlns:r="${NS_R}"${blipRefs}/>${crop}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>` +
             `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}><a:off x="0" y="0"/><a:ext cx="${emu(sz.w)}" cy="${emu(sz.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${d.lineXml || ''}</xdr:spPr></xdr:pic>`;
         } else if (d.kind === 'chart') {
           const cPart = `xl/charts/chart${++nChart}.xml`;
@@ -845,7 +852,7 @@
     });
     const okNames = names.filter((n) => n.scope == null || (n.scope >= 0 && n.scope < wb.sheets.length));
     if (okNames.length) {
-      x += '<definedNames>' + okNames.map((n) => `<definedName${attrs({ name: n.name, comment: n.comment, localSheetId: n.scope != null ? n.scope : undefined, hidden: n.hidden ? '1' : undefined })}>${escT(String(n.ref).replace(/^=/, ''))}</definedName>`).join('') + '</definedNames>';
+      x += '<definedNames>' + okNames.map((n) => `<definedName${attrs({ name: n.name, comment: n.comment, localSheetId: n.scope != null ? n.scope : undefined, hidden: n.hidden ? '1' : undefined })}>${XML.escText(String(n.ref).replace(/^=/, ''), true)}</definedName>`).join('') + '</definedNames>';
     }
     const cp = wb.calcPr || {};
     x += `<calcPr${attrs({ calcId: '124519', calcMode: cp.mode && cp.mode !== 'auto' ? cp.mode : undefined, iterate: cp.iterate ? '1' : undefined, iterateCount: cp.iterate && cp.iterateCount !== 100 ? cp.iterateCount : undefined, iterateDelta: cp.iterate && cp.iterateDelta !== 0.001 ? cp.iterateDelta : undefined, fullPrecision: cp.fullPrecision === false ? '0' : undefined, refMode: wb.r1c1 ? 'R1C1' : undefined, fullCalcOnLoad: '1' })}/>`;

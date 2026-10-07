@@ -501,8 +501,9 @@
   /** mousedown on an object element; returns true if handled */
   DR.onObjectDown = function (e, objEl) {
     const wrap = objEl.closest('.flt');
-    /* clicks inside a text box's text edit the text */
-    if (e.target.closest && e.target.closest('.tbx .pc, .tbx .p')) { DR.clearSelection(); return false; }
+    /* presses anywhere in a text box's text area (on the text or the space around it) edit the text: the
+       caret goes there and a drag selects; the box's border and margins move it */
+    if (e.target.closest && e.target.closest('.tbx')) { DR.clearSelection(); return false; }
     if (!wrap) {
       /* inline shape or chart: select as an inline object */
       if (objEl.classList.contains('shp') && objEl.closest('.p') && !objEl.closest('.flt')) {

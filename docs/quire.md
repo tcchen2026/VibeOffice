@@ -19,7 +19,7 @@ The metric-compatible fonts (see *Rendering notes*) currently come from Google F
 
 | Feature | How it works |
 | --- | --- |
-| Spelling (as you type and Tools ▸ Spelling and Grammar) | Word lists for English (U.S.) and English (U.K.) in `common/dict/en_US.words` and `common/dict/en_GB.words`, expanded from the Hunspell/SCOWL dictionaries and ranked by word frequency so suggestions come out in a sensible order. Unknown words get red wavy underlines (CSS Custom Highlight API); right-click for suggestions, Ignore All and Add to Dictionary. |
+| Spelling (as you type and Tools ▸ Spelling and Grammar) | Word lists for English (U.S.) and English (U.K.) in `common/dict/en_US.words` and `common/dict/en_GB.words`, expanded from the Hunspell/SCOWL dictionaries and ranked by word frequency so suggestions come out in a sensible order. Unknown words get red wavy underlines (CSS Custom Highlight API); right-click for suggestions, Ignore All and Add to Dictionary. Underlines are off when a document opens (and the dictionary is not loaded): click the spelling icon in the status bar to check that document as you type, click again to stop. |
 | Grammar | A rule checker for the mistakes Word 2003 flagged most often: repeated words, a/an, capitalisation at sentence start, spacing around punctuation, commonly confused words, simple subject–verb agreement. Green wavy underlines. |
 | Thesaurus and Research pane | `common/dict/en.thes`, built from the WordNet 3.1 thesaurus (MyThes format), with meanings grouped by part of speech, related words, antonyms and a Back history. "Search This Document" finds the word in the open document. |
 | Custom dictionary | Tools ▸ Options ▸ Spelling & Grammar; words you add are stored in the browser. |
@@ -62,11 +62,92 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
 | Web Page `.htm` / `.html` | yes | yes (single file, images inlined) |
 | Rich Text Format `.rtf` | yes | yes |
 | Plain Text `.txt` | yes | yes |
+| Markdown `.md` / `.markdown` (GitHub flavour) | yes | yes |
+| Markdown with pictures `.zip` (a `.md` and its picture files) | yes | yes |
 | PDF | — | yes (File ▸ Print, or Save As ▸ PDF) |
 | Password-protected `.docx` | yes (Word 2007 "standard" and Word 2010+ "agile" encryption) | yes: Tools ▸ Options ▸ Security ▸ Password to open (AES-256, as Word 2013+) |
 
 Encryption and decryption happen in the browser (WebCrypto for hashing, so the page must be served over
 https or from localhost). A document opened with its password keeps that password when saved.
+
+## Markdown
+
+Quire reads and writes the Markdown GitHub uses: CommonMark plus tables, task lists, strikethrough,
+extended autolinks, footnotes and alerts (`> [!NOTE]`).
+
+| In the file | In Quire | Written back as |
+| --- | --- | --- |
+| `#` … `######` headings | Heading 1–6 | `#` headings (Title as `#`, Subtitle as `##`) |
+| `**bold**`, `*italic*`, `~~strike~~`, `` `code` `` | Bold, italic, strikethrough, the HTML Code character style | The same; where a delimiter could not open or close, `<strong>`, `<em>`, `<del>` |
+| Links, autolinks, `[text](#heading)` | Hyperlinks (titles as tips); `#heading` follows GitHub's heading anchors | The same |
+| `-` / `1.` lists, nested, tight or loose | Bullets and numbering per list level (List Paragraph) | `-` and `1.`; tight unless the items have space between them |
+| `- [ ]` / `- [x]` task lists | Check boxes that tick on click | `[ ]` / `[x]` |
+| `>` quotes, nested; `> [!NOTE]` and the other four alerts | Quote style with a bar per level; alerts with their title and colour | `>` and `[!KIND]` |
+| Fenced and indented code | HTML Preformatted paragraphs, the language kept | Fenced code with the language |
+| Pipe tables with alignment | Tables (Markdown Table style: header row, banded rows) | Pipe tables; merged cells or several paragraphs in a cell as an HTML `<table>` |
+| `---` | A paragraph with a bottom border | `---` |
+| `[^label]` footnotes | Footnotes | `[^label]` and its definition |
+| Pictures | Pictures from `data:` URLs, or from the `.zip`; others as a box with the alt text, the address kept | `![alt](path)`; a resized picture as `<img width>`; new pictures go into the `.zip` as `images/…` |
+| `$…$` math, emoji `:shortcodes:`, Mermaid and other diagram code | Kept as written (math in the Markdown Source character style, diagrams as code) | Unchanged |
+| Inline HTML GitHub allows (`<sub>`, `<sup>`, `<ins>`, `<kbd>`, `<br>`, `<img>`, `<a href>`, `<a name>`) | Subscript, superscript, underline, HTML Keyboard style, line break, picture, link, bookmark | The same tags |
+| HTML blocks, YAML front matter, link reference definitions, comments | Blocks through the HTML reader; front matter, definitions and comments are kept but not shown | Unchanged unless edited |
+
+Saving keeps the file as it was where it was not edited: each block of the file remembers its lines,
+and a block whose content is unchanged is written back byte for byte (line endings, a byte-order mark,
+`*` or `_`, setext headings, reference links and line wrapping included). Edited and new blocks are
+written in one style. What Markdown cannot express (fonts, colours, alignment, page setup, headers and
+footers) is not saved; a `.md` file cannot hold pictures, so saving one that has new pictures offers
+the `.zip` form instead. A `.zip` is saved with every other file it held, unchanged. Unsaved versions
+of a Markdown document (autosave, Document Recovery) are kept as Markdown.
+
+Checks (tools in docs/testing.md):
+
+| Check | Result |
+| --- | --- |
+| Reader against the CommonMark 0.31.2 spec examples (rendered as the reference implementation renders) | 652 of 652 |
+| Reader against the GFM spec's extension examples (tables, task lists, strikethrough, autolinks, disallowed raw HTML) | 22 of 22 |
+| Spec examples opened, every block rewritten, saved and read again, same HTML | 559 of 652; 507 of the 544 without raw HTML (the rest: nested emphasis of the same kind, `*a *b**`, which a document cannot hold; empty links; a quote that starts inside a list item's first line) |
+| 24 real files (READMEs of React, Node.js, VS Code, Rust, Kubernetes, TensorFlow, Vue, Deno, Astro, Express, Go, TypeScript, cmark-gfm, markdown-it, awesome, public-apis, free-programming-books, the Airbnb style guide, GitHub's own formatting docs) saved unchanged | 24 of 24 byte for byte |
+| The same files with one paragraph edited | Only the edited block's lines change in all 24 |
+| The same files with every block rewritten, same HTML | 7 of 24; all 5 without raw HTML (the others turn logos, `<picture>` and centred `<p align>` blocks into formatting) |
+| Opening time | 300 kB (public-apis): 80 ms; the spec examples twenty times over (300 kB): 70 ms to parse and render |
+
+## What a save keeps, converts and drops
+
+Quire reads a document into its own model and writes a new file from it, so anything the model has no
+place for is left out of the saved file, and today there is no warning when that happens (the one
+exception: embedded HTML/RTF documents are reported when the file opens). `tools/quire/test/loss-audit.py` measures
+it by comparing each of 2,778 test documents with Quire's saved copy, feature by feature and word by word
+(`python3 tools/quire/test/loss-audit.py originals/ saved/ out.json`, standard library only).
+
+**Kept.** The text: 2,724 documents keep every word, and over the whole set 666,082 of 666,941 words
+survive (the 859 missing sit in 54 documents, most of them deliberately malformed test files, comments
+or footnotes that nothing in the text refers to, and text inside data-bound content controls). Styles,
+lists, tables, sections and columns, headers and footers, footnotes and endnotes, comments with their
+replies, tracked changes, fields, bookmarks, hyperlinks, pictures, text boxes, drawing shapes, equations,
+charts, page borders, line numbers, legacy form fields, ruby text, custom document properties and
+editing restrictions are all written back.
+
+**Converted.** Embedded objects (Excel, Visio, PDF and other OLE packages, 81 documents) are saved as
+their preview pictures, so they can no longer be opened for editing; SmartArt becomes grouped shapes
+with its text (22); content controls are removed and their contents kept as ordinary text (296), which
+also ends any binding to document data; smart tags and custom XML markup become plain text (48);
+`HYPERLINK` fields become ordinary hyperlinks.
+
+**Dropped.**
+
+| What | Documents in the test set |
+| --- | --- |
+| Custom XML data parts (document-management metadata, content-control bindings) | 573 |
+| Sensitivity labels in the newer `docMetadata/LabelInfo.xml` form (labels kept as `MSIP_Label` custom properties survive: 11 of 11) | 3 |
+| Building blocks and AutoText stored in the document (glossary) | 129 |
+| Link to the attached template | 77 |
+| Page background with a picture or fill effect (coloured backgrounds are kept; 45 white ones are left out, which changes nothing) | 3 of 68 |
+| Word 2010 text effects (glow, outline, shadow, ligatures) | 35 |
+| Embedded fonts | 10 |
+| Embedded HTML/RTF documents (`altChunk`) — their content is not shown, so it is lost on save | 4 |
+| Permission ranges for restricted editing | 3 |
+| VBA macros (a `.docm` is saved without its project) | — |
 
 ## Compatibility testing
 
@@ -125,6 +206,7 @@ rich text, and RC4-encrypted files from Office 97–2003.
 | `js/editor.js` | contentEditable bridge: selection mapping, typing, IME, clipboard, keyboard |
 | `js/docx-read.js`, `js/docx-write.js`, `../common/dml.js` | `.docx` import/export, DrawingML/VML shapes, charts, themes |
 | `js/rtf.js`, `js/htmlio.js` | RTF and HTML import/export |
+| `js/markdown.js`, `js/mdio.js` | Markdown reader (CommonMark + GitHub extensions, with source lines; also loads in Node) and Markdown/`.zip` import and export |
 | `js/fields.js` | Field engine (PAGE, DATE, REF, SEQ, TOC, INDEX, IF, formulas, …), footnotes and endnotes |
 | `js/review.js` | Track changes, comments, balloons, Reviewing pane, compare documents |
 | `js/tables.js` | Tables and Borders toolbar, table styles, draw/erase, merge/split, sort, formulas |

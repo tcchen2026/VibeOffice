@@ -23,9 +23,10 @@
     });
   }
   XML.unescape = unescape;
-  XML.esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  /* tabs and line breaks become character references: inside an attribute a parser would turn them into spaces */
+  XML.esc = (s) => { s = String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); return /[\t\n\r]/.test(s) ? s.replace(/\t/g, '&#9;').replace(/\n/g, '&#10;').replace(/\r/g, '&#13;') : s; };
   /** text node content: also protect characters XML 1.0 forbids (Excel's _xHHHH_ escape) */
-  XML.escText = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/_x([0-9A-Fa-f]{4})_/g, '_x005F_x$1_').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, (c) => '_x' + c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0') + '_');
+  XML.escText = (s, keepCR) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/_x([0-9A-Fa-f]{4})_/g, '_x005F_x$1_').replace(keepCR ? /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g : /[\u0000-\u0008\u000B-\u001F\uFFFE\uFFFF]/g, (c) => '_x' + c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0') + '_');
   /** decode Excel's _xHHHH_ escapes (used in shared strings and attribute text) */
   XML.unx = (s) => (s.indexOf('_x') < 0 ? s : s.replace(/_x([0-9A-Fa-f]{4})_/g, (m, h) => String.fromCharCode(parseInt(h, 16))));
 
@@ -231,6 +232,12 @@
    * Scan tags between [from, to): fn(local, kind, attrText, textBefore) where kind is 1 open, 2 close, 3 self-closing.
    * textBefore is the raw (escaped) text since the previous tag.
    */
+  /** character data between two tags as text: entities resolved, CDATA sections taken literally */
+  /* (line ends are normalised as XML 1.0 §2.11 requires; &#13; stays a carriage return) */
+  XML.chars = (s) => {
+    if (s.indexOf('\r') >= 0) s = s.replace(/\r\n?/g, '\n');
+    return s.indexOf('<![CDATA[') < 0 ? XML.unescape(s) : s.split(/(<!\[CDATA\[[\s\S]*?\]\]>)/).map((p) => (p.startsWith('<![CDATA[') ? p.slice(9, -3) : XML.unescape(p))).join('');
+  };
   XML.scan = function (text, from, to, fn) {
     const re = /<(\/?)(?:[A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)([^>]*?)(\/?)>/g;
     re.lastIndex = from;
@@ -246,6 +253,9 @@
   XML.decode = function (u8) {
     if (u8.length >= 2 && u8[0] === 0xff && u8[1] === 0xfe) return new TextDecoder('utf-16le').decode(u8.subarray(2));
     if (u8.length >= 2 && u8[0] === 0xfe && u8[1] === 0xff) return new TextDecoder('utf-16be').decode(u8.subarray(2));
+    /* no byte-order mark: '<?' in UTF-16 still gives the encoding away (XML 1.0, appendix F) */
+    if (u8.length >= 4 && u8[0] === 0 && u8[1] === 0x3c && u8[2] === 0 && u8[3] === 0x3f) return new TextDecoder('utf-16be').decode(u8);
+    if (u8.length >= 4 && u8[0] === 0x3c && u8[1] === 0 && u8[2] === 0x3f && u8[3] === 0) return new TextDecoder('utf-16le').decode(u8);
     return new TextDecoder('utf-8').decode(u8);
   };
   /* ------------------------------------------------------------ serialisation (kept fragments) */

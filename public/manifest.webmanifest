@@ -96,6 +96,10 @@
         ],
         "application/rtf": [
           ".rtf"
+        ],
+        "text/markdown": [
+          ".md",
+          ".markdown"
         ]
       }
     },

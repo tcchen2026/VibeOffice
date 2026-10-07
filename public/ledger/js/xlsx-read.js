@@ -82,8 +82,9 @@
     if (at(el, 'auto') === '1' || at(el, 'auto') === 'true') return { auto: true };
     const tint = num(el, 'tint', 0);
     let c = null;
-    if (at(el, 'rgb') != null) { let v = at(el, 'rgb').replace('#', ''); if (v.length === 6) v = 'FF' + v; c = { rgb: v.toUpperCase() }; }
-    else if (at(el, 'theme') != null) c = { theme: +at(el, 'theme') };
+    /* with both theme and rgb, Excel goes by the theme slot (LibreOffice tdf#113271) */
+    if (at(el, 'theme') != null && at(el, 'theme') !== '') c = { theme: +at(el, 'theme') };
+    else if (at(el, 'rgb') != null) { let v = at(el, 'rgb').replace('#', ''); if (v.length === 6) v = 'FF' + v; c = { rgb: v.toUpperCase() }; }
     else if (at(el, 'indexed') != null) c = { indexed: +at(el, 'indexed') };
     else return undefined;
     if (tint) c.tint = tint;
@@ -245,15 +246,10 @@
         nf: nfCode(num(x, 'numFmtId', 0)),
         prot: prot(kid(x, 'protection')),
       };
-      /* attributes applyX="0" mean "use the parent style's X" */
-      if (parent) {
-        if (at(x, 'applyFont') === '0') st.font = Object.assign({}, parent.font);
-        if (at(x, 'applyFill') === '0') st.fill = parent.fill;
-        if (at(x, 'applyBorder') === '0') st.border = parent.border;
-        if (at(x, 'applyAlignment') === '0') st.align = parent.align;
-        if (at(x, 'applyNumberFormat') === '0') st.nf = parent.nf;
-        if (at(x, 'applyProtection') === '0') st.prot = parent.prot;
-      }
+      /* In cellXfs, applyX="0" does not mean "take X from the parent style": the xf's own fontId, fillId, … are what
+         Excel shows; the flag only says whether a later change to the parent style should flow into this format
+         (MS-OI29500 §18.8.45). Files from ClosedXML, EPPlus and others write applyFill="0" next to a real fill. */
+      void parent;
       if (st.font) for (const k of Object.keys(st.font)) if (st.font[k] === undefined) delete st.font[k];
       return st;
     };
@@ -270,8 +266,11 @@
     }
     /* cell formats */
     const xfs = kids(kid(el, 'cellXfs'), 'xf');
-    const base = xfs.length ? styleOf(xfs[0], named[num(xfs[0], 'xfId', 0)]) : null;
+    /* a stylesheet without cell formats, or a default font without a name or size, means Excel's own default
+       (the theme's body font at 11 pt), not Ledger's Arial 10 for new workbooks */
+    const base = xfs.length ? styleOf(xfs[0], named[num(xfs[0], 'xfId', 0)]) : styleOf({ children: [], attrs: {} }, null);
     if (base && base.font && !base.font.name) base.font.name = (wb.theme && wb.theme.minor) || 'Calibri';
+    if (base && base.font && base.font.sz == null) base.font.sz = 11;
     if (base) {
       /* the workbook's default font (xf 0) */
       wb.styles = new M.StyleTable(base);
@@ -308,7 +307,7 @@
     let runs = null, cur = null, inT = false, inRPh = 0, buf = '', rpr = null, rprStack = null;
     let siText = '';
     XML.scan(text, 0, text.length, (name, kind, attrs, before) => {
-      if (inT && before) { const t = XML.unx(XML.unescape(before)); if (!inRPh) { if (cur) cur.t += t; siText += t; } }
+      if (inT && before) { const t = XML.unx(XML.chars(before)); if (!inRPh) { if (cur) cur.t += t; siText += t; } }
       switch (name) {
         case 'si':
           if (kind === 1) { runs = null; cur = null; siText = ''; }
@@ -354,8 +353,8 @@
   function colorAttrs(a) {
     if (a.auto === '1') return { auto: true };
     let c = null;
-    if (a.rgb != null) { let v = a.rgb.replace('#', ''); if (v.length === 6) v = 'FF' + v; c = { rgb: v.toUpperCase() }; }
-    else if (a.theme != null) c = { theme: +a.theme };
+    if (a.theme != null && a.theme !== '') c = { theme: +a.theme };
+    else if (a.rgb != null) { let v = a.rgb.replace('#', ''); if (v.length === 6) v = 'FF' + v; c = { rgb: v.toUpperCase() }; }
     else if (a.indexed != null) c = { indexed: +a.indexed };
     if (c && a.tint && +a.tint) c.tint = +a.tint;
     return c;
@@ -405,8 +404,8 @@
         if (sv == null) v = '';
         else if (typeof sv === 'string') v = sv;
         else { v = sv.text; cell.rt = sv.runs; }
-      } else if (t === 'str') v = vText == null ? '' : XML.unx(XML.unescape(vText));
-      else if (t === 'inlineStr') { v = isText != null ? isText : vText != null ? XML.unescape(vText) : ''; if (isRuns && isRuns.some((x) => x.font)) cell.rt = isRuns; }
+      } else if (t === 'str') v = vText == null ? '' : XML.unx(XML.chars(vText));
+      else if (t === 'inlineStr') { v = isText != null ? isText : vText != null ? XML.chars(vText) : ''; if (isRuns && isRuns.some((x) => x.font)) cell.rt = isRuns; }
       else if (t === 'b') v = vText != null && (vText.trim() === '1' || vText.trim() === 'true');
       else if (t === 'e') v = vText != null ? M.err(vText.trim()) : null;
       else if (t === 'd') { v = vText != null ? isoToSerial(vText.trim(), ctx.wb.date1904) : null; if (v == null && vText != null) v = vText; }
@@ -414,7 +413,7 @@
       cell.v = v;
       if (fAttr) {
         const ft = fAttr.t;
-        let ftext = fText != null ? XML.unescape(fText) : '';
+        let ftext = fText != null ? XML.chars(fText) : '';
         if (ftext && ftext[0] === '=') ftext = ftext.slice(1);
         if (ft === 'shared') {
           const si = fAttr.si;
@@ -458,7 +457,7 @@
       }
     };
     XML.scan(text, from, to, (name, kind, attrs, before) => {
-      if (inT && before) { const t = XML.unx(XML.unescape(before)); if (!inRPh) { isText = (isText || '') + t; if (curRun) curRun.t += t; } }
+      if (inT && before) { const t = XML.unx(XML.chars(before)); if (!inRPh) { isText = (isText || '') + t; if (curRun) curRun.t += t; } }
       switch (name) {
         case 'row': {
           if (kind === 2) { row = null; break; }
@@ -1001,12 +1000,14 @@
     const base = { id: num(cNv, 'id', 0), name: at(cNv, 'name') || '', descr: at(cNv, 'descr') || undefined, hidden: bool(cNv, 'hidden', false) || undefined };
     if (obj.localName === 'pic') {
       const blip = obj.getElementsByTagName('*').find((e) => e.localName === 'blip');
-      const id = blip && (rid(blip, 'embed') || rid(blip, 'link'));
-      const r = id && rels.get(id);
-      if (!r || r.external) return null;
-      const bytes = await pkg.bytes(r.target);
-      if (!bytes) return null;
-      const d = Object.assign(base, { kind: 'image', media: ctx.media(r.target, bytes) });
+      const re = blip && rid(blip, 'embed') ? rels.get(rid(blip, 'embed')) : null;
+      const rl = blip && rid(blip, 'link') ? rels.get(rid(blip, 'link')) : null;
+      let media = null;
+      if (re && !re.external) { const bytes = await pkg.bytes(re.target); if (bytes) media = ctx.media(re.target, bytes); }
+      /* a linked picture (Insert Picture ▸ Link to File, or a URL) keeps its link even when the image cannot be loaded here */
+      const imgLink = rl && rl.external ? rl.raw : re && re.external ? re.raw : undefined;
+      if (!media && !imgLink) return null;
+      const d = Object.assign(base, { kind: 'image', media, imgLink });
       const sp = kid(obj, 'spPr');
       const ln = sp && kid(sp, 'ln');
       if (ln && !kid(ln, 'noFill')) d.lineXml = XML.serialize(ln);

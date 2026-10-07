@@ -61,7 +61,7 @@
   function buildMenus() {
     const autoShapeSub = (group) => ({ custom: (close) => shapeGrid(L.geom.MENU[group], close) });
     const menus = [
-      { label: '&File', items: ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', '-', 'properties', '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', '-', 'properties', ...((r) => (r.length ? ['-', ...r] : []))(window.VO ? VO.recentMenuItems(4) : []), '-', 'exitApp'] },
       { label: '&Edit', items: ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', '-', 'clear', 'selectAll', 'duplicate', 'deleteSlide', '-', 'find', 'replace'] },
       {
         label: '&View', items: () => ['viewNormal', 'viewSorter', 'showFromStart', 'viewNotes', '-',
@@ -340,6 +340,7 @@
     if (!L.hist.dirty) return true;
     const r = await ui.msg(`Do you want to save the changes you made to ${A.fileName}?`, { icon: 'warn', buttons: ['&Yes', '&No', 'Cancel'] });
     if (r === 0) { await A.save(); return true; }
+    if (r === 1 && window.VO) VO.discard(L.pres);   // its unsaved version goes too
     return r === 1;
   }
   A.newPresentation = async function () {
@@ -388,7 +389,7 @@
       if (!pres.slides.length) pres.slides.push(M.newSlide(pres, 'title', Object.keys(pres.designs)[0]));
       A.loadPres(pres, file.name.replace(/\.(pptx|ppsx|potx|pptm|ppsm|potm)$/i, ''), { saved: true });
       A.fileType = /\.ppsx$/i.test(file.name) ? 'ppsx' : /\.potx$/i.test(file.name) ? 'potx' : 'pptx';
-      if (window.VO) VO.opened(file);
+      if (window.VO) VO.opened(file, L.pres);
       ui.busy(false);
       if (pres.repaired) {
         const lost = pres.repaired.parts.filter((p) => /slides\/slide\d+\.xml$/.test(p)).length;
@@ -421,7 +422,7 @@
       ui.busy(false);
       if (!blob) return;
       const r = await L.saveFile(`${name}.${ext}`, blob);
-      if (r === 'saved' && ['pptx', 'ppsx', 'potx'].includes(type)) { L.hist.dirty = false; A.status(`Saved ${name}.${ext}`); if (window.VO) VO.saved(`${name}.${ext}`, blob); }
+      if (r === 'saved' && ['pptx', 'ppsx', 'potx'].includes(type)) { L.hist.dirty = false; A.status(`Saved ${name}.${ext}`); if (window.VO) VO.saved(`${name}.${ext}`, blob, L.pres); }
     } catch (e) {
       ui.busy(false);
       console.error(e);
@@ -1932,32 +1933,6 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     });
   }
 
-  /* ================= recovery (per-browser convenience) ================= */
-  const autosave = L.debounce(async () => {
-    if (!L.hist.dirty) return;
-    try {
-      const media = {};
-      let total = 0;
-      for (const [id, m] of L.media.all()) { if (total > 3e6) break; const d = await L.blobToDataURL(m.blob); total += d.length; media[id] = d; }
-      const snap = { at: Date.now(), name: A.fileName, pres: JSON.parse(L.hist.snapshot()), media };
-      const s = JSON.stringify(snap);
-      if (s.length < 4.5e6) L.store.set('recover', snap); else L.store.del('recover');
-    } catch (e) { /* storage is optional */ }
-  }, 4000);
-  async function offerRecovery() {
-    const snap = L.store.get('recover', null);
-    if (!snap || !snap.pres || !snap.pres.slides || !snap.pres.slides.length) return false;
-    const r = await ui.msg(`Lectern found an unsaved version of "${snap.name}" from ${new Date(snap.at).toLocaleString()}.\nDo you want to restore it?`, { title: 'Document Recovery', icon: 'question', buttons: ['&Restore', '&Discard'] });
-    if (r !== 0) { L.store.del('recover'); return false; }
-    for (const id in snap.media) {
-      try { const blob = await (await fetch(snap.media[id])).blob(); const m = L.media.add(blob, id); const re = new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); snap.pres = JSON.parse(JSON.stringify(snap.pres).replace(re, m)); } catch (e) { /* skip */ }
-    }
-    const pres = Object.assign(M.newPresentation({ empty: true }), snap.pres);
-    A.loadPres(pres, snap.name + ' (Recovered)');
-    L.hist.dirty = true;
-    return true;
-  }
-
   /* ================= sample presentation ================= */
   function buildSample() {
     const pres = M.newPresentation({ design: 'azure', empty: true });
@@ -2073,7 +2048,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     });
     L.bus.on('slide-changed-silent', () => { L.panes.notes.render(); A.updateStatus(); L.panes.task.refresh('slide'); });
     const thumbSoon = L.debounce((i) => { L.panes.left.refreshThumb(i); if (A.view === 'sorter') L.panes.sorter.render(); }, 350);
-    L.bus.on('slide-modified', (i) => { if (E.view === 'master') { L.panes.left.render(); return; } thumbSoon(i); autosave(); if (L.panes.left.tab === 'outline' && !TE.active()) L.panes.left.render(); });
+    L.bus.on('slide-modified', (i) => { if (E.view === 'master') { L.panes.left.render(); return; } thumbSoon(i); if (window.VO) VO.changed(L.pres); if (L.panes.left.tab === 'outline' && !TE.active()) L.panes.left.render(); });
     L.bus.on('slides-changed', (o) => {
       if (E.idx >= L.pres.slides.length) E.idx = Math.max(0, L.pres.slides.length - 1);
       if (!(o && o.keepOutline)) L.panes.left.render();
@@ -2082,7 +2057,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
       L.panes.notes.render();
       L.panes.task.refresh(o && o.design ? 'design' : o && o.trans ? 'trans' : 'slides');
       A.updateStatus();
-      autosave();
+      if (window.VO) VO.changed(L.pres);
       ui.refresh();
     });
     L.bus.on('selection', () => { A.updateToolbars(); L.panes.task.refresh('selection'); });
@@ -2129,9 +2104,22 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     E.layout();
     const prompt = window.self !== window.top ? null : null;
     void prompt;
-    setTimeout(() => { offerRecovery(); }, 600);
     ui.refresh();
-    if (window.VO) VO.attach('lectern', { open: (f) => A.openFile(f), thumb: () => L.pres.slides[0] && A.slideCanvas(L.pres.slides[0], 480), message: (t) => ui.msg(t, { icon: 'warn' }), templates: () => L.templates.list().map(({ id, name }) => ({ id, name })) });
+    if (window.VO) VO.attach('lectern', {
+      async open(f, o) {
+        await A.openFile(f);
+        /* an unsaved version: the changes are not saved yet, and a never-saved presentation still needs Save As */
+        if (o && o.draft) { L.hist.dirty = true; A.saved = !!o.saved; A.fileName = o.name.replace(/\.(pptx|ppsx|potx|pptm)$/i, ''); A.updateTitle(); A.status('Recovered the unsaved changes. Save the presentation to keep them.'); ui.refresh(); }
+      },
+      snapshot: (p) => L.pptx.write(p, { format: 'pptx' }),
+      docInfo: () => ({ name: A.fileName + '.' + (A.fileType || 'pptx'), draftName: A.fileName + '.pptx' }),
+      isDirty: (p) => p === L.pres && !!L.hist.dirty,
+      current: () => L.pres,
+      showRecovery() { A.opts.taskOpen = true; L.$('#taskpane').hidden = false; L.panes.task.show('recovery'); },
+      thumb: () => L.pres.slides[0] && A.slideCanvas(L.pres.slides[0], 480),
+      message: (t) => ui.msg(t, { icon: 'warn' }),
+      templates: () => L.templates.list().map(({ id, name }) => ({ id, name })),
+    });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => A.init());

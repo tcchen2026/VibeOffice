@@ -232,12 +232,13 @@
   function onDown(e, el) {
     if (e.button === 2) return;
     e.stopPropagation();
+    /* a shape whose text is being edited: the press places the caret and a drag selects text */
+    if (el.classList.contains('editing')) return;
     e.preventDefault();
     if (L.editor && L.editor.active && !L.editor.commit()) return;
     const d = el._d;
     if (G().selectedObject() !== d) G().selectObject(d);
     G().focus();
-    if (el.classList.contains('editing')) return;
     const handle = e.target.closest('.gobj-h');
     if ((d.locked || (sh().protection && !d.unlocked)) && guard()) return;
     const x0 = e.clientX, y0 = e.clientY;

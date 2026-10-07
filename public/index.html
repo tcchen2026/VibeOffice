@@ -67,6 +67,8 @@
   .doc .name { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .doc .meta { color: var(--muted); font-size: 11px; display: flex; align-items: center; gap: 5px; }
   .doc .meta i { width: 8px; height: 8px; border-radius: 2px; }
+  .doc .unsaved { align-self: flex-start; padding: 0 5px; border-radius: 3px; background: #fde3c4; color: #8a3b00; font-size: 11px; font-weight: bold; }
+  .doc .alt { position: relative; z-index: 1; align-self: flex-start; font-size: 11px; color: var(--pane-link); text-decoration: underline; }
   .doc .rm { position: absolute; top: 4px; right: 4px; z-index: 1; width: 20px; height: 20px; padding: 0; border: 1px solid transparent; border-radius: 3px;
     background: rgba(255,255,255,.9); color: #333; cursor: pointer; opacity: 0; line-height: 1; }
   .doc:hover .rm, .doc:focus-within .rm { opacity: 1; }
@@ -155,7 +157,7 @@
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
     for (const k in attrs || {}) if (attrs[k] != null) el.setAttribute(k, attrs[k]);
-    el.append(...kids);
+    el.append(...kids.filter((k) => k != null));
     return el;
   };
   const COLOR = { quire: 'var(--quire)', ledger: 'var(--ledger)', lectern: 'var(--lectern)' };
@@ -221,14 +223,21 @@
       const thumb = h('div', { class: 'thumb' });
       if (e.thumb) { const u = URL.createObjectURL(e.thumb); urls.push(u); thumb.append(h('img', { src: u, alt: '' })); }
       else thumb.innerHTML = picture(e.app, VO.ext(e.name));
-      const rm = h('button', { class: 'rm', type: 'button', title: 'Remove from list', 'aria-label': 'Remove ' + e.name + ' from the list' }, '×');
-      rm.addEventListener('click', () => VO.recent.remove(e.key).then(render));
+      /* a document with unsaved changes opens at its unsaved version; × then discards those changes */
+      const rm = h('button', { class: 'rm', type: 'button', title: e.draft ? 'Discard the unsaved changes' : 'Remove from list', 'aria-label': (e.draft ? 'Discard the unsaved changes to ' : 'Remove from the list: ') + e.name }, '×');
+      rm.addEventListener('click', async () => {
+        if (e.draft) { if (confirm(`Discard the unsaved changes to “${e.name}”?` + (e.file ? ' The saved version stays in the list.' : ''))) await VO.recent.discardDraft(e.key); }
+        else await VO.recent.remove(e.key);
+        render();
+      });
       const app = VO.APPS[e.app] || { name: e.app };
       const dot = h('i'); dot.style.background = COLOR[e.app] || '#888';
-      return h('div', { class: 'doc', title: `${e.name}\n${app.name} · ${(e.size / 1024).toFixed(0)} KB · ${new Date(e.time).toLocaleString()}` },
+      return h('div', { class: 'doc', title: `${e.name}\n${app.name}` + (e.file ? ` · ${(e.size / 1024).toFixed(0)} KB` : '') + ` · ${new Date(e.time).toLocaleString()}` + (e.draft ? '\nUnsaved changes' : '') },
         thumb,
-        h('a', { class: 'name', href: VO.url(e.app, { recent: e.key }), 'data-go': '' }, e.name),
+        h('a', { class: 'name', href: VO.url(e.app, e.draft ? { recent: e.key, draft: true } : { recent: e.key }), 'data-go': '' }, e.name),
         h('div', { class: 'meta' }, dot, app.name + ' · ' + when(e.time)),
+        e.draft ? h('span', { class: 'unsaved' }, e.file ? 'Unsaved changes' : 'Never saved') : null,
+        e.draft && e.file ? h('a', { class: 'alt', href: VO.url(e.app, { recent: e.key }), 'data-go': '', title: 'Open the version saved before the changes' }, 'Saved version') : null,
         rm);
     }));
     grid.hidden = !list.length;

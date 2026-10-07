@@ -72,7 +72,7 @@ For every file, `tools/lectern/test/corpus.js` opens the deck in headless Chromi
 |---|---|---|
 | Decks that open | 1,662 | 1,665 (3 more: password-protected, with the passwords their test suites document) |
 | Errors loading, rendering, saving or reopening | 0 | 0 |
-| Decks that lose content on save (round trip) | 14 (SVG, linked and broken pictures dropped) | 0 |
+| Decks whose shapes, text or pictures change on save (round trip; other content: see *What a save keeps* below) | 14 (SVG, linked and broken pictures dropped) | 0 |
 | Slide counts different from python-pptx (1,505 decks compared) | 0 | 0 |
 | Charts saved with their workbook and styles | 0 of 441 (rewritten from a summary) | all unedited charts |
 | Saved files that python-pptx opens | | 1,665 of 1,665 (3 after decryption) |
@@ -89,9 +89,34 @@ Fixes found this way, besides charts and passwords: shapes filled with the slide
 
 To run the harness: serve Lectern (`python3 tools/serve.py`) and the folder above the decks (`python3 -m http.server 8766`; set `HOST` and `CORPUS_URL` to use other addresses), then `node tools/lectern/test/corpus.js <folder-or-list> results.jsonl --png png/ --save saved/` and `node tools/lectern/test/summarize.js results.jsonl`. `tools/lectern/test/ui-features.js` drives the password dialog, Tools ▸ Options ▸ Security and the chart dialog in the real UI; `tools/lectern/test/chartedit.js` writes every chart from the model for validation; `tools/lectern/test/decrypt.py` checks encrypted saves with an independent implementation.
 
+## What a save keeps, converts and drops
+
+Lectern reads a file into its own model and writes a new file from that model. Whatever the model has no place for is not written, and today that happens without a warning. To measure it, `tools/lectern/test/loss-audit.py` compares each of the 1,652 decks with Lectern's saved copy, feature by feature and word by word (python, standard library only: `python3 tools/lectern/test/loss-audit.py corpus/ saved/ out.json`).
+
+**Kept.** The words on the slides (all but 24 of 111,243, in two decks: a text box holding an equation, saved as the picture PowerPoint stores for older readers, and text typed into connector-shaped AutoShapes) and in the speaker notes (7,274 of 7,282); pictures, shapes, tables, group structure; animations (2,873 of 2,876 effects) and transitions (143 of 144); links to web pages, e-mail addresses and other slides; unedited charts byte for byte with their workbooks.
+
+**Converted** — still visible, no longer editable the original way: SmartArt becomes grouped shapes (129 decks); embedded Excel, Word or Visio objects become their preview pictures (46 decks); Office 2016 charts (waterfall, sunburst, funnel…) become the picture stored with them (9 decks); text with equations becomes a picture.
+
+**Dropped.**
+
+| What | Decks in the test set |
+|---|---|
+| Video and audio, and the animations that play them | 43 (29) |
+| Comments | 21 |
+| Sections, custom shows | 29, 6 |
+| Handout master; slide layouts and masters that no slide uses | 154; 8,668 layouts in 1,316 decks |
+| Header, footer and date text on notes pages (often a copyright line) | 214 decks, 752 words |
+| 3-D bevel and extrusion, glow, reflection, soft edges, inner shadow, text effects, picture recolouring | 50, 27, 11, 16, 8 |
+| Action settings that run a program or macro; links to files or other presentations | 39; 70 of 536 links |
+| Ink, 3-D models, embedded fonts | 5, 2, 15 |
+| VBA macros (a `.pptm` is saved as `.pptx`) | 11 |
+| Custom XML parts and tags, custom document properties (document IDs, add-in data) | 317, 126 |
+| Sensitivity labels, in both forms (`MSIP_Label` custom properties and `docMetadata/LabelInfo.xml`) | 10 and 16 |
+| Auto-advance set to 0 seconds | 14 of 47 timings |
+
 ## Known limits
 
-* Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macros in `.pptm` files are not kept; the file is saved as `.pptx`.
+* Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macros in `.pptm` files are not kept; the file is saved as `.pptx`. See *What a save keeps, converts and drops* for everything else a save leaves out.
 * SmartArt imports as grouped shapes. When a file carries only the diagram data (PowerPoint 2007 saved no drawing), Lectern lays it out itself with one of its built-in layout families, so unusual layouts look simpler than in PowerPoint.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
 * Embedded OLE objects and ActiveX controls import as their preview pictures.

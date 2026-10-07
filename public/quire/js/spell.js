@@ -161,6 +161,13 @@
   let spellHL = null, gramHL = null;
   if (HL) { spellHL = new Highlight(); gramHL = new Highlight(); CSS.highlights.set('quire-spell', spellHL); CSS.highlights.set('quire-grammar', gramHL); }
   SP.ignoredOnce = new Set(); /* "p.id:a:word" */
+  /* Underlines are off in every document until asked for (the status bar icon, or the Options checkbox
+     "Hide spelling and grammar errors in this document"): opening a file shows it without red and green
+     lines, and the dictionary is not even loaded until then. */
+  Object.defineProperty(SP, 'hidden', {
+    get: () => !(doc() && doc().proofOn),
+    set: (v) => { const d = doc(); if (!d) return; d.proofOn = !v; SP.refreshSoon(0); L.bus.emit('proof-state'); },
+  });
   let timer = 0;
   SP.refreshSoon = function (ms) { clearTimeout(timer); timer = setTimeout(SP.refresh, ms == null ? 350 : ms); };
   /** text of one rendered paragraph fragment with a map back to text nodes */
@@ -240,14 +247,12 @@
   L.bus.on('app-ready', () => {
     LY.scroller.addEventListener('scroll', () => SP.refreshSoon(150), { passive: true });
     if (LY.root) LY.root.spellcheck = false;
-    /* warm the default dictionary so the first check is instant */
-    setTimeout(() => LEX.load('en_US').then(() => SP.refreshSoon(0)).catch(() => {}), 400);
   });
 
   /* ================= right-click suggestions ================= */
   /** the misspelled word or grammar finding under the mouse, as context menu items (or null) */
   SP.suggestionsAt = function (e) {
-    if (!opt('spell', true) || !e) return null;
+    if (!opt('spell', true) || SP.hidden || !e) return null;
     let node = null, off = 0;
     if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(e.clientX, e.clientY); if (r) { node = r.startContainer; off = r.startOffset; } }
     else if (document.caretPositionFromPoint) { const r = document.caretPositionFromPoint(e.clientX, e.clientY); if (r) { node = r.offsetNode; off = r.offset; } }

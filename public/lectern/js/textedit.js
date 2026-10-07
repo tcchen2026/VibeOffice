@@ -368,6 +368,7 @@
     if (document.caretPositionFromPoint) { const p = document.caretPositionFromPoint(x, y); if (!p) return null; const r = document.createRange(); r.setStart(p.offsetNode, p.offset); r.collapse(true); return r; }
     return null;
   }
+  TE.caretFromPoint = caretFromPoint;
   TE.resume = function (snap) {
     if (!snap) return;
     TE.begin(snap.id, { cell: snap.cell, sel: snap.sel || undefined });

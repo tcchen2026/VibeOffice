@@ -378,6 +378,10 @@
       if (e.button === 0 && L.te.target().sh.type === 'table') startCellSelect(e);
       return;
     }
+    /* elsewhere inside the box being edited (its margins, the space under the text): place the caret and
+       drag to select text, as PowerPoint does; the hatched ring around it moves the box */
+    const st = L.te.state;
+    if (st && !st.cell && e.button === 0 && st.el.contains(tgt)) { startTextSelect(e, st); return; }
     const hit = shapeHit(tgt);
     if (e.button === 2) {
       if (hit) { const id = pickId(hit); if (!E.sel.includes(id)) E.select([id]); }
@@ -401,6 +405,31 @@
     else if (E.editing()) L.te.end();
     E.refocus();
     startMove(e, id, wasSelected);
+  }
+  /** caret position for a point in or around the text being edited: above it → start, below → end, beside → that line */
+  function caretNear(root, x, y) {
+    const r = root.getBoundingClientRect();
+    const edge = (end) => { const rg = document.createRange(); rg.selectNodeContents(root); rg.collapse(!end); return rg; };
+    if (y < r.top) return edge(false);
+    if (y > r.bottom) return edge(true);
+    const rg = L.te.caretFromPoint(L.clamp(x, r.left + 1, r.right - 1), y);
+    return rg && root.contains(rg.startContainer) ? rg : edge(x > r.left + r.width / 2);
+  }
+  function startTextSelect(e, st) {
+    e.preventDefault();
+    const root = st.root;
+    L.te.focus();
+    const sel = window.getSelection();
+    const at = caretNear(root, e.clientX, e.clientY);
+    let anchor = { node: at.startContainer, off: at.startOffset };
+    if (e.shiftKey && sel.rangeCount && root.contains(sel.anchorNode)) anchor = { node: sel.anchorNode, off: sel.anchorOffset };
+    const extend = (ev) => {
+      const f = caretNear(root, ev.clientX, ev.clientY);
+      try { sel.setBaseAndExtent(anchor.node, anchor.off, f.startContainer, f.startOffset); } catch (err) { /* outside the text */ }
+    };
+    extend(e);
+    try { E.scroller.setPointerCapture(e.pointerId); } catch (err) { /* window listeners still follow the drag */ }
+    drag = { move: extend, up() { L.te.lastSel = L.te.getSel(); } };
   }
   function pickId(hit) {
     if (hit.top === hit.inner) return hit.top;

@@ -176,6 +176,7 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .sb-cell.act { cursor: default; }
 .sb-cell.act:hover { background: var(--menu-hot); }
 .sb-spell { display: inline-flex; align-items: center; }
+.sb-spell.off svg { filter: grayscale(1); opacity: .5; }
 
 /* floating toolbars */
 .floatbar { position: absolute; z-index: 60; background: linear-gradient(var(--tb-a), var(--tb-b)); border: 1px solid var(--tb-border); border-radius: 3px; box-shadow: 2px 2px 5px rgba(0,0,0,.35); display: flex; flex-direction: column; }

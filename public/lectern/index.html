@@ -99,7 +99,9 @@
 .grp-frame { border: 1px dashed #666; }
 .sel-frame.editing { border: 0; }
 .edit-ring { position: absolute; inset: -5px; border: 5px solid transparent; pointer-events: auto; cursor: move;
-  border-image: repeating-linear-gradient(45deg, #6b6b6b 0 1px, transparent 1px 3px) 5; }
+  border-image: repeating-linear-gradient(45deg, #6b6b6b 0 1px, transparent 1px 3px) 5;
+  /* only the hatched band moves the box: presses inside it go to the text */
+  clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 5px 5px, 5px calc(100% - 5px), calc(100% - 5px) calc(100% - 5px), calc(100% - 5px) 5px, 5px 5px); }
 .hd { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #fff; border: 1px solid #000; pointer-events: auto; z-index: 2; }
 .hd[data-h="nw"], .hd[data-h="se"] { cursor: nwse-resize; } .hd[data-h="ne"], .hd[data-h="sw"] { cursor: nesw-resize; }
 .hd[data-h="n"], .hd[data-h="s"] { cursor: ns-resize; } .hd[data-h="e"], .hd[data-h="w"] { cursor: ew-resize; }
