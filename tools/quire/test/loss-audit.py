@@ -4,6 +4,11 @@ of the whole document (body, headers, footers, notes, comments, text boxes) as a
 Usage: python3 -I loss-audit.py corpusDir savedDir out.json"""
 import collections, json, os, re, sys, zipfile
 
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'ooxml'))
+from audit import Audit
+audit = Audit()
+
 corpus, saved, outp = sys.argv[1], sys.argv[2], sys.argv[3]
 
 def load(path):
@@ -16,7 +21,7 @@ def load(path):
                 x = z.read(n).decode('utf8', 'replace')
                 # the Fallback of mc:AlternateContent repeats the Choice (a VML copy of a text box or shape)
                 files[n] = re.sub(r'<mc:Fallback\b.*?</mc:Fallback>', '', x, flags=re.S) if 'mc:Fallback' in x else x
-            except Exception: pass
+            except Exception: raise
     return names, files
 
 def part(f, pat):
@@ -90,22 +95,21 @@ def words(f):
 stats = {k: {'docs_with': 0, 'lost_all': 0, 'lost_some': 0, 'items_orig': 0, 'items_saved': 0, 'examples': []} for k in FEATURES}
 text = {'docs': 0, 'docs_missing_words': 0, 'words_orig': 0, 'words_missing': 0, 'worst': []}
 pairs = 0
-for s in sorted(os.listdir(saved)):
-    sp = os.path.join(saved, s)
-    op = os.path.join(corpus, s)
-    if not os.path.exists(op):
-        cand = [c for c in os.listdir(corpus) if c.rsplit('.', 1)[0] == s.rsplit('.', 1)[0]] if False else []
-        continue
+for s, op, sp in audit.pairs(corpus, saved, ('.docx', '.docm', '.dotx', '.dotm')):
+    base = s.rsplit('.', 1)[0]
     try:
         with open(sp, 'rb') as fh:
-            if fh.read(4) == bytes.fromhex('d0cf11e0'): continue
+            if fh.read(4) == bytes.fromhex('d0cf11e0'):
+                audit.failure(s, 'Encrypted output requires decrypted comparison', excluded=True)
+                continue
         on, of = load(op); sn, sf = load(sp)
-    except Exception:
+    except Exception as error:
+        audit.failure(s, error)
         continue
     pairs += 1
     for k, fn in FEATURES.items():
         try: a, b = int(fn(on, of) or 0), int(fn(sn, sf) or 0)
-        except Exception: continue
+        except Exception as error: audit.failure(s, error, k); continue
         if a <= 0: continue
         st = stats[k]
         st['docs_with'] += 1; st['items_orig'] += a; st['items_saved'] += min(a, b)
@@ -119,10 +123,14 @@ for s in sorted(os.listdir(saved)):
         text['docs_missing_words'] += 1
         text['worst'].append([s, miss, sum(wa.values())])
 text['worst'] = sorted(text['worst'], key=lambda r: -r[1])[:25]
-json.dump({'pairs': pairs, 'stats': stats, 'text': text}, open(outp, 'w'), indent=1)
+json.dump({'accounting': audit.report(), 'pairs': pairs, 'stats': stats, 'text': text}, open(outp, 'w'), indent=1)
 print('document pairs compared', pairs)
 print('words: %d of %d documents keep every word; %d of %d words missing in all' % (text['docs'] - text['docs_missing_words'], text['docs'], text['words_missing'], text['words_orig']))
 print('%-52s %6s %6s %6s %12s' % ('feature', 'docs', 'lost', 'part', 'kept items'))
 for k, st in sorted(stats.items(), key=lambda kv: -kv[1]['docs_with']):
     if st['docs_with']:
         print('%-52s %6d %6d %6d %6d/%-6d' % (k, st['docs_with'], st['lost_all'], st['lost_some'], st['items_saved'], st['items_orig']))
+
+accounting = audit.report()
+print('attempts: %(attempted)d; OK: %(ok)d; failed: %(failed)d; excluded: %(excluded)d' % accounting)
+if accounting['failed']: sys.exit(1)

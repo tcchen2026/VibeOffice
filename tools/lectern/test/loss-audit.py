@@ -3,6 +3,11 @@ feature, the decks where the original has it and the saved copy no longer does.
 Usage: python3 -I loss-audit.py corpusDir savedDir out.json"""
 import json, os, re, sys, zipfile, collections
 
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'ooxml'))
+from audit import Audit
+audit = Audit()
+
 corpus, saved, outp = sys.argv[1], sys.argv[2], sys.argv[3]
 
 def load(path):
@@ -11,7 +16,7 @@ def load(path):
     for n in z.namelist():
         if n.endswith('.xml') or n.endswith('.rels'):
             try: files[n] = z.read(n).decode('utf8', 'replace')
-            except Exception: pass
+            except Exception: raise
     return z.namelist(), files
 
 def rel_targets(files, prefix):
@@ -80,21 +85,21 @@ def words(names, f, original):
 stats = {k: {'decks_with': 0, 'decks_lost_all': 0, 'decks_lost_some': 0, 'items_orig': 0, 'items_saved': 0, 'examples': []} for k in FEATURES}
 pairs = 0
 text = {'decks': 0, 'decks_missing_words': 0, 'words_orig': 0, 'words_missing': 0, 'worst': []}
-for s in sorted(os.listdir(saved)):
-    sp = os.path.join(saved, s)
-    with open(sp, 'rb') as fh:
-        if fh.read(4) == bytes.fromhex('d0cf11e0'): continue
+for s, op, sp in audit.pairs(corpus, saved, ('.pptx', '.pptm', '.ppsx', '.ppsm', '.potx', '.potm')):
     base = s.rsplit('.', 1)[0]
-    orig = next((os.path.join(corpus, base + e) for e in ('.pptx', '.pptm', '.potx', '.ppsx', '.potm', '.ppsm') if os.path.exists(os.path.join(corpus, base + e))), None)
-    if not orig: continue
     try:
-        on, of = load(orig); sn, sf = load(sp)
-    except Exception:
+        with open(sp, 'rb') as fh:
+            if fh.read(4) == bytes.fromhex('d0cf11e0'):
+                audit.failure(s, 'Encrypted output requires decrypted comparison', excluded=True)
+                continue
+        on, of = load(op); sn, sf = load(sp)
+    except Exception as error:
+        audit.failure(s, error)
         continue
     pairs += 1
     for k, fn in FEATURES.items():
         try: a, b = int(fn(on, of) or 0), int(fn(sn, sf) or 0)
-        except Exception: continue
+        except Exception as error: audit.failure(s, error, k); continue
         if a <= 0: continue
         st = stats[k]
         st['decks_with'] += 1; st['items_orig'] += a; st['items_saved'] += min(a, b)
@@ -106,10 +111,14 @@ for s in sorted(os.listdir(saved)):
     text['decks'] += 1; text['words_orig'] += sum(wa.values()); text['words_missing'] += miss
     if miss: text['decks_missing_words'] += 1; text['worst'].append([base, miss, sum(wa.values())])
 text['worst'] = sorted(text['worst'], key=lambda r: -r[1])[:30]
-json.dump({'pairs': pairs, 'stats': stats, 'text': text}, open(outp, 'w'), indent=1)
+json.dump({'accounting': audit.report(), 'pairs': pairs, 'stats': stats, 'text': text}, open(outp, 'w'), indent=1)
 print('deck pairs compared', pairs)
 print('words: %d of %d decks keep every word; %d of %d words missing in all' % (text['decks'] - text['decks_missing_words'], text['decks'], text['words_missing'], text['words_orig']))
 print('%-44s %6s %6s %6s %10s' % ('feature', 'decks', 'lost', 'part', 'kept items'))
 for k, st in sorted(stats.items(), key=lambda kv: -kv[1]['decks_with']):
     if st['decks_with']:
         print('%-44s %6d %6d %6d %5d/%-5d' % (k, st['decks_with'], st['decks_lost_all'], st['decks_lost_some'], st['items_saved'], st['items_orig']))
+
+accounting = audit.report()
+print('attempts: %(attempted)d; OK: %(ok)d; failed: %(failed)d; excluded: %(excluded)d' % accounting)
+if accounting['failed']: sys.exit(1)

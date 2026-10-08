@@ -1,8 +1,8 @@
 # Ledger 2003 — Web Edition
 
-A spreadsheet in the image of Excel 2003, written in plain HTML and vanilla JavaScript: 44 script files,
+A spreadsheet in the image of Excel 2003, written in plain HTML and vanilla JavaScript, with
 no libraries, no frameworks, no build step at run time. It opens and saves Office Open XML workbooks
-(`.xlsx`, `.xlsm`, `.xltx`, password-protected ones included), CSV and text files, and XML Spreadsheet
+(`.xlsx`, `.xlsm`, `.xltx`, `.xltm`, password-protected ones included), CSV and text files, and XML Spreadsheet
 2003, and it exports web pages and PDF.
 
 The look is Office 2003 on Windows XP (Luna Blue): menus with their access keys, the Standard and
@@ -134,10 +134,46 @@ be served over https or from localhost. A workbook opened with its password keep
 
 ## What a save keeps, converts and drops
 
-Ledger reads a workbook into its own model and writes a new file from it. Anything the model has no
-place for is left out of the saved file, and today there is no warning when that happens.
-`tools/ledger/test/loss-audit.py` measures it: for each of 2,941 test workbooks it counts every feature in the
-original and in Ledger's saved copy, and reads every cell of both with openpyxl, an independent reader,
+Ledger regenerates worksheets and retains original package dependencies, workbook settings, style
+definitions and shared-string entries. Pivots, controls, threaded-comment editing and worksheet
+extensions still need their object-level preservation and mutation rules. The Compatibility Checker
+reports recorded losses before a user save; coverage of remaining content conversions is incomplete.
+
+### Package preservation (2026-10-08)
+
+Save, Save As and drafts keep `.xlsx`, `.xlsm`, `.xltx` or `.xltm`, including encryption after recovery.
+The main-part content type determines the variant even for a misnamed input. Macro-free Save As warns
+before download. Cancellation leaves the file identity and loss acknowledgements unchanged.
+
+The pinned 951-file run saves and reopens **935**, with **11 failures and 5 exclusions**, unchanged
+from the baseline. Package/SDK comparison improves from 808 to **910 OK**, with **36 failed and 5
+excluded**. Independent package checks compare bytes, content types, original rIds and targets:
+
+| Package feature | Preserved relationships |
+|---|---:|
+| Custom XML stores / their property parts | 97 / 97 each |
+| Custom properties, including types/pids and empty bags | 114 / 114 |
+| Connections | 35 / 36 |
+| External links | 49 / 49 |
+| VBA projects | 26 / 26 |
+| Persons | 4 / 4 |
+| Web extensions | 3 / 3 |
+| Sensitivity labels | 2 / 2 |
+
+The connection exception points to a part absent from the original. Existing styles and shared strings
+keep their indices and unknown properties; edits append definitions. Unedited macro/dialog sheets
+are carried intact. Editing one converts it to an ordinary worksheet and records that conversion.
+Raw unedited drawing shapes retain their relationships, including hyperlinks and grouped pictures.
+Keeping pivot/cache package parts does not yet implement the required pivot range/refresh rules.
+
+Reports: `~/corpora/results/package-preservation-2026-10-08/`. Excel samples are in
+`~/Downloads/lossless-check/ledger/package/`; Office acceptance is pending.
+
+### Historical feature baseline
+
+The following larger-corpus figures predate package preservation. `tools/ledger/test/loss-audit.py`
+counted every feature in each of 2,941 test workbooks and its saved copy, and read
+every cell of both with openpyxl, an independent reader,
 comparing value, formula, number format, font, fill, borders and alignment
 (`python3 tools/ledger/test/loss-audit.py originals/ saved/ out.json`).
 
@@ -171,6 +207,49 @@ back.
 | Sensitivity labels in the newer `docMetadata/LabelInfo.xml` form (labels kept as `MSIP_Label` custom properties survive: 35 of 35) | 27 |
 | Embedded OLE objects | 5 |
 | Slicers and timelines | 1 |
+
+### Pinned lossless-save baseline (2026-10-07)
+
+The reproducible three-source corpus in `tools/corpora.sh` was measured against application revision
+`5abafdc`, before preservation changes. Of 951 inputs, 935 completed open → save → reopen,
+11 failed and 5 were explicitly excluded. Completion is not a fidelity result. The independent
+feature inventory compared 923 readable pairs; malformed/encrypted originals and missing
+outputs remain in its accounting. This corpus differs from the earlier compatibility corpus above.
+
+| Feature | Files containing it | Original inventory items | Saved inventory items | Text edit: kept / original |
+|---|---:|---:|---:|---:|
+| pivot tables | 101 | 156 | 0 | 0 / 156 |
+| form controls / ActiveX | 22 | 371 | 0 | 0 / 371 |
+| threaded comments | 4 | 6 | 0 | 0 / 6 |
+| custom XML data parts | 32 | 99 | 0 | 0 / 99 |
+
+The text-edit inventory covers 921 readable saved pairs; files without editable text and failed
+operations stay in the driver report, so its denominator differs from the unedited inventory.
+
+Package checks plus the Office 2019 SDK comparison reported 808 attempts without new
+automated diagnostics and 138 failures (including originals that could not be validated);
+5 driver exclusions remain separate. These checks do not certify Office acceptance. Commands,
+comparison policies and failure accounting are in [testing.md](testing.md#lossless-same-format-save-reproducible-baseline).
+
+The cell-edit/save/undo/redo baseline completed in 933 files, excluded 7 and failed in 11.
+The independent openpyxl check compared 1,649,147 cells in 895 workbooks; 7 workbooks differed
+in values or formulas and 6 in formatting. Full failure accounting is retained.
+Of 8 feature samples, 7 converted in LibreOffice with unchanged page counts. The pivot sample
+`bug66675.xlsx` changed from 36 to 42 pages after saving. The full corpus
+has not yet been rendered in LibreOffice. The baseline reports are retained outside git in
+`~/corpora/results/lossless-baseline-2026-10-07/`; Office samples are in
+`~/Downloads/lossless-check/baseline/`.
+
+### Shared preservation core (2026-10-08)
+
+Ledger's XML parser and namespace serializer now live in `common/xml.js` and `common/opc.js`. The
+writer does not yet use the package carry graph, so the feature-loss numbers above still apply. The
+same 951 inputs again produced 935 successful open/save/reopen attempts, 11 failures and 5 exclusions.
+Compared with the earlier saved outputs, 911 package/SDK comparisons completed with no new diagnostics;
+24 earlier outputs could not be SDK-validated, 11 had no saved output and 5 were excluded. Eight
+LibreOffice samples kept their page counts relative to the earlier saves; this comparison does not
+resolve the existing pivot sample's 36-to-42-page change from its author's file. The Ledger Node tests
+pass. Reports: `~/corpora/results/opc-core-2026-10-08/`.
 
 ## Compatibility testing
 
@@ -245,13 +324,15 @@ at A1, which freezes nothing, is not written.
 | File | What it does |
 | --- | --- |
 | `index.html`, `tools/ledger/build/` | Window chrome, Ledger's CSS after the shared `../common/luna.css`, script order (generated by the build script) |
-| `../common/core.js`, `js/xml.js`, `../common/zip.js` | Utilities, file saving, PDF writer, a small fast XML parser, ZIP reader/writer |
+| `../common/core.js`, `../common/zip.js` | Utilities, file saving, PDF writer, ZIP reader/writer |
+| `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js`, `js/xml.js` | Shared XML parser and OOXML preservation core; `js/xml.js` aliases the shared tree as `L.xml`. Original package ownership, settings merges and style/string identities are implemented. |
 | `../common/sha.js`, `../common/crypto.js` | SHA-1/256/384/512 and AES, Office document encryption (standard and agile) |
 | `js/model.js`, `js/ops.js` | Workbook model (sparse rows, shared styles, names, tables), undo history, every editing operation |
 | `js/formula.js`, `js/calc.js` | Formula language (A1, R1C1, structured references, `@`, spills), calculation engine and dependency graph |
 | `js/fn-core.js`, `js/fn-lookup.js`, `js/fn-stat.js`, `js/fn-fin.js`, `js/fn-eng.js`, `js/fninfo.js` | The 519 worksheet functions and their catalogue for Insert Function |
 | `../common/numfmt.js`, `js/layout.js`, `js/render.js`, `js/cf.js`, `js/styles.js` | Number formats, text measurement, the canvas renderer, conditional formats, list styles |
 | `js/grid.js`, `js/editor.js`, `js/clipboard.js` | Selection, scrolling, keyboard and mouse; in-cell editing and point mode; clipboard |
+| `js/preserve.js` | Package ownership, workbook/property merges and retained style indices |
 | `js/xlsx-read.js`, `js/xlsx-write.js`, `js/csv.js`, `js/xmlss.js` | File formats |
 | `../common/dml.js`, `../common/charts.js`, `js/xchart.js`, `js/drawing.js`, `../common/geometry.js`, `../common/metafile.js` | DrawingML, chart model and SVG drawing, Chart Wizard, pictures and AutoShapes, WMF/EMF |
 | `js/filter.js`, `js/print.js`, `../common/spell.js`, `js/spell.js`, `js/panes.js` | AutoFilter, printing and Print Preview, the shared spelling engine with Ledger's Spelling dialog and AutoCorrect, task panes and templates |

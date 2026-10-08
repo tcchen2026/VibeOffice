@@ -158,12 +158,12 @@
           if (e.code === 'xls') { ui.busy(false); if (L.xls && L.xls.read) { w = await L.xls.read(bytes); type = 'xls'; } else throw Object.assign(new Error(`'${name}' is a binary Excel 97–2003 workbook (.xls). Ledger opens .xlsx, .xlsm, .csv and XML Spreadsheet 2003 files. Open it in Excel or LibreOffice and save it as .xlsx first.`), { code: 'xls' }); }
           else throw e;
         }
-        type = ext === 'xlsm' || w.macroEnabled ? 'xlsm' : 'xlsx';
+        type = w.ooxmlFormat || (w.macroEnabled ? 'xlsm' : 'xlsx');
         if (w.repaired) ui.toast('This file was damaged; Ledger repaired what it could.');
       }
       A.prepare(w);
       const b = A.addBook(w, name, { type });
-      if (/^xlt/.test(ext)) { b.untitled = true; b.name = name.replace(/\.xlt[xm]$/i, '') + '1'; }
+      if (password) b.password = password;
       if (window.VO && file.name) VO.opened(file, b);
       updateTitle();
     } finally { ui.busy(false); }
@@ -253,17 +253,14 @@
       else if (type === 'xmlss') blob = L.xmlss.write(w);
       else if (type === 'pdf') { ui.busy(false); await L.print.exportPDF(); return true; }
       else {
-        if (type === 'xlsx' && w.macroEnabled && w.extra.vba) {
-          ui.busy(false);
-          const r = await ui.msg('The following features cannot be saved in macro-free workbooks:\n\n• VB project\n\nTo save a file with these features, click No, and then choose a macro-enabled file type (.xlsm).\nTo continue saving as a macro-free workbook, click Yes.', { icon: 'warn', buttons: ['&Yes', '&No'] });
-          if (r !== 0) return false;
-          ui.busy(true, 'Saving...');
-        }
         blob = await L.xlsxWrite.write(w, { type, password: b.password });
       }
       ui.busy(false);
+      const losses = L.opc.formats[type] ? await ui.compatibility(w, blob.dropped) : [];
+      if (losses === null) return false;
       const res = await L.saveFile(name, blob);
       if (res === 'saved') {
+        L.opc.acknowledge(w, losses);
         if (type !== 'csv' && type !== 'txt' && type !== 'html') { b.name = name; b.type = type; b.untitled = false; b.dirty = false; w.fileName = name; }
         else if (b.untitled) b.dirty = false;
         if (window.VO && type !== 'html') VO.saved(name, blob, b);
@@ -1417,12 +1414,14 @@
         await A.openFiles([f]);
         /* an unsaved version: the changes are not saved yet, and a never-saved workbook still needs Save As */
         const b = book();
-        if (o && o.draft && b) { b.dirty = true; b.name = o.saved ? o.name : o.name.replace(/\.xlsx$/i, ''); b.untitled = !o.saved; b.saved = !!o.saved; updateTitle(); A.status('Recovered the unsaved changes. Save the workbook to keep them.'); ui.refresh(); }
+        if (o?.draft && b) L.opc.recoverLosses(b.wb, o.lossState);
+        if (o && o.draft && b) { b.dirty = true; b.name = o.saved ? o.name : o.name.replace(/\.(xlsx|xlsm|xltx|xltm)$/i, ''); b.untitled = !o.saved; b.saved = !!o.saved; updateTitle(); A.status('Recovered the unsaved changes. Save the workbook to keep them.'); ui.refresh(); }
       },
-      snapshot: (b) => L.xlsxWrite.write(b.wb, { type: b.type === 'xlsm' || b.wb.macroEnabled ? 'xlsm' : 'xlsx', password: b.password }),
+      snapshot: (b) => L.xlsxWrite.write(b.wb, { type: L.opc.formats[b.type] ? b.type : b.wb.ooxmlFormat || 'xlsx', password: b.password }),
       docInfo(b) {
-        const name = /\.\w+$/.test(b.name) ? b.name : b.name + '.xlsx';
-        return { name, draftName: name.replace(/\.(csv|txt|tsv|prn|xml|html?|xltx|xltm)$/i, '.xlsx') };
+        const type = L.opc.formats[b.type] ? b.type : b.wb.ooxmlFormat || 'xlsx';
+        const name = /\.\w+$/.test(b.name) ? b.name : b.name + '.' + type;
+        return { name, draftName: name.replace(/\.(csv|txt|tsv|prn|xml|html?)$/i, '.' + type), lossState: L.opc.lossState(b.wb) };
       },
       isDirty: (b) => !!(b && b.dirty),
       current: () => book(),

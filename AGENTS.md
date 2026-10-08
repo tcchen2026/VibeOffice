@@ -4,9 +4,9 @@ A static web office suite in the style of Office 2003 (Luna Blue) that opens and
 
 | App | Folder | Kind | Files |
 |---|---|---|---|
-| Quire | `public/quire/` | Word processor | .docx/.dotx, RTF, HTML, text, Markdown (GitHub flavour; .zip with pictures); PDF out |
-| Ledger | `public/ledger/` | Spreadsheet | .xlsx/.xlsm/.xltx, CSV/text, XML Spreadsheet 2003, HTML; PDF out |
-| Lectern | `public/lectern/` | Presentations | .pptx/.ppsx/.potx; PDF, PNG, HTML out |
+| Quire | `public/quire/` | Word processor | .docx/.docm/.dotx/.dotm, RTF, HTML, text, Markdown (GitHub flavour; .zip with pictures); PDF out |
+| Ledger | `public/ledger/` | Spreadsheet | .xlsx/.xlsm/.xltx/.xltm, CSV/text, XML Spreadsheet 2003, HTML; PDF out |
+| Lectern | `public/lectern/` | Presentations | .pptx/.pptm/.ppsx/.ppsm/.potx/.potm; PDF, PNG, HTML out |
 
 Each app is classic `<script>` files (no ES modules) that attach to one global namespace, `window.L` (also `window.Quire` / `window.Ledger` / `window.Lectern`), loaded in the order listed in its `index.html`. `public/common/` holds what the apps share: the libraries and the Luna stylesheet (one copy each: core, ui, icons, zip, sha, crypto, geometry, metafile, charts, numfmt, dml, spell engine, clipart, `luna.css`), `suite.js` (`window.VO`: launching apps, Recent Files, the service worker) and the proofing dictionaries (`common/dict/`). See docs/suite.md.
 
@@ -29,6 +29,9 @@ Keep them current: a change to an app's features, formats or source layout updat
 - Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`. (Open gap: the three apps still load the metric-compatible fonts from Google Fonts.)
 - Compatibility is measured against files other people wrote (public test corpora), compared with outside references (the page or cell values the authoring application stored, LibreOffice, openpyxl, python-pptx), and the result is written down in the app's doc with numbers.
 - Saved files must open in the authoring application's newer versions and in LibreOffice; what an app cannot edit it keeps and writes back unchanged.
+- OOXML preservation uses `common/opc.js`: immutable package bytes stay outside JSON history; model fragments carry source identities and dependency references. Classify parts as opaque, merged or regenerated. Preserve original identities unless every referrer is regenerated; duplicates remap definitions and references together. Merge settings-like parts only; regenerate content parts with model-attached fragments. Record conversions and drops in the document's loss ledger.
+- Save and drafts keep the main-part variant and encryption. Save As changes the filename/type only after a successful download. Show unacknowledged loss entries in the Compatibility Checker after preparing the file and before download; acknowledge only a successful user save. Drafts neither show nor acknowledge the checker. Recompute writer losses on every save so cancelling a conversion does not poison the next save.
+- Preservation changes are measured against the pinned corpus (`tools/corpora.sh`), including edits, undo/redo and drafts. Record failed and excluded attempts, compare validator diagnostics with each original, and keep Office acceptance pending until it has actually been checked. The measurement tools are in `tools/ooxml/`.
 - Shared code lives once, in `public/common/`; never copy it into an app. A change there is checked in all three apps (load each, and screenshot what it touches). What stays app-specific goes through the hooks in docs/suite.md (app config, `ui.hooks`, `L.icons.app`, …), not through app names inside common code.
 
 ## Tools (details in docs/testing.md)

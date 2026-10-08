@@ -659,8 +659,8 @@
   D.saveAs = function () {
     const b = A().books[A().cur];
     const base = b.name.replace(/\.[^.]+$/, '');
-    const types = [['xlsx', 'Microsoft Office Excel Workbook (*.xlsx)'], ['xlsm', 'Excel Macro-Enabled Workbook (*.xlsm)'], ['xltx', 'Template (*.xltx)'], ['xmlss', 'XML Spreadsheet 2003 (*.xml)'], ['csv', 'CSV (Comma delimited) (*.csv)'], ['txt', 'Text (Tab delimited) (*.txt)'], ['html', 'Web Page (*.htm)'], ['pdf', 'PDF (*.pdf)']];
-    let type = b.type === 'xlsm' || b.type === 'xltx' || b.type === 'csv' || b.type === 'txt' ? b.type : 'xlsx';
+    const types = [['xlsx', 'Microsoft Office Excel Workbook (*.xlsx)'], ['xlsm', 'Excel Macro-Enabled Workbook (*.xlsm)'], ['xltx', 'Template (*.xltx)'], ['xltm', 'Macro-Enabled Template (*.xltm)'], ['xmlss', 'XML Spreadsheet 2003 (*.xml)'], ['csv', 'CSV (Comma delimited) (*.csv)'], ['txt', 'Text (Tab delimited) (*.txt)'], ['html', 'Web Page (*.htm)'], ['pdf', 'PDF (*.pdf)']];
+    let type = b.type === 'xlsm' || b.type === 'xltx' || b.type === 'xltm' || b.type === 'csv' || b.type === 'txt' ? b.type : 'xlsx';
     const name = h('input', { type: 'text', value: base, style: 'width:100%' });
     const pw = { open: b.password || '', backup: false };
     const tools = ui.button('Too&ls ▾', () => {
@@ -677,7 +677,7 @@
     return ui.dialog({ title: 'Save As', width: 460, body: h('div', { class: 'col' }, ui.field('File &name:', name), ui.field('Save as &type:', ui.select(types, type, (v) => { type = v; })), h('div', { class: 'hint', text: 'The file is saved to your browser\'s downloads.' })),
       buttons: [{ label: 'Tools', onClick: () => { tools.click(); return false; } }, { label: '&Save', primary: true, onClick: () => {
         const ext = { xmlss: 'xml', html: 'htm' }[type] || type;
-        const n = (name.value.trim() || base).replace(/\.(xlsx|xlsm|xltx|xml|csv|txt|htm|html|pdf)$/i, '') + '.' + ext;
+        const n = (name.value.trim() || base).replace(/\.(xlsx|xlsm|xltx|xltm|xml|csv|txt|htm|html|pdf)$/i, '') + '.' + ext;
         b.password = pw.open || undefined;
         A().saveAs(type, n);
       } }, { label: 'Cancel' }] }).done;

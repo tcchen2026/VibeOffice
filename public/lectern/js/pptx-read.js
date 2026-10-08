@@ -9,6 +9,7 @@
   const parse = (s) => {
     const d = new DOMParser().parseFromString(s, 'application/xml');
     if (d.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
+    if (L.opc) L.opc.captureAC(d, s);
     resolveAlternateContent(d);
     if (s.indexOf('%"') >= 0) percentsToThousandths(d);
     return d.documentElement;
@@ -45,6 +46,7 @@
   const rid = (el, n) => (el ? el.getAttributeNS(NS_R, n || 'id') || el.getAttribute('r:' + (n || 'id')) : null);
   const bool = (v) => v === '1' || v === 'true' || v === 'on';
   function resolvePath(base, target) {
+    try { return L.opc.resolve(base, target).part; } catch (e) { /* retain the damaged-package reader's recovery path */ }
     if (/^\//.test(target)) return target.slice(1);
     const parts = base.split('/');
     parts.pop();
@@ -754,11 +756,21 @@
       password = opts.password;
     }
     const damaged = [];
+    const file = part => zip.get(part) || zip.get(L.opc.relative('', part));
+    let pkg = null, packageError = null;
+    try { pkg = await L.opc.open(zip); } catch (e) { packageError = e.message; }
+    const originals = new Map();
+    const original = part => {
+      if (!pkg) return null;
+      if (!originals.has(part)) {
+        try { originals.set(part, L.preserve.originalShapes(pkg, part)); } catch (e) { originals.set(part, null); }
+      }
+      return originals.get(part);
+    };
     const textCache = new Map();
     const getText = async (p) => {
       if (textCache.has(p)) return textCache.get(p);
-      let f = zip.get(p);
-      if (!f) { try { f = zip.get(decodeURIComponent(p)); } catch (e) { f = null; } }
+      const f = file(p);
       let t = null;
       if (f) { try { t = await f.text(); } catch (e) { damaged.push(p); } }
       textCache.set(p, t);
@@ -793,7 +805,7 @@
     const mediaCache = new Map();
     const loadMedia = async (p) => {
       if (mediaCache.has(p)) return mediaCache.get(p);
-      const f = zip.get(p);
+      const f = file(p);
       if (!f) { mediaCache.set(p, null); return null; }
       let bytes;
       try { bytes = await f.bytes(); } catch (e) { damaged.push(p); mediaCache.set(p, null); return null; }
@@ -825,18 +837,21 @@
     const sz = kid(presX, 'sldSz');
     const W = L.round(pt(num(sz, 'cx', 9144000)), 3), H = L.round(pt(num(sz, 'cy', 6858000)), 3);
     const pres = L.model.newPresentation({ w: W, h: H, empty: true });
+    if (pkg) L.opc.attach(pres, pkg);
+    if (packageError) L.opc.loss(pres, { id: 'package:unreadable', what: 'Some original package bytes could not be retained: ' + packageError, where: presPath, action: 'drop' });
     pres.designs = {};
     pres.firstNum = num(presX, 'firstSlideNum', 1);
 
     /* document properties */
     try {
-      const core = await xml('docProps/core.xml');
+      const propertyPart = (type, fallback) => pkg?.rels('').find(r => L.opc.relationshipType(r.type) === type)?.part || fallback;
+      const core = await xml(propertyPart(L.opc.NS.pkg + '/metadata/core-properties', 'docProps/core.xml'));
       if (core) {
         const g = (n) => { const e = desc(core, n); return e ? e.textContent : ''; };
         Object.assign(pres.props, { title: g('title'), subject: g('subject'), author: g('creator'), keywords: g('keywords'), comments: g('description'), category: g('category'), created: g('created') || pres.props.created });
         pres.title = pres.props.title;
       }
-      const app = await xml('docProps/app.xml');
+      const app = await xml(propertyPart(L.opc.NS.rel + '/extended-properties', 'docProps/app.xml'));
       if (app) { const c = desc(app, 'Company'); if (c) pres.props.company = c.textContent; }
     } catch (e) { /* optional parts */ }
     /* show settings */
@@ -956,6 +971,7 @@
       const themeRel = Object.values(mr).find((r) => r.type === 'theme');
       const theme = await loadTheme(themeRel ? themeRel.target : '');
       const design = L.model.buildDesign('default', W, H);
+      design.keep = { source: pkg?.id, part: p, theme: themeRel?.target, layouts: {} };
       design.name = theme.name || 'Imported Design';
       design.key = 'imported';
       design.colors = Object.assign({}, design.colors, theme.colors);
@@ -1089,6 +1105,8 @@
         try {
           const s = await shapeFrom(el, ctx, opts);
           if (!s) continue;
+          const source = original(ctx.partPath);
+          if (source) for (const shape of Array.isArray(s) ? s : [s]) L.preserve.shape(shape, source.map.get(String(shape.numId)), el, pkg, ctx.partPath);
           if (Array.isArray(s)) out.push(...s); else out.push(s);
         } catch (e) { console.warn('shape skipped', e); }
       }
@@ -1524,14 +1542,14 @@
           const ref = new RegExp('<(\\w+:)?(userShapes|externalData)\\b[^>]*?r:id="' + id.replace(/[^\w-]/g, '') + '"[^>]*?(?:/>|>[\\s\\S]*?</(\\w+:)?(userShapes|externalData)>)');
           if (rel.type === 'chartUserShapes') { text = text.replace(ref, ''); continue; }
           if (rel.external) { parts.push({ id, fullType: rel.fullType, target: rel.target, external: true }); continue; }
-          const f = zip.get(rel.target);
+          const f = file(rel.target);
           if (!f) { text = text.replace(ref, ''); continue; }
           let bytes;
           try { bytes = await f.bytes(); } catch (e) { text = text.replace(ref, ''); continue; }
           parts.push({ id, fullType: rel.fullType, type: rel.type, name: rel.target.split('/').pop(), bytes, ct: await contentType(rel.target) });
         }
-        /* Strict OOXML charts are rewritten in the transitional form the rest of the file is saved in */
-        if (text && text.indexOf('purl.oclc.org/ooxml') < 0) model.srcId = L.chart.keep({ xml: text, parts });
+        /* The package writer carries the original graph, including Strict charts. */
+        if (text) model.srcId = L.chart.keep({ xml: text, parts, source: pkg?.id, part: p, owner: ctx.partPath });
       } catch (e) { /* the chart is then written from its model */ }
       return model;
     }
@@ -1747,7 +1765,7 @@
       n++;
       if (opts.progress) opts.progress(n, slidePaths.length);
       const sx = await xml(sp);
-      if (!sx) { if (zip.get(sp)) damaged.push(sp); continue; }
+      if (!sx) { if (file(sp)) damaged.push(sp); continue; }
       try {
       const sr = await rels(sp);
       const layRel = Object.values(sr).find((r) => r.type === 'slideLayout');
@@ -1814,6 +1832,9 @@
       slide.trans = transitionFrom(sx) || slide.trans;
       /* animations */
       try { slide.anims = timingFrom(kid(sx, 'timing'), slide); } catch (e) { console.warn('timing skipped', e); slide.anims = []; }
+      if (original(sp)) L.preserve.slide(slide, original(sp).tree, pkg, sp, at(sldIds[n - 1], 'id'), sx);
+      if (lay && design.keep) design.keep.layouts[slide.layout + (slide.lkey ? '|' + slide.lkey : '')] = lay.path;
+      if (nr && slide.keep) slide.keep.notes = { part: nr.target, text: slide.notes };
       pathToId.set(sp, slide.id);
       pres.slides.push(slide);
       } catch (e) {
@@ -1848,6 +1869,9 @@
     for (const s of pres.slides) L.model.walk(s.shapes, pick);
     for (const d of Object.values(pres.designs)) [d.deco, d.titleDeco].concat(d.layoutDecos ? Object.values(d.layoutDecos) : []).forEach((list) => list && L.model.walk(list, pick));
     for (const sh of clearPics) { const v = await L.media.withTransparent(sh.media, sh.img.clear, 3); if (v) sh.img.view = v; }
+    L.preserve.seal(pres);
+    pres.keep = { values: L.preserve.values(pres), media: Object.fromEntries(Array.from(mediaCache, ([part, id]) => [id, part])) };
+    pres.ooxmlFormat = L.opc.variant(pres.pkg, 'pptx');
     return pres;
   }
 

@@ -116,10 +116,10 @@
       return key;
     },
     /** store the unsaved version of a document */
-    async setDraft(key, app, name, draftName, blob) {
+    async setDraft(key, app, name, draftName, blob, lossState) {
       const e = (await VO.recent.get(key)) || { key, app, name, size: 0, file: null, thumb: null };
       if (!e.file) e.name = name;
-      e.draft = { file: blob, name: draftName || name, time: Date.now() };
+      e.draft = { file: blob, name: draftName || name, time: Date.now(), lossState };
       e.time = e.draft.time;
       await tx('recent', 'readwrite', (s) => s.put(e));
       changed();
@@ -208,7 +208,7 @@
     if (!blob) { (current.hooks.message || alert)('That file is no longer available here. Open it again from your computer.'); return; }
     const f = asFile(blob, draft ? e.draft.name : e.name);
     if (draft) f.voDraft = key;
-    await current.hooks.open(f, { draft, name: e.name, saved: !!e.file });
+    await current.hooks.open(f, { draft, name: e.name, saved: !!e.file, lossState: draft ? e.draft.lossState : undefined });
   };
   /** File ▸ New… inside an app: Blank and the app's templates with their previews (the Start Center's
    *  Create File gallery, common/templates.json), in the app's own dialog. create(id): id '' is Blank. */
@@ -315,7 +315,7 @@
     const info = H.docInfo(doc);
     let key = docKeys.get(doc);
     if (!key) { key = current.app + ':~' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); bind(doc, key); }
-    try { await VO.recent.setDraft(key, current.app, info.name, info.draftName, blob); } catch (e) { console.warn('autosave:', e); return; }
+    try { await VO.recent.setDraft(key, current.app, info.name, info.draftName, blob, info.lossState); } catch (e) { console.warn('autosave:', e); return; }
     if (!H.current || H.current() === doc) thumbLater(key);
   }
   /** the user chose not to keep doc's changes (No in "Do you want to save the changes…?") */

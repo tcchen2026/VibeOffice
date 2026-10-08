@@ -4,6 +4,9 @@
  * Needs Lectern at HOST (default: tools/serve.py, http://127.0.0.1:8760/lectern/) and the decks at
  * CORPUS_URL (default http://127.0.0.1:8766/pdata/corpus/: python3 -m http.server 8766 in the folder above
  * the corpus). */
+if (process.argv.some(a => ['--lossless', '--edit', '--scenarios'].includes(a))) {
+  import('../../ooxml/corpus.mjs').then(({ corpus }) => corpus('lectern', process.argv.slice(2).filter(a => a !== '--lossless'))).catch(e => { console.error(e); process.exitCode = 1; });
+} else {
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -47,7 +50,9 @@ async function testDeck([url, o]) {
     return { count, chars, per };
   };
   try {
-    const buf = await (await fetch(url)).arrayBuffer();
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
+    const buf = await response.arrayBuffer();
     res.size = buf.byteLength;
     let t0 = performance.now();
     let pres;
@@ -135,7 +140,7 @@ async function testDeck([url, o]) {
       res = { fatal: String(e.message || e).slice(0, 300) };
       await fresh().catch(() => {});
     }
-    res = Object.assign({ file: f }, res, { ms: Date.now() - t0 });
+    res = Object.assign({ file: f, attempted: true, status: ['readError', 'loadError', 'writeError', 'rereadError', 'fatal', 'renderErrors', 'rtDiffs'].some(k => res[k]) ? 'failed' : 'ok' }, res, { ms: Date.now() - t0 });
     if (pageErrors.length) res.pageErrors = pageErrors.slice(0, 6);
     if (res.png) { res.png.forEach((d, i) => { if (d) fs.writeFileSync(path.join(pngDir, f.replace(/\.[^.]+$/, '') + '__' + (i + 1) + '.png'), Buffer.from(d.split(',')[1], 'base64')); }); res.pngs = res.png.filter(Boolean).length; delete res.png; }
     if (res.saved) { fs.writeFileSync(path.join(saveDir, f.replace(/\.[^.]+$/, '') + '.pptx'), Buffer.from(res.saved, 'base64')); delete res.saved; }
@@ -145,3 +150,5 @@ async function testDeck([url, o]) {
   out.end();
   await browser.close();
 })();
+
+}

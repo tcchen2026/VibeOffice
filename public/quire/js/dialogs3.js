@@ -728,9 +728,9 @@
   /* ================= Save As ================= */
   G.saveAs = function (cb) {
     const name = h('input', { type: 'text', id: 'sa-name', value: A().fileName, style: 'width:100%' });
-    const type = ui.select([['docx', 'Word Document (*.docx)'], ['dotx', 'Word Template (*.dotx)'], ['html', 'Single File Web Page (*.htm)'], ['rtf', 'Rich Text Format (*.rtf)'], ['txt', 'Plain Text (*.txt)'], ['md', 'Markdown (*.md)'], ['mdzip', 'Markdown with pictures (*.zip)'], ['pdf', 'PDF (*.pdf)']], ['dotx', 'md', 'mdzip'].includes(A().fileType) ? A().fileType : 'docx', null, { id: 'sa-type' });
+    const type = ui.select([['docx', 'Word Document (*.docx)'], ['docm', 'Word Macro-Enabled Document (*.docm)'], ['dotx', 'Word Template (*.dotx)'], ['dotm', 'Word Macro-Enabled Template (*.dotm)'], ['html', 'Single File Web Page (*.htm)'], ['rtf', 'Rich Text Format (*.rtf)'], ['txt', 'Plain Text (*.txt)'], ['md', 'Markdown (*.md)'], ['mdzip', 'Markdown with pictures (*.zip)'], ['pdf', 'PDF (*.pdf)']], ['docm', 'dotx', 'dotm', 'md', 'mdzip'].includes(A().fileType) ? A().fileType : 'docx', null, { id: 'sa-type' });
     const note = h('div', { class: 'tp-note', text: 'Your browser asks where to save the file, or saves it to the Downloads folder.' });
-    ui.dialog({ title: 'Save As', width: 430, focus: name, body: h('div', { class: 'col' }, G.f('File &name:', name, 'wide'), G.f('Save as &type:', type, 'wide'), note), buttons: [{ label: '&Save', primary: true, onClick: () => { const n = name.value.trim().replace(/\.(docx|dotx|htm|html|rtf|txt|md|zip|pdf)$/i, '') || 'Document'; cb(n, type.value); } }, { label: 'Cancel' }] });
+    return ui.dialog({ title: 'Save As', width: 430, focus: name, body: h('div', { class: 'col' }, G.f('File &name:', name, 'wide'), G.f('Save as &type:', type, 'wide'), note), buttons: [{ label: '&Save', primary: true, onClick: () => { const n = name.value.trim().replace(/\.(docx|docm|dotx|dotm|htm|html|rtf|txt|md|zip|pdf)$/i, '') || 'Document'; cb(n, type.value); } }, { label: 'Cancel' }] });
   };
   G.pasteSpecial = function () {
     const lb = G.listBox([{ value: 'rich', label: 'Formatted Text (RTF)' }, { value: 'html', label: 'HTML Format' }, { value: 'text', label: 'Unformatted Text' }, { value: 'utext', label: 'Unformatted Unicode Text' }], 'rich', { height: 110 });

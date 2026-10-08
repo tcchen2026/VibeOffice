@@ -7,6 +7,11 @@ class Slow(Exception): pass
 def _alarm(*a): raise Slow()
 signal.signal(signal.SIGALRM, _alarm)
 
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'ooxml'))
+from audit import Audit
+audit = Audit()
+
 corpus, saved, outp = sys.argv[1], sys.argv[2], sys.argv[3]
 
 def load(path):
@@ -16,7 +21,7 @@ def load(path):
     for n in names:
         if (n.endswith('.xml') or n.endswith('.rels') or n.endswith('.vml')) and z.getinfo(n).file_size < 60_000_000:
             try: files[n] = z.read(n).decode('utf8', 'replace')
-            except Exception: pass
+            except Exception: raise
     return names, files
 
 def part(f, pat):
@@ -50,7 +55,8 @@ def colmap(f):
             a = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
             if 'width' not in a: continue
             try: lo, hi, w = int(a['min']), int(a['max']), float(a['width'])
-            except Exception: continue
+            except (TypeError, ValueError) as error:
+                raise ValueError('Invalid column bounds/width: ' + str(a)) from error
             for c in range(lo, min(hi, lo + 300) + 1): out[(n, c)] = w
     return out
 _cw = {}
@@ -121,11 +127,11 @@ def cells(path):
                         st = (c.number_format, bool(fo.b), bool(fo.i), fo.u or None, round(float(fo.sz or 11), 1), col(fo.color),
                               fi.fill_type if getattr(fi, 'fill_type', None) else None, col(getattr(fi, 'fgColor', None)) if getattr(fi, 'fill_type', None) == 'solid' else None,
                               bo.left.style, bo.right.style, bo.top.style, bo.bottom.style, None if al.horizontal == 'general' else al.horizontal, None if al.vertical == 'bottom' else al.vertical, bool(al.wrap_text))
-                    except Exception:
-                        st = None
+                    except Exception as error:
+                        raise ValueError('Cannot compare cell style at ' + str(c.coordinate)) from error
                     d[(c.row, c.column)] = (v, st)
         except Exception:
-            pass
+            raise
         out[ws.title] = d
     return out
 
@@ -158,37 +164,41 @@ stats = {k: {'books_with': 0, 'lost_all': 0, 'lost_some': 0, 'items_orig': 0, 'i
 cellstat = {'fmt_nf': 0, 'fmt_other': 0, 'books_fmt': 0, 'fmt_samples': [], 'worst_fmt': [], 'books': 0, 'books_diff': 0, 'cells': 0, 'missing': 0, 'changed': 0, 'formula_changed': 0, 'unreadable': 0, 'worst': [], 'samples': []}
 pairs = 0
 CELLS = os.environ.get('CELLS', '1') == '1'
-for s in sorted(os.listdir(saved)):
-    sp = os.path.join(saved, s)
+for s, op, sp in audit.pairs(corpus, saved, ('.xlsx', '.xlsm', '.xltx', '.xltm')):
     base = s.rsplit('.', 1)[0]
-    op = next((os.path.join(corpus, base + e) for e in ('.xlsx', '.xlsm', '.XLSX') if os.path.exists(os.path.join(corpus, base + e))), None)
-    if not op: continue
     try:
+        with open(sp, 'rb') as fh:
+            if fh.read(4) == bytes.fromhex('d0cf11e0'):
+                audit.failure(s, 'Encrypted output requires decrypted comparison', excluded=True)
+                continue
         on, of = load(op); sn, sf = load(sp)
-    except Exception:
+    except Exception as error:
+        audit.failure(s, error)
         continue
     pairs += 1
     for k, fn in FEATURES.items():
         try: a, b = int(fn(on, of) or 0), int(fn(sn, sf) or 0)
-        except Exception: continue
+        except Exception as error: audit.failure(s, error, k); continue
         if a <= 0: continue
         st = stats[k]
         st['books_with'] += 1; st['items_orig'] += a; st['items_saved'] += min(a, b)
         if b == 0: st['lost_all'] += 1
         elif b < a: st['lost_some'] += 1
         if b < a and len(st['examples']) < 4: st['examples'].append(base)
-    if not CELLS or os.path.getsize(op) > float(os.environ.get('MAXMB', '1e9')) * 1e6: continue
+    if not CELLS or os.path.getsize(op) > float(os.environ.get('MAXMB', '1e9')) * 1e6:
+        audit.failure(s, 'Cell comparison disabled or above MAXMB', 'cells', excluded=True)
+        continue
     signal.alarm(int(os.environ.get('TIMEOUT', '40')))
     try:
         try: ca = cells(op)
         except Slow: raise
-        except Exception: signal.alarm(0); continue
+        except Exception as error: signal.alarm(0); audit.failure(s, error, 'original cells'); continue
         try: cb = cells(sp)
         except Slow: raise
         except Exception as e:
-            signal.alarm(0); cellstat['unreadable'] += 1; continue
+            signal.alarm(0); cellstat['unreadable'] += 1; audit.failure(s, e, 'saved cells'); continue
     except Slow:
-        cellstat.setdefault('timeouts', []).append(base); continue
+        cellstat.setdefault('timeouts', []).append(base); audit.failure(s, 'Cell comparison timeout', 'cells'); continue
     signal.alarm(0)
     cellstat['books'] += 1
     miss = chg = fchg = n = fmt_nf = fmt_other = wsd = 0
@@ -223,7 +233,7 @@ for s in sorted(os.listdir(saved)):
         cellstat['worst'].append([base, miss, chg, fchg, n])
 cellstat['worst_fmt'] = sorted(cellstat['worst_fmt'], key=lambda r: -(r[1] + r[2]))[:30]
 cellstat['worst'] = sorted(cellstat['worst'], key=lambda r: -(r[1] + r[2] + r[3]))[:30]
-json.dump({'pairs': pairs, 'stats': stats, 'cells': cellstat}, open(outp, 'w'), indent=1, default=str)
+json.dump({'accounting': audit.report(), 'pairs': pairs, 'stats': stats, 'cells': cellstat}, open(outp, 'w'), indent=1, default=str)
 print('workbook pairs compared', pairs)
 c = cellstat
 print('cells (openpyxl): %d workbooks, %d keep every value and formula; %d cells, %d missing, %d values changed, %d formulas changed, %d saved copies unreadable' % (c['books'], c['books'] - c['books_diff'], c['cells'], c['missing'], c['changed'], c['formula_changed'], c['unreadable']))
@@ -233,3 +243,7 @@ print('%-46s %6s %6s %6s %13s' % ('feature', 'books', 'lost', 'part', 'kept item
 for k, st in sorted(stats.items(), key=lambda kv: -kv[1]['books_with']):
     if st['books_with']:
         print('%-46s %6d %6d %6d %6d/%-6d' % (k, st['books_with'], st['lost_all'], st['lost_some'], st['items_saved'], st['items_orig']))
+
+accounting = audit.report()
+print('attempts: %(attempted)d; OK: %(ok)d; failed: %(failed)d; excluded: %(excluded)d' % accounting)
+if accounting['failed']: sys.exit(1)

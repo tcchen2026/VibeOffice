@@ -8,10 +8,10 @@ import os
 D = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.join(D, '..', '..', '..', 'public', 'ledger')
 # load order; 'common/x' is public/common/x.js, shared by the suite, anything else public/ledger/js/x.js
-SCRIPTS = ['common/core', 'xml', 'common/zip', 'common/sha', 'common/crypto', 'common/icons',
+SCRIPTS = ['common/core', 'common/xml', 'common/opc', 'common/opc-order', 'xml', 'common/zip', 'common/sha', 'common/crypto', 'common/icons',
            'common/geometry', 'common/metafile', 'common/ui', 'common/numfmt', 'formula', 'model', 'calc',
            'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng', 'common/dml', 'common/charts', 'xchart',
-           'xlsx-read', 'xlsx-write', 'csv', 'xmlss', 'styles', 'cf', 'layout', 'render', 'ops', 'clipboard',
+           'preserve', 'xlsx-read', 'xlsx-write', 'csv', 'xmlss', 'styles', 'cf', 'layout', 'render', 'ops', 'clipboard',
            'fninfo', 'grid', 'editor', 'common/spell', 'spell', 'filter', 'drawing', 'commands', 'dialogs',
            'dialogs2', 'dialogs3', 'print', 'panes', 'app']
 tpl = open(os.path.join(D, 'template.html')).read()

@@ -65,3 +65,197 @@ The engine and the file readers and writers load in Node through `load.js` (the 
 ## Corpora
 
 The compatibility numbers in each app's doc come from public test corpora (LibreOffice, Apache POI, Open XML SDK, XlsxWriter, ClosedXML and others; see the app docs for the list). They are not checked in; download them outside the repo and point the per-file scripts at the folder.
+
+## Lossless same-format save: reproducible baseline
+
+`sh tools/corpora.sh ~/corpora` fetches the pinned LibreOffice, Apache POI and Open XML SDK revisions
+listed in `tools/ooxml/corpora.py`. It resumes interrupted fetches, refuses dirty or unrelated checkouts,
+and never deletes an existing corpus. `manifest.json` records source, commit, original path, size and
+SHA-256. `word/`, `excel/` and `powerpoint/` contain collision-resistant symlinks. Fixtures stay outside
+the repository. A source name after the directory selects just that source.
+
+The corpus drivers record every file and scenario as `ok`, `failed` or `excluded`, with the input hash
+and an error/reason. Here, `ok` means the requested operation and reread completed; it does **not** mean
+the file was lossless. Independent comparisons and Office acceptance are separate checks.
+
+```sh
+node tools/quire/test/corpus.mjs ~/corpora/word /tmp/quire.jsonl --save /tmp/lossless/quire
+node tools/ledger/test/corpus.js ~/corpora/excel /tmp/ledger.jsonl --save /tmp/lossless/ledger
+node tools/lectern/test/corpus.js ~/corpora/powerpoint /tmp/lectern.jsonl --lossless --save /tmp/lossless/lectern
+```
+
+Default scenarios are `save` and `repeat` (save, reopen, save again). `--edit` selects separate text,
+formatting, geometry, duplicate and delete-object scenarios, plus row/column/sheet operations in Ledger
+or slide insertion/deletion in Lectern. Each successful mutation also saves its undo and redo states.
+`--scenarios text` runs just text editing; `--scenarios draft` in the browser drivers exercises the app's
+actual snapshot and recovery hooks. For Ledger drafts, use `node tools/ledger/test/browser-corpus.mjs`
+with the same arguments; the Node engine driver rejects that scenario. `--limit N` limits files; `--resume` skips recorded input hashes and
+scenarios. A single Office file or a file list can replace the directory. Saved artifacts go into
+`save/`, `repeat/`, `repeat-second/`, `text/`, `text-undo/`, etc. Files retain their source extensions so
+variant errors remain observable. The browser drivers use the existing CDP browser and close only their
+own tabs. Ledger uses isolated Node workers with a per-file timeout. The older Lectern rendering driver
+without these switches remains available and still requires Playwright.
+
+Quire history regressions run with `node --test tools/quire/test/history.test.js`. The real-file check
+`node tools/quire/test/history.mjs ~/corpora/word/libreoffice__9b899b6707be__chart-size.docx`
+checks original chart bytes after editing, undo, redo, copying and whole-document snapshot restore.
+
+`tools/ooxml/check.mjs FILE...` uses an independent strict Python XML/ZIP reader to check content types,
+relationship targets and relationship attributes, scoped drawing/slide/timing IDs, connector and timing
+references, bookmark/permission endpoints, and pivot cache references. AlternateContent branches are
+checked without falsely counting mutually exclusive IDs as duplicates. Output is JSONL; a failure exits
+nonzero. `node --test tools/ooxml/*.test.mjs` exercises malformed packages, cycles, shared dependencies,
+alternate branches, target swaps and ordered text.
+
+### Shared preservation core
+
+`node --test tools/ooxml/opc.test.mjs` tests the Node-safe `L.opc` API: immutable bytes, full relationship
+types, cyclic/shared graphs, reserved names and IDs, duplicate reference remapping, namespace/QName
+scope, original nested AlternateContent emitted once, cross-document dependency transport, loss
+acknowledgement, property merging, and DrawingML/Word/spreadsheet/VML geometry adapters. Together with
+the independent checker tests, all 24 tests pass at the shared-core stage. These tests do not replace
+real-file comparisons or Office acceptance.
+
+Load `common/xml.js`, `common/opc.js`, then `common/opc-order.js`. `L.xmlTree` supplies a portable tree;
+Ledger's small `js/xml.js` bridge exposes it as `L.xml`. `L.opc.open(zip)` keeps a separate immutable
+baseline; `attach(model, pkg)` makes `model.pkg` non-enumerable. `fragment(element, {pkg, part})` produces
+JSON-safe XML and dependency/identity references. Use an original baseline element when exact lexical
+XML is needed: `raw` reads its source range, not later mutations. `captureAC(dom, rawText)` makes its
+own original parse before the reader normalises the working DOM.
+
+Each app supplies part ownership to `L.opc.Writer`: opaque bytes are carried, merged parts replace
+owned properties in schema order, and regenerated content parts emit model-attached fragments.
+`emit(fragment, owner, {box})` remaps relationships and IDs and optionally changes geometry. `slice`
+extracts a tokenised property while retaining only its dependencies and identities. ZIP entries,
+content types and internal relationship URIs share one decoded identity; output URIs are escaped.
+`duplicate`
+remaps copied definitions and references together; `export`/`import` transport dependency bytes for a
+cross-document clipboard. `finish()` checks relationship targets and returns `{files, dropped}`.
+Loss acknowledgement is per entry; autosave must neither show a dialog nor acknowledge entries.
+Package ownership and save-dialog integration are implemented in all three apps; remaining object preservation is still in progress.
+
+`opc-order.js` contains ordering and ID-bound facts for 27 types, generated from the official
+[ECMA-376 Part 4 schemas](https://ecma-international.org/publications-and-standards/standards/ecma-376/).
+The archive stays outside git; its SHA-256 is recorded in the generated file. Regenerate with:
+
+```sh
+python3 tools/ooxml/schema-order.py ~/corpora/ecma-376/part4.zip public/common/opc-order.js
+```
+
+The shared-core run is retained in `~/corpora/results/opc-core-2026-10-08/`. All 4,697 open/save/reopen
+statuses match the earlier baseline. Against the **earlier saved files**, 4,626 package/SDK comparisons
+completed without new diagnostics; 29 earlier outputs could not be validated, 36 inputs had no saved
+output and 6 were excluded. All 30 LibreOffice sample comparisons retained page/slide counts. All three
+apps loaded and were screenshotted without console errors (the existing Google Fonts requests remain).
+Full-corpus LibreOffice rendering and Office acceptance are still pending.
+
+`tools/ooxml/compare.mjs ORIGINAL SAVED [--policy policy.json]` defaults to exact part-byte preservation.
+A policy can designate individual parts as `merged` or `regenerated`, map their target names, allow
+specific ElementTree paths/attributes to change, and specify removed parts and expected slide count.
+Merged XML compares expanded namespace names and QName-valued compatibility attributes. Regenerated
+content compares ordered text, run/paragraph properties, cells, drawing properties and feature counts;
+adjacent runs with identical properties may be split. Relationships compare their resolved targets,
+including the case where unchanged XML's rIds were redirected. This is a deliberately conservative
+comparison, not a complete Word layout or Excel calculation oracle. The separate loss audits retain
+their historical feature inventories; their new `accounting` field exposes missing saved files and
+failed comparisons rather than silently excluding them.
+
+Build the SDK validator and install the independent workbook reader in a test environment:
+
+```sh
+dotnet build tools/ooxml/oxval -c Release
+python3 -m venv /tmp/vo-ooxml-venv
+/tmp/vo-ooxml-venv/bin/python -m pip install -r tools/ooxml/requirements.txt
+dotnet tools/ooxml/oxval/bin/Release/net8.0/oxval.dll --baseline original.docm saved.docm
+```
+
+The validator is pinned to SDK 3.1.1, targets Office 2019, handles all document/macro/template/slideshow
+extensions and reports uncapped diagnostics by part, XPath and diagnostic ID. `--baseline` reports new
+diagnostic identities, not merely a change in count. `--stdin-pairs` accepts JSON lines containing
+`original` and `saved` paths for a warm batch process.
+
+`python3 tools/ooxml/validate.py RESULTS.jsonl ORIGINALS SAVED_ROOT OUT.jsonl --sdk PATH_TO_DLL`
+combines package checks and SDK comparison, accounting for unsuccessful driver attempts as well.
+It validates every emitted artifact, including before-edit, undo, redo, second-save and recovered
+draft states. A diagnostic comparison requires a validatable original; standalone validation of
+repaired output is reported separately when its original cannot be opened by the SDK.
+`--dotnet PATH` selects the SDK runtime. `--lo PDF_DIRECTORY` additionally converts original and saved
+files using LibreOffice with its own temporary profile, checks conversion success and extracts page
+counts with `pdfinfo`. Unedited saves must keep the page count; edit scenarios can record
+`expectedPages` or `expectedSlides`. LibreOffice and the validator cannot certify acceptance by Office itself.
+
+### Lectern media preservation
+
+`node tools/lectern/test/media.mjs FILE_OR_LIST OUTDIR` opens authored video/audio decks in Chromium.
+It saves unedited, moves/resizes, changes shadow and crop, duplicates, deletes, replaces, duplicates
+the slide, recovers an actual suite draft and copies through keyboard/native clipboard events into
+another tab. Every mutation that uses history emits its pre-edit, undo and redo state.
+
+`python3 tools/lectern/test/media-check.py ORIGINALS OUTDIR` independently compares media frames,
+bytes, reference targets, playback and exact history restoration (core timestamps excepted).
+`python3 tools/lectern/test/media-check.py --sounds ORIGINALS RESULTS.jsonl SAVED_ROOT` compares
+transition/click sounds and playback through ordinary save/repeat/text/draft corpus scenarios,
+including decks without a media picture. `media-variant.py SOURCE.pptx OUT.pptx` derives an
+AlternateContent/effects fixture from an authored media deck (`--strict` adds a Strict case with an
+existing shadow to replace); keep it outside the repository and
+validate the fixture itself before testing. Feed each driver's report to `validate.py` for all-state
+package and SDK checks.
+
+The media stage retains reports and saved files in `~/corpora/results/lectern-media-2026-10-08/`:
+140 media-operation fidelity checks, 117 sound-state checks, 18 LibreOffice comparisons, all three
+app screenshots, 32 Node tests and the unchanged 24-file Markdown checks. The full 844-file Lectern
+run has no new diagnostics, with malformed originals and the password exclusion still accounted for.
+Office samples live in `~/Downloads/lossless-check/lectern/media/`; PowerPoint acceptance is pending.
+
+### Package preservation and save flows
+
+`node tools/ooxml/save-matrix.mjs OUTDIR` exercises the actual app Save and Save As dialogs,
+download cancellation, all 14 variants, MIME/main-part types, encrypted draft recovery and the
+Compatibility Checker. It intercepts the final download handoff and disables recent-file bookkeeping
+in its own tabs. Fixtures for the format matrix are synthetic blank documents; authored-file fidelity
+is measured separately. `--macro-files FILE.json` accepts an app-to-file mapping for authored VBA
+samples and checks cancelled and approved macro-free Save As. `--checker-only` runs just the checker
+and pending-loss recovery checks.
+
+`python3 tools/ooxml/package-carry.py ORIGINALS SAVED RESULTS.jsonl OUT.jsonl` independently verifies
+selected package features, including dependency bytes, content types, original rIds and intended
+targets. It stops at model-owned boundaries and does not treat a preserved pivot part as proof that
+pivot editing works. Driver failures and malformed originals remain explicit failed/excluded rows.
+Corpus writers select the source main-part variant, including inputs with a misleading extension.
+
+The package stage reports are in `~/corpora/results/package-preservation-2026-10-08/`:
+
+| App | Save/reopen OK | Failed / excluded | Package/SDK OK | Failed / excluded |
+|---|---:|---:|---:|---:|
+| Quire | 2,880 | 22 / 0 | 2,792 | 110 / 0 |
+| Ledger | 935 | 11 / 5 | 910 | 36 / 5 |
+| Lectern | 840 | 3 / 1 | 822 | 21 / 1 |
+
+The recorded 14-variant matrix passes 420 assertions; checker and authored macro cases pass too.
+A focused follow-up checks that recovery retains pending compatibility entries without warning at
+open. Metadata stored alongside a draft carries these entries and acknowledgements; they do not
+become document content. The Markdown fixtures remain 24/24 unchanged and 24/24 edits confined to
+their edited block. All three app/checker views load without console errors; the existing Google
+Fonts requests remain the only external requests in those runs.
+
+Office handoffs cover 32 package features under `~/Downloads/lossless-check/<app>/package/`, with
+original and saved copies, and edited copies when the fixture has editable text. Acceptance is
+pending. Three representative macro-enabled samples (one per app) open in LibreOffice with unchanged
+page/slide counts. Full-corpus LibreOffice rendering and the remaining object-level preservation gates are
+unfinished. Further testing is focused on changed behavior and observed failures, rather than
+repeating the complete matrix after unrelated changes.
+
+`python3 tools/ooxml/samples.py ~/corpora /tmp/lossless ~/Downloads/lossless-check/baseline`
+selects small independently authored files for each carried-feature test, copies original/saved/edited
+variants where available, and writes a manifest. It refuses to replace differing handoff files.
+Use a new destination for each implementation stage. Record actual Word/Excel/PowerPoint repair
+results; an unperformed Office check remains pending.
+
+`node tools/lectern/test/timing-repair.mjs OUTDIR --sdk PATH_TO_DLL` reproduces the six slide-6
+diagnostic copies from the current sample. `--source SAVED_SAMPLE.pptx` instead uses the exact bytes
+of a reported failure; `--dotnet PATH` selects the runtime. The output directory must be empty.
+The variants isolate removal of slide-6 timing, its build list, its teeter effect, and ordering of
+timing IDs; the LibreOffice resave is a separate control. The script asserts build-pair identity and
+text targets, validates each package, and writes hashes and a pending PowerPoint result per copy.
+Only slide6.xml changes in the four isolated variants. PowerPoint results are a manual gate:
+schema validity and LibreOffice opening do not prove that the repair problem has been fixed.

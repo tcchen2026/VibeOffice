@@ -905,13 +905,10 @@
   D.saveAs = function (cb) {
     const base = (L.app.fileName || 'Presentation1').replace(/\.[^.]+$/, '');
     const name = h('input', { type: 'text', id: 'sa-name', value: base, style: 'width:300px' });
-    let types = [['pptx', 'PowerPoint Presentation (*.pptx)'], ['ppsx', 'PowerPoint Show (*.ppsx)'], ['potx', 'Design Template (*.potx)'], ['pdf', 'PDF, one slide per page (*.pdf)'], ['html', 'Single File Web Page (*.html)'], ['png', 'PNG Graphics Format, current slide (*.png)'], ['txt', 'Outline (*.txt)']];
-    /* the hosted page can only hand over common file types; .ppsx/.potx need a standalone copy */
-    const hosted = !!L.dlReady;
-    if (hosted) types = types.filter(([k]) => k !== 'ppsx' && k !== 'potx');
+    const types = [['pptx', 'PowerPoint Presentation (*.pptx)'], ['pptm', 'Macro-Enabled Presentation (*.pptm)'], ['ppsx', 'PowerPoint Show (*.ppsx)'], ['ppsm', 'Macro-Enabled Show (*.ppsm)'], ['potx', 'Design Template (*.potx)'], ['potm', 'Macro-Enabled Template (*.potm)'], ['pdf', 'PDF, one slide per page (*.pdf)'], ['html', 'Single File Web Page (*.html)'], ['png', 'PNG Graphics Format, current slide (*.png)'], ['txt', 'Outline (*.txt)']];
     const cur = types.some(([k]) => k === L.app.fileType) ? L.app.fileType : 'pptx';
     const type = ui.select(types, cur);
-    ui.dialog({ title: 'Save As', body: h('div', { class: 'col' }, ui.field('File &name:', name, { cls: 'wide' }), ui.field('Save as &type:', type, { cls: 'wide' }), h('div', { class: 'tp-note', text: hosted ? 'You will be asked to confirm each download. Slide shows (.ppsx) and templates (.potx) can be saved when Lectern runs as a standalone page; a .pptx opens in every version of PowerPoint since 2007.' : 'Your browser decides where downloaded files go.' })), width: 470, buttons: [{ label: '&Save', primary: true, onClick: () => cb(name.value.trim() || base, type.value) }, { label: 'Cancel' }] });
+    return ui.dialog({ title: 'Save As', body: h('div', { class: 'col' }, ui.field('File &name:', name, { cls: 'wide' }), ui.field('Save as &type:', type, { cls: 'wide' }), h('div', { class: 'tp-note', text: 'Your browser decides where downloaded files go.' })), width: 470, buttons: [{ label: '&Save', primary: true, onClick: () => cb((name.value.trim() || base).replace(/\.(pptx|pptm|ppsx|ppsm|potx|potm)$/i, ''), type.value) }, { label: 'Cancel' }] });
   };
 
   /* ---------- Zoom ---------- */

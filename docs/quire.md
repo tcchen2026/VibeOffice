@@ -1,7 +1,7 @@
 # Quire 2003 — Web Edition
 
 A Word 2003–style word processor written in plain HTML and vanilla JavaScript (no build step, no
-libraries). It reads and writes Office Open XML (`.docx`) files.
+libraries). It reads and writes Office Open XML (`.docx`, `.docm`, `.dotx`, `.dotm`) files.
 
 ## Running it
 
@@ -114,10 +114,48 @@ Checks (tools in docs/testing.md):
 
 ## What a save keeps, converts and drops
 
-Quire reads a document into its own model and writes a new file from it, so anything the model has no
-place for is left out of the saved file, and today there is no warning when that happens (the one
-exception: embedded HTML/RTF documents are reported when the file opens). `tools/quire/test/loss-audit.py` measures
-it by comparing each of 2,778 test documents with Quire's saved copy, feature by feature and word by word
+Quire regenerates document content from its model and carries original package dependencies alongside
+it. Package preservation is implemented; content controls, opaque objects and unknown run/paragraph
+properties are still being integrated. The Compatibility Checker reports recorded losses before a
+user save. Its coverage is incomplete until those remaining object paths populate the loss ledger.
+
+### Package preservation (2026-10-08)
+
+Save, Save As and draft recovery support `.docx`, `.docm`, `.dotx` and `.dotm`, including encryption.
+The main-part content type determines the imported variant. Macros remain in macro-enabled saves;
+choosing a macro-free type reports their removal before download. Cancelling keeps the current file
+identity and does not acknowledge the loss.
+
+The pinned 2,902-file run saves and reopens **2,880**, with the same **22 failures** as the baseline.
+Package/SDK comparison reports **2,792 OK and 110 failed**, up from 2,768 OK. Failed originals and
+remaining content-writer diagnostics are counted, not accepted as passes. The independent package
+audit checks original bytes, content types and relationship identities:
+
+| Package feature | Preserved relationships |
+|---|---:|
+| Custom XML stores / their property parts | 965 / 965 each |
+| Custom document properties, including empty bags and original types/pids | 353 / 353 |
+| Attached templates | 102 / 102 |
+| Referenced embedded fonts | 20 / 20 |
+| VBA projects | 17 / 17 |
+| Glossary | 193 / 195 |
+| People / comment identity parts | 95 / 95; 15 / 15 |
+| Sensitivity labels | 1 / 1 |
+
+The two glossary exceptions have missing source dependencies. Orphaned parts with no incoming
+relationship (including three font files) are not reattached; drops are recorded. Settings retain
+unowned children, font-table entries retain embedding metadata, and existing comment paragraph IDs
+and special footnote/endnote entries survive. General drawing/bookmark identity preservation remains
+part of the next object stage.
+
+Reports: `~/corpora/results/package-preservation-2026-10-08/`. Word samples are in
+`~/Downloads/lossless-check/quire/package/`; Office acceptance is pending. The 24 Markdown fixtures
+still save byte for byte unchanged, and each scripted edit stays within its edited block.
+
+### Historical feature baseline
+
+The following larger-corpus figures predate package preservation. `tools/quire/test/loss-audit.py`
+compared 2,778 test documents with saved copies, feature by feature and word by word
 (`python3 tools/quire/test/loss-audit.py originals/ saved/ out.json`, standard library only).
 
 **Kept.** The text: 2,724 documents keep every word, and over the whole set 666,082 of 666,941 words
@@ -148,6 +186,57 @@ also ends any binding to document data; smart tags and custom XML markup become 
 | Embedded HTML/RTF documents (`altChunk`) — their content is not shown, so it is lost on save | 4 |
 | Permission ranges for restricted editing | 3 |
 | VBA macros (a `.docm` is saved without its project) | — |
+
+### Pinned lossless-save baseline (2026-10-07)
+
+The reproducible three-source corpus in `tools/corpora.sh` was measured against application revision
+`5abafdc`, before preservation changes. Of 2,902 inputs, 2,880 completed open → save → reopen,
+22 failed and 0 were explicitly excluded. Completion is not a fidelity result. The independent
+feature inventory compared 2,868 readable pairs; malformed/encrypted originals and missing
+outputs remain in its accounting. This corpus differs from the earlier compatibility corpus above.
+
+| Feature | Files containing it | Original inventory items | Saved inventory items | Text edit: kept / original |
+|---|---:|---:|---:|---:|
+| content controls | 379 | 2,696 | 0 | 0 / 2,594 |
+| custom XML data parts | 646 | 966 | 0 | 0 / 814 |
+| embedded OLE objects | 82 | 544 | 0 | 0 / 434 |
+| VBA macros | 17 | 17 | 0 | 0 / 15 |
+
+The text-edit inventory covers 2,236 readable saved pairs; files without editable text and failed
+operations stay in the driver report, so its denominator differs from the unedited inventory.
+
+Package checks plus the Office 2019 SDK comparison reported 2,768 attempts without new
+automated diagnostics and 134 failures (including originals that could not be validated);
+0 driver exclusions remain separate. These checks do not certify Office acceptance. Commands,
+comparison policies and failure accounting are in [testing.md](testing.md#lossless-same-format-save-reproducible-baseline).
+
+The text-edit/save/undo/redo baseline completed in 2,248 files, excluded 592 without a suitable
+editable paragraph and failed in 62. Forty failures expose circular textbox-owner references in
+JSON history snapshots; 22 are read failures.
+
+The history prerequisite is now fixed: textbox owners are runtime-only back-references, and
+original chart bytes live in the shared chart cache instead of JSON snapshots. All 40 previously
+failing files complete text edit → save → undo → save → redo → save. Their undo packages match
+the pre-edit baseline part for part, except generated core-property timestamps in one file.
+The 40 edited outputs have no new package/SDK diagnostics compared with the pre-edit saves and
+all open in LibreOffice. A chart regression also checks all four original chart parts byte for
+byte across six states (open, edit, undo, redo, copy and snapshot restore). Samples are in
+`~/Downloads/lossless-check/quire/chart-history/` and `textbox-history/`.
+
+All 10 feature samples converted in LibreOffice with unchanged page counts. The full corpus
+has not yet been rendered in LibreOffice. The baseline reports are retained outside git in
+`~/corpora/results/lossless-baseline-2026-10-07/`; Office samples are in
+`~/Downloads/lossless-check/baseline/`.
+
+### Shared preservation core (2026-10-08)
+
+The shared XML/OPC core now captures original AlternateContent before Quire normalises it. The writer
+does not yet emit these records, so the feature-loss numbers above still apply. The same 2,902 inputs
+again produced 2,880 successful open/save/reopen attempts and 22 failures. Compared with the earlier
+saved outputs, 2,875 package/SDK comparisons completed with no new diagnostics; 5 earlier outputs
+could not be SDK-validated and 22 had no saved output. Ten LibreOffice samples kept their page counts
+relative to the earlier saves. Markdown remained byte-identical for all 24 unchanged files, with edits
+confined to the edited block in all 24. Reports: `~/corpora/results/opc-core-2026-10-08/`.
 
 ## Compatibility testing
 
@@ -200,10 +289,12 @@ rich text, and RC4-encrypted files from Office 97–2003.
 | --- | --- |
 | `index.html` | Window chrome, CSS (Office 2003 Luna Blue), script order |
 | `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF writer, downloads |
+| `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML package graph, identity reservations, AlternateContent capture and schema-order merges |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected documents: compound-file reader/writer, AES, ECMA-376 agile and standard encryption |
 | `js/dmodel.js`, `js/ops.js` | Document model (paragraphs, runs, tables, sections, styles, numbering), undo history, editing operations |
 | `js/render.js`, `js/layout.js` | Paragraph/run rendering, pagination, headers/footers, footnotes, columns, floats |
 | `js/editor.js` | contentEditable bridge: selection mapping, typing, IME, clipboard, keyboard |
+| `js/preserve.js` | Package ownership and settings, font-table and document-property merges |
 | `js/docx-read.js`, `js/docx-write.js`, `../common/dml.js` | `.docx` import/export, DrawingML/VML shapes, charts, themes |
 | `js/rtf.js`, `js/htmlio.js` | RTF and HTML import/export |
 | `js/markdown.js`, `js/mdio.js` | Markdown reader (CommonMark + GitHub extensions, with source lines; also loads in Node) and Markdown/`.zip` import and export |

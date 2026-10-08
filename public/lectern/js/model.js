@@ -657,20 +657,25 @@
     for (const k of g.kids) each(k);
   };
   /* Deep copy with fresh ids */
-  M.dup = function (s) {
-    const c = L.clone(s);
+  M.dupMany = function (shapes) {
+    const copies = L.opc.duplicate(shapes);
     const re = (x) => { x.id = L.uid('s'); if (x.kids) x.kids.forEach(re); };
-    re(c);
-    if (c.ph && !['dt', 'ftr', 'sldNum'].includes(c.ph.type)) delete c.ph;
-    return c;
+    for (const c of copies) {
+      re(c);
+      if (c.ph && !['dt', 'ftr', 'sldNum'].includes(c.ph.type)) delete c.ph;
+    }
+    return copies;
   };
+  M.dup = s => M.dupMany([s])[0];
   M.dupSlide = function (slide) {
-    const c = L.clone(slide);
+    const c = L.opc.duplicate(slide);
     c.id = L.uid('sl');
+    if (c.keep) c.keep.copy = c.id;
     const map = {};
     const re = (x) => { const n = L.uid('s'); map[x.id] = n; x.id = n; if (x.kids) x.kids.forEach(re); };
     c.shapes.forEach(re);
     c.anims = (c.anims || []).map((a) => Object.assign({}, a, { id: L.uid('a'), sid: map[a.sid] || a.sid }));
+    if (c.keep?.anims) c.keep.anims = L.preserve.anims(c);
     return c;
   };
   M.allText = function (slide) {
@@ -685,7 +690,7 @@
 
   /* ---------- undo / redo ---------- */
   const H = (L.hist = { undo: [], redo: [], limit: 100, dirty: false, lastLabel: '' });
-  H.snapshot = () => JSON.stringify({ W: L.pres.W, H: L.pres.H, firstNum: L.pres.firstNum, designs: L.pres.designs, slides: L.pres.slides, show: L.pres.show, hf: L.pres.hf, props: L.pres.props, title: L.pres.title, shapeDefaults: L.pres.shapeDefaults, lineDefaults: L.pres.lineDefaults });
+  H.snapshot = () => JSON.stringify({ W: L.pres.W, H: L.pres.H, firstNum: L.pres.firstNum, designs: L.pres.designs, slides: L.pres.slides, show: L.pres.show, hf: L.pres.hf, props: L.pres.props, title: L.pres.title, keep: L.pres.keep, ooxmlFormat: L.pres.ooxmlFormat, losses: L.pres.losses || [], shapeDefaults: L.pres.shapeDefaults, lineDefaults: L.pres.lineDefaults });
   H.restore = (snap) => { Object.assign(L.pres, JSON.parse(snap)); };
   /** Record state before a mutation. coalesceKey merges rapid repeats (typing). */
   H.push = (label, coalesceKey) => {

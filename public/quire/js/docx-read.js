@@ -141,7 +141,10 @@
     doc.numbering = { abs: {}, nums: {} };
     doc.settings.compat = 12;
     doc.theme = { major: 'Calibri Light', minor: 'Calibri', colors: Object.assign({}, X.DEFAULT_THEME) };
-    doc.src = { zip, mainPath };
+    doc.src = { mainPath };
+    try { L.opc.attach(doc, await L.opc.open(zip)); }
+    catch (error) { L.opc.loss(doc, { id: 'package', what: 'Some original package data could not be retained: ' + error.message, where: mainPath, action: 'drop' }); }
+    doc.keep = { media: {} };
 
     /* ---- theme ---- */
     const themeRel = relOfType('theme');
@@ -475,6 +478,7 @@
         view = await L.metafile.toPNG(bytes, ext === 'wmf' || mime === 'image/x-wmf' ? 'wmf' : 'emf', 1600);
       }
       const id = L.media.add(new Blob([bytes], { type: mime }), p.split('/').pop(), view);
+      doc.keep.media[id] = p;
       mediaCache.set(p, id);
       return id;
     }
@@ -513,7 +517,9 @@
         const cr = await rels(p);
         for (const k in cr) if (!cr[k].external) await add(cr[k].target);
       }
-      const out = { model, files, path: p };
+      // History and clipboard snapshots use JSON. Keep only a cache key in runs;
+      // the original typed-array bytes must stay outside those snapshots.
+      const out = { model, src: L.chart.keep({ files, path: p, source: doc.pkg?.id }) };
       chartCache.set(p, out);
       return out;
     }
@@ -1120,7 +1126,7 @@
             const r = rid(content);
             const rel = r && ctx.rels[r];
             const c = rel && chartCache.get(rel.target);
-            it = { t: 'chart', w, h, chart: c && c.model, src: c ? { files: c.files, path: c.path } : null };
+            it = { t: 'chart', w, h, chart: c && c.model, src: c ? c.src : null };
             if (!c || !c.model) { it.t = 'img'; it.media = null; it.alt = 'Chart'; }
             break;
           }
@@ -1630,7 +1636,7 @@
         const hr = await rels(rel.target);
         await preload(hr);
         const sid = (rel.type === 'header' ? 'h' : 'f') + ++hfN;
-        const story = { kind: rel.type === 'header' ? 'hdr' : 'ftr', id: sid, blocks: [] };
+        const story = { kind: rel.type === 'header' ? 'hdr' : 'ftr', id: sid, blocks: [], keep: { part: rel.target } };
         const ctx = storyCtx(rel.target, hr, story);
         story.blocks = parseBlocks(x, ctx);
         if (!story.blocks.length || story.blocks[story.blocks.length - 1].t !== 'p') { const sp = D.para(); sp.synth = true; story.blocks.push(sp); }
@@ -1646,6 +1652,11 @@
       if (!x) return;
       const nr = await rels(rel.target);
       await preload(nr);
+      if (doc.pkg) {
+        doc.keep.notes = doc.keep.notes || {};
+        doc.keep.notes[kind] = Array.from(doc.pkg.xml(rel.target)?.children || []).filter(n => ['separator', 'continuationSeparator', 'continuationNotice'].includes(at(n, 'type')))
+          .map(n => ({ id: at(n, 'id'), fragment: L.opc.fragment(n, { pkg: doc.pkg, part: rel.target }) }));
+      }
       for (const n of kids(x, tag)) {
         const ty = at(n, 'type');
         const id = at(n, 'id');
@@ -1682,7 +1693,7 @@
         const ps = kids(c, 'p');
         const lastP = ps[ps.length - 1];
         const pid = lastP && at(lastP, 'paraId');
-        if (pid) { paraOwner.set(pid, id); const ex = exMap.get(pid); if (ex) { story.done = ex.done; story._parentPara = ex.parent; } }
+        if (pid) { story.keep = { paraId: pid }; paraOwner.set(pid, id); const ex = exMap.get(pid); if (ex) { story.done = ex.done; story._parentPara = ex.parent; } }
         doc.comments[id] = story;
       }
       for (const k in doc.comments) { const c = doc.comments[k]; if (c._parentPara) { c.parent = paraOwner.get(c._parentPara); delete c._parentPara; } }
@@ -1718,18 +1729,21 @@
     }
 
     /* ---- properties ---- */
-    const coreX = await xml('docProps/core.xml');
+    const propertyPart = (type, fallback) => doc.pkg?.rels('').find(r => L.opc.relationshipType(r.type) === type && !r.external)?.part || fallback;
+    const coreX = await xml(propertyPart(L.opc.NS.pkg + '/metadata/core-properties', 'docProps/core.xml'));
     if (coreX) {
       const g = (n) => { const e = desc(coreX, n); return e ? e.textContent : ''; };
       Object.assign(doc.props, { title: g('title'), subject: g('subject'), creator: g('creator'), keywords: g('keywords'), description: g('description'), lastModifiedBy: g('lastModifiedBy'), revision: +g('revision') || 1, created: g('created') || doc.props.created, modified: g('modified') || doc.props.modified, category: g('category'), lastPrinted: g('lastPrinted'), contentStatus: g('contentStatus'), language: g('language'), identifier: g('identifier'), version: g('version') });
     }
-    const appX = await xml('docProps/app.xml');
+    const appX = await xml(propertyPart(L.opc.NS.rel + '/extended-properties', 'docProps/app.xml'));
     if (appX) { const g = (n) => { const e = desc(appX, n); return e ? e.textContent : ''; }; doc.props.company = g('Company'); doc.props.manager = g('Manager'); doc.props.template = g('Template'); }
-    const custX = await xml('docProps/custom.xml');
+    const custX = await xml(propertyPart(L.opc.NS.rel + '/custom-properties', 'docProps/custom.xml'));
     if (custX) for (const p of kids(custX, 'property')) { const v = p.firstElementChild; if (at(p, 'name')) doc.custom[at(p, 'name')] = v ? v.textContent : ''; }
     const mainCT = await (async () => { const ct = await xml('[Content_Types].xml'); if (!ct) return ''; const o = kids(ct, 'Override').find((x) => at(x, 'PartName') === '/' + mainPath); return o ? at(o, 'ContentType') : ''; })();
     if (/template/.test(mainCT)) doc.isTemplate = true;
-    if (/macroEnabled/.test(mainCT)) { doc.hasMacros = true; warnings.push('This document contains macros. Quire keeps the text but does not run or save macros.'); }
+    if (/macroEnabled/.test(mainCT)) doc.hasMacros = true;
+    doc.ooxmlFormat = L.opc.variant(doc.pkg, doc.isTemplate ? 'dotx' : 'docx');
+    doc.keep.values = Object.fromEntries(['settings', 'theme', 'props', 'custom'].map(k => [k, JSON.parse(JSON.stringify(doc[k]))]));
 
     /* numbering instances referenced but undefined → plain paragraphs */
     D.walk(doc.main, (b) => { if (b.t === 'p' && b.pPr.num && b.pPr.num.id && b.pPr.num.id !== '0' && !doc.numbering.nums[b.pPr.num.id]) delete b.pPr.num; });

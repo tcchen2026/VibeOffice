@@ -1,0 +1,2 @@
+# Independent cell/value/style comparison in tools/ledger/test/loss-audit.py.
+openpyxl==3.1.5

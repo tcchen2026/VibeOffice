@@ -45,20 +45,6 @@
   const hp = (pt) => Math.round((pt || 0) * 2);
   const ON = (b) => (b === false ? ' w:val="0"' : '');
 
-  class Rels {
-    constructor() { this.list = []; }
-    add(type, target, external) {
-      const hit = this.list.find((r) => r.type === type && r.target === target && !!r.external === !!external);
-      if (hit) return hit.id;
-      const id = 'rId' + (this.list.length + 1);
-      this.list.push({ id, type, target, external });
-      return id;
-    }
-    xml() {
-      return HEAD + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-        this.list.map((r) => `<Relationship Id="${r.id}" Type="${r.type}" Target="${X(r.target)}"${r.external ? ' TargetMode="External"' : ''}/>`).join('') + '</Relationships>';
-    }
-  }
   const DT = (d) => (d ? `w:date="${X(d)}"` : '');
   const hex = (c) => (!c || c === 'auto' ? 'auto' : String(c).replace('#', '').toUpperCase());
 
@@ -583,7 +569,7 @@
     const poly = '<wp:wrapPolygon edited="0"><wp:start x="0" y="0"/><wp:lineTo x="0" y="21600"/><wp:lineTo x="21600" y="21600"/><wp:lineTo x="21600" y="0"/><wp:lineTo x="0" y="0"/></wp:wrapPolygon>';
     const wrap = f.wrap === 'square' ? `<wp:wrapSquare wrapText="${side}"/>` : f.wrap === 'tight' ? `<wp:wrapTight wrapText="${side}">${poly}</wp:wrapTight>` : f.wrap === 'through' ? `<wp:wrapThrough wrapText="${side}">${poly}</wp:wrapThrough>` : f.wrap === 'topBottom' ? '<wp:wrapTopAndBottom/>' : '<wp:wrapNone/>';
     const behind = f.wrap === 'behind' || (f.behind && f.wrap !== 'none');
-    return `<w:drawing><wp:anchor distT="${emu(d.t || 0)}" distB="${emu(d.b || 0)}" distL="${emu(d.l == null ? 9 : d.l)}" distR="${emu(d.r == null ? 9 : d.r)}" simplePos="0" relativeHeight="${Math.round(f.z || 251659264)}" behindDoc="${behind ? 1 : 0}" locked="${f.locked ? 1 : 0}" layoutInCell="${f.layoutInCell === false ? 0 : 1}" allowOverlap="${f.allowOverlap === false ? 0 : 1}"><wp:simplePos x="0" y="0"/>${pos('H', f.posH)}${pos('V', f.posV)}${ext}${wrap}${docPr}${lock}${graphicEl}</wp:anchor></w:drawing>`;
+    return `<w:drawing><wp:anchor distT="${emu(d.t || 0)}" distB="${emu(d.b || 0)}" distL="${emu(d.l == null ? 9 : d.l)}" distR="${emu(d.r == null ? 9 : d.r)}" simplePos="0" relativeHeight="${Math.max(0, Math.min(4294967295, Math.round(f.z ?? 251659264)))}" behindDoc="${behind ? 1 : 0}" locked="${f.locked ? 1 : 0}" layoutInCell="${f.layoutInCell === false ? 0 : 1}" allowOverlap="${f.allowOverlap === false ? 0 : 1}"><wp:simplePos x="0" y="0"/>${pos('H', f.posH)}${pos('V', f.posV)}${ext}${wrap}${docPr}${lock}${graphicEl}</wp:anchor></w:drawing>`;
   }
 
   /* ================= blocks ================= */
@@ -831,14 +817,16 @@
   /* ================= package ================= */
   W.write = async function (doc, opts) {
     opts = opts || {};
+    const K = L.opc, format = K.format(doc, opts.format || (opts.template ? 'dotx' : null), 'docx');
+    const pack = L.preserve.begin(doc, format);
     const files = [];
     const add = (name, data) => files.push({ name, data });
     const overrides = [];
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
-    const docRels = new Rels();
+    const docRels = pack.rels('word/document.xml');
     D.reindex(doc);
     /* --- context shared by every story --- */
-    let revN = 0, docPrN = 0, bmN = 0;
+    let revN = 0, bmN = 0;
     const bmIds = new Map();
     const mediaMap = new Map();
     let mediaN = 0;
@@ -847,13 +835,14 @@
     const numMap = (id) => { if (!numIds.has(String(id))) numIds.set(String(id), String(id)); return numIds.get(String(id)); };
     const cmtIds = new Map();
     const fnIds = new Map(), enIds = new Map();
-    let fnN = 1, enN = 1;
+    const highNote = kind => Math.max(0, ...Object.keys(kind === 'fn' ? doc.fn : doc.en).map(x => +x || 0), ...(doc.keep?.notes?.[kind] || []).map(n => +n.id || 0)) + 1;
+    let fnN = highNote('fn'), enN = highNote('en');
     const charts = [];
     const usedPaths = new Set();
     const mkCtx = (rels, main) => ({
-      rels, main,
+      rels, main, writer: pack.writer, part: rels.owner,
       rev: () => ++revN,
-      docPrId: () => ++docPrN,
+      docPrId: () => pack.writer.ids.fresh('document', 'docPr'),
       bmSeen: new Set(),
       bmId: (id) => { const k = String(id); if (!bmIds.has(k)) bmIds.set(k, bmN++); return bmIds.get(k); },
       cmtOk: (id) => !!doc.comments[id],
@@ -862,7 +851,7 @@
         const store = kind === 'fn' ? doc.fn : doc.en;
         if (!store[id]) return null;
         const m = kind === 'fn' ? fnIds : enIds;
-        if (!m.has(String(id))) m.set(String(id), kind === 'fn' ? fnN++ : enN++);
+        if (!m.has(String(id))) m.set(String(id), /^\d+$/.test(String(id)) ? +id : kind === 'fn' ? fnN++ : enN++);
         return m.get(String(id));
       },
       numMap,
@@ -873,11 +862,22 @@
         return rels.add(RT('image'), () => 'media/' + mediaMap.get(mid).name);
       },
       chart: (it) => {
+        const src = it.src && L.chart.src.get(it.src), source = src?.source && K.package(src.source);
+        let conversion = false;
+        if (source && !it.dirtyChart) {
+          try {
+            const target = pack.writer.carry(source, src.path);
+            return pack.writer.rels(rels.owner).add(RT('chart'), K.relative(rels.owner, target));
+          } catch (error) {
+            conversion = true;
+            pack.writer.loss({ id: 'chart:' + src.source + ':' + src.path, what: 'The chart was converted because its original dependencies are incomplete: ' + error.message, where: src.path, action: 'conversion' });
+          }
+        }
         const n = charts.length + 1;
         let path = 'word/charts/chart' + n + '.xml';
         while (usedPaths.has(path)) path = path.replace(/chart(\d+)\.xml$/, (m, k) => 'chart' + (+k + 1) + '.xml');
         usedPaths.add(path);
-        charts.push({ it, path });
+        charts.push({ it, path, conversion });
         return rels.add(RT('chart'), path.replace(/^word\//, ''));
       },
     });
@@ -906,7 +906,8 @@
       const st = doc.hf[id];
       const isH = st.kind === 'hdr';
       const name = isH ? `header${++hN}.xml` : `footer${++fN}.xml`;
-      const rels = new Rels();
+      pack.bind('word/' + name, st.keep?.part);
+      const rels = pack.rels('word/' + name);
       const ctx = mkCtx(rels, false);
       let body = blocksXML(st.blocks.length ? st.blocks : [D.para()], ctx);
       if (!st.blocks.length || st.blocks[st.blocks.length - 1].t !== 'p') body += '<w:p/>';
@@ -930,9 +931,10 @@
       const tag = kind === 'fn' ? 'footnote' : 'endnote';
       const store = kind === 'fn' ? doc.fn : doc.en;
       const ids = kind === 'fn' ? fnIds : enIds;
-      const rels = new Rels();
+      const rels = pack.rels('word/' + tag + 's.xml');
       const ctx = mkCtx(rels, false);
       let x = `<w:${tag} w:type="separator" w:id="-1"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:separator/></w:r></w:p></w:${tag}><w:${tag} w:type="continuationSeparator" w:id="0"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:continuationSeparator/></w:r></w:p></w:${tag}>`;
+      if (doc.keep?.notes?.[kind]) x = doc.keep.notes[kind].map(n => pack.writer.emit(n.fragment, rels.owner)).join('');
       for (const [orig, nid] of ids) {
         const st = store[orig];
         if (!st) continue;
@@ -943,22 +945,23 @@
       return { xml: HEAD + `<w:${tag}s ${NSDECL}>${x}</w:${tag}s>`, rels };
     };
     let fnPart = null, enPart = null;
-    if (fnIds.size) { fnPart = noteXML('fn'); }
-    if (enIds.size) { enPart = noteXML('en'); }
+    if (fnIds.size || pack.originals.has('word/footnotes.xml')) { fnPart = noteXML('fn'); }
+    if (enIds.size || pack.originals.has('word/endnotes.xml')) { enPart = noteXML('en'); }
     /* --- comments --- */
     let cmPart = null, cmExPart = null;
     if (cmtIds.size) {
-      const rels = new Rels();
+      const rels = pack.rels('word/comments.xml');
       const ctx = mkCtx(rels, false);
       let x = '', ex = '';
-      let paraN = 0x10000000;
+      const reservedParaIds = new Set(Object.values(doc.comments).map(c => c.keep?.paraId).filter(Boolean));
+      let paraN = Math.max(0x10000000, ...Array.from(reservedParaIds, p => parseInt(p, 16) || 0));
       const paraIds = new Map();
       for (const [orig, nid] of cmtIds) {
         const c = doc.comments[orig];
         if (!c) continue;
         let inner = blocksXML(c.blocks, ctx);
         if (!/annotationRef/.test(inner)) inner = inner.replace(/<w:p>(<w:pPr>.*?<\/w:pPr>)?/, (m) => m + '<w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:annotationRef/></w:r>');
-        const pid = (++paraN).toString(16).toUpperCase().padStart(8, '0');
+        const pid = c.keep?.paraId || (++paraN).toString(16).toUpperCase().padStart(8, '0');
         paraIds.set(String(orig), pid);
         /* tag the last paragraph with a paraId for threading / done state */
         const lastIdx = inner.lastIndexOf('<w:p>');
@@ -981,14 +984,16 @@
       const e = mediaMap.get(mid);
       if (!b) { e.name = 'missing.png'; continue; }
       e.name = `image${++mediaN}.${b.ext}`;
+      const source = doc.keep?.media?.[mid], original = source && doc.pkg?.bytes(source);
+      if (original && original.length === b.bytes.length && original.every((value, i) => value === b.bytes[i])) pack.bind('word/media/' + e.name, source);
       add('word/media/' + e.name, b.bytes);
       if (!defaults.has(b.ext)) defaults.set(b.ext, L.extToMime(b.ext) === 'application/octet-stream' ? 'image/' + b.ext : L.extToMime(b.ext));
     }
     if (pendingMedia.length) { /* media referenced after the loop (notes/comments) were added above too */ }
     /* --- charts --- */
     for (const ch of charts) {
-      const src = ch.it.src;
-      if (src && src.files && src.files.length && !ch.it.dirtyChart) {
+      const src = typeof ch.it.src === 'string' ? L.chart.src.get(ch.it.src) : ch.it.src;
+      if (src && src.files && src.files.length && !ch.it.dirtyChart && !ch.conversion) {
         /* copy the original chart part and everything it references */
         const base = src.path;
         const relp = L.dml.relsPath(base);
@@ -1010,7 +1015,7 @@
     /* --- assemble --- */
     const flatRels = (rels) => { finishRels(rels); return rels; };
     add('word/document.xml', documentXML);
-    overrides.push(['word/document.xml', opts.template ? CT.tmpl : CT.doc]);
+    overrides.push(['word/document.xml', format.contentType]);
     for (const p of hfParts) {
       add('word/' + p.name, HEAD + `<w:${p.isH ? 'hdr' : 'ftr'} ${NSDECL}>${p.body}</w:${p.isH ? 'hdr' : 'ftr'}>`);
       overrides.push(['word/' + p.name, p.isH ? CT.header : CT.footer]);
@@ -1052,18 +1057,22 @@
     overrides.push(['docProps/core.xml', CT.core]);
     add('docProps/app.xml', appXML(doc, stats));
     overrides.push(['docProps/app.xml', CT.app]);
-    const hasCustom = Object.keys(doc.custom || {}).length > 0;
+    const hasCustom = Object.keys(doc.custom || {}).length > 0 || pack.originals.has('docProps/custom.xml');
     if (hasCustom) { add('docProps/custom.xml', customXML(doc)); overrides.push(['docProps/custom.xml', CT.custom]); }
-    add('_rels/.rels', HEAD + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-      `<Relationship Id="rId1" Type="${RT('officeDocument')}" Target="word/document.xml"/>` +
-      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>' +
-      `<Relationship Id="rId3" Type="${RT('extended-properties')}" Target="docProps/app.xml"/>` +
-      (hasCustom ? `<Relationship Id="rId4" Type="${RT('custom-properties')}" Target="docProps/custom.xml"/>` : '') + '</Relationships>');
+    const rootRels = pack.rels('');
+    rootRels.add(RT('officeDocument'), 'word/document.xml');
+    rootRels.add('http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties', 'docProps/core.xml');
+    rootRels.add(RT('extended-properties'), 'docProps/app.xml');
+    if (hasCustom) rootRels.add(RT('custom-properties'), 'docProps/custom.xml');
     const ct = HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
       Array.from(defaults).map(([e, t]) => `<Default Extension="${e}" ContentType="${t}"/>`).join('') +
       overrides.map(([p, t]) => `<Override PartName="/${p}" ContentType="${t}"/>`).join('') + '</Types>';
     files.unshift({ name: '[Content_Types].xml', data: ct });
-    return L.zip.write(files, opts.template ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.template' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const types = new Map(overrides);
+    for (const file of files) pack.put(file.name, file.data, types.get(file.name) || defaults.get(file.name.split('.').pop()));
+    const result = pack.finish();
+    const blob = await L.zip.write(result.files, format.mime); blob.dropped = result.dropped;
+    return blob;
   };
 
   /* ---------- chart XML from the chart model (charts created in Quire) ---------- */

@@ -5,7 +5,7 @@
 (function (root) {
   'use strict';
   const L = root.L;
-  const M = L.model, F = L.formula, NF = L.numfmt, XML = L.xml;
+  const M = L.model, F = L.formula, NF = L.numfmt, XML = L.xml, K = L.opc;
   const W = (L.xlsxWrite = {});
   const HDR = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n';
   const NS_MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
@@ -51,17 +51,6 @@
   const numStr = (v) => { if (!isFinite(v)) return null; if (Object.is(v, -0)) return '0'; return String(v); };
 
   /* ------------------------------------------------------------ package plumbing */
-  class Rels {
-    constructor() { this.list = []; }
-    add(type, target, external) {
-      const id = 'rId' + (this.list.length + 1);
-      this.list.push({ id, type: /^https?:/.test(type) ? type : RT + type, target, external });
-      return id;
-    }
-    xml() {
-      return HDR + `<Relationships xmlns="${NS_PKG}">` + this.list.map((r) => `<Relationship Id="${r.id}" Type="${esc(r.type)}" Target="${esc(r.target)}"${r.external ? ' TargetMode="External"' : ''}/>`).join('') + '</Relationships>';
-    }
-  }
   const relsPath = (p) => { const i = p.lastIndexOf('/'); return (i < 0 ? '' : p.slice(0, i + 1)) + '_rels/' + p.slice(i + 1) + '.rels'; };
 
   /* ------------------------------------------------------------ colours */
@@ -233,20 +222,46 @@
 
   /* ------------------------------------------------------------ shared strings */
   class SST {
-    constructor() { this.list = []; this.map = new Map(); this.count = 0; }
-    add(v, runs) {
+    constructor(wb, writer) {
+      this.list = []; this.map = new Map(); this.count = 0; this.source = wb.pkg?.id; this.originalKeys = [];
+      const source = L.preserve.related(wb, wb.pkg?.main, 'sharedStrings');
+      if (source) {
+        let root;
+        try {
+          root = wb.pkg.xml(source);
+          if (root?.localName !== 'sst') throw new Error('The original string table has no valid root element.');
+        } catch (error) {
+          writer.loss({ id: 'strings:malformed', what: 'The damaged shared-string table was rebuilt from the readable cell text.', where: source, action: 'conversion' });
+          return;
+        }
+        const items = Array.from(root.children || []).filter(e => e.localName === 'si');
+        this.original = K.raw(root); this.originalPart = wb.pkg.text(source); this.originalCount = +root.getAttribute('count') || 0;
+        const values = L.xlsxRead.readSST(wb.pkg.text(source));
+        items.forEach((el, i) => {
+          const value = values[i] ?? '', key = typeof value === 'string' ? value : '\u0001' + JSON.stringify(value.runs);
+          this.originalKeys[i] = key;
+          if (!this.map.has(key)) this.map.set(key, i);
+          this.list.push({ xml: K.raw(el) });
+        });
+        this.originalLength = this.list.length;
+      }
+    }
+    add(v, runs, keep) {
       this.count++;
       let key = runs && runs.length ? '\u0001' + JSON.stringify(runs) : v;
+      if (keep && keep.source === this.source && keep.sst != null && this.originalKeys[keep.sst] === key) return keep.sst;
       let i = this.map.get(key);
       if (i == null) { i = this.list.length; this.list.push(runs && runs.length ? { runs } : v); this.map.set(key, i); }
       return i;
     }
     xml() {
+      const start = '<si xmlns="' + NS_MAIN + '">';
+      const item = s => typeof s === 'string' ? start + tEl(s.length > 32767 ? s.slice(0, 32767) : s) + '</si>'
+        : s.xml || start + s.runs.map(r => '<r>' + (r.font ? '<rPr>' + fontXml(r.font, true) + '</rPr>' : '') + tEl(r.t || '') + '</r>').join('') + '</si>';
+      if (this.original) return K.partXML(this.originalPart, K.attributes(K.mergeBag(this.original, { __append: this.list.slice(this.originalLength).map(item) }),
+        { count: Math.max(this.count, this.originalCount), uniqueCount: this.list.length }));
       const out = [HDR, `<sst xmlns="${NS_MAIN}" count="${this.count}" uniqueCount="${this.list.length}">`];
-      for (const s of this.list) {
-        if (typeof s === 'string') out.push('<si>' + tEl(s.length > 32767 ? s.slice(0, 32767) : s) + '</si>');
-        else out.push('<si>' + s.runs.map((r) => '<r>' + (r.font ? '<rPr>' + fontXml(r.font, true) + '</rPr>' : '') + tEl(r.t || '') + '</r>').join('') + '</si>');
-      }
+      for (const s of this.list) out.push(item(s));
       out.push('</sst>');
       return out.join('');
     }
@@ -290,14 +305,14 @@
     return '<sheetViews>' + s + '</sheetView></sheetViews>';
   }
 
-  function colsXml(sh) {
+  function colsXml(sh, ctx) {
     const out = [];
-    const sig = (o) => (o ? JSON.stringify([o.w, o.custom, o.hidden, o.bestFit, o.level, o.collapsed, o.s]) : null);
+    const sig = (o) => (o ? JSON.stringify([o.w, o.custom, o.hidden, o.bestFit, o.level, o.collapsed, o.s, o.keep]) : null);
     const n = Math.max(sh.cols.length, 0);
     let c = 0;
     const emit = (min, max, o) => {
       if (!o) return;
-      const a = { min: min + 1, max: max + 1, width: o.w != null ? o.w : undefined, style: o.s ? o.s : undefined, hidden: o.hidden ? '1' : undefined, bestFit: o.bestFit ? '1' : undefined, customWidth: o.custom || (o.w != null && !o.bestFit) ? '1' : undefined, outlineLevel: o.level || undefined, collapsed: o.collapsed ? '1' : undefined };
+      const a = { min: min + 1, max: max + 1, width: o.w != null ? o.w : undefined, style: o.s || o.keep?.style != null ? ctx.style(o.s || 0, o.keep) : undefined, hidden: o.hidden ? '1' : undefined, bestFit: o.bestFit ? '1' : undefined, customWidth: o.custom || (o.w != null && !o.bestFit) ? '1' : undefined, outlineLevel: o.level || undefined, collapsed: o.collapsed ? '1' : undefined };
       if (a.width == null) { if (!a.style && !a.hidden && !a.outlineLevel && !a.collapsed) return; a.width = sh.defColW != null ? sh.defColW : M.pxToWidth(M.defaultColPx(sh), M.mdw(sh.wb)); a.customWidth = undefined; }
       out.push(`<col${attrs(a)}/>`);
     };
@@ -317,7 +332,8 @@
 
   function cellXml(cell, r, c, ctx, headerName) {
     let s = '<c r="' + cellName(r, c) + '"';
-    if (cell.s) s += ' s="' + cell.s + '"';
+    const style = ctx.style(cell.s || 0, cell.keep);
+    if (style) s += ' s="' + style + '"';
     let v = cell.v;
     const hasF = cell.f != null && cell.f !== '' && !cell.am;
     if (headerName != null && !hasF) v = headerName;
@@ -338,7 +354,7 @@
     } else {
       if (v == null) { /* styled blank */ }
       else if (typeof v === 'number') { const n = numStr(v); if (n == null) { t = 'e'; body = '<v>#NUM!</v>'; } else body = '<v>' + n + '</v>'; }
-      else if (typeof v === 'string') { t = 's'; body = '<v>' + ctx.sst.add(v.length > 32767 ? v.slice(0, 32767) : v, headerName != null ? null : cell.rt) + '</v>'; }
+      else if (typeof v === 'string') { t = 's'; body = '<v>' + ctx.sst.add(v.length > 32767 ? v.slice(0, 32767) : v, headerName != null ? null : cell.rt, cell.keep) + '</v>'; }
       else if (typeof v === 'boolean') { t = 'b'; body = '<v>' + (v ? 1 : 0) + '</v>'; }
       else if (M.isErr(v)) { t = 'e'; body = '<v>' + esc(v.e) + '</v>'; }
     }
@@ -365,7 +381,7 @@
       });
       if (extra) { parts = parts.concat(extra).sort((a, b) => a[0] - b[0]); first = parts[0][0]; last = parts[parts.length - 1][0]; parts = parts.map((x) => x[1]); }
       const a = {};
-      if (row.s) { a.s = row.s; a.customFormat = '1'; }
+      if (row.s || row.keep?.style != null) { a.s = ctx.style(row.s || 0, row.keep); a.customFormat = '1'; }
       if (row.ht != null && (row.customHeight || row.auto == null)) { a.ht = row.ht; if (row.customHeight) a.customHeight = '1'; }
       else if (row.auto != null && Math.abs(row.auto - def) > 0.01) a.ht = row.auto;
       if (row.hidden) a.hidden = '1';
@@ -633,15 +649,20 @@
   /* ------------------------------------------------------------ workbook */
   W.bytes = async function (wb, opts) {
     opts = opts || {};
-    const type = opts.type || 'xlsx';
-    const macro = (type === 'xlsm' || type === 'xltm') && wb.extra && wb.extra.vba;
+    const format = K.format(wb, opts.type, 'xlsx'), type = format.ext;
+    const macro = format.macro && wb.extra && wb.extra.vba;
+    const pack = L.preserve.begin(wb, format);
+    const relsFor = owner => {
+      const r = pack.rels(owner);
+      return { ...r, add: (type, target, external, preferred) => r.add(/^[a-z][a-z0-9+.-]*:/i.test(type) ? type : RT + type, target, external, preferred) };
+    };
     const files = [];
     const overrides = new Map();
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const add = (name, data, ct) => { files.push({ name, data }); if (ct) overrides.set('/' + name, ct); };
-    const wbRels = new Rels();
-    const sst = new SST();
-    const ctx = { sst, dynamic: false };
+    const wbRels = relsFor('xl/workbook.xml');
+    const sst = new SST(wb, pack.writer), styles = L.preserve.styles(wb, buildStyles(wb), pack.writer);
+    const ctx = { sst, style: (i, keep) => styles.id(i, keep), dynamic: false };
     const mediaPath = new Map(); /* media id → part name */
     let nImg = 0, nDrawing = 0, nChart = 0, nComment = 0, nTable = 0, nVml = 0;
     const mediaPart = (id) => {
@@ -651,6 +672,10 @@
       let ext = String(m.ext || 'png').toLowerCase();
       if (ext === 'jpg') ext = 'jpeg';
       const name = `xl/media/image${++nImg}.${ext}`;
+      if (m.part && wb.pkg?.has(m.part)) {
+        const original = wb.pkg.bytes(m.part);
+        if (original.length === m.bytes.length && original.every((v, i) => v === m.bytes[i])) pack.bind(name, m.part);
+      }
       defaults.set(ext, IMG_CT[ext] || m.type || 'application/octet-stream');
       add(name, m.bytes);
       mediaPath.set(id, name);
@@ -664,9 +689,21 @@
     const sheetEntries = [];
     for (let si = 0; si < wb.sheets.length; si++) {
       const sh = wb.sheets[si];
-      const rels = new Rels();
+      const part = sh.kind === 'chartsheet' ? `xl/chartsheets/sheet${si + 1}.xml` : `xl/worksheets/sheet${si + 1}.xml`;
+      const opaque = sh.kind === 'macrosheet' || sh.kind === 'dialogsheet';
+      if (opaque && wb.pkg?.has(sh.extra.ooxmlPart)) {
+        if ((sh.kind !== 'macrosheet' || format.macro) && sh.extra.opaqueBaseline === L.preserve.sheetContent(sh)) {
+          pack.bind(part, sh.extra.ooxmlPart, 'opaque');
+          add(part, wb.pkg.bytes(sh.extra.ooxmlPart), wb.pkg.type(sh.extra.ooxmlPart));
+          const relation = wb.pkg.rels(wb.pkg.main).find(r => r.part === sh.extra.ooxmlPart);
+          sheetEntries.push({ sh, part, kind: relation.type });
+          continue;
+        }
+        pack.writer.loss({ id: 'sheet-conversion:' + sh.sheetId, what: sh.kind === 'macrosheet' ? 'The Excel 4.0 macro sheet is converted to an ordinary worksheet.' : 'The dialog sheet is converted to an ordinary worksheet.', where: sh.name, action: 'conversion' });
+      }
+      pack.bind(part, sh.extra.ooxmlPart);
+      const rels = relsFor(part);
       if (sh.kind === 'chartsheet') {
-        const part = `xl/chartsheets/sheet${si + 1}.xml`;
         let body = HDR + `<chartsheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}">` + (sh.tabColor ? `<sheetPr>${colorEl('tabColor', sh.tabColor)}</sheetPr>` : '') + `<sheetViews><sheetView${si === wb.active ? ' tabSelected="1"' : ''}${sh.view.zoom && sh.view.zoom !== 100 ? ` zoomScale="${Math.round(sh.view.zoom)}"` : ''}${sh.view.zoomToFit ? ' zoomToFit="1"' : ''} workbookViewId="0"/></sheetViews>`;
         const m = sh.print.margins;
         body += `<pageMargins left="${m.l}" right="${m.r}" top="${m.t}" bottom="${m.b}" header="${m.header}" footer="${m.footer}"/><pageSetup orientation="${sh.print.orientation === 'portrait' ? 'portrait' : 'landscape'}"/>`;
@@ -678,7 +715,6 @@
         sheetEntries.push({ sh, part, kind: 'chartsheet' });
         continue;
       }
-      const part = `xl/worksheets/sheet${si + 1}.xml`;
       const headers = syncTableHeaders(wb, sh);
       const out = [HDR, `<worksheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" mc:Ignorable="x14ac">`];
       /* sheetPr */
@@ -691,7 +727,7 @@
       out.push(sheetViewXml(sh, wb, si));
       const fp = { baseColWidth: sh.baseColW != null && sh.baseColW !== 8 ? sh.baseColW : undefined, defaultColWidth: sh.defColW != null ? sh.defColW : undefined, defaultRowHeight: sh.defRowH != null ? sh.defRowH : M.defaultRowPt(sh), customHeight: sh.defRowH != null ? '1' : undefined, zeroHeight: sh.zeroHeight ? '1' : undefined, outlineLevelRow: op.levelRow || undefined, outlineLevelCol: op.levelCol || undefined };
       out.push(`<sheetFormatPr${attrs(fp)}/>`);
-      out.push(colsXml(sh));
+      out.push(colsXml(sh, ctx));
       out.push(sheetDataXml(sh, ctx, headers));
       if (sh.protection) {
         const a = Object.assign({}, sh.protection.attrs || {});
@@ -731,9 +767,11 @@
       if (dr) out.push(`<drawing r:id="${dr}"/>`);
       if (sh.comments.size) {
         const cPart = `xl/comments${++nComment}.xml`;
+        pack.bind(cPart, L.preserve.related(wb, sh.extra.ooxmlPart, 'comments'));
         add(cPart, commentsXml(sh), CT.comments);
         rels.add('comments', '../' + cPart.slice(3));
         const vPart = `xl/drawings/vmlDrawing${++nVml}.vml`;
+        pack.bind(vPart, L.preserve.related(wb, sh.extra.ooxmlPart, 'vmlDrawing'));
         defaults.set('vml', CT.vml);
         add(vPart, vmlXml(sh, si + 1));
         out.push(`<legacyDrawing r:id="${rels.add('vmlDrawing', '../drawings/' + vPart.split('/').pop())}"/>`);
@@ -744,6 +782,7 @@
       if (tables.length) {
         const ids = tables.map((t) => {
           const tp = `xl/tables/table${++nTable}.xml`;
+          pack.bind(tp, t.ooxmlPart);
           add(tp, tableXml(t, wb), CT.table);
           return rels.add('table', '../tables/' + tp.split('/').pop());
         });
@@ -760,7 +799,8 @@
       const list = sh.drawings.filter((d) => d && d.anchor && (d.kind === 'image' ? (wb.media && wb.media.get(d.media)) || d.imgLink : d.kind === 'chart' ? d.xml || d.chart : d.kind === 'shape'));
       if (!list.length) return null;
       const dPart = `xl/drawings/drawing${++nDrawing}.xml`;
-      const drels = new Rels();
+      pack.bind(dPart, sh.extra.ooxmlDrawing);
+      const drels = relsFor(dPart);
       let nextId = 2;
       for (const d of list) if (d.id >= nextId) nextId = d.id + 1;
       const usedIds = new Set();
@@ -785,20 +825,47 @@
             `<xdr:blipFill><a:blip xmlns:r="${NS_R}"${blipRefs}/>${crop}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>` +
             `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}><a:off x="0" y="0"/><a:ext cx="${emu(sz.w)}" cy="${emu(sz.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${d.lineXml || ''}</xdr:spPr></xdr:pic>`;
         } else if (d.kind === 'chart') {
+          let rid;
+          if (wb.pkg?.has(d.part) && !d.chart?.dirty) {
+            try {
+              const target = pack.writer.carry(wb.pkg, d.part);
+              if (d.chart?.refs && L.xchart?.patchRefs) {
+                const updated = L.xchart.patchRefs(d.xml, d.chart.refs);
+                if (updated !== d.xml) pack.writer.put(target, updated, wb.pkg.type(d.part));
+              }
+              rid = pack.writer.rels(drels.owner).add(RT + 'chart', K.relative(drels.owner, target));
+            } catch (error) {
+              pack.writer.loss({ id: 'chart:' + d.part, what: 'The chart was converted because its original dependencies are incomplete: ' + error.message, where: d.part, action: 'conversion' });
+            }
+          }
+          if (!rid) {
           const cPart = `xl/charts/chart${++nChart}.xml`;
           add(cPart, chartPartXml(d, wb), CT.chart);
           if (d.chartParts && !(d.chart && d.chart.dirty)) {
-            const crels = new Rels();
+            const crels = relsFor(cPart);
             for (const p of d.chartParts) {
               if (p.type === 'chartStyle') { const n = `xl/charts/style${nChart}.xml`; add(n, p.bytes, CT.chartStyle); crels.add('http://schemas.microsoft.com/office/2011/relationships/chartStyle', 'style' + nChart + '.xml'); }
               else if (p.type === 'chartColorStyle') { const n = `xl/charts/colors${nChart}.xml`; add(n, p.bytes, CT.chartColors); crels.add('http://schemas.microsoft.com/office/2011/relationships/chartColorStyle', 'colors' + nChart + '.xml'); }
             }
             if (crels.list.length) add(relsPath(cPart), crels.xml());
           }
-          const rid = drels.add('chart', '../charts/' + cPart.split('/').pop());
+          rid = drels.add('chart', '../charts/' + cPart.split('/').pop());
+          }
           obj = `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${id}" name="${nameAttr}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="${NS_C}"><c:chart xmlns:c="${NS_C}" xmlns:r="${NS_R}" r:id="${rid}"/></a:graphicData></a:graphic></xdr:graphicFrame>`;
         } else {
-          if (d.xml && !d.dirty) obj = d.xml.replace(/\sr:(embed|link|id)="[^"]*"/g, '').replace(/(<(?:\w+:)?cNvPr\b[^>]*?\bid=")\d+(")/, '$1' + id + '$2');
+          if (d.xml && !d.dirty) {
+            const source = K.package(d.keep?.source);
+            if (source) {
+              try {
+                let fragment = K.fragment(K.parse(d.xml), { pkg: source, part: d.keep.part });
+                if (id !== d.id) fragment = K.duplicate(fragment);
+                obj = pack.writer.emit(fragment, drels.owner);
+              } catch (error) {
+                pack.writer.loss({ id: 'shape:' + d.keep.part + ':' + d.id, what: 'The shape was converted because its original references could not be retained: ' + error.message, where: dPart, action: 'conversion' });
+                obj = shapeXml(d, id, sz);
+              }
+            } else obj = d.xml.replace(/\sr:(embed|link|id)="[^"]*"/g, '').replace(/(<(?:\w+:)?cNvPr\b[^>]*?\bid=")\d+(")/, '$1' + id + '$2');
+          }
           else obj = shapeXml(d, id, sz);
         }
         x += open + obj + close;
@@ -810,7 +877,7 @@
     }
 
     /* workbook-level parts */
-    const sheetRids = sheetEntries.map((e) => wbRels.add(e.kind === 'chartsheet' ? 'chartsheet' : 'worksheet', e.part.slice(3)));
+    const sheetRids = sheetEntries.map((e) => wbRels.add(e.kind, e.part.slice(3)));
     wbRels.add('theme', 'theme/theme1.xml');
     add('xl/theme/theme1.xml', wb.themeXml || themeXml(wb), CT.theme);
     wbRels.add('styles', 'styles.xml');
@@ -818,9 +885,10 @@
     if (wb.externalLinks && wb.externalLinks.length) {
       wb.externalLinks.forEach((e, i) => {
         const p = `xl/externalLinks/externalLink${i + 1}.xml`;
+        pack.bind(p, e.part, 'opaque');
         add(p, e.xml, CT.ext);
         if (e.relTarget != null) {
-          const r = new Rels();
+          const r = relsFor(p);
           const t = e.relType === 'xlPathMissing' ? 'http://schemas.microsoft.com/office/2006/relationships/xlExternalLinkPath/xlPathMissing' : e.relType || 'externalLinkPath';
           r.add(t, e.relTarget, e.relExternal !== false);
           add(relsPath(p), r.xml());
@@ -857,9 +925,9 @@
     const cp = wb.calcPr || {};
     x += `<calcPr${attrs({ calcId: '124519', calcMode: cp.mode && cp.mode !== 'auto' ? cp.mode : undefined, iterate: cp.iterate ? '1' : undefined, iterateCount: cp.iterate && cp.iterateCount !== 100 ? cp.iterateCount : undefined, iterateDelta: cp.iterate && cp.iterateDelta !== 0.001 ? cp.iterateDelta : undefined, fullPrecision: cp.fullPrecision === false ? '0' : undefined, refMode: wb.r1c1 ? 'R1C1' : undefined, fullCalcOnLoad: '1' })}/>`;
     x += '</workbook>';
-    const wbCT = type === 'xltx' ? CT.wbt : type === 'xltm' ? CT.wbtm : macro ? CT.wbm : CT.wb;
+    const wbCT = format.contentType;
     add('xl/workbook.xml', x, wbCT);
-    add('xl/styles.xml', buildStyles(wb), CT.styles);
+    add('xl/styles.xml', styles.xml(), CT.styles);
     if (sst.list.length) { wbRels.add('sharedStrings', 'sharedStrings.xml'); add('xl/sharedStrings.xml', sst.xml(), CT.sst); }
     if (ctx.dynamic) { wbRels.add('sheetMetadata', 'metadata.xml'); add('xl/metadata.xml', META_XML, CT.meta); }
     add('xl/_rels/workbook.xml.rels', wbRels.xml());
@@ -877,13 +945,13 @@
       `<HeadingPairs><vt:vector size="2" baseType="variant"><vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant><vt:variant><vt:i4>${titles.length}</vt:i4></vt:variant></vt:vector></HeadingPairs>` +
       `<TitlesOfParts><vt:vector size="${titles.length}" baseType="lpstr">${titles.map((t) => `<vt:lpstr>${escT(t)}</vt:lpstr>`).join('')}</vt:vector></TitlesOfParts>` +
       dc('Manager', p.manager) + dc('Company', p.company) + '<LinksUpToDate>false</LinksUpToDate><SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged><AppVersion>11.0000</AppVersion></Properties>', CT.app);
-    const rootRels = new Rels();
+    const rootRels = relsFor('');
     rootRels.add('officeDocument', 'xl/workbook.xml');
     rootRels.add('http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties', 'docProps/core.xml');
     rootRels.add('extended-properties', 'docProps/app.xml');
-    if (p.custom && p.custom.length) {
+    if (p.custom?.length || pack.originals.has('docProps/custom.xml')) {
       add('docProps/custom.xml', HDR + '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
-        p.custom.map((c, i) => `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${i + 2}" name="${esc(c.name)}"><vt:${c.type || 'lpwstr'}>${escT(c.value)}</vt:${c.type || 'lpwstr'}></property>`).join('') + '</Properties>', CT.custom);
+        (p.custom || []).map((c, i) => `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${i + 2}" name="${esc(c.name)}"><vt:${c.type || 'lpwstr'}>${escT(c.value)}</vt:${c.type || 'lpwstr'}></property>`).join('') + '</Properties>', CT.custom);
       rootRels.add('custom-properties', 'docProps/custom.xml');
     }
     add('_rels/.rels', rootRels.xml());
@@ -893,15 +961,19 @@
     for (const [n, t] of overrides) ct += `<Override PartName="${esc(n)}" ContentType="${t}"/>`;
     ct += '</Types>';
     files.unshift({ name: '[Content_Types].xml', data: ct });
-    const blob = await L.zip.write(files, 'application/octet-stream');
+    for (const file of files) pack.put(file.name, file.data, overrides.get('/' + file.name) || defaults.get(file.name.split('.').pop()));
+    const result = pack.finish();
+    const blob = await L.zip.write(result.files, format.mime);
     let bytes = new Uint8Array(await blob.arrayBuffer());
     if (opts.password) bytes = await L.officeCrypto.encrypt(bytes, opts.password);
+    bytes.dropped = result.dropped;
     return bytes;
   };
   W.MIME = { xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', xlsm: 'application/vnd.ms-excel.sheet.macroEnabled.12', xltx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.template', xltm: 'application/vnd.ms-excel.template.macroEnabled.12' };
   W.write = async function (wb, opts) {
     const bytes = await W.bytes(wb, opts);
-    return new Blob([bytes], { type: W.MIME[(opts && opts.type) || 'xlsx'] || W.MIME.xlsx });
+    const blob = new Blob([bytes], { type: K.format(wb, opts?.type, 'xlsx').mime });
+    blob.dropped = bytes.dropped; return blob;
   };
   W.themeXml = themeXml;
 })(typeof window !== 'undefined' ? window : globalThis);

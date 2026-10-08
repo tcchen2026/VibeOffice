@@ -637,7 +637,13 @@
     for (const st of allStories) {
       D.walk(st, (b) => {
         if (b.t === 'p') for (const it of b.runs) if ((it.t === 'shape' || it.t === 'group') && it.tb) {
-          for (const tb of it.t === 'group' ? D.groupTextboxes(it) : [it.tb]) { tb.kind = 'tb'; tb.owner = it; tbStories.push(tb); }
+          for (const tb of it.t === 'group' ? D.groupTextboxes(it) : [it.tb]) {
+            tb.kind = 'tb';
+            // Runtime back-reference, rebuilt on indexing. Keep it out of JSON
+            // snapshots and clipboard copies, where it would make the shape cyclic.
+            Object.defineProperty(tb, 'owner', { value: it, writable: true, configurable: true, enumerable: false });
+            tbStories.push(tb);
+          }
         }
       });
     }
@@ -881,7 +887,7 @@
     t.full = { snap: D.snapshot(D.doc) };
     t.global = true;
   };
-  const DOC_KEYS = ['main', 'sect', 'styles', 'defaults', 'numbering', 'hf', 'fn', 'en', 'comments', 'settings', 'props', 'custom', 'theme', 'bg', 'watermark'];
+  const DOC_KEYS = ['main', 'sect', 'styles', 'defaults', 'numbering', 'hf', 'fn', 'en', 'comments', 'settings', 'props', 'custom', 'theme', 'bg', 'watermark', 'keep', 'losses', 'ooxmlFormat'];
   D.snapshot = (doc) => { const o = {}; for (const k of DOC_KEYS) o[k] = doc[k]; return L.clone(o); };
   D.restoreSnapshot = (doc, s) => { const c = L.clone(s); for (const k of DOC_KEYS) doc[k] = c[k]; doc._idxDirty = true; D.stylesChanged(); };
 

@@ -14,7 +14,7 @@
     if (L.xml) {   // Ledger's own parser (also in Node)
       let el;
       try { el = L.xml.parse(s); } catch (e) { el = L.xml.parse(strip(s)); }
-      X.resolveAC(el.parentNode);
+      X.resolveAC(el.parentNode, s);
       return el.parentNode.children[0];
     }
     let d = new DOMParser().parseFromString(s, 'application/xml');
@@ -22,12 +22,13 @@
       d = new DOMParser().parseFromString(strip(s), 'application/xml');
       if (d.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
     }
-    X.resolveAC(d);
+    X.resolveAC(d, s);
     return d.documentElement;
   };
   /** Markup Compatibility: keep the Choice we understand (wps/wpg/wpc/w14), else the Fallback */
   const UNDERSTOOD = /^(wps|wpg|wp14|w14|w15|a14|wpc|v|o|w10|mc|wne|m)$/;
-  X.resolveAC = function (d) {
+  X.resolveAC = function (d, source) {
+    if (L.opc) L.opc.captureAC(d, source);
     const acs = Array.from(d.getElementsByTagName('*')).filter((e) => e.localName === 'AlternateContent').reverse();
     for (const ac of acs) {
       if (!ac.parentNode) continue;

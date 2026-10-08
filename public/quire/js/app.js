@@ -674,7 +674,7 @@
   async function confirmDiscard() {
     if (!doc() || !doc().dirty) return true;
     const r = await ui.msg(`Do you want to save the changes to ${A.fileName}?`, { icon: 'warn', buttons: ['&Yes', '&No', 'Cancel'] });
-    if (r === 0) { await A.save(); return true; }
+    if (r === 0) return await A.save() === 'saved';
     if (r === 1 && window.VO) VO.discard(doc());   // its unsaved version goes too
     return r === 1;
   }
@@ -713,12 +713,12 @@
       else {
         const buf = await L.readAsArrayBuffer(file);
         const res = await A.readDocx(buf, file.name);
-        d = res.doc; warnings = res.warnings || [];
+        d = res.doc; warnings = res.warnings || []; type = d.ooxmlFormat || type;
       }
-      A.loadDoc(d, name, { saved: /\.docx$/i.test(file.name) || type !== 'docx', type, newWindow: !reuse });
+      A.loadDoc(d, name, { saved: /\.(docx|docm|dotx|dotm)$/i.test(file.name) || type !== 'docx', type, newWindow: !reuse });
       if (window.VO) VO.opened(file, doc());
       ui.busy(false);
-      if (d.isTemplate) A.status('Opened a template: saving creates a new document.');
+      if (d.isTemplate) A.status('Opened a template. Save keeps its template format.');
       if (d.wasEncrypted) A.status('This document is protected with a password to open; saving keeps the protection (Tools ▸ Options ▸ Security).');
       if (warnings.length) ui.msg(warnings.join('\n'), { icon: 'warn' });
       if (type === 'md') { const n = L.mdio.missingPictures(d); if (n) A.status(`${n === 1 ? 'A picture is' : n + ' pictures are'} not in the .md file and show${n === 1 ? 's' : ''} as a box. Open a .zip holding the file and its pictures to see them.`); }
@@ -776,7 +776,14 @@
     if (!A.saved) return A.saveAs();
     return A.exportAs(A.fileType || 'docx', A.fileName);
   };
-  A.saveAs = function () { return new Promise((res) => (L.dlg && L.dlg.saveAs ? L.dlg.saveAs(async (name, type) => { if (['docx', 'dotx', 'md', 'mdzip'].includes(type)) { A.fileName = name; A.fileType = type; A.saved = true; A.updateTitle(); } await A.exportAs(type, name); res(); }) : A.exportAs('docx', A.fileName).then(res))); };
+  A.saveAs = function () {
+    if (!L.dlg?.saveAs) return A.exportAs('docx', A.fileName);
+    return new Promise(resolve => {
+      let writing = false;
+      const dialog = L.dlg.saveAs(async (name, type) => { writing = true; resolve(await A.exportAs(type, name)); });
+      dialog.done.then(() => { if (!writing) resolve('declined'); });
+    });
+  };
   A.docStats = function () {
     const d = doc();
     const st = D.stats(D.allParas(d));
@@ -791,11 +798,15 @@
       let blob, ext = type;
       d.props.modified = new Date().toISOString();
       d.props.lastModifiedBy = A.opts.userName || 'Quire User';
-      if (type === 'docx' || type === 'dotx') {
+      if (/^(docx|docm|dotx|dotm)$/.test(type)) {
         d.props.revision = (d.props.revision || 0) + 1;
-        blob = await L.docx.write(d, { stats: A.docStats(), template: type === 'dotx' });
+        blob = await L.docx.write(d, { stats: A.docStats(), format: type });
         /* a password to open: encrypt the package (Agile encryption, readable by Word 2010+ and LibreOffice) */
-        if (d.openPassword && L.officeCrypto) blob = new Blob([await L.officeCrypto.encrypt(new Uint8Array(await blob.arrayBuffer()), d.openPassword)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        if (d.openPassword && L.officeCrypto) {
+          const original = blob;
+          blob = new Blob([await L.officeCrypto.encrypt(new Uint8Array(await original.arrayBuffer()), d.openPassword)], { type: original.type });
+          blob.dropped = original.dropped;
+        }
       }
       else if (type === 'md') {
         /* pictures need the .zip form: a .md file only refers to them */
@@ -815,8 +826,11 @@
       else if (type === 'rtf' && L.rtf) { blob = new Blob([await L.rtf.write(d)], { type: 'application/rtf' }); }
       ui.busy(false);
       if (!blob) return;
+      const losses = L.opc.formats[type] ? await ui.compatibility(d, blob.dropped) : [];
+      if (losses === null) return 'declined';
       const r = await L.saveFile(`${name}.${ext}`, blob);
-      if (r === 'saved' && ['docx', 'dotx', 'md', 'mdzip'].includes(type)) { d.dirty = false; A.status(`Saved ${name}.${ext}`); ui.refresh(); if (window.VO) VO.saved(`${name}.${ext}`, blob, d); }
+      if (r === 'saved') L.opc.acknowledge(d, losses);
+      if (r === 'saved' && ['docx', 'docm', 'dotx', 'dotm', 'md', 'mdzip'].includes(type)) { A.fileName = name; A.fileType = type; A.saved = true; A.updateTitle(); d.dirty = false; A.status(`Saved ${name}.${ext}`); ui.refresh(); if (window.VO) VO.saved(`${name}.${ext}`, blob, d); }
       return r;
     } catch (e) {
       ui.busy(false);
@@ -1246,17 +1260,20 @@
     if (window.VO) VO.attach('quire', {
       async open(f, o) {
         await A.openFile(f);
+        if (o?.draft && doc()) L.opc.recoverLosses(doc(), o.lossState);
         /* an unsaved version: the changes are not saved yet, and a never-saved document still needs Save As */
         if (o && o.draft && doc()) { doc().dirty = true; A.saved = !!o.saved; A.fileName = o.name.replace(/\.(docx|docm|dotx|dotm|md|markdown|zip)$/i, ''); A.updateTitle(); A.status('Recovered the unsaved changes. Save the document to keep them.'); ui.refresh(); }
       },
       /* a Markdown document's unsaved version is Markdown too, so recovering it loses nothing */
-      snapshot(d) {
+      async snapshot(d) {
         const t = winOf(d).fileType;
         if (t === 'md' && L.mdio) return new Blob([L.mdio.write(d).text], { type: 'text/markdown' });
         if (t === 'mdzip' && L.mdio) return L.mdio.writeZip(d, winOf(d).fileName);
-        return L.docx.write(d, { stats: A.docStats() });
+        const format = L.opc.formats[t] ? t : d.ooxmlFormat || 'docx';
+        const blob = await L.docx.write(d, { stats: A.docStats(), format });
+        return d.openPassword && L.officeCrypto ? new Blob([await L.officeCrypto.encrypt(new Uint8Array(await blob.arrayBuffer()), d.openPassword)], { type: blob.type }) : blob;
       },
-      docInfo(d) { const w = winOf(d); const ext = { md: '.md', mdzip: '.zip' }[w.fileType] || '.docx'; return { name: (w.fileName || 'Document') + ext }; },
+      docInfo(d) { const w = winOf(d); const ext = { md: '.md', mdzip: '.zip' }[w.fileType] || '.' + (L.opc.formats[w.fileType] ? w.fileType : d.ooxmlFormat || 'docx'); return { name: (w.fileName || 'Document') + ext, lossState: L.opc.lossState(d) }; },
       isDirty: (d) => !!(d && d.dirty),
       current: () => doc(),
       autosave: () => A.opts.autoRecover !== false,

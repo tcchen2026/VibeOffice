@@ -430,6 +430,24 @@
     return d.done.then(() => val);
   };
 
+  /** Check a prepared Office save before handing it to the download host.
+   * Returns entries to acknowledge after a successful save, or null on cancel.
+   * Snapshot writers never call this UI or acknowledge a loss.
+   */
+  ui.compatibility = async function (doc, entries) {
+    const pending = L.opc.pendingLosses(doc, entries);
+    if (!pending.length) return [];
+    const list = h('ul', { style: 'max-height:240px;overflow:auto;margin:8px 0;padding-left:22px' });
+    for (const e of pending) list.appendChild(h('li', { style: 'margin-bottom:8px' },
+      h('div', { text: e.what }), e.where ? h('div', { class: 'hint', text: e.where }) : null));
+    const body = h('div', { class: 'col' },
+      h('div', { text: 'The following features cannot be saved completely in this file. They will be converted or removed if you continue.' }), list,
+      h('div', { text: 'To keep working without saving these changes, click Cancel.' }));
+    const result = await ui.dialog({ title: 'Compatibility Checker', width: 540, body,
+      buttons: [{ label: '&Continue', primary: true }, { label: 'Cancel', cancel: true }] }).done;
+    return result === 0 ? pending : null;
+  };
+
   /** the "Password" box for opening a protected file; resolves to the password or null. wrong: after a wrong one */
   ui.password = function (fileName, wrong) {
     const inp = h('input', { type: 'password', id: 'pw-in', value: '', style: 'width:100%', autocomplete: 'off' });

@@ -401,6 +401,7 @@
       if (t === 's') {
         const k = vText == null ? -1 : parseInt(vText, 10);
         const sv = sst[k];
+        if (sv != null && ctx.wb.pkg) cell.keep = { source: ctx.wb.pkg.id, sst: k };
         if (sv == null) v = '';
         else if (typeof sv === 'string') v = sv;
         else { v = sv.text; cell.rt = sv.runs; }
@@ -448,6 +449,7 @@
       }
       const s = cAttr.s ? +cAttr.s : 0;
       if (s) { const id = xf[s]; if (id) cell.s = id; }
+      if (cAttr.s != null && xf[s] != null && ctx.wb.pkg) cell.keep = { ...cell.keep, source: ctx.wb.pkg.id, style: s, modelStyle: cell.s || 0 };
       if (cell.v == null && cell.f == null && !cell.s && !cell.dt) { /* nothing to keep */ }
       else {
         if (!row) row = sh.rowObj(r);
@@ -477,6 +479,7 @@
             if (lvl) row.level = lvl;
             if (coll) row.collapsed = true;
             if (custFmt) { const id = xf[+a.s]; if (id) row.s = id; }
+            if (custFmt && xf[+a.s] != null && ctx.wb.pkg) row.keep = { source: ctx.wb.pkg.id, style: +a.s, modelStyle: row.s || 0 };
             if (a.thickBot === '1') row.thickBot = true;
             if (a.thickTop === '1') row.thickTop = true;
             if (r > maxR && (row.s || row.ht != null)) { /* styled empty rows extend the used range only through cells */ }
@@ -609,6 +612,7 @@
       const lvl = num(col, 'outlineLevel', 0); if (lvl) o.level = lvl;
       if (bool(col, 'collapsed', false)) o.collapsed = true;
       const s = num(col, 'style', 0); if (s && ctx.xf[s]) o.s = ctx.xf[s];
+      if (at(col, 'style') != null && ctx.xf[s] != null && ctx.wb.pkg) o.keep = { source: ctx.wb.pkg.id, style: s, modelStyle: o.s || 0 };
       if (!Object.keys(o).length) continue;
       if (mx - mn > 2000 && !o.hidden && !o.level && (o.w == null || !o.s)) {
         /* a run to the last column: record it once as a tail default */
@@ -943,7 +947,7 @@
     const ref = F.parseRange(at(el, 'ref') || '');
     if (!ref) return;
     const t = {
-      id: num(el, 'id', ctx.wb.tables.length + 1), name: at(el, 'displayName') || at(el, 'name') || 'Table' + (ctx.wb.tables.length + 1), dname: at(el, 'name'), sheet: sh, ref,
+      ooxmlPart: part, id: num(el, 'id', ctx.wb.tables.length + 1), name: at(el, 'displayName') || at(el, 'name') || 'Table' + (ctx.wb.tables.length + 1), dname: at(el, 'name'), sheet: sh, ref,
       header: num(el, 'headerRowCount', 1) > 0, totals: num(el, 'totalsRowCount', 0) > 0 || bool(el, 'totalsRowShown', false) && num(el, 'totalsRowCount', 0) > 0,
       columns: [], style: null, autoFilter: !!kid(el, 'autoFilter'), comment: at(el, 'comment') || undefined,
     };
@@ -974,6 +978,7 @@
   async function readDrawing(pkg, part, sh, ctx) {
     const el = await pkg.xml(part);
     if (!el) return;
+    sh.extra.ooxmlDrawing = part;
     resolveAC(el, true);
     const rels = await pkg.rels(part);
     for (const a of el.children) {
@@ -988,6 +993,7 @@
       const d = await readDrawingObject(pkg, obj, rels, ctx, sh);
       if (!d) continue;
       d.anchor = anchor;
+      if (d.kind === 'shape' && ctx.wb.pkg) d.keep = { source: ctx.wb.pkg.id, part };
       const cd = kid(a, 'clientData');
       if (cd && at(cd, 'fLocksWithSheet') === '0') d.unlocked = true;
       if (cd && at(cd, 'fPrintsWithSheet') === '0') d.noPrint = true;
@@ -1118,6 +1124,9 @@
     if (!wbEl) throw new Error('The workbook part is damaged.');
     const wrels = await pkg.rels(wbPart);
     const wb = new M.Workbook();
+    try { L.opc.attach(wb, await L.opc.open(zip)); }
+    catch (error) { L.opc.loss(wb, { id: 'package', what: 'Some original package data could not be retained: ' + error.message, where: wbPart, action: 'drop' }); }
+    wb.ooxmlFormat = L.opc.variant(wb.pkg, 'xlsx');
     wb.strict = /purl\.oclc\.org/.test(wbEl.lookupNamespaceURI(wbEl.prefix) || '');
     const wpr = kid(wbEl, 'workbookPr');
     if (wpr) { wb.date1904 = bool(wpr, 'date1904', false); if (at(wpr, 'codeName')) wb.codeName = at(wpr, 'codeName'); if (bool(wpr, 'filterPrivacy', false)) wb.extra.filterPrivacy = true; if (at(wpr, 'defaultThemeVersion')) wb.themeVersion = at(wpr, 'defaultThemeVersion'); }
@@ -1153,7 +1162,7 @@
       if (mediaMap.has(partName)) return mediaMap.get(partName);
       const ext = partName.split('.').pop().toLowerCase();
       const id = 'img' + (wb.media.size + 1);
-      wb.media.set(id, { bytes: bytes2, ext, type: ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', bmp: 'image/bmp', emf: 'image/x-emf', wmf: 'image/x-wmf', tif: 'image/tiff', tiff: 'image/tiff', svg: 'image/svg+xml', webp: 'image/webp' })[ext] || 'application/octet-stream', name: partName.split('/').pop() });
+      wb.media.set(id, { part: partName, bytes: bytes2, ext, type: ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', bmp: 'image/bmp', emf: 'image/x-emf', wmf: 'image/x-wmf', tif: 'image/tiff', tiff: 'image/tiff', svg: 'image/svg+xml', webp: 'image/webp' })[ext] || 'application/octet-stream', name: partName.split('/').pop() });
       mediaMap.set(partName, id);
       return id;
     };
@@ -1170,6 +1179,7 @@
       const kind = r ? (r.type === 'chartsheet' ? 'chartsheet' : r.type === 'dialogsheet' ? 'dialogsheet' : r.type === 'xlMacrosheet' || r.type === 'xlIntlMacrosheet' ? 'macrosheet' : 'worksheet') : 'worksheet';
       const sh = wb.addSheet(XML.unx(at(s, 'name') || 'Sheet' + (wb.sheets.length + 1)), null, kind);
       sh.sheetId = num(s, 'sheetId', wb.sheets.length);
+      if (r && !r.external) sh.extra.ooxmlPart = r.target;
       const state = at(s, 'state');
       if (state === 'hidden' || state === 'veryHidden') sh.state = state;
       sheetParts.push({ sh, part: r ? r.target : null });
@@ -1208,12 +1218,13 @@
       const g = (n) => { const e = kid(coreEl, n); return e ? e.textContent : ''; };
       Object.assign(wb.props, { title: g('title'), subject: g('subject'), creator: g('creator'), keywords: g('keywords'), description: g('description'), lastModifiedBy: g('lastModifiedBy'), category: g('category'), created: g('created') || null, modified: g('modified') || null });
     }
-    const appEl = await pkg.xml('docProps/app.xml');
+    const propertyPart = (type, fallback) => wb.pkg?.rels('').find(r => L.opc.relationshipType(r.type) === L.opc.NS.rel + '/' + type)?.part || fallback;
+    const appEl = await pkg.xml(propertyPart('extended-properties', 'docProps/app.xml'));
     if (appEl) {
       const g = (n) => { const e = kid(appEl, n); return e ? e.textContent : ''; };
       wb.props.company = g('Company'); wb.props.manager = g('Manager'); wb.props.application = g('Application'); wb.props.appVersion = g('AppVersion');
     }
-    const custEl = await pkg.xml('docProps/custom.xml');
+    const custEl = await pkg.xml(propertyPart('custom-properties', 'docProps/custom.xml'));
     if (custEl) wb.props.custom = kids(custEl, 'property').map((p) => ({ name: at(p, 'name'), type: p.children[0] ? p.children[0].localName : 'lpwstr', value: p.children[0] ? p.children[0].textContent : '' }));
     /* macros and other parts we carry through untouched */
     const vba = relOfType(wrels, 'vbaProject');
@@ -1226,6 +1237,9 @@
     if (!wb.sheets.length) wb.addSheet('Sheet1');
     if (wb.active >= wb.sheets.length || wb.active < 0) wb.active = 0;
     if (wb.sheets[wb.active].state !== 'visible') wb.active = Math.max(0, wb.sheets.findIndex((s) => s.state === 'visible'));
+    wb.extra.keepValues = L.preserve.values(wb);
+    wb.extra.styleBaseline = { xf: st.xf.slice(), list: JSON.parse(JSON.stringify(wb.styles.list)), dxfs: JSON.parse(JSON.stringify(wb.dxfs)) };
+    for (const sh of wb.sheets) if (sh.kind === 'macrosheet' || sh.kind === 'dialogsheet') sh.extra.opaqueBaseline = L.preserve.sheetContent(sh);
     return wb;
   };
 
