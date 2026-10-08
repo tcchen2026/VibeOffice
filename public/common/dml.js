@@ -7,13 +7,14 @@
   X.emu = emu;
 
   /* ---------- XML helpers ---------- */
-  X.parse = function (s) {
+  X.parse = function (s, beforeResolve) {
     if (s && s.charCodeAt(0) === 0xFEFF) s = s.slice(1); /* byte-order mark left in by some writers */
     /* characters XML 1.0 forbids are stripped and the parse retried (seen in damaged files) */
     const strip = (t) => t.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
     if (L.xml) {   // Ledger's own parser (also in Node)
       let el;
       try { el = L.xml.parse(s); } catch (e) { el = L.xml.parse(strip(s)); }
+      if (beforeResolve) beforeResolve(el.parentNode);
       X.resolveAC(el.parentNode, s);
       return el.parentNode.children[0];
     }
@@ -22,6 +23,7 @@
       d = new DOMParser().parseFromString(strip(s), 'application/xml');
       if (d.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
     }
+    if (beforeResolve) beforeResolve(d);
     X.resolveAC(d, s);
     return d.documentElement;
   };

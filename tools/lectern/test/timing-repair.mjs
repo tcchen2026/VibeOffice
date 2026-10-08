@@ -1,4 +1,4 @@
-// Reproduce the six slide-6 diagnostics; automated success is not PowerPoint acceptance.
+// Reproduce the slide-6 diagnostics (six copies, plus the deck without slide 6 and slide 6 alone); automated success is not PowerPoint acceptance.
 // node timing-repair.mjs OUTDIR [--source saved-sample.pptx] [--sdk oxval.dll] [--dotnet PATH]
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,7 +40,7 @@ for (const name of fs.readdirSync(out).filter(n => n.endsWith('.pptx')).sort()) 
   const r = spawnSync('python3', [fileURLToPath(new URL('../../ooxml/package.py', import.meta.url)), 'check', file], { encoding: 'utf8' });
   if (r.error || !r.stdout) throw new Error('Package checker failed: ' + (r.error || r.stderr));
   const entry = { name, sha256: createHash('sha256').update(fs.readFileSync(file)).digest('hex'), package: JSON.parse(r.stdout), powerpointRepair: null };
-  failed ||= entry.package.status !== 'ok';
+  failed ||= entry.package.status !== 'ok' && !name.startsWith('2-');   // LibreOffice's resave is a control
   if (sdk) {
     const v = spawnSync(dotnet, [sdk, file], { encoding: 'utf8', timeout: 120000, maxBuffer: 10 * 1024 * 1024 });
     if (v.error || !v.stdout) throw new Error('SDK validator failed: ' + (v.error || v.stderr));
@@ -103,5 +103,10 @@ async function variants(encoded) {
     all(dom, P, 'cTn').forEach((n, i) => { map.set(n.getAttribute('id'), String(i + 1)); n.setAttribute('id', String(i + 1)); });
     for (const n of all(dom, P, 'tn')) { const old = n.getAttribute('val'); demand(map.has(old), 'Unresolved timing target'); n.setAttribute('val', map.get(old)); }
   });
+  /* broader probes, from the sample's model: is slide 6 the cause at all? */
+  if (!encoded) for (const [file, keep] of [['7-without-slide6.pptx', (_, i) => i !== 5], ['8-only-slide6.pptx', (_, i) => i === 5]]) {
+    const pres = L.app.buildSample(); pres.slides = pres.slides.filter(keep);
+    files[file] = encode(new Uint8Array(await (await L.pptx.write(pres)).arrayBuffer()));
+  }
   return { files, structural: { effects: effects.length, builds: builds.length, buildPairs: builds.map(pair) } };
 }

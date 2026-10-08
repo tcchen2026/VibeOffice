@@ -355,6 +355,8 @@
     let fieldDepth = ctx.fieldStack ? ctx.fieldStack.slice() : [];
     const markup = ctx.markup || 'markup';
     const items = p.runs;
+    const controls = (p.pPr.sdts || []).slice();
+    const controlSpan = el => { const c = controls.at(-1); if (c && !c.converted && c.type === 'checkbox') { el.dataset.control = c.key; el.style.cursor = 'pointer'; el.title = c.name; } };
     let lastSpan = null, lastCss = null;
     for (let idx = 0; idx < items.length; idx++) {
       const it = items[idx];
@@ -363,6 +365,8 @@
       pos = e;
       /* zero-length markers */
       if (n === 0) {
+        if (it.t === 'sdts') { controls.push(it.control); lastSpan = null; }
+        if (it.t === 'sdte') { const i = controls.findIndex(c => c.key === it.key); if (i >= 0) controls.splice(i, 1); lastSpan = null; }
         if (s < from || s > to) { trackMarker(it, open, fieldDepth); continue; }
         if (s === to && to !== from && to < (ctx._plen != null ? ctx._plen : D.plen(p)) && it.t !== 'ce' && it.t !== 'be' && it.t !== 'fe') { continue; }
         trackMarker(it, open, fieldDepth);
@@ -488,6 +492,7 @@
             sp.appendChild(document.createTextNode(part));
             if (r.link || rp.link) sp.dataset.link = linkStr(r.link || rp.link);
             if (r.noProof) sp.spellcheck = false;
+            controlSpan(sp);
             pc.appendChild(sp);
             k += part.length;
           }
@@ -503,6 +508,7 @@
         if (r.link || rp.link) el.dataset.link = linkStr(r.link || rp.link);
         if (r.noProof) el.spellcheck = false;
         if (r.lang && !/^en/i.test(r.lang)) el.lang = r.lang;
+        controlSpan(el);
         pc.appendChild(el);
         lastSpan = el; lastCss = css + '|' + clsS;
         continue;
@@ -581,8 +587,9 @@
           el.appendChild(mm);
         } else {
           el.style.cssText = R.runCSS(r, mult) + (it.math ? ';font-family:"Cambria Math",Caladea,serif;font-style:italic' : '');
-          el.textContent = it.text || (it.math ? '' : '');
-          if (!it.text) el.classList.add('empty');
+          el.textContent = it.text || it.label || '';
+          if (it.opaquePlaceholder) { el.style.opacity = '0.65'; el.style.border = '1px dotted currentColor'; el.style.padding = '2px 5px'; }
+          if (!it.text && !it.label) el.classList.add('empty');
         }
       } else {
         el = document.createElement('span');
@@ -590,6 +597,7 @@
       }
       el.dataset.o = a;
       el.dataset.n = 1;
+      controlSpan(el);
       if (cls.length && el.classList) for (const c of cls) el.classList.add(c);
       pc.appendChild(el);
     }

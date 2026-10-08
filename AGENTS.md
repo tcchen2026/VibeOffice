@@ -29,10 +29,15 @@ Keep them current: a change to an app's features, formats or source layout updat
 - Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`. (Open gap: the three apps still load the metric-compatible fonts from Google Fonts.)
 - Compatibility is measured against files other people wrote (public test corpora), compared with outside references (the page or cell values the authoring application stored, LibreOffice, openpyxl, python-pptx), and the result is written down in the app's doc with numbers.
 - Saved files must open in the authoring application's newer versions and in LibreOffice; what an app cannot edit it keeps and writes back unchanged.
-- OOXML preservation uses `common/opc.js`: immutable package bytes stay outside JSON history; model fragments carry source identities and dependency references. Classify parts as opaque, merged or regenerated. Preserve original identities unless every referrer is regenerated; duplicates remap definitions and references together. Merge settings-like parts only; regenerate content parts with model-attached fragments. Record conversions and drops in the document's loss ledger.
-- Save and drafts keep the main-part variant and encryption. Save As changes the filename/type only after a successful download. Show unacknowledged loss entries in the Compatibility Checker after preparing the file and before download; acknowledge only a successful user save. Drafts neither show nor acknowledge the checker. Recompute writer losses on every save so cancelling a conversion does not poison the next save.
-- Preservation changes are measured against the pinned corpus (`tools/corpora.sh`), including edits, undo/redo and drafts. Record failed and excluded attempts, compare validator diagnostics with each original, and keep Office acceptance pending until it has actually been checked. The measurement tools are in `tools/ooxml/`.
+- Follow the [Preservation contracts](docs/suite.md#preservation) for OOXML ownership, identities, edits, history/copy, drafts and loss reporting.
 - Shared code lives once, in `public/common/`; never copy it into an app. A change there is checked in all three apps (load each, and screenshot what it touches). What stays app-specific goes through the hooks in docs/suite.md (app config, `ui.hooks`, `L.icons.app`, …), not through app names inside common code.
+
+## Office acceptance (lessons from the slide-6 repair)
+
+- Schema-valid is not Office-valid: the Open XML SDK and LibreOffice passed decks PowerPoint repaired (a preset's partial adjustment list; a master and layout sharing an ID). Write what Office writes, not merely what the schema allows; when unsure, look at how Office-authored files in the corpus do it.
+- Every Office-found defect becomes a `tools/ooxml/package.py` rule with a test, plus a corpus scan for how widespread it is.
+- Before handing files to the user for Office, diff the new save against the previous writer's save of the same input; unexplained differences are suspects. Two overlapping faults made one Office round misleading.
+- Narrow Office failures by bisection: copies that each change one thing, with whole-file controls (without the suspect part, the part alone), at most about 8 per round, each with a checklist.
 
 ## Tools (details in docs/testing.md)
 

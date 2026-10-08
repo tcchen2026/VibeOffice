@@ -14,6 +14,7 @@ import io
 import json
 from pathlib import Path
 import posixpath
+import re
 import sys
 from urllib.parse import unquote, urlsplit
 import xml.etree.ElementTree as ET
@@ -28,6 +29,12 @@ W = {'http://schemas.openxmlformats.org/wordprocessingml/2006/main', 'http://pur
 P = {'http://schemas.openxmlformats.org/presentationml/2006/main', 'http://purl.oclc.org/ooxml/presentationml/main'}
 A = {'http://schemas.openxmlformats.org/drawingml/2006/main', 'http://purl.oclc.org/ooxml/drawingml/main'}
 S = {'http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'http://purl.oclc.org/ooxml/spreadsheetml/main'}
+W14 = 'http://schemas.microsoft.com/office/word/2010/wordml'
+LEGACY_COMMENTS = '{http://schemas.microsoft.com/office/word/2010/11/wordml}commentsEx'
+MODERN_COMMENTS = '{http://schemas.microsoft.com/office/word/2012/wordml}commentsEx'
+# each preset shape's adjustment names, from the generated schema facts the apps use
+_ORDER = (Path(__file__).resolve().parents[2] / 'public/common/opc-order.js').read_text()
+PRESET_ADJUST = {k: [n for n, _ in v] for k, v in json.loads(_ORDER[_ORDER.index('= {') + 2:_ORDER.rindex('; })')]).get('presetAdjust', {}).items()}
 
 def split(tag):
     if tag.startswith('{'):
@@ -36,6 +43,38 @@ def split(tag):
 
 def at(el, name, default=None):
     return next((v for k, v in el.attrib.items() if split(k)[1] == name), default)
+
+def added_issues(original, saved):
+    """Match the same diagnostic after a Strict/Transitional namespace change.
+
+    Keep part names, code, detail and multiplicity significant. For duplicate IDs,
+    the identity and its scope matter; adding a preceding run must not turn the
+    same malformed original identity into a new diagnostic.
+    The actual saved diagnostic is returned, without normalizing the evidence.
+    """
+    def key(issue):
+        item = dict(issue)
+        if 'path' in item:
+            item['path'] = re.sub(r'\{http://purl\.oclc\.org/ooxml/(officeDocument|wordprocessingml|drawingml|spreadsheetml|presentationml|schemaLibrary)/', r'{http://schemas.openxmlformats.org/\1/2006/', item['path'])
+            if item.get('code', '').startswith('duplicate-') and item['code'].endswith('-id'):
+                del item['path']
+        return json.dumps(item, sort_keys=True)
+    remaining = Counter(key(i) for i in original)
+    added = []
+    for issue in saved:
+        k = key(issue)
+        if remaining[k]: remaining[k] -= 1
+        else: added.append(issue)
+    return added
+
+def conversion_issues(original, saved):
+    """Office-found incompatibilities requiring comparison with the source."""
+    issues = []
+    for part, root in original.xml.items():
+        if root.tag == LEGACY_COMMENTS and part in saved.xml and saved.xml[part].tag == MODERN_COMMENTS:
+            issues.append(dict(code='promoted-comment-extension', part=part, path='',
+                               detail='Pre-release comment metadata was promoted to the released namespace. Word repairs this conversion; retain its source vocabulary.'))
+    return issues
 
 def rels_owner(name):
     if name == '_rels/.rels':
@@ -173,9 +212,21 @@ class Package:
         references = []
         caches = set()
         pivot_refs = []
+        comment_counts = {}
         for part, root in self.xml.items():
+            if split(root.tag)[0] in W and split(root.tag)[1] == 'comments':
+                comment_counts[part] = Counter(at(c, 'id') for c in root if split(c.tag)[1] == 'comment')
+        main = next((r['target'] for r in self.rels.get('', {}).values() if r['type'].endswith('/officeDocument')), '')
+        for part, root in self.xml.items():
+            parents = {child: parent for parent in root.iter() for child in parent}
             for el, path, branches in walk(root):
                 ns, tag = split(el.tag)
+                parent = parents.get(el)
+                if ns == W14 and tag in ('noFill', 'solidFill', 'gradFill', 'blipFill', 'pattFill', 'grpFill'):
+                    if parent is None or parent.tag not in ('{' + W14 + '}textFill', '{' + W14 + '}textOutline'):
+                        self.issue('wordart-fill-outside-property', part, tag, path)
+                if ns in W and tag == 'ins' and parent is not None and parent.tag == '{' + ns + '}del':
+                    self.issue('inserted-inside-deleted', part, 'Word writes the insertion outside the deletion.', path)
                 for key, val in el.attrib.items():
                     ans, name = split(key)
                     if (ans in R or (ans == 'urn:schemas-microsoft-com:office:office' and name == 'relid')) and val and val not in self.rels.get(part, {}):
@@ -190,8 +241,13 @@ class Package:
                     kind = 'timing'
                 elif tag == 'sldId' and ns in P and '/sldIdLst' in path.replace('{' + ns + '}', ''):
                     kind = 'slide'
+                elif tag in ('sldMasterId', 'sldLayoutId') and ns in P:
+                    # one ID space for every master and layout in the presentation
+                    kind, scope = 'master-layout', 'presentation'
                 elif tag in ('bookmarkStart', 'permStart') and ns in W:
                     kind = 'bookmark' if tag == 'bookmarkStart' else 'permission'
+                elif tag == 'commentReference' and ns in W:
+                    kind = 'comment-reference'
                 elif tag == 'pivotCache' and ns in S:
                     id_ = at(el, 'cacheId')
                     if id_ in caches:
@@ -199,14 +255,31 @@ class Package:
                     caches.add(id_)
                 if kind and at(el, 'id') is not None:
                     key = (scope, kind, at(el, 'id'))
+                    allowance = 1
+                    if kind == 'comment-reference':
+                        related = list(self.rels.get(part, {}).values()) + list(self.rels.get(main, {}).values())
+                        target = next((r['target'] for r in related if r['type'].endswith('/comments')), '')
+                        # Word accepts the original Comment040 with two matching
+                        # definitions. It repairs our former one-definition save
+                        # with two anchors. Do not blame that accepted source.
+                        allowance = max(1, comment_counts.get(target, {}).get(key[2], 0))
+                    matches = 0
                     for prior_part, prior_path, prior_branches in definitions[key]:
                         # Branch paths include a part identifier to avoid conflating unrelated ACs.
                         both = compatible({part + k: v for k, v in branches.items()}, {prior_part + k: v for k, v in prior_branches.items()})
                         if both:
-                            self.issue('duplicate-' + kind + '-id', part, key[2], path)
+                            matches += 1
+                            if matches >= allowance:
+                                self.issue('duplicate-' + kind + '-id', part, key[2], path)
                     definitions[key].append((part, path, branches))
                 # PresentationML spid targets cNvPr. VML o:spid is the shape's
                 # own identity, not a reference into DrawingML's ID space.
+                # PowerPoint repairs a preset whose adjustment list is neither empty nor complete
+                if tag == 'prstGeom' and ns in A and at(el, 'prst') in PRESET_ADJUST:
+                    av = next((c for c in el if split(c.tag)[1] == 'avLst'), None)
+                    names = [at(g, 'name') for g in av if split(g.tag)[1] == 'gd'] if av is not None else []
+                    if names and sorted(names) != sorted(PRESET_ADJUST[at(el, 'prst')]):
+                        self.issue('partial-preset-adjust', part, at(el, 'prst') + ': ' + ' '.join(names), path)
                 if ns in P and at(el, 'spid') is not None:
                     references.append((part, 'shape', at(el, 'spid'), path, branches))
                 if tag in ('stCxn', 'endCxn') and ns in A:
@@ -341,9 +414,7 @@ def compare(a, b, policy):
         count = sum(1 for x in b.xml.values() if split(x.tag)[0] in P and split(x.tag)[1] == 'sld')
         if count != policy['expectedSlides']:
             differences.append(dict(what='slide-count', expected=policy['expectedSlides'], actual=count))
-    ai = Counter(json.dumps(i, sort_keys=True) for i in a.check())
-    bi = Counter(json.dumps(i, sort_keys=True) for i in b.check())
-    new_issues = [json.loads(i) for i, n in (bi - ai).items() for _ in range(n)]
+    new_issues = added_issues(a.check(), b.check()) + conversion_issues(a, b)
     return dict(original=a.file, saved=b.file, status='failed' if differences or new_issues else 'ok',
                 summary=dict(summary), differences=differences, newIssues=new_issues)
 

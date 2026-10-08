@@ -114,7 +114,7 @@
       return `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst>${paths}</a:pathLst></a:custGeom>`;
     }
     const g = sh.geom || 'rect';
-    const av = sh.adj ? Object.keys(sh.adj).map((k) => `<a:gd name="${k}" fmla="val ${Math.round(sh.adj[k])}"/>`).join('') : '';
+    const av = L.opc.presetAdjust(g, sh.adj);
     return `<a:prstGeom prst="${g}"><a:avLst>${av}</a:avLst></a:prstGeom>`;
   }
 

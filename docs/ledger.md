@@ -120,9 +120,9 @@ printer itself.
 
 | Format | Open | Save |
 | --- | --- | --- |
-| Excel Workbook `.xlsx`, Macro-Enabled `.xlsm`, Template `.xltx` | yes | yes (VBA projects are kept, not run) |
+| Excel Workbook `.xlsx`, Macro-Enabled `.xlsm`, Templates `.xltx` / `.xltm` | yes | yes (VBA projects are kept, not run) |
 | Password-protected `.xlsx` / `.xlsm` | yes: Office 2007 "standard" and Office 2010+ "agile" encryption (AES with SHA-1/256/384/512) | yes: Tools ▸ Options ▸ Security, or Save As ▸ General Options (AES-256 with SHA-512, as Excel 2013+) |
-| Strict Open XML `.xlsx` | yes | as transitional `.xlsx` |
+| Strict Open XML `.xlsx` | yes | standard Transitional OOXML, with a Compatibility Checker notice |
 | CSV `.csv`, text `.txt` / `.tsv` / `.prn` | yes: UTF-8, UTF-16 and Windows-1252 detected; the Text Import Wizard for delimited and fixed-width text | yes: CSV (UTF-8) and tab-delimited text, what each cell shows, as Excel does |
 | XML Spreadsheet 2003 `.xml` | yes | yes |
 | Web Page `.htm` / `.html` | yes: each table on the page becomes a sheet | yes: one self-contained page per workbook |
@@ -134,182 +134,126 @@ be served over https or from localhost. A workbook opened with its password keep
 
 ## What a save keeps, converts and drops
 
-Ledger regenerates worksheets and retains original package dependencies, workbook settings, style
-definitions and shared-string entries. Pivots, controls, threaded-comment editing and worksheet
-extensions still need their object-level preservation and mutation rules. The Compatibility Checker
-reports recorded losses before a user save; coverage of remaining content conversions is incomplete.
+Ledger regenerates worksheets and keeps original package dependencies, workbook settings, style
+indices and shared strings. Save and drafts retain all four OOXML variants and encryption. The
+Compatibility Checker reports recorded conversions before a user download; reporting is incomplete
+for the remaining object features.
 
-### Package preservation (2026-10-08)
+The pinned 951-file corpus saves and reopens **935 workbooks**, with **11 failures and 5 exclusions**.
+Cell edit/save/undo/redo completes in **933**, with **11 failures and 7 exclusions**; draft recovery
+completes in **935**, with **11 failures and 5 exclusions**. The full run uses writer `cf1b313`.
+Package/SDK comparison reports **910 OK, 36 failed and 5 excluded** for unedited saves. One equation
+wrapper diagnostic found in that run is fixed in `bc3a04e`; its seven save/edit/history/draft states
+have no new diagnostics. Malformed or unvalidatable originals remain failures in the reports.
 
-Save, Save As and drafts keep `.xlsx`, `.xlsm`, `.xltx` or `.xltm`, including encryption after recovery.
-The main-part content type determines the variant even for a misnamed input. Macro-free Save As warns
-before download. Cancellation leaves the file identity and loss acknowledgements unchanged.
+The feature inventory compares **923 readable pairs**. The independent openpyxl cell comparison
+completes in **887 workbooks / 991,581 cells**: **881 workbooks** keep every compared value/formula;
+6 differ, and 2 differ in formatting. Exceptions include adversarial shared strings, out-of-range
+cells, a template and dynamic-array formulas. The other **64 attempts** remain reported failures,
+including 8 saved copies openpyxl cannot read. No blanket lossless claim is made for these inputs.
 
-The pinned 951-file run saves and reopens **935**, with **11 failures and 5 exclusions**, unchanged
-from the baseline. Package/SDK comparison improves from 808 to **910 OK**, with **36 failed and 5
-excluded**. Independent package checks compare bytes, content types, original rIds and targets:
+| Status | Feature | Current measured result / limit |
+|---|---|---|
+| Kept | Custom XML, typed custom properties, external links | 97/97 custom-XML relationships and property dependencies, 114/114 custom-property relationships, 49/49 external links; 97/99 XML parts in the inventory because unreferenced parts are not reattached |
+| Kept | VBA, people, labels and web extensions | 26/26 VBA, 4/4 persons, 2/2 label and 3/3 web-extension relationships |
+| Kept, with source exception | Connections | 35/36 relationships; one original dependency is missing; connections/query-part inventory 58/59 |
+| Kept on an unedited save; edit rules pending | Pivot tables and caches | 156/156 table parts and 131/131 cache definitions; source shifts, refresh flags and deletion rules remain unfinished |
+| Kept on an unedited save; edit rules pending | Threaded comments | 6/6 thread records and their persons; thread/mention identity and reference updates still need integration with edits |
+| Kept | Notes, tables, merges, validation and names | 373/373 notes, 230/230 tables, 56,263/56,263 merges, 258/259 validations, 2,106/2,106 names |
+| Kept, with exceptions | Charts, pictures and shapes | 155/157 charts, 164/165 pictures and 492/493 shapes; unedited raw shapes retain nested compatibility alternatives and relationships |
+| Converted | Newer conditional formatting | 733/752 base conditional-format entries and 7/30 data-bar/icon-set extensions; some newer properties fall back to the base representation |
+| Dropped from worksheet content | Controls and embedded OLE objects | 0/344 control references and 0/26 OLE objects; carrying 370/371 control-related package parts does not make the controls usable |
+| Pending / unmeasured | Slicers, timelines, query-table edit rules and unknown worksheet extensions | The pinned inventory has no slicer/timeline samples; query-table parts alone do not establish preservation of table fields or refresh behavior |
 
-| Package feature | Preserved relationships |
-|---|---:|
-| Custom XML stores / their property parts | 97 / 97 each |
-| Custom properties, including types/pids and empty bags | 114 / 114 |
-| Connections | 35 / 36 |
-| External links | 49 / 49 |
-| VBA projects | 26 / 26 |
-| Persons | 4 / 4 |
-| Web extensions | 3 / 3 |
-| Sensitivity labels | 2 / 2 |
+Package figures compare bytes, content types, original rIds and intended targets. The user accepted
+both Excel files in Office batch 1 (XLSM and custom XML/external links); the namespace sample also
+passed, but tested repeated declarations only, not inner `mc:Ignorable`. Batch 2's namespace follow-up
+confirms both the old `calcPr mc:Ignorable` form and the compact save in Excel. Rewritten parts now
+hoist fragment declarations to their root; opaque dependencies remain byte-identical.
+All 15 suite batch files open in LibreOffice with unchanged counts. Strict conversion passes
+all **23 Strict workbooks / 92 emitted states** against original package/SDK diagnostics and keeps
+its notice through draft recovery; the Strict Excel sample passed Office batch 2.
+Reports, failed attempts and historical measurements: `~/corpora/results/next-plan-head-2026-10-08/`
+and `~/corpora/results/strict-transitional-2026-10-08/`.
 
-The connection exception points to a part absent from the original. Existing styles and shared strings
-keep their indices and unknown properties; edits append definitions. Unedited macro/dialog sheets
-are carried intact. Editing one converts it to an ordinary worksheet and records that conversion.
-Raw unedited drawing shapes retain their relationships, including hyperlinks and grouped pictures.
-Keeping pivot/cache package parts does not yet implement the required pivot range/refresh rules.
+### Package, styles and strings: edit behavior
 
-Reports: `~/corpora/results/package-preservation-2026-10-08/`. Excel samples are in
-`~/Downloads/lossless-check/ledger/package/`; Office acceptance is pending.
+| Edit | Save behavior |
+|---|---|
+| Type or format an ordinary cell | Keep unrelated opaque parts; append changed styles/strings without rebinding old indices |
+| Change document properties or workbook settings | Replace owned properties; retain other values and custom-property types/pids |
+| Save as a macro-free variant | Report removed VBA before download; cancellation keeps the original filename/type and acknowledgements |
+| Edit an imported macro/dialog sheet | Convert that sheet to a worksheet and report it |
+| Undo/redo or recover a draft | Restore model properties, dependency identities and pending loss entries |
 
-### Historical feature baseline
+### Drawings: edit behavior
 
-The following larger-corpus figures predate package preservation. `tools/ledger/test/loss-audit.py`
-counted every feature in each of 2,941 test workbooks and its saved copy, and read
-every cell of both with openpyxl, an independent reader,
-comparing value, formula, number format, font, fill, borders and alignment
-(`python3 tools/ledger/test/loss-audit.py originals/ saved/ out.json`).
+| Edit | Save behavior |
+|---|---|
+| Edit cells around an unedited raw shape | Keep its original XML, compatibility alternatives and relationships |
+| Move a drawing | Update its worksheet anchor |
+| Edit chart contents or a converted shape | Regenerate the modeled content; general per-property preservation remains pending |
+| Copy/duplicate or delete | Existing drawing operations apply; complete opaque-object ownership and reference rules are part of the remaining Ledger work |
 
-**Kept.** Of 3,092,390 cells in 2,875 workbooks, every value and formula is unchanged in 2,861
-workbooks. The other 14 are malformed test files (strings of a million characters, cells beyond column
-XFD), dates written as text that Ledger stores as real dates, and spilled dynamic-array cells that
-openpyxl reports differently in the two files. Number formats, fonts, fills, borders and alignment agree
-except where a file leaves the font unspecified. Merged cells, column widths and row heights, hidden and
-grouped rows and columns, frozen panes, defined names, tables, filters, data validation, conditional
-formatting, notes, hyperlinks, sparklines, charts and chart sheets, pictures (linked ones keep their
-link), shapes and text boxes, page setup, print headers and footers, sheet and workbook protection,
-external links, custom document properties, scenarios and the VBA project of an `.xlsm` are all written
-back.
+### Pivots, threads, controls and extensions: current edit limits
 
-**Converted.**
+| Edit | Current behavior / remaining work |
+|---|---|
+| No edit to pivot/thread content | Package parts are carried; there is no pivot or threaded-comment editor |
+| Edit source cells, insert/delete rows or columns, rename/delete a sheet | Pivot source/location/cache and threaded-comment reference rules are not yet implemented |
+| Edit conditional formatting | The model writes its base form; extended bars and unknown entries need property-level merging |
+| Save a sheet containing controls, OLE or non-comment VML | Their worksheet/VML content still needs integration; retained package parts alone are insufficient |
+| Edit a query table | Modeled table fields are written; query-specific field identity and refresh rules remain pending |
 
-- Pivot tables (118 workbooks) keep their last values as ordinary cells; the pivot table itself — layout,
-  fields and cache — is not saved, so Excel sees a plain range that cannot be refreshed.
-- Threaded comments (6) survive as the classic notes Excel stores alongside them; the thread structure
-  and @mentions do not.
-- Excel 2010 data bars and icon sets (12 of 15 workbooks) fall back to their Excel 2007 form: negative-bar
-  colours, solid fills, bar borders and the newer icon sets are lost.
+### Pivot preservation rules for the next implementation
 
-**Dropped.**
+These are the agreed behavior rules for the pending pivot work, not additional supported behavior.
+Pivot definitions and cached records remain original package data. The model will hold source and
+output locations, cache identities and pending changes; Ledger will not calculate a pivot or execute
+an external connection. Excel performs any requested refresh when it opens the saved file.
 
-| What | Workbooks in the test set |
-| --- | --- |
-| Form controls and ActiveX controls (buttons, check boxes, drop-downs) | 25 |
-| Data connections and Power Query queries (the data stays, refreshing it does not) | 31 |
-| Custom XML data parts (document-management metadata) | 41 |
-| Sensitivity labels in the newer `docMetadata/LabelInfo.xml` form (labels kept as `MSIP_Label` custom properties survive: 35 of 35) | 27 |
-| Embedded OLE objects | 5 |
-| Slicers and timelines | 1 |
+| Source or edit | Required save behavior |
+|---|---|
+| Several pivots share a cache | Keep one cache definition, records part and workbook `cacheId`; every surviving pivot refers to that identity. A source change marks the shared cache once. Remove it only when no pivot or other retained dependent uses it. |
+| Worksheet range source | Resolve the source sheet to its model identity and keep the original range until an edit affects it. Sheet renames update the source name without changing the cache identity. |
+| Table source | Retain `worksheetSource@name` and the table identity; follow the table's current range after row/column edits. Do not replace the table name with a fixed range. |
+| Defined-name source | Retain the name and its scope, and use the current name formula when it resolves to a range. Keep formula-based names intact; if a source cannot be bounded safely, request refresh after workbook value or structure changes instead of inventing a range. |
+| External source | Keep the connection, external source metadata and cached records unchanged. Local edits do not execute the connection or rewrite its source. |
+| Consolidation source | Keep every source area and its page-field metadata. Shift or rename each local area by its owning sheet; retain external areas unchanged. |
+| Change a value or formula in a local source | Keep the current cache records and set `refreshOnLoad="1"` on the cache definition. Formatting-only edits do not request refresh. The Compatibility Checker explains that Excel must refresh the cached result. |
+| Insert/delete source rows or columns | Apply `O.shiftRange` to each affected area and request refresh. Preserve field identities and cached records; if a deleted source column is used by a pivot field, report that field's loss rather than silently remapping it to another column. |
+| Insert/delete rows or columns around the output | Shift or shrink the pivot `location` with its displayed cells. Keep offsets and field layout consistent with the surviving range. If the whole output is deleted, remove that pivot and report it. |
+| Edit a value or formula inside the output | Allow the cell edit and retain the pivot. Report that Excel can overwrite that edit on refresh; never silently discard the edit while saving. |
+| Delete a pivot sheet, source sheet, whole source range, source table or source name | Remove the affected pivots and their slicers, and report the loss. Keep caches still used elsewhere; remove dependencies that no surviving object references. Deleting one local consolidation area invalidates its dependent pivot rather than changing the meaning of the consolidation. |
+| Undo/redo a cell or structural edit | Restore source/output locations, refresh flags, cache membership and loss entries together with the cells. `snapSheet`/`restoreSheet` must cover the preserved state, including changes to caches shared with another sheet. |
+| Save, reopen or recover a draft | Write the current pivot state and original identities; drafts retain the same refresh requests and pending notices without showing or acknowledging the checker. |
 
-### Pinned lossless-save baseline (2026-10-07)
-
-The reproducible three-source corpus in `tools/corpora.sh` was measured against application revision
-`5abafdc`, before preservation changes. Of 951 inputs, 935 completed open → save → reopen,
-11 failed and 5 were explicitly excluded. Completion is not a fidelity result. The independent
-feature inventory compared 923 readable pairs; malformed/encrypted originals and missing
-outputs remain in its accounting. This corpus differs from the earlier compatibility corpus above.
-
-| Feature | Files containing it | Original inventory items | Saved inventory items | Text edit: kept / original |
-|---|---:|---:|---:|---:|
-| pivot tables | 101 | 156 | 0 | 0 / 156 |
-| form controls / ActiveX | 22 | 371 | 0 | 0 / 371 |
-| threaded comments | 4 | 6 | 0 | 0 / 6 |
-| custom XML data parts | 32 | 99 | 0 | 0 / 99 |
-
-The text-edit inventory covers 921 readable saved pairs; files without editable text and failed
-operations stay in the driver report, so its denominator differs from the unedited inventory.
-
-Package checks plus the Office 2019 SDK comparison reported 808 attempts without new
-automated diagnostics and 138 failures (including originals that could not be validated);
-5 driver exclusions remain separate. These checks do not certify Office acceptance. Commands,
-comparison policies and failure accounting are in [testing.md](testing.md#lossless-same-format-save-reproducible-baseline).
-
-The cell-edit/save/undo/redo baseline completed in 933 files, excluded 7 and failed in 11.
-The independent openpyxl check compared 1,649,147 cells in 895 workbooks; 7 workbooks differed
-in values or formulas and 6 in formatting. Full failure accounting is retained.
-Of 8 feature samples, 7 converted in LibreOffice with unchanged page counts. The pivot sample
-`bug66675.xlsx` changed from 36 to 42 pages after saving. The full corpus
-has not yet been rendered in LibreOffice. The baseline reports are retained outside git in
-`~/corpora/results/lossless-baseline-2026-10-07/`; Office samples are in
-`~/Downloads/lossless-check/baseline/`.
-
-### Shared preservation core (2026-10-08)
-
-Ledger's XML parser and namespace serializer now live in `common/xml.js` and `common/opc.js`. The
-writer does not yet use the package carry graph, so the feature-loss numbers above still apply. The
-same 951 inputs again produced 935 successful open/save/reopen attempts, 11 failures and 5 exclusions.
-Compared with the earlier saved outputs, 911 package/SDK comparisons completed with no new diagnostics;
-24 earlier outputs could not be SDK-validated, 11 had no saved output and 5 were excluded. Eight
-LibreOffice samples kept their page counts relative to the earlier saves; this comparison does not
-resolve the existing pivot sample's 36-to-42-page change from its author's file. The Ledger Node tests
-pass. Reports: `~/corpora/results/opc-core-2026-10-08/`.
+The pinned inventory contains 105 pivot workbooks, including 14 with shared caches, but no
+defined-name or consolidation source. `tools/ledger/test/pivot-fixtures.py` supplies those two
+structural fixtures from a pinned range-source workbook. Both have zero package/SDK diagnostics;
+an independent reader confirms their source kinds, and the consolidation's ten input values match
+its cache and output. Office acceptance and Ledger mutation checks remain pending.
 
 ## Compatibility testing
 
-Ledger was tested against workbooks other people wrote — the test suites of sixteen spreadsheet
-libraries and applications, not files made for Ledger:
+`tools/corpora.sh` pins the LibreOffice, Apache POI and Open XML SDK inputs used above. The Node and
+browser drivers exercise the shipping readers/writers, real undo operations and suite draft hooks.
+Independent ZIP/XML checks, Open XML SDK diagnostics and openpyxl comparisons are separate from the
+app's own reopen check. Commands and comparison policies are in [testing.md](testing.md).
 
-| Source | `.xlsx` / `.xlsm` files |
-| --- | --- |
-| XlsxWriter (Python) | 979 |
-| ClosedXML (.NET) | 382 |
-| Apache POI (Java) | 350 |
-| PhpSpreadsheet | 287 |
-| LibreOffice import/export regression files | 263 |
-| rust_xlsxwriter | 228 |
-| ExcelDataReader (.NET) | 183 |
-| calamine (Rust) | 64 |
-| pandas | 60 |
-| readxl (R) | 43 |
-| ExcelJS | 36 |
-| tealeg/xlsx (Go) | 32 |
-| xlsx-populate | 28 |
-| EPPlus | 25 |
-| Microsoft Power BI sample workbooks | 10 |
-| excelize (Go) | 9 |
-| **Total** | **2,979** |
-
-plus 584 CSV files: 502 data sets published by FiveThirtyEight, the CSV test files of PhpSpreadsheet,
-pandas, LibreOffice, ExcelDataReader and ExcelJS, the csv-spectrum edge cases and Our World in Data's
-CO₂ table (14 MB).
-
-Every file was opened by the same code that ships here (in Node.js for the bulk runs, in headless
-Chromium for the interface tests), saved again, and compared with outside references:
-
-| Check | Result |
-| --- | --- |
-| Workbooks opened | 2,964 of 2,979. Of the 34 password-protected test files, the 20 whose password is published open with it; 8 use ciphers Excel never writes (DES, 3DES, RC2 or MD5 hashing) and are reported as unsupported; the passwords of 6 are not published. The last file is a deliberately corrupt ZIP |
-| Encrypted workbooks Ledger writes | open in LibreOffice with the right password and are refused with a wrong one |
-| Saved without error | 2,964 of 2,964 |
-| Round trip (open → save → open, then compare every cell's value, formula and style, row heights, column widths, merges, names, validation, conditional formats, comments, hyperlinks, tables, drawings, print settings) | 2,919 of the 2,944 unencrypted workbooks identical, 13,708,945 cells compared; the other 25 differ by design — see below |
-| Saved files read by openpyxl | 2,931 of 2,939 (all files under 3 MB); the 8 failures are files openpyxl cannot read in their original form either |
-| Saved files opened by LibreOffice 24.2 and compared cell by cell | a sample of 240 workbooks: all open; of 75,277 cells, 214 differ and none because of the file — 199 sit in one workbook using the `TRIMRANGE` functions LibreOffice lacks, 11 depend on `RANDBETWEEN`, 2 use `_xlfn.SINGLE`, 1 is an external link LibreOffice cannot follow, and 1 is a value the source file never calculated |
-| Recalculation: every formula recalculated by Ledger and compared with the value Excel stored in the file | 117,649 of 120,944 (97.3 %) across the 446 workbooks that carry stored results. Two files account for 78 % of the differences, and in both the stored values do not follow from the cells (one refers to cells that are empty in the file; the other was not last saved by Excel). Without them, 99.3 %. Most of the rest are files whose stored values were written by the library that made them rather than by Excel |
-| CSV | 584 of 584 files parsed exactly as Python's `csv` module parses them (29.4 million cells); writing each back and reading it again changes no General-format value. Values shown in a number format are written as shown, as Excel does — `3.73929E-09` typed into a cell is saved as `3.74E-09` |
-| XML Spreadsheet 2003 | 297 sampled workbooks written and read back: 287 identical; the rest differ by design (the format has no chart sheets, external references are written by file name, dates keep milliseconds as Excel's do). 50 of them opened in LibreOffice: 14,325 of 14,335 values agree once LibreOffice's habit of dropping the time from date-times is allowed for |
-| Interface | all 213 menu and toolbar commands run without a script error; 44 scripted end-to-end checks pass in Chromium (typing and entry rules, formulas, formats, AutoSum, AutoFill, insert row with undo, sort, AutoFilter, Chart Wizard, save and reopen with the chart, nine real workbooks, CSV import, print preview, validation circles, dragging a page break, opening a web page, and opening, refusing and re-saving a password-protected workbook) |
-| Speed (Chromium) | a 15 MB workbook with 2.1 million cells opens in 4.7 s and saves in 5.6 s; 3 million cells open in 9.7 s; a 40 MB CSV with 5.2 million cells imports in 12 s; scrolling stays under 20 ms a screen |
-
-The 25 round-trip differences are deliberate: invalid page-setup values in the source are normalised
-(paper size 0 becomes Letter, scale 0 becomes 100 %) in 20 files; text longer than Excel's
-32,767-character cell limit is cut to the limit in three (two of them "XML bomb" tests, whose entities
-Ledger refuses to expand); cells beyond column XFD are dropped, as Excel drops them; and a frozen pane
-at A1, which freezes nothing, is not written.
+Formula recalculation, CSV, XML Spreadsheet 2003 and UI harnesses remain in `tools/ledger/test/`.
+Their earlier broad-corpus measurements are archived with the run history, rather than mixed into
+the current OOXML preservation figures. Current preservation does not imply exact print layout or
+support for every formula or external data source.
 
 ## Known limitations
 
 - Macros are kept in `.xlsm` files but never run; there is no VBA editor.
 - PivotTables: Data ▸ PivotTable builds a static summary report. Pivot tables in opened files keep
-  their last values, but only as ordinary cells: the pivot table itself (layout, fields, cache) is not
-  saved, so after a save Excel sees a plain range that cannot be refreshed.
-- Power Pivot data models and Power Query connections are not loaded and are not saved back.
+  their cached cells and original pivot/cache parts. Range changes, source edits and deletion behavior
+  are not yet safe; see the edit limits above.
+- Power Pivot models and Power Query connections are carried as package dependencies; Ledger does not
+  execute them or maintain their query-specific edit semantics.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.
 - One window per workbook (Window ▸ New Window is not available); the binary `.xls` format is not read.

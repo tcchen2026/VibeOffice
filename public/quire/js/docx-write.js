@@ -7,6 +7,9 @@
   const X = L.xesc;
   const W = (L.docx = L.docx || {});
   const emu = L.pt2emu;
+  // Preserved paragraph properties can have namespace/compatibility attributes.
+  // Insert generated content after them, including in paragraphs with IDs.
+  const prependParagraph = (xml, contents) => xml.replace(/<w:p\b[^>]*>(\s*<w:pPr\b[^>]*(?:\/>|>[\s\S]*?<\/w:pPr>))?/, m => m + contents);
   const HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
   const NS = {
     w: 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', r: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
@@ -100,8 +103,8 @@
     if (r.em) x += `<w:em w:val="${r.em}"/>`;
     if (r.lang || r.langEA) x += `<w:lang${r.lang ? ` w:val="${X(r.lang)}"` : ''}${r.langEA ? ` w:eastAsia="${X(r.langEA)}"` : ''}/>`;
     tog('specVanish', 'specVanish');
-    if (r.chg && ctx) x += `<w:rPrChange w:id="${ctx.rev()}" w:author="${X(r.chg.author || 'Unknown')}" ${DT(r.chg.date)}><w:rPr>${rPrXML(r.chg.old || {}, null, null)}</w:rPr></w:rPrChange>`;
-    return x;
+    if (r.chg && ctx) { const old = { ...r.chg.old }; delete old.chg; x += `<w:rPrChange w:id="${ctx.rev()}" w:author="${X(r.chg.author || 'Unknown')}" ${DT(r.chg.date)}>${rPrXML(old, null, ctx) || '<w:rPr/>'}</w:rPrChange>`; }
+    return L.preserve.propertyXML('rPr', r, x, ctx);
   }
   function pPrXML(p, ctx, opts) {
     p = p || {};
@@ -166,8 +169,8 @@
     if (p.outline != null && p.outline < 9) x += `<w:outlineLvl w:val="${p.outline}"/>`;
     if (opts && opts.rPr != null) x += opts.rPr;
     if (opts && opts.sect) x += opts.sect;
-    if (p.chg && ctx) { const o = Object.assign({}, p.chg.old || {}); delete o.chg; x += `<w:pPrChange w:id="${ctx.rev()}" w:author="${X(p.chg.author || 'Unknown')}" ${DT(p.chg.date)}><w:pPr>${pPrXML(o, null, { noChg: true })}</w:pPr></w:pPrChange>`; }
-    return x;
+    if (p.chg && ctx) { const o = Object.assign({}, p.chg.old || {}); delete o.chg; x += `<w:pPrChange w:id="${ctx.rev()}" w:author="${X(p.chg.author || 'Unknown')}" ${DT(p.chg.date)}>${pPrXML(o, ctx, { noChg: true }) || '<w:pPr/>'}</w:pPrChange>`; }
+    return L.preserve.propertyXML('pPr', p, x, ctx);
   }
   function sectXML(s, ctx) {
     let x = '';
@@ -289,6 +292,21 @@
     return out;
   }
   /** XML for a paragraph's runs */
+  function wrapRunGroup(inner, r, ctx) {
+    if (!inner) return '';
+    const { link, ins, del } = r;
+    /* inserted, then deleted: Word nests the deletion inside the insertion */
+    if (del) inner = `<w:del w:id="${ctx.rev()}" w:author="${X(del.author)}" ${DT(del.date)}>${inner}</w:del>`;
+    if (ins) inner = `<w:ins w:id="${ctx.rev()}" w:author="${X(ins.author)}" ${DT(ins.date)}>${inner}</w:ins>`;
+    if (link) {
+      const a = [];
+      if (link.url) a.push(`r:id="${ctx.rels.add(RT('hyperlink'), link.url, true)}"`);
+      if (link.anchor) a.push(`w:anchor="${X(link.anchor)}"`);
+      if (link.tip) a.push(`w:tooltip="${X(link.tip)}"`);
+      a.push('w:history="1"'); inner = `<w:hyperlink ${a.join(' ')}>${inner}</w:hyperlink>`;
+    }
+    return inner;
+  }
   function runsXML(p, ctx) {
     const items = p.runs;
     let out = '';
@@ -296,6 +314,16 @@
     let i = 0;
     while (i < items.length) {
       const it = items[i];
+      const original = L.preserve.objectXML(it, 'ac', ctx);
+      if (original != null) {
+        if (original) out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx);
+        i++; continue;
+      }
+      if (it.t === 'sdts') {
+        const end = items.findIndex((n, at) => at > i && n.t === 'sdte' && n.key === it.control.key);
+        if (end >= 0) { out += L.preserve.controlXML(it.control, runsXML({ ...p, runs: items.slice(i + 1, end) }, ctx), ctx); i = end + 1; continue; }
+      }
+      if (it.t === 'sdts' || it.t === 'sdte') { i++; continue; }
       const r = it.rPr || {};
       const link = D.ilen(it) ? r.link : null;
       const ins = D.ilen(it) || it.t === 'fb' || it.t === 'fs' || it.t === 'fe' ? r.ins : null;
@@ -304,6 +332,7 @@
       if (link || ins || del) {
         while (j < items.length) {
           const n = items[j], nr = n.rPr || {};
+          if (n.keep?.ac) break;
           if (D.isMarker(n) && n.t !== 'fb' && n.t !== 'fs' && n.t !== 'fe') break;
           if (!sameLink(link, D.ilen(n) ? nr.link : null) || !sameRev(ins, nr.ins) || !sameRev(del, nr.del)) break;
           j++;
@@ -312,17 +341,7 @@
       let inner = '';
       for (let k = i; k < j; k++) inner += itemXML(items[k], p, ctx, !!del);
       /* revision marks sit inside hyperlinks (w:hyperlink may contain w:ins/w:del, not the reverse) */
-      if (ins) inner = `<w:ins w:id="${ctx.rev()}" w:author="${X(ins.author)}" ${DT(ins.date)}>${inner}</w:ins>`;
-      if (del) inner = `<w:del w:id="${ctx.rev()}" w:author="${X(del.author)}" ${DT(del.date)}>${inner}</w:del>`;
-      if (link) {
-        const a = [];
-        if (link.url) a.push(`r:id="${ctx.rels.add(RT('hyperlink'), link.url, true)}"`);
-        if (link.anchor) a.push(`w:anchor="${X(link.anchor)}"`);
-        if (link.tip) a.push(`w:tooltip="${X(link.tip)}"`);
-        a.push('w:history="1"');
-        inner = `<w:hyperlink ${a.join(' ')}>${inner}</w:hyperlink>`;
-      }
-      out += inner;
+      out += wrapRunGroup(inner, { link, ins, del }, ctx);
       i = j;
     }
     return out;
@@ -335,10 +354,12 @@
   }
   function runWrap(r, content, ctx) {
     const rp = rPrXML(cleanRPr(r), null, ctx);
-    return `<w:r>${rp ? `<w:rPr>${rp}</w:rPr>` : ''}${content}</w:r>`;
+    return `<w:r>${rp}${content}</w:r>`;
   }
   function itemXML(it, p, ctx, del) {
     const r = it.rPr || {};
+    const original = L.preserve.objectXML(it, 'opaque', ctx);
+    if (original != null) return original ? runWrap(r, original, ctx) : '';
     switch (it.t) {
       case 'text': return runWrap(r, textXML(it.text, del), ctx);
       case 'tab': return runWrap(r, '<w:tab/>', ctx);
@@ -347,7 +368,7 @@
       case 'ruby': {
         const pr = it.pr || {};
         const prx = ['rubyAlign', 'hps', 'hpsRaise', 'hpsBaseText', 'lid'].filter((k) => pr[k] != null).map((k) => `<w:${k} w:val="${X(String(pr[k]))}"/>`).join('');
-        const sub = (rp, t) => { const x = rPrXML(rp || {}, null, null); return `<w:r>${x ? `<w:rPr>${x}</w:rPr>` : ''}${textXML(t || '')}</w:r>`; };
+        const sub = (rp, t) => `<w:r>${rPrXML(rp || {}, null, ctx)}${textXML(t || '')}</w:r>`;
         return runWrap(r, `<w:ruby><w:rubyPr>${prx || '<w:rubyAlign w:val="distributeSpace"/><w:hps w:val="10"/><w:hpsRaise w:val="20"/><w:hpsBaseText w:val="21"/><w:lid w:val="ja-JP"/>'}</w:rubyPr><w:rt>${sub(it.rtRPr, it.rt)}</w:rt><w:rubyBase>${sub(it.baseRPr, it.base)}</w:rubyBase></w:ruby>`, ctx);
       }
       case 'sym': return runWrap(r, `<w:sym w:font="${X(it.font || 'Symbol')}" w:char="${it.code || it.char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}"/>`, ctx);
@@ -368,10 +389,12 @@
       }
       case 'fs': return runWrap(r, '<w:fldChar w:fldCharType="separate"/>', ctx);
       case 'fe': return runWrap(r, '<w:fldChar w:fldCharType="end"/>', ctx);
-      case 'bs': { const k = 's' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return `<w:bookmarkStart w:id="${ctx.bmId(it.id)}" w:name="${X(it.name || '_bm' + it.id)}"/>`; }
-      case 'be': { const k = 'e' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return `<w:bookmarkEnd w:id="${ctx.bmId(it.id)}"/>`; }
-      case 'cs': return ctx.cmtOk(it.id) ? `<w:commentRangeStart w:id="${ctx.cmtId(it.id)}"/>` : '';
-      case 'ce': return ctx.cmtOk(it.id) ? `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>` + runWrap({ style: 'CommentReference' }, `<w:commentReference w:id="${ctx.cmtId(it.id)}"/>`, ctx) : '';
+      case 'bs': { const k = 's' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return L.preserve.markerXML(it, ctx) ?? `<w:bookmarkStart w:id="${ctx.bmId(it.id)}" w:name="${X(it.name || '_bm' + it.id)}"/>`; }
+      case 'be': { const k = 'e' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return L.preserve.markerXML(it, ctx) ?? `<w:bookmarkEnd w:id="${ctx.bmId(it.id)}"/>`; }
+      case 'perm': return L.preserve.markerXML(it, ctx) || '';
+      case 'cs': return ctx.cmtOk(it.id) && !it.point ? `<w:commentRangeStart w:id="${ctx.cmtId(it.id)}"/>` : '';
+      case 'ce': return ctx.cmtOk(it.id) ? (it.point ? '' : `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>`) +
+        (ctx.cmtReference(it.id) ? runWrap({ style: 'CommentReference' }, `<w:commentReference w:id="${ctx.cmtId(it.id)}"/>`, ctx) : '') : '';
       case 'fn': case 'en': {
         const kind = it.t === 'fn' ? 'footnote' : 'endnote';
         if (it.self) return runWrap(Object.assign({ style: it.t === 'fn' ? 'FootnoteReference' : 'EndnoteReference' }, cleanRPr(r)), `<w:${kind}Ref/>`, ctx);
@@ -440,7 +463,7 @@
       return `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst>${paths}</a:pathLst></a:custGeom>`;
     }
     const g = sh.geom === 'line' ? 'line' : sh.geom || 'rect';
-    const av = sh.adj ? Object.keys(sh.adj).map((k) => `<a:gd name="${k}" fmla="val ${Math.round(sh.adj[k])}"/>`).join('') : '';
+    const av = L.opc.presetAdjust(g, sh.adj);
     return `<a:prstGeom prst="${g}"><a:avLst>${av}</a:avLst></a:prstGeom>`;
   }
   function xfrmXML(sh, x, y, tag, extra) {
@@ -457,7 +480,8 @@
     let eff = '';
     if (it.gray) eff += '<a:grayscl/>';
     if (it.bw) eff += '<a:biLevel thresh="50000"/>';
-    if (it.bright || it.contrast) eff += `<a:lum${it.bright ? ` bright="${Math.round(it.bright * 100000)}"` : ''}${it.contrast ? ` contrast="${Math.round(it.contrast * 100000)}"` : ''}/>`;
+    const bright = it.washout ? 0.7 : it.bright, contrast = it.washout ? -0.75 : it.contrast;
+    if (bright || contrast) eff += `<a:lum${bright ? ` bright="${Math.round(bright * 100000)}"` : ''}${contrast ? ` contrast="${Math.round(contrast * 100000)}"` : ''}/>`;
     if (it.alpha != null && it.alpha < 1) eff += `<a:alphaModFix amt="${Math.round(it.alpha * 100000)}"/>`;
     const blip = rid ? `<a:blip r:embed="${rid}"${eff ? `>${eff}</a:blip>` : '/>'}` : '<a:blip/>';
     const ln = it.border && it.border.val && it.border.val !== 'nil' ? `<a:ln w="${emu(it.border.sz || 0.75)}"><a:solidFill>${clr('#' + hex(it.border.color === 'auto' ? '000000' : it.border.color))}</a:solidFill></a:ln>` : '';
@@ -491,9 +515,10 @@
       };
       const ln = it.line && it.line.t !== 'none' && it.line.c ? `<w14:textOutline w14:w="${emu(it.line.w || 0.75)}" w14:cap="flat" w14:cmpd="sng" w14:algn="ctr"><w14:solidFill><w14:srgbClr w14:val="${hex(it.line.c)}"/></w14:solidFill><w14:prstDash w14:val="solid"/><w14:round/></w14:textOutline>` : '';
       const baseColor = f.t === 'solid' ? hex(f.c) : f.t === 'grad' && f.stops ? hex(f.stops[0].c) : '3366CC';
-      const rp = rPrXML({ font: w.font || 'Arial Black', sz: w.sz || 36, b: w.b || undefined, i: w.i || undefined, color: baseColor }, null, null);
+      const rp = rPrXML({ font: w.font || 'Arial Black', sz: w.sz || 36, b: w.b || undefined, i: w.i || undefined, color: baseColor }, null, ctx);
       const lines = String(w.text || '').split('\n');
-      wa = `<wps:txbx><w:txbxContent>${lines.map((t) => `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr>${rp}${ln}${w14fill(f)}</w:rPr>${textXML(t)}</w:r></w:p>`).join('')}</w:txbxContent></wps:txbx>`;
+      const effects = rp.replace('</w:rPr>', ln + '<w14:textFill>' + w14fill(f) + '</w14:textFill></w:rPr>');   // the fill only counts inside textFill
+      wa = `<wps:txbx><w:txbxContent>${lines.map((t) => `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>${effects}${textXML(t)}</w:r></w:p>`).join('')}</w:txbxContent></wps:txbx>`;
     }
     const shapeFill = isWA ? '<a:noFill/>' : isLine ? '<a:noFill/>' : fillXML(it.fill || { t: 'none' }, ctx);
     const shapeLine = isWA ? '<a:ln><a:noFill/></a:ln>' : lineXML(it.line || { t: 'none' });
@@ -575,43 +600,41 @@
   /* ================= blocks ================= */
   function paraXML(p, ctx) {
     const markR = rPrXML(p.rPr || {}, p.mark, ctx);
-    const pPr = pPrXML(p.pPr, ctx, { rPr: markR ? `<w:rPr>${markR}</w:rPr>` : '', sect: p.sect && ctx.main ? sectXML(p.sect, ctx) : '' });
+    const pPr = pPrXML(p.pPr, ctx, { rPr: markR, sect: p.sect && ctx.main ? sectXML(p.sect, ctx) : '' });
     /* display math paragraphs */
     const runs = runsXML(p, ctx);
-    return `<w:p>${pPr ? `<w:pPr>${pPr}</w:pPr>` : ''}${runs}</w:p>`;
+    return `<w:p>${pPr}${runs}</w:p>`;
   }
   function tableXML(t, ctx) {
     const map = L.R.tblMap(t);
-    let x = `<w:tbl><w:tblPr>${tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { full: true })}</w:tblPr><w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}</w:tblGrid>`;
-    t.rows.forEach((row, ri) => {
+    const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { full: true }), ctx);
+    let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}</w:tblGrid>`;
+    x += L.preserve.controlSequence(t.rows, row => row.trPr, row => L.preserve.tableMemberXML(row, ctx, () => {
+      const ri = t.rows.indexOf(row);
       const trp = trPrXML(row.trPr, ctx);
-      x += `<w:tr>${trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
-      row.cells.forEach((cell, ci) => {
+      let rowXML = `<w:tr>${trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
+      rowXML += L.preserve.controlSequence(row.cells, cell => cell.tcPr, cell => L.preserve.tableMemberXML(cell, ctx, () => {
+        const ci = row.cells.indexOf(cell);
         const m = map[ri][ci];
         const w = cell.tcPr.w != null ? cell.tcPr.w : t.grid.slice(m.c0, m.c0 + m.span).reduce((a, b) => a + b, 0);
         const blocks = cell.blocks.length ? cell.blocks : [D.para()];
         let inner = blocksXML(blocks, ctx);
         if (!blocks.length || blocks[blocks.length - 1].t !== 'p') inner += '<w:p/>';
-        x += `<w:tc><w:tcPr>${tcPrXML(cell.tcPr, w)}</w:tcPr>${inner}</w:tc>`;
-      });
-      x += '</w:tr>';
-    });
+        return `<w:tc><w:tcPr>${tcPrXML(cell.tcPr, w)}</w:tcPr>${inner}</w:tc>`;
+      }), ctx);
+      return rowXML + '</w:tr>';
+    }), ctx);
     return x + '</w:tbl>';
   }
   function blocksXML(blocks, ctx) {
-    let x = '';
-    for (const b of blocks) {
-      if (b.t === 'p') x += paraXML(b, ctx);
-      else if (b.t === 'tbl') x += tableXML(b, ctx);
-    }
-    return x;
+    return L.preserve.controlSequence(blocks, b => b.t === 'p' ? b.pPr : b.tblPr, b => L.preserve.objectXML(b, 'ac', ctx) ?? L.preserve.objectXML(b, 'opaque', ctx) ?? (b.t === 'p' ? paraXML(b, ctx) : b.t === 'tbl' ? tableXML(b, ctx) : ''), ctx);
   }
 
   /* ================= styles, numbering, settings ================= */
   function stylesXML(doc, ctx) {
     const dd = doc.defaults || {};
     let x = HEAD + `<w:styles xmlns:w="${NS.w}" xmlns:r="${NS.r}" xmlns:mc="${NS.mc}" xmlns:w14="${NS.w14}" mc:Ignorable="w14">`;
-    x += `<w:docDefaults><w:rPrDefault><w:rPr>${rPrXML(Object.assign({ font: 'Times New Roman', sz: 12, lang: 'en-US' }, dd.rPr || {}), null, null)}</w:rPr></w:rPrDefault><w:pPrDefault>${dd.pPr && Object.keys(dd.pPr).length ? `<w:pPr>${pPrXML(dd.pPr, null)}</w:pPr>` : ''}</w:pPrDefault></w:docDefaults>`;
+    x += `<w:docDefaults><w:rPrDefault>${rPrXML(Object.assign({ font: 'Times New Roman', sz: 12, lang: 'en-US' }, dd.rPr || {}), null, ctx)}</w:rPrDefault><w:pPrDefault>${pPrXML(dd.pPr, ctx)}</w:pPrDefault></w:docDefaults>`;
     const order = Object.values(doc.styles).sort((a, b) => (a.id === 'Normal' ? -1 : b.id === 'Normal' ? 1 : 0));
     for (const s of order) {
       if (!s || !s.id) continue;
@@ -628,10 +651,9 @@
       if (type === 'paragraph' || type === 'table' || type === 'numbering') {
         const pp = Object.assign({}, s.pPr || {});
         delete pp.style;
-        if (type === 'numbering' && pp.num) { st += `<w:pPr>${pPrXML({ num: pp.num }, ctx)}</w:pPr>`; }
-        else { const ppx = pPrXML(pp, ctx); if (ppx) st += `<w:pPr>${ppx}</w:pPr>`; }
+        st += pPrXML(pp, ctx);
       }
-      if (type !== 'numbering') { const rp = rPrXML(s.rPr || {}, null, null); if (rp) st += `<w:rPr>${rp}</w:rPr>`; }
+      if (type !== 'numbering') st += rPrXML(s.rPr || {}, null, ctx);
       if (type === 'table') {
         const tp = tblPrXML(s.tblPr || {}, null);
         if (tp) st += `<w:tblPr>${tp}</w:tblPr>`;
@@ -641,8 +663,8 @@
           const c = s.cond && s.cond[ty];
           if (!c) continue;
           let cx = '';
-          if (c.pPr) { const v = pPrXML(c.pPr, ctx); if (v) cx += `<w:pPr>${v}</w:pPr>`; }
-          if (c.rPr) { const v = rPrXML(c.rPr, null, null); if (v) cx += `<w:rPr>${v}</w:rPr>`; }
+          if (c.pPr) cx += pPrXML(c.pPr, ctx);
+          if (c.rPr) cx += rPrXML(c.rPr, null, ctx);
           cx += `<w:tblPr>${c.tblPr ? tblPrXML(c.tblPr, null) : ''}</w:tblPr>`;
           if (c.tcPr) { const v = tcPrXML(c.tcPr, null); if (v) cx += `<w:tcPr>${v}</w:tcPr>`; }
           st += `<w:tblStylePr w:type="${ty}">${cx}</w:tblStylePr>`;
@@ -652,7 +674,7 @@
     }
     return x + '</w:styles>';
   }
-  function lvlXML(lv, i) {
+  function lvlXML(lv, i, ctx) {
     let x = `<w:lvl w:ilvl="${i}"><w:start w:val="${lv.start != null ? lv.start : 1}"/>`;
     x += lv.custFmt ? `<w:numFmt w:val="custom" w:format="${X(lv.custFmt)}"/>` : `<w:numFmt w:val="${lv.fmt || 'decimal'}"/>`;
     if (lv.restart != null) x += `<w:lvlRestart w:val="${lv.restart + 1}"/>`;
@@ -662,13 +684,15 @@
     x += `<w:lvlText w:val="${X(lv.text == null ? '' : lv.text)}"/>`;
     if (lv.pictureId != null) x += `<w:lvlPicBulletId w:val="${lv.pictureId}"/>`;
     x += `<w:lvlJc w:val="${lv.jc || 'left'}"/>`;
-    const pp = {};
-    if (lv.tabPos != null) pp.tabs = [{ pos: lv.tabPos, al: 'num' }];
-    if (lv.ind) pp.ind = { l: lv.ind.l || 0, fl: lv.ind.fl || 0 };
-    const ppx = pPrXML(pp, null);
-    if (ppx) x += `<w:pPr>${ppx}</w:pPr>`;
-    const rp = rPrXML(lv.rPr || {}, null, null);
-    if (rp) x += `<w:rPr>${rp}</w:rPr>`;
+    const pp = { ...lv.pPr };
+    if (!lv.pPrValues || lv.tabPos !== lv.pPrValues.tabPos) {
+      if (lv.tabPos != null) pp.tabs = [{ pos: lv.tabPos, al: 'num' }]; else delete pp.tabs;
+    }
+    if (!lv.pPrValues || JSON.stringify(lv.ind) !== JSON.stringify(lv.pPrValues.ind)) {
+      if (lv.ind) pp.ind = { l: lv.ind.l || 0, fl: lv.ind.fl || 0 }; else delete pp.ind;
+    }
+    x += pPrXML(pp, ctx);
+    x += rPrXML(lv.rPr || {}, null, ctx);
     return x + '</w:lvl>';
   }
   function numberingXML(doc, ctx) {
@@ -683,7 +707,7 @@
       if (a.name) ax += `<w:name w:val="${X(a.name)}"/>`;
       if (a.styleDef) ax += `<w:styleLink w:val="${X(a.styleDef)}"/>`;
       if (a.styleLink && !a.styleDef) ax += `<w:numStyleLink w:val="${X(a.styleLink)}"/>`;
-      if (!a.styleLink || a.styleDef) for (let i = 0; i < 9; i++) ax += lvlXML(a.levels[i] || D.numLevel(i, 'decimal', `%${i + 1}.`), i);
+      if (!a.styleLink || a.styleDef) for (let i = 0; i < 9; i++) ax += lvlXML(a.levels[i] || D.numLevel(i, 'decimal', `%${i + 1}.`), i, ctx);
       x += ax + '</w:abstractNum>';
     }
     for (const id of Object.keys(nb.nums)) {
@@ -692,7 +716,7 @@
       let nx = `<w:num w:numId="${ctx.numMap(id)}"><w:abstractNumId w:val="${absMap.get(String(n.abs))}"/>`;
       for (const l of Object.keys(n.ov || {})) {
         const o = n.ov[l];
-        nx += `<w:lvlOverride w:ilvl="${l}">${o.start != null ? `<w:startOverride w:val="${o.start}"/>` : ''}${o.lvl ? lvlXML(o.lvl, +l) : ''}</w:lvlOverride>`;
+        nx += `<w:lvlOverride w:ilvl="${l}">${o.start != null ? `<w:startOverride w:val="${o.start}"/>` : ''}${o.lvl ? lvlXML(o.lvl, +l, ctx) : ''}</w:lvlOverride>`;
       }
       x += nx + '</w:num>';
     }
@@ -778,10 +802,12 @@
   /** VML text/picture watermark for headers */
   function watermarkXML(wm, ctx) {
     if (!wm) return '';
+    const typeId = '_x0000_t' + ctx.writer.ids.fresh(ctx.part, 'vmlType:_x0000_t');
+    const shapeId = '_x0000_s' + ctx.writer.ids.fresh(ctx.part, 'vml:_x0000_s');
     if (wm.type === 'text' && wm.text) {
       const sz = wm.size && wm.size > 1 ? wm.size : 1;
       const w = Math.max(100, Math.min(500, (wm.text.length * (wm.size || 40)) * 0.55)), h = Math.max(40, (wm.size || 60) * 1.1);
-      return `<w:r><w:rPr><w:noProof/></w:rPr><w:pict><v:shapetype id="_x0000_t136" coordsize="21600,21600" o:spt="136" adj="10800" path="m@7,l@8,m@5,21600l@6,21600e"><v:formulas><v:f eqn="sum #0 0 10800"/><v:f eqn="prod #0 2 1"/><v:f eqn="sum 21600 0 @1"/><v:f eqn="sum 0 0 @2"/><v:f eqn="sum 21600 0 @3"/><v:f eqn="if @0 @3 0"/><v:f eqn="if @0 21600 @1"/><v:f eqn="if @0 0 @2"/><v:f eqn="if @0 @4 21600"/><v:f eqn="mid @5 @6"/><v:f eqn="mid @8 @5"/><v:f eqn="mid @7 @8"/><v:f eqn="mid @6 @7"/><v:f eqn="sum @6 0 @5"/></v:formulas><v:path textpathok="t" o:connecttype="custom" o:connectlocs="@9,0;@10,10800;@11,21600;@12,10800" o:connectangles="270,180,90,0"/><v:textpath on="t" fitshape="t"/><o:lock v:ext="edit" text="t" shapetype="t"/></v:shapetype><v:shape id="PowerPlusWaterMarkObject${ctx.docPrId()}" o:spid="_x0000_s2049" type="#_x0000_t136" style="position:absolute;margin-left:0;margin-top:0;width:${L.round(w, 1)}pt;height:${L.round(h, 1)}pt;${wm.layout === 'horizontal' ? '' : 'rotation:315;'}z-index:-251657216;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:margin" o:allowincell="f" fillcolor="#${wm.color || 'C0C0C0'}" stroked="f"><v:fill opacity="${wm.semi === false ? '1' : '.5'}"/><v:textpath style="font-family:&quot;${X(wm.font || 'Times New Roman')}&quot;;font-size:${Math.round(sz)}pt" string="${X(wm.text)}"/><w10:wrap anchorx="margin" anchory="margin"/></v:shape></w:pict></w:r>`;
+      return `<w:r><w:rPr><w:noProof/></w:rPr><w:pict><v:shapetype id="${typeId}" coordsize="21600,21600" o:spt="136" adj="10800" path="m@7,l@8,m@5,21600l@6,21600e"><v:formulas><v:f eqn="sum #0 0 10800"/><v:f eqn="prod #0 2 1"/><v:f eqn="sum 21600 0 @1"/><v:f eqn="sum 0 0 @2"/><v:f eqn="sum 21600 0 @3"/><v:f eqn="if @0 @3 0"/><v:f eqn="if @0 21600 @1"/><v:f eqn="if @0 0 @2"/><v:f eqn="if @0 @4 21600"/><v:f eqn="mid @5 @6"/><v:f eqn="mid @8 @5"/><v:f eqn="mid @7 @8"/><v:f eqn="mid @6 @7"/><v:f eqn="sum @6 0 @5"/></v:formulas><v:path textpathok="t" o:connecttype="custom" o:connectlocs="@9,0;@10,10800;@11,21600;@12,10800" o:connectangles="270,180,90,0"/><v:textpath on="t" fitshape="t"/><o:lock v:ext="edit" text="t" shapetype="t"/></v:shapetype><v:shape id="PowerPlusWaterMarkObject${ctx.docPrId()}" o:spid="${shapeId}" type="#${typeId}" style="position:absolute;margin-left:0;margin-top:0;width:${L.round(w, 1)}pt;height:${L.round(h, 1)}pt;${wm.layout === 'horizontal' ? '' : 'rotation:315;'}z-index:-251657216;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:margin" o:allowincell="f" fillcolor="#${wm.color || 'C0C0C0'}" stroked="f"><v:fill opacity="${wm.semi === false ? '1' : '.5'}"/><v:textpath style="font-family:&quot;${X(wm.font || 'Times New Roman')}&quot;;font-size:${Math.round(sz)}pt" string="${X(wm.text)}"/><w10:wrap anchorx="margin" anchory="margin"/></v:shape></w:pict></w:r>`;
     }
     if (wm.type === 'picture' && wm.media) {
       const rid = ctx.media(wm.media);
@@ -789,7 +815,7 @@
       const m = L.media.get(wm.media);
       const w = wm.w || 300, h = wm.h || 200;
       void m;
-      return `<w:r><w:rPr><w:noProof/></w:rPr><w:pict><v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f"><v:stroke joinstyle="miter"/><v:formulas><v:f eqn="if lineDrawn pixelLineWidth 0"/><v:f eqn="sum @0 1 0"/><v:f eqn="sum 0 0 @1"/><v:f eqn="prod @2 1 2"/><v:f eqn="prod @3 21600 pixelWidth"/><v:f eqn="prod @3 21600 pixelHeight"/><v:f eqn="sum @0 0 1"/><v:f eqn="prod @6 1 2"/><v:f eqn="prod @7 21600 pixelWidth"/><v:f eqn="sum @8 21600 0"/><v:f eqn="prod @7 21600 pixelHeight"/><v:f eqn="sum @10 21600 0"/></v:formulas><v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/><o:lock v:ext="edit" aspectratio="t"/></v:shapetype><v:shape id="WordPictureWatermark${ctx.docPrId()}" o:spid="_x0000_s2050" type="#_x0000_t75" style="position:absolute;margin-left:0;margin-top:0;width:${L.round(w, 1)}pt;height:${L.round(h, 1)}pt;z-index:-251656192;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:margin" o:allowincell="f"><v:imagedata r:id="${rid}" o:title="" gain="19661f" blacklevel="22938f"/><w10:wrap anchorx="margin" anchory="margin"/></v:shape></w:pict></w:r>`;
+      return `<w:r><w:rPr><w:noProof/></w:rPr><w:pict><v:shapetype id="${typeId}" coordsize="21600,21600" o:spt="75" o:preferrelative="t" path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f"><v:stroke joinstyle="miter"/><v:formulas><v:f eqn="if lineDrawn pixelLineWidth 0"/><v:f eqn="sum @0 1 0"/><v:f eqn="sum 0 0 @1"/><v:f eqn="prod @2 1 2"/><v:f eqn="prod @3 21600 pixelWidth"/><v:f eqn="prod @3 21600 pixelHeight"/><v:f eqn="sum @0 0 1"/><v:f eqn="prod @6 1 2"/><v:f eqn="prod @7 21600 pixelWidth"/><v:f eqn="sum @8 21600 0"/><v:f eqn="prod @7 21600 pixelHeight"/><v:f eqn="sum @10 21600 0"/></v:formulas><v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/><o:lock v:ext="edit" aspectratio="t"/></v:shapetype><v:shape id="WordPictureWatermark${ctx.docPrId()}" o:spid="${shapeId}" type="#${typeId}" style="position:absolute;margin-left:0;margin-top:0;width:${L.round(w, 1)}pt;height:${L.round(h, 1)}pt;z-index:-251656192;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:margin" o:allowincell="f"><v:imagedata r:id="${rid}" o:title="" gain="19661f" blacklevel="22938f"/><w10:wrap anchorx="margin" anchory="margin"/></v:shape></w:pict></w:r>`;
     }
     return '';
   }
@@ -825,8 +851,9 @@
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const docRels = pack.rels('word/document.xml');
     D.reindex(doc);
+    const ranges = L.preserve.prepareRanges(doc);
+    const objects = L.preserve.prepareObjects(doc, pack.writer);
     /* --- context shared by every story --- */
-    let revN = 0, bmN = 0;
     const bmIds = new Map();
     const mediaMap = new Map();
     let mediaN = 0;
@@ -834,18 +861,36 @@
     const numIds = new Map();
     const numMap = (id) => { if (!numIds.has(String(id))) numIds.set(String(id), String(id)); return numIds.get(String(id)); };
     const cmtIds = new Map();
+    const cmtReferences = new Set();
     const fnIds = new Map(), enIds = new Map();
     const highNote = kind => Math.max(0, ...Object.keys(kind === 'fn' ? doc.fn : doc.en).map(x => +x || 0), ...(doc.keep?.notes?.[kind] || []).map(n => +n.id || 0)) + 1;
     let fnN = highNote('fn'), enN = highNote('en');
     const charts = [];
     const usedPaths = new Set();
     const mkCtx = (rels, main) => ({
-      rels, main, writer: pack.writer, part: rels.owner,
-      rev: () => ++revN,
-      docPrId: () => pack.writer.ids.fresh('document', 'docPr'),
+      rels, main, doc, ranges, objects, writer: pack.writer, part: rels.owner, mainPart: pack.part('word/document.xml'),
+      drawingXML,
+      rev: () => pack.writer.ids.fresh('document', 'revision'),
+      docPrId: () => {
+        // Generated frames use one value for docPr and cNvPr. Original shapes
+        // have an independent, part-local ID space, which must also be reserved.
+        const ids = pack.writer.ids, shapes = ids.space(rels.owner, 'shape');
+        let id;
+        do { id = ids.fresh('document', 'docPr'); } while (shapes.used.has(ids.canonical(id)));
+        ids.reserve(rels.owner, 'shape', id);
+        return id;
+      },
       bmSeen: new Set(),
-      bmId: (id) => { const k = String(id); if (!bmIds.has(k)) bmIds.set(k, bmN++); return bmIds.get(k); },
+      bmId: (id) => { const k = rels.owner + ':' + id; if (!bmIds.has(k)) bmIds.set(k, pack.writer.ids.fresh(rels.owner, 'bookmark')); return bmIds.get(k); },
       cmtOk: (id) => !!doc.comments[id],
+      cmtReference: (id) => {
+        const key = String(id);
+        if (cmtReferences.has(key)) {
+          pack.writer.loss({ id: 'comment-reference:' + key, what: 'A duplicate reference to the same comment was removed; the comment and its first reference are kept.', where: rels.owner, action: 'conversion' });
+          return false;
+        }
+        cmtReferences.add(key); return true;
+      },
       cmtId: (id) => { const k = String(id); if (!cmtIds.has(k)) cmtIds.set(k, cmtIds.size); return cmtIds.get(k); },
       noteId: (kind, id) => {
         const store = kind === 'fn' ? doc.fn : doc.en;
@@ -890,7 +935,7 @@
     const hfParts = [];
     /* the watermark lives in the default header of every section */
     const wmHeaders = new Set();
-    if (doc.watermark && (doc.watermark.text || doc.watermark.media)) {
+    if (doc.watermark && !L.preserve.keepWatermark(doc) && (doc.watermark.text || doc.watermark.media)) {
       const secs = D.sections(doc);
       for (const s of secs) {
         if (!s.sect.refs) s.sect.refs = { hdr: {}, ftr: {} };
@@ -911,7 +956,7 @@
       const ctx = mkCtx(rels, false);
       let body = blocksXML(st.blocks.length ? st.blocks : [D.para()], ctx);
       if (!st.blocks.length || st.blocks[st.blocks.length - 1].t !== 'p') body += '<w:p/>';
-      if (wmHeaders.has(id)) { const wm = watermarkXML(doc.watermark, ctx); body = body.replace(/<w:p>(<w:pPr>.*?<\/w:pPr>)?/, (m) => m + wm); }
+      if (wmHeaders.has(id)) body = prependParagraph(body, watermarkXML(doc.watermark, ctx));
       hfParts.push({ name, rels, isH, body });
       hfRid[id] = docRels.add(RT(isH ? 'header' : 'footer'), name);
     }
@@ -924,7 +969,7 @@
     /* undo temporary watermark header refs */
     for (const s of D.sections(doc)) if (s._tempRefs) for (const [ty] of s._tempRefs) delete s.sect.refs.hdr[ty];
     for (const k of Object.keys(doc.hf)) if (doc.hf[k]._temp) delete doc.hf[k];
-    const bg = doc.bg ? `<w:background w:color="${hex(doc.bg)}"/>` : '';
+    const bg = doc.keep?.background && doc.bg === doc.keep.background.value ? pack.writer.emit(doc.keep.background.fragment, mainCtx.part) : doc.bg ? `<w:background w:color="${hex(doc.bg)}"/>` : '';
     const documentXML = HEAD + `<w:document ${NSDECL}>${bg}<w:body>${body}</w:body></w:document>`;
     /* --- notes --- */
     const noteXML = (kind) => {
@@ -939,7 +984,7 @@
         const st = store[orig];
         if (!st) continue;
         let inner = blocksXML(st.blocks, ctx);
-        if (!/<w:(footnote|endnote)Ref\/>/.test(inner)) inner = inner.replace(/<w:p>(<w:pPr>.*?<\/w:pPr>)?/, (m) => m + `<w:r><w:rPr><w:rStyle w:val="${kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference'}"/></w:rPr><w:${tag}Ref/></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>`);
+        if (!/<w:(footnote|endnote)Ref\/>/.test(inner)) inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference'}"/></w:rPr><w:${tag}Ref/></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>`);
         x += `<w:${tag} w:id="${nid}">${inner}</w:${tag}>`;
       }
       return { xml: HEAD + `<w:${tag}s ${NSDECL}>${x}</w:${tag}s>`, rels };
@@ -960,7 +1005,7 @@
         const c = doc.comments[orig];
         if (!c) continue;
         let inner = blocksXML(c.blocks, ctx);
-        if (!/annotationRef/.test(inner)) inner = inner.replace(/<w:p>(<w:pPr>.*?<\/w:pPr>)?/, (m) => m + '<w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:annotationRef/></w:r>');
+        if (!/annotationRef/.test(inner)) inner = prependParagraph(inner, '<w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:annotationRef/></w:r>');
         const pid = c.keep?.paraId || (++paraN).toString(16).toUpperCase().padStart(8, '0');
         paraIds.set(String(orig), pid);
         /* tag the last paragraph with a paraId for threading / done state */
@@ -976,7 +1021,8 @@
         ex += `<w15:commentEx w15:paraId="${pid}"${parent ? ` w15:paraIdParent="${parent}"` : ''} w15:done="${c.done ? 1 : 0}"/>`;
       }
       cmPart = { xml: HEAD + `<w:comments ${NSDECL}>${x}</w:comments>`, rels };
-      cmExPart = HEAD + `<w15:commentsEx xmlns:mc="${NS.mc}" xmlns:w15="${NS.w15}" mc:Ignorable="w15">${ex}</w15:commentsEx>`;
+      const extendedNS = doc.keep?.commentExtension?.namespace || NS.w15;
+      cmExPart = HEAD + `<w15:commentsEx xmlns:mc="${NS.mc}" xmlns:w15="${X(extendedNS)}" mc:Ignorable="w15">${ex}</w15:commentsEx>`;
     }
     /* --- media names --- */
     for (const mid of pendingMedia) {
@@ -1021,13 +1067,13 @@
       overrides.push(['word/' + p.name, p.isH ? CT.header : CT.footer]);
       if (p.rels.list.length) add('word/_rels/' + p.name + '.rels', flatRels(p.rels).xml());
     }
-    const stylesCtx = mkCtx(docRels, false);
+    const stylesCtx = mkCtx(pack.rels('word/styles.xml'), false);
     add('word/styles.xml', stylesXML(doc, stylesCtx));
     docRels.add(RT('styles'), 'styles.xml');
     overrides.push(['word/styles.xml', CT.styles]);
     const usesNumbering = Object.keys(doc.numbering.nums).length > 0;
     if (usesNumbering) {
-      add('word/numbering.xml', numberingXML(doc, mainCtx));
+      add('word/numbering.xml', numberingXML(doc, mkCtx(pack.rels('word/numbering.xml'), false)));
       docRels.add(RT('numbering'), 'numbering.xml');
       overrides.push(['word/numbering.xml', CT.numbering]);
     }
@@ -1070,6 +1116,7 @@
     files.unshift({ name: '[Content_Types].xml', data: ct });
     const types = new Map(overrides);
     for (const file of files) pack.put(file.name, file.data, types.get(file.name) || defaults.get(file.name.split('.').pop()));
+    L.preserve.writeBindings(doc, pack.writer);
     const result = pack.finish();
     const blob = await L.zip.write(result.files, format.mime); blob.dropped = result.dropped;
     return blob;

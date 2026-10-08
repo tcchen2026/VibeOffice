@@ -1000,6 +1000,8 @@
     if (inTable) items.push({ label: '&Insert', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', 'insertCells'] }, { label: '&Delete', sub: ['deleteTable', 'deleteCols', 'deleteRows', 'deleteCells'] }, 'mergeCells', 'splitCells', '-', 'distRows', 'distCols', '-', 'bordersDlg', { label: 'Cell Alignment', sub: ['cellTop', 'cellMiddle', 'cellBottom'] }, 'tableAutoFormat', 'tableProps', '-');
     const f = L.fields && L.fields.at(E.sel && E.sel.f);
     if (f) items.push('updateField', 'editField', 'toggleCodes', '-');
+    const control = L.preserve.controlAt(E.sel && E.sel.f);
+    if (control && !control.control.converted && ['date', 'dropDownList', 'comboBox', 'checkbox'].includes(control.control.type)) items.push({ label: 'Content Control &Value...', run: () => L.preserve.controlDialog(control) }, '-');
     if (L.review && L.review.revisionAt && L.review.revisionAt()) items.push('acceptChange', 'rejectChange', '-');
     const cm = L.review && L.review.commentAt && L.review.commentAt();
     if (cm) items.push({ label: '&Edit Comment', run: () => L.review.editComment(cm) }, { label: 'Delete Co&mment', run: () => L.review.deleteComment(cm) }, '-');

@@ -18,6 +18,65 @@ const text = data => typeof data === 'string' ? data : new TextDecoder().decode(
 const kid = (el, name) => el.children.find(c => c.localName === name);
 const children = xml => K.parse(xml).children.map(e => e.localName);
 
+test('rewritten parts hoist fragment declarations and Ignorable once, retaining scoped QName meanings', () => {
+  const xml = `<w:document xmlns:w="${N.w}" xmlns:mc="${N.mc}" xmlns:x="urn:one" mc:Ignorable="x"><w:p xmlns:w="${N.w}" xmlns:z="urn:new" mc:Ignorable="z"><x:outer xmlns:x="urn:two" mc:Ignorable="x"><x:reset xmlns:x="urn:one"/><z:payload xmlns:z="urn:new"/></x:outer></w:p></w:document>`;
+  const result = K.hoistNamespaces(xml), parsed = K.parse(result);
+  assert.equal(result.match(/xmlns:w=/g).length, 1);
+  assert.equal(result.match(/xmlns:z=/g).length, 1);
+  assert.equal(result.match(/:Ignorable=/g).length, 1);
+  assert.equal(parsed.getElementsByTagName('x:outer')[0].namespaceURI, 'urn:two');
+  assert.equal(parsed.getElementsByTagName('x:reset')[0].namespaceURI, 'urn:one');
+  assert.equal(parsed.getElementsByTagName('z:payload')[0].namespaceURI, 'urn:new');
+  const ignored = parsed.getAttributeNS(N.mc, 'Ignorable').split(' ').map(p => parsed.lookupNamespaceURI(p));
+  assert.deepEqual(new Set(ignored), new Set(['urn:one', 'urn:new', 'urn:two']));
+  assert.equal(K.hoistNamespaces(result), result);
+});
+
+test('namespace hoisting preserves default resets, attribute aliases, other MC properties and opaque bytes', async () => {
+  const xml = `<root xmlns="urn:root" xmlns:k="${N.mc}"><a xmlns="urn:child" xmlns:n="urn:new" k:Ignorable="n" k:ProcessContent="n:payload"><b xmlns="urn:root"/><n:payload/></a><unqualified xmlns=""/></root>`;
+  const result = K.hoistNamespaces(xml), parsed = K.parse(result);
+  assert.equal(parsed.children[0].namespaceURI, 'urn:child');
+  assert.equal(parsed.children[0].children[0].namespaceURI, 'urn:root');
+  assert.equal(parsed.children[1].namespaceURI, '');
+  assert.equal(parsed.children[0].getAttributeNS(N.mc, 'ProcessContent'), 'n:payload');
+  assert.equal(parsed.children[0].lookupNamespaceURI('n'), 'urn:new');
+  const source = await pkg({ 'kept.xml': xml });
+  const out = K.output(source); out.bind('kept.xml', 'kept.xml', 'opaque'); out.put('kept.xml', xml);
+  assert.equal(text(out.writer.parts.get('kept.xml')), xml);
+  const fresh = K.output(null); fresh.put('new.xml', xml);
+  assert.equal(text(fresh.writer.parts.get('new.xml')), result);
+});
+
+test('compatibility attributes retain one expanded identity across prefix aliases and repeated saves', () => {
+  const source = `<w:document xmlns:w="${N.w}" xmlns:mc="${N.mc}" xmlns:ns1="${N.mc}" xmlns:w14="urn:w14" xmlns:wp14="urn:wp14" mc:Ignorable="w14" mc:ProcessContent="w14:outer"><w:p ns1:Ignorable="wp14" ns1:ProcessContent="wp14:inner"/></w:document>`;
+  for (const serialize of [K.raw, K.serialize]) {
+    let element = K.parse(source).children[0];
+    for (let save = 0; save < 3; save++) {
+      const xml = serialize(element), parsed = K.parse(xml);
+      const compatibility = Array.from(parsed.attributes).filter(a => a.prefix && parsed.lookupNamespaceURI(a.prefix) === N.mc);
+      assert.equal(compatibility.length, 2);
+      assert.equal(parsed.getAttributeNS(N.mc, 'Ignorable'), 'w14 wp14');
+      assert.equal(parsed.getAttributeNS(N.mc, 'ProcessContent'), 'w14:outer wp14:inner');
+      assert.ok(xml.includes('ns1:Ignorable='));
+      element = K.parse(`<w:document xmlns:w="${N.w}" xmlns:mc="${N.mc}" xmlns:w14="urn:w14" mc:Ignorable="w14">${xml}</w:document>`).children[0];
+    }
+    const rebound = K.parse(`<outer xmlns:mc="${N.mc}" xmlns:w14="urn:w14" mc:Ignorable="w14"><inner xmlns:mc="urn:unrelated"/></outer>`).children[0];
+    const result = K.parse(serialize(rebound));
+    assert.equal(result.getAttributeNS(N.mc, 'Ignorable'), 'w14');
+    assert.equal(result.lookupNamespaceURI('mc'), 'urn:unrelated');
+  }
+});
+
+test('new revision IDs avoid preserved changes and copied changes get distinct IDs', async () => {
+  const source = `<w:rPr xmlns:w="${N.w}"><w:rPrChange w:id="2147483647" w:author="Author"><w:rPr/></w:rPrChange></w:rPr>`;
+  const p = await pkg({ 'word/document.xml': source }), w = new K.Writer(p);
+  const fragment = K.fragment(p.xml('word/document.xml'), { pkg: p, part: 'word/document.xml' });
+  const id = w.ids.fresh('document', 'revision');
+  assert.equal(id, '1');
+  assert.match(w.emit(fragment, 'word/document.xml'), /w:id="2147483647"/);
+  assert.match(w.emit(K.duplicate(fragment), 'word/document.xml'), /w:id="2"/);
+});
+
 test('baseline bytes are immutable; the graph retains full types, sharing, cycles and external URLs', async () => {
   const p = await pkg({ 'a.xml': '<a/>', 'b.xml': '<b/>', 'shared.bin': new Uint8Array([3, 4]),
     '_rels/.rels': rels(rel('rId40', N.rel + '/officeDocument', 'a.xml')),
@@ -120,6 +179,52 @@ test('rewritten roots retain their original entity prolog and Strict namespace f
   assert.ok(strict.includes(`note="${N.w}"`)); // ordinary values are not URI declarations
 });
 
+test('Strict carry converts namespaces and DrawingML percentages, preserving other values and binary bytes', async () => {
+  const a = 'http://purl.oclc.org/ooxml/drawingml/main', w = 'http://purl.oclc.org/ooxml/wordprocessingml/main';
+  const source = `<w:document xmlns:w="${w}" xmlns:a="${a}" note="${w}"><w:body><a:alpha val="37.5%"/><a:lumOff val="-10%"/><a:graphicData uri="${a}"/><w:p w:rsidR="1234"/></w:body></w:document>`;
+  const bytes = new Uint8Array([0, 255, 17]);
+  const p = await pkg({ 'word/document.xml': source, 'word/theme.xml': `<a:theme xmlns:a="${a}"/>`, 'word/embedded.bin': bytes,
+    '_rels/.rels': rels(rel('rId1', N.strictRel + '/officeDocument', 'word/document.xml')),
+    'word/_rels/document.xml.rels': rels(rel('rId7', N.strictRel + '/theme', 'theme.xml') + rel('rId8', N.strictRel + '/oleObject', 'embedded.bin')) });
+  const doc = {}, writer = new K.Writer(p, { doc }); writer.carryRels(p, '');
+  const files = new Map(writer.finish().files.map(f => [f.name, f.data]));
+  const xml = text(files.get('word/document.xml'));
+  assert.match(xml, /val="37500"/); assert.match(xml, /val="-10000"/);
+  assert.ok(xml.includes(`note="${w}"`)); assert.ok(xml.includes(`xmlns:w="${N.w}"`));
+  assert.ok(xml.includes(`uri="${N.a}"`)); assert.ok(!text(files.get('word/theme.xml')).includes('purl.oclc.org'));
+  assert.ok(!text(files.get('word/_rels/document.xml.rels')).includes('purl.oclc.org'));
+  assert.deepEqual(files.get('word/embedded.bin'), bytes);
+  assert.equal(doc.losses.filter(e => e.id === 'ooxml:strict-to-transitional').length, 1);
+  K.acknowledge(doc, doc.losses);
+  const second = new K.Writer(p, { doc }); second.carryRels(p, ''); second.finish();
+  assert.equal(K.pendingLosses(doc).length, 0);
+  const untouched = `<a:x xmlns:a="${N.a}" note="${w}" val="37.5%"/>`;
+  assert.equal(K.transitionalXML(untouched), untouched);
+});
+
+test('Strict Word vocabulary converts table flags, tab measures and relative drawing sizes', () => {
+  const w = 'http://purl.oclc.org/ooxml/wordprocessingml/main';
+  const xml = `<w:p xmlns:w="${w}" xmlns:sl="http://purl.oclc.org/ooxml/schemaLibrary/main" xmlns:wp14="${K.KNOWN_NS.wp14}"><w:pPr><w:cnfStyle w:firstRow="true" w:lastRow="0" w:firstRowLastColumn="1"/><w:tabs><w:tab w:pos="85.05pt"/></w:tabs></w:pPr><wp14:pctWidth>12.5%</wp14:pctWidth><w:r><w:t>12.5%</w:t></w:r></w:p>`;
+  const out = K.transitionalXML(xml);
+  assert.match(out, /w:val="100000001000"/); assert.match(out, /w:pos="1701"/);
+  assert.match(out, /<wp14:pctWidth>12500<\/wp14:pctWidth>/); assert.match(out, /<w:t>12.5%<\/w:t>/);
+  assert.ok(out.includes('http://schemas.openxmlformats.org/schemaLibrary/2006/main'));
+});
+
+test('Strict regeneration and carried references both use Transitional output with original rIds', async () => {
+  const sw = 'http://purl.oclc.org/ooxml/wordprocessingml/main';
+  const p = await pkg({ 'word/document.xml': `<w:document xmlns:w="${sw}"/>`, 'word/theme.xml': '<theme/>',
+    '_rels/.rels': rels(rel('rId3', N.strictRel + '/officeDocument', 'word/document.xml')),
+    'word/_rels/document.xml.rels': rels(rel('rId17', N.strictRel + '/theme', 'theme.xml')) });
+  const o = K.output(p); o.bind('word/document.xml', p.main);
+  assert.equal(o.rels('').add(N.rel + '/officeDocument', 'word/document.xml'), 'rId3');
+  o.put('word/document.xml', `<w:document xmlns:w="${N.w}"><w:body/></w:document>`, p.type(p.main));
+  const files = new Map(o.finish().files.map(f => [f.name, text(f.data)]));
+  assert.ok(files.get('word/document.xml').includes(N.w));
+  assert.ok(files.get('word/_rels/document.xml.rels').includes('Id="rId17"'));
+  assert.ok(!files.get('word/_rels/document.xml.rels').includes('purl.oclc.org'));
+});
+
 test('identity scopes survive transfers, explicit index maps and bounded slide/master ranges', () => {
   const ids = new K.Identities(); ids.reserve('slide2.xml', 'shape', '99');
   assert.equal(ids.resolve('pkg', 'slide1.xml', 'shape', '2', { primary: 'pkg', scope: 'slide2.xml' }), '100');
@@ -128,6 +233,9 @@ test('identity scopes survive transfers, explicit index maps and bounded slide/m
   assert.equal(ids.resolve('pkg', 'styles', 'dxf', '3', { primary: 'pkg' }), '7');
   assert.equal(ids.fresh('presentation', 'sldId'), '256');
   assert.equal(ids.fresh('presentation', 'sldMasterId'), '2147483648');
+  assert.equal(ids.fresh('presentation', 'sldLayoutId'), '2147483649'); // one space for masters and layouts
+  ids.reserve('presentation', 'sldLayoutId', '2147483655');
+  assert.equal(ids.fresh('presentation', 'sldMasterId'), '2147483656');
   ids.reserve('presentation', 'sldId', '2147483647');
   assert.equal(ids.fresh('presentation', 'sldId'), '257');
   ids.reserve('lexical', 'shape', '+001');
@@ -329,4 +437,14 @@ test('escaped ZIP entry names and relationship URIs share one logical part ident
   const saved = await K.open(new Uint8Array(await (await L.zip.write(result.files)).arrayBuffer()));
   assert.deepEqual(saved.bytes('media/Cortázar one.bin'), new Uint8Array([7, 8]));
   assert.equal(saved.rels('a.xml')[0].part, 'media/Cortázar one.bin');
+});
+
+test('a preset shape writes all of its adjustment values or none', () => {
+  // PowerPoint repaired a deck whose rounded callout listed adj1 and adj2 but not adj3
+  assert.equal(K.presetAdjust('wedgeRoundRectCallout', { adj1: -62000, adj2: 48000 }),
+    '<a:gd name="adj1" fmla="val -62000"/><a:gd name="adj2" fmla="val 48000"/><a:gd name="adj3" fmla="val 16667"/>');
+  assert.equal(K.presetAdjust('wedgeRoundRectCallout', {}), '');
+  assert.equal(K.presetAdjust('rect', undefined), '');
+  assert.equal(K.presetAdjust('roundRect', { adj: 30000.4, bogus: 1 }), '<a:gd name="adj" fmla="val 30000"/>');
+  assert.equal(K.presetAdjust('notAPreset', { a: 1 }), '<a:gd name="a" fmla="val 1"/>');
 });

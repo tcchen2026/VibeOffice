@@ -22,6 +22,8 @@
   K.KNOWN_NS = Object.freeze({
     a: NS.a, r: NS.rel, w: NS.w, p: NS.p, mc: NS.mc,
     wp: 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+    wp14: 'http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing',
+    dsp: 'http://schemas.microsoft.com/office/drawing/2008/diagram',
     xdr: 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing', c: 'http://schemas.openxmlformats.org/drawingml/2006/chart',
     a14: 'http://schemas.microsoft.com/office/drawing/2010/main', a16: 'http://schemas.microsoft.com/office/drawing/2014/main',
     x14: 'http://schemas.microsoft.com/office/spreadsheetml/2009/9/main', xm: 'http://schemas.microsoft.com/office/excel/2006/main',
@@ -61,6 +63,44 @@
   const strictURI = uri => uri.replace(/^http:\/\/schemas\.openxmlformats\.org\/(officeDocument|wordprocessingml|drawingml|spreadsheetml|presentationml)\/2006\/(.*)$/, (_, family, rest) =>
     'http://purl.oclc.org/ooxml/' + family + '/' + rest.replace(/(^|\/)(extended-properties|custom-properties)$/, (m, slash, name) => slash + (name === 'extended-properties' ? 'extendedProperties' : 'customProperties')));
   K.strictXML = xml => xml.replace(/(\b(?:xmlns(?::[\w.-]+)?|uri|Type)\s*=\s*)(["'])(.*?)\2/g, (_, key, quote, uri) => key + quote + strictURI(uri) + quote);
+  const strictBase = 'http://purl.oclc.org/ooxml/';
+  const transitionalURI = uri => uri.replace(/^http:\/\/purl\.oclc\.org\/ooxml\/(officeDocument|wordprocessingml|drawingml|spreadsheetml|presentationml|schemaLibrary)\/(.*)$/, (_, family, rest) =>
+    'http://schemas.openxmlformats.org/' + family + '/2006/' + rest.replace(/(^|\/)(extendedProperties|customProperties)$/, (m, slash, name) => slash + (name === 'extendedProperties' ? 'extended-properties' : 'custom-properties')));
+  // Generated vocabulary is Transitional. Convert retained Strict XML as a
+  // format conversion too, rather than relabelling generated vocabulary Strict.
+  // Work on source ranges so unrelated XML and its prefixes stay unchanged.
+  K.transitionalXML = function (xml) {
+    if (!xml.includes(strictBase)) return xml;
+    const changes = [];
+    walk(K.parse(xml), el => {
+      const pos = XML.source.get(el), dml = el.namespaceURI?.startsWith(strictBase + 'drawingml/'), word = el.namespaceURI === strictBase + 'wordprocessingml/main';
+      const percentage = value => /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)%$/.test(value) ? String(Math.round(parseFloat(value) * 1000)) : value;
+      for (const a of attrs(el)) {
+        let value = a.value;
+        if (a.name === 'xmlns' || a.prefix === 'xmlns' || el.localName === 'Relationship' && el.namespaceURI === NS.pkg && a.name === 'Type' || el.localName === 'graphicData' && dml && a.name === 'uri' || el.namespaceURI === K.KNOWN_NS.dsp && el.localName === 'dataModelExt' && a.name === 'minVer') value = transitionalURI(value);
+        else if (dml && !a.prefix) value = percentage(value);
+        else if (word && el.localName === 'tab' && a.localName === 'pos') {
+          const measure = /^([-+]?(?:\d+(?:\.\d*)?|\.\d+))(mm|cm|in|pt|pc|pi)$/.exec(value);
+          if (measure) value = String(Math.round(+measure[1] * ({ mm: 1440 / 25.4, cm: 1440 / 2.54, in: 1440, pt: 20, pc: 240, pi: 240 })[measure[2]]));
+        }
+        if (value !== a.value) { const p = pos.attrs.find(p => p.name === a.name); changes.push({ start: p.start, end: p.end, value: esc(value) }); }
+      }
+      // ISO/IEC 29500-4 14.11.9: use the twelve-bit value Office/SDK expect.
+      if (word && el.localName === 'cnfStyle' && el.getAttributeNS(el.namespaceURI, 'val') == null) {
+        const flags = ['firstRow', 'lastRow', 'firstColumn', 'lastColumn', 'oddVBand', 'evenVBand', 'oddHBand', 'evenHBand', 'firstRowLastColumn', 'firstRowFirstColumn', 'lastRowFirstColumn', 'lastRowLastColumn'];
+        const value = flags.map(name => /^(1|true|on)$/.test(el.getAttributeNS(el.namespaceURI, name) || '') ? '1' : '0').join('');
+        const prefix = el.prefix || attrs(el).find(a => a.prefix && el.lookupNamespaceURI(a.prefix) === el.namespaceURI)?.prefix || 'w';
+        const at = pos.openEnd - (xml[pos.openEnd - 2] === '/' ? 2 : 1);
+        changes.push({ start: at, end: at, value: (el.lookupNamespaceURI(prefix) ? '' : ' xmlns:' + prefix + '="' + NS.w + '"') + ' ' + prefix + ':val="' + value + '"' });
+      }
+      if (el.namespaceURI === K.KNOWN_NS.wp14 && ['pctWidth', 'pctHeight'].includes(el.localName)) {
+        const value = percentage(el.textContent);
+        if (value !== el.textContent) changes.push({ start: pos.openEnd, end: xml.lastIndexOf('</', pos.end - 1), value });
+      }
+    });
+    if (!changes.length) return xml;
+    return K.patch(xml, changes).replace(/(<\?xml\b[^?]*\bencoding\s*=\s*)(["'])(.*?)\2/i, (_, before, quote) => before + quote + 'UTF-8' + quote);
+  };
   K.format = (doc, requested, fallback) => {
     const type = requested || doc.ooxmlFormat || K.variant(doc.pkg, fallback);
     if (!K.formats[type]) throw new Error('Unsupported Office file variant: ' + type);
@@ -95,12 +135,27 @@
       if (a.name === 'xmlns' || a.prefix === 'xmlns') bindings[a.name] = a.value;
       else if (ans(e, a) === NS.xml) contextual[a.name] = a.value;
       else if (ans(e, a) === NS.mc) {
-        const key = a.name;
-        if (!lists.has(key)) lists.set(key, new Set());
-        for (const v of a.value.split(/\s+/).filter(Boolean)) lists.get(key).add(v);
+        // Prefix aliases still name the same attribute. Prefer the closest
+        // spelling so a recovered fragment does not acquire both ns1:Ignorable
+        // and mc:Ignorable from its new ancestors.
+        const key = a.localName;
+        if (!lists.has(key)) lists.set(key, { name: a.name, values: new Set() });
+        const list = lists.get(key); list.name = a.name;
+        for (const v of a.value.split(/\s+/).filter(Boolean)) list.values.add(v);
       }
     }
-    for (const [key, values] of lists) contextual[key] = Array.from(values).join(' ');
+    for (const [local, list] of lists) {
+      let prefix = list.name.split(':')[0];
+      if (bindings['xmlns:' + prefix] !== NS.mc && el.lookupNamespaceURI(prefix) !== NS.mc) {
+        prefix = Object.keys(bindings).find(k => k.startsWith('xmlns:') && bindings[k] === NS.mc)?.slice(6);
+        if (!prefix) {
+          prefix = 'mc'; let i = 0;
+          while (bindings['xmlns:' + prefix]) prefix = 'mc' + ++i;
+          bindings['xmlns:' + prefix] = NS.mc;
+        }
+      }
+      contextual[prefix + ':' + local] = Array.from(list.values).join(' ');
+    }
     // Detached lightweight fragments from older models may lack their ancestor.
     walk(el, e => {
       const prefixes = [e.prefix];
@@ -223,6 +278,16 @@
     privateData.set(pkg, { bytes, rels, types, parse }); packages.set(pkg.id, pkg);
     return pkg;
   }
+  /** a preset shape's <a:gd> list: PowerPoint repairs a file whose list names some of the preset's
+      adjustment values but not all, so a non-empty list carries every one, in the preset's order,
+      defaults filled in (an empty list means all defaults) */
+  K.presetAdjust = function (prst, adj) {
+    const keys = adj ? Object.keys(adj).filter((k) => isFinite(adj[k])) : [];
+    if (!keys.length) return '';
+    const preset = K.schema?.presetAdjust?.[prst];
+    const list = preset ? preset.map(([name, value]) => [name, name in adj && isFinite(adj[name]) ? adj[name] : value]) : keys.map((k) => [k, adj[k]]);
+    return list.map(([name, value]) => '<a:gd name="' + esc(name) + '" fmla="val ' + Math.round(value) + '"/>').join('');
+  };
   K.attach = function (doc, pkg) { Object.defineProperty(doc, 'pkg', { value: pkg, configurable: true, writable: true, enumerable: false }); return doc; };
   K.subtree = function (pkg, start) {
     const names = new Set(), pending = [start];
@@ -235,10 +300,12 @@
     return { source: pkg.id, part: start, parts: Array.from(names) };
   };
 
+  const SHARED_SPACE = { sldLayoutId: 'sldMasterId' };
   class Identities {
     constructor() { this.spaces = new Map(); this.mapping = new Map(); this.copies = new Map(); }
     canonical(id) { return /^[+-]?\d+$/.test(String(id)) && Number.isSafeInteger(+id) ? String(+id) : String(id); }
-    space(scope, kind) { const key = JSON.stringify([scope, kind]); if (!this.spaces.has(key)) this.spaces.set(key, { used: new Set(), high: 0 }); return this.spaces.get(key); }
+    // Masters and layouts share one ID space (PowerPoint repairs a deck where a layout reuses a master's ID).
+    space(scope, kind) { const key = JSON.stringify([scope, SHARED_SPACE[kind] || kind]); if (!this.spaces.has(key)) this.spaces.set(key, { used: new Set(), high: 0 }); return this.spaces.get(key); }
     reserve(scope, kind, id) { const s = this.space(scope, kind), value = this.canonical(id); s.used.add(value); if (/^\d+$/.test(value)) s.high = Math.max(s.high, +value); return String(id); }
     fresh(scope, kind) {
       const s = this.space(scope, kind), limits = K.schema?.limits[kind] || { min: 0, max: Number.MAX_SAFE_INTEGER };
@@ -272,6 +339,20 @@
     const isP = ns === NS.p || ns === 'http://purl.oclc.org/ooxml/presentationml/main';
     const isS = ns === NS.s || ns === 'http://purl.oclc.org/ooxml/spreadsheetml/main';
     let kind, scope = part, definition = false;
+    if (isW && tag === 'control' && name === 'name') {
+      const m = /^(.*?)(\d+)$/.exec(a.value), prefix = m ? m[1] : a.value + '_';
+      return { kind: 'controlName:' + prefix, scope: 'document', id: m ? m[2] : '0', prefix, literal: a.value, definition: true };
+    }
+    if (ns === K.KNOWN_NS.v && (tag === 'shapetype' && name === 'id' || name === 'type' && a.value.startsWith('#'))) {
+      const reference = name === 'type', value = a.value.replace(/^#/, ''), m = /^(_x0000_t)(\d+)$/.exec(value);
+      return { kind: m ? 'vmlType:' + m[1] : 'vmlType', scope, id: m ? m[2] : value, prefix: (reference ? '#' : '') + (m?.[1] || ''), definition: !reference };
+    }
+    const vmlDefinition = ns === K.KNOWN_NS.v && (name === 'id' && tag !== 'shapetype' || name === 'spid');
+    const vmlReference = ns === K.KNOWN_NS.o && tag === 'OLEObject' && name === 'ShapeID' || isW && tag === 'control' && name === 'shapeid';
+    if (vmlDefinition || vmlReference) {
+      const m = /^(_x0000_[a-z])(\d+)$/.exec(a.value);
+      return { kind: m ? 'vml:' + m[1] : 'vml', scope, id: m ? m[2] : a.value, prefix: m?.[1] || '', definition: vmlDefinition };
+    }
     if (tag === 'docPr' && name === 'id' && ns.includes('wordprocessingDrawing')) { kind = 'docPr'; scope = 'document'; definition = true; }
     else if (tag === 'cNvPr' && name === 'id') { kind = 'shape'; definition = true; }
     else if (isP && tag === 'cTn' && name === 'id') { kind = 'timing'; definition = true; }
@@ -279,6 +360,7 @@
     else if ((isP && name === 'spid') || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
     else if (isP && name === 'grpId' && ['cTn', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic'].includes(tag)) { kind = 'build'; definition = tag !== 'cTn'; }
     else if (isW && name === 'id' && /^(bookmark|perm)(Start|End)$/.test(tag)) { kind = tag.startsWith('bookmark') ? 'bookmark' : 'permission'; definition = tag.endsWith('Start'); }
+    else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
     else if (isP && name === 'id' && ['sldId', 'sldMasterId', 'sldLayoutId'].includes(tag)) { kind = tag; scope = 'presentation'; definition = true; }
     else if (isS && name === 'sheetId') { kind = 'sheet'; scope = 'workbook'; definition = tag === 'sheet'; }
     else if (isS && name === 'cacheId') { kind = 'cache'; scope = 'workbook'; definition = tag === 'pivotCache'; }
@@ -394,11 +476,19 @@
     const rank = new Map(); slots.forEach((slot, i) => slot.forEach(name => { if (!rank.has(expanded(name))) rank.set(expanded(name), i); }));
     const entries = [], seen = new Set(); let previous = -1, cursor = pos.openEnd, serial = 0;
     const add = (text, order) => { if (text) entries.push({ text, order, serial: serial++ }); };
+    const childRank = child => {
+      const name = canonical('{' + child.namespaceURI + '}' + child.localName);
+      if (rank.has(name)) return rank.get(name);
+      if (child.namespaceURI === NS.mc && ['AlternateContent', 'Choice', 'Fallback'].includes(child.localName)) {
+        const slots = elements(child).map(childRank).filter(n => n != null);
+        if (slots.length) return Math.min(...slots);
+      }
+    };
     for (const child of elements(tree)) {
       const cp = XML.source.get(child), name = canonical('{' + child.namespaceURI + '}' + child.localName);
       add(xml.slice(cursor, cp.start), previous);
-      const order = rank.get(name) ?? previous;
-      if (rank.has(name)) previous = order;
+      const known = childRank(child), order = known ?? previous;
+      if (known != null) previous = order;
       if (Object.prototype.hasOwnProperty.call(replacements, name)) {
         if (!seen.has(name)) for (const value of [replacements[name]].flat()) add(value, order);
         seen.add(name);
@@ -451,6 +541,76 @@
     if (added.length) {
       const at = pos.openEnd - (xml[pos.openEnd - 2] === '/' ? 2 : 1);
       edits.push({ start: at, end: at, value: added.join('') });
+    }
+    return K.patch(xml, edits);
+  };
+  // Fragments are self-contained in history/clipboard, but a rewritten part
+  // needs only one set of namespace declarations. Keep real local rebindings:
+  // removing an inner reset after a different ancestor binding changes names.
+  K.hoistNamespaces = function (xml) {
+    const tree = K.parse(xml), rootPos = XML.source.get(tree);
+    const bindings = new Map(), additions = {}, edits = [], ignorable = new Set();
+    const declarations = new Map(), nodes = [];
+    const namespacePrefix = a => a.name === 'xmlns' ? '' : a.prefix === 'xmlns' ? a.localName : null;
+    for (const a of attrs(tree)) {
+      const p = namespacePrefix(a); if (p != null) bindings.set(p, a.value);
+    }
+    walk(tree, el => {
+      nodes.push(el);
+      for (const a of attrs(el)) {
+        const p = namespacePrefix(a); if (!p || p === 'xml') continue;
+        if (!declarations.has(p)) declarations.set(p, new Map());
+        const counts = declarations.get(p); counts.set(a.value, (counts.get(a.value) || 0) + 1);
+      }
+    });
+    const declare = (prefix, uri) => { bindings.set(prefix, uri); additions['xmlns:' + prefix] = uri; return prefix; };
+    for (const [prefix, values] of declarations) if (!bindings.has(prefix)) {
+      const uri = [...values].sort((a, b) => b[1] - a[1])[0][0];
+      declare(prefix, uri);
+    }
+    const ignAttr = attrs(tree).find(a => a.localName === 'Ignorable' && tree.lookupNamespaceURI(a.prefix) === NS.mc);
+    if (ignAttr) for (const p of ignAttr.value.trim().split(/\s+/).filter(Boolean)) ignorable.add(p);
+    const rootPrefix = (wanted, uri) => {
+      if (bindings.get(wanted) === uri) return wanted;
+      for (const [prefix, value] of bindings) if (prefix && value === uri) return prefix;
+      let prefix = wanted || 'ns', i = 1;
+      while (bindings.has(prefix)) prefix = (wanted || 'ns') + '_' + i++;
+      return declare(prefix, uri);
+    };
+    const remove = (el, a) => {
+      const pos = XML.source.get(el), original = pos.attrs.find(p => p.name === a.name);
+      let start = xml.lastIndexOf(a.name, original.start - 2);
+      while (start > pos.start && /\s/.test(xml[start - 1])) start--;
+      edits.push({ start, end: original.end + 1, value: '' });
+    };
+    for (const el of nodes) {
+      if (el === tree) continue;
+      for (const a of attrs(el)) {
+        const prefix = namespacePrefix(a);
+        if (prefix != null && bindings.get(prefix) === a.value) {
+          const inherited = el.parentNode?.lookupNamespaceURI(prefix || null);
+          if (inherited == null || inherited === a.value) remove(el, a);
+        } else if (a.localName === 'Ignorable' && el.lookupNamespaceURI(a.prefix) === NS.mc) {
+          let resolved = true;
+          for (const prefix of a.value.trim().split(/\s+/).filter(Boolean)) {
+            const uri = el.lookupNamespaceURI(prefix);
+            if (uri) ignorable.add(rootPrefix(prefix, uri)); else resolved = false;
+          }
+          if (resolved) remove(el, a);
+        }
+      }
+    }
+    if (ignorable.size) {
+      const name = ignAttr?.name || rootPrefix('mc', NS.mc) + ':Ignorable';
+      if (!ignAttr || ignAttr.value !== [...ignorable].join(' ')) additions[name] = [...ignorable].join(' ');
+    }
+    // Root edits use the same lexical attribute helper as property merges;
+    // children, processing instructions, entities and quote styles stay intact.
+    if (Object.keys(additions).length) {
+      const open = xml.slice(rootPos.start, rootPos.openEnd);
+      const self = open.endsWith('/>'), standalone = self ? open : open + '</' + tree.nodeName + '>';
+      const patched = K.attributes(standalone, additions);
+      edits.push({ start: rootPos.start, end: rootPos.openEnd, value: self ? patched : patched.slice(0, patched.length - tree.nodeName.length - 3) });
     }
     return K.patch(xml, edits);
   };
@@ -583,10 +743,22 @@
     }
     for (const vml of nodes.vml) {
       let style = vml.getAttribute('style');
+      const setStyle = (name, value) => {
+        const re = new RegExp('(^|;)(\\s*' + name + '\\s*:)[^;]*');
+        style = re.test(style) ? style.replace(re, (_, before, label) => before + label + value) : style + (style.endsWith(';') ? '' : ';') + name + ':' + value;
+      };
       for (const [key, property] of [['x', 'left'], ['y', 'top'], ['w', 'width'], ['h', 'height']]) if (box[key] != null) {
         const name = new RegExp('(?:^|;)\\s*margin-' + property + '\\s*:').test(style) ? 'margin-' + property : property;
         const re = new RegExp('(^|;)(\\s*' + name + '\\s*:)[^;]*');
         style = re.test(style) ? style.replace(re, (_, before, label) => before + label + box[key] + 'pt') : style + (style.endsWith(';') ? '' : ';') + name + ':' + box[key] + 'pt';
+      }
+      if (box.x != null) setStyle('mso-position-horizontal', 'absolute');
+      if (box.y != null) setStyle('mso-position-vertical', 'absolute');
+      if (box.rot != null) setStyle('rotation', box.rot);
+      if (box.flipH != null || box.flipV != null) {
+        const old = /(?:^|;)\s*flip\s*:([^;]*)/.exec(style)?.[1] || '';
+        const h = box.flipH ?? old.includes('x'), v = box.flipV ?? old.includes('y');
+        setStyle('flip', (h ? 'x' : '') + (v ? 'y' : '') || 'none');
       }
       attr(vml, 'style', style);
       walk(vml, el => {
@@ -610,7 +782,8 @@
       for (const id of this.reserved) { const m = /^rId(\d+)$/.exec(id); if (m) this.high = Math.max(this.high, +m[1]); }
     }
     add(type, target, external = false, preferred) {
-      const same = r => r.type === type && r.target === target && !!r.external === !!external;
+      type = K.relationshipType(type);
+      const same = r => K.relationshipType(r.type) === type && r.target === target && !!r.external === !!external;
       if (preferred) {
         const hit = this.list.find(r => r.id === preferred);
         if (hit) { if (!same(hit)) throw new Error('Relationship identity rebound: ' + preferred); return hit.id; }
@@ -635,6 +808,7 @@
       // Save-time losses are recomputed. Cancelling a macro-free Save As must
       // not warn again when the next save keeps the original macro variant.
       this.doc.losses = (this.doc.losses || []).filter(e => e.phase !== 'save');
+      if (pkg?.main && pkg.xml(pkg.main)?.namespaceURI?.startsWith(strictBase)) this.standardFormatNotice();
       this.names = new Set((pkg?.names || []).map(n => n.toLowerCase())); this.mapping = new Map();
       this.classes = new Map(); this.omitted = new Set(); this.carried = new Set(); this.relationships = new Map(); this.emitted = new Set();
       this.ids = new Identities();
@@ -653,6 +827,7 @@
       }
     }
     loss(entry) { return K.loss(this.doc, { ...entry, phase: 'save' }); }
+    standardFormatNotice() { this.loss({ id: 'ooxml:strict-to-transitional', what: 'This file will be saved in the standard Office Open XML format (Transitional).', where: 'Strict Open XML', action: 'conversion' }); }
     key(pkg, part) { return JSON.stringify([pkg.id, part]); }
     name(dir, base, ext) {
       dir = dir ? dir.replace(/\/$/, '') + '/' : ''; ext = ext ? '.' + ext.replace(/^\./, '') : '';
@@ -690,6 +865,10 @@
     }
     put(name, data, type) {
       if (data == null) throw new Error('No bytes for ' + name);
+      if (/\.(xml|rels|vml)$/i.test(name) || /(?:\+|\/)xml$/.test(type || '')) {
+        const original = typeof data === 'string' ? data : XML.decode(data), converted = K.transitionalXML(original);
+        if (converted !== original) { data = converted; this.standardFormatNotice(); }
+      }
       this.names.add(name.toLowerCase()); this.parts.set(name, typeof data === 'string' ? data : new Uint8Array(data).slice());
       if (type) this.types.set(name, type);
       return name;
@@ -790,6 +969,8 @@
       const copy = options.copy || fragment.copy;
       const definitions = fragment.copyDefinitions || fragment.ids.filter(i => i.definition);
       if (copy) this.ids.copy(copy, definitions);
+      const localCopy = i => i.copy ? (copy ? copy + ':' : '') + i.copy : copy;
+      for (const key of new Set(fragment.ids.map(i => i.copy).filter(Boolean))) this.ids.copy((copy ? copy + ':' : '') + key, definitions.filter(i => i.copy === key));
       if (fragment.source !== this.pkg?.id || owner !== fragment.part) {
         const available = new Set(definitions.concat(options.references || []).map(i => this.ids.key(i.source, i.scope, i.kind, i.id)));
         const unresolved = fragment.ids.find(i => !i.definition && ['shape', 'timing'].includes(i.kind) && i.scope === fragment.part && !available.has(this.ids.key(i.source, i.scope, i.kind, i.id)));
@@ -802,9 +983,10 @@
       const dependencies = fragment.deps.map(d => {
         const id = this.keepRel(owner, d); if (!id) throw new Error('Fragment dependency was removed'); return id;
       });
-      const ids = fragment.ids.map(i => this.ids.resolve(i.source, i.scope, i.kind, i.id, {
-        primary: this.pkg?.id, copy, scope: i.scope === fragment.part ? owner : i.scope,
-      }));
+      const ids = fragment.ids.map(i => {
+        const value = this.ids.resolve(i.source, i.scope, i.kind, i.id, { primary: this.pkg?.id, copy: localCopy(i), scope: i.scope === fragment.part ? owner : i.scope });
+        return i.literal && value === i.id ? i.literal : (i.prefix || '') + value;
+      });
       let xml = fragment.xml.replace(/\u0001(rel|id):(\d+)\u0001/g, (_, kind, n) => {
         const value = (kind === 'rel' ? dependencies : ids)[+n];
         if (value == null) throw new Error('Invalid fragment token'); return esc(value);
@@ -828,14 +1010,21 @@
           this.loss({ id: 'unreferenced:' + this.pkg.id + ':' + name, what: 'This preserved part has no remaining reference in the saved file.', where: name, action: 'drop' });
         }
       }
-      const overrides = [];
+      /* As Office writes it: Defaults for .rels, .xml and every extension whose parts all share one type
+         (pictures, fonts…), Overrides for the rest */
+      const typed = [], byExt = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]), mixed = new Set();
       for (const [name] of this.parts) {
         if (name === '[Content_Types].xml') continue;
         const type = this.types.get(name) || this.pkg?.type(name);
         if (!type) throw new Error('Missing content type for ' + name);
-        overrides.push('<Override PartName="/' + esc(K.relative('', name)) + '" ContentType="' + esc(type) + '"/>');
+        typed.push([name, type]);
+        const ext = (/\.([^./]+)$/.exec(name) || [])[1]?.toLowerCase();
+        if (ext && ext !== 'xml' && ext !== 'rels' && !mixed.has(ext)) { if (byExt.has(ext) && byExt.get(ext) !== type) { byExt.delete(ext); mixed.add(ext); } else byExt.set(ext, type); }
       }
-      this.put('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?>\n<Types xmlns="' + NS.ct + '">' + overrides.join('') + '</Types>');
+      const defaults = Array.from(byExt, ([ext, type]) => '<Default Extension="' + esc(ext) + '" ContentType="' + esc(type) + '"/>');
+      const overrides = typed.filter(([name, type]) => byExt.get((/\.([^./]+)$/.exec(name) || [])[1]?.toLowerCase()) !== type)
+        .map(([name, type]) => '<Override PartName="/' + esc(K.relative('', name)) + '" ContentType="' + esc(type) + '"/>');
+      this.put('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="' + NS.ct + '">' + defaults.join('') + overrides.join('') + '</Types>');
       return { files: Array.from(this.parts, ([name, data]) => ({ name: name === '[Content_Types].xml' ? name : K.relative('', name), data })), dropped: (this.doc.losses || []).slice() };
     }
   }
@@ -845,7 +1034,6 @@
   // ownership table and settings merge; content remains model-generated.
   K.output = function (pkg, options = {}) {
     const writer = new Writer(pkg, options), names = new Map(), originals = new Map(), modes = new Map(), views = new Map();
-    const strict = pkg?.main && pkg.xml(pkg.main)?.namespaceURI?.startsWith('http://purl.oclc.org/ooxml/');
     const bind = (base, original, mode = 'regenerated') => {
       if (original && pkg?.has(original)) {
         let target = writer.target(pkg, original);
@@ -876,7 +1064,7 @@
             const resolved = K.resolve(base, value);
             return K.relative(owner, part(resolved.part)) + (resolved.fragment || '');
           };
-          if (typeof target === 'function') return r.add(strict ? strictURI(type) : type, () => mapped(target()), external, preferred);
+          if (typeof target === 'function') return r.add(type, () => mapped(target()), external, preferred);
           let destination = mapped(target);
           const source = base ? originals.get(base) : '';
           const original = source !== undefined && pkg?.rels(source).find(rel =>
@@ -886,7 +1074,7 @@
             preferred = original.id;
             if (owner === source && (external || writer.target(pkg, original.part) === original.part)) destination = original.target;
           }
-          return r.add(strict ? strictURI(type) : type, destination, external, preferred);
+          return r.add(type, destination, external, preferred);
         };
         views.set(base, { base, owner, list: r.list, add, xml: () => r.xml() });
       }
@@ -921,7 +1109,10 @@
         // instructions are outside its root fragment but still belong to it.
         data = K.partXML(pkg.text(original), data);
       }
-      writer.put(target, strict && typeof data === 'string' ? K.strictXML(data) : data, type || pkg?.type(original));
+      // Opaque parts return above and keep their exact bytes. This also covers
+      // regenerated main parts in all three apps, after every fragment is in place.
+      if (/\.xml$/i.test(base)) data = K.hoistNamespaces(typeof data === 'string' ? data : XML.decode(data));
+      writer.put(target, data, type || pkg?.type(original));
     };
     const finish = () => {
       if (pkg) {

@@ -35,14 +35,16 @@
     const get = (p) => zip.get(p) || zip.get(p.replace(/^\//, '')) || findCI(p);
     const findCI = (p) => { const lp = p.toLowerCase(); for (const [k, v] of zip) if (k.toLowerCase() === lp) return v; return null; };
     const xmlCache = new Map();
+    const xmlParts = new WeakMap();
     const xml = async (p) => {
       if (!p) return null;
       if (xmlCache.has(p)) return xmlCache.get(p);
       const e = get(p);
       if (!e) return null;
       let x = null;
-      try { x = X.parse(await e.text()); } catch (err) { warnings.push('Part ' + p + ' could not be read.'); }
+      try { x = X.parse(await e.text(), L.preserve.captureProperties); } catch (err) { warnings.push('Part ' + p + ' could not be read.'); }
       xmlCache.set(p, x);
+      if (x) xmlParts.set(x.ownerDocument || x, p);
       return x;
     };
     const rels = async (p) => {
@@ -72,22 +74,23 @@
     const relOfType = (t) => Object.values(docRels).find((r) => r.type === t && !r.external);
 
     /* ---- custom XML data stores: content controls bound to them show the stored values (as Word does on open) ---- */
-    const stores = new Map();
+    const stores = new Map(), storeParts = {};
     for (const k of Array.from(zip.keys())) {
-      if (!/^customXml\/item\d+\.xml$/i.test(k)) continue;
+      if (!/\.xml$/i.test(k)) continue;
       const rr = await rels(k);
       const pr = Object.values(rr).find((r) => /customXmlProps$/.test(r.type));
+      if (!pr) continue;
       const px = pr && await xml(pr.target);
       const root = px && (px.documentElement || px);
       const idAttr = root && Array.from(root.attributes).find((a) => a.localName === 'itemID');
-      const dx = await xml(k);
-      if (idAttr && dx) stores.set(idAttr.value.toUpperCase(), dx);
+      const dx = idAttr && await xml(k);
+      if (idAttr && dx) { stores.set(idAttr.value.toUpperCase(), dx); storeParts[idAttr.value.toUpperCase()] = k; }
     }
     if (stores.size || get('docProps/core.xml')) {
       const core = await xml('docProps/core.xml');
-      if (core) stores.set('{6C3C8BC8-F283-45AE-878A-BAB7291924A1}', core);
+      if (core) { stores.set('{6C3C8BC8-F283-45AE-878A-BAB7291924A1}', core); storeParts['{6C3C8BC8-F283-45AE-878A-BAB7291924A1}'] = 'docProps/core.xml'; }
       const appx = await xml('docProps/app.xml');
-      if (appx) stores.set('{6668398D-A668-4E3E-A5EB-62B293D839F1}', appx);
+      if (appx) { stores.set('{6668398D-A668-4E3E-A5EB-62B293D839F1}', appx); storeParts['{6668398D-A668-4E3E-A5EB-62B293D839F1}'] = 'docProps/app.xml'; }
     }
     /** text a data-bound content control should show, or null to keep what the file has */
     const boundText = (sdtPr) => {
@@ -129,6 +132,7 @@
     };
     /** paragraph items for a bound value: line breaks for new lines, markers kept */
     const boundRuns = (value, from) => {
+      if (from.some(r => r.t === 'sdts')) return from;
       const first = from.find((r) => r.t === 'text' || r.t === 'sym');
       const rPr = first ? Object.assign({}, first.rPr || {}) : {};
       const out = from.filter((r) => D.ilen(r) === 0 && !/^f[bse]$/.test(r.t));
@@ -144,7 +148,8 @@
     doc.src = { mainPath };
     try { L.opc.attach(doc, await L.opc.open(zip)); }
     catch (error) { L.opc.loss(doc, { id: 'package', what: 'Some original package data could not be retained: ' + error.message, where: mainPath, action: 'drop' }); }
-    doc.keep = { media: {} };
+    doc.keep = { media: {}, stores: storeParts };
+    const propertyContext = el => ({ pkg: doc.pkg, part: xmlParts.get(el.ownerDocument || el) || mainPath });
 
     /* ---- theme ---- */
     const themeRel = relOfType('theme');
@@ -225,6 +230,7 @@
       const r = {};
       if (!el) return r;
       for (const c of el.children) {
+        if (![L.opc.NS.w, 'http://purl.oclc.org/ooxml/wordprocessingml/main'].includes(c.namespaceURI)) continue;
         switch (c.localName) {
           case 'rStyle': r.style = at(c, 'val'); break;
           case 'rFonts': {
@@ -275,7 +281,7 @@
           default: break;
         }
       }
-      return r;
+      return L.preserve.properties(r, el, 'rPr', propertyContext(el));
     }
     const rev = (el) => ({ author: at(el, 'author') || 'Unknown', date: at(el, 'date') || '', id: num(el, 'id', 0) });
 
@@ -285,6 +291,7 @@
       const p = {};
       if (!el) return p;
       for (const c of el.children) {
+        if (![L.opc.NS.w, 'http://purl.oclc.org/ooxml/wordprocessingml/main'].includes(c.namespaceURI)) continue;
         switch (c.localName) {
           case 'pStyle': p.style = at(c, 'val'); break;
           case 'keepNext': p.keepNext = bool(c); break;
@@ -363,7 +370,7 @@
           default: break;
         }
       }
-      return p;
+      return L.preserve.properties(p, el, 'pPr', propertyContext(el));
     }
 
     /* ---- styles ---- */
@@ -545,6 +552,8 @@
         const pp = pPr(kid(lv, 'pPr'));
         if (pp.ind) o.ind = { l: pp.ind.l || 0, fl: pp.ind.fl || 0 };
         if (pp.tabs && pp.tabs.length) { const nt = pp.tabs.find((t) => t.al === 'num' || t.al === 'left'); if (nt) o.tabPos = nt.pos; }
+        o.pPr = pp;
+        o.pPrValues = { ind: L.clone(o.ind), tabPos: o.tabPos };
         if (kid(lv, 'isLgl')) o.isLgl = true;
         if (kid(lv, 'lvlRestart')) o.restart = num(kid(lv, 'lvlRestart'), 'val', 0) - 1;
         if (kid(lv, 'pStyle')) o.pStyle = rn(at(kid(lv, 'pStyle'), 'val'));
@@ -648,11 +657,17 @@
 
     /* ---- story parsing ---- */
     let fid = 0;
-    function storyCtx(partPath, relMap, story) { return { part: partPath, rels: relMap, story, fstack: [], dropFids: new Set(), cmtOpen: new Set(), pendingBm: [], hyper: new Map() }; }
+    const commentRanges = new Map();
+    function storyCtx(partPath, relMap, story) {
+      if (!commentRanges.has(partPath)) commentRanges.set(partPath, new Set(Array.from(xmlCache.get(partPath)?.getElementsByTagName('*') || []).filter(e => ['commentRangeStart', 'commentRangeEnd'].includes(e.localName)).map(e => at(e, 'id'))));
+      return { part: partPath, rels: relMap, story, stores, vmlTypes, fstack: [], dropFids: new Set(), cmtOpen: new Set(), cmtRanges: commentRanges.get(partPath), pendingBm: [], hyper: new Map() };
+    }
 
     function parseBlocks(el, ctx, out) {
       out = out || [];
+      const ac = L.preserve.readAlternates(el, out, ctx, doc, 'block');
       for (const c of el.children) {
+        const from = out.length;
         switch (c.localName) {
           case 'p': { const p = parseP(c, ctx); if (p) out.push(p); break; }
           case 'tbl': { const t = parseTbl(c, ctx); if (t) out.push(t); break; }
@@ -663,18 +678,23 @@
             parseBlocks(sc, ctx, out);
             const bv = boundText(kid(c, 'sdtPr'));
             if (bv != null) { const ps = out.slice(n0).filter((b) => b.t === 'p'); if (ps.length === 1) ps[0].runs = boundRuns(bv, ps[0].runs); }
+            if (out.length === n0) out.push(D.para());
+            const owned = out.slice(n0), control = L.preserve.control(c, ctx, doc);
+            if (control) { const first = owned[0], last = owned.at(-1); const a = first.t === 'p' ? first.pPr : first.tblPr, b = last.t === 'p' ? last.pPr : last.tblPr; (a.sdts || (a.sdts = [])).unshift(control); (b.sdte || (b.sdte = [])).push(control.key); }
             break;
           }
           case 'customXml': case 'ins': case 'moveTo': case 'smartTag': parseBlocks(c, ctx, out); break;
           case 'del': case 'moveFrom': parseBlocks(c, ctx, out); break;
-          case 'bookmarkStart': ctx.pendingBm.push(D.item('bs', { id: at(c, 'id'), name: at(c, 'name') })); break;
-          case 'bookmarkEnd': { const last = lastParaIn(out); if (last) last.runs.push(D.item('be', { id: at(c, 'id') })); else ctx.pendingBm.push(D.item('be', { id: at(c, 'id') })); break; }
+          case 'bookmarkStart': case 'permStart': ctx.pendingBm.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
+          case 'bookmarkEnd': case 'permEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
           case 'commentRangeStart': ctx.pendingBm.push(D.item('cs', { id: at(c, 'id') })); break;
           case 'commentRangeEnd': { const last = lastParaIn(out); const it = D.item('ce', { id: at(c, 'id') }); if (last) last.runs.push(it); else ctx.pendingBm.push(it); break; }
-          case 'altChunk': ctx.altChunk = true; break;
+          case 'altChunk': out.push(L.preserve.opaqueBlock(c, ctx, doc, 'Embedded document')); break;
           default: break;
         }
+        ac.add(c, from);
       }
+      ac.finish();
       return out;
     }
     const lastParaIn = (bl) => { for (let i = bl.length - 1; i >= 0; i--) { if (bl[i].t === 'p') return bl[i]; if (bl[i].t === 'tbl') return D.lastPara([bl[i]]); } return null; };
@@ -704,7 +724,9 @@
 
     /* inline content */
     function parseInline(el, p, ctx, inh) {
+      const ac = L.preserve.readAlternates(el, p.runs, ctx, doc, 'inline', inh);
       for (const c of el.children) {
+        const from = p.runs.length;
         switch (c.localName) {
           case 'r': parseRun(c, p, ctx, inh); break;
           case 'hyperlink': {
@@ -737,21 +759,24 @@
             const sc = kid(c, 'sdtContent');
             if (!sc) break;
             const bv = boundText(kid(c, 'sdtPr'));
-            if (bv == null) { parseInline(sc, p, ctx, inh); break; }
             const tmp = D.para();
             parseInline(sc, tmp, ctx, inh);
-            p.runs.push(...boundRuns(bv, tmp.runs));
+            const control = L.preserve.control(c, ctx, doc);
+            if (control) p.runs.push(D.item('sdts', { control }));
+            p.runs.push(...(bv == null ? tmp.runs : boundRuns(bv, tmp.runs)));
+            if (control) p.runs.push(D.item('sdte', { key: control.key }));
             break;
           }
-          case 'bookmarkStart': p.runs.push(D.item('bs', { id: at(c, 'id'), name: at(c, 'name') })); break;
-          case 'bookmarkEnd': p.runs.push(D.item('be', { id: at(c, 'id') })); break;
+          case 'bookmarkStart': case 'bookmarkEnd': case 'permStart': case 'permEnd': p.runs.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
           case 'commentRangeStart': p.runs.push(D.item('cs', { id: at(c, 'id') })); ctx.cmtOpen.add(at(c, 'id')); break;
           case 'commentRangeEnd': p.runs.push(D.item('ce', { id: at(c, 'id') })); ctx.cmtSeen = ctx.cmtSeen || new Set(); ctx.cmtSeen.add(at(c, 'id')); break;
           case 'oMath': case 'oMathPara': p.runs.push(mathItem(c)); break;
           case 'r_': break;
           default: break;
         }
+        ac.add(c, from);
       }
+      ac.finish();
     }
     function mathItem(c) {
       const text = descAll(c, 't').map((t) => t.textContent).join('');
@@ -785,9 +810,11 @@
         if (inInstr(ctx) && it.t !== 'fb' && it.t !== 'fs' && it.t !== 'fe') return;
         p.runs.push(it);
       };
-      const text = (s) => { if (!s) return; const last = p.runs[p.runs.length - 1]; if (last && last.t === 'text' && last.rPr === base && !inInstr(ctx)) last.text += s; else push(D.text(s, base)); };
+      const text = s => { if (s) push(D.text(s, base)); };
       let customMark = false;
+      const ac = L.preserve.readAlternates(r, p.runs, ctx, doc, 'run', base);
       for (const c of r.children) {
+        const from = p.runs.length;
         switch (c.localName) {
           case 'rPr': break;
           case 't': {
@@ -868,14 +895,21 @@
           case 'commentReference': {
             const id = at(c, 'id');
             /* comments without a range get an empty range at the reference */
-            const hasStart = p.runs.some((x) => x.t === 'cs' && x.id === id) || (ctx.cmtOpen && ctx.cmtOpen.has(id));
-            if (!hasStart) { p.runs.push(D.item('cs', { id })); p.runs.push(D.item('ce', { id })); }
+            // A reference may precede its real range. Point comments have virtual
+            // editor boundaries, but must not add duplicate OOXML range IDs.
+            if (!ctx.cmtRanges.has(id)) { p.runs.push(D.item('cs', { id, point: true })); p.runs.push(D.item('ce', { id, point: true })); }
             break;
           }
-          case 'drawing': { const it = parseDrawing(c, ctx, base); if (it) push(it); break; }
-          case 'pict': case 'object': { const it = parseVML(c, ctx, base); if (it) push(it); break; }
+          case 'drawing': { const it = parseDrawing(c, ctx, base); push(L.preserve.keepObject(it, c, ctx, doc, it?.diagram ? 'SmartArt' : it?.alt || 'Drawing')); break; }
+          case 'pict': case 'object': {
+            const it = parseVML(c, ctx, base);
+            if (it) push(L.preserve.keepObject(it, c, ctx, doc, c.localName === 'object' ? 'Embedded object' : 'Drawing'));
+            else if (!Array.from(c.getElementsByTagName('*')).some(e => /WaterMark/i.test(at(e, 'id') || ''))) push(L.preserve.keepObject(null, c, ctx, doc, 'Drawing'));
+            break;
+          }
+          case 'control': case 'contentPart': { const it = L.preserve.keepObject(null, c, ctx, doc, c.localName === 'control' ? 'Form control' : 'Embedded content'); it.rPr = base; push(it); break; }
           case 'pgNum': { const f = 'f' + ++fid; push(D.item('fb', { fid: f, instr: ' PAGE ' }, base)); push(D.item('fs', { fid: f }, base)); text('1'); push(D.item('fe', { fid: f }, base)); break; }
-          case 'lastRenderedPageBreak': case 'annotationRef': case 'contentPart': break;
+          case 'lastRenderedPageBreak': case 'annotationRef': break;
           case 'ruby': {
             /* phonetic guide: kept as one inline object (base text with its annotation above) */
             const rb = kid(c, 'rubyBase'), rtEl = kid(c, 'rt');
@@ -890,7 +924,9 @@
           case 'dayShort': case 'monthShort': case 'yearShort': case 'dayLong': case 'monthLong': case 'yearLong': break;
           default: break;
         }
+        ac.add(c, from);
       }
+      ac.finish();
       if (customMark) {
         /* the custom footnote mark is the run's own text */
         const txt = descAll(r, 't').map((x) => x.textContent).join('');
@@ -976,18 +1012,23 @@
     }
     function parseTbl(el, ctx) {
       const tp = tblPr(kid(el, 'tblPr'));
+      L.preserve.properties(tp, kid(el, 'tblPr'), 'tblPr', { pkg: doc.pkg, part: ctx.part });
       const grid = kids(kid(el, 'tblGrid'), 'gridCol').map((g) => tw(at(g, 'w')));
       const rows = [];
+      const rowAlternates = L.preserve.readAlternates(el, rows, ctx, doc, 'row');
       const rowEls = [];
-      const collectRows = (parent) => { for (const c of parent.children) { if (c.localName === 'tr') rowEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) collectRows(sc); } else if (c.localName === 'customXml' || c.localName === 'ins' || c.localName === 'del') collectRows(c); } };
+      const rowControls = [], rowModels = new Map(), emptyRows = [];
+      const collectRows = (parent) => { for (const c of parent.children) { if (c.localName === 'tr') rowEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n = rowEls.length; collectRows(sc); rowControls.push({ control: L.preserve.control(c, ctx, doc), elements: rowEls.slice(n) }); } } else if (c.localName === 'customXml' || c.localName === 'ins' || c.localName === 'del') collectRows(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(el)) emptyRows.push({ el: c, index: rowEls.length }); } };
       collectRows(el);
       for (const tr of rowEls) {
         const rp = trPr(kid(tr, 'trPr'));
         const ex = kid(tr, 'tblPrEx');
         const cells = [];
+        const cellAlternates = L.preserve.readAlternates(tr, cells, ctx, doc, 'cell');
         const cellEls = [];
+        const cellControls = [], cellModels = new Map(), emptyCells = [];
         const cellBound = new Map(); /* cell-level content controls bound to a data store */
-        const collectCells = (parent) => { for (const c of parent.children) { if (c.localName === 'tc') cellEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n0 = cellEls.length; collectCells(sc); const bv = boundText(kid(c, 'sdtPr')); if (bv != null && cellEls.length === n0 + 1) cellBound.set(cellEls[n0], bv); } } else if (c.localName === 'customXml') collectCells(c); } };
+        const collectCells = (parent) => { for (const c of parent.children) { if (c.localName === 'tc') cellEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n0 = cellEls.length; collectCells(sc); const bv = boundText(kid(c, 'sdtPr')); if (bv != null && cellEls.length === n0 + 1) cellBound.set(cellEls[n0], bv); cellControls.push({ control: L.preserve.control(c, ctx, doc), elements: cellEls.slice(n0) }); } } else if (c.localName === 'customXml') collectCells(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(tr)) emptyCells.push({ el: c, index: cellEls.length }); } };
         collectCells(tr);
         for (const tc of cellEls) {
           const cp = tcPr(kid(tc, 'tcPr'));
@@ -995,7 +1036,10 @@
           if (cellBound.has(tc)) { const ps = blocks.filter((b) => b.t === 'p'); if (ps.length === 1) ps[0].runs = boundRuns(cellBound.get(tc), ps[0].runs); }
           if (!blocks.length || blocks[blocks.length - 1].t !== 'p') { const sp = D.para(); if (blocks.length) sp.synth = true; blocks.push(sp); }
           cells.push({ id: D.nid(), tcPr: cp, blocks });
+          cellModels.set(tc, cells.at(-1));
+          cellAlternates.add(tc, cells.length - 1);
         }
+        cellAlternates.finish();
         /* legacy horizontal merges → gridSpan */
         for (let i = cells.length - 1; i > 0; i--) {
           if (cells[i].tcPr.hMerge === 'continue') {
@@ -1006,12 +1050,20 @@
           }
         }
         for (const c of cells) delete c.tcPr.hMerge;
+        for (const c of cellControls) L.preserve.markControl(c.elements.map(e => cellModels.get(e)).filter(c => cells.includes(c)), 'tcPr', c.control);
+        if (!cells.length && emptyCells.length) return L.preserve.opaqueBlock(el, ctx, doc, 'Compatibility table');
         if (!cells.length) continue;
+        L.preserve.emptyAlternates(emptyCells, cellEls.map(e => cellModels.get(e)).map(c => cells.includes(c) ? c : null), ctx, doc);
         const row = { id: D.nid(), trPr: rp, cells };
         if (ex) { const xp = tblPr(ex); if (xp.borders) row.exBorders = xp.borders; }
         rows.push(row);
+        rowModels.set(tr, row);
+        rowAlternates.add(tr, rows.length - 1);
       }
-      if (!rows.length) return null;
+      rowAlternates.finish();
+      for (const c of rowControls) L.preserve.markControl(c.elements.map(e => rowModels.get(e)).filter(Boolean), 'trPr', c.control);
+      if (!rows.length) return emptyRows.length ? L.preserve.opaqueBlock(el, ctx, doc, 'Compatibility table') : null;
+      L.preserve.emptyAlternates(emptyRows, rowEls.map(e => rowModels.get(e)), ctx, doc);
       /* grid sanity: compute from cell widths when missing or inconsistent */
       const nCols = Math.max(...rows.map((r) => (r.trPr.gridBefore || 0) + r.cells.reduce((s, c) => s + (c.tcPr.span || 1), 0) + (r.trPr.gridAfter || 0)));
       let g = grid.slice();
@@ -1478,6 +1530,8 @@
         if (ct || cb || cl || cr) it.crop = { t: frac(ct), b: frac(cb), l: frac(cl), r: frac(cr) };
         if (X.bool(at(im, 'grayscale'))) it.gray = true;
         if (X.bool(at(im, 'bilevel'))) it.bw = true;
+        if (at(im, 'blacklevel')) it.bright = frac(at(im, 'blacklevel'));
+        if (at(im, 'gain')) it.contrast = frac(at(im, 'gain')) - 1;
         if (at(s, 'alt')) it.alt = at(s, 'alt');
       } else {
         let geom = { rect: 'rect', roundrect: 'roundRect', oval: 'ellipse', line: 'line', arc: 'arc' }[s.localName] || 'rect';
@@ -1579,14 +1633,14 @@
         if (tp) {
           const ts = styleMap(at(tp, 'style'));
           doc.watermark = { type: 'text', text: at(tp, 'string') || '', font: (ts['font-family'] || 'Calibri').replace(/["']/g, ''), size: ts['font-size'] ? cssLen(ts['font-size']) : 0, color: (vColor(at(s, 'fillcolor')) || '#C0C0C0').replace('#', ''), semi: !!desc(s, 'fill') && /\.5|50/.test(at(desc(s, 'fill'), 'opacity') || ''), layout: /rotation:\s*315|rotation:-45/.test(at(s, 'style') || '') ? 'diagonal' : 'horizontal' };
-          return null;
+          return D.item('raw', { zero: true, watermark: true }, base);
         }
         const im = desc(s, 'imagedata');
         if (im) {
           const r = rid(im, 'id');
           const rel = r && ctx.rels[r];
           doc.watermark = { type: 'picture', media: rel ? mediaCache.get(rel.target) : null, w, h, washout: true };
-          return null;
+          return D.item('raw', { zero: true, watermark: true }, base);
         }
       }
       let it;
@@ -1697,13 +1751,19 @@
         doc.comments[id] = story;
       }
       for (const k in doc.comments) { const c = doc.comments[k]; if (c._parentPara) { c.parent = paraOwner.get(c._parentPara); delete c._parentPara; } }
+      const exRoot = exX && (exX.documentElement || exX);
+      if (exRoot && exRoot.namespaceURI !== 'http://schemas.microsoft.com/office/word/2012/wordml') {
+        // Pre-release comment extensions are not interchangeable with the
+        // released Word 2013 vocabulary. Word repairs an automatic promotion.
+        doc.keep.commentExtension = { part: exRel.target, namespace: exRoot.namespaceURI, values: L.preserve.commentMetadata(doc) };
+      }
     }
 
     /* ---- body ---- */
     await preload(docRels);
     const body = kid(docX, 'body');
     const bg = kid(docX, 'background');
-    if (bg) { const c = wColor(bg, 'color', 'themeColor'); if (c && c !== 'auto' && c !== 'FFFFFF') doc.bg = c; }
+    if (bg) { const c = wColor(bg, 'color', 'themeColor'); if (c && c !== 'auto' && c !== 'FFFFFF') doc.bg = c; doc.keep.background = { fragment: L.opc.fragment(bg, { pkg: doc.pkg, part: mainPath }), value: doc.bg }; }
     const mctx = storyCtx(mainPath, docRels, doc.main);
     mctx.hfMap = hfMap;
     if (body) {
@@ -1715,7 +1775,6 @@
     if (!doc.main.blocks.length || doc.main.blocks[doc.main.blocks.length - 1].t !== 'p') doc.main.blocks.push(D.para());
     if (mctx.pendingBm.length) doc.main.blocks[doc.main.blocks.length - 1].runs.push(...mctx.pendingBm);
     finishStory(doc.main, mctx);
-    if (mctx.altChunk) warnings.push('Embedded documents (altChunk) are not displayed.');
 
     function finishStory(story, ctx) {
       /* drop hyperlink field markers (links live on the runs) and repair unmatched field markers */
@@ -1743,12 +1802,13 @@
     if (/template/.test(mainCT)) doc.isTemplate = true;
     if (/macroEnabled/.test(mainCT)) doc.hasMacros = true;
     doc.ooxmlFormat = L.opc.variant(doc.pkg, doc.isTemplate ? 'dotx' : 'docx');
-    doc.keep.values = Object.fromEntries(['settings', 'theme', 'props', 'custom'].map(k => [k, JSON.parse(JSON.stringify(doc[k]))]));
+    doc.keep.values = Object.fromEntries(['settings', 'theme', 'props', 'custom', 'watermark'].map(k => [k, JSON.parse(JSON.stringify(doc[k]))]));
 
     /* numbering instances referenced but undefined → plain paragraphs */
     D.walk(doc.main, (b) => { if (b.t === 'p' && b.pPr.num && b.pPr.num.id && b.pPr.num.id !== '0' && !doc.numbering.nums[b.pPr.num.id]) delete b.pPr.num; });
     D.stylesChanged();
     doc._idxDirty = true;
+    L.preserve.finishObjects(doc);
     return { doc, warnings };
   };
 })();

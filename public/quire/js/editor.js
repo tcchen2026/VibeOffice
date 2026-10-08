@@ -205,12 +205,12 @@
   E.edit = function (label, fn, opts) {
     if (E.guard()) return false;
     let res;
-    D.tx(label, () => {
+    const committed = D.tx(label, () => {
       res = fn();
       if (res && res.p) E.sel = { a: res, f: res };
       else if (res && res.a) E.sel = res;
     }, opts);
-    return true;
+    return committed !== false;
   };
   /** refuse edits in protected documents */
   E.guard = function () {
@@ -742,7 +742,7 @@
     try {
       e.clipboardData.setData('text/plain', data.text);
       e.clipboardData.setData('text/html', data.html);
-      e.clipboardData.setData('application/x-quire', JSON.stringify({ blocks: data.blocks, media: data.media }));
+      e.clipboardData.setData('application/x-quire', JSON.stringify({ blocks: data.blocks, media: data.media, preserved: data.preserved }));
     } catch (err) { /* ignore */ }
     E.clip = data;
     if (cut) E.edit('Cut', () => E.deleteSelection());
@@ -755,7 +755,7 @@
     const text = O.textRange(a, b);
     const html = L.htmlio ? L.htmlio.blocksToHTML(blocks, { clipboard: true }) : L.esc(text);
     const media = {};
-    return { blocks, text, html, media };
+    return { blocks, text, html, media, preserved: L.preserve.clipboard(blocks) };
   };
   async function onPaste(e) {
     e.preventDefault();
@@ -763,7 +763,7 @@
     const cd = e.clipboardData;
     let q = null;
     try { q = cd.getData('application/x-quire'); } catch (err) { /* ignore */ }
-    if (q) { try { const o = JSON.parse(q); E.pasteBlocks(o.blocks); return; } catch (err) { /* fall through */ } }
+    if (q) { try { const o = JSON.parse(q); const blocks = o.preserved ? await L.preserve.hydrateClipboard(L.opc.remapSources(o.blocks, L.opc.import(o.preserved))) : o.blocks; E.pasteBlocks(blocks); return; } catch (err) { /* fall through */ } }
     const files = Array.from(cd.files || []).filter((f) => /^image\//.test(f.type));
     if (files.length && L.app && L.app.insertPictureFiles) { L.app.insertPictureFiles(files); return; }
     const html = cd.getData('text/html');
@@ -897,6 +897,11 @@
   }
   function onClick(e) {
     const t = e.target;
+    const control = t.closest && t.closest('[data-control]');
+    if (control && !E.readOnly) {
+      const record = L.preserve.controls(D.doc).records.get(+control.dataset.control);
+      if (record) { e.preventDefault(); L.preserve.controlDialog(record); return; }
+    }
     const ln = t.closest && t.closest('[data-link]');
     if (ln && (e.ctrlKey || e.metaKey || LY.view === 'reading' || E.readOnly)) {
       e.preventDefault();

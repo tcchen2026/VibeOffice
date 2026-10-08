@@ -979,6 +979,9 @@
     const el = await pkg.xml(part);
     if (!el) return;
     sh.extra.ooxmlDrawing = part;
+    // Shape XML is saved as an opaque object. Capture before selecting a
+    // display branch, so nested equations and effects keep Choice/Fallback.
+    const originalShapes = new WeakMap(el.getElementsByTagName('*').filter(e => /^(sp|grpSp|cxnSp)$/.test(e.localName)).map(e => [e, XML.serialize(e)]));
     resolveAC(el, true);
     const rels = await pkg.rels(part);
     for (const a of el.children) {
@@ -992,6 +995,7 @@
       if (!obj) continue;
       const d = await readDrawingObject(pkg, obj, rels, ctx, sh);
       if (!d) continue;
+      if (d.kind === 'shape' && originalShapes.has(obj)) d.xml = originalShapes.get(obj);
       d.anchor = anchor;
       if (d.kind === 'shape' && ctx.wb.pkg) d.keep = { source: ctx.wb.pkg.id, part };
       const cd = kid(a, 'clientData');

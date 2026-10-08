@@ -71,7 +71,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `ui.js` | commands, menus, toolbars, combo boxes, dialogs, colour menus, password and prompt boxes | all |
 | `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |
 | `zip.js`, `sha.js`, `crypto.js` | ZIP read/write; SHA; ECMA-376 encryption (password-protected files) | all |
-| `xml.js`, `opc.js`, `opc-order.js` | Portable XML tree, immutable OOXML packages, dependency and identity maps, fragment capture and geometry adapters; generated schema order tables. Writer integration is in progress. | all |
+| `xml.js`, `opc.js`, `opc-order.js` | Portable XML tree, immutable OOXML packages, dependency and identity maps, fragment capture and geometry adapters; generated schema order and preset adjustment tables. | all |
 | `geometry.js`, `metafile.js` | AutoShape presets; WMF/EMF player | all |
 | `charts.js` | chart model, SVG renderer, chart data dialog (Lectern's `chart-draw.js` adds the v2 renderer) | all |
 | `numfmt.js` | Excel number formats | Ledger, Lectern |
@@ -87,6 +87,59 @@ What each app provides:
 - a spelling UI sets `L.spell.refreshSoon` if it draws underlines (Quire).
 
 Script order: `suite.js`, the app config, `core.js`, then the libraries and the app's own scripts as listed in each `index.html` (Ledger's from `tools/ledger/build/make.py`, where `'common/x'` means `public/common/x.js`).
+
+## Preservation
+
+Same-format Office saves carry what the model cannot edit. These contracts apply to all three apps;
+the current feature and edit-behaviour tables are in [Quire](quire.md#what-a-save-keeps-converts-and-drops),
+[Ledger](ledger.md#what-a-save-keeps-converts-and-drops) and
+[Lectern](lectern.md#what-a-save-keeps-converts-and-drops). Conversions to Markdown, CSV, PDF and other
+formats have their own rules.
+
+- OOXML preservation uses `common/opc.js`: immutable package bytes stay outside JSON history; model fragments carry source identities and dependency references. Classify parts as opaque, merged or regenerated. Preserve original identities unless every referrer is regenerated; duplicates remap definitions and references together. Merge settings-like parts only; regenerate content parts with model-attached fragments. Record conversions and drops in the document's loss ledger.
+- Save and drafts keep the main-part variant and encryption. Save As changes the filename/type only after a successful download. Show unacknowledged loss entries in the Compatibility Checker after preparing the file and before download; acknowledge only a successful user save. Drafts neither show nor acknowledge the checker. Recompute writer losses on every save so cancelling a conversion does not poison the next save.
+- Preserved content-control boundaries and binding updates participate in undo. Keep boundaries balanced through edits and paste, remap copied identities together, and roll back the whole transaction when a content/deletion lock forbids it. Typed value commands retain their binding; ordinary typing that converts a typed control records that conversion.
+- Retained formatting belongs to individual properties: compare the owning model fields, replace only the property the user changed, and keep its siblings. Capture property alternatives before normalisation and emit changed children in Office-compatible schema order. Copy range endpoints together with fresh identities; report incomplete ranges at save.
+- Opaque frames belong to their displayed objects. A compatibility wrapper with several model members is emitted once only while all members remain intact, ordered and contiguous; never resurrect deleted content. Geometry updates preserve the payload. Clipboard transfer includes preview bytes, dependent parts and implicit references, with copied definitions and references remapped together.
+- Preservation changes are measured against the pinned corpus (`tools/corpora.sh`), including edits, undo/redo and drafts. Record failed and excluded attempts, compare validator diagnostics with each original, and keep Office acceptance pending until it has actually been checked. The measurement tools are in `tools/ooxml/`.
+
+| Part ownership | Writer contract |
+|---|---|
+| Opaque | Carry original bytes and original relationships; follow their dependency graph, including cycles and shared targets |
+| Merged | Start with the original settings-like part and replace only model-owned properties in schema order |
+| Regenerated | Write model content and attached fragments; preserve identities used by any retained referrer |
+
+Strict inputs save as Transitional OOXML after the approved compatibility notice. This explicitly
+converts retained XML namespaces and vocabulary; binary dependencies remain unchanged. It preserves
+the document/template/slideshow and macro variant. A cancelled save does not acknowledge the notice,
+and draft recovery keeps it pending until a successful user save.
+
+`L.opc.open` reads the immutable baseline; `attach` keeps it out of JSON snapshots. `fragment` records
+namespace context, relationship attributes and identity definitions/references. `captureAC` runs on
+the original XML before branch selection, and `emit` writes an outer compatibility record once.
+Inherited compatibility attributes are merged by namespace URI and local name, even when an ancestor
+and a fragment use different prefixes. Repeated saves must not add a second `Ignorable` attribute
+under an alias; the fragment keeps its own spelling and the inherited value list.
+Fragments stay self-contained in history and clipboard data. Once a regenerated or merged part is
+assembled, `output.put` hoists missing namespace declarations and the union of `mc:Ignorable` onto
+its root. It removes redundant inner declarations, keeps actual prefix rebindings and default-namespace
+resets, and leaves other compatibility properties scoped as written. Opaque parts bypass this pass
+and keep their bytes. This prevents every preserved paragraph/run property from repeating the full
+document namespace list.
+`duplicate` assigns a shared copy identity to the selected definitions and references; `export` and
+`import` transport their dependency bytes between documents. The writer reserves existing part names,
+relationship IDs and identity spaces before allocating new values. Master and layout IDs share one
+space; non-empty preset adjustment lists include every preset value in Office's order.
+
+The loss ledger distinguishes conversion from deletion and keeps stable entry identities. Digital
+signatures are removed and reported because a changed package cannot retain their validity. Missing
+dependencies and unavoidable conversions are reported by the writer; draft recovery retains pending
+entries even when the original content has already been converted in the draft.
+
+An Office review batch contains at most 15 files and a checklist. Before handoff, compare the new save
+with the previous writer's save of the same input and explain each difference. Automated validators
+and LibreOffice do not establish Office acceptance. Keep run history outside the repository in
+`~/corpora/results/<run>/README.md`, and keep app docs focused on current behavior and measurements.
 
 ## Recent Files and unsaved versions
 

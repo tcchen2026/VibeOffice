@@ -107,14 +107,29 @@ checked without falsely counting mutually exclusive IDs as duplicates. Output is
 nonzero. `node --test tools/ooxml/*.test.mjs` exercises malformed packages, cycles, shared dependencies,
 alternate branches, target swaps and ordered text.
 
+### Office conventions: tools/ooxml/conventions.py
+
+`node tools/ooxml/office-batch.mjs MANIFEST.json OUTPUT_DIR` makes a review batch of at most 15 Office
+files, its `CHECKLIST.md` and a manifest of hashes, edits and recorded losses. Each input names its app,
+authored source, output filename, edit, feature and inspection instructions. `BASE` can point at an
+isolated previous writer to reproduce the same edits for the required save-to-save comparison.
+Use an empty output directory. Original sources stay outside the batch. A generated batch is pending
+Office review even when SDK and LibreOffice checks pass.
+
+`python3 tools/ooxml/conventions.py ~/corpora/powerpoint SAVED_DIR [--out report.json]` lists markup our
+saved files contain that no Office-authored original in the corpus does: attributes, child elements,
+child order, enumerated values, preset adjustment sets, content-type forms, relationship types. Markup
+already in a file's own original is not counted. It finds Office-rejected output the SDK accepts (the
+slide-6 repair was such a case); run it with every full corpus run. Findings and fixes: NEXT_PLAN.md.
+
 ### Shared preservation core
 
 `node --test tools/ooxml/opc.test.mjs` tests the Node-safe `L.opc` API: immutable bytes, full relationship
 types, cyclic/shared graphs, reserved names and IDs, duplicate reference remapping, namespace/QName
 scope, original nested AlternateContent emitted once, cross-document dependency transport, loss
-acknowledgement, property merging, and DrawingML/Word/spreadsheet/VML geometry adapters. Together with
-the independent checker tests, all 24 tests pass at the shared-core stage. These tests do not replace
-real-file comparisons or Office acceptance.
+acknowledgement, property merging, Strict-to-Transitional conversion and DrawingML/Word/spreadsheet/VML
+geometry adapters. These tests do not replace real-file comparisons or Office acceptance. API contracts
+and edit-preservation rules are in [suite.md](suite.md#preservation).
 
 Load `common/xml.js`, `common/opc.js`, then `common/opc-order.js`. `L.xmlTree` supplies a portable tree;
 Ledger's small `js/xml.js` bridge exposes it as `L.xml`. `L.opc.open(zip)` keeps a separate immutable
@@ -135,19 +150,12 @@ Loss acknowledgement is per entry; autosave must neither show a dialog nor ackno
 Package ownership and save-dialog integration are implemented in all three apps; remaining object preservation is still in progress.
 
 `opc-order.js` contains ordering and ID-bound facts for 27 types, generated from the official
-[ECMA-376 Part 4 schemas](https://ecma-international.org/publications-and-standards/standards/ecma-376/).
+[ECMA-376 Part 4 schemas](https://ecma-international.org/publications-and-standards/standards/ecma-376/), and each preset shape's adjustment values (names, order, defaults) from Part 1's `presetShapeDefinitions.xml`.
 The archive stays outside git; its SHA-256 is recorded in the generated file. Regenerate with:
 
 ```sh
-python3 tools/ooxml/schema-order.py ~/corpora/ecma-376/part4.zip public/common/opc-order.js
+python3 tools/ooxml/schema-order.py ~/corpora/ecma-376/part4.zip public/common/opc-order.js ~/corpora/ecma-376/part1.zip
 ```
-
-The shared-core run is retained in `~/corpora/results/opc-core-2026-10-08/`. All 4,697 open/save/reopen
-statuses match the earlier baseline. Against the **earlier saved files**, 4,626 package/SDK comparisons
-completed without new diagnostics; 29 earlier outputs could not be validated, 36 inputs had no saved
-output and 6 were excluded. All 30 LibreOffice sample comparisons retained page/slide counts. All three
-apps loaded and were screenshotted without console errors (the existing Google Fonts requests remain).
-Full-corpus LibreOffice rendering and Office acceptance are still pending.
 
 `tools/ooxml/compare.mjs ORIGINAL SAVED [--policy policy.json]` defaults to exact part-byte preservation.
 A policy can designate individual parts as `merged` or `regenerated`, map their target names, allow
@@ -160,6 +168,15 @@ comparison, not a complete Word layout or Excel calculation oracle. The separate
 their historical feature inventories; their new `accounting` field exposes missing saved files and
 failed comparisons rather than silently excluding them.
 
+`node tools/ooxml/namespace-size.mjs ORIGINALS SAVED OUTPUT [LIMIT=400]` isolates namespace compaction
+on existing Word saves. It reports original/before/after main-part sizes and compacts writer-owned
+parts while keeping opaque dependency bytes. It is a serialization benchmark, not an app round trip;
+use fresh browser saves, package/SDK comparisons and Office samples for integration checks. Run
+`conventions.py` on its output and every full corpus run, recording newly introduced signatures.
+`tools/quire/test/comment-office-copies.py BATCH PREVIOUS_BATCH OUTPUT` recreates the bounded first
+Word comment-repair isolation round. Package checks now reject excess comment references beyond
+their matching definitions; comparison also rejects automatic pre-release thread-namespace promotion.
+
 Build the SDK validator and install the independent workbook reader in a test environment:
 
 ```sh
@@ -171,7 +188,14 @@ dotnet tools/ooxml/oxval/bin/Release/net8.0/oxval.dll --baseline original.docm s
 
 The validator is pinned to SDK 3.1.1, targets Office 2019, handles all document/macro/template/slideshow
 extensions and reports uncapped diagnostics by part, XPath and diagnostic ID. `--baseline` reports new
-diagnostic identities, not merely a change in count. `--stdin-pairs` accepts JSON lines containing
+diagnostic identities, not merely a change in count. Style diagnostics use `styleId` rather than an
+unstable style-list index. Unmatched diagnostics can also match identical namespace-expanded node
+content within the same part; each original occurrence is consumed once, so duplicating an invalid
+property still adds a diagnostic. The actual XPath and content fingerprint remain in the report.
+`--comparison-self-test` checks movement, duplication, changed content and changed errors.
+Package diagnostics normalize Strict/
+Transitional namespace aliases and compare duplicate IDs by scope, identity and multiplicity.
+`--stdin-pairs` accepts JSON lines containing
 `original` and `saved` paths for a warm batch process.
 
 `python3 tools/ooxml/validate.py RESULTS.jsonl ORIGINALS SAVED_ROOT OUT.jsonl --sdk PATH_TO_DLL`
@@ -201,12 +225,6 @@ existing shadow to replace); keep it outside the repository and
 validate the fixture itself before testing. Feed each driver's report to `validate.py` for all-state
 package and SDK checks.
 
-The media stage retains reports and saved files in `~/corpora/results/lectern-media-2026-10-08/`:
-140 media-operation fidelity checks, 117 sound-state checks, 18 LibreOffice comparisons, all three
-app screenshots, 32 Node tests and the unchanged 24-file Markdown checks. The full 844-file Lectern
-run has no new diagnostics, with malformed originals and the password exclusion still accounted for.
-Office samples live in `~/Downloads/lossless-check/lectern/media/`; PowerPoint acceptance is pending.
-
 ### Package preservation and save flows
 
 `node tools/ooxml/save-matrix.mjs OUTDIR` exercises the actual app Save and Save As dialogs,
@@ -223,27 +241,33 @@ targets. It stops at model-owned boundaries and does not treat a preserved pivot
 pivot editing works. Driver failures and malformed originals remain explicit failed/excluded rows.
 Corpus writers select the source main-part variant, including inputs with a misleading extension.
 
-The package stage reports are in `~/corpora/results/package-preservation-2026-10-08/`:
+`python3 tools/ledger/test/pivot-fixtures.py ~/corpora/excel OUTDIR` authors the two pivot source kinds
+absent from the pinned inventory: a defined-name source and a two-area consolidation source. It keeps
+all unchanged package parts byte-identical, records source/output hashes and changed parts, and
+requires an empty destination. Consolidation input cells, cached records and displayed output agree.
+These are structural fixtures; package/SDK validity does not establish Office acceptance or Ledger's
+edit behavior. Use them alongside the public range, table, external-source and shared-cache workbooks.
 
-| App | Save/reopen OK | Failed / excluded | Package/SDK OK | Failed / excluded |
-|---|---:|---:|---:|---:|
-| Quire | 2,880 | 22 / 0 | 2,792 | 110 / 0 |
-| Ledger | 935 | 11 / 5 | 910 | 36 / 5 |
-| Lectern | 840 | 3 / 1 | 822 | 21 / 1 |
+### Quire controls, properties and objects
 
-The recorded 14-variant matrix passes 420 assertions; checker and authored macro cases pass too.
-A focused follow-up checks that recovery retains pending compatibility entries without warning at
-open. Metadata stored alongside a draft carries these entries and acknowledgements; they do not
-become document content. The Markdown fixtures remain 24/24 unchanged and 24/24 edits confined to
-their edited block. All three app/checker views load without console errors; the existing Google
-Fonts requests remain the only external requests in those runs.
+`node --test tools/quire/test/*.test.js` covers control boundaries and locks, independent property
+replacement, alternatives, range/object identity and history. `node tools/quire/test/controls.mjs
+~/corpora/word OUTDIR` edits authored bound-text, date and checkbox controls, emitting before/edit/undo/
+copy/draft/recovered files. `node tools/quire/test/objects.mjs ~/corpora/word OUTDIR` transfers authored
+OLE/SmartArt objects between browser tabs, edits converted content, undoes it and recovers a draft.
+`node tools/quire/test/drawing-properties.mjs ~/corpora/word OUTDIR` checks authored picture/shape
+properties and watermarks, plus generated row/cell alternatives with populated and empty choices.
+It writes originals and every edit/history/draft state, checking that deletion cannot restore hidden
+table content and that original watermark elements remain byte-identical before editing.
+Use the resulting JSONL state rows with `validate.py`; it validates every emitted state.
+The Office batch generator supports Quire edits `picture-properties`, `shape-shadow`, `drawing-anchor`
+and `watermark`, so review copies and previous-writer comparisons use the same scripted edits.
 
-Office handoffs cover 32 package features under `~/Downloads/lossless-check/<app>/package/`, with
-original and saved copies, and edited copies when the fixture has editable text. Acceptance is
-pending. Three representative macro-enabled samples (one per app) open in LibreOffice with unchanged
-page/slide counts. Full-corpus LibreOffice rendering and the remaining object-level preservation gates are
-unfinished. Further testing is focused on changed behavior and observed failures, rather than
-repeating the complete matrix after unrelated changes.
+Current results belong in the app docs. Preserve complete run commands, hashes, previous-writer
+comparisons, initial failures, corrections and historical tables in `~/corpora/results/<run>/README.md`.
+A full run should use a frozen writer revision, served on a separate port while development continues.
+The browser harness disables persistence in its own tabs, captures loss metadata after snapshot, and
+checks the recovered document. Locked content-control edits are explicit exclusions, not undo failures.
 
 `python3 tools/ooxml/samples.py ~/corpora /tmp/lossless ~/Downloads/lossless-check/baseline`
 selects small independently authored files for each carried-feature test, copies original/saved/edited
@@ -251,11 +275,11 @@ variants where available, and writes a manifest. It refuses to replace differing
 Use a new destination for each implementation stage. Record actual Word/Excel/PowerPoint repair
 results; an unperformed Office check remains pending.
 
-`node tools/lectern/test/timing-repair.mjs OUTDIR --sdk PATH_TO_DLL` reproduces the six slide-6
+`node tools/lectern/test/timing-repair.mjs OUTDIR --sdk PATH_TO_DLL` reproduces the slide-6
 diagnostic copies from the current sample. `--source SAVED_SAMPLE.pptx` instead uses the exact bytes
 of a reported failure; `--dotnet PATH` selects the runtime. The output directory must be empty.
 The variants isolate removal of slide-6 timing, its build list, its teeter effect, and ordering of
-timing IDs; the LibreOffice resave is a separate control. The script asserts build-pair identity and
+timing IDs; from the built-in sample it also writes the deck without slide 6 and slide 6 alone. The LibreOffice resave is a separate control and does not fail the run. The script asserts build-pair identity and
 text targets, validates each package, and writes hashes and a pending PowerPoint result per copy.
 Only slide6.xml changes in the four isolated variants. PowerPoint results are a manual gate:
 schema validity and LibreOffice opening do not prove that the repair problem has been fixed.

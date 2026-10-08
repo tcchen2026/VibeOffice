@@ -41,6 +41,22 @@ test('valid shared targets and cyclic relationships do not look like missing par
   const file = await pkg('cycle', { 'a.xml': '<x/>', 'b.xml': '<y/>', '_rels/a.xml.rels': rels(rel('one', 'b.xml') + rel('two', 'b.xml')), '_rels/b.xml.rels': rels(rel('back', 'a.xml')) });
   assert.equal(run('check', file).status, 'ok');
 });
+test('Word repair regressions: duplicate comment references and promoted pre-release threads', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const duplicate = await pkg('comment-reference', { 'word/document.xml': `<w:document xmlns:w="${W}"><w:body><w:p><w:r><w:commentReference w:id="0"/><w:commentReference w:id="0"/></w:r></w:p></w:body></w:document>` });
+  assert(run('check', duplicate).issues.some(i => i.code === 'duplicate-comment-reference-id'));
+  const two = await pkg('two-comment-definitions', {
+    '_rels/.rels': rels(rel('main', 'word/document.xml', 'officeDocument')),
+    'word/_rels/document.xml.rels': rels(rel('comments', 'comments.xml', 'comments')),
+    'word/document.xml': `<w:document xmlns:w="${W}"><w:body><w:p><w:r><w:commentReference w:id="0"/><w:commentReference w:id="0"/></w:r></w:p></w:body></w:document>`,
+    'word/comments.xml': `<w:comments xmlns:w="${W}"><w:comment w:id="0"/><w:comment w:id="0"/></w:comments>`,
+  });
+  assert(!run('check', two).issues.some(i => i.code === 'duplicate-comment-reference-id'));
+  const old = await pkg('old-comments', { 'word/commentsExtended.xml': '<commentsEx xmlns="http://schemas.microsoft.com/office/word/2010/11/wordml"/>' });
+  const modern = await pkg('modern-comments', { 'word/commentsExtended.xml': '<commentsEx xmlns="http://schemas.microsoft.com/office/word/2012/wordml"/>' });
+  assert(run('compare', old, modern).newIssues.some(i => i.code === 'promoted-comment-extension'));
+  assert.equal(run('compare', old, old).newIssues.length, 0);
+});
 test('IDs in mutually exclusive alternatives may repeat, active duplicate IDs may not', async () => {
   const ac = `<mc:AlternateContent xmlns:mc="${MC}" xmlns:new="urn:new"><mc:Choice Requires="new">${picture(2)}</mc:Choice><mc:Fallback>${picture(2)}</mc:Fallback></mc:AlternateContent>`;
   assert.equal(run('check', await pkg('ac', { 'slide.xml': slide(ac) })).status, 'ok');
@@ -48,6 +64,39 @@ test('IDs in mutually exclusive alternatives may repeat, active duplicate IDs ma
   assert.ok(invalid.issues.some(i => i.code === 'duplicate-shape-id'));
   assert.equal(run('check', await pkg('scoped', { 'one.xml': slide(picture(2)), 'two.xml': slide(picture(2)) })).status, 'ok');
 });
+test('a Strict format conversion matches existing diagnostics but still detects new duplicates', async () => {
+  const original = await pkg('strict-duplicates', { 'slide.xml': slide(picture(2) + picture(2)).replaceAll(P, 'http://purl.oclc.org/ooxml/presentationml/main') });
+  const same = await pkg('transitional-duplicates', { 'slide.xml': slide(picture(2) + picture(2)) });
+  assert.equal(run('check', same).issues.length, 1);
+  assert.equal(run('compare', original, same).newIssues.length, 0);
+  const extra = await pkg('transitional-more-duplicates', { 'slide.xml': slide(picture(2) + picture(2) + picture(2)) });
+  assert.equal(run('compare', original, extra).newIssues.length, 2);
+});
+test('a slide layout may not reuse its master\'s ID', async () => {
+  const pres = id => `<p:presentation xmlns:p="${P}" xmlns:r="${R}"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst></p:presentation>`;
+  const master = id => `<p:sldMaster xmlns:p="${P}" xmlns:r="${R}"><p:sldLayoutIdLst><p:sldLayoutId id="${id}" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>`;
+  const parts = id => ({ 'presentation.xml': pres(), '_rels/presentation.xml.rels': rels(rel('rId1', 'master.xml', 'slideMaster')), 'master.xml': master(id), '_rels/master.xml.rels': rels(rel('rId1', 'layout.xml', 'slideLayout')), 'layout.xml': `<p:sldLayout xmlns:p="${P}"/>` });
+  assert.ok(run('check', await pkg('master-layout-dup', parts('2147483648'))).issues.some(i => i.code === 'duplicate-master-layout-id'));
+  assert.ok(!run('check', await pkg('master-layout-ok', parts('2147483649'))).issues.some(i => i.code.startsWith('duplicate')));
+});
+
+test('a preset shape lists all of its adjustment values or none', async () => {
+  const sp = av => `<p:sp><p:nvSpPr><p:cNvPr id="2" name="Callout"/></p:nvSpPr><p:spPr><a:prstGeom prst="wedgeRoundRectCallout"><a:avLst>${av}</a:avLst></a:prstGeom></p:spPr></p:sp>`;
+  const gd = (n, v) => `<a:gd name="${n}" fmla="val ${v}"/>`;
+  assert.ok(run('check', await pkg('adj-partial', { 'slide.xml': slide(sp(gd('adj1', -62000) + gd('adj2', 48000))) })).issues.some(i => i.code === 'partial-preset-adjust'));
+  assert.equal(run('check', await pkg('adj-full', { 'slide.xml': slide(sp(gd('adj1', -62000) + gd('adj2', 48000) + gd('adj3', 16667))) })).status, 'ok');
+  assert.equal(run('check', await pkg('adj-none', { 'slide.xml': slide(sp('')) })).status, 'ok');
+});
+
+test('WordArt fill belongs to textFill/textOutline and insertion encloses deletion', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', W14 = 'http://schemas.microsoft.com/office/word/2010/wordml';
+  const doc = content => `<w:document xmlns:w="${W}" xmlns:w14="${W14}"><w:body><w:p>${content}</w:p></w:body></w:document>`;
+  const bad = await pkg('word-conventions-bad', { 'word/document.xml': doc('<w:del><w:ins><w:r><w:rPr><w14:solidFill/></w:rPr><w:delText>edited</w:delText></w:r></w:ins></w:del>') });
+  assert.deepEqual(run('check', bad).issues.map(i => i.code).sort(), ['inserted-inside-deleted', 'wordart-fill-outside-property']);
+  const good = await pkg('word-conventions-good', { 'word/document.xml': doc('<w:ins><w:del><w:r><w:rPr><w14:textFill><w14:solidFill/></w14:textFill><w14:textOutline><w14:noFill/></w14:textOutline></w:rPr><w:delText>edited</w:delText></w:r></w:del></w:ins>') });
+  assert.equal(run('check', good).status, 'ok');
+});
+
 test('timing and connector targets must identify existing shapes and timing nodes', async () => {
   const file = await pkg('timing', { 'slide.xml': slide(picture(2) + '<p:timing><p:cTn id="1"/><p:spTgt spid="3"/><p:tn val="4"/><a:stCxn id="5"/></p:timing>') });
   const codes = run('check', file).issues.map(i => i.code);

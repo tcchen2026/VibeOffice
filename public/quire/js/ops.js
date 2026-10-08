@@ -105,6 +105,7 @@
       if (p.pPr.pageBreakBefore) { np.pPr.pageBreakBefore = true; delete p.pPr.pageBreakBefore; }
     }
     delete np.pPr.dropCap;
+    L.preserve?.splitControls(d, p, np);
     if (O.tracking()) p.mark = { ins: O.revStamp() };
     cont.blocks.splice(cont.blocks.indexOf(p) + 1, 0, np);
     d._idxDirty = true;
@@ -119,6 +120,7 @@
     const q = cont.blocks[idx + 1];
     if (!q || q.t !== 'p') return null;
     D.touch(p); D.touch(q); D.touchList(cont);
+    L.preserve?.joinControls(d, p, q);
     const o = D.plen(p);
     const pEmpty = o === 0 && !p.runs.length;
     if (pEmpty) { p.pPr = L.clone(q.pPr); p.rPr = L.clone(q.rPr); }
@@ -171,6 +173,7 @@
     const d = doc();
     [a, b] = D.order(d, a, b);
     if (D.eqPos(a, b)) return a;
+    L.preserve?.deleteControls(d, a, b);
     if (O.tracking()) return trackDeleteRange(a, b);
     if (a.p === b.p) { cutRange(a.p, a.o, b.o); return D.pos(a.p, a.o); }
     const ia = D.info(d, a.p), ib = D.info(d, b.p);
@@ -284,8 +287,9 @@
   O.copyRange = function (a, b) {
     const d = doc();
     [a, b] = D.order(d, a, b);
+    const copyP = (p, from, to) => D.para(D.sliceRuns(p, from, to), L.preserve ? L.preserve.copyParagraphProperties(p, from, to) : L.clone(p.pPr), L.clone(p.rPr));
     if (a.p === b.p) {
-      const p = D.para(D.sliceRuns(a.p, a.o, b.o), L.clone(a.p.pPr), L.clone(a.p.rPr));
+      const p = copyP(a.p, a.o, b.o);
       p.partial = true;
       return [p];
     }
@@ -296,9 +300,9 @@
       const i0 = bl.indexOf(a.p), i1 = bl.indexOf(b.p);
       for (let i = i0; i <= i1; i++) {
         const blk = bl[i];
-        if (blk === a.p) out.push(D.para(D.sliceRuns(blk, a.o, D.plen(blk)), L.clone(blk.pPr), L.clone(blk.rPr)));
-        else if (blk === b.p) { const q = D.para(D.sliceRuns(blk, 0, b.o), L.clone(blk.pPr), L.clone(blk.rPr)); q.partial = true; out.push(q); }
-        else out.push(D.cloneBlocks([blk])[0]);
+        if (blk === a.p) out.push(copyP(blk, a.o, D.plen(blk)));
+        else if (blk === b.p) { const q = copyP(blk, 0, b.o); q.partial = true; out.push(q); }
+        else out.push(L.clone(blk));
         if (blk.t === 'p' && blk.sect && blk !== b.p) out[out.length - 1].sect = L.clone(blk.sect);
       }
       return out.map((x) => { if (x.t === 'p') x.id = D.nid(); return x; });
@@ -308,13 +312,13 @@
     if (fa.cont === fb.cont) {
       for (let i = fa.i; i <= fb.i; i++) {
         const blk = fa.cont.blocks[i];
-        if (blk === a.p) out.push(D.para(D.sliceRuns(blk, a.o, D.plen(blk)), L.clone(blk.pPr), L.clone(blk.rPr)));
-        else if (blk === b.p) { const q = D.para(D.sliceRuns(blk, 0, b.o), L.clone(blk.pPr), L.clone(blk.rPr)); q.partial = true; out.push(q); }
-        else out.push(D.cloneBlocks([blk])[0]);
+        if (blk === a.p) out.push(copyP(blk, a.o, D.plen(blk)));
+        else if (blk === b.p) { const q = copyP(blk, 0, b.o); q.partial = true; out.push(q); }
+        else out.push(L.clone(blk));
       }
       return out;
     }
-    for (const p of D.parasBetween(d, a.p, b.p)) out.push(D.para(D.sliceRuns(p, p === a.p ? a.o : 0, p === b.p ? b.o : D.plen(p)), L.clone(p.pPr), L.clone(p.rPr)));
+    for (const p of D.parasBetween(d, a.p, b.p)) out.push(copyP(p, p === a.p ? a.o : 0, p === b.p ? b.o : D.plen(p)));
     return out;
   };
   /** plain text of a range (paragraphs separated by \r\n for clipboard) */
@@ -351,6 +355,7 @@
     const d = doc();
     if (!blocks.length) return pos;
     blocks = D.cloneBlocks(blocks);
+    if (L.preserve?.controls({ main: { blocks }, hf: {}, fn: {}, en: {}, comments: {} }).records.size) { D.touchKey(d, 'keep'); d.keep = d.keep || {}; d.keep.controls = true; }
     const trk = O.tracking();
     if (trk) {
       const st = O.revStamp();
@@ -360,8 +365,9 @@
     const keepSrcFmt = !opts || opts.keepFormat !== false;
     if (blocks.length === 1 && blocks[0].t === 'p') {
       const src = blocks[0];
+      L.preserve?.inlineControls(src);
       const p = D.touch(pos.p);
-      const i = D.splitAt(p, pos.o);
+      const i = D.insertIndex(p, pos.o);
       const items = src.runs.map((it) => Object.assign({}, it));
       if (!keepSrcFmt) for (const it of items) it.rPr = Object.assign(O.inheritRPr(pos), it.rPr && it.rPr.ins ? { ins: it.rPr.ins } : {});
       p.runs.splice(i, 0, ...items);
@@ -379,7 +385,7 @@
     const cont = D.touchList(info.cont);
     let insertAt = cont.blocks.indexOf(startP) + 1;
     let first = 0;
-    if (blocks[0].t === 'p') {
+    if (blocks[0].t === 'p' && !blocks[0].pPr.sdts?.length && !blocks[0].pPr.sdte?.length) {
       const p = D.touch(startP);
       p.runs = p.runs.concat(blocks[0].runs);
       if (wasEmpty || pos.o === 0) { p.pPr = L.clone(blocks[0].pPr); p.rPr = L.clone(blocks[0].rPr); }
@@ -390,7 +396,7 @@
     let lastIdx = blocks.length;
     let endPos = null;
     const last = blocks[blocks.length - 1];
-    if (blocks.length > 1 && last.t === 'p' && last.partial) {
+    if (blocks.length > 1 && last.t === 'p' && last.partial && !last.pPr.sdts?.length && !last.pPr.sdte?.length) {
       const q = D.touch(after.p);
       const n = last.runs.reduce((s, it) => s + D.ilen(it), 0);
       q.runs = last.runs.concat(q.runs);
