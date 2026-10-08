@@ -79,6 +79,24 @@ async function save(c, data) {
       D.tx('Link tracked text', () => { D.touch(owner); run.rPr.link = { url: 'https://example.invalid/review' }; });
       changed.push('Added a hyperlink to tracked text');
     } else if (c.edit && c.edit !== 'save') changed = corpusScenario(c.app, doc, c.edit).changed;
+  } else if (c.app === 'ledger' && c.steps) {
+    const O = L.ops;
+    for (const step of c.steps) {
+      const table = step.table == null ? null : doc.tables[step.table];
+      const sh = table?.sheet || (typeof step.sheet === 'string' ? doc.sheetByName(step.sheet) : doc.sheets[step.sheet || 0]);
+      if (!sh) throw new Error('Missing worksheet for ' + step.kind);
+      if (step.kind === 'lines') O.insertLines(sh, step.axis, table ? table.ref[step.axis + '1'] + step.offset : step.at, step.count);
+      else if (step.kind === 'value') O.tx(doc, 'Review cell edit', () => O.put(sh, step.row, step.col, { ...sh.get(step.row, step.col), v: step.value, f: undefined }));
+      else if (step.kind === 'copy-sheet') { O.copySheet(doc, sh, doc.sheets.length); if (step.deleteSource) O.deleteSheet(doc, sh); }
+      else if (step.kind === 'delete-sheet') O.deleteSheet(doc, sh);
+      else if (step.kind === 'note') O.tx(doc, 'Review note', () => O.setComment(sh, step.row, step.col, { r: step.row, c: step.col, author: 'Review', text: step.text }));
+      else if (step.kind === 'bar') {
+        const cf = L.clone(sh.cf), rule = cf.flatMap(c => c.rules).find(r => r.bar);
+        if (!rule) throw new Error('Missing data bar');
+        Object.assign(rule.bar, step.properties); O.tx(doc, 'Review data bar', () => O.setCF(sh, cf));
+      } else throw new Error('Unknown review step ' + step.kind);
+      changed.push(step);
+    }
   } else if (c.edit && c.edit !== 'save') changed = corpusScenario(c.app, doc, c.edit).changed;
   const format = c.file.split('.').pop();
   const blob = await (c.app === 'quire' ? L.docx.write(doc, { format }) : c.app === 'ledger' ? L.xlsxWrite.write(doc, { type: format }) : L.pptx.write(doc, { format }));

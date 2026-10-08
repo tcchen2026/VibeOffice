@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import urllib.request
 
 SOURCES = {
     'libreoffice': ('https://github.com/LibreOffice/core', '2821d29a87b28785d74fa64d975465e4c99d4416', ['sw/qa', 'sc/qa', 'sd/qa', 'oox/qa']),
@@ -14,6 +15,29 @@ SOURCES = {
 EXTENSIONS = {'word': ['docx', 'docm', 'dotx', 'dotm'], 'excel': ['xlsx', 'xlsm', 'xltx', 'xltm'],
               'powerpoint': ['pptx', 'pptm', 'ppsx', 'ppsm', 'potx', 'potm']}
 BY_EXT = {'.' + ext: app for app, exts in EXTENSIONS.items() for ext in exts}
+LEDGER_FEATURES = [
+    ('XLibur/XLibur', 'cc7547ff9bf67077e47fbffc38d313b3c6cd31aa',
+     'XLibur.Tests/Resource/TryToLoad/SlicersOnPivotAndTable.xlsx', '4dc1bd8cac0c5c50d15c7460ce2c5479974442c4ea6c7f441f35f3f77c70a280'),
+    ('XLibur/XLibur', 'cc7547ff9bf67077e47fbffc38d313b3c6cd31aa',
+     'XLibur.Tests/Resource/TryToLoad/Timelines_Missing_21232.xlsx', '662c40550a6b296deee93c744bc7bcb37a93196104ef907cd2dafea5a167f6b9'),
+    ('Ryvier/CoffeeSalesProject', '4b94ad3d35d7f50f385051d5adaac426d391e03f',
+     'coffeeSalesProject.xlsx', 'd8e288300dfb18e1912289ccfb4e346398667afd928151193be9868f9aaee048'),
+]
+
+def ledger_features(root):
+    dest = root / 'ledger-features'
+    dest.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    for repo, commit, source, digest in LEDGER_FEATURES:
+        url = f'https://raw.githubusercontent.com/{repo}/{commit}/{source}'
+        file = dest / Path(source).name
+        data = file.read_bytes() if file.exists() else urllib.request.urlopen(url, timeout=60).read()
+        if hashlib.sha256(data).hexdigest() != digest:
+            raise ValueError(f'Fixture hash mismatch: {file}')
+        if not file.exists(): file.write_bytes(data)
+        manifest.append(dict(file=file.name, repo=repo, commit=commit, path=source, url=url, sha256=digest))
+    (dest / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    print(f'ledger-features: {len(manifest)} pinned supplemental files (separate from the main corpus)')
 
 def git(folder, *args, check=True):
     p = subprocess.run(['git', '-C', str(folder), *args], check=check, stdout=subprocess.PIPE, text=True)
@@ -25,6 +49,9 @@ def main():
     if root == repo or repo in root.parents:
         raise ValueError('Choose a corpus directory outside the repository')
     selected = sys.argv[2:] or list(SOURCES)
+    if selected == ['ledger-features']:
+        ledger_features(root)
+        return
     if any(s not in SOURCES for s in selected):
         raise ValueError('Sources: ' + ', '.join(SOURCES))
     root.mkdir(parents=True, exist_ok=True)

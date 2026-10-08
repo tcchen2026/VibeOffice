@@ -20,7 +20,7 @@ SELECT = {
     'a': ['CT_ShapeProperties', 'CT_EffectList', 'CT_TextBodyProperties', 'CT_TextParagraphProperties', 'CT_TextCharacterProperties', 'CT_Blip', 'CT_BlipFillProperties', 'CT_NonVisualDrawingProps'],
     'wp': ['CT_Anchor', 'CT_Inline'],
     'p': ['CT_Presentation', 'CT_PresentationProperties', 'CT_ViewProperties', 'CT_Slide', 'CT_CommonSlideData', 'CT_SlideLayout', 'CT_NotesMaster', 'CT_NotesSlide', 'CT_SlideMaster'],
-    's': ['CT_Stylesheet', 'CT_Worksheet', 'CT_Workbook', 'CT_Table', 'CT_PivotCacheDefinition'],
+    's': ['CT_Stylesheet', 'CT_Worksheet', 'CT_Workbook', 'CT_Table', 'CT_TableColumn', 'CT_QueryTableRefresh', 'CT_PivotCacheDefinition'],
 }
 NAMESPACES = {
     'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',

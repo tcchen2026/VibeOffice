@@ -16,7 +16,7 @@ corpus, saved, outp = sys.argv[1], sys.argv[2], sys.argv[3]
 
 def load(path):
     z = zipfile.ZipFile(path)
-    names = z.namelist()
+    names = [n for n in z.namelist() if not n.endswith('/')]
     files = {}
     for n in names:
         if (n.endswith('.xml') or n.endswith('.rels') or n.endswith('.vml')) and z.getinfo(n).file_size < 60_000_000:
@@ -164,6 +164,10 @@ stats = {k: {'books_with': 0, 'lost_all': 0, 'lost_some': 0, 'items_orig': 0, 'i
 cellstat = {'fmt_nf': 0, 'fmt_other': 0, 'books_fmt': 0, 'fmt_samples': [], 'worst_fmt': [], 'books': 0, 'books_diff': 0, 'cells': 0, 'missing': 0, 'changed': 0, 'formula_changed': 0, 'unreadable': 0, 'worst': [], 'samples': []}
 pairs = 0
 CELLS = os.environ.get('CELLS', '1') == '1'
+# The corpus driver's text scenario changes A1 on the first ordinary worksheet.
+# Exclude only that intended target; every other original value/formula is compared.
+SCENARIO = os.environ.get('SCENARIO', '')
+if SCENARIO not in ('', 'text'): raise ValueError('Unsupported cell-audit SCENARIO: ' + SCENARIO)
 for s, op, sp in audit.pairs(corpus, saved, ('.xlsx', '.xlsm', '.xltx', '.xltm')):
     base = s.rsplit('.', 1)[0]
     try:
@@ -206,6 +210,7 @@ for s, op, sp in audit.pairs(corpus, saved, ('.xlsx', '.xlsm', '.xltx', '.xltm')
     for title, d in ca.items():
         e = cb.get(title, {})
         for k, v in d.items():
+            if SCENARIO == 'text' and title == next(iter(ca), None) and k == (1, 1): continue
             n += 1
             if k not in e: miss += 1; continue
             (v, sa), (w, sb) = v, e[k]
@@ -233,7 +238,7 @@ for s, op, sp in audit.pairs(corpus, saved, ('.xlsx', '.xlsm', '.xltx', '.xltm')
         cellstat['worst'].append([base, miss, chg, fchg, n])
 cellstat['worst_fmt'] = sorted(cellstat['worst_fmt'], key=lambda r: -(r[1] + r[2]))[:30]
 cellstat['worst'] = sorted(cellstat['worst'], key=lambda r: -(r[1] + r[2] + r[3]))[:30]
-json.dump({'accounting': audit.report(), 'pairs': pairs, 'stats': stats, 'cells': cellstat}, open(outp, 'w'), indent=1, default=str)
+json.dump({'accounting': audit.report(), 'pairs': pairs, 'stats': stats, 'cells': cellstat, 'scenario': SCENARIO or 'save'}, open(outp, 'w'), indent=1, default=str)
 print('workbook pairs compared', pairs)
 c = cellstat
 print('cells (openpyxl): %d workbooks, %d keep every value and formula; %d cells, %d missing, %d values changed, %d formulas changed, %d saved copies unreadable' % (c['books'], c['books'] - c['books_diff'], c['cells'], c['missing'], c['changed'], c['formula_changed'], c['unreadable']))

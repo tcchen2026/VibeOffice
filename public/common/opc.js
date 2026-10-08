@@ -596,7 +596,19 @@
             const uri = el.lookupNamespaceURI(prefix);
             if (uri) ignorable.add(rootPrefix(prefix, uri)); else resolved = false;
           }
-          if (resolved) remove(el, a);
+          if (resolved) {
+            // Preserve*/ProcessContent must name namespaces in Ignorable on
+            // this same element (MC and the Office SDK require it). Their
+            // scope cannot be widened by moving the processing rule to root.
+            const required = new Set(attrs(el).filter(p => /^(PreserveAttributes|PreserveElements|ProcessContent)$/.test(p.localName) && ans(el, p) === NS.mc)
+              .flatMap(p => p.value.trim().split(/\s+/).filter(Boolean).map(v => v.split(':')[0])));
+            const local = a.value.trim().split(/\s+/).filter(p => required.has(p));
+            if (!local.length) remove(el, a);
+            else if (local.join(' ') !== a.value) {
+              const p = XML.source.get(el).attrs.find(p => p.name === a.name);
+              edits.push({ start: p.start, end: p.end, value: esc(local.join(' ')) });
+            }
+          }
         }
       }
     }

@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
   const L = root.L;
-  const M = L.model, F = L.formula, NF = L.numfmt, XML = L.xml;
+  const M = L.model, F = L.formula, NF = L.numfmt, XML = L.xml, K = L.opc;
   const R = (L.xlsxRead = {});
 
   /* ------------------------------------------------------------ element helpers */
@@ -545,6 +545,9 @@
     const sd = sliceSheetData(text);
     let el;
     try { el = XML.parse(sd.rest); } catch (e) { el = XML.parse(sd.rest.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')); }
+    L.sheetObjects.capture(sh, part, sd.rest);
+    L.opc.captureAC(el, sd.rest);
+    resolveAC(el);
     const rels = await pkg.rels(part);
     /* sheet properties */
     const pr = kid(el, 'sheetPr');
@@ -648,7 +651,7 @@
     for (const cf of kids(el, 'conditionalFormatting')) {
       const ranges = M.parseSqref(at(cf, 'sqref'));
       if (!ranges.length) continue;
-      const rules = kids(cf, 'cfRule').map((r) => readCfRule(r, ctx));
+      const rules = kids(cf, 'cfRule').map((r) => { const o = readCfRule(r, ctx); L.sheetExtensions.base(o, r, sh); return o; });
       if (rules.length) sh.cf.push({ ranges, rules, pivot: bool(cf, 'pivot', false) || undefined });
     }
     /* data validation */
@@ -703,7 +706,7 @@
     if (cm) await readComments(pkg, cm.target, sh);
     const vmlRel = (() => { const ld = kid(el, 'legacyDrawing'); return ld && rels.get(rid(ld, 'id')); })();
     if (vmlRel) await readVmlNotes(pkg, vmlRel.target, sh);
-    /* threaded comments: authors live at workbook level; legacy comments carry the text already */
+    /* Complete threads, including files without legacy note text. */
     const tcm = relOfType(rels, 'threadedComment');
     if (tcm) await readThreaded(pkg, tcm.target, sh, ctx);
     /* tables */
@@ -729,6 +732,7 @@
     if (keep.length) sh.extra.keep = keep;
     const scn = kid(el, 'scenarios');
     if (scn) sh.scenarios = kids(scn, 'scenario').map((x) => ({ name: at(x, 'name') || '', comment: at(x, 'comment') || '', user: at(x, 'user') || '', cells: kids(x, 'inputCells').map((ic) => { const p = F.parseCell(at(ic, 'r') || 'A1'); const v = at(ic, 'val'); return { r: p ? p.r : 0, c: p ? p.c : 0, v: v != null && v !== '' && !isNaN(+v) ? +v : v }; }) }));
+    L.sheetObjects.read(sh);
   }
 
   function readAutoFilter(af) {
@@ -743,6 +747,8 @@
         if (bool(fs, 'blank', false)) c.blank = true;
         const dg = kids(fs, 'dateGroupItem');
         if (dg.length) c.dates = dg.map((d) => ({ y: num(d, 'year', 0), m: num(d, 'month', 0), d: num(d, 'day', 0), H: num(d, 'hour', 0), M: num(d, 'minute', 0), S: num(d, 'second', 0), g: at(d, 'dateTimeGrouping') }));
+        // Preserve source ordering when a filter mixes date groups with text values.
+        if (c.values.length && c.dates?.length) c.filtersKeep = { xml: XML.serialize(fs), values: L.preserve.filterValues(c) };
       }
       const cf = kid(fc, 'customFilters');
       if (cf) c.custom = { and: bool(cf, 'and', false), list: kids(cf, 'customFilter').map((f) => ({ op: at(f, 'operator') || 'equal', val: at(f, 'val') })) };
@@ -811,6 +817,7 @@
   function readSheetExt(ext, sh, ctx) {
     for (const e of kids(ext, 'ext')) {
       for (const c of e.children) {
+        if (c.namespaceURI !== L.sheetExtensions.NS) continue;
         if (c.localName === 'dataValidations') {
           for (const d of kids(c, 'dataValidation')) {
             const sq = kid(d, 'sqref');
@@ -823,6 +830,7 @@
             if (f2) o.f2 = f2.textContent.trim();
             o.x14 = true;
             sh.dv.push(o);
+            L.sheetExtensions.keep(o, d, sh);
           }
         } else if (c.localName === 'conditionalFormattings') {
           for (const cf of kids(c, 'conditionalFormatting')) {
@@ -834,6 +842,8 @@
               const base = id && sh.cf.flatMap((x) => x.rules).find((x) => x.x14id === id);
               const db = kid(r, 'dataBar');
               if (base && db && base.bar) {
+                for (const k of ['minLength', 'maxLength']) if (at(db, k) != null) base.bar[k] = num(db, k, base.bar[k]);
+                if (at(db, 'showValue') != null) base.bar.showValue = bool(db, 'showValue', true);
                 base.bar.gradient = at(db, 'gradient') !== '0';
                 base.bar.border = bool(db, 'border', false);
                 if (at(db, 'direction')) base.bar.direction = at(db, 'direction');
@@ -843,11 +853,13 @@
                 if (at(db, 'axisPosition')) base.bar.axis = at(db, 'axisPosition');
                 const cfvos = kids(db, 'cfvo');
                 if (cfvos.length === 2) base.bar.cfvo = cfvos.map((v) => { const o = { type: at(v, 'type') === 'autoMin' ? 'min' : at(v, 'type') === 'autoMax' ? 'max' : at(v, 'type') }; const f = kid(v, 'f'); if (f) o.val = f.textContent; return o; });
+                L.sheetExtensions.keep(base, r, sh, cf);
                 continue;
               }
               if (!ranges.length) continue;
               /* x14-only rules (icon sets with custom icons, rules referring to other sheets) */
               const o = readCfRule(r, ctx);
+              o.x14id = id; o.x14Only = true;
               const fs = kids(r, 'f').map((f) => f.textContent);
               if (fs.length) o.f = fs;
               const dx = kid(r, 'dxf');
@@ -859,6 +871,7 @@
                 if (ci.length) o.icons.custom = ci.map((x) => ({ set: at(x, 'iconSet'), id: +(at(x, 'iconId') || 0) }));
               }
               sh.cf.push({ ranges, rules: [o] });
+              L.sheetExtensions.keep(o, r, sh, cf);
             }
           }
         } else if (c.localName === 'sparklineGroups') {
@@ -870,9 +883,11 @@
             minAxisType: at(g, 'minAxisType') || 'individual', maxAxisType: at(g, 'maxAxisType') || 'individual', manualMin: at(g, 'manualMin') != null ? +at(g, 'manualMin') : null, manualMax: at(g, 'manualMax') != null ? +at(g, 'manualMax') : null, dateAxis: bool(g, 'dateAxis', false),
             items: kids(kid(g, 'sparklines'), 'sparkline').map((s) => ({ f: (kid(s, 'f') || { textContent: '' }).textContent, sqref: (kid(s, 'sqref') || { textContent: '' }).textContent })),
           }));
+          kids(c, 'sparklineGroup').forEach((g, i) => L.sheetExtensions.keep(sh.sparklines[i], g, sh));
         }
       }
     }
+    L.sheetExtensions.read(sh, ext);
   }
 
   async function readComments(pkg, part, sh) {
@@ -901,6 +916,7 @@
       }
       sh.comments.set(M.key(p.r, p.c), { r: p.r, c: p.c, author: authors[num(c, 'authorId', 0)] || '', text, runs: runs.some((x) => x.font) ? runs : undefined, visible: false });
     }
+    L.threads.notes(sh, part);
   }
   async function readVmlNotes(pkg, part, sh) {
     const t = await pkg.text(part);
@@ -927,19 +943,7 @@
     }
   }
   async function readThreaded(pkg, part, sh, ctx) {
-    const el = await pkg.xml(part);
-    if (!el) return;
-    for (const tc of kids(el, 'threadedComment')) {
-      const p = F.parseCell(at(tc, 'ref') || '');
-      if (!p) continue;
-      const cm = sh.comments.get(M.key(p.r, p.c));
-      if (!cm) continue;
-      const pid = at(tc, 'personId');
-      const person = ctx.persons && ctx.persons.get(pid);
-      const text = (kid(tc, 'text') || { textContent: '' }).textContent;
-      if (!cm.thread) cm.thread = [];
-      cm.thread.push({ author: person || '', text, date: at(tc, 'dT') || '', id: at(tc, 'id'), parent: at(tc, 'parentId') || null, done: bool(tc, 'done', false) });
-    }
+    L.threads.read(sh, part, ctx.persons);
   }
   async function readTable(pkg, part, sh, ctx) {
     const el = await pkg.xml(part);
@@ -966,6 +970,7 @@
     const af = kid(el, 'autoFilter');
     if (af) { t.filter = readAutoFilter(af); if (ctx.markFiltered) ctx.markFiltered(t.filter); }
     ctx.wb.tables.push(t);
+    L.tableKeep.read(t, el);
   }
 
   /* ------------------------------------------------------------ drawings */
@@ -981,7 +986,9 @@
     sh.extra.ooxmlDrawing = part;
     // Shape XML is saved as an opaque object. Capture before selecting a
     // display branch, so nested equations and effects keep Choice/Fallback.
-    const originalShapes = new WeakMap(el.getElementsByTagName('*').filter(e => /^(sp|grpSp|cxnSp)$/.test(e.localName)).map(e => [e, XML.serialize(e)]));
+    const originalShapes = new WeakMap(el.getElementsByTagName('*').filter(e => /^(sp|grpSp|cxnSp|pic)$/.test(e.localName)).map(e => [e, XML.serialize(e)]));
+    const owned = new Set((sh.extra.objectGroups || []).flatMap(g => g.ids));
+    const slicers = L.slicers.captureDrawing(el, sh, part);
     resolveAC(el, true);
     const rels = await pkg.rels(part);
     for (const a of el.children) {
@@ -992,15 +999,20 @@
       else if (kind === 'oneCellAnchor') { anchor.from = anchorPt(kid(a, 'from')); const ex = kid(a, 'ext'); anchor.w = num(ex, 'cx', 0) / EMU; anchor.h = num(ex, 'cy', 0) / EMU; }
       else { const p = kid(a, 'pos'), ex = kid(a, 'ext'); anchor.x = num(p, 'x', 0) / EMU; anchor.y = num(p, 'y', 0) / EMU; anchor.w = num(ex, 'cx', 0) / EMU; anchor.h = num(ex, 'cy', 0) / EMU; }
       const obj = a.children.find((c) => /^(pic|graphicFrame|sp|grpSp|cxnSp|contentPart)$/.test(c.localName));
-      if (!obj) continue;
-      const d = await readDrawingObject(pkg, obj, rels, ctx, sh);
+      const record = slicers.get(a);
+      if (!obj && !record) continue;
+      let d = obj && await readDrawingObject(pkg, obj, rels, ctx, sh);
+      if (!d && record) d = { kind: 'shape', text: record.names.join(', '), geom: 'rect' };
       if (!d) continue;
       if (d.kind === 'shape' && originalShapes.has(obj)) d.xml = originalShapes.get(obj);
       d.anchor = anchor;
       if (d.kind === 'shape' && ctx.wb.pkg) d.keep = { source: ctx.wb.pkg.id, part };
+      if (d.kind === 'image' && owned.has(d.id) && originalShapes.has(obj)) d.keep = { source: ctx.wb.pkg.id, part,
+        frame: K.fragment(K.parse(originalShapes.get(obj)), { pkg: ctx.wb.pkg, part }) };
       const cd = kid(a, 'clientData');
       if (cd && at(cd, 'fLocksWithSheet') === '0') d.unlocked = true;
       if (cd && at(cd, 'fPrintsWithSheet') === '0') d.noPrint = true;
+      if (record) L.slicers.attach(d, record);
       sh.drawings.push(d);
     }
   }
@@ -1242,6 +1254,9 @@
     if (wb.active >= wb.sheets.length || wb.active < 0) wb.active = 0;
     if (wb.sheets[wb.active].state !== 'visible') wb.active = Math.max(0, wb.sheets.findIndex((s) => s.state === 'visible'));
     wb.extra.keepValues = L.preserve.values(wb);
+    L.pivots.read(wb);
+    L.slicers.read(wb);
+    L.tableKeep.readWorkbook(wb);
     wb.extra.styleBaseline = { xf: st.xf.slice(), list: JSON.parse(JSON.stringify(wb.styles.list)), dxfs: JSON.parse(JSON.stringify(wb.dxfs)) };
     for (const sh of wb.sheets) if (sh.kind === 'macrosheet' || sh.kind === 'dialogsheet') sh.extra.opaqueBaseline = L.preserve.sheetContent(sh);
     return wb;

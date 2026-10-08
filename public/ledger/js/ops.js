@@ -12,11 +12,13 @@
   /** run fn inside one undoable step; recalculates what changed afterwards */
   O.tx = function (wb, label, fn) {
     const outer = changes == null;
+    const pivots = outer && L.pivots?.begin(wb);
     if (outer) { changes = []; structural = false; }
     wb.undo.begin(label);
     let res;
     try { res = fn(); }
     finally {
+      if (outer) L.pivots?.end(wb, pivots);
       wb.undo.end();
       if (outer) {
         const list = changes, st = structural;
@@ -46,6 +48,7 @@
   O.put = function (sh, r, c, cell) {
     sh.wb.undo.note(sh, r, c);
     const old = sh.get(r, c);
+    L.pivots?.cell(sh, r, c, old, cell);
     if (old && old._gnode && sh.wb.graph) sh.wb.graph.remove(old);
     if (cell && cell.f == null) { delete cell.ast; delete cell._fsrc; delete cell._gnode; }
     sh.put(r, c, cell);
@@ -639,8 +642,10 @@
       autoFilter: sh.autoFilter ? JSON.parse(JSON.stringify(sh.autoFilter)) : null,
       print: JSON.parse(JSON.stringify(sh.print)), maxR: sh.maxR, maxC: sh.maxC,
       view: { freeze: sh.view.freeze ? Object.assign({}, sh.view.freeze) : null, top: Object.assign({}, sh.view.top) },
-      tables: sh.wb.tables.filter((t) => t.sheet === sh).map((t) => ({ t, ref: Object.assign({}, t.ref), columns: t.columns.map((c) => Object.assign({}, c)) })),
+      tableSheet: sh.id, tableOrder: sh.wb.tables.slice(),
+      tables: sh.wb.tables.filter((t) => t.sheet === sh).map((t) => ({ t, ref: Object.assign({}, t.ref), columns: t.columns.map((c) => Object.assign({}, c)), filter: t.filter ? JSON.parse(JSON.stringify(t.filter)) : null, queryOps: t.queryOps?.slice() })),
       names: sh.wb.names.map((n) => Object.assign({}, n, { _ast: undefined })),
+      pivotSheet: sh.id, pivots: L.pivots?.snapshot(sh.wb),
     };
   }
   function restoreSheet(sh, s) {
@@ -656,8 +661,12 @@
     sh.print = JSON.parse(JSON.stringify(s.print));
     sh.maxR = s.maxR; sh.maxC = s.maxC;
     sh.view.freeze = s.view.freeze ? Object.assign({}, s.view.freeze) : null; sh.view.top = Object.assign({}, s.view.top);
-    for (const x of s.tables) { x.t.ref = Object.assign({}, x.ref); x.t.columns = x.columns.map((c) => Object.assign({}, c)); }
+    if (s.tableSheet === sh.id) {
+      sh.wb.tables = s.tableOrder.slice();
+      for (const x of s.tables) { x.t.ref = Object.assign({}, x.ref); x.t.columns = x.columns.map((c) => Object.assign({}, c)); x.t.filter = x.filter ? JSON.parse(JSON.stringify(x.filter)) : null; x.t.queryOps = x.queryOps?.slice(); }
+    }
     sh.wb.names = s.names.map((n) => Object.assign({}, n));
+    if (s.pivotSheet === sh.id) L.pivots?.restore(sh.wb, s.pivots);
     LY.invalidate(sh); LY.touchMerges(sh); sh._cfIdx = null;
   }
   O.snapSheet = snapSheet; O.restoreSheet = restoreSheet;
@@ -669,9 +678,11 @@
     if (inStruct.has(sh)) { const r = fn(); O.markStructural(); return r; }
     return O.tx(wb, label, () => {
       const before = snapSheet(sh);
+      const pivots = L.pivots?.structural(sh);
       let res;
       inStruct.add(sh);
       try { res = fn(); } finally { inStruct.delete(sh); }
+      L.pivots?.afterStructural(sh, pivots);
       const after = snapSheet(sh);
       wb.undo.op(() => restoreSheet(sh, before), () => restoreSheet(sh, after));
       O.markStructural();
@@ -707,8 +718,14 @@
     for (const s of wb.sheets) {
       for (const d of s.drawings) if (d.chart && L.xchart && L.xchart.adjust) L.xchart.adjust(d.chart, (ast) => F.adjust(ast, op, s.name));
       if (s.name === op.sheet) continue;
+      const beforeCF = JSON.stringify(s.cf), beforeDV = JSON.stringify(s.dv);
       for (const v of s.dv) for (const k of ['f1', 'f2']) if (v[k]) { const t = adjText(v[k], op, s.name); if (t !== v[k]) v[k] = t; }
-      for (const cf of s.cf) for (const rule of cf.rules) if (rule.f) rule.f = rule.f.map((x) => adjText(x, op, s.name));
+      for (const cf of s.cf) for (const rule of cf.rules) adjustRule(rule, op, s.name);
+      const afterCF = JSON.stringify(s.cf), afterDV = JSON.stringify(s.dv);
+      if (beforeCF !== afterCF || beforeDV !== afterDV) {
+        const put = (cf, dv) => { s.cf = JSON.parse(cf); s.dv = JSON.parse(dv); s._cfIdx = null; };
+        wb.undo.op(() => put(beforeCF, beforeDV), () => put(afterCF, afterDV));
+      }
     }
     /* sparkline data ranges (the edited sheet's own groups are restored by its snapshot) */
     for (const s of wb.sheets) {
@@ -725,6 +742,12 @@
   }
   function adjText(text, op, home) {
     try { const a = F.parse(String(text).replace(/^=/, '')); const r = F.adjust(a, op, home); return r.changed ? F.toText(r.ast, { store: true }) : text; } catch (e) { return text; }
+  }
+  function adjustRule(rule, op, home) {
+    if (rule.f) rule.f = rule.f.map(x => adjText(x, op, home));
+    for (const property of ['bar', 'icons', 'scale']) for (const value of rule[property]?.cfvo || []) {
+      if (value.type === 'formula' && value.val != null) value.val = adjText(value.val, op, home);
+    }
   }
   /** shift a range for an insert / delete; null when it disappears */
   function shiftRange(rg, axis, at, n) {
@@ -766,6 +789,9 @@
     }
     return O.structural(sh, label, () => {
       const op = { sheet: sh.name, axis, at, n };
+      const fixedSizes = new Map(sh.drawings.filter(d => d.anchor?.editAs === 'oneCell' && d.anchor.to)
+        .map(d => [d, anchorSpan(sh, d.anchor, axis)]));
+      L.pivots?.lines(sh, axis, at, n);
       adjustFormulas(wb, op);
       /* move cells */
       if (axis === 'r') {
@@ -797,7 +823,7 @@
       sh.rows.forEach((row) => { if (!row) return; row.cells.forEach((cl) => { if (cl && cl.am) { const p = shiftRange({ r1: cl.am.r, c1: cl.am.c, r2: cl.am.r, c2: cl.am.c }, axis, at, n); if (p) cl.am = { r: p.r1, c: p.c1 }; } }); });
       /* ranges hanging off the sheet */
       sh.merges = sh.merges.map((m) => shiftRange(m, axis, at, n)).filter((m) => m && (m.r1 !== m.r2 || m.c1 !== m.c2));
-      for (const cf of sh.cf) { cf.ranges = cf.ranges.map((g) => shiftRange(g, axis, at, n)).filter(Boolean); for (const rule of cf.rules) if (rule.f) rule.f = rule.f.map((x) => adjText(x, op, sh.name)); }
+      for (const cf of sh.cf) { cf.ranges = cf.ranges.map((g) => shiftRange(g, axis, at, n)).filter(Boolean); for (const rule of cf.rules) adjustRule(rule, op, sh.name); }
       sh.cf = sh.cf.filter((cf) => cf.ranges.length);
       for (const v of sh.dv) { v.ranges = v.ranges.map((g) => shiftRange(g, axis, at, n)).filter(Boolean); for (const k of ['f1', 'f2']) if (v[k]) v[k] = adjText(v[k], op, sh.name); }
       sh.dv = sh.dv.filter((v) => v.ranges.length);
@@ -815,8 +841,8 @@
       for (const v of sh.comments.values()) { const g = shiftRange({ r1: v.r, c1: v.c, r2: v.r, c2: v.c }, axis, at, n); if (g) cm.set(M.key(g.r1, g.c1), Object.assign({}, v, { r: g.r1, c: g.c1 })); }
       sh.comments = cm;
       if (sh.autoFilter && sh.autoFilter.ref) { const g = shiftRange(sh.autoFilter.ref, axis, at, n); sh.autoFilter = g ? Object.assign({}, sh.autoFilter, { ref: g }) : null; }
-      for (const t of wb.tables) if (t.sheet === sh) { const g = shiftRange(t.ref, axis, at, n); if (g) t.ref = g; }
-      for (const d of sh.drawings) moveAnchor(sh, d, axis, at, n);
+      L.tableKeep.shift(sh, axis, at, n, shiftRange);
+      for (const d of sh.drawings) moveAnchor(sh, d, axis, at, n, fixedSizes.get(d));
       if (sh.print.rowBreaks && axis === 'r') sh.print.rowBreaks = sh.print.rowBreaks.map((b) => (b >= at ? b + n : b)).filter((b) => b > 0);
       if (sh.print.colBreaks && axis === 'c') sh.print.colBreaks = sh.print.colBreaks.map((b) => (b >= at ? b + n : b)).filter((b) => b > 0);
       if (axis === 'r') sh.maxR = Math.max(-1, sh.maxR + n); else sh.maxC = Math.max(-1, sh.maxC + n);
@@ -824,14 +850,30 @@
       LY.invalidate(sh); LY.touchMerges(sh);
     });
   };
-  function moveAnchor(sh, d, axis, at, n) {
+  function anchorSpan(sh, a, axis) {
+    let size = (a.to[axis + 'Off'] || 0) - (a.from[axis + 'Off'] || 0);
+    for (let i = a.from[axis]; i < a.to[axis]; i++) size += axis === 'r' ? M.rowPt(sh, i) : M.colPx(sh, i) * 0.75;
+    return Math.max(0, size);
+  }
+  function moveAnchor(sh, d, axis, at, n, fixedSize) {
     const a = d.anchor;
     if (!a || a.type === 'abs') return;
     const k = axis === 'r' ? 'r' : 'c';
     const mv = (p) => { if (!p) return; if (n > 0) { if (p[k] >= at) p[k] += n; } else { const cnt = -n; if (p[k] >= at + cnt) p[k] -= cnt; else if (p[k] >= at) { p[k] = at; p[k + 'Off'] = 0; } } };
     if (a.editAs === 'absolute') return;
     mv(a.from);
-    if (a.editAs !== 'oneCell') mv(a.to);
+    if (fixedSize != null && a.to) {
+      // A two-cell anchor with oneCell behavior moves but keeps its physical size.
+      // Recompute its end against the rows/columns after the structural edit.
+      let i = a.from[k], off = (a.from[k + 'Off'] || 0) + fixedSize;
+      const limit = k === 'r' ? MAXR : MAXC;
+      for (; i < limit - 1; i++) {
+        const size = k === 'r' ? M.rowPt(sh, i) : M.colPx(sh, i) * 0.75;
+        if (off < size) break;
+        off -= size;
+      }
+      a.to[k] = i; a.to[k + 'Off'] = off;
+    } else if (a.editAs !== 'oneCell') mv(a.to);
   }
   /** insert / delete cells inside a range, shifting neighbours */
   O.shiftCells = function (sh, rg, dir, insert) {
@@ -989,27 +1031,38 @@
   O.copySheet = function (wb, sh, to, name) {
     let copy;
     O.tx(wb, 'Copy Sheet', () => {
+      const oldNames = wb.names.map(n => ({ ...n })), oldOrder = wb.sheets.slice();
       let base = sh.name.replace(/ \(\d+\)$/, ''), k = 2;
       name = name || (() => { let n; do { n = base + ' (' + k++ + ')'; } while (wb.sheetByName(n)); return n.length > 31 ? n.slice(0, 31) : n; })();
       copy = wb.addSheet(name, to);
       const snap = snapSheet(sh);
       restoreSheet(copy, snap);
+      copy.comments = new Map(Array.from(copy.comments, ([key, cm]) => [key, L.threads.copy(cm, wb)]));
       copy.wb = wb;
       copy.view = JSON.parse(JSON.stringify(sh.view));
       copy.print = JSON.parse(JSON.stringify(sh.print));
       copy.tabColor = sh.tabColor; copy.defColW = sh.defColW; copy.baseColW = sh.baseColW; copy.defRowH = sh.defRowH; copy.outline = Object.assign({}, sh.outline);
       copy.drawings = sh.drawings.map((d) => Object.assign({}, d, { anchor: JSON.parse(JSON.stringify(d.anchor)), chart: d.chart ? JSON.parse(JSON.stringify(d.chart)) : d.chart }));
-      wb.names = snap.names.map((n) => Object.assign({}, n));
+      L.sheetObjects.copySheet(sh, copy);
+      if (sh.extra.extensions) copy.extra.extensions = L.opc.duplicate(sh.extra.extensions);
+      L.tableKeep.copySheet(sh, copy);
+      wb.names = oldNames.map(n => ({ ...n, scope: n.scope == null ? n.scope : wb.sheets.indexOf(oldOrder[n.scope]) }));
       /* sheet-scoped names are duplicated for the copy */
       const idx = wb.sheets.indexOf(copy), srcIdx = wb.sheets.indexOf(sh);
-      for (const n of wb.names.slice()) if (n.scope === srcIdx) wb.names.push(Object.assign({}, n, { scope: idx }));
+      for (const n of wb.names.slice()) if (n.scope === srcIdx) {
+        let ref = n.ref;
+        try { const result = F.renameSheet(F.parse(String(ref).replace(/^=/, '')), sh.name, copy.name); if (result.changed) ref = F.toText(result.ast, { store: true }); } catch (_) { /* keep unparsed names */ }
+        wb.names.push({ ...n, scope: idx, ref, _ast: undefined });
+      }
       /* tables get new names */
       for (const t of wb.tables.filter((t) => t.sheet === sh)) {
         let tn = t.name.replace(/\d+$/, ''), i = 1; let nm; do { nm = tn + i++; } while (wb.findTable(nm));
-        wb.tables.push(Object.assign({}, t, { sheet: copy, name: nm, dname: nm, id: wb.tables.length + 1, ref: Object.assign({}, t.ref), columns: t.columns.map((c) => Object.assign({}, c)) }));
+        wb.tables.push(L.tableKeep.copy(Object.assign({}, t, { sheet: copy, name: nm, dname: nm, ooxmlCopy: true, id: Math.max(0, ...wb.tables.map(t => t.id || 0)) + 1, ref: Object.assign({}, t.ref), columns: t.columns.map((c) => Object.assign({}, c)), filter: t.filter ? JSON.parse(JSON.stringify(t.filter)) : t.filter }), wb));
       }
       const tablesAfter = wb.tables.slice();
-      wb.undo.op(() => { wb.sheets.splice(wb.sheets.indexOf(copy), 1); wb.tables = wb.tables.filter((t) => t.sheet !== copy); }, () => { wb.sheets.splice(idx, 0, copy); wb.tables = tablesAfter; });
+      const namesAfter = wb.names.map(n => ({ ...n }));
+      L.pivots?.copySheet(wb, sh, copy);
+      wb.undo.op(() => { wb.sheets.splice(wb.sheets.indexOf(copy), 1); wb.tables = wb.tables.filter((t) => t.sheet !== copy); wb.names = oldNames.map(n => ({ ...n })); }, () => { wb.sheets.splice(idx, 0, copy); wb.tables = tablesAfter; wb.names = namesAfter.map(n => ({ ...n })); });
       O.markStructural();
     });
     return copy;

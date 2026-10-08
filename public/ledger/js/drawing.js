@@ -350,13 +350,14 @@
     const c = DR.clipboard;
     if (!c) return;
     const s = sh();
-    const d = JSON.parse(JSON.stringify(c.d));
+    const d = L.sheetObjects.copy(c.d);
     if (c.media && d.media) {
       let id = d.media;
       if (!wb().media.get(id) || wb().media.get(id) !== c.media) { id = 'img' + (wb().media.size + 1) + '_' + Date.now().toString(36); wb().media.set(id, c.media); }
       d.media = id;
+      if (d.objectKeep?.values.media === c.d.media) d.objectKeep.values.media = id;
     }
-    d.id = Math.max(1, ...s.drawings.map((x) => x.id || 0)) + 1;
+    d.id = Math.max(d.objectKeep ? 1024 : 1, ...s.drawings.map((x) => x.id || 0)) + 1;
     const sel = G().sel();
     const a = d.anchor;
     if (a && a.type !== 'abs') {

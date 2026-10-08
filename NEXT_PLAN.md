@@ -12,8 +12,9 @@ and the habits, based on the progress review of commits b06d938..ffc6814.
 - Quire content controls, text/drawing properties, embedded objects, row/cell alternatives and
   watermarks (Office batch 2 accepted, including the comment correction and namespace follow-up).
 
-**Not done:**
-- Ledger and Lectern object-level features.
+**Implemented; Office pending:** Ledger object-level features and the full group measurement.
+
+**Not done:** Lectern object-level remainder and final suite measurement/loss reporting.
 
 **Slide-6 repair: fixed** (60c26b4, confirmed in PowerPoint). Read "Office acceptance" in AGENTS.md
 first: two bugs in the shared save code passed every automated check (master and layout sharing an
@@ -183,7 +184,7 @@ becomes a `package.py` rule with a test, per AGENTS.md "Office acceptance".
   samples open in LibreOffice with unchanged counts. Diffs contain only explained changes. The user
   confirmed all four namespace copies, including PowerPoint, pass Office.
   Reports: `~/corpora/results/namespace-hoist-2026-10-08/`.
-- Next: finish Ledger pivot implementation. The pivot behavior matrix is
+- Ledger pivot sources and output edits are implemented. The pivot behavior matrix was
   written in docs/ledger.md before code changes, as step 6 requires. The source inventory finds
   105 pivot workbooks, including 14 with shared caches. Defined-name and consolidation source
   fixtures are authored by `tools/ledger/test/pivot-fixtures.py`; both pass package/SDK checks,
@@ -191,8 +192,60 @@ becomes a `package.py` rule with a test, per AGENTS.md "Office acceptance".
   pending because it uses the package graph and identity patterns accepted in batch 1, rather than
   Quire's drawing-property patterns. That was a dependency-based interpretation of habit 1, broader
   than the execution line here stated. Work was paused for the review corrections; batch 2's required
-  checks are now accepted. Eight focused pivot edit/history cases pass, but integration, full-group
-  measurement and Excel acceptance remain pending; the pivot changes are still uncommitted.
+  checks are now accepted. Ten focused pivot cases and 31 package/SDK states pass; source-edited drafts
+  retain refresh notices, and two samples open in LibreOffice with unchanged counts. The complete
+  79-test unit set passes. Slicer dependencies will be integrated in step 6(d); full-group measurement
+  and Excel acceptance remain pending.
+- Ledger threads now include every reply, mentions, person metadata and comments without legacy notes.
+  Cell moves, row/column edits and copying update references; editing the displayed text converts only
+  that thread with a notice. Five focused cases / 16 package/SDK states pass, along with actual browser
+  Paste Special, undo/redo and draft recovery; two LibreOffice samples keep their page counts.
+  The complete unit set has 84 passing tests. The four public thread workbooks keep their original
+  thread/person parts byte for byte; mentions additionally use an authored fixture. Excel acceptance
+  remains pending in batch 3.
+- Ledger controls, embedded objects, worksheet custom properties and non-comment VML are integrated.
+  The 40 relevant workbooks retain 344/344 control references, 26/26 OLE entries, 367/367 non-note
+  VML shapes and 31/31 worksheet properties, with no new package/SDK diagnostics. All 43 VML parts
+  retain their bytes; 396 dependency parts are byte-identical, with 13 Strict ActiveX XML parts
+  explicitly converted to Transitional. Nine focused cases produce 26 passing saved states;
+  cross-workbook clipboard, undo/redo and two real draft states also pass. Two edited samples open
+  in LibreOffice with unchanged counts. All 93 unit tests pass and four pages load. The full Ledger
+  run and Excel batch 3 remain pending.
+- Ledger slicers and timelines now retain their frames, view/cache parts and sheet/workbook links.
+  Three supplemental public workbooks are pinned separately through `tools/corpora.sh DIR ledger-features`:
+  7/7 views remain and all 12 definition/cache parts are byte-identical. Seven focused cases and
+  19 package/SDK states cover moves, copies, shared pivots, source deletion, conversion and undo;
+  two actual browser draft states also pass. Two edited samples and timeline undo/redo open in
+  LibreOffice. All 100 unit tests pass and four pages load. Excel batch 3 and full Ledger measurement
+  remain pending.
+- Ledger data bars, extended rules/validations, sparklines and unknown worksheet extensions are
+  integrated. The 65 relevant workbooks keep 100/100 extension entries with unchanged expanded XML,
+  including 23 bars and 63 unknown entries. All package checks add no issues; 64 SDK comparisons
+  pass and one malformed original remains unvalidatable. Seven focused cases / 22 states plus
+  two browser draft states pass; two edited samples and history states keep their LibreOffice page
+  counts. All 107 unit tests pass and four pages load. Scoped MC processing/preservation attributes
+  retain the local Ignorable list required by the SDK; namespace declarations still hoist. This fixes
+  the 14 affected Mac-authored workbooks in the sweep. Full Ledger measurement and Excel batch 3
+  remain pending.
+- Ledger query tables now retain table/column metadata and external field identities. New columns
+  are unbound; deleted fields stay excluded from refresh; copied tables get independent query parts.
+  The ten-file sweep keeps 23/23 query parts and 10/10 connections parts byte-identical, with all
+  20 query tables and 68 column identities intact. Package checks add no issues; nine SDK comparisons
+  pass and one original has a missing dependency. Six focused cases / 20 unique states and two
+  browser draft states pass package/SDK; two edited samples and three history states open in
+  LibreOffice with unchanged page counts. All 113 unit tests pass and four pages load. Saving no
+  longer mutates table headings, and copied sheet-scoped names now undo correctly. Next: the full
+  Ledger group run and Excel batch 3, whose Office acceptance remains pending.
+- The full Ledger run at `8236f3a`, with five correction inputs, now completes all 2,853 attempts.
+  Save/draft each have 935 OK, 11 failed and 5 excluded; cell edits have 933 OK, 11 failed and
+  7 excluded. The 6,589 emitted states have 6,371 passing package/SDK comparisons, 201 failed and
+  17 excluded; none adds diagnostics. Damaged-original recovery and unchanged mixed date/text
+  filter ordering are corrected. Independent save comparison covers 889 workbooks / 1,649,147
+  cells, with 883 exact; existing exceptions remain explicit. All 115 unit tests pass. The audit
+  now excludes ZIP directory markers and identifies intended A1 edits separately. Excel batch 3
+  is ready at `~/Downloads/lossless-check/office-batch-3/CHECKLIST.md`: all 15 pass package/SDK and
+  LibreOffice, with reviewed differences against `f584dd6`. **Excel acceptance is pending.**
+  Reports: `~/corpora/results/ledger-group-2026-10-09/`. Lectern preparation is next.
 
 ## Review of 6d24c43..275406e (2026-10-08)
 Followed well: bounded Office batches with previous-writer comparison, checker rules for the WordArt

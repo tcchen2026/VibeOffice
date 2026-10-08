@@ -262,7 +262,7 @@
       if (what === 'all' || what === 'comments') {
         for (const cm of snap.comments) {
           const r = dest.r1 + (opts.transpose ? cm.dc : cm.dr), c = dest.c1 + (opts.transpose ? cm.dr : cm.dc);
-          O.setComment(sh, r, c, Object.assign({}, cm, { r, c }));
+          O.setComment(sh, r, c, Object.assign(L.threads.copy(cm, sh.wb), { r, c }));
         }
       }
       if (what === 'all' || what === 'validation') {

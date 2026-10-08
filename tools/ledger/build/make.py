@@ -11,7 +11,7 @@ APP = os.path.join(D, '..', '..', '..', 'public', 'ledger')
 SCRIPTS = ['common/core', 'common/xml', 'common/opc', 'common/opc-order', 'xml', 'common/zip', 'common/sha', 'common/crypto', 'common/icons',
            'common/geometry', 'common/metafile', 'common/ui', 'common/numfmt', 'formula', 'model', 'calc',
            'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng', 'common/dml', 'common/charts', 'xchart',
-           'preserve', 'xlsx-read', 'xlsx-write', 'csv', 'xmlss', 'styles', 'cf', 'layout', 'render', 'ops', 'clipboard',
+           'pivots', 'threads', 'objects', 'slicers', 'extensions', 'tables', 'preserve', 'xlsx-read', 'xlsx-write', 'csv', 'xmlss', 'styles', 'cf', 'layout', 'render', 'ops', 'clipboard',
            'fninfo', 'grid', 'editor', 'common/spell', 'spell', 'filter', 'drawing', 'commands', 'dialogs',
            'dialogs2', 'dialogs3', 'print', 'panes', 'app']
 tpl = open(os.path.join(D, 'template.html')).read()

@@ -177,6 +177,33 @@ use fresh browser saves, package/SDK comparisons and Office samples for integrat
 Word comment-repair isolation round. Package checks now reject excess comment references beyond
 their matching definitions; comparison also rejects automatic pre-release thread-namespace promotion.
 
+Ledger's `pivots.test.js` and `threads.test.js` use the pinned public inputs (`VO_CORPORA` overrides
+`~/corpora`). `PIVOT_RESULTS=DIR` / `THREAD_RESULTS=DIR` retain the emitted edit/history states and
+their source paths for package/SDK comparisons. The thread test also authors a mention/no-legacy-note
+fixture missing from the public corpus. `node tools/ledger/test/threads-ui.mjs INPUT.xlsx OUTPUT`
+checks the real Paste Special, undo/redo and suite draft/recovery hooks on a thread in the first sheet.
+`objects.test.js` uses `OBJECT_RESULTS=DIR` to retain controls/OLE/VML edit states from the same corpus.
+`node tools/ledger/test/objects-ui.mjs INPUT.xlsx OUTPUT` checks object paste into another workbook,
+undo/redo and actual draft recovery, including the dependent payload bytes.
+`sh tools/corpora.sh ~/corpora ledger-features` fetches three supplemental slicer/timeline workbooks
+at fixed commits and SHA-256 hashes without changing the main corpus manifest. `slicers.test.js`
+uses them (`LEDGER_FEATURES` overrides their directory); `SLICER_RESULTS=DIR` retains edit states.
+`node tools/ledger/test/slicers-ui.mjs INPUT.xlsx OUTPUT` exercises real drawing copy/paste, undo/redo
+and draft recovery. The supplemental sources and hashes are recorded in `ledger-features/manifest.json`.
+`extensions.test.js` uses `EXTENSION_RESULTS=DIR` for extended bars, validation, sparklines and unknown
+worksheet extension edit/history saves (`EXCEL_CORPUS` overrides `~/corpora/excel`).
+`node tools/ledger/test/extensions-ui.mjs INPUT.xlsx OUTPUT` checks an extended bar through edits,
+sheet copy, undo/redo and actual draft recovery.
+`tables.test.js` uses `QUERY_RESULTS=DIR` for query-table edits, column identities, copies and
+history saves (`EXCEL_CORPUS` overrides `~/corpora/excel`).
+`node tools/ledger/test/tables-ui.mjs INPUT.xlsx OUTPUT` checks inserted query columns, sheet
+copy, scoped names, undo/redo and actual draft recovery.
+`recovery.test.js` covers readable cells in damaged packages and unchanged mixed date/text filters.
+For the independent cell audit after `corpus.js --scenarios text`, set `SCENARIO=text` when running
+`tools/ledger/test/loss-audit.py`: only A1 on the first ordinary worksheet is excluded as the intended
+edit. Dependent array-result recalculation still appears in the report. ZIP directory markers are
+excluded from feature-part counts.
+
 Build the SDK validator and install the independent workbook reader in a test environment:
 
 ```sh

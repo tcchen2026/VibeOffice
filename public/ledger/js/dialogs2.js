@@ -143,6 +143,7 @@
             if (f2 === null) throw new Error('You must enter a value in the Maximum box.');
           } catch (e) { ui.msg(e.message, { icon: 'warn' }); return false; }
           const rule = { type: st.type, op: ['whole', 'decimal', 'date', 'time', 'textLength'].includes(st.type) ? st.op : undefined, allowBlank: st.allowBlank, showDrop: st.showDrop !== false, showInput: st.showInput !== false, showError: st.showError !== false, errorStyle: st.errorStyle, f1: f1 == null ? undefined : f1, f2: f2 == null ? undefined : f2, promptTitle: pt.value || undefined, prompt: pm.value || undefined, errorTitle: et.value || undefined, error: em.value || undefined, ime: st.ime };
+          if (st.x14) { rule.x14 = true; rule.extKeep = st.extKeep; }
           tryRun(() => O.tx(w, 'Validation', () => {
             let target = ranges;
             if (st.applyAll && cur) target = target.concat(cur.ranges);
@@ -408,7 +409,7 @@
     for (const cf of s.cf) if (cf.ranges.some((rg) => M.rangeContains(rg, sel.r, sel.c))) for (const r of cf.rules) if (editable(r)) existing.push({ rule: r, anchor: cf.ranges[0] });
     existing.sort((a, b) => (a.rule.priority || 0) - (b.rule.priority || 0));
     const fromStored = (f, anchor) => (f == null ? '' : /^"/.test(f) ? f.slice(1, -1).replace(/""/g, '"') : /^-?[\d.]+(E[+-]?\d+)?$/i.test(f) ? f : '=' + F.translate(F.display(f), sel.r - anchor.r1, sel.c - anchor.c1));
-    const conds = existing.slice(0, 3).map(({ rule, anchor }) => ({ kind: rule.type === 'expression' ? 'formula' : 'value', op: rule.op || 'between', v1: fromStored(rule.f && rule.f[0], anchor), v2: fromStored(rule.f && rule.f[1], anchor), dxf: rule.dxf != null && w.dxfs[rule.dxf] ? JSON.parse(JSON.stringify(w.dxfs[rule.dxf])) : {}, stop: rule.stop }));
+    const conds = existing.slice(0, 3).map(({ rule, anchor }) => ({ keep: JSON.parse(JSON.stringify(rule)), kind: rule.type === 'expression' ? 'formula' : 'value', op: rule.op || 'between', v1: fromStored(rule.f && rule.f[0], anchor), v2: fromStored(rule.f && rule.f[1], anchor), dxf: rule.dxf != null && w.dxfs[rule.dxf] ? JSON.parse(JSON.stringify(w.dxfs[rule.dxf])) : {}, stop: rule.stop }));
     if (!conds.length) conds.push({ kind: 'value', op: 'between', v1: '', v2: '', dxf: {} });
     const body = h('div', { class: 'col' });
     const prevCss = (d) => { const f = d.font || {}; const css = []; if (f.b) css.push('font-weight:bold'); if (f.i) css.push('font-style:italic'); if (f.u || f.strike) css.push('text-decoration:' + (f.u ? 'underline ' : '') + (f.strike ? 'line-through' : '')); if (f.color) css.push('color:' + M.colorHex(w, f.color)); if (d.fill && (d.fill.fg || d.fill.bg)) css.push('background:' + M.colorHex(w, d.fill.fg || d.fill.bg)); if (d.border) css.push('outline:1px solid #000;outline-offset:-3px'); return css.join(';'); };
@@ -445,15 +446,15 @@
           const rules = [];
           try {
             for (const cd of conds) {
-              if (cd.kind === 'formula') { if (!String(cd.v1).trim()) continue; const f = toStore(cd.v1[0] === '=' ? cd.v1 : '=' + cd.v1); rules.push({ type: 'expression', f: [f], dxf: cd.dxf }); }
-              else { const f1 = toStore(cd.v1); if (f1 == null) continue; const two = cd.op === 'between' || cd.op === 'notBetween'; const f2 = two ? toStore(cd.v2) : null; if (two && f2 == null) throw new Error('You must enter a value in both boxes for between conditions.'); rules.push({ type: 'cellIs', op: cd.op, f: two ? [f1, f2] : [f1], dxf: cd.dxf }); }
+              if (cd.kind === 'formula') { if (!String(cd.v1).trim()) continue; const f = toStore(cd.v1[0] === '=' ? cd.v1 : '=' + cd.v1); rules.push({ ...cd.keep, type: 'expression', op: undefined, f: [f], dxf: cd.dxf }); }
+              else { const f1 = toStore(cd.v1); if (f1 == null) continue; const two = cd.op === 'between' || cd.op === 'notBetween'; const f2 = two ? toStore(cd.v2) : null; if (two && f2 == null) throw new Error('You must enter a value in both boxes for between conditions.'); rules.push({ ...cd.keep, type: 'cellIs', op: cd.op, f: two ? [f1, f2] : [f1], dxf: cd.dxf }); }
             }
           } catch (e) { ui.msg(e.message || 'The formula contains an error.', { icon: 'warn' }); return false; }
           tryRun(() => O.tx(w, 'Conditional Formatting', () => {
             for (const rg of ranges) O.removeRangeRules(s, rg, 'cf', editable);
             if (!rules.length) return;
             let prio = Math.max(0, ...s.cf.flatMap((x) => x.rules.map((r) => r.priority || 0)));
-            const out = rules.map((r) => { const dx = w.dxfs.push(r.dxf) - 1; return { type: r.type, op: r.op, f: r.f, dxf: dx, priority: ++prio }; });
+            const out = rules.map((r) => { const dx = w.dxfs.push(r.dxf) - 1; return { ...r, dxf: dx, priority: ++prio }; });
             /* Excel 2003 conditions come before newer rules: renumber so these are first */
             const others = s.cf.flatMap((x) => x.rules).sort((a, b) => (a.priority || 0) - (b.priority || 0));
             out.forEach((r, i) => { r.priority = i + 1; });

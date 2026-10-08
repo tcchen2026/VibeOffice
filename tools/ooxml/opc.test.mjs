@@ -35,6 +35,7 @@ test('rewritten parts hoist fragment declarations and Ignorable once, retaining 
 test('namespace hoisting preserves default resets, attribute aliases, other MC properties and opaque bytes', async () => {
   const xml = `<root xmlns="urn:root" xmlns:k="${N.mc}"><a xmlns="urn:child" xmlns:n="urn:new" k:Ignorable="n" k:ProcessContent="n:payload"><b xmlns="urn:root"/><n:payload/></a><unqualified xmlns=""/></root>`;
   const result = K.hoistNamespaces(xml), parsed = K.parse(result);
+  assert.equal(parsed.children[0].getAttributeNS(N.mc, 'Ignorable'), 'n', 'ProcessContent has its required local Ignorable binding');
   assert.equal(parsed.children[0].namespaceURI, 'urn:child');
   assert.equal(parsed.children[0].children[0].namespaceURI, 'urn:root');
   assert.equal(parsed.children[1].namespaceURI, '');
