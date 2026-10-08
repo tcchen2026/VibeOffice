@@ -715,7 +715,7 @@
     root.appendChild(R.background(bgFill, design, W, H));
     if (!slide.hideMaster) {
       const layer = h('div', { class: 'sl-master' });
-      const deco = lkDeco || (isTitle && design.titleDeco ? design.titleDeco : design.deco) || [];
+      const deco = isTitle && design.titleDeco ? design.titleDeco : lkDeco ? (design.layoutShowMaster?.[slide.lkey] ? (design.deco || []).concat(lkDeco) : lkDeco) : design.deco || [];
       for (const d of deco) layer.appendChild(R.shape(d, ctx, { deco: true }));
       root.appendChild(layer);
     }

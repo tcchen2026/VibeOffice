@@ -78,6 +78,12 @@ async function run(o) {
   const save = async (kind, doc) => { const blob = await write(doc); if (o.save) artifacts[kind] = await encode(blob); return blob; };
   try {
     let doc = await read(bytes);
+    if (o.app === 'lectern' && doc.pkg) {
+      const list = Array.from(doc.pkg.xml(doc.pkg.main).children).find(e => e.localName === 'sldIdLst');
+      const original = list ? Array.from(list.children).filter(e => e.localName === 'sldId').length : 0;
+      result.slides = { original, opened: doc.slides.length };
+      if (original !== doc.slides.length) throw new Error(`Opened ${doc.slides.length} of ${original} source slides`);
+    }
     if (o.app === 'quire') L.D.doc = doc; else if (o.app === 'lectern') { L.pres = doc; L.hist.clear(); }
     const operation = corpusScenario(o.app, doc, o.scenario);
     result.changed = operation.changed;
@@ -85,6 +91,10 @@ async function run(o) {
     const first = await save('saved', doc);
     result.bytes = first.size;
     const reread = await read(new Uint8Array(await first.arrayBuffer()));
+    if (result.slides) {
+      result.slides.saved = reread.slides.length;
+      if (doc.slides.length !== reread.slides.length) throw new Error(`Saved ${reread.slides.length} of ${doc.slides.length} model slides`);
+    }
     if (o.scenario === 'repeat') await save('second', reread);
     if (operation.undo) {
       if (!operation.undo()) throw new Error('Undo did not restore a transaction');

@@ -8,6 +8,11 @@ using System.Security.Cryptography;
 using System.Text;
 
 // JSONL, one result for every argument. --baseline ORIGINAL SAVED compares diagnostic identities.
+var version = FileFormatVersions.Office2019;
+if (args.Length >= 2 && args[0] == "--version") {
+    version = Enum.Parse<FileFormatVersions>(args[1], ignoreCase: true);
+    args = args.Skip(2).ToArray();
+}
 OpenXmlPackage Open(string path) => Path.GetExtension(path).ToLowerInvariant() switch {
     ".docx" or ".docm" or ".dotx" or ".dotm" => WordprocessingDocument.Open(path, false),
     ".xlsx" or ".xlsm" or ".xltx" or ".xltm" => SpreadsheetDocument.Open(path, false),
@@ -38,7 +43,7 @@ Diagnostic Describe(ValidationErrorInfo error, Dictionary<OpenXmlElement, string
 List<Diagnostic> Validate(string path) {
     using var doc = Open(path);
     var cache = new Dictionary<OpenXmlElement, string>();
-    return new OpenXmlValidator(FileFormatVersions.Office2019) { MaxNumberOfErrors = 0 }.Validate(doc)
+    return new OpenXmlValidator(version) { MaxNumberOfErrors = 0 }.Validate(doc)
         .Select(e => Describe(e, cache))
         .OrderBy(e => e.Part).ThenBy(e => e.Path).ThenBy(e => e.Id).ToList();
 }

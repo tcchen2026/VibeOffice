@@ -6,7 +6,7 @@ import collections, json, os, re, sys, zipfile
 
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'ooxml'))
-from audit import Audit
+from audit import Audit, xml_text
 audit = Audit()
 
 corpus, saved, outp = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -18,7 +18,7 @@ def load(path):
     for n in names:
         if n.endswith('.xml') or n.endswith('.rels'):
             try:
-                x = z.read(n).decode('utf8', 'replace')
+                x = xml_text(z.read(n))
                 # the Fallback of mc:AlternateContent repeats the Choice (a VML copy of a text box or shape)
                 files[n] = re.sub(r'<mc:Fallback\b.*?</mc:Fallback>', '', x, flags=re.S) if 'mc:Fallback' in x else x
             except Exception: raise

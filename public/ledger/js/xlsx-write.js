@@ -875,6 +875,7 @@
             `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}><a:off x="0" y="0"/><a:ext cx="${emu(sz.w)}" cy="${emu(sz.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${d.lineXml || ''}</xdr:spPr></xdr:pic>`;
         } else if (d.kind === 'chart') {
           let rid;
+          if (d.chart?.dirty && (d.part || d.xml)) pack.writer.loss({ id: 'chart-edit:' + (d.part || d.id), what: 'Editing this chart replaces its original chart-specific formatting and extensions.', where: sh.name, action: 'conversion' });
           if (wb.pkg?.has(d.part) && !d.chart?.dirty) {
             try {
               const target = pack.writer.carry(wb.pkg, d.part);
@@ -916,7 +917,10 @@
               }
             } else obj = d.xml.replace(/\sr:(embed|link|id)="[^"]*"/g, '').replace(/(<(?:\w+:)?cNvPr\b[^>]*?\bid=")\d+(")/, '$1' + id + '$2');
           }
-          else obj = shapeXml(d, id, sz);
+          else {
+            if (d.xml && d.dirty) pack.writer.loss({ id: 'shape-edit:' + (d.keep?.part || dPart) + ':' + d.id, what: 'Editing this drawing replaces its original unsupported formatting.', where: sh.name, action: 'conversion' });
+            obj = shapeXml(d, id, sz);
+          }
         }
         x += open + obj + close;
       }

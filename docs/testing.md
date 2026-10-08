@@ -147,7 +147,8 @@ content types and internal relationship URIs share one decoded identity; output 
 remaps copied definitions and references together; `export`/`import` transport dependency bytes for a
 cross-document clipboard. `finish()` checks relationship targets and returns `{files, dropped}`.
 Loss acknowledgement is per entry; autosave must neither show a dialog nor acknowledge entries.
-Package ownership and save-dialog integration are implemented in all three apps; remaining object preservation is still in progress.
+Package ownership, object preservation and save-dialog integration are implemented in all three apps.
+Current corpus limits and pending Office acceptance are listed in each app’s save table.
 
 `opc-order.js` contains ordering and ID-bound facts for 27 types, generated from the official
 [ECMA-376 Part 4 schemas](https://ecma-international.org/publications-and-standards/standards/ecma-376/), and each preset shape's adjustment values (names, order, defaults) from Part 1's `presetShapeDefinitions.xml`.
@@ -213,13 +214,15 @@ python3 -m venv /tmp/vo-ooxml-venv
 dotnet tools/ooxml/oxval/bin/Release/net8.0/oxval.dll --baseline original.docm saved.docm
 ```
 
-The validator is pinned to SDK 3.1.1, targets Office 2019, handles all document/macro/template/slideshow
+The validator is pinned to SDK 3.1.1, defaults to Office 2019, handles all document/macro/template/slideshow
 extensions and reports uncapped diagnostics by part, XPath and diagnostic ID. `--baseline` reports new
 diagnostic identities, not merely a change in count. Style diagnostics use `styleId` rather than an
 unstable style-list index. Unmatched diagnostics can also match identical namespace-expanded node
 content within the same part; each original occurrence is consumed once, so duplicating an invalid
 property still adds a diagnostic. The actual XPath and content fingerprint remain in the report.
 `--comparison-self-test` checks movement, duplication, changed content and changed errors.
+Use `--version Microsoft365` before other arguments to validate modern presentation comments;
+Office 2019 does not validate those newer parts. The batch wrapper accepts `--sdk-version Microsoft365`.
 Package diagnostics normalize Strict/
 Transitional namespace aliases and compare duplicate IDs by scope, identity and multiplicity.
 `--stdin-pairs` accepts JSON lines containing
@@ -235,7 +238,42 @@ files using LibreOffice with its own temporary profile, checks conversion succes
 counts with `pdfinfo`. Unedited saves must keep the page count; edit scenarios can record
 `expectedPages` or `expectedSlides`. LibreOffice and the validator cannot certify acceptance by Office itself.
 
-### Lectern media preservation
+### Lectern preservation
+
+`node tools/ooxml/conversions.mjs OUTPUT_DIR [SCENARIO_REGEX]` checks conversion notices on public
+Word/Excel/PowerPoint files and verifies that reverting an edit removes its save-time notice.
+`node tools/ooxml/save-matrix.mjs OUTPUT_DIR --checker-only` checks silent drafts, recovery,
+cancellation, download failure, successful acknowledgement and newly introduced notices in all apps.
+Feature inventories decode UTF-16 parts and count retained SmartArt text on both sides.
+
+`node tools/lectern/test/properties.mjs OUTPUT_DIR [SCENARIO_REGEX]` checks per-property edits,
+tags, actions, transitions, animation changes, clipboard dependencies, undo/redo and actual drafts.
+The corpus driver also records original/opened/saved slide counts so a skipped source slide cannot
+pass merely because the remaining package is valid.
+
+`tools/lectern/test/designs.mjs OUTPUT [SCENARIO_REGEX]` checks imported design edits, independent
+copies, unused-master retention, history and draft recovery. It checks that unrelated layouts
+retain their exact bytes, theme effects retain their expanded XML, and new layouts allocate unique
+shape IDs including the structural group. Reports follow the same
+package/SDK and LibreOffice comparison workflow.
+
+`node tools/lectern/test/frames.mjs OUTPUT_DIR [SCENARIO_REGEX]` exercises opaque SmartArt, OLE,
+ink, 3-D and chartEx previews with geometry/content edits, copies, deletion, ungrouping, clipboard
+renditions and drafts. Run `python3 tools/lectern/test/frame-fixtures.py FIXTURE_DIR` first for its
+multiple-member fallback case; `FRAME_FIXTURES` overrides the default sibling `frames-fixtures/`
+directory. The fixture is derived from a public SDK chartEx input, with explicit provenance.
+
+`python3 tools/lectern/test/comment-fixtures.py FIXTURE_DIR` creates a documented schema-authored
+modern thread/task/anchor sample on a pinned public deck; it is not an Office-authored input.
+`node tools/lectern/test/comments.mjs OUTPUT_DIR FIXTURE_DIR [SCENARIO_REGEX]` checks original
+comment bytes, slide/shape ownership, author/index and GUID references, detached clipboard packages,
+Strict copies, undo/redo and suite drafts. Validate its `results.jsonl` using the Microsoft365 target.
+The scenario filter retains other recorded cases so corrections need not repeat unaffected work.
+
+`node tools/lectern/test/membership.mjs OUTPUT_DIR` uses pinned presentation inputs for section and
+custom-show insertion, copy, move, deletion, large IDs, empty sections, undo/redo and actual suite
+draft recovery (`VO_CORPORA` overrides `~/corpora`). It retains every saved state and a draft screenshot.
+Use its `results.jsonl` with `tools/ooxml/validate.py` for package/SDK and LibreOffice comparison.
 
 `node tools/lectern/test/media.mjs FILE_OR_LIST OUTDIR` opens authored video/audio decks in Chromium.
 It saves unedited, moves/resizes, changes shadow and crop, duplicates, deletes, replaces, duplicates
@@ -266,7 +304,10 @@ and pending-loss recovery checks.
 selected package features, including dependency bytes, content types, original rIds and intended
 targets. It stops at model-owned boundaries and does not treat a preserved pivot part as proof that
 pivot editing works. Driver failures and malformed originals remain explicit failed/excluded rows.
-Corpus writers select the source main-part variant, including inputs with a misleading extension.
+Corpus writers select the source main-part variant, including inputs with a misleading extension. The presentation
+inventory parses transition/run-effect elements and text as XML: namespace hoisting, self-closing
+properties and escaped apostrophes must not appear as feature or word loss. Edited SmartArt previews
+are intentional conversions and must be matched with their recorded loss entries.
 
 `python3 tools/ledger/test/pivot-fixtures.py ~/corpora/excel OUTDIR` authors the two pivot source kinds
 absent from the pinned inventory: a defined-name source and a two-area consolidation source. It keeps

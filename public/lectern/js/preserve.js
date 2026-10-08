@@ -21,20 +21,92 @@
     ['docProps/app.xml', RT('extended-properties'), 'merged', true],
   ]);
   P.values = pres => JSON.parse(JSON.stringify({ props: pres.props, W: pres.W, H: pres.H, firstNum: pres.firstNum, show: pres.show }));
+  P.readSlideLists = function (pres) {
+    const pkg = pres.pkg; if (!pkg) return;
+    const tree = pkg.xml(pkg.main), slides = pres.slides, rels = pkg.rels(pkg.main);
+    const sections = all(tree).filter(e => e.localName === 'section' && /powerpoint\/2010\/main$/.test(e.namespaceURI));
+    pres.keep.sections = sections.map(section => {
+      const id = section.getAttribute('id');
+      for (const member of kids(kid(section, 'sldIdLst'))) {
+        const slide = slides.find(s => s.keep?.sldId === member.getAttribute('id'));
+        if (slide) slide.section = id;
+      }
+      return id;
+    });
+    pres.keep.customShows = kids(kid(tree, 'custShowLst')).map(show => ({
+      id: show.getAttribute('id'), name: show.getAttribute('name'),
+      slides: kids(kid(show, 'sldLst')).map(member => {
+        const id = member.getAttributeNS(N.rel, 'id') || member.getAttributeNS(N.strictRel, 'id');
+        const part = rels.find(r => r.id === id)?.part;
+        return slides.find(s => s.keep?.part === part)?.id || null;
+      }),
+    }));
+  };
+  P.joinSection = function (pres, rest, at, slides) {
+    const sections = pres.keep?.sections;
+    const id = sections?.length ? rest[at - 1]?.section || rest[at]?.section || sections[0] : null;
+    for (const slide of slides) { if (id) slide.section = id; else delete slide.section; }
+  };
+  const emptyShows = pres => (pres.keep?.customShows || []).filter(show => show.slides.length && !show.slides.some(id => pres.slides.some(s => s.id === id)));
+  P.mergeSlideLists = function (pres, xml, writer) {
+    const tree = K.parse(xml), edits = [], live = new Set(pres.slides.map(s => s.id));
+    const members = new Map();
+    let prior;
+    for (let i = 0; i < pres.slides.length; i++) {
+      const slide = pres.slides[i];
+      // Importers may append directly; ordinary UI insert/move operations assign at edit time.
+      const id = slide.section || (!(slide.keep?.source === pres.pkg?.id && !slide.keep.copy) &&
+        (prior || pres.slides.slice(i + 1).find(s => s.section)?.section || pres.keep?.sections?.[0]));
+      if (id) { if (!members.has(id)) members.set(id, []); members.get(id).push(String(writer.slideIds.get(slide.id))); prior = id; }
+    }
+    const replace = (el, value) => { const p = XML.source.get(el); edits.push({ start: p.start, end: p.end, value }); };
+    for (const section of all(tree).filter(e => e.localName === 'section' && /powerpoint\/2010\/main$/.test(e.namespaceURI))) {
+      const list = kid(section, 'sldIdLst'), ns = section.namespaceURI, ids = members.get(section.getAttribute('id')) || [];
+      const old = kids(list), before = old.map(e => e.getAttribute('id'));
+      if (same(ids, before)) continue;
+      const children = ids.map(id => { const el = old.find(e => e.getAttribute('id') === id); return el ? K.raw(el) : '<sldId xmlns="' + ns + '" id="' + id + '"/>'; });
+      const next = K.mergeBag(list ? K.raw(list) : '<sldIdLst xmlns="' + ns + '"/>', { ['{' + ns + '}sldId']: children });
+      replace(section, K.mergeBag(K.raw(section), { ['{' + ns + '}sldIdLst']: next }));
+    }
+    const shows = kid(tree, 'custShowLst'), records = pres.keep?.customShows || [];
+    if (shows) {
+      const children = kids(shows).flatMap((show, i) => {
+        const record = records[i], list = kid(show, 'sldLst'); if (!record || !list) return [K.raw(show)];
+        const kept = kids(list).filter((el, j) => live.has(record.slides[j]));
+        if (kept.length === kids(list).length) return [K.raw(show)];
+        if (!kept.length) {
+          writer.loss({ id: 'custom-show:' + record.id, what: 'The custom show "' + record.name + '" was removed because all its slides were deleted.', where: 'Custom shows', action: 'drop' });
+          return [];
+        }
+        return [K.mergeBag(K.raw(show), { ['{' + show.namespaceURI + '}sldLst']: K.mergeBag(K.raw(list), { ['{' + list.namespaceURI + '}sld']: kept.map(K.raw) }) })];
+      });
+      replace(shows, children.length ? K.mergeBag(K.raw(shows), { ['{' + shows.namespaceURI + '}custShow']: children }) : '');
+    }
+    return K.patch(xml, edits);
+  };
   P.designValues = design => JSON.stringify(Object.fromEntries(Object.entries(design).filter(([key]) => key !== 'keep')));
   P.begin = function (pres, format) {
     const pkg = pres.pkg;
-    const consumed = new Set([RT('officeDocument'), ...P.parts.map(p => p[1]), ...['slide', 'slideMaster', 'slideLayout', 'notesSlide', 'theme', 'image', 'chart', 'hyperlink'].map(RT)]);
+    const consumed = new Set([RT('officeDocument'), ...P.parts.map(p => p[1]), ...L.comments.types, ...['slide', 'slideMaster', 'slideLayout', 'notesSlide', 'theme', 'image', 'chart', 'hyperlink', 'tags'].map(RT)]);
     const output = K.output(pkg, { doc: pres, format, contentType: P.mediaType,
-      consumes: (base, rel, type) => consumed.has(type),
+      consumes: (base, rel, type) => consumed.has(type) || L.frames.consumes(pres, base, rel),
       convert: (base, source, data) => /^ppt\/(theme\/|notesMasters\/|notesSlides\/|viewProps\.xml$|tableStyles\.xml$)/.test(base) ? data : null,
-      merge: (base, source, data, writer) => P.mergePackage(pres, base, source, data, writer) });
+      merge: (base, source, data, writer) => P.mergePackage(pres, base, source, data, writer), audit: P.reportLosses });
     output.bind('ppt/presentation.xml', pkg?.main, 'merged');
     for (const [base, type, mode, root] of P.parts) {
       const rel = pkg?.rels(root ? '' : pkg.main).find(r => K.relationshipType(r.type) === type && !r.external);
       output.bind(base, rel?.part, mode);
     }
     return output;
+  };
+  P.reportLosses = writer => {
+    K.reportFeatures(writer, {
+      accepts: el => ['sld', 'notes', 'sldMaster', 'sldLayout'].includes(el.localName) && [N.p, 'http://purl.oclc.org/ooxml/presentationml/main'].includes(el.namespaceURI),
+      classify: el => ['http://purl.oclc.org/ooxml/presentationml/main', N.p].includes(el.namespaceURI) && el.localName === 'control' ? 'controls' :
+        ['http://purl.oclc.org/ooxml/drawingml/main', N.a].includes(el.namespaceURI) && el.localName === 'fld' ? 'fields' : null,
+      labels: { controls: 'Some original form controls were converted to previews or removed', fields: 'Some original text fields were converted to ordinary text' },
+    });
+    if (writer.doc.repaired?.parts?.length) writer.loss({ id: 'read:damaged', what: 'Some damaged source parts could not be fully read and may be incomplete in this save.', where: writer.doc.repaired.parts.join(', '), action: 'conversion' });
   };
   P.mergePackage = function (pres, base, source, generated, writer) {
     const fragment = K.fragment(writer.pkg.xml(source), { pkg: writer.pkg, part: source });
@@ -46,9 +118,15 @@
       for (const tag of ['sldMasterIdLst', 'notesMasterIdLst', 'sldIdLst']) replace(tag);
       if (pres.W !== before.W || pres.H !== before.H) replace('sldSz');
       xml = K.merge(xml, replacements, 'p:CT_Presentation');
+      xml = P.mergeSlideLists(pres, xml, writer);
       if (pres.firstNum !== before.firstNum) xml = K.attributes(xml, { firstSlideNum: pres.firstNum || 1 });
     } else if (base === 'ppt/presProps.xml') {
       if (!same(pres.show, before.show)) xml = K.merge(xml, { ['{' + N.p + '}showPr']: kids(fresh).filter(e => e.localName === 'showPr').map(K.raw) }, 'p:CT_PresentationProperties');
+      const show = kid(K.parse(xml), 'showPr'), custom = kid(show, 'custShow');
+      if (custom && emptyShows(pres).some(s => s.id === custom.getAttribute('id'))) {
+        const updated = K.mergeBag(K.raw(show), { ['{' + show.namespaceURI + '}custShow']: '<p:sldAll xmlns:p="' + N.p + '"/>' });
+        xml = K.mergeBag(xml, { ['{' + show.namespaceURI + '}showPr']: updated });
+      }
     } else {
       const owned = base === 'docProps/core.xml' ? { title: 'title', subject: 'subject', author: 'creator', keywords: 'keywords', comments: 'description', category: 'category', created: 'created', revision: 'revision' } : { company: 'Company' };
       xml = K.properties(xml, generated, pres.props, before.props, owned);
@@ -63,7 +141,11 @@
     const tree = pkg.xml(part), map = new Map();
     for (const el of all(tree)) if (el.localName === 'cNvPr') {
       const shape = el.parentNode?.parentNode;
-      if (shape) map.set(el.getAttribute('id'), shape);
+      if (shape?.localName === 'spTree') continue;
+      const prior = map.get(el.getAttribute('id'));
+      // An OLE preview can repeat its outer frame's ID. The frame owns that
+      // identity; sibling Choice/Fallback definitions still prefer the fallback.
+      if (shape && (!prior || !all(prior).includes(shape))) map.set(el.getAttribute('id'), shape);
     }
     return { tree, map };
   };
@@ -75,7 +157,9 @@
     if (![N.p, 'http://purl.oclc.org/ooxml/presentationml/main'].includes(original.namespaceURI)) return;
     const cnv = kid(kids(original).find(e => /^nv/.test(e.localName)), 'cNvPr');
     if (!cnv) return;
-    shape.keep = { source: pkg.id, part, identity: K.fragment(cnv, { pkg, part }) };
+    shape.keep = { source: pkg.id, part, element: original.localName, identity: K.fragment(cnv, { pkg, part }) };
+    L.properties.shape(shape, original, pkg, part);
+    if (/\/slide(?:Masters|Layouts)\//.test(part)) shape.keep.designFrame = K.fragment(working && K.alternate(working) ? working : original, { pkg, part });
     if (find(cnv, 'snd')) shape.keep.sound = true;
     const alternate = K.alternate(working);
     if (shape.type === 'image' && (P.isMedia(original) || alternate && P.isMedia(K.parse(alternate.xml)))) {
@@ -83,11 +167,13 @@
     }
   };
   P.seal = function (pres) {
+    L.properties.seal(pres);
+    L.designs.seal(pres);
     for (const d of Object.values(pres.designs)) if (d.keep) {
       d.keep.themeValues = JSON.stringify([d.colors, d.fonts]);
       d.keep.values = P.designValues(d);
     }
-    for (const slide of pres.slides) L.model.walk(slide.shapes, shape => {
+    for (const list of L.properties.lists(pres)) L.model.walk(list, shape => {
       if (shape.keep) shape.keep.metadata = Object.fromEntries(['name', 'alt', 'hidden', 'link'].map(k => [k, JSON.stringify(shape[k] ?? null)]));
       if (shape.keep?.media) {
         const keep = shape.keep.media;
@@ -105,17 +191,17 @@
   P.pruneTiming = function (xml, allowed, media = allowed, modeled = false) {
     const root = K.parse(xml), text = XML.source.get(root).text;
     const atomic = new Set(['video', 'audio', 'cmd', 'set', 'anim', 'animClr', 'animEffect', 'animMotion', 'animRot', 'animScale', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic']);
-    function visit(el) {
+    function visit(el, inMain = false) {
       const pos = XML.source.get(el), tag = el.localName, refs = shapeRefs(el), ctn = kid(el, 'cTn');
+      inMain ||= tag === 'cTn' && el.getAttribute('nodeType') === 'mainSeq';
       const cls = ctn?.getAttribute('presetClass');
       if (atomic.has(tag) && refs.some(id => !allowed.has(id))) return '';
       if (['video', 'audio', 'cmd'].includes(tag) && refs.some(id => !media.has(id))) return '';
-      if (tag === 'par' && cls && (modeled && ['entr', 'exit', 'emph', 'path'].includes(cls) || cls === 'mediacall' && refs.some(id => !media.has(id)))) return '';
+      if (tag === 'par' && cls && (modeled && inMain && ['entr', 'exit', 'emph', 'path'].includes(cls) || cls === 'mediacall' && refs.some(id => !media.has(id)))) return '';
       if (tag === 'seq' && ctn?.getAttribute('nodeType') === 'interactiveSeq' && shapeRefs(kid(ctn, 'stCondLst')).some(id => !allowed.has(id))) return '';
-      if (modeled && tag === 'bldP') return '';
       const changes = [], alive = [];
       for (const child of kids(el)) {
-        const cp = XML.source.get(child), output = visit(child);
+        const cp = XML.source.get(child), output = visit(child, inMain);
         if (output) alive.push(child.localName);
         if (output !== text.slice(cp.start, cp.end)) changes.push({ start: cp.start - pos.start, end: cp.end - pos.start, value: output });
       }
@@ -124,7 +210,15 @@
       if (tag === 'cTn' && kid(el, 'childTnLst') && !alive.includes('childTnLst') && !['tmRoot', 'mainSeq'].includes(el.getAttribute('nodeType'))) return '';
       return K.patch(text.slice(pos.start, pos.end), changes);
     }
-    return visit(root);
+    let output = visit(root);
+    if (modeled && output) {
+      const tree = K.parse(output), groups = new Set(all(tree).filter(e => e.localName === 'cTn' && e.hasAttribute('grpId')).map(e => e.getAttribute('grpId'))), edits = [];
+      for (const e of all(tree).filter(e => /^bld/.test(e.localName) && e.hasAttribute('grpId') && !groups.has(e.getAttribute('grpId')))) {
+        const p = XML.source.get(e); edits.push({ start: p.start, end: p.end, value: '' });
+      }
+      output = K.patch(output, edits);
+    }
+    return output;
   };
   function tokenIds(fragment, kind, id) {
     return fragment.ids.flatMap((r, i) => r.kind === kind && String(r.id) === String(id) ? ['\u0001id:' + i + '\u0001'] : []);
@@ -132,9 +226,10 @@
   P.slide = function (slide, original, pkg, part, sldId, working) {
     const tree = kid(kid(original, 'cSld'), 'spTree'), cnv = kid(kid(tree, 'nvGrpSpPr'), 'cNvPr');
     slide.keep = { source: pkg.id, part, sldId, rootId: cnv?.getAttribute('id') || '1' };
+    L.comments.read(slide, original, pkg, part);
     const media = []; L.model.walk(slide.shapes, s => { if (s.keep?.media) media.push(s); return true; });
     const timing = kid(original, 'timing');
-    if (timing && (media.length || find(timing, 'sndTgt'))) {
+    if (timing) {
       const fragment = K.fragment(timing, { pkg, part });
       slide.keep.timing = fragment; slide.keep.anims = P.anims(slide);
       const raw = K.parse(fragment.xml), root = all(raw).find(e => e.localName === 'cTn' && e.getAttribute('nodeType') === 'tmRoot');
@@ -154,9 +249,10 @@
     }
     const normalized = kid(working, 'transition');
     const transition = normalized && K.alternate(normalized) ? normalized : kid(original, 'transition');
-    if (transition && all(transition).some(e => e.localName === 'sndAc')) {
+    if (transition) {
       slide.keep.transition = K.fragment(transition, { pkg, part }); slide.keep.trans = JSON.stringify(slide.trans);
     }
+    L.properties.slide(slide, original, pkg, part);
   };
   // Change a known property in every alternative while leaving the rest lexical.
   function rewrite(xml, select, change) {
@@ -179,18 +275,20 @@
     return K.serialize(clone);
   }
   P.nonVisual = function (shape, ctx, generated) {
-    if (!ctx.writer || !shape.keep?.sound) return generated;
+    if (!ctx.writer || !shape.keep?.identity) return generated;
     const absent = missing(shape.keep.identity);
     if (absent) {
       ctx.writer.loss({ id: 'action-sound:' + shape.id, what: 'The action sound refers to a part missing from the original file.', where: shape.name + ': ' + (absent.part || absent.id), action: 'drop' });
       return generated;
     }
-    let xml = ctx.writer.emit(shape.keep.identity, ctx.part);
+    const identity = L.properties.action(shape.keep.identity, shape.link, ctx, generated);
+    let xml = L.properties.emit(identity, ctx);
+    if (xml == null) return generated;
     if (['name', 'alt', 'hidden', 'link'].some(k => shape.keep.metadata[k] !== JSON.stringify(shape[k] ?? null))) {
       const g = K.parse('<root xmlns:p="' + N.p + '" xmlns:a="' + N.a + '" xmlns:r="' + N.rel + '">' + generated + '</root>');
       xml = metadata(xml, shape, shape.keep.metadata, find(g, 'cNvPr'));
     }
-    return xml;
+    return L.comments.shapeIdentity(shape, ctx, xml);
   };
   P.emitShape = function (shape, ctx, generated) {
     const keep = shape.keep?.media;
@@ -201,6 +299,7 @@
     }
     let xml = ctx.writer.emit(keep.frame, ctx.part);
     if (!xml) return '';
+    xml = L.comments.shapeIdentity(shape, ctx, xml);
     if (ctx.inGroup || keep.box !== value(shape, GEOMETRY)) xml = K.setBox(xml, Object.fromEntries(GEOMETRY.map(k => [k, shape[k] || 0])));
     const changed = key => keep.properties[key] !== JSON.stringify(shape[key] ?? null);
     if (!PROPERTIES.some(changed)) return xml;
@@ -249,7 +348,9 @@
     const kept = slide.keep?.timing;
     if (!kept && !extras.some(Boolean)) return generate();
     let xml = kept ? ctx.writer.emit(kept, ctx.part) : '';
-    const edited = !!kept && slide.keep.anims !== P.anims(slide);
+    const live = new Set(); L.model.walk(slide.shapes, shape => { live.add(shape.id); return true; });
+    const previous = slide.keep?.anims ? JSON.parse(slide.keep.anims).filter(a => live.has(a.sid)) : [];
+    const edited = !!kept && JSON.stringify(previous) !== P.anims(slide);
     if (xml) xml = P.pruneTiming(xml, allowed, media, edited);
     if (!xml) {
       const rootId = ctx.writer.ids.fresh(ctx.part, 'timing'), mainId = ctx.writer.ids.fresh(ctx.part, 'timing');
@@ -260,6 +361,7 @@
     const main = all(tree).find(e => e.localName === 'cTn' && e.getAttribute('nodeType') === 'mainSeq');
     ctx.timingRootId = root?.getAttribute('id'); ctx.timingMainId = main?.getAttribute('id');
     ctx.nextTimingId = () => ctx.writer.ids.fresh(ctx.part, 'timing');
+    ctx.nextBuildId = () => ctx.writer.ids.fresh(ctx.part, 'build');
     const add = { main: '', root: '' };
     for (const extra of extras.filter(Boolean)) for (const where of ['main', 'root']) for (const f of extra[where]) {
       const references = f.ids.filter(i => !i.definition && i.kind === 'timing' && extra.mainRef && i.source === extra.mainRef.source && i.scope === extra.mainRef.scope && i.id === extra.mainRef.id);
@@ -276,7 +378,14 @@
       if (fresh) {
         const g = K.parse('<root xmlns:p="' + N.p + '">' + fresh + '</root>'), seq = all(g).find(e => e.localName === 'cTn' && e.getAttribute('nodeType') === 'mainSeq');
         add.main += kids(kid(seq, 'childTnLst')).map(K.raw).join('');
-        const builds = find(g, 'bldLst'); if (builds) xml = append(xml, K.parse(xml), K.raw(builds));
+        const builds = find(g, 'bldLst');
+        if (builds) {
+          const old = kid(K.parse(xml), 'bldLst');
+          if (old) {
+            const p = XML.source.get(old), combined = append(K.raw(old), K.parse(K.raw(old)), kids(builds).map(K.raw).join(''));
+            xml = K.patch(xml, [{ start: p.start, end: p.end, value: combined }]);
+          } else xml = append(xml, K.parse(xml), K.raw(builds));
+        }
       }
     }
     for (const where of ['main', 'root']) if (add[where]) {
@@ -291,7 +400,7 @@
     return xml;
   };
   P.clipboard = function (item) {
-    const refs = [], visit = value => {
+    const refs = [...L.comments.references(item), ...L.frames.references(item)], visit = value => {
       if (!value || typeof value !== 'object') return;
       if (typeof value.xml === 'string' && Array.isArray(value.deps)) {
         for (const dep of value.deps) if (!dep.external && dep.part) refs.push({ source: dep.source, part: dep.part });
@@ -322,6 +431,7 @@
       return true;
     };
     L.model.walk(item.kind === 'slides' ? item.slides.flatMap(s => s.shapes) : item.shapes || [], restore);
+    L.frames.restore(item);
     return item;
   };
 })();

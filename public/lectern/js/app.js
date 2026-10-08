@@ -570,7 +570,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     L.hist.push('New Slide');
     const s = M.newSlide(pres, layout || 'text', design);
     const i = at != null ? at : pres.slides.length ? Math.max(...selIdx(), E.idx) + 1 : 0;
-    pres.slides.splice(i, 0, s);
+    M.insertSlides(pres, i, [s]);
     A.slideSel = new Set([i]);
     E.goto(i, { force: true });
     L.bus.emit('slides-changed');
@@ -588,7 +588,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     L.hist.push('Duplicate Slide');
     const copies = idxs.map((i) => M.dupSlide(L.pres.slides[i]));
     const at = Math.max(...idxs) + 1;
-    L.pres.slides.splice(at, 0, ...copies);
+    M.insertSlides(L.pres, at, copies);
     A.slideSel = new Set(copies.map((_, k) => at + k));
     E.goto(at, { force: true });
     L.bus.emit('slides-changed');
@@ -619,6 +619,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     const next = rest.slice(0, t).concat(moving, rest.slice(t));
     if (next.every((s, i) => s === before[i])) return;
     L.hist.push('Move Slide');
+    L.preserve.joinSection(pres, rest, t, moving);
     pres.slides = next;
     A.slideSel = new Set(moving.map((s) => next.indexOf(s)));
     E.idx = next.indexOf(moving[0]);
@@ -662,7 +663,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     else for (const id of ids) {
       const users = L.pres.slides.filter((s) => s.design === id);
       if (users.every((s) => targets.includes(s))) { L.pres.designs[id].colors = Object.assign({}, L.pres.designs[id].colors, L.clone(cs)); continue; }
-      const d = L.clone(L.pres.designs[id]); d.id = L.uid('dsn'); d.colors = Object.assign({}, d.colors, L.clone(cs)); L.pres.designs[d.id] = d;
+      const d = L.opc.duplicate(L.pres.designs[id]); d.id = L.uid('dsn'); d.colors = Object.assign({}, d.colors, L.clone(cs)); L.pres.designs[d.id] = d;
       for (const s of targets) if (s.design === id) s.design = d.id;
     }
     if (A.view === 'master') E.buildMaster();
@@ -892,7 +893,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
       if (!raw.trim()) continue;
       const m = /^(\t*| *)(.*)$/.exec(raw);
       const depth = m[1].includes('\t') ? m[1].length : Math.floor(m[1].length / 4);
-      if (depth === 0) { cur = M.newSlide(L.pres, 'text', did); T.setPlain(cur.shapes[0].tx, m[2].trim()); cur.shapes[1].tx.ps = []; L.pres.slides.splice(i++, 0, cur); }
+      if (depth === 0) { cur = M.newSlide(L.pres, 'text', did); T.setPlain(cur.shapes[0].tx, m[2].trim()); cur.shapes[1].tx.ps = []; M.insertSlides(L.pres, i++, [cur]); }
       else if (cur) cur.shapes[1].tx.ps.push(T.para(m[2].trim(), null, null, Math.min(8, depth - 1)));
     }
     for (const s of L.pres.slides) { const b = s.shapes.find((x) => x.ph && x.ph.type === 'body'); if (b && !b.tx.ps.length) b.tx.ps = [T.para('')]; }
@@ -922,7 +923,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
       }
       added.push(s);
     }
-    L.pres.slides.splice(at, 0, ...added);
+    M.insertSlides(L.pres, at, added);
     M.gcDesigns(L.pres);
     E.goto(at, { force: true });
     L.bus.emit('slides-changed');
@@ -1566,7 +1567,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     const t = M.newSlide(pres, 'title', did);
     T.setPlain(t.shapes[0].tx, 'Photo Album');
     T.setPlain(t.shapes[1].tx, 'by ' + (pres.props.author || 'Lectern'));
-    pres.slides.push(t);
+    M.insertSlides(pres, pres.slides.length, [t]);
     const per = layout === 'fit' || /^1/.test(layout) ? 1 : /^2/.test(layout) ? 2 : 4;
     const withTitle = /t$/.test(layout);
     for (let i = 0; i < pics.length; i += per) {
@@ -1592,7 +1593,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
         s.shapes.push(sh);
         if (caps) { const tb = M.newTextBox(pres, s, cell.x, cell.y + cell.h + 2, cell.w, 22, true); tb.tx.ps = [T.para(sh.alt, { algn: 'ctr' }, { sz: 12 })]; s.shapes.push(tb); }
       }
-      pres.slides.push(s);
+      M.insertSlides(pres, pres.slides.length, [s]);
     }
     E.goto(pres.slides.indexOf(t), { force: true });
     L.bus.emit('slides-changed');
@@ -1627,7 +1628,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
             T.setPlain(s.shapes[0].tx, i === 0 && title.value ? title.value : t);
             if (i === 0) T.setPlain(s.shapes[1].tx, bullets.join('\n'));
             else s.shapes[1].tx.ps = bullets.map((b) => T.para(b));
-            pres.slides.push(s);
+            M.insertSlides(pres, pres.slides.length, [s]);
           });
           pres.hf = Object.assign(pres.hf, { num: num.input.checked, dt: date.input.checked, ftr: !!footer.value, ftrText: footer.value, notOnTitle: true });
           A.loadPres(pres, title.value || list.value);
@@ -1690,7 +1691,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
       const at = (A.view === 'sorter' || A.focusArea === 'slides') && A.slideSel.size ? Math.max(...A.slideSel) + 1 : E.idx + 1;
       L.hist.push('Paste Slides');
       const added = c.slides.map((s) => { const d = M.dupSlide(s); if (!L.pres.designs[d.design]) L.pres.designs[d.design] = L.clone(c.designs[s.design]); return d; });
-      L.pres.slides.splice(at, 0, ...added);
+      M.insertSlides(L.pres, at, added);
       A.slideSel = new Set(added.map((_, k) => at + k));
       E.goto(at, { force: true });
       L.bus.emit('slides-changed');

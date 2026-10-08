@@ -35,7 +35,7 @@
     const output = K.output(pkg, { doc, format,
       contentType: (source, part) => { const mime = L.extToMime(part.split('.').pop()); return mime.startsWith('image/') ? mime : undefined; },
       consumes: (base, rel, type) => consumed.has(type) || owned.has((output.originals.get(base) || '') + ':' + rel.id),
-      merge: (base, source, data, writer) => P.merge(doc, base, source, data, writer) });
+      merge: (base, source, data, writer) => P.merge(doc, base, source, data, writer), audit: P.reportLosses });
     output.bind('word/document.xml', pkg?.main);
     for (const [base, type, mode, root] of P.parts) {
       const rel = pkg?.rels(root ? '' : pkg.main).find(r => canonical(r.type) === type && !r.external);
@@ -44,6 +44,19 @@
     }
     return output;
   };
+  P.reportLosses = writer => K.reportFeatures(writer, {
+    accepts: el => wordNS(el.namespaceURI) && ['document', 'hdr', 'ftr', 'footnotes', 'endnotes', 'comments'].includes(el.localName),
+    classify: el => {
+      if (!wordNS(el.namespaceURI)) return null;
+      const tag = el.localName;
+      if (['smartTag', 'customXml'].includes(tag)) return 'xml';
+      if (['dir', 'bdo'].includes(tag)) return 'direction';
+      if (['moveFrom', 'moveTo'].includes(tag)) return 'moves';
+      if (tag === 'fldSimple' || tag === 'fldChar' && attr(el, 'fldCharType') === 'begin') return 'fields';
+      return ({ sdt: 'controls', bookmarkStart: 'bookmarks', permStart: 'permissions', comment: 'comments', footnote: 'footnotes', endnote: 'endnotes', ins: 'revisions', del: 'revisions' })[tag];
+    },
+    labels: { xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: 'Inline direction wrappers were converted to ordinary text', moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
+  });
   P.merge = function (doc, base, source, generated, writer) {
     const original = writer.pkg.xml(source), fragment = K.fragment(original, { pkg: writer.pkg, part: source });
     const fresh = K.parse(generated), previous = doc.keep?.values || {};

@@ -284,13 +284,13 @@
   T.paraText = (p) => p.rs.map((r) => (r.fld ? r.t || '' : r.t)).join('');
   T.plain = (tx) => (tx && tx.ps ? tx.ps.map(T.paraText).join('\n') : '');
   T.isEmpty = (tx) => !tx || !tx.ps || tx.ps.every((p) => !T.paraText(p).length);
-  T.RUN_KEYS = ['b', 'i', 'u', 'strike', 'sz', 'font', 'color', 'base', 'shd', 'shdX', 'link', 'fld', 'spc', 'cap', 'fill', 'ln', 'hl', 'emb'];
+  T.RUN_KEYS = ['b', 'i', 'u', 'strike', 'sz', 'font', 'color', 'base', 'shd', 'shdX', 'link', 'fld', 'spc', 'cap', 'fill', 'ln', 'hl', 'emb', 'keep'];
   T.runProps = (r) => { const o = {}; for (const k of T.RUN_KEYS) if (r[k] !== undefined && k !== 'fld') o[k] = r[k]; return o; };
   T.sameProps = (a, b) => L.equal(T.runProps(a), T.runProps(b)) && !a.fld && !b.fld;
   T.normalize = (p) => {
     const out = [];
     for (const r of p.rs) {
-      if (!r.fld && !r.t) continue;
+      if (!r.fld && !r.t && !r.keep) continue;
       const prev = out[out.length - 1];
       if (prev && T.sameProps(prev, r)) prev.t += r.t;
       else out.push(Object.assign({}, r));
@@ -499,6 +499,10 @@
     return slide;
   };
 
+  M.insertSlides = function (pres, at, slides) {
+    L.preserve?.joinSection(pres, pres.slides, at, slides);
+    pres.slides.splice(at, 0, ...slides);
+  };
   M.design = (pres, slide) => (slide && pres.designs[slide.design]) || Object.values(pres.designs)[0];
 
   /** Re-apply a layout: keep existing content, move it into the new frames, add/remove empty placeholders. */
@@ -566,7 +570,7 @@
   M.gcDesigns = function (pres) {
     const used = new Set(pres.slides.map((s) => s.design));
     const ids = Object.keys(pres.designs);
-    for (const id of ids) if (!used.has(id) && ids.length > 1 && used.size) delete pres.designs[id];
+    for (const id of ids) if (!used.has(id) && !pres.designs[id].keep?.master && ids.length > 1 && used.size) delete pres.designs[id];
   };
 
   /* ---------- shape factories ---------- */
@@ -672,7 +676,11 @@
     c.id = L.uid('sl');
     if (c.keep) c.keep.copy = c.id;
     const map = {};
-    const re = (x) => { const n = L.uid('s'); map[x.id] = n; x.id = n; if (x.kids) x.kids.forEach(re); };
+    const re = (x) => {
+      const n = L.uid('s'); map[x.id] = n;
+      if (x.keep?.commentAnchor?.owner === x.id) x.keep.commentAnchor.owner = n;
+      x.id = n; if (x.kids) x.kids.forEach(re);
+    };
     c.shapes.forEach(re);
     c.anims = (c.anims || []).map((a) => Object.assign({}, a, { id: L.uid('a'), sid: map[a.sid] || a.sid }));
     if (c.keep?.anims) c.keep.anims = L.preserve.anims(c);

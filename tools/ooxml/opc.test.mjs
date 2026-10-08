@@ -18,6 +18,36 @@ const text = data => typeof data === 'string' ? data : new TextDecoder().decode(
 const kid = (el, name) => el.children.find(c => c.localName === name);
 const children = xml => K.parse(xml).children.map(e => e.localName);
 
+test('XML patches retain insertion order at shared boundaries and reject overlaps', () => {
+  assert.equal(K.patch('abcdef', [
+    { start: 1, end: 3, value: 'B' }, { start: 1, end: 1, value: 'I' },
+    { start: 4, end: 6, value: 'E' }, { start: 6, end: 6, value: '!' },
+  ]), 'aIBdE!');
+  assert.equal(K.patch('ab', [{ start: 1, end: 1, value: '1' }, { start: 1, end: 1, value: '2' }]), 'a21b');
+  assert.throws(() => K.patch('abc', [{ start: 0, end: 2, value: '' }, { start: 1, end: 3, value: '' }]), /Overlapping/);
+});
+
+test('feature notices describe actual assembled losses, survive drafts, and clear on a preserving save', async () => {
+  const original = `<w:document xmlns:w="${N.w}"><w:body><w:smartTag><w:p><w:r><w:t>Retained text</w:t></w:r></w:p></w:smartTag></w:body></w:document>`;
+  const converted = `<w:document xmlns:w="${N.w}"><w:body><w:p><w:r><w:t>Retained text</w:t></w:r></w:p></w:body></w:document>`;
+  const source = await pkg({ 'doc.xml': original }), doc = {};
+  const options = { accepts: el => el.namespaceURI === N.w, classify: el => el.namespaceURI === N.w && el.localName === 'smartTag' ? 'tags' : null, labels: { tags: 'Smart tags were converted to ordinary content' } };
+  const output = xml => {
+    const pack = K.output(source, { doc, audit: w => K.reportFeatures(w, options) });
+    pack.bind('doc.xml', 'doc.xml'); pack.put('doc.xml', xml, 'application/xml');
+    assert.equal(K.pendingLosses(doc).length, 0, 'no notice before the file has been assembled');
+    pack.finish();
+  };
+  output(original); assert.deepEqual(doc.losses, []);
+  output(converted); assert.equal(doc.losses.length, 1);
+  assert.equal(doc.losses[0].where, 'doc.xml');
+  const state = K.lossState(doc), recovered = {};
+  K.recoverLosses(recovered, state); assert.equal(K.pendingLosses(recovered).length, 1);
+  output(original); assert.equal(K.pendingLosses(doc).length, 0, 'cancelled conversion does not poison a preserving save');
+  output(converted); K.acknowledge(doc, doc.losses);
+  assert.equal(K.pendingLosses(doc).length, 0);
+});
+
 test('rewritten parts hoist fragment declarations and Ignorable once, retaining scoped QName meanings', () => {
   const xml = `<w:document xmlns:w="${N.w}" xmlns:mc="${N.mc}" xmlns:x="urn:one" mc:Ignorable="x"><w:p xmlns:w="${N.w}" xmlns:z="urn:new" mc:Ignorable="z"><x:outer xmlns:x="urn:two" mc:Ignorable="x"><x:reset xmlns:x="urn:one"/><z:payload xmlns:z="urn:new"/></x:outer></w:p></w:document>`;
   const result = K.hoistNamespaces(xml), parsed = K.parse(result);
@@ -374,6 +404,19 @@ test('geometry edits change the outer group transform without rewriting child ge
   assert.equal(changed, xml.replace('x="0" y="0"', 'x="38100" y="50800"').replace('cx="127000" cy="254000"', 'cx="254000" cy="508000"'));
   assert.equal(K.getBox(changed).x, 3); assert.equal(K.getBox(changed).w, 20);
   assert.throws(() => K.setBox(xml, { w: NaN }), /Invalid box/);
+});
+
+test('moving a 3-D frame keeps model coordinates; ink has its own outer transform', () => {
+  const inner = '<am3d:model3d xmlns:am3d="http://schemas.microsoft.com/office/drawing/2017/model3d"><am3d:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="300" cy="400"/></a:xfrm></am3d:spPr></am3d:model3d>';
+  const xml = `<p:graphicFrame xmlns:p="${N.p}" xmlns:a="${N.a}"><p:xfrm><a:off x="12700" y="25400"/><a:ext cx="38100" cy="50800"/></p:xfrm><a:graphic><a:graphicData>${inner}</a:graphicData></a:graphic></p:graphicFrame>`;
+  const changed = K.setBox(xml, { x: 10, y: 20, w: 30, h: 40 });
+  assert.ok(changed.includes(inner)); assert.equal(K.getBox(changed).x, 10);
+  const ink = `<p:contentPart xmlns:p="${N.p}" xmlns:a="${N.a}" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"><p14:xfrm><a:off x="12700" y="25400"/><a:ext cx="38100" cy="50800"/></p14:xfrm></p:contentPart>`;
+  assert.equal(K.getBox(K.setBox(ink, { x: 5 })).x, 5);
+});
+test('OLE preview identities are owned by the related VML part', () => {
+  const f = K.fragment(K.parse(`<p:oleObj xmlns:p="${N.p}" spid="_x0000_s1030"/>`), { part: 'ppt/slides/slide1.xml' });
+  assert.deepEqual(f.ids, []); assert.match(f.xml, /spid="_x0000_s1030"/);
 });
 
 test('editing a Strict property replaces it once and retains Strict namespace and sibling effects', () => {

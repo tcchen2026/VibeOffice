@@ -136,24 +136,27 @@ be served over https or from localhost. A workbook opened with its password keep
 
 Ledger regenerates worksheets and keeps original package dependencies, workbook settings, style
 indices and shared strings. Save and drafts retain all four OOXML variants and encryption. The
-Compatibility Checker reports recorded conversions before a user download; reporting is incomplete
-for the remaining object features.
+Compatibility Checker reports conversions from the prepared output before a user download,
+including edited imported charts and opaque drawings. Drafts retain notices silently.
 
 The pinned 951-file corpus saves and reopens **935 workbooks**, with **11 failures and 5 exclusions**.
 Cell edit/save/undo/redo completes in **933**, with **11 failures and 7 exclusions**; draft recovery
-completes in **935**, with **11 failures and 5 exclusions**. The full run uses writer `8236f3a`
-with five measured correction inputs. Package/SDK comparison reports **911 OK, 35 failed and
+completes in **935**, with **11 failures and 5 exclusions**. The final full run uses writer `69be775`.
+Package/SDK comparison reports **911 OK, 35 failed and
 5 excluded** for unedited saves. Across **6,589** save/edit/history/draft states, **6,371 pass,
 201 fail and 17 are excluded**; none adds diagnostics. Malformed or unvalidatable originals
-remain failures in the reports. All **115 unit tests** pass.
+remain failures in the reports. The complete unit set has **120 passing tests**.
 
-The feature inventory compares **923 readable pairs**. The independent openpyxl cell comparison
-completes in **889 workbooks / 1,649,147 cells**: **883 workbooks** keep every compared value/formula;
+The feature inventory compares **922 readable pairs**. The independent openpyxl cell comparison
+covers **889 workbooks / 1,649,147 cells**: **883 workbooks** keep every compared value/formula;
 6 differ, and 2 differ in formatting. Exceptions include adversarial shared strings, out-of-range
 cells, a template and dynamic-array formulas. The other **62 attempts** remain reported failures,
 including six saved copies openpyxl cannot read. The edited comparison excludes only the scripted
 A1 target: **879 of 887 workbooks** match every other value/formula; six have existing differences
 and two recalculate dependent array-result cells. No blanket lossless claim is made for these inputs.
+One large workbook reached the fresh audit's 40-second limit; its previous passing save/edit cell comparisons are reused after
+verifying that all 18 ZIP members in each current output are byte-identical. The original timeout
+remains in the report. The feature audit now rejects an invalid UTF-8 part in `tdf76115` explicitly.
 
 | Status | Feature | Current measured result / limit |
 |---|---|---|
@@ -168,6 +171,8 @@ and two recalculate dependent array-result cells. No blanket lossless claim is m
 | Kept; Excel edit acceptance pending | Controls, OLE, non-comment VML and sheet custom properties | All 40 relevant workbooks save without new package/SDK errors: 344/344 control references, 370/370 control/ActiveX parts, 26/26 OLE entries, 367/367 non-note VML shapes and 31/31 sheet properties. All 43 VML parts retain their original bytes |
 | Kept; Excel edit acceptance pending | Slicers and timelines | Three pinned supplemental workbooks retain 7/7 views and 12/12 definition/cache parts byte for byte; edits cover shared pivots, table copies, source deletion and drafts. OLAP cases remain unmeasured |
 | Kept; Excel edit acceptance pending | Query tables and column metadata | Ten public workbooks retain 23/23 query parts and 10/10 connections parts byte for byte, with 20/20 query tables and 68/68 column identities. Six focused cases cover column edits, copies, deletion and history |
+| Converted, with a notice | Edited imported charts, opaque drawing contents and macro/dialog sheets | Regenerate the edited model content; report its conversion before download |
+| Dropped, with a notice | Missing or unreferenced package dependencies; VBA in macro-free Save As | One source connection dependency is missing; two unreferenced custom-XML parts are not reattached. Macro removal requires the selected format and successful save |
 
 Package figures compare bytes, content types, original rIds and intended targets. The user accepted
 both Excel files in Office batch 1 (XLSM and custom XML/external links); the namespace sample also
@@ -178,7 +183,8 @@ All 15 suite batch files open in LibreOffice with unchanged counts. Strict conve
 all **23 Strict workbooks / 92 emitted states** against original package/SDK diagnostics and keeps
 its notice through draft recovery; the Strict Excel sample passed Office batch 2.
 Reports, failed attempts and historical measurements: `~/corpora/results/next-plan-head-2026-10-08/`
-and `~/corpora/results/strict-transitional-2026-10-08/`. Current full-group results:
+and `~/corpora/results/strict-transitional-2026-10-08/`. Current full results:
+`~/corpora/results/final-suite-2026-10-09/ledger/`; feature edit checks remain in
 `~/corpora/results/ledger-group-2026-10-09/`. The 15-file **Office batch 3** passes package/SDK and
 LibreOffice, with explained changes against the previous writer; **Excel acceptance is pending**.
 
@@ -198,7 +204,7 @@ LibreOffice, with explained changes against the previous writer; **Excel accepta
 |---|---|
 | Edit cells around an unedited raw shape | Keep its original XML, compatibility alternatives and relationships |
 | Move a drawing | Update its worksheet anchor |
-| Edit chart contents or a converted shape | Regenerate the modeled content; general per-property preservation remains pending |
+| Edit chart contents or a converted shape | Regenerate the modeled content with a Compatibility Checker notice; general per-property preservation remains pending |
 | Copy/duplicate or delete | Controls and OLE follow the ownership rules below; other opaque-frame ownership remains part of the remaining Ledger work |
 
 ### Pivots, threads, controls and extensions: current edit limits

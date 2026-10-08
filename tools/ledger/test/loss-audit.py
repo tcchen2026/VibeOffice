@@ -9,7 +9,7 @@ signal.signal(signal.SIGALRM, _alarm)
 
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'ooxml'))
-from audit import Audit
+from audit import Audit, xml_text
 audit = Audit()
 
 corpus, saved, outp = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -20,7 +20,7 @@ def load(path):
     files = {}
     for n in names:
         if (n.endswith('.xml') or n.endswith('.rels') or n.endswith('.vml')) and z.getinfo(n).file_size < 60_000_000:
-            try: files[n] = z.read(n).decode('utf8', 'replace')
+            try: files[n] = xml_text(z.read(n))
             except Exception: raise
     return names, files
 

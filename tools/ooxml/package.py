@@ -280,7 +280,13 @@ class Package:
                     names = [at(g, 'name') for g in av if split(g.tag)[1] == 'gd'] if av is not None else []
                     if names and sorted(names) != sorted(PRESET_ADJUST[at(el, 'prst')]):
                         self.issue('partial-preset-adjust', part, at(el, 'prst') + ': ' + ' '.join(names), path)
-                if ns in P and at(el, 'spid') is not None:
+                if ns in P and tag == 'oleObj' and at(el, 'spid') is not None:
+                    # OLE's spid belongs to its related VML preview, not cNvPr.
+                    targets = [r['target'] for r in self.rels.get(part, {}).values() if r['type'].endswith('/vmlDrawing') and not r['external']]
+                    found = any(at(e, 'id') == at(el, 'spid') for target in targets if target in self.xml for e in self.xml[target].iter())
+                    if not found:
+                        self.issue('unresolved-vml-preview', part, at(el, 'spid'), path)
+                elif ns in P and at(el, 'spid') is not None:
                     references.append((part, 'shape', at(el, 'spid'), path, branches))
                 if tag in ('stCxn', 'endCxn') and ns in A:
                     references.append((part, 'shape', at(el, 'id'), path, branches))

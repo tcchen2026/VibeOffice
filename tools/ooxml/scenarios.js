@@ -71,7 +71,7 @@
     if (scenario === 'geometry') s.shapes[0].x += 6;
     if (scenario === 'duplicate') s.shapes.push(L.model.dup(s.shapes[0]));
     if (scenario === 'delete-object') s.shapes.shift();
-    if (scenario === 'insert-slide') doc.slides.splice(1, 0, L.model.newSlide(doc, 'blank', s.design));
+    if (scenario === 'insert-slide') L.model.insertSlides(doc, 1, [L.model.newSlide(doc, 'blank', s.design)]);
     if (scenario === 'delete-slide') doc.slides.splice(1, 1);
     return { changed: [{ slide: s.id, shape: text?.id, kind: scenario }], expectedSlides: doc.slides.length, undo: () => L.hist.doUndo(), redo: () => L.hist.doRedo() };
   };

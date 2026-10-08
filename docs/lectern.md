@@ -14,6 +14,8 @@ The app is `public/lectern/` (`python3 tools/serve.py`, then http://127.0.0.1:87
 | `../common/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML preservation graph, identities, namespace capture and schema order |
 | `../common/geometry.js` | 92 AutoShape presets, adjust handles, text rectangles, connectors |
+| `js/designs.js` | Imported master/layout library, selective design changes and independent design copies |
+| `js/properties.js` | Shape/text properties, tags, actions and transitions retained until their owning property changes |
 | `js/model.js` | Presentation model, 14 design templates, 21 slide layouts, undo history |
 | `js/render.js` | DOM/SVG renderer for slides, fills, patterns, gradients, WordArt |
 | `../common/metafile.js` | WMF/EMF player, so old clip art, logos and pasted Excel/Visio graphics display |
@@ -27,6 +29,8 @@ The app is `public/lectern/` (`python3 tools/serve.py`, then http://127.0.0.1:87
 | `js/panes.js` | Slides/Outline tab, notes, sorter, notes page, print preview, task panes |
 | `js/slideshow.js` | Full-screen show, 58 transitions, 50+ entrance/emphasis/exit/motion-path effects, pen, rehearse timings |
 | `js/preserve.js` | Package ownership and settings merges; model-attached media, playback, property invalidation and clipboard dependencies |
+| `js/comments.js` | Legacy/modern comment ownership, author dependencies, copied identities and anchors |
+| `js/frames.js` | Opaque frame membership, geometry, diagram/VML dependencies and preview clipboard transport |
 | `js/pptx-read.js` | PresentationML import (themes, masters, layouts, placeholders, table styles, charts, SmartArt, custom geometry, animations; repairs damaged packages) |
 | `js/pptx-write.js` | PresentationML export (validated against the OOXML schema) |
 | `js/commands.js` | Every menu/toolbar command |
@@ -87,36 +91,51 @@ Office review batches are documented in [testing.md](testing.md).
 
 ## What a save keeps, converts and drops
 
-Lectern regenerates slides and keeps package dependencies and media properties beside the model.
+Lectern regenerates slides and keeps package dependencies and unsupported properties beside the model.
 Save and drafts retain all six OOXML variants and encryption. The Compatibility Checker reports
-recorded conversions before a user download; complete coverage depends on the remaining object work.
+conversions from the prepared output before a user download; drafts retain those notices silently.
 
-The pinned 844-file corpus completes **840 save/reopen attempts**, with **3 failures and 1 password
-exclusion**. Text edit/save/undo/redo completes in **551**, excludes **290** without editable text and
-fails in **3**. Draft recovery completes in **840**, with **3 failures and 1 exclusion**. The full run
-uses writer `cf1b313`; package/SDK comparison reports **822 OK, 21 failed and 1 excluded** for saves,
-and no new diagnostics in comparable outputs. Unvalidatable originals are failures, not passes.
+The pinned **844-file** run completes **837 saves and 837 draft recoveries**, with **6 failures and
+1 password exclusion** in each scenario. Text edit/save/undo/redo completes in **548**, excludes
+**290** without editable text and fails in **6**. Across **5,302 emitted or attempted states**, package/SDK
+comparison has **4,914 OK, 96 failed and 292 excluded**, with **no new diagnostics**. Failed originals
+and incomplete recovered decks remain failures. The full writer is `11a9f1e`, with isolated damaged-source
+and timeout corrections through `5247af8`; reports retain every original attempt.
 
-The independent feature inventory compares **827 readable pairs**; **17 attempts fail**. Its text
-inventory retains **57,931 of 58,131 words**: **812 of 827 decks** keep every counted word. Part and
-relationship counts do not establish that an unsupported frame remains attached to its slide.
+The independent inventory compares **827 readable pairs** and records **17 failed comparisons**.
+All **58,022 counted words** and every inventoried feature remain after an unchanged save, including
+**896 masters, 7,265 named layouts, 642 effects, 232 transition branches and 184 SmartArt references**.
+Counts alone do not establish rendering fidelity; the edit checks below verify ownership and dependencies.
 
 | Status | Feature | Current measured result / limit |
 |---|---|---|
 | Kept | Video/audio and playback | 29/29 media relationships in 17 decks; 16/16 media play/pause behaviors; original frames, links and media bytes survive |
 | Kept | Package metadata and fonts | 111/111 custom-XML, 67/67 XML-property, 33/33 tag, 70/70 custom-property, 12/12 font, 7/7 VBA and 1/1 label relationships |
 | Kept | Notes and handout dependencies | 932/932 notes-master references, 97/97 handout masters and 29/29 comment-author relationships; unedited notes keep header/footer text |
-| Kept as records; edit rules pending | Comments, sections and custom shows | 20/20 comment inventory items, 32/32 sections and 8/8 custom shows; membership and slide deletion/insertion rules remain unfinished |
-| Kept, with remaining losses | Animation and transitions | 639/642 general effects, 112/112 transitions and 29/43 auto-advance timings |
-| Kept for used designs; unused designs incomplete | Masters and layouts | 864/896 masters and 7,209/7,249 named layouts; all layouts of retained used masters survive |
-| Converted to displayed groups/pictures | SmartArt, OLE and newer charts | 0/184 SmartArt frames, 0/71 OLE frames and 0/4 chartEx frames; their 184 diagram relationships, 51 OLE relationships and 4 chartEx parts remain in the package, which alone does not preserve editability |
-| Dropped from slide content | Ink and 3-D models | 0/44 ink/content-part entries and 0/2 3-D models |
-| Dropped on general non-media shapes | Extended visual effects | 0/64 glow/reflection/soft-edge, 0/109 3-D effect, 0/36 inner-shadow, 0/4 recolour/artistic and 0/24 run-effect inventory items |
-| Partly kept | Links, program/macro actions and shape tags | 369/422 hyperlinks and 14/29 action settings; shape-level tag ownership and unsupported action types remain unfinished |
+| Kept; PowerPoint edit acceptance pending | Sections and custom shows | All 18 relevant decks retain 32/32 sections and 8/8 custom shows with unchanged expanded XML. Eight focused edit cases / 26 saved states pass package/SDK comparison |
+| Kept; PowerPoint edit acceptance pending | Comments | The 30 relevant decks retain 39/39 comment/author parts: 37 byte-identical, two Strict parts converted to Transitional. Copy/delete/paste ownership and modern anchors are implemented |
+| Kept; PowerPoint edit acceptance pending | Animation and transitions | Original timing and all 482 transition elements in the 214-deck property sweep remain; editing a modeled animation retains unrelated interactive sequences |
+| Kept; PowerPoint edit acceptance pending | Masters and layouts | All 54 masters and 276 layouts in the 13 unused-master decks remain; 52 masters and every layout retain exact bytes. Two damaged source masters require conversion |
+| Kept; PowerPoint edit acceptance pending | SmartArt, OLE and newer charts | 184/184 SmartArt, 71/71 OLE entries and 4/4 chartEx frames remain attached to their slides across all 135 relevant inputs; three missing drawing-cache references are removed with a notice |
+| Kept; PowerPoint edit acceptance pending | Ink and 3-D models | 44/44 ink/content-part entries and 2/2 3-D models; unavailable previews have editable placeholder frames |
+| Kept; PowerPoint edit acceptance pending | Extended visual effects | The property sweep retains all 18 glow, 30 reflection, 16 soft-edge, 36 inner-shadow, 136 scene3d, 123 sp3d and 6 picture-treatment entries; unknown run/paragraph details remain with their properties |
+| Kept; PowerPoint edit acceptance pending | Program/macro actions and shape tags | All 29 action settings and 13 slide/shape tag lists remain in the property sweep; copied tag parts and shape identities are independent |
+| Converted, with a notice | Edited opaque contents, imported charts and notes formatting | The text script converts 67 selected SmartArt previews; untouched inventoried features remain |
+| Dropped, with a notice | Missing source dependencies, invalidated signatures and VBA in macro-free Save As | Damaged source parts cannot be reconstructed; explicit deletion and format changes remove their owned parts |
 
-The custom-XML/tag part inventory is **234/244** even though all selected package relationships pass:
-unreferenced parts and modeled content have separate ownership rules. The Compatibility Checker
-reports losses known to the implemented paths; the remaining conversions are still being covered.
+The custom-XML/tag inventory retains **234/234 parts**, excluding ZIP directory markers. Package
+carry checks pass byte comparison in **818 files**; **9 Strict inputs** deliberately convert retained
+XML and relationship vocabulary. Sixteen malformed/failed inputs and one password exclusion remain
+separate. The edit inventory covers **545 readable pairs**: its only feature reduction is **67 SmartArt
+objects whose preview text the script edits**, each reported as converted. Other inventoried features
+remain. Run-boundary edits and those converted previews account for the word-count differences.
+
+Documented exceptions are damaged or missing source dependencies, signatures invalidated by a save,
+Strict-to-Transitional conversion, edited chart/opaque-frame content, and edited notes-page formatting.
+Form-control or field markup that requires conversion is also reported. Full-corpus LibreOffice
+rendering is not complete; the **15 PowerPoint batch-4 samples** pass package/SDK and LibreOffice with
+expected counts. Their previous-writer differences are reviewed. **PowerPoint acceptance is pending**
+at `~/Downloads/lossless-check/office-batch-4/CHECKLIST.md`.
 
 The user accepted the PPTM video, VBA and authors/handout samples in Office batch 1. The slide-6
 repair is fixed and confirmed in PowerPoint: presets write complete adjustment lists and masters
@@ -125,10 +144,8 @@ counts. Strict conversion passes **85 presentations / 340 emitted states** again
 package/SDK diagnostics; the Strict presentation sample passed Office batch 2. Rewritten parts now
 hoist fragment namespace declarations and `mc:Ignorable` to the root. The fresh namespace sample
 passes PowerPoint, package/SDK and LibreOffice with unchanged slide count. Opaque parts retain their
-bytes. Full-corpus
-LibreOffice rendering has not been completed. Reports and history:
-`~/corpora/results/next-plan-head-2026-10-08/` and
-`~/corpora/results/strict-transitional-2026-10-08/`.
+bytes. Current reports, convention signatures, correction history and exceptions are in
+`~/corpora/results/lectern-group-2026-10-09/`; earlier runs remain archived separately.
 
 ### Media: edit behavior
 
@@ -148,24 +165,118 @@ LibreOffice rendering has not been completed. Reports and history:
 |---|---|
 | Edit slide text | Keep unrelated package parts, custom-property types/pids and unedited notes |
 | Duplicate a slide | Copy its notes page and redirect its backlink |
-| Leave a used design unchanged | Retain its original master, every layout and theme |
-| Change a design, or leave a master unused | Complete invalidation/retention rules are pending |
+| Edit notes text | Regenerate the notes page and report its formatting conversion |
+| Leave a design unchanged, unused, or delete its last slide | Retain its original master, every layout and theme |
+| Insert a slide using a missing layout | Generate that layout under the selected master; reserve its structural shape ID before assigning placeholders |
+| Change colors or fonts | Update only changed color slots or Latin font entries; keep theme effects, other scripts and layouts |
+| Edit a master background, decoration or placeholder frame | Update the owning property; retain unrelated layouts and original shape identities |
+| Change master text styles, footer font or title alignment | Replace edited attributes/properties; keep unknown siblings and other levels |
+| Apply colors to only some slides | Create an independent master/layout/theme family for those slides |
+| Undo/redo or recover a draft | Restore the design library and its preserved properties |
 | Save as a macro-free variant | Report VBA removal; cancellation leaves file identity and acknowledgements unchanged |
 
-### Sections, comments and opaque frames: current edit limits
+The 13-deck design sweep, with four targeted corrections, has 11 passing package/SDK comparisons;
+two originals with missing dependencies remain failed comparisons. Eleven focused cases / 35 saved
+states pass package/SDK checks and cover geometry, theme changes, styles, independent copies,
+last-slide deletion, new layouts, undo/redo and actual drafts. Three edited samples open in LibreOffice with
+expected slide counts. All 118 unit tests pass and four pages load without console errors.
+PowerPoint batch 4 acceptance remains pending. Reports:
+`~/corpora/results/lectern-preservation-2026-10-09/designs-*`.
 
-| Edit | Current behavior / remaining work |
+### Sections and custom shows: edit behavior
+
+| Edit | Save behavior |
 |---|---|
-| Insert, delete or reorder slides in sections/custom shows | Original lists remain; membership and stable-identity updates need integration |
-| Change or delete a commented slide | Comment parts are carried; complete legacy/modern comment ownership rules remain pending |
-| Move, resize, edit or ungroup converted SmartArt/OLE/new-chart content | The displayed conversion is saved; original-frame ownership and geometry merging remain pending |
-| Change a non-media shape's shadow, fill or picture treatment | Regenerate modeled properties; unknown sibling effects still need per-property preservation |
-| Copy shape tags or unsupported file/program actions | Dependency and reference remapping still needs integration |
+| Save unchanged slides | Keep original slide IDs, section names/IDs, empty sections and custom-show order, including repeated show entries |
+| Insert or copy slides | Use fresh IDs above the source maximum; join the preceding slide's section (the following section when inserting first). Copies are not automatically added to custom shows |
+| Move slides | Join the destination section and retain original slide IDs; custom shows keep their own playback order |
+| Delete slides | Remove their section and custom-show references; retain empty section definitions |
+| Delete every slide in a custom show | Remove that show with a Compatibility Checker entry; a selected removed show switches to all slides |
+| Undo/redo or recover a draft | Restore slide membership and original identities; draft recovery retains pending notices |
+
+The 18-deck sweep and all 26 edit/history/draft states introduce no package/SDK diagnostics.
+Large slide IDs and empty sections are covered by a public one-slide deck with ten sections.
+Two edited samples and four history states open in LibreOffice with the expected inserted/deleted
+slide counts. All 115 unit tests pass; the browser edit driver and app load report no console errors.
+The full group measurement is above; PowerPoint batch 4 acceptance remains pending. Reports:
+`~/corpora/results/lectern-preservation-2026-10-09/membership-*`.
+
+### Comments: edit behavior
+
+| Edit | Save behavior |
+|---|---|
+| Text elsewhere, slide move or shape geometry | Keep comments, replies, authors and task metadata; retain unchanged comment parts byte for byte |
+| Copy a slide or paste a slide from another document | Independent comment parts and identities; remap authors, per-author indices, reply links, slide/shape anchors and creation identities together |
+| Duplicate only a shape | Existing comments remain on the original shape |
+| Delete a commented shape or edit its anchored text | Keep the thread attached to the slide; report the anchor conversion |
+| Delete a slide | Remove its comment parts; retain parts owned by other slides and copied comments |
+| Undo/redo or recover a draft | Restore ownership and dependencies; retain pending notices |
+
+All 30 public comment/author inputs save and reopen; package/SDK comparison passes for 29, with one
+original ZIP CRC failure explicitly retained as a failed comparison. Twelve focused cases / 38
+saved states pass package/SDK comparison and cover
+legacy and Strict copies, modern replies/tasks, shape and text anchors, detached clipboard transfer,
+undo/redo and actual drafts. The modern fixture is schema-authored because the pinned corpus has
+modern authors but no modern comment threads; it passes the SDK's Microsoft365 target.
+Two edited samples and four history states open in LibreOffice with expected slide counts.
+PowerPoint acceptance remains pending in batch 4. Reports:
+`~/corpora/results/lectern-preservation-2026-10-09/comments-*`.
+
+### Opaque frames: edit behavior
+
+| Edit | Save behavior |
+|---|---|
+| Text outside an opaque object | Keep its original frame and dependent parts |
+| Move, resize or rotate its preview | Update the outer frame; retain internal 3-D coordinates, data and effects |
+| Copy or paste the object | Independent dependent parts and remapped identities; import preview renditions, diagram cache links and OLE/VML preview identities |
+| Change converted content or ungroup SmartArt | Save the edited group/picture and record the conversion |
+| Delete the object | Remove its original frame; do not restore it from package parts |
+| Delete or copy only some members of a compatibility fallback | Save those remaining/copied members as converted content; emit the original wrapper only when all members remain intact, ordered and contiguous |
+| Undo/redo or recover a draft | Restore original membership, dependencies and pending notices |
+
+The 135 relevant decks all save and reopen. Package/SDK comparison passes for 133; two originals
+have missing parts and remain failed comparisons. Twenty focused cases / 62 saved states cover
+geometry, copying, clipboard previews, content edits, ungrouping, deletion and actual draft recovery,
+including a schema-authored fallback with two displayed members. The two OLE identity corrections
+and the missing-cache correction were rerun separately; the original measurements remain recorded.
+Of 959 diagram, embedding, ink and model dependency parts, 928 are byte-identical, ten are Strict
+conversions, three remove missing optional cache references, and 18 are unreferenced orphan parts
+in one damaged source. Five edited samples open in LibreOffice with expected slide counts.
+All 118 unit tests pass and all four pages load without console errors.
+PowerPoint batch 4 acceptance remains pending. Reports:
+`~/corpora/results/lectern-preservation-2026-10-09/frames-*`.
+
+### Shape properties, tags, actions and timing: edit behavior
+
+| Edit | Save behavior |
+|---|---|
+| Change shadow, fill, line, crop or picture treatment | Replace that property only; retain sibling effects, 3-D and extensions |
+| Change text or bold/size/alignment | Keep unknown run/paragraph/body properties, including empty formatted runs and line text bodies |
+| Move or resize a group | Keep its effects and update the group/child coordinate transforms together |
+| Copy shapes, slides or paste into another deck | Copy tags independently; remap actions, shape identities and dependencies; include preview bytes |
+| Edit an action or delete its slide target | Replace the action or remove the dangling jump with a notice |
+| Change transition speed/advance time | Update those attributes in every retained compatibility branch; preserve its original effect |
+| Replace a transition | Use the chosen transition and report the conversion |
+| Edit a modeled animation | Replace the modeled main sequence; retain unrelated interactive/media sequences and consistent build IDs |
+| Delete an animated shape | Remove its targets and build entries without regenerating other effects |
+| Undo/redo or recover a draft | Restore property fragments, tags, timing and pending notices |
+
+Save also reports imported-chart regeneration, converted form controls/text fields and incomplete
+source-part recovery. These notices are recomputed from the prepared file. Cancelling a conversion
+does not leave its notice on a later preserving save.
+
+The 214-deck sweep plus targeted corrections saves/reopens every input; 212 package/SDK comparisons
+pass and two damaged originals remain failed comparisons. Eighteen focused cases / 56 emitted
+states pass, including text edits, geometry, copies, deletion, detached clipboard and actual drafts.
+Four edited samples open in LibreOffice with unchanged counts. UTF-16 package XML is decoded
+correctly, retaining a six-slide template previously read as empty; its save/edit/history states
+also pass SDK and LibreOffice. The corpus driver now compares original, opened and saved slide
+counts. All 118 unit tests pass and four pages load. PowerPoint batch 4 acceptance remains pending. Reports: `~/corpora/results/lectern-preservation-2026-10-09/properties-*`.
 
 ## Known limits
 
 * Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
-* SmartArt currently saves as grouped shapes; its carried diagram parts do not restore the original frame. When a file carries only the diagram data (PowerPoint 2007 saved no drawing), Lectern lays it out itself with one of its built-in layout families, so unusual layouts look simpler than in PowerPoint.
+* SmartArt is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped. When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
 * Embedded OLE objects and ActiveX controls import as their preview pictures.
 * Fonts that aren't installed fall back to metric-compatible web fonts (Arimo, Tinos, Cousine, Carlito, Caladea).

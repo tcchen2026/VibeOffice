@@ -2,10 +2,11 @@
 feature, the decks where the original has it and the saved copy no longer does.
 Usage: python3 -I loss-audit.py corpusDir savedDir out.json"""
 import json, os, re, sys, zipfile, collections
+from xml.etree import ElementTree as ET
 
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'ooxml'))
-from audit import Audit
+from audit import Audit, xml_text
 audit = Audit()
 
 corpus, saved, outp = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -15,9 +16,9 @@ def load(path):
     files = {}
     for n in z.namelist():
         if n.endswith('.xml') or n.endswith('.rels'):
-            try: files[n] = z.read(n).decode('utf8', 'replace')
+            try: files[n] = xml_text(z.read(n))
             except Exception: raise
-    return z.namelist(), files
+    return [n for n in z.namelist() if not n.endswith('/')], files
 
 def rel_targets(files, prefix):
     """relationship type tails from .rels files whose source part matches prefix"""
@@ -29,6 +30,13 @@ def rel_targets(files, prefix):
 
 def joined(files, pat):
     return '\n'.join(x for n, x in files.items() if re.match(pat, n))
+
+def elements(files, pat, family, tag):
+    for name, xml in files.items():
+        if not re.match(pat, name): continue
+        for el in ET.fromstring(xml).iter():
+            if el.tag.endswith('}' + tag) and family in el.tag:
+                yield el
 
 FEATURES = {
     # package parts
@@ -49,7 +57,7 @@ FEATURES = {
     # slide content
     'animations (effects)': lambda names, f: len(re.findall(r'presetClass="(?!mediacall)', joined(f, r'ppt/slides/slide\d+\.xml'))),
     'media play/pause animations': lambda names, f: len(re.findall(r'presetClass="mediacall"', joined(f, r'ppt/slides/slide\d+\.xml'))),
-    'slide transitions': lambda names, f: sum(1 for n, x in f.items() if re.match(r'ppt/slides/slide\d+\.xml$', n) and re.search(r'<p:transition\b[^>]*[^/]>\s*<(?!/)', x)),
+    'slide transitions': lambda names, f: sum(bool(len(el)) for el in elements(f, r'ppt/slides/slide\d+\.xml$', 'presentationml', 'transition')),
     'auto-advance timings': lambda names, f: sum(1 for n, x in f.items() if re.match(r'ppt/slides/slide\d+\.xml$', n) and re.search(r'<p:transition\b[^>]*advTm="', x)),
     'hyperlinks (web, file, slide)': lambda names, f: len(re.findall(r'<a:hlinkClick\b(?![^>]*action="ppaction://(?:ole|media|macro|program))[^>]*r:id="[^"]+"', joined(f, r'ppt/slides/slide\d+\.xml'))) + len(re.findall(r'<a:hlinkClick\b[^>]*action="ppaction://(?:hlinksldjump|hlinkshowjump)', joined(f, r'ppt/slides/slide\d+\.xml'))),
     'action settings (run program, macro, OLE verb)': lambda names, f: len(re.findall(r'action="ppaction://(?:ole|macro|program|media)', joined(f, r'ppt/slides/slide\d+\.xml'))),
@@ -57,7 +65,7 @@ FEATURES = {
     '3-D shape effects (bevel, extrusion)': lambda names, f: len(re.findall(r'<a:sp3d\b[^/>]*(?:/>|>)(?!</a:sp3d>)', joined(f, r'ppt/slides/slide\d+\.xml'))) and len(re.findall(r'<a:bevelT\b|extrusionH="', joined(f, r'ppt/slides/slide\d+\.xml'))),
     'inner shadow': lambda names, f: len(re.findall(r'<a:innerShdw\b', joined(f, r'ppt/slides/slide\d+\.xml'))),
     'picture artistic effects / recolour': lambda names, f: len(re.findall(r'<a:duotone\b|<a14:imgEffect\b|<a:clrRepl\b', joined(f, r'ppt/slides/slide\d+\.xml'))),
-    'text effects on runs (glow, outline gradient)': lambda names, f: len(re.findall(r'<a:rPr\b[^>]*>(?:(?!</a:rPr>).)*<a:(glow|reflection)\b', joined(f, r'ppt/slides/slide\d+\.xml'), re.S)),
+    'text effects on runs (glow, outline gradient)': lambda names, f: sum(any(c.tag.endswith(('}glow', '}reflection')) for c in el.iter()) for el in elements(f, r'ppt/slides/slide\d+\.xml$', 'drawingml', 'rPr')),
     'speaker notes with formatting': lambda names, f: len(re.findall(r'<a:rPr\b[^>]*\b(b="1"|i="1"|u="sng")', joined(f, r'ppt/notesSlides/notesSlide\d+\.xml'))),
     'slide layouts (named)': lambda names, f: len(set(re.findall(r'<p:cSld name="([^"]+)"', joined(f, r'ppt/slideLayouts/slideLayout\d+\.xml')))),
     'slide masters': lambda names, f: sum(1 for n in names if re.match(r'ppt/slideMasters/slideMaster\d+\.xml$', n)),
@@ -68,17 +76,21 @@ COUNTED = {'animations (effects)', 'slide transitions', 'auto-advance timings', 
 def words(names, f, original):
     """words of the slides, their SmartArt and the speaker notes, taken per paragraph (a:p)"""
     pats = [r'ppt/slides/slide\d+\.xml$', r'ppt/notesSlides/notesSlide\d+\.xml$']
-    if original:
-        # SmartArt text lives in the diagram drawing (or, without one, the data model); Lectern saves it as shapes
-        pats.append(r'ppt/diagrams/drawing\d+\.xml$')
-        drawn = {re.sub(r'drawing', 'data', n) for n in names if re.match(r'ppt/diagrams/drawing\d+\.xml$', n) and len(f.get(n, '')) > 600}
-        pats.append('|'.join(re.escape(n) + '$' for n in names if re.match(r'ppt/diagrams/data\d+\.xml$', n) and n not in drawn) or r'^$')
+    # Retained SmartArt text still lives in the diagram drawing (or data model)
+    # on both sides. Converted SmartArt contributes its slide shapes instead.
+    pats.append(r'ppt/diagrams/drawing\d+\.xml$')
+    drawn = {re.sub(r'drawing', 'data', n) for n in names if re.match(r'ppt/diagrams/drawing\d+\.xml$', n) and len(f.get(n, '')) > 600}
+    pats.append('|'.join(re.escape(n) + '$' for n in names if re.match(r'ppt/diagrams/data\d+\.xml$', n) and n not in drawn) or r'^$')
     c = collections.Counter()
     for n, x in f.items():
         if not any(re.match(p, n) for p in pats): continue
-        x = re.sub(r'<mc:Fallback\b.*?</mc:Fallback>', '', x, flags=re.S)
-        for para in re.split(r'</a:p>', x):
-            t = ''.join(m.group(1) for m in re.finditer(r'<a:t>([^<]*)</a:t>', para))
+        root = ET.fromstring(x)
+        for parent in root.iter():
+            for child in list(parent):
+                if child.tag == '{http://schemas.openxmlformats.org/markup-compatibility/2006}Fallback': parent.remove(child)
+        for para in root.iter():
+            if not para.tag.endswith('}p') or 'drawingml' not in para.tag: continue
+            t = ''.join(el.text or '' for el in para.iter() if el.tag.endswith('}t') and 'drawingml' in el.tag)
             c.update(re.findall(r'\w+', t.lower()))
     return c
 

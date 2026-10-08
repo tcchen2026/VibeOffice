@@ -238,7 +238,7 @@
     const pres = L.pres;
     groups.forEach((g, i) => {
       let s = pres.slides[i];
-      if (!s) { s = M.newSlide(pres, 'text', (pres.slides[i - 1] || pres.slides[0] || {}).design); pres.slides.push(s); }
+      if (!s) { s = M.newSlide(pres, 'text', (pres.slides[i - 1] || pres.slides[0] || {}).design); M.insertSlides(pres, pres.slides.length, [s]); }
       let t = s.shapes.find((x) => x.ph && (x.ph.type === 'title' || x.ph.type === 'ctrTitle'));
       if (!t && g.title) { M.applyLayout(pres, s, s.layout === 'blank' || s.layout === 'contentOnly' ? 'titleOnly' : s.layout); t = s.shapes.find((x) => x.ph && (x.ph.type === 'title' || x.ph.type === 'ctrTitle')); }
       if (t && L.txt.plain(t.tx).replace(/\n/g, ' ') !== g.title) L.txt.setPlain(t.tx, g.title);

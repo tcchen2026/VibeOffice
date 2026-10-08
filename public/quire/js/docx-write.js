@@ -909,6 +909,7 @@
       chart: (it) => {
         const src = it.src && L.chart.src.get(it.src), source = src?.source && K.package(src.source);
         let conversion = false;
+        if (src && it.dirtyChart) pack.writer.loss({ id: 'chart-edit:' + it.src, what: 'Editing this chart replaces its original chart-specific formatting and extensions.', where: src.path || rels.owner, action: 'conversion' });
         if (source && !it.dirtyChart) {
           try {
             const target = pack.writer.carry(source, src.path);

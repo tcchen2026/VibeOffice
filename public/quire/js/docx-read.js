@@ -42,7 +42,7 @@
       const e = get(p);
       if (!e) return null;
       let x = null;
-      try { x = X.parse(await e.text(), L.preserve.captureProperties); } catch (err) { warnings.push('Part ' + p + ' could not be read.'); }
+      try { x = X.parse(L.xmlTree.decode(await e.bytes()), L.preserve.captureProperties); } catch (err) { warnings.push('Part ' + p + ' could not be read.'); }
       xmlCache.set(p, x);
       if (x) xmlParts.set(x.ownerDocument || x, p);
       return x;

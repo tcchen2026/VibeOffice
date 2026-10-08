@@ -141,7 +141,8 @@
     if (r.hl) kids += `<a:highlight>${clr(r.hl, null, design)}</a:highlight>`;
     if (r.font) { const f = X(fontRef(r.font)); kids += `<a:latin typeface="${f}"/><a:ea typeface="${f}"/><a:cs typeface="${f}"/>`; }
     if (r.link && ctx && tag === 'a:rPr') kids += hlinkXML(r.link, ctx);
-    return kids ? `<${tag} ${a.join(' ')}>${kids}</${tag}>` : `<${tag} ${a.join(' ')}/>`;
+    const xml = kids ? `<${tag} ${a.join(' ')}>${kids}</${tag}>` : `<${tag} ${a.join(' ')}/>`;
+    return L.properties.text(r, ctx, xml, 'run', tag);
   }
   function hlinkXML(link, ctx, tag) {
     tag = tag || 'a:hlinkClick';
@@ -175,8 +176,8 @@
     if (pp.algn) a.push(`algn="${pp.algn}"`);
     let kids = spc(pp.lnSpc, 'a:lnSpc') + spc(pp.spcBef, 'a:spcBef') + spc(pp.spcAft, 'a:spcAft') + buXML(pp.bu, design);
     if (withDefRPr && pp.rPr && Object.keys(pp.rPr).length) kids += rPrXML(pp.rPr, 'a:defRPr', ctx, design);
-    if (!a.length && !kids) return '';
-    return kids ? `<${tag}${a.length ? ' ' + a.join(' ') : ''}>${kids}</${tag}>` : `<${tag} ${a.join(' ')}/>`;
+    const xml = !a.length && !kids ? '' : kids ? `<${tag}${a.length ? ' ' + a.join(' ') : ''}>${kids}</${tag}>` : `<${tag} ${a.join(' ')}/>`;
+    return L.properties.text(pp, ctx, xml, 'para', tag, lvl);
   }
   function lstStyleXML(lst, ctx, design) {
     if (!lst) return '<a:lstStyle/>';
@@ -194,10 +195,10 @@
         const parts = String(r.t).split('\n');
         parts.forEach((t, i) => {
           if (i) x += `<a:br>${rPrXML(Object.assign({}, props, { link: undefined }), 'a:rPr', ctx, design)}</a:br>`;
-          if (t) x += `<a:r>${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(t)}</a:t></a:r>`;
+          if (t || r.keep && parts.length === 1) x += `<a:r>${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(t)}</a:t></a:r>`;
         });
       }
-      const end = p.end || (p.rs.length ? L.txt.runProps(p.rs[p.rs.length - 1]) : {});
+      const end = p.end || (p.rs.length ? Object.fromEntries(Object.entries(L.txt.runProps(p.rs[p.rs.length - 1])).filter(([key]) => key !== 'keep')) : {});
       x += rPrXML(Object.assign({}, end, { link: undefined }), 'a:endParaRPr', ctx, design);
       return x + '</a:p>';
     }).join('');
@@ -222,7 +223,7 @@
   function txBodyXML(tx, ctx, design, tag, extra) {
     tag = tag || 'p:txBody';
     const ps = tx.ps && tx.ps.length ? tx.ps : [L.txt.para('')];
-    return `<${tag}>${bodyPrXML(tx, extra)}${lstStyleXML(tx.lst, ctx, design)}${parasXML(ps, ctx, design)}</${tag}>`;
+    return `<${tag}>${L.properties.text(tx, ctx, bodyPrXML(tx, extra), 'body', 'a:bodyPr')}${L.properties.list(tx, ctx, lstStyleXML(tx.lst, ctx, design))}${parasXML(ps, ctx, design)}</${tag}>`;
   }
 
   /* ---------- shapes ---------- */
@@ -241,19 +242,33 @@
     return `<p:nvPr><p:ph${a.length ? ' ' + a.join(' ') : ''}/></p:nvPr>`;
   }
   function shapeXML(sh, ctx, design) {
+    if (ctx.designTemplate) return '';
     const id = ctx.nextId(sh.id);
+    if (ctx.writer && sh.keep?.frame) {
+      const kept = L.frames.emit(sh, ctx);
+      if (kept != null) return kept;
+    }
     if (ctx.writer && sh.keep?.media) {
       const kept = L.preserve.emitShape(sh, ctx, () => shapeXML({ ...sh, keep: null }, ctx, design));
       if (kept != null) return kept;
     }
+    if (ctx.writer && sh.keep?.designFrame) {
+      const kept = L.designs.shape(sh, ctx);
+      if (kept != null) return kept;
+    }
+    return L.properties.apply(sh, ctx, shapeContentXML(sh, id, ctx, design));
+  }
+  function shapeContentXML(sh, id, ctx, design) {
     switch (sh.type) {
       case 'group': {
         const kids = sh.kids.map((k) => shapeXML(k, { ...ctx, inGroup: true }, design)).join('');
         const ext = `<a:chOff x="${emu(sh.x)}" y="${emu(sh.y)}"/><a:chExt cx="${emu(sh.w)}" cy="${emu(sh.h)}"/>`;
         return `<p:grpSp><p:nvGrpSpPr>${cNvPr(id, sh, ctx)}<p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr>${xfrm(sh, 'a:xfrm', ext)}</p:grpSpPr>${kids}</p:grpSp>`;
       }
-      case 'line':
-        return `<p:cxnSp><p:nvCxnSpPr>${cNvPr(id, sh, ctx)}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr>${xfrm(sh)}<a:prstGeom prst="${sh.geom || 'line'}"><a:avLst/></a:prstGeom>${lineXML(sh.line || { c: 'tx1', w: 0.75 }, design)}${shadowXML(sh.shadow, design)}</p:spPr></p:cxnSp>`;
+      case 'line': {
+        const simple = sh.keep?.element === 'sp' || !!sh.tx, tag = simple ? 'sp' : 'cxnSp', nv = simple ? 'SpPr' : 'CxnSpPr';
+        return `<p:${tag}><p:nv${nv}>${cNvPr(id, sh, ctx)}<p:cNv${nv}/><p:nvPr/></p:nv${nv}><p:spPr>${xfrm(sh)}<a:prstGeom prst="${sh.geom || 'line'}"><a:avLst/></a:prstGeom>${lineXML(sh.line || { c: 'tx1', w: 0.75 }, design)}${shadowXML(sh.shadow, design)}</p:spPr>${sh.tx ? txBodyXML(sh.tx, ctx, design) : ''}</p:${tag}>`;
+      }
       case 'image': {
         /* a picture whose image is missing or linked from outside keeps its frame (PowerPoint shows its own placeholder) */
         const rid = ctx.media(sh.media) || (sh.linkUrl ? ctx.rels.add(RT('image'), sh.linkUrl, true) : null);
@@ -320,6 +335,7 @@
   /* ---------- charts ---------- */
   function chartFrameXML(sh, id, ctx, design) {
     const c = sh.chart || L.chart.sample();
+    if (c.srcId && c.edited) ctx.writer?.loss({ id: 'chart-edit:' + c.srcId, what: 'Editing this chart replaces its original chart-specific formatting and extensions.', where: sh.name || ctx.part, action: 'conversion' });
     /* a chart read from a file and not edited here is written back as it came, with its workbook and styles */
     const src = c.srcId && !c.edited && L.chart.src ? L.chart.src.get(c.srcId) : null;
     const source = src?.source && K.package(src.source);
@@ -506,7 +522,7 @@
         const effs = sub.map((a) => {
           const total = (a.delay || 0) + (a.dur || 500) * (a.cls === 'emph' ? Math.max(1, a.repeat || 1) : 1);
           end = Math.max(end, start + total);
-          if (!bld.has(a.sid + ':' + a.id)) bld.set(a.sid + ':' + a.id, { sid: a.sid, grpId: grp++, para: a.by === 'para' });
+          if (!bld.has(a.sid + ':' + a.id)) bld.set(a.sid + ':' + a.id, { sid: a.sid, grpId: ctx.nextBuildId ? ctx.nextBuildId() : grp++, para: a.by === 'para' });
           const gi = bld.get(a.sid + ':' + a.id).grpId;
           return effectXML(a, ctx, nid, gi, a === sub[0] && sub === g.subs[0] ? (g.click ? 'clickEffect' : a.start === 'with' ? 'withEffect' : 'afterEffect') : a.start === 'after' ? 'afterEffect' : 'withEffect');
         }).join('');
@@ -629,8 +645,8 @@
   }
   function masterXML(d, ctx, layoutIds) {
     let id = 1;
-    const nid = () => ++id;
-    ctx.nextId = () => nid();
+    const nid = ctx.nextId || (() => ++id);
+    ctx.nextId ||= nid;
     const deco = (d.deco || []).map((s) => shapeXML(s, ctx, d)).join('');
     const body = (t) => L.txt.body([L.txt.para(t)], { anchor: 't' });
     const ph = d.ph;
@@ -642,20 +658,20 @@
     const sn = placeholderSp(nid(), 'Slide Number Placeholder 5', { type: 'sldNum', idx: 4 }, ph.sldNum, Object.assign(L.txt.body([{ lvl: 0, pp: {}, rs: [{ t: '‹#›', fld: 'slidenum' }] }]), { lst: footLst('r') }), ctx, d);
     const tStyle = levelsXML([L.deepMerge(L.model.DEFAULT_TX.title[0], d.tx.title[0])], ctx, d);
     const bStyle = levelsXML(L.model.DEFAULT_TX.body.map((lv, i) => L.deepMerge(lv, d.tx.body[i])), ctx, d);
-    const oStyle = levelsXML(L.model.DEFAULT_TX.other, ctx, d);
+    const oStyle = levelsXML(d.tx.other || L.model.DEFAULT_TX.other, ctx, d);
     const lids = layoutIds.map((l) => `<p:sldLayoutId id="${l.id}" r:id="${l.rid}"/>`).join('');
     return HEAD + `<p:sldMaster ${NSDECL}><p:cSld>${bgXML(d.bg || { t: 'solid', c: 'bg1' }, ctx, d)}<p:spTree>${GRP}${deco}${tp}${bp}${dt}${ft}${sn}</p:spTree></p:cSld>${CLRMAP}<p:sldLayoutIdLst>${lids}</p:sldLayoutIdLst><p:txStyles><p:titleStyle>${tStyle}</p:titleStyle><p:bodyStyle>${bStyle}</p:bodyStyle><p:otherStyle>${oStyle}</p:otherStyle></p:txStyles></p:sldMaster>`;
   }
   function layoutXML(d, key, lkey, ctx) {
     const info = L.model.layoutInfo(key);
     let id = 1;
-    const nid = () => ++id;
-    ctx.nextId = () => nid();
+    const nid = ctx.nextId || (() => ++id);
+    ctx.nextId ||= nid;
     let deco = '', showMaster = true, bg = '';
-    if (lkey && d.layoutDecos && d.layoutDecos[lkey]) { deco = d.layoutDecos[lkey].map((s) => shapeXML(s, ctx, d)).join(''); showMaster = false; }
-    else if (key === 'title' && d.titleDeco) { deco = d.titleDeco.map((s) => shapeXML(s, ctx, d)).join(''); showMaster = false; }
-    if (lkey && d.layoutBgs && d.layoutBgs[lkey]) bg = bgXML(d.layoutBgs[lkey], ctx, d);
-    else if (key === 'title' && d.titleBg) bg = bgXML(d.titleBg, ctx, d);
+    if (key === 'title' && d.titleDeco) { deco = d.titleDeco.map((s) => shapeXML(s, ctx, d)).join(''); showMaster = false; }
+    else if (lkey && d.layoutDecos && d.layoutDecos[lkey]) { deco = d.layoutDecos[lkey].map((s) => shapeXML(s, ctx, d)).join(''); showMaster = !!d.layoutShowMaster?.[lkey]; }
+    if (key === 'title' && d.titleBg) bg = bgXML(d.titleBg, ctx, d);
+    else if (lkey && d.layoutBgs && d.layoutBgs[lkey]) bg = bgXML(d.layoutBgs[lkey], ctx, d);
     const frames = L.model.layoutFrames(key, d);
     const phs = frames.map((fr, i) => {
       const sh = L.model.makePlaceholder(fr, d);
@@ -712,6 +728,7 @@
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const mainCT = format.contentType;
     const presRels = pack.rels('ppt/presentation.xml');
+    const frames = L.frames.prepare(pres, writer);
     const mediaMap = new Map(); /* media id → {name} */
     let chartN = 0;
     const charts = [];
@@ -735,8 +752,8 @@
       return freshName('ppt/slides', 'slide', 'xml');
     });
     const slideIndex = (id) => allSlides.findIndex((s) => s.id === id);
-    /* designs used, in order of first use */
-    const designIds = [];
+    /* Retain the imported design library, including masters with no slides. */
+    const designIds = Object.keys(pres.designs);
     for (const s of allSlides) if (!designIds.includes(s.design)) designIds.push(s.design);
     if (!designIds.length) designIds.push(Object.keys(pres.designs)[0]);
 
@@ -788,10 +805,44 @@
     const layoutPartOf = new Map(); /* designId|layoutKey|lkey -> layout file number */
     let layoutN = 0;
     const masterN = new Map();
+    let firstTheme = null;
     designIds.forEach((did, mi) => {
       const d = pres.designs[did] || L.model.buildDesign('default', pres.W, pres.H);
       const mNum = mi + 1;
-      const original = d.keep?.source === pres.pkg?.id && d.keep?.values === L.preserve.designValues(d);
+      if (d.keep?.master) {
+        try {
+          const kept = L.designs.write(d, pres, pack, {
+            name: freshName, master: masterXML, layout: layoutXML, theme: themeXML, shape: shapeXML,
+            context: (part, shapes, owner) => {
+              pack.use(part);
+              // Generated masters/layouts use 1 for their structural spTree.
+              // Reserve it before allocating placeholders in a new layout.
+              owner.ids.reserve(part, 'shape', '1');
+              const rels = pack.rels(part), ids = new Map(), byId = new Map();
+              L.model.walk(shapes, s => { byId.set(s.id, s); return true; });
+              return { writer: owner, frames, part, rels, media: mediaSync(rels, part), svg: svgSync(rels, part), slideIndex,
+                fieldId: fieldIds(part), slideTarget: i => K.relative(part, slideParts[i]),
+                nextId: mid => {
+                  if (ids.has(mid)) return ids.get(mid);
+                  const f = byId.get(mid)?.keep?.identity, ref = f?.ids.find(r => r.kind === 'shape' && r.definition);
+                  const id = ref ? owner.ids.resolve(ref.source, ref.scope, ref.kind, ref.id, { primary: pres.pkg?.id, scope: part }) : owner.ids.fresh(part, 'shape');
+                  if (mid) ids.set(mid, id); return id;
+                }, idOf: mid => ids.get(mid), findShape: mid => byId.get(mid),
+                addChart: (xml, parts) => { chartN++; charts.push({ n: chartN, xml, parts }); return chartN; } };
+            },
+          });
+          if (kept) {
+            if (!mi) firstTheme = kept.theme;
+            masterIdList.push({ id: kept.id, rid: writer.rels(presRels.owner).add(RT('slideMaster'), K.relative(presRels.owner, kept.part), false, kept.rid) });
+            for (const [key, part] of kept.layouts) layoutPartOf.set(did + '|' + key, { part });
+            masterN.set(did, mNum); return;
+          }
+        } catch (error) {
+          if (error.code !== 'OOXML_DESIGN_DEPENDENCY') throw error;
+          writer.loss({ id: 'design:' + d.keep.part, what: 'The design was converted because its original dependencies are incomplete: ' + error.message, where: d.keep.part, action: 'conversion' });
+        }
+      }
+      const original = !d.keep?.master && d.keep?.source === pres.pkg?.id && d.keep?.values === L.preserve.designValues(d);
       const used = allSlides.filter(s => s.design === did).map(s => s.layout + (s.lkey ? '|' + s.lkey : ''));
       if (original && used.every(key => d.keep.layouts[key])) {
         try {
@@ -862,15 +913,22 @@
     const notesMasterRid = presRels.add(RT('notesMaster'), 'notesMasters/notesMaster1.xml');
 
     /* slides */
-    const sldIds = [];
+    const sldIds = []; writer.slideIds = new Map();
+    const commentState = L.comments.begin(pres, pack);
     allSlides.forEach((s, i) => {
       const n = i + 1;
       const part = slideParts[i];
+      const originalSlide = s.keep?.part === part && s.keep?.source === pres.pkg?.id;
+      const slideId = originalSlide && s.keep.sldId ? s.keep.sldId : writer.ids.fresh('presentation', 'sldId');
+      writer.slideIds.set(s.id, slideId);
       const d = pres.designs[s.design] || pres.designs[designIds[0]];
       const sRels = pack.rels(part);
       const lk = s.design + '|' + s.layout + (s.lkey ? '|' + s.lkey : '');
       const ln = layoutPartOf.get(lk) || layoutPartOf.get(designIds[0] + '|text') || 1;
-      if (ln.original) {
+      if (ln.part) {
+        const dep = pres.pkg?.rels(s.keep?.part || '').find(r => r.part === ln.part && K.relationshipType(r.type) === RT('slideLayout'));
+        writer.rels(sRels.owner).add(dep?.type || RT('slideLayout'), K.relative(sRels.owner, ln.part), false, dep?.id);
+      } else if (ln.original) {
         const dep = pres.pkg.rels(s.keep?.part || '').find(r => r.part === ln.original && K.relationshipType(r.type) === RT('slideLayout'));
         writer.rels(sRels.owner).add(dep?.type || RT('slideLayout'), K.relative(sRels.owner, writer.target(pres.pkg, ln.original)), false, dep?.id);
       } else sRels.add(RT('slideLayout'), K.relative(part, `ppt/slideLayouts/slideLayout${ln}.xml`));
@@ -878,11 +936,11 @@
       // Some source decks reuse the structural spTree ID for an actual shape.
       // Keep the visible shape's identity (timing may target it) and repair the root.
       let rootClash = false;
-      L.model.walk(s.shapes, shape => { if (shape.keep?.identity.ids.some(ref => ref.kind === 'shape' && ref.definition && String(ref.id) === String(rootId) && ref.scope === part)) rootClash = true; return true; });
+      L.model.walk(s.shapes, shape => { if (shape.keep?.identity?.ids.some(ref => ref.kind === 'shape' && ref.definition && String(ref.id) === String(rootId) && ref.scope === part)) rootClash = true; return true; });
       if (rootClash) rootId = writer.ids.fresh(part, 'shape');
       const idMap = new Map();
       const ctx = {
-        writer, part, rels: sRels, media: mediaSync(sRels, part), svg: svgSync(sRels, part), slideIndex, fieldId: fieldIds(part),
+        writer, frames, part, rels: sRels, media: mediaSync(sRels, part), svg: svgSync(sRels, part), slideIndex, fieldId: fieldIds(part),
         slideTarget: index => K.relative(part, slideParts[index]),
         nextId: (mid) => {
           if (idMap.has(mid)) return idMap.get(mid);
@@ -896,6 +954,8 @@
         addChart: (xml, parts) => { chartN++; charts.push({ n: chartN, xml, parts }); return chartN; },
       };
       L.model.walk(s.shapes, shape => { ctx.nextId(shape.id); return true; });
+      ctx.liveShapeIds = new Set(Array.from(idMap.values(), String));
+      const comments = L.comments.slide(commentState, s, ctx);
       let tree = s.shapes.map((sh) => shapeXML(sh, ctx, d)).join('');
       /* header & footer placeholders */
       const hf = Object.assign({}, pres.hf || {}, s.hf || {});
@@ -913,17 +973,18 @@
         if (hf.num && !has('sldNum')) tree += foot('sldNum', { t: String(i + (pres.firstNum || 1)), fld: 'slidenum' }, 'Slide Number Placeholder');
       }
       const timing = L.preserve.timing(s, ctx, () => timingXML(s, ctx));
-      const transition = s.keep?.transition && s.keep.trans === JSON.stringify(s.trans) ? writer.emit(s.keep.transition, part) : transitionXML(s.trans);
+      const transition = L.properties.transition(s, ctx, transitionXML(s.trans));
       const attrs = [];
       if (s.hidden) attrs.push('show="0"');
       if (s.hideMaster) attrs.push('showMasterSp="0"');
-      const xml = HEAD + `<p:sld ${NSDECL}${attrs.length ? ' ' + attrs.join(' ') : ''}><p:cSld>${s.bg ? bgXML(s.bg, ctx, d) : ''}<p:spTree>${GRP.replace('id="1"', 'id="' + rootId + '"')}${tree}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${transition}${timing}</p:sld>`;
+      const xml = L.properties.finishSlide(s, ctx, HEAD + `<p:sld ${NSDECL}${attrs.length ? ' ' + attrs.join(' ') : ''}><p:cSld>${s.bg ? bgXML(s.bg, ctx, d) : ''}<p:spTree>${GRP.replace('id="1"', 'id="' + rootId + '"')}${tree}</p:spTree>${comments.creation}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${transition}${timing}${comments.ext}</p:sld>`);
       if (s.notes && s.notes.trim() || s.keep?.notes) {
         if (s.keep?.copy && s.keep.notes?.text === s.notes && pres.pkg?.has(s.keep.notes.part)) {
           const target = pack.part(`ppt/notesSlides/notesSlide${n}.xml`);
           writer.copyPart(pres.pkg, s.keep.notes.part, target, { [s.keep.part]: part });
           sRels.add(RT('notesSlide'), K.relative(part, `ppt/notesSlides/notesSlide${n}.xml`));
         } else {
+        if (s.keep?.notes && s.keep.notes.text !== s.notes) writer.loss({ id: 'notes-edit:' + s.id, what: 'Editing these notes replaces their original notes-page formatting.', where: s.keep.notes.part, action: 'conversion' });
         pack.bind(`ppt/notesSlides/notesSlide${n}.xml`, s.keep?.notes?.part, s.keep?.notes?.text === s.notes ? 'opaque' : 'regenerated');
         const nRels = pack.rels(`ppt/notesSlides/notesSlide${n}.xml`);
         nRels.add(RT('notesMaster'), '../notesMasters/notesMaster1.xml');
@@ -937,9 +998,9 @@
       add(part, xml);
       add(K.relsPath(part), sRels.xml());
       overrides.push(['/' + part, CT.slide]);
-      const originalSlide = s.keep?.part === part && s.keep?.source === pres.pkg?.id;
-      sldIds.push({ id: originalSlide && s.keep.sldId ? s.keep.sldId : writer.ids.fresh('presentation', 'sldId'), rid: presRels.add(RT('slide'), K.relative('ppt/presentation.xml', part)) });
+      sldIds.push({ id: slideId, rid: presRels.add(RT('slide'), K.relative('ppt/presentation.xml', part)) });
     });
+    L.comments.finish(commentState);
     /* charts, and the parts an unedited imported chart brings with it (workbook, style, colours, theme override) */
     let embN = 0;
     const PART_CT = { xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', xlsm: 'application/vnd.ms-excel.sheet.macroEnabled.12', xlsb: 'application/vnd.ms-excel.sheet.binary.macroEnabled.main', xls: 'application/vnd.ms-excel', bin: 'application/vnd.openxmlformats-officedocument.oleObject', xml: 'application/xml', png: 'image/png', jpeg: 'image/jpeg', jpg: 'image/jpeg', gif: 'image/gif', emf: 'image/x-emf', wmf: 'image/x-wmf' };
@@ -972,7 +1033,8 @@
     /* presentation-level parts */
     presRels.add(RT('presProps'), 'presProps.xml');
     presRels.add(RT('viewProps'), 'viewProps.xml');
-    presRels.add(RT('theme'), 'theme/theme1.xml');
+    if (firstTheme) writer.rels(presRels.owner).add(RT('theme'), K.relative(presRels.owner, firstTheme));
+    else presRels.add(RT('theme'), 'theme/theme1.xml');
     presRels.add(RT('tableStyles'), 'tableStyles.xml');
     const sizeType = { '720x540': 'screen4x3', '720x405': 'screen16x9', '720x450': 'screen16x10', '780x540': 'A4', '810x540': '35mm', '576x72': 'banner' }[`${Math.round(pres.W)}x${Math.round(pres.H)}`] || 'custom';
     const defStyle = levelsXML(L.model.DEFAULT_TX.other, { rels: presRels, media: () => null }, pres.designs[designIds[0]]);

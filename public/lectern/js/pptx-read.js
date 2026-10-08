@@ -1,7 +1,7 @@
 /* Lectern — PresentationML reader (.pptx / .ppsx / .potx / .pptm). */
 (function () {
   'use strict';
-  const L = window.L;
+  const L = window.L, K = L.opc;
   const pt = L.emu2pt;
   const NS_R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
@@ -33,7 +33,8 @@
       const fb = kidsEl.find((c) => c.localName === 'Fallback');
       const ch = kidsEl.find((c) => c.localName === 'Choice');
       const pick = fb && fb.children.length ? fb : ch || fb;
-      if (pick) ac.replaceWith(...Array.from(pick.childNodes)); else ac.remove();
+      if (pick?.children.length) ac.replaceWith(...Array.from(pick.childNodes));
+      else if (!['spTree', 'grpSp'].includes(ac.parentNode.localName)) ac.remove();
     }
   }
   const kids = (el, name) => (el ? Array.from(el.children).filter((c) => !name || c.localName === name) : []);
@@ -205,6 +206,7 @@
         default: break;
       }
     }
+    if (ctx?.pkg && ctx.partPath) L.properties.capture(r, rPr, ctx, 'run');
     return r;
   }
   function spacing(el) {
@@ -245,6 +247,7 @@
       if (o.bu.font && /wingdings|symbol/i.test(o.bu.font)) delete o.bu.font;
     }
     if (withDef) { const d = kid(pPr, 'defRPr'); if (d) { const r = runProps(d, ctx); delete r.link; if (Object.keys(r).length) o.rPr = r; } }
+    if (ctx?.pkg && ctx.partPath) L.properties.capture(o, pPr, ctx, 'para');
     return o;
   }
   function listStyle(lst, ctx) {
@@ -772,7 +775,7 @@
       if (textCache.has(p)) return textCache.get(p);
       const f = file(p);
       let t = null;
-      if (f) { try { t = await f.text(); } catch (e) { damaged.push(p); } }
+      if (f) { try { t = pkg?.has(p) ? pkg.text(p) : L.xmlTree.decode(await f.bytes()); } catch (e) { damaged.push(p); } }
       textCache.set(p, t);
       return t;
     };
@@ -967,11 +970,13 @@
     async function loadMaster(p) {
       if (masters.has(p)) return masters.get(p);
       const mx = await xml(p);
+      if (!mx) throw new Error('Missing slide master: ' + p);
       const mr = await rels(p);
       const themeRel = Object.values(mr).find((r) => r.type === 'theme');
       const theme = await loadTheme(themeRel ? themeRel.target : '');
       const design = L.model.buildDesign('default', W, H);
-      design.keep = { source: pkg?.id, part: p, theme: themeRel?.target, layouts: {} };
+      design.keep = { source: pkg?.id, part: p, theme: themeRel?.target, layouts: {}, layoutParts: [] };
+      if (pkg?.has(p)) design.keep.master = K.fragment(pkg.xml(p), { pkg, part: p });
       design.name = theme.name || 'Imported Design';
       design.key = 'imported';
       design.colors = Object.assign({}, design.colors, theme.colors);
@@ -1009,6 +1014,7 @@
     async function loadLayout(p) {
       if (layouts.has(p)) return layouts.get(p);
       const lx = await xml(p);
+      if (!lx) throw new Error('Missing slide layout: ' + p);
       const lr = await rels(p);
       const mRel = Object.values(lr).find((r) => r.type === 'slideMaster');
       const master = await loadMaster(mRel ? mRel.target : '');
@@ -1029,16 +1035,19 @@
       for (const ph of phs) if ((ph.ph.type === 'ctrTitle' || ph.ph.type === 'subTitle') && ph.xfrm && !master.design._ctrSet) master.design.ph[ph.ph.type] = { x: ph.xfrm.x, y: ph.xfrm.y, w: ph.xfrm.w, h: ph.xfrm.h };
       if (phs.some((x) => x.ph.type === 'ctrTitle')) master.design._ctrSet = true;
       const d = master.design;
-      if (deco.length || bg || !showMaster) {
+      {
         const key = p.split('/').pop().replace('.xml', '');
         d.layoutDecos = d.layoutDecos || {};
         d.layoutBgs = d.layoutBgs || {};
         d.layoutNames = d.layoutNames || {};
-        d.layoutDecos[key] = (showMaster ? L.clone(d.deco) : []).concat(deco);
+        d.layoutDecos[key] = deco;
+        (d.layoutShowMaster ||= {})[key] = showMaster;
         if (bg) d.layoutBgs[key] = bg;
         d.layoutNames[key] = name;
         info.lkey = key;
       }
+      if (pkg?.has(p)) d.keep.layoutParts.push({ part: p, lkey: info.lkey, type,
+        fragment: K.fragment(pkg.xml(p), { pkg, part: p }) });
       layouts.set(p, info);
       return info;
     }
@@ -1046,7 +1055,7 @@
     /* per-part parsing context */
     function mkCtx(partPath, partRels, design, theme) {
       const ctx = {
-        design, theme, partPath, rels: partRels, phClr: null, clrMapOvr: null, mediaQueue: [],
+        pkg, design, theme, partPath, rels: partRels, phClr: null, clrMapOvr: null, mediaQueue: [],
         media: (id) => { const r = partRels[id]; if (!r || r.external) return null; const m = mediaCache.get(r.target); if (m) return m; ctx.pendingMedia.add(r.target); return '__pending__:' + r.target; },
         link: (el) => {
           const action = at(el, 'action') || '';
@@ -1103,10 +1112,16 @@
       const out = [];
       for (const el of kids(tree)) {
         try {
-          const s = await shapeFrom(el, ctx, opts);
-          if (!s) continue;
           const source = original(ctx.partPath);
-          if (source) for (const shape of Array.isArray(s) ? s : [s]) L.preserve.shape(shape, source.map.get(String(shape.numId)), el, pkg, ctx.partPath);
+          const cnv = desc(el, 'cNvPr'), raw = source?.map.get(at(cnv, 'id'));
+          let s = await shapeFrom(el, ctx, opts);
+          if ((!s || Array.isArray(s) && !s.length) && source) s = L.frames.placeholder(el, raw, tree, ctx);
+          if (!s) continue;
+          if (source) {
+            const models = Array.isArray(s) ? s : [s];
+            for (const shape of models) L.preserve.shape(shape, source.map.get(String(shape.numId)), el, pkg, ctx.partPath);
+            L.frames.attach(models, el, raw, tree, pkg, ctx.partPath);
+          }
           if (Array.isArray(s)) out.push(...s); else out.push(s);
         } catch (e) { console.warn('shape skipped', e); }
       }
@@ -1757,13 +1772,14 @@
 
     /* ---- slides ---- */
     const sldIds = kids(kid(presX, 'sldIdLst'), 'sldId');
-    const slidePaths = sldIds.map((s) => presRels[rid(s)]).filter(Boolean).map((r) => r.target);
+    const slideRefs = sldIds.map(el => ({ el, path: presRels[rid(el)]?.target })).filter(s => s.path);
     const pathToId = new Map();
     const LAYOUT_MAP = { title: 'title', titleOnly: 'titleOnly', tx: 'text', twoColTx: 'twoText', blank: 'blank', objOnly: 'contentOnly', obj: 'content', twoObj: 'twoContent', fourObj: 'fourContent', txAndObj: 'textContent', objAndTx: 'contentText', txAndTwoObj: 'textTwoContent', twoObjAndTx: 'twoContentText', tbl: 'table', chart: 'chart', txOverObj: 'textOverContent', objOverTx: 'contentOverText', vertTx: 'vertText', vertTitleAndTx: 'vertTitleText', objAndTwoObj: 'contentTwoContent', twoObjAndObj: 'twoContentContent', secHead: 'titleOnly', twoTxTwoObj: 'twoContent', objTx: 'textContent', picTx: 'textContent', txAndChart: 'textContent', chartAndTx: 'contentText', txAndClipArt: 'textContent', clipArtAndTx: 'contentText', txAndMedia: 'textContent', mediaAndTx: 'contentText', dgm: 'content', txOverObj2: 'textOverContent' };
     let n = 0;
-    for (const sp of slidePaths) {
+    for (const sourceSlide of slideRefs) {
+      const sp = sourceSlide.path;
       n++;
-      if (opts.progress) opts.progress(n, slidePaths.length);
+      if (opts.progress) opts.progress(n, slideRefs.length);
       const sx = await xml(sp);
       if (!sx) { if (file(sp)) damaged.push(sp); continue; }
       try {
@@ -1832,7 +1848,7 @@
       slide.trans = transitionFrom(sx) || slide.trans;
       /* animations */
       try { slide.anims = timingFrom(kid(sx, 'timing'), slide); } catch (e) { console.warn('timing skipped', e); slide.anims = []; }
-      if (original(sp)) L.preserve.slide(slide, original(sp).tree, pkg, sp, at(sldIds[n - 1], 'id'), sx);
+      if (original(sp)) L.preserve.slide(slide, original(sp).tree, pkg, sp, at(sourceSlide.el, 'id'), sx);
       if (lay && design.keep) design.keep.layouts[slide.layout + (slide.lkey ? '|' + slide.lkey : '')] = lay.path;
       if (nr && slide.keep) slide.keep.notes = { part: nr.target, text: slide.notes };
       pathToId.set(sp, slide.id);
@@ -1842,6 +1858,21 @@
         console.warn('slide skipped', sp, e);
         damaged.push(sp);
       }
+    }
+    // Unused masters and layouts are still part of the document's design library.
+    for (const ref of Object.values(presRels).filter(r => r.type === 'slideMaster')) {
+      try {
+        const master = await loadMaster(ref.target);
+        for (const rel of Object.values(master.mr).filter(r => r.type === 'slideLayout')) {
+          try { await loadLayout(rel.target); } catch (_) { damaged.push(rel.target); }
+        }
+      } catch (_) { damaged.push(ref.target); }
+    }
+    for (const layout of layouts.values()) {
+      const key = LAYOUT_MAP[layout.type] || (layout.phs.some(p => p.ph.type === 'ctrTitle') ? 'title' : layout.phs.some(p => p.ph.type === 'title') ? (layout.phs.length > 1 ? 'text' : 'titleOnly') : 'blank');
+      layout.master.design.keep.layouts[key + '|' + layout.lkey] = layout.path;
+      layout.master.design.keep.layouts[key] ||= layout.path;
+      const record = layout.master.design.keep.layoutParts.find(r => r.part === layout.path); if (record) record.key = key;
     }
     /* resolve slide-jump hyperlinks and strip numeric ids */
     const fixLinks = (o) => {
@@ -1869,8 +1900,10 @@
     for (const s of pres.slides) L.model.walk(s.shapes, pick);
     for (const d of Object.values(pres.designs)) [d.deco, d.titleDeco].concat(d.layoutDecos ? Object.values(d.layoutDecos) : []).forEach((list) => list && L.model.walk(list, pick));
     for (const sh of clearPics) { const v = await L.media.withTransparent(sh.media, sh.img.clear, 3); if (v) sh.img.view = v; }
-    L.preserve.seal(pres);
     pres.keep = { values: L.preserve.values(pres), media: Object.fromEntries(Array.from(mediaCache, ([part, id]) => [id, part])) };
+    await L.frames.seal(pres, mediaCache);
+    L.preserve.seal(pres);
+    L.preserve.readSlideLists(pres);
     pres.ooxmlFormat = L.opc.variant(pres.pkg, 'pptx');
     return pres;
   }

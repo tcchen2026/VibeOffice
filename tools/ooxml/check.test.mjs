@@ -41,6 +41,13 @@ test('valid shared targets and cyclic relationships do not look like missing par
   const file = await pkg('cycle', { 'a.xml': '<x/>', 'b.xml': '<y/>', '_rels/a.xml.rels': rels(rel('one', 'b.xml') + rel('two', 'b.xml')), '_rels/b.xml.rels': rels(rel('back', 'a.xml')) });
   assert.equal(run('check', file).status, 'ok');
 });
+test('OLE spid resolves in its related VML preview rather than slide shape IDs', async () => {
+  const parts = id => ({ 'slide.xml': slide(`<p:oleObj spid="${id}"/>`),
+    '_rels/slide.xml.rels': rels(rel('vml', 'vml.xml', 'vmlDrawing')),
+    'vml.xml': '<xml xmlns:v="urn:schemas-microsoft-com:vml"><v:shape id="_x0000_s1030"/></xml>' });
+  assert.equal(run('check', await pkg('ole-vml', parts('_x0000_s1030'))).status, 'ok');
+  assert.ok(run('check', await pkg('ole-missing-vml', parts('_x0000_s1031'))).issues.some(i => i.code === 'unresolved-vml-preview'));
+});
 test('Word repair regressions: duplicate comment references and promoted pre-release threads', async () => {
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
   const duplicate = await pkg('comment-reference', { 'word/document.xml': `<w:document xmlns:w="${W}"><w:body><w:p><w:r><w:commentReference w:id="0"/><w:commentReference w:id="0"/></w:r></w:p></w:body></w:document>` });

@@ -1,6 +1,16 @@
 """Attempt accounting shared by the feature inventories. Failed pairs never disappear."""
 from pathlib import Path
 
+def xml_text(data):
+    """OOXML parts may be UTF-8 or UTF-16, independently of other ZIP members."""
+    if data.startswith((b'\xff\xfe', b'\xfe\xff')):
+        return data.decode('utf-16')
+    if data.startswith(b'\x00<\x00?'):
+        return data.decode('utf-16be')
+    if data.startswith(b'<\x00?\x00'):
+        return data.decode('utf-16le')
+    return data.decode('utf-8-sig')
+
 class Audit:
     def __init__(self):
         self.results = []

@@ -116,11 +116,14 @@
   K.parse = text => XML.parse(text, { keepWhitespace: true, source: true, strict: true });
   K.patch = function (text, changes) {
     let end = text.length;
+    if (!changes.length) return text;
+    const chunks = [];
     for (const c of changes.slice().sort((a, b) => b.start - a.start || b.end - a.end)) {
       if (c.start < 0 || c.end < c.start || c.end > end) throw new Error('Overlapping XML edits');
-      text = text.slice(0, c.start) + c.value + text.slice(c.end); end = c.start;
+      chunks.push(text.slice(c.end, end), String(c.value)); end = c.start;
     }
-    return text;
+    chunks.push(text.slice(0, end));
+    return chunks.reverse().join('');
   };
   K.partXML = function (original, root) {
     const before = XML.source.get(K.parse(original)), after = XML.source.get(K.parse(root));
@@ -357,7 +360,8 @@
     else if (tag === 'cNvPr' && name === 'id') { kind = 'shape'; definition = true; }
     else if (isP && tag === 'cTn' && name === 'id') { kind = 'timing'; definition = true; }
     else if (isP && tag === 'tn' && name === 'val') kind = 'timing';
-    else if ((isP && name === 'spid') || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
+    // An OLE preview names a shape in the related VML part, not this slide's cNvPr space.
+    else if ((isP && name === 'spid' && tag !== 'oleObj') || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
     else if (isP && name === 'grpId' && ['cTn', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic'].includes(tag)) { kind = 'build'; definition = tag !== 'cTn'; }
     else if (isW && name === 'id' && /^(bookmark|perm)(Start|End)$/.test(tag)) { kind = tag.startsWith('bookmark') ? 'bookmark' : 'permission'; definition = tag.endsWith('Start'); }
     else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
@@ -457,6 +461,32 @@
     // no longer be rediscovered from that package, so keep it after recovery.
     for (const entry of state.entries || []) K.loss(doc, { ...entry, phase: 'recovery' });
     doc.acknowledgedLosses = Array.from(new Set([...(doc.acknowledgedLosses || []), ...(state.acknowledged || [])]));
+  };
+
+  // App-owned exceptions are measured on the assembled output, not guessed at
+  // open time. This also covers a fragment that was kept by one path but
+  // converted by another. Opaque parts already have their own carry/drop ledger.
+  K.reportFeatures = function (writer, { accepts, classify, labels }) {
+    if (!writer.pkg) return;
+    const count = root => {
+      const values = new Map();
+      if (root) walk(root, el => { const key = classify(el); if (key) values.set(key, (values.get(key) || 0) + 1); });
+      return values;
+    };
+    for (const [key, mode] of writer.classes) {
+      const [source, part] = JSON.parse(key);
+      if (source !== writer.pkg.id || mode === 'opaque' || !/\.xml$/i.test(part)) continue;
+      let before;
+      try { before = writer.pkg.xml(part); } catch (_) { continue; } // damaged-part recovery reports its own conversion
+      if (!before || !accepts(before)) continue;
+      const original = count(before);
+      if (!original.size) continue;
+      const data = writer.parts.get(writer.mapping.get(key)), after = data == null ? new Map() : count(K.parse(typeof data === 'string' ? data : XML.decode(data)));
+      for (const [feature, total] of original) {
+        const missing = total - (after.get(feature) || 0);
+        if (missing > 0) writer.loss({ id: 'content:' + part + ':' + feature, what: labels[feature] + ' (' + missing + ').', where: part, action: 'conversion' });
+      }
+    }
   };
 
   /** Replace owned children only; preserve every other child and its relative anchor.
@@ -654,7 +684,7 @@
 
   const direct = (el, name) => elements(el).find(e => e.localName === name);
   function outerFrames(tree) {
-    const names = new Set(['sp', 'pic', 'graphicFrame', 'grpSp', 'wsp', 'wgp', 'spTree', 'shape', 'rect', 'oval', 'group']);
+    const names = new Set(['sp', 'pic', 'graphicFrame', 'grpSp', 'contentPart', 'model3d', 'wsp', 'wgp', 'spTree', 'shape', 'rect', 'oval', 'group']);
     const out = [];
     function scan(e, inside) {
       if (e !== tree && inside && names.has(e.localName)) return;
@@ -1141,6 +1171,7 @@
           }
         }
       }
+      options.audit?.(writer);
       return writer.finish();
     };
     const use = name => { names.set(name, name); writer.names.add(name.toLowerCase()); return name; };

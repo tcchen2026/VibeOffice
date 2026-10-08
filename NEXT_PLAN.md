@@ -4,25 +4,22 @@ The approved plan stands. This file changes the order
 and the habits, based on the progress review of commits b06d938..ffc6814.
 
 ## Status
-**Done:**
-- measurement tools;
-- the shared preservation core;
-- Lectern media;
-- whole-file parts in all three apps;
-- Quire content controls, text/drawing properties, embedded objects, row/cell alternatives and
-  watermarks (Office batch 2 accepted, including the comment correction and namespace follow-up).
 
-**Implemented; Office pending:** Ledger object-level features and the full group measurement.
+**Implementation and final automated measurement are complete**, with the explicit compatibility
+exceptions in the app docs. **The plan is not signed off:** Excel batch 3 and PowerPoint batch 4
+still need the user's Office results.
 
-**Not done:** Lectern object-level remainder and final suite measurement/loss reporting.
+- Quire and whole-package preservation: Office batches 1–2 accepted, including the corrected
+  comments and all four namespace follow-up copies.
+- Ledger pivots, threads, controls/OLE/VML, slicers/timelines, extensions and query tables: implemented
+  and measured; [Excel batch 3](~/Downloads/lossless-check/office-batch-3/CHECKLIST.md) pending.
+- Lectern sections/shows, comments, opaque frames, designs, tags/actions/effects and timing: implemented
+  and measured; [PowerPoint batch 4](~/Downloads/lossless-check/office-batch-4/CHECKLIST.md) pending.
+- Conversion notices, edit/history/draft checks, final corpus runs and current documentation are done.
+  Failed and excluded inputs remain explicit; the suite does not claim every arbitrary input is lossless.
 
-**Slide-6 repair: fixed** (60c26b4, confirmed in PowerPoint). Read "Office acceptance" in AGENTS.md
-first: two bugs in the shared save code passed every automated check (master and layout sharing an
-ID; partial preset adjustment lists).
-
-**Office batch 1 is accepted.** The user reported all 15 files passed on 2026-10-08, including
-the preservation samples and the namespace/convention checks. The slide-6 diagnostic copies
-also passed PowerPoint. Later feature groups still require their own Office batches.
+**Slide-6 repair: fixed** (`60c26b4`), confirmed in PowerPoint. The last batch-preparation defect,
+a new layout reusing its structural shape ID, is fixed in `99c9b3a` before handoff.
 
 ## Changed habits
 1. **Office is the gate.**
@@ -154,98 +151,42 @@ becomes a `package.py` rule with a test, per AGENTS.md "Office acceptance".
 
 ## Current execution
 
-- Office batch 1 is accepted: `~/Downloads/lossless-check/office-batch-1/CHECKLIST.md` (15 Office files).
-  It covers the requested features, namespace forms, the two corrected Word conventions and a tracked
-  hyperlink. The video fixture is saved as PPTM from an authored PPTX; a separate authored PPTM tests VBA.
-- All 15 batch files save/reopen, introduce no package/SDK diagnostics and open in LibreOffice with
-  unchanged page/slide counts. The comparison against writer `ffc6814` has only explained differences.
-  57 unit tests pass and all four pages load. The user subsequently reported all 15 passed in Office.
-- Reports and exact inputs: `~/corpora/results/next-plan-head-2026-10-08/`.
-- Full runs completed on frozen writer `cf1b313`: 14,091 driver attempts and 30,909 package/SDK
-  validation rows, including edit/history/draft states. App docs now have one current save table and
-  edit-behavior tables; historical sections are archived with the reports. Preservation contracts
-  moved from AGENTS.md to docs/suite.md.
-- Strict-to-Transitional output and initial measured regressions are fixed in `bc3a04e`.
-- Quire drawing-property merges, row/cell alternatives (including empty choices), and original
-  watermarks are implemented. Eight focused cases pass 62 checks and 48 package/SDK comparisons;
-  66 unit tests pass after the full-run corrections. The full Quire run at `5f11b84` completes all
-  8,706 attempts: save/draft 2,880 OK and 22 failed each; text 2,281 OK, 599 excluded and 22 failed.
-  Its 19,028 package/SDK states have 18,020 OK, 409 failed and 599 excluded. Duplicate compatibility
-  attributes in three recovered drafts and a converted-shape ID collision are fixed in `51460e8`
-  and `5f2e5f6`; all 14 affected correction states pass. Six malformed-formatting inputs remain
-  explicit exceptions. Markdown checks pass unchanged. Reports: `~/corpora/results/quire-remainder-2026-10-08/`.
-- Office batch 2 is accepted with a correction: 14 originals pass; file 12 offered repair.
-  Office isolation found excess comment anchors and promotion of a pre-release thread namespace.
-  `3b92fe9` fixes both; the actual corrected save and a modern-reply control pass Word, package/SDK
-  and LibreOffice. The original failed artifact remains in the checklist with its correction linked.
-  A pinned scan finds 1 excess-anchor save and 55 namespace promotions; scan failures stay recorded.
-- The required namespace follow-up also passes Office: original Excel `calcPr mc:Ignorable`, compact
-  Excel, and compact Word. Four namespace samples pass package/SDK; the two comment and four namespace
-  samples open in LibreOffice with unchanged counts. Diffs contain only explained changes. The user
-  confirmed all four namespace copies, including PowerPoint, pass Office.
-  Reports: `~/corpora/results/namespace-hoist-2026-10-08/`.
-- Ledger pivot sources and output edits are implemented. The pivot behavior matrix was
-  written in docs/ledger.md before code changes, as step 6 requires. The source inventory finds
-  105 pivot workbooks, including 14 with shared caches. Defined-name and consolidation source
-  fixtures are authored by `tools/ledger/test/pivot-fixtures.py`; both pass package/SDK checks,
-  and their source/cache data is independently checked. Pivot code began while Quire review was
-  pending because it uses the package graph and identity patterns accepted in batch 1, rather than
-  Quire's drawing-property patterns. That was a dependency-based interpretation of habit 1, broader
-  than the execution line here stated. Work was paused for the review corrections; batch 2's required
-  checks are now accepted. Ten focused pivot cases and 31 package/SDK states pass; source-edited drafts
-  retain refresh notices, and two samples open in LibreOffice with unchanged counts. The complete
-  79-test unit set passes. Slicer dependencies will be integrated in step 6(d); full-group measurement
-  and Excel acceptance remain pending.
-- Ledger threads now include every reply, mentions, person metadata and comments without legacy notes.
-  Cell moves, row/column edits and copying update references; editing the displayed text converts only
-  that thread with a notice. Five focused cases / 16 package/SDK states pass, along with actual browser
-  Paste Special, undo/redo and draft recovery; two LibreOffice samples keep their page counts.
-  The complete unit set has 84 passing tests. The four public thread workbooks keep their original
-  thread/person parts byte for byte; mentions additionally use an authored fixture. Excel acceptance
-  remains pending in batch 3.
-- Ledger controls, embedded objects, worksheet custom properties and non-comment VML are integrated.
-  The 40 relevant workbooks retain 344/344 control references, 26/26 OLE entries, 367/367 non-note
-  VML shapes and 31/31 worksheet properties, with no new package/SDK diagnostics. All 43 VML parts
-  retain their bytes; 396 dependency parts are byte-identical, with 13 Strict ActiveX XML parts
-  explicitly converted to Transitional. Nine focused cases produce 26 passing saved states;
-  cross-workbook clipboard, undo/redo and two real draft states also pass. Two edited samples open
-  in LibreOffice with unchanged counts. All 93 unit tests pass and four pages load. The full Ledger
-  run and Excel batch 3 remain pending.
-- Ledger slicers and timelines now retain their frames, view/cache parts and sheet/workbook links.
-  Three supplemental public workbooks are pinned separately through `tools/corpora.sh DIR ledger-features`:
-  7/7 views remain and all 12 definition/cache parts are byte-identical. Seven focused cases and
-  19 package/SDK states cover moves, copies, shared pivots, source deletion, conversion and undo;
-  two actual browser draft states also pass. Two edited samples and timeline undo/redo open in
-  LibreOffice. All 100 unit tests pass and four pages load. Excel batch 3 and full Ledger measurement
-  remain pending.
-- Ledger data bars, extended rules/validations, sparklines and unknown worksheet extensions are
-  integrated. The 65 relevant workbooks keep 100/100 extension entries with unchanged expanded XML,
-  including 23 bars and 63 unknown entries. All package checks add no issues; 64 SDK comparisons
-  pass and one malformed original remains unvalidatable. Seven focused cases / 22 states plus
-  two browser draft states pass; two edited samples and history states keep their LibreOffice page
-  counts. All 107 unit tests pass and four pages load. Scoped MC processing/preservation attributes
-  retain the local Ignorable list required by the SDK; namespace declarations still hoist. This fixes
-  the 14 affected Mac-authored workbooks in the sweep. Full Ledger measurement and Excel batch 3
-  remain pending.
-- Ledger query tables now retain table/column metadata and external field identities. New columns
-  are unbound; deleted fields stay excluded from refresh; copied tables get independent query parts.
-  The ten-file sweep keeps 23/23 query parts and 10/10 connections parts byte-identical, with all
-  20 query tables and 68 column identities intact. Package checks add no issues; nine SDK comparisons
-  pass and one original has a missing dependency. Six focused cases / 20 unique states and two
-  browser draft states pass package/SDK; two edited samples and three history states open in
-  LibreOffice with unchanged page counts. All 113 unit tests pass and four pages load. Saving no
-  longer mutates table headings, and copied sheet-scoped names now undo correctly. Next: the full
-  Ledger group run and Excel batch 3, whose Office acceptance remains pending.
-- The full Ledger run at `8236f3a`, with five correction inputs, now completes all 2,853 attempts.
-  Save/draft each have 935 OK, 11 failed and 5 excluded; cell edits have 933 OK, 11 failed and
-  7 excluded. The 6,589 emitted states have 6,371 passing package/SDK comparisons, 201 failed and
-  17 excluded; none adds diagnostics. Damaged-original recovery and unchanged mixed date/text
-  filter ordering are corrected. Independent save comparison covers 889 workbooks / 1,649,147
-  cells, with 883 exact; existing exceptions remain explicit. All 115 unit tests pass. The audit
-  now excludes ZIP directory markers and identifies intended A1 edits separately. Excel batch 3
-  is ready at `~/Downloads/lossless-check/office-batch-3/CHECKLIST.md`: all 15 pass package/SDK and
-  LibreOffice, with reviewed differences against `f584dd6`. **Excel acceptance is pending.**
-  Reports: `~/corpora/results/ledger-group-2026-10-09/`. Lectern preparation is next.
+- Final suite: **14,091 driver attempts** and **30,919 package/SDK rows** across the pinned sets.
+  Of the validation rows, 29,310 pass, 701 fail and 908 are excluded. There are no added package
+  issues. New SDK diagnostics remain confined to six previously documented malformed Word inputs;
+  they are failed comparisons, never passes. No new Excel or PowerPoint SDK diagnostics appear.
+- Quire: save/draft each 2,880 OK and 22 failed; text 2,281 OK, 22 failed, 599 excluded. Its 19,028
+  validation rows have 18,025 OK, 404 failed and 599 excluded. Feature counts remain at the documented
+  final levels; the independent inventory retains 776,207/776,869 counted words. Malformed formatting,
+  stale bound values, orphan stories and unsupported markup remain explicit exceptions.
+- Ledger: save/draft each 935 OK, 11 failed, 5 excluded; text 933 OK, 11 failed, 7 excluded. Its 6,589
+  validation rows have 6,371 OK, 201 failed and 17 excluded. Independent comparison covers 889 saves
+  and 887 edits; one timed-out large workbook reuses its earlier passing checks after all 18 current
+  output parts match byte for byte. Existing cell/formula exceptions remain documented.
+- Lectern: save/draft each 837 OK, 6 failed, 1 excluded; text 548 OK, 6 failed, 290 excluded. Its 5,302
+  validation rows have 4,914 OK, 96 failed and 292 excluded. All 827 readable unchanged pairs retain
+  every inventoried feature and all 58,022 counted words. The script converts 67 selected SmartArt
+  previews with notices; other inventoried features remain.
+- Each app's full run has a convention scan. Word: 192 signatures, no additions over its preceding
+  run. Excel: 185; three additional signatures come from a recovered fuzzer omitted by the old scan,
+  whose corrected/current parts differ only by the save timestamp. PowerPoint: 169, including retained
+  and Strict-converted vocabulary, scoped MC, frame transforms and content-type forms. Reports
+  distinguish convention differences from confirmed defects.
+- All 120 unit tests pass; all four pages load with no console errors (known font requests remain).
+  Markdown stays at 652/652 CommonMark, 22/22 GFM and 24/24 exact saves with confined edits.
+  The three-app Compatibility Checker has 21 passing save/cancel/draft/acknowledgement checks;
+  five public conversion cases produce nine passing SDK/LibreOffice states.
+- Shared namespace cleanup now assembles XML slices once. All 98,574 old/new patch comparisons are
+  byte-identical; time within patch calls fell from 52,301.5 to 243.2 ms on the large-deck comparison.
+  This is a patch benchmark, not total save time. No passing corpus files were rerun for that optimization.
+- Every final file in Office batches 3 and 4 passes package/SDK and LibreOffice with expected counts.
+  Previous-writer differences are reviewed. The batches contain 15 files each; Office acceptance is
+  pending, not inferred from those checks. Full-corpus LibreOffice rendering has not been completed.
+
+Current reports: `~/corpora/results/final-suite-2026-10-09/` and
+`~/corpora/results/lectern-group-2026-10-09/`. Exact inputs, frozen writer revisions, initial failures,
+correction overlays, hashes and older progress notes stay with those reports. The next action is to
+record the two Office results, fix any reported repair and only then sign off the plan.
 
 ## Review of 6d24c43..275406e (2026-10-08)
 Followed well: bounded Office batches with previous-writer comparison, checker rules for the WordArt

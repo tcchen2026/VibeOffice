@@ -19,6 +19,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('results'); p.add_argument('originals'); p.add_argument('saved'); p.add_argument('out')
     p.add_argument('--sdk'); p.add_argument('--dotnet', default='dotnet'); p.add_argument('--lo'); p.add_argument('--limit', type=int)
+    p.add_argument('--sdk-version', help='SDK target version, e.g. Microsoft365 (default Office2019)')
     p.add_argument('--resume', action='store_true')
     args = p.parse_args()
     rows = [json.loads(l) for l in Path(args.results).read_text().splitlines() if l.strip()]
@@ -61,7 +62,8 @@ def main():
                     r['status'] = 'failed' if r['newIssues'] else 'ok'
                     if args.sdk:
                         if sdk is None or sdk.poll() is not None:
-                            sdk = subprocess.Popen([args.dotnet, args.sdk, '--stdin-pairs'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+                            version = ['--version', args.sdk_version] if args.sdk_version else []
+                            sdk = subprocess.Popen([args.dotnet, args.sdk, *version, '--stdin-pairs'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
                         sdk.stdin.write(json.dumps(dict(original=str(original), saved=str(saved))) + '\n'); sdk.stdin.flush()
                         if not select.select([sdk.stdout], [], [], 120)[0]:
                             sdk.kill(); sdk.wait(); sdk = None

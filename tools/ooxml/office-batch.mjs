@@ -97,11 +97,58 @@ async function save(c, data) {
       } else throw new Error('Unknown review step ' + step.kind);
       changed.push(step);
     }
+  } else if (c.app === 'lectern' && c.steps) {
+    const M = L.model;
+    L.pres = doc; L.hist.clear();
+    const all = e => e ? [e, ...Array.from(e.children).flatMap(all)] : [];
+    const sourceShape = sh => {
+      const f = sh.keep?.identity, ref = f?.ids.find(r => r.definition && r.kind === 'shape');
+      if (!ref || !doc.pkg) return '';
+      const cnv = all(doc.pkg.xml(f.part)).find(e => e.localName === 'cNvPr' && e.getAttribute('id') === String(ref.id));
+      return cnv ? K.raw(cnv.parentNode.parentNode) : '';
+    };
+    for (const step of c.steps) {
+      const slide = doc.slides[step.slide || 0];
+      if (!slide) throw new Error('Missing slide for ' + step.kind);
+      let shape, list;
+      const select = shapes => {
+        for (const sh of shapes) {
+          if (!shape && (!step.needle || sourceShape(sh).includes(step.needle))) { shape = sh; list = shapes; }
+          if (!shape && sh.kids) select(sh.kids);
+        }
+      };
+      if (['move-shape', 'copy-shape', 'paste-shape', 'shape-properties', 'bold'].includes(step.kind)) {
+        select(slide.shapes); if (!shape) throw new Error('No matching shape for ' + step.kind);
+      }
+      if (step.kind === 'copy-slide') {
+        const copy = M.dupSlide(slide);
+        if (M.insertSlides) M.insertSlides(doc, step.at ?? 1, [copy]); else doc.slides.splice(step.at ?? 1, 0, copy);
+      } else if (step.kind === 'insert-slide') {
+        const added = M.newSlide(doc, 'blank', slide.design);
+        if (M.insertSlides) M.insertSlides(doc, step.at ?? 1, [added]); else doc.slides.splice(step.at ?? 1, 0, added);
+      } else if (step.kind === 'delete-slide') doc.slides.splice(step.slide || 0, 1);
+      else if (step.kind === 'move-shape') M.translate(shape, step.dx || 12, step.dy || 8);
+      else if (step.kind === 'copy-shape') list.push(M.dup(shape));
+      else if (step.kind === 'paste-shape') {
+        const item = L.preserve.pasteboard(JSON.parse(JSON.stringify(L.preserve.clipboard({ kind: 'shapes', shapes: [L.clone(shape)], text: '' }))));
+        for (const sh of item.shapes) { M.translate(sh, 18, 12); slide.shapes.push(sh); }
+      } else if (step.kind === 'shape-properties') Object.assign(shape, step.properties);
+      else if (step.kind === 'bold') {
+        const run = shape.tx?.ps.flatMap(p => p.rs).find(r => r.t); if (!run) throw new Error('No text run'); run.b = !run.b;
+      } else if (step.kind === 'design-copy') {
+        const copy = K.duplicate(doc.designs[slide.design]); copy.id = L.uid('dsn'); copy.colors.accent1 = '#AA2244';
+        doc.designs[copy.id] = copy; slide.design = copy.id;
+      } else if (step.kind === 'transition') Object.assign(slide.trans, step.properties);
+      else if (step.kind === 'animation') {
+        if (!slide.anims.length) throw new Error('No modeled animation'); slide.anims[0].dur += 200;
+      } else throw new Error('Unknown review step ' + step.kind);
+      changed.push(step);
+    }
   } else if (c.edit && c.edit !== 'save') changed = corpusScenario(c.app, doc, c.edit).changed;
   const format = c.file.split('.').pop();
   const blob = await (c.app === 'quire' ? L.docx.write(doc, { format }) : c.app === 'ledger' ? L.xlsxWrite.write(doc, { type: format }) : L.pptx.write(doc, { format }));
   const saved = new Uint8Array(await blob.arrayBuffer());
   await read(saved);
   let encoded = ''; for (let i = 0; i < saved.length; i += 32768) encoded += String.fromCharCode(...saved.subarray(i, i + 32768));
-  return { data: btoa(encoded), changed, losses: doc.losses || [] };
+  return { data: btoa(encoded), changed, losses: doc.losses || [], ...(c.app === 'lectern' ? { expectedSlides: doc.slides.length } : {}) };
 }
