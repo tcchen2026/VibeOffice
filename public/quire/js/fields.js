@@ -629,6 +629,7 @@
   F.insertGenerated = function (instr, opts) {
     opts = opts || {};
     const f = F.parse(instr);
+    let inserted;
     E.edit(f.type === 'INDEX' ? 'Insert Index' : 'Insert Table of Contents', () => {
       let pos = E.deleteSelection();
       /* fields producing paragraphs start at the beginning of a paragraph */
@@ -640,6 +641,7 @@
       p.runs.unshift(D.item('fb', { fid, instr: ' ' + instr.trim() + ' ' }), D.item('fs', { fid }), D.item('fe', { fid }));
       tocFids.add(fid);
       const story = D.storyOf(doc(), p);
+      inserted = { it: p.runs[0], story };
       D.reindex(doc());
       const blocks = f.type === 'INDEX' ? F.buildIndex(f) : F.buildTOC(f);
       O.setFieldResult(story, fid, blocks);
@@ -651,17 +653,17 @@
         const tb0 = D.topBlock(d, g.begin.p), tb1 = D.topBlock(d, g.end.p);
         const cont = D.touchList(d.main);
         const before = D.para([], {});
-        const curSect = L.clone(D.sectOfBlock(d, tb0.i).sect);
-        before.sect = Object.assign(L.clone(curSect), { type: 'continuous' });
+        const curSect = D.sectOfBlock(d, tb0.i).sect;
+        before.sect = Object.assign(L.opc.duplicate(curSect), { type: 'continuous' });
         const endP = cont.blocks[tb1.i];
         D.touch(endP);
-        endP.sect = Object.assign(L.clone(curSect), { type: 'continuous', cols: { n: opts.columns, space: 36, eq: true, w: [] } });
+        endP.sect = Object.assign(endP.sect || L.opc.duplicate(curSect), { type: 'continuous', cols: { n: opts.columns, space: 36, eq: true, w: [] } });
         cont.blocks.splice(tb0.i, 0, before);
         d._idxDirty = true;
       }
       return E.sel;
     });
-    E.edit('Update Page Numbers', () => { F.refreshTOCPages([{ it: { instr } }]); return E.sel; }, { merge: null });
+    if (inserted) E.edit('Update Page Numbers', () => { F.refreshTOCPages([inserted]); return E.sel; }, { merge: null });
   };
 
   /* ================= captions & cross-references ================= */

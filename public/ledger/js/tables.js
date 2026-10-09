@@ -12,7 +12,6 @@
   const cellValues = c => ({ v: c?.f == null ? c?.v ?? null : null, f: c?.f, rt: c?.rt });
   const rels = (pkg, owner) => pkg.rels(owner).filter(r => !r.external && K.relationshipType(r.type) === N.rel + '/queryTable');
   const fragment = (el, wb, part) => K.fragment(el, { pkg: wb.pkg, part });
-  const guid = () => '{' + root.crypto.randomUUID().toUpperCase() + '}';
   T.read = function (t, el) {
     const wb = t.sheet.wb, part = t.ooxmlPart;
     if (!wb.pkg) return; // The reader already reports an unrecoverable package graph.
@@ -37,24 +36,20 @@
   };
   T.sameHeader = (t, c, i) => c.keep && same(c.keep.header, cellValues(t.sheet.get(t.ref.r1, t.ref.c1 + i))) && c.name === c.keep.values.name;
   T.copy = function (object, wb) {
-    const ids = {}, xml = [object.keep?.fragment.xml, ...(object.queries || []).map(r => wb.pkg?.text(r.part))].filter(Boolean);
-    for (const text of xml) for (const e of all(K.parse(text))) for (const a of Array.from(e.attributes)) if (a.localName === 'uid') ids[a.value] ||= guid();
-    object.copyKeep = { id: guid(), ids };
-    return object;
+    const { sheet, ...data } = object, ids = {}, previous = object.copyKeep?.ids;
+    const sources = (object.queries || []).map(r => wb.pkg?.text(r.part)).filter(Boolean).map(xml => K.remapGuids(xml, previous));
+    const copy = K.duplicate(data, { guidMap: ids, guidAttributes: ['uid'], guidSources: sources });
+    // Opaque query parts still come from their source package, even when copying
+    // a copy. Compose that original-to-current mapping with this duplication.
+    for (const [old, current] of Object.entries(previous || {})) if (ids[current]) ids[old] = ids[current];
+    copy.copyKeep = { id: K.guid(), ids };
+    return sheet ? { ...copy, sheet } : copy;
   };
   T.copySheet = function (from, to) {
     to.extra.queryParts = clone(from.extra.queryParts || []);
-    if (to.extra.queryParts.length) to.extra.queryCopy = { ...T.copy({ queries: to.extra.queryParts }, from.wb).copyKeep, keepName: true };
+    if (to.extra.queryParts.length) to.extra.queryCopy = { ...T.copy({ queries: to.extra.queryParts, copyKeep: from.extra.queryCopy }, from.wb).copyKeep, keepName: true };
   };
-  const copyIds = (xml, copy) => {
-    if (!copy) return xml;
-    const edits = [];
-    for (const e of all(K.parse(xml))) for (const a of Array.from(e.attributes)) if (a.localName === 'uid' && copy.ids[a.value]) {
-      const p = L.xmlTree.source.get(e).attrs.find(p => p.name === a.name);
-      edits.push({ start: p.start, end: p.end, value: copy.ids[a.value] });
-    }
-    return K.patch(xml, edits);
-  };
+  const copyIds = (xml, copy) => K.remapGuids(xml, copy?.ids);
   function attributes(raw, fresh, before, after, fields) {
     const changes = {};
     for (const [name, field] of Object.entries(fields)) if (!same(before?.[field], after?.[field])) changes[name] = at(fresh, name);
@@ -66,7 +61,9 @@
       const old = t.ref, next = shift(old, axis, at, n); if (!next) return false;
       if (axis === 'c') {
         if (n > 0 && at > old.c1 && at <= old.c2) {
-          let id = Math.max(0, ...t.columns.map(c => c.id || 0));
+          // Never reuse a column id from the file: query fields and slicers bind to it.
+          const original = t.keep ? kids(kid(K.parse(t.keep.fragment.xml), 'tableColumns'), 'tableColumn').map(c => +c.getAttribute('id') || 0) : [];
+          let id = Math.max(0, ...original, ...t.columns.map(c => c.id || 0));
           const used = new Set(t.columns.map(c => c.name.toLowerCase()));
           const added = Array.from({ length: n }, () => {
             let name, k = 1; do { name = 'Column' + k++; } while (used.has(name.toLowerCase()));
@@ -107,6 +104,14 @@
     for (const t of wb.tables) if (!t.copyKeep) for (const r of t.queries || []) used.add(r.part);
     for (const sh of wb.sheets) if (!sh.extra.queryCopy) for (const r of sh.extra.queryParts || []) used.add(r.part);
     for (const q of wb.extra.queries || []) if (!used.has(q.part)) pack.writer.omit(q.part, 'The table or worksheet that owned this query was deleted.');
+    const names = new Set([...used].map(part => (at(wb.pkg.xml(part), 'name') || '').toLowerCase())), copies = new Map();
+    pack.writer.queryName = (name, copy, part) => {
+      const key = copy.id + ':' + part; if (copies.has(key)) return copies.get(key);
+      let next = name, n = +(name.match(/\d+$/)?.[0] || 0), base = name.replace(/\d+$/, '');
+      if (base === name) base += '_';
+      while (names.has(next.toLowerCase())) next = base + ++n;
+      names.add(next.toLowerCase()); copies.set(key, next); return next;
+    };
   };
   T.prepare = function (t, columns) {
     const current = { ...t, columns }, pkg = t.sheet.wb.pkg;
@@ -119,7 +124,7 @@
       let nextId = Math.max(+at(refresh, 'nextId') || 1, ...source.map(e => +at(e, 'id') + 1));
       const found = new Set();
       for (const col of columns) {
-        const before = source.find(e => +at(e, 'id') === col.queryField || +at(e, 'tableColumnId') === col.id);
+        const before = source.find(e => col.queryField != null && +at(e, 'id') === col.queryField || col.keep && +at(e, 'tableColumnId') === col.id);
         if (before) { output.push(K.raw(before)); found.add(before); }
         else if (!col.keep) {
           col.queryField = nextId++; col.uniqueName = String(col.id);
@@ -161,7 +166,7 @@
       target = w.name('xl/queryTables', 'queryTable', 'xml');
       w.copyPart(pkg, rel.part, target);
       const tree = K.parse(xml), name = at(tree, 'name');
-      xml = K.partXML(xml, copyIds(K.attributes(K.raw(tree), { name: copy.keepName ? name : name + '_Copy' + copy.id.slice(1, 9) }), copy));
+      xml = K.partXML(xml, copyIds(K.attributes(K.raw(tree), { name: copy.keepName ? name : w.queryName(name, copy, rel.part) }), copy));
     } else target = w.target(pkg, rel.part);
     if (!copy && xml === original) w.carry(pkg, rel.part);
     else {

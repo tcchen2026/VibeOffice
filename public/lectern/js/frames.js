@@ -180,7 +180,7 @@
     for (const el of shapes) {
       const raw = K.raw(el), b = K.getBox(raw); if (b.x == null || b.y == null) continue;
       const p = X.source.get(el);
-      edits.push({ start: p.start, end: p.end, value: K.setBox(raw, { x: next.x + (b.x - old.x) * sx, y: next.y + (b.y - old.y) * sy, w: b.w * sx, h: b.h * sy, rot: next.rot, flipH: next.flipH, flipV: next.flipV }) });
+      edits.push({ start: p.start, end: p.end, value: K.setBox(raw, { x: next.x + (b.x - old.x) * sx, y: next.y + (b.y - old.y) * sy, w: b.w * sx, h: b.h * sy }) });
     }
     return K.patch(xml, edits);
   }

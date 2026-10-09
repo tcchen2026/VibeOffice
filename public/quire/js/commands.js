@@ -71,6 +71,7 @@
   /** apply a list definition (from the Bullets and Numbering dialog). opts: {restart, kind} */
   LS.apply = function (abs, opts) {
     opts = opts || {};
+    abs = L.preserve.materializeNumbering(abs);
     const d = doc();
     const paras = E.selectedParas();
     const first = paras[0];
@@ -688,13 +689,14 @@
   /** remap list ids of blocks coming from another document */
   A.mergeNumbering = function (src, blocks) {
     const d = doc();
+    const numbering = L.opc.duplicate(src.numbering);
     const map = {};
     const absMap = {};
-    for (const nid in src.numbering.nums) {
-      const n = src.numbering.nums[nid];
-      if (absMap[n.abs] == null) { const abs = L.clone(src.numbering.abs[n.abs]); let aid = 0; while (d.numbering.abs[aid] != null) aid++; abs.id = aid; d.numbering.abs[aid] = abs; absMap[n.abs] = aid; }
+    for (const nid in numbering.nums) {
+      const n = numbering.nums[nid];
+      if (absMap[n.abs] == null) { const abs = numbering.abs[n.abs]; let aid = 0; while (d.numbering.abs[aid] != null) aid++; abs.id = aid; d.numbering.abs[aid] = abs; absMap[n.abs] = aid; }
       let k = 1; while (d.numbering.nums[k] != null) k++;
-      d.numbering.nums[k] = { abs: absMap[n.abs], ov: L.clone(n.ov || {}) };
+      d.numbering.nums[k] = { ...n, abs: absMap[n.abs] };
       map[nid] = String(k);
     }
     const fix = (bl) => D.walk({ blocks: bl }, (b) => { if (b.t === 'p' && b.pPr.num && map[b.pPr.num.id]) b.pPr.num = Object.assign({}, b.pPr.num, { id: map[b.pPr.num.id] }); });

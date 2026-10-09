@@ -12,6 +12,7 @@
   const captured = new WeakSet();
   const types = { conditionalFormattings: 'conditionalFormatting', dataValidations: 'dataValidation', sparklineGroups: 'sparklineGroup' };
   E.NS = X; E.XM = XM;
+  E.copy = o => K.duplicate(o, { guidAttributes: ['uid'], guidFields: ['x14id'] });
   E.keep = function (o, el, sh, group) {
     captured.add(el);
     o.extKeep = { fragment: fragment(el, sh), values: values(o) };
@@ -47,7 +48,7 @@
     const state = { writer, ids: new Set(), rules: new WeakMap(), uids: new WeakMap() };
     const allocate = original => {
       let id = original;
-      if (!id || state.ids.has(id.toUpperCase())) do { id = '{' + root.crypto.randomUUID().toUpperCase() + '}'; } while (state.ids.has(id));
+      if (!id || state.ids.has(id.toUpperCase())) do { id = K.guid(); } while (state.ids.has(id));
       state.ids.add(id.toUpperCase()); return id;
     };
     state.uid = (o, id) => {
@@ -81,12 +82,7 @@
     return xml;
   }
   function emit(o, f, xml, state, owner) {
-    const edits = [];
-    for (const el of all(K.parse(xml))) for (const a of Array.from(el.attributes)) if (a.localName === 'uid') {
-      const pos = L.xmlTree.source.get(el).attrs.find(p => p.name === a.name);
-      edits.push({ start: pos.start, end: pos.end, value: state.uid(o, a.value) });
-    }
-    return state.writer.emit(K.slice(f, K.patch(xml, edits)), owner);
+    return state.writer.emit(K.slice(f, K.remapGuids(xml, id => state.uid(o, id), ['uid'])), owner);
   }
   E.rule = function (r, generated, state, owner, wb, base = false) {
     const keep = base ? r.baseKeep : r.extKeep; if (!keep) return generated;

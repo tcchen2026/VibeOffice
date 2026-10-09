@@ -275,7 +275,7 @@
               if (ov.r1 > ov.r2 || ov.c1 > ov.c2) continue;
               ranges.push({ r1: dest.r1 + ov.r1 - clip.range.r1, c1: dest.c1 + ov.c1 - clip.range.c1, r2: dest.r1 + ov.r2 - clip.range.r1, c2: dest.c1 + ov.c2 - clip.range.c1 });
             }
-            if (ranges.length) dv.push(Object.assign({}, d, { ranges }));
+            if (ranges.length) dv.push(Object.assign(L.sheetExtensions.copy(d), { ranges }));
           }
           O.setDV(sh, dv);
         }

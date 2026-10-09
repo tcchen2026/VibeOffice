@@ -525,14 +525,13 @@
       '<x14:sparklines>' + s.items.map((i) => `<x14:sparkline><xm:f>${esc(i.f)}</xm:f><xm:sqref>${esc(i.sqref)}</xm:sqref></x14:sparkline>`).join('') + '</x14:sparklines></x14:sparklineGroup>', state, owner)).join('');
     return `<extLst>${cfx}<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"><x14:sparklineGroups xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">${g}</x14:sparklineGroups></ext></extLst>`;
   }
-  function printXml(sh) {
+  function printXml(sh, writer, owner) {
     const p = sh.print;
     let s = '';
     if (p.gridLines || p.headings || p.hCenter || p.vCenter) s += `<printOptions${attrs({ horizontalCentered: p.hCenter ? '1' : undefined, verticalCentered: p.vCenter ? '1' : undefined, headings: p.headings ? '1' : undefined, gridLines: p.gridLines ? '1' : undefined })}/>`;
     const m = p.margins || {};
     s += `<pageMargins left="${m.l != null ? m.l : 0.75}" right="${m.r != null ? m.r : 0.75}" top="${m.t != null ? m.t : 1}" bottom="${m.b != null ? m.b : 1}" header="${m.header != null ? m.header : 0.5}" footer="${m.footer != null ? m.footer : 0.5}"/>`;
-    const ps = { paperSize: p.paper && p.paper !== 1 ? p.paper : undefined, scale: p.scale && p.scale !== 100 ? Math.round(p.scale) : undefined, firstPageNumber: p.firstPage != null ? p.firstPage : undefined, fitToWidth: p.fit && p.fitW !== 1 ? (p.fitW == null ? 0 : p.fitW) : undefined, fitToHeight: p.fit && p.fitH !== 1 ? (p.fitH == null ? 0 : p.fitH) : undefined, pageOrder: p.pageOrder === 'overThenDown' ? 'overThenDown' : undefined, orientation: p.orientation === 'landscape' ? 'landscape' : 'portrait', blackAndWhite: p.bw ? '1' : undefined, draft: p.draft ? '1' : undefined, cellComments: p.comments && p.comments !== 'none' ? p.comments : undefined, useFirstPageNumber: p.firstPage != null ? '1' : undefined, errors: p.errors && p.errors !== 'displayed' ? p.errors : undefined };
-    s += `<pageSetup${attrs(ps)}/>`;
+    s += L.preserve.pageSetupXML(sh, writer, owner);
     const hf = [['oddHeader', p.header], ['oddFooter', p.footer], ['evenHeader', p.diffOddEven && p.evenHeader], ['evenFooter', p.diffOddEven && p.evenFooter], ['firstHeader', p.diffFirst && p.firstHeader], ['firstFooter', p.diffFirst && p.firstFooter]].filter(([, v]) => v);
     if (hf.length || p.diffFirst || p.diffOddEven) s += `<headerFooter${attrs({ differentOddEven: p.diffOddEven ? '1' : undefined, differentFirst: p.diffFirst ? '1' : undefined, scaleWithDoc: p.hfScale === false ? '0' : undefined, alignWithMargins: p.hfAlign === false ? '0' : undefined })}>` + hf.map(([k, v]) => `<${k}>${escX(v)}</${k}>`).join('') + '</headerFooter>';
     const rb = (p.rowBreaks || []).filter((b) => b > 0), cb = (p.colBreaks || []).filter((b) => b > 0);
@@ -562,10 +561,11 @@
     if (!authors.length) aid('');
     return HDR + `<comments xmlns="${NS_MAIN}"${list.some(L.threads.active) ? L.threads.noteNamespaces : ''}><authors>` + authors.map((a) => `<author>${escX(a)}</author>`).join('') + '</authors><commentList>' + items.join('') + '</commentList></comments>';
   }
-  function vmlXml(sh, idmap) {
+  function vmlXml(sh, idmaps) {
+    const idmap = [].concat(idmaps || 1)[0];
     const list = Array.from(sh.comments.values()).filter((c) => c.r < M.MAXR && c.c < M.MAXC);
     let s = '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">' +
-      `<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="${idmap}"/></o:shapelayout>` +
+      `<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="${[].concat(idmaps || 1).join(',')}"/></o:shapelayout>` +
       '<v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe"><v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/></v:shapetype>';
     list.forEach((cm, i) => {
       const w = cm.w || 108, hgt = cm.h || 59.25;
@@ -724,6 +724,7 @@
     const extensions = E.begin(wb, pack.writer);
     L.tableKeep.begin(wb, pack);
     const sheetEntries = [];
+    const idmaps = L.sheetObjects.idmaps(wb);
     for (let si = 0; si < wb.sheets.length; si++) {
       const sh = wb.sheets[si];
       const part = sh.kind === 'chartsheet' ? `xl/chartsheets/sheet${si + 1}.xml` : `xl/worksheets/sheet${si + 1}.xml`;
@@ -740,12 +741,12 @@
       }
       pack.bind(part, sh.extra.ooxmlPart);
       const rels = relsFor(part);
-      const objects = L.sheetObjects.begin(sh, pack, pack.part(part));
+      const objects = L.sheetObjects.begin(sh, pack, pack.part(part), idmaps.get(sh));
       L.tableKeep.sheet(sh, pack, pack.part(part));
       if (sh.kind === 'chartsheet') {
         let body = HDR + `<chartsheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}">` + (sh.tabColor ? `<sheetPr>${colorEl('tabColor', sh.tabColor)}</sheetPr>` : '') + `<sheetViews><sheetView${si === wb.active ? ' tabSelected="1"' : ''}${sh.view.zoom && sh.view.zoom !== 100 ? ` zoomScale="${Math.round(sh.view.zoom)}"` : ''}${sh.view.zoomToFit ? ' zoomToFit="1"' : ''} workbookViewId="0"/></sheetViews>`;
         const m = sh.print.margins;
-        body += `<pageMargins left="${m.l}" right="${m.r}" top="${m.t}" bottom="${m.b}" header="${m.header}" footer="${m.footer}"/><pageSetup orientation="${sh.print.orientation === 'portrait' ? 'portrait' : 'landscape'}"/>`;
+        body += `<pageMargins left="${m.l}" right="${m.r}" top="${m.t}" bottom="${m.b}" header="${m.header}" footer="${m.footer}"/>` + L.preserve.pageSetupXML(sh, pack.writer, pack.part(part));
         const dr = await drawingPart(sh, rels, objects);
         if (dr) body += `<drawing r:id="${dr}"/>`;
         body += '</chartsheet>';
@@ -764,8 +765,7 @@
       const maxR = Math.max(0, sh.maxR), maxC = Math.max(0, sh.maxC);
       out.push(`<dimension ref="${sh.maxR < 0 ? 'A1' : rangeName({ r1: 0, c1: 0, r2: Math.min(maxR, M.MAXR - 1), c2: Math.min(maxC, M.MAXC - 1) })}"/>`);
       out.push(sheetViewXml(sh, wb, si));
-      const fp = { baseColWidth: sh.baseColW != null && sh.baseColW !== 8 ? sh.baseColW : undefined, defaultColWidth: sh.defColW != null ? sh.defColW : undefined, defaultRowHeight: sh.defRowH != null ? sh.defRowH : M.defaultRowPt(sh), customHeight: sh.defRowH != null ? '1' : undefined, zeroHeight: sh.zeroHeight ? '1' : undefined, outlineLevelRow: op.levelRow || undefined, outlineLevelCol: op.levelCol || undefined };
-      out.push(`<sheetFormatPr${attrs(fp)}/>`);
+      out.push(L.preserve.sheetFormatXML(sh, pack.writer, pack.part(part)));
       out.push(colsXml(sh, ctx));
       out.push(sheetDataXml(sh, ctx, headers));
       if (sh.protection) {
@@ -800,7 +800,7 @@
           return `<hyperlink${attrs(a)}/>`;
         }).join('') + '</hyperlinks>');
       }
-      out.push(printXml(sh));
+      out.push(printXml(sh, pack.writer, pack.part(part)));
       out.push(L.sheetObjects.sheetXML('customProperties', objects));
       out.push(keepXml(sh, 'cellWatches'), keepXml(sh, 'ignoredErrors'), keepXml(sh, 'smartTags'));
       const dr = await drawingPart(sh, rels, objects);
@@ -813,7 +813,7 @@
       }
       if (sh.comments.size || L.sheetObjects.hasVML(sh)) {
         const vPart = `xl/drawings/vmlDrawing${++nVml}.vml`;
-        const data = L.sheetObjects.vml(vmlXml(sh, si + 1), vPart, objects);
+        const data = L.sheetObjects.vml(vmlXml(sh, objects.vml.blocks), vPart, objects);
         if (data) {
           defaults.set('vml', CT.vml); add(vPart, data);
           out.push(`<legacyDrawing r:id="${rels.add('vmlDrawing', '../drawings/' + vPart.split('/').pop())}"/>`);
@@ -968,7 +968,7 @@
     }).join('') + '</sheets>';
     if (extRids.length) x += '<externalReferences>' + extRids.map((id) => `<externalReference r:id="${id}"/>`).join('') + '</externalReferences>';
     /* defined names: the AutoFilter database name Excel keeps for filtered sheets */
-    const names = wb.names.filter((n) => n && n.name && n.ref != null).slice();
+    const names = L.slicers.names(wb.names.filter((n) => n && n.name && n.ref != null).slice(), slicers);
     wb.sheets.forEach((s, i) => {
       if (s.autoFilter && s.autoFilter.ref && !names.some((n) => n.scope === i && /^_xlnm\._FilterDatabase$/i.test(n.name))) names.push({ name: '_xlnm._FilterDatabase', ref: F.quoteSheet(s.name) + '!' + F.absRangeName(s.autoFilter.ref), scope: i, hidden: true });
     });
@@ -1015,6 +1015,7 @@
     for (const [n, t] of overrides) ct += `<Override PartName="${esc(n)}" ContentType="${t}"/>`;
     ct += '</Types>';
     files.unshift({ name: '[Content_Types].xml', data: ct });
+    pack.sheetParts = new Map(sheetEntries.map(e => [e.sh, pack.part(e.part)]));
     L.pivots.write(wb, pack);
     L.slicers.write(slicers);
     L.threads.write(wb, pack);

@@ -124,6 +124,7 @@
     const fresh = raw(kids(K.parse('<root xmlns:a="' + N.a + '" xmlns:r="' + N.rel + '">' + (generated || '<' + tag + '/>') + '</root>'))[0]);
     const apply = el => {
       let out = L.designs.property(raw(el), fresh, current, keep.before, fields, kind === 'run' ? 'a:CT_TextCharacterProperties' : kind === 'para' ? 'a:CT_TextParagraphProperties' : 'a:CT_TextBodyProperties');
+      if (kind === 'para' && !same(object.rPr, keep.before.rPr)) out = K.merge(out, { ['{' + N.a + '}defRPr']: raw(kid(K.parse(fresh), 'defRPr')) }, 'a:CT_TextParagraphProperties');
       if (kind === 'run' && (!same(object.shd, keep.before.shd) || !same(object.shdX, keep.before.shdX))) out = K.merge(out, { ['{' + N.a + '}effectLst']: shadow(out, fresh) }, 'a:CT_TextCharacterProperties');
       if (el.localName !== tag.split(':').pop()) {
         const tree = K.parse(out), p = X.source.get(tree);
@@ -232,9 +233,13 @@
   Q.finishSlide = function (slide, ctx, xml) {
     const keep = slide.keep?.details; if (!keep) return xml;
     for (const where of ['common', 'root']) for (const f of keep[where]) {
-      let text = Q.emit(f, ctx); if (text == null) continue;
-      const tag = K.parse(text).localName, tree = K.parse(xml), parent = where === 'common' ? kid(tree, 'cSld') : tree;
+      const tag = K.parse(f.xml).localName, tree = K.parse(xml), parent = where === 'common' ? kid(tree, 'cSld') : tree;
       if (tag === 'clrMapOvr' && slide.design !== keep.design) continue;
+      // Replaced extensions must not first carry their old dependencies. A copied
+      // comment extension otherwise adds a second relationship to the source thread.
+      const generated = tag === 'extLst' && kid(parent, tag);
+      const retained = generated ? K.slice(f, K.mergeBag(f.xml, Object.fromEntries(kids(generated).map(e => [e.getAttribute('uri'), ''])), e => e.getAttribute('uri'))) : f;
+      let text = Q.emit(retained, ctx); if (text == null) continue;
       if (tag === 'extLst') text = extensions(text, raw(kid(parent, tag)));
       const next = K.merge(raw(parent), { ['{' + N.p + '}' + tag]: text }, where === 'common' ? 'p:CT_CommonSlideData' : 'p:CT_Slide');
       xml = where === 'common' ? replace(xml, parent, next) : next;

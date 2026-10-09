@@ -42,7 +42,33 @@ async function save(c, data) {
   if (c.app === 'quire') {
     const { D, O, preserve: P } = L;
     L.app.loadDoc(doc, 'Office review', { saved: true });
-    if (c.edit === 'binding') {
+    if (['numbering-align', 'numbering-copy'].includes(c.edit)) {
+      let selected;
+      D.walk(doc.main, p => {
+        if (selected || p.t !== 'p') return;
+        const info = L.lists.info(p), abs = info && D.numDef(doc, info.numId)?.abs;
+        const level = info && D.numLevelDef(doc, info.numId, info.lvl);
+        if (abs && (c.numbering === 'picture' ? level?.picture : c.numbering === 'custom' ? level?.custFmt : abs.styleLink)) selected = { p, info, abs };
+      });
+      if (!selected) throw new Error('Missing ' + c.numbering + ' list');
+      const pos = D.pos(selected.p, 0); L.ed.sel = { a: pos, f: pos };
+      if (c.edit === 'numbering-copy') L.lists.apply(selected.abs, { newList: true });
+      else {
+        L.dlg.customizeList(selected.abs, selected.info.lvl);
+        document.querySelector('#cl-al').value = 'right';
+        document.querySelector('.dlg .dlg-foot .primary').click();
+        if (c.copyAfter) L.lists.apply(D.numDef(doc, L.lists.info(selected.p).numId).abs, { newList: true });
+      }
+      changed.push(c.edit === 'numbering-copy' ? 'Started an independent list at the selected paragraph' : 'Right-aligned the selected list level');
+      if (c.copyAfter) changed.push('Copied the edited list as an independent definition');
+    } else if (c.edit === 'section-review') {
+      D.tx('Change top margin', () => { D.touchKey(doc, 'sect'); doc.sect.mt += 9; });
+      const p = doc.main.blocks.at(-1), pos = D.pos(p, Math.min(5, D.plen(p))); L.ed.sel = { a: pos, f: pos };
+      L.dlg.pageNumbers('format'); document.querySelector('#pf-start').value = '5';
+      document.querySelector('.dlg .dlg-foot .primary').click();
+      L.app.insertSectionBreak('continuous');
+      changed.push('Increased the last section top margin by 9 points, restarted numbering at 5 and inserted a continuous section');
+    } else if (c.edit === 'binding') {
       const record = [...P.controls(doc).records.values()].find(r => r.complete && r.control.binding && r.control.type === 'text');
       if (!record) throw new Error('No editable bound text control');
       D.tx('Edit bound value', () => O.insertText(D.pos(record.start.pos.p, record.start.pos.o + 1), ' EDITED'));
@@ -90,6 +116,12 @@ async function save(c, data) {
       else if (step.kind === 'copy-sheet') { O.copySheet(doc, sh, doc.sheets.length); if (step.deleteSource) O.deleteSheet(doc, sh); }
       else if (step.kind === 'delete-sheet') O.deleteSheet(doc, sh);
       else if (step.kind === 'note') O.tx(doc, 'Review note', () => O.setComment(sh, step.row, step.col, { r: step.row, c: step.col, author: 'Review', text: step.text }));
+      else if (step.kind === 'thread-text') {
+        const cm = [...sh.comments.values()].find(cm => cm.thread?.some(t => !t.parent));
+        if (!cm) throw new Error('Missing threaded comment');
+        const root = cm.thread.find(t => !t.parent), text = step.text ?? (root.text + (step.append || ' EDITED'));
+        O.tx(doc, 'Review thread root', () => O.setComment(sh, cm.r, cm.c, { ...cm, text, runs: undefined }));
+      }
       else if (step.kind === 'bar') {
         const cf = L.clone(sh.cf), rule = cf.flatMap(c => c.rules).find(r => r.bar);
         if (!rule) throw new Error('Missing data bar');

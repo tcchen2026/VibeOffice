@@ -123,11 +123,14 @@
     G.paint();
     L.bus.emit('scrolled');
   }
+  // The first row and column of the scrolling pane, below and right of frozen panes. (The frame's
+  // sR/sC are the pane's current first row and column, i.e. the scroll position itself.)
+  const firstR = fr => fr.oR + fr.fr, firstC = fr => fr.oC + fr.fc;
   G.scrollBy = function (dr, dc) {
     const vs = G.vs(), fr = G.frame();
     const g = LY.geo(G.sheet());
-    if (dr) { let r = vs.scrollR, k = Math.abs(dr); const d = dr > 0 ? 1 : -1; while (k > 0) { r += d; if (r < fr.sR) { r = fr.sR; break; } if (r >= MAXR) { r = MAXR - 1; break; } if (g.rows.size(r) > 0) k--; } vs.scrollR = Math.max(fr.sR, r); }
-    if (dc) { let c = vs.scrollC, k = Math.abs(dc); const d = dc > 0 ? 1 : -1; while (k > 0) { c += d; if (c < fr.sC) { c = fr.sC; break; } if (c >= MAXC) { c = MAXC - 1; break; } if (g.cols.size(c) > 0) k--; } vs.scrollC = Math.max(fr.sC, c); }
+    if (dr) { let r = vs.scrollR, k = Math.abs(dr); const d = dr > 0 ? 1 : -1; while (k > 0) { r += d; if (r < firstR(fr)) { r = firstR(fr); break; } if (r >= MAXR) { r = MAXR - 1; break; } if (g.rows.size(r) > 0) k--; } vs.scrollR = Math.max(firstR(fr), r); }
+    if (dc) { let c = vs.scrollC, k = Math.abs(dc); const d = dc > 0 ? 1 : -1; while (k > 0) { c += d; if (c < firstC(fr)) { c = firstC(fr); break; } if (c >= MAXC) { c = MAXC - 1; break; } if (g.cols.size(c) > 0) k--; } vs.scrollC = Math.max(firstC(fr), c); }
     G.paint();
     L.bus.emit('scrolled');
   };
@@ -138,26 +141,26 @@
     const fr = lastFrame, g = fr.g, z = fr.z;
     const main = fr.panes[fr.panes.length - 1];
     if (!main) return;
-    if (r >= fr.sR) {
+    if (r >= firstR(fr)) {
       if (r < vs.scrollR) vs.scrollR = r;
       else {
         const bottom = g.rows.pos(vs.scrollR) + main.h / z;
         if (g.rows.end(r) > bottom) {
           /* scroll so r is the last fully visible row */
           let top = r, acc = g.rows.size(r);
-          while (top > fr.sR && acc + g.rows.size(top - 1) <= main.h / z) { top--; acc += g.rows.size(top); }
-          vs.scrollR = Math.max(fr.sR, top);
+          while (top > firstR(fr) && acc + g.rows.size(top - 1) <= main.h / z) { top--; acc += g.rows.size(top); }
+          vs.scrollR = Math.max(firstR(fr), top);
         }
       }
     }
-    if (c >= fr.sC) {
+    if (c >= firstC(fr)) {
       if (c < vs.scrollC) vs.scrollC = c;
       else {
         const right = g.cols.pos(vs.scrollC) + main.w / z;
         if (g.cols.end(c) > right) {
           let left = c, acc = g.cols.size(c);
-          while (left > fr.sC && acc + g.cols.size(left - 1) <= main.w / z) { left--; acc += g.cols.size(left); }
-          vs.scrollC = Math.max(fr.sC, left);
+          while (left > firstC(fr) && acc + g.cols.size(left - 1) <= main.w / z) { left--; acc += g.cols.size(left); }
+          vs.scrollC = Math.max(firstC(fr), left);
         }
       }
     }
@@ -502,8 +505,8 @@
     const fr = G.frame();
     const main = fr.panes[fr.panes.length - 1];
     let dr = 0, dc = 0;
-    if (p.y > fr.hdrH + (main ? main.y + main.h - fr.hdrH : 0) - 2) dr = 1; else if (p.y < (main ? main.y : fr.hdrH) && G.vs().scrollR > fr.sR) dr = -1;
-    if (p.x > (main ? main.x + main.w : 0) - 2) dc = 1; else if (p.x < (main ? main.x : fr.hdrW) && G.vs().scrollC > fr.sC) dc = -1;
+    if (p.y > fr.hdrH + (main ? main.y + main.h - fr.hdrH : 0) - 2) dr = 1; else if (p.y < (main ? main.y : fr.hdrH) && G.vs().scrollR > firstR(fr)) dr = -1;
+    if (p.x > (main ? main.x + main.w : 0) - 2) dc = 1; else if (p.x < (main ? main.x : fr.hdrW) && G.vs().scrollC > firstC(fr)) dc = -1;
     if (!dr && !dc) return;
     autoTimer = setInterval(() => { G.scrollBy(dr, dc); fn(); }, 60);
   }
@@ -826,8 +829,8 @@
         e.preventDefault();
         if (endMode) { endMode = false; L.bus.emit('mode'); const r = sh.maxR, c = sh.maxC; shift ? G.extendTo(r, c) : G.select(r, c); return; }
         const fr = G.frame();
-        if (ctrl) { const r = fr.fr ? fr.sR : 0, c = fr.fc ? fr.sC : 0; shift ? G.extendTo(r, c) : G.select(r, c); }
-        else { const c = fr.fc ? fr.sC : 0; shift ? G.extendTo(s.extent && shift ? s.extent.r : s.r, c) : G.select(s.r, c); }
+        if (ctrl) { const r = fr.fr ? firstR(fr) : 0, c = fr.fc ? firstC(fr) : 0; shift ? G.extendTo(r, c) : G.select(r, c); }
+        else { const c = fr.fc ? firstC(fr) : 0; shift ? G.extendTo(s.extent && shift ? s.extent.r : s.r, c) : G.select(s.r, c); }
         return;
       }
       case 'End':

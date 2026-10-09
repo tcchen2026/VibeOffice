@@ -69,6 +69,8 @@
     }
     function creationId(slide) {
       if (!creationIds.has(slide.id)) {
+        const original = !slide.keep?.copy && slide.keep?.source === pres.pkg?.id && (slide.keep.commentCreation || []).flatMap(xml => all(K.parse(xml))).find(e => e.localName === 'creationId' && e.hasAttribute('val'));
+        if (original) { creationIds.set(slide.id, +at(original, 'val')); return creationIds.get(slide.id); }
         let id = parseInt(guid('slide:' + slide.id).slice(1, 9), 16);
         while (!id || usedCreation.has(id)) id = (id + 1) >>> 0;
         usedCreation.add(id); creationIds.set(slide.id, id);
@@ -125,7 +127,7 @@
         const sldId = w.slideIds.get(slide.id);
         anchors.forEach((anchor, i) => {
           const p = X.source.get(anchor);
-          changes.push({ start: p.start, end: p.end, value: i ? '' : '<pc:sldMkLst xmlns:pc="' + PC + '"><pc:docMk/><pc:sldMk sldId="' + sldId + '"/></pc:sldMkLst>' });
+          changes.push({ start: p.start, end: p.end, value: i ? '' : '<pc:sldMkLst xmlns:pc="' + PC + '"><pc:docMk/><pc:sldMk cId="' + state.creationId(slide) + '" sldId="' + sldId + '"/></pc:sldMkLst>' });
         });
         w.loss({ id: 'comment-anchor:' + slide.id + ':' + at(cm, 'id'), what: absent ? 'A comment on a deleted object is now attached to its slide.' : 'A comment on edited text is now attached to its slide.', where: 'Slide comments', action: 'conversion' });
       }
@@ -140,7 +142,7 @@
       }
       if (el.namespaceURI === PC && el.localName === 'sldMk') {
         if (at(el, 'sldId') !== String(w.slideIds.get(slide.id))) attrs.sldId = w.slideIds.get(slide.id);
-        if (copy && el.hasAttribute('cId')) attrs.cId = state.creationId(slide);
+        if (copy || !el.hasAttribute('cId') || !slide.keep?.commentCreation?.length) attrs.cId = state.creationId(slide);
       }
       if (el.namespaceURI === AC && /^(sp|grpSp|graphicFrame|cxnSp|pic|ink)Mk$/.test(el.localName)) {
         const shape = shapeMap.get(at(el, 'id'));
@@ -183,8 +185,9 @@
       if (f.deps.some(d => !relIds.has(d.id))) return [];
       return [f.xml.replace(/\u0001rel:(\d+)\u0001/g, (_, i) => relIds.get(f.deps[+i].id))];
     }).join('');
-    const creation = (slide.keep?.commentCreation || []).map(xml => slide.keep.copy || slide.keep.source !== pres.pkg?.id
+    let creation = (slide.keep?.commentCreation || []).map(xml => slide.keep.copy || slide.keep.source !== pres.pkg?.id
       ? rewrite(xml, e => e.localName === 'creationId' ? { val: state.creationId(slide) } : null) : xml).join('');
+    if (!creation && comments.some(r => kind(r) === 1 && relIds.has(r.id))) creation = '<p:ext uri="{BB962C8B-B14F-4D97-AF65-F5344CB8AC3E}"><p14:creationId xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" val="' + state.creationId(slide) + '"/></p:ext>';
     return { ext: extensions ? '<p:extLst>' + extensions + '</p:extLst>' : '', creation: creation ? '<p:extLst>' + creation + '</p:extLst>' : '' };
   };
   C.finish = function (state) {

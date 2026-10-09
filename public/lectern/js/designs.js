@@ -10,7 +10,6 @@
   const same = (a, b) => value(a) === value(b);
   const geometry = new Set(['x', 'y', 'w', 'h', 'rot', 'flipH', 'flipV']);
   const shapeValue = s => value(Object.fromEntries(Object.entries(s).filter(([k]) => !geometry.has(k))));
-  const shapeNames = new Set(['sp', 'pic', 'cxnSp', 'grpSp', 'graphicFrame', 'contentPart', 'AlternateContent']);
   const namespaced = e => '{' + e.namespaceURI + '}' + e.localName;
   const changeChild = (xml, name, child, type) => K.merge(xml, { ['{' + N.p + '}' + name]: child }, type);
   const changeAt = (xml, node, next) => { const p = X.source.get(node); return K.patch(xml, [{ start: p.start, end: p.end, value: next }]); };
@@ -18,6 +17,21 @@
     for (const d of Object.values(pres.designs)) if (d.keep) {
       d.keep.design = d.id;
       d.keep.before = JSON.parse(value(d));
+      d.keep.decorations = {};
+      for (const record of [{ part: d.keep.part, fragment: d.keep.master }, ...(d.keep.layoutParts || [])]) {
+        if (!record.fragment) continue;
+        const shapes = (record.lkey ? d.layoutDecos?.[record.lkey] : d.deco) || [];
+        const identities = shapes.map(s => ({ id: s.id, ids: (s.keep?.identity || s.keep?.designFrame || s.keep?.frame?.fragment)?.ids.filter(i => i.definition && i.kind === 'shape').map(i => i.id) || [] }));
+        const tree = find(K.parse(record.fragment.xml), 'spTree');
+        d.keep.decorations[record.part] = kids(tree).flatMap((node, index) => {
+          const ids = all(node).filter(e => e.localName === 'cNvPr').map(e => {
+            const token = /^\u0001id:(\d+)\u0001$/.exec(e.getAttribute('id') || '');
+            return token ? record.fragment.ids[+token[1]].id : e.getAttribute('id');
+          });
+          const models = identities.filter(s => s.ids.some(id => ids.includes(id))).map(s => s.id);
+          return models.length ? [{ index, models }] : [];
+        });
+      }
       for (const list of [d.deco, d.titleDeco, ...Object.values(d.layoutDecos || {})]) L.model.walk(list || [], s => {
         if (s.keep?.designFrame) s.keep.designValue = shapeValue(s);
         return true;
@@ -75,6 +89,42 @@
     }
     return K.slice(fragment, xml);
   }
+  function decorations(xml, d, fragment, current, before, ctx, emitShape) {
+    const tree = find(K.parse(xml), 'spTree'), children = kids(tree);
+    const slots = d.keep.decorations?.[fragment.part] || [], owners = new Map();
+    for (const slot of slots) for (const id of slot.models) owners.set(id, slot);
+    const old = new Map((before || []).map(s => [s.id, s])), units = [];
+    for (const shape of current || []) {
+      const owner = owners.get(shape.id), last = units[units.length - 1];
+      if (owner && last?.owner === owner) last.shapes.push(shape);
+      else units.push({ owner, shapes: [shape] });
+    }
+    for (const unit of units) {
+      const unchanged = unit.owner && same(unit.shapes.map(s => s.id), unit.owner.models) && unit.shapes.every(s => same(s, old.get(s.id)));
+      unit.xml = unchanged ? raw(children[unit.owner.index]) : unit.shapes.map(s => emitShape(s, ctx, d)).join('');
+    }
+    // Ordinary property edits and deletions stay in their original slots, with
+    // unread shapes and placeholders between them untouched. Only a deliberate
+    // reorder moves surviving decorations between those slots.
+    const ordered = units.filter(u => u.owner), reordered = ordered.some((u, i) => i && u.owner.index < ordered[i - 1].owner.index);
+    const live = slots.filter(slot => ordered.some(u => u.owner === slot));
+    const replacements = new Map(slots.map(s => [s.index, '']));
+    let pending = '', previous, cursor = 0;
+    for (const unit of units) {
+      if (!unit.owner) { pending += unit.xml; continue; }
+      const slot = reordered ? live[Math.min(cursor++, live.length - 1)] : unit.owner;
+      replacements.set(slot.index, replacements.get(slot.index) + pending + unit.xml);
+      pending = ''; previous = slot;
+    }
+    if (previous) { replacements.set(previous.index, replacements.get(previous.index) + pending); pending = ''; }
+    const edits = [...replacements].map(([index, value]) => { const p = X.source.get(children[index]); return { start: p.start, end: p.end, value }; });
+    if (pending) {
+      const ext = children.find(e => e.localName === 'extLst'), pos = X.source.get(tree);
+      const at = ext ? X.source.get(ext).start : pos.end - tree.nodeName.length - 3;
+      edits.push({ start: at, end: at, value: pending });
+    }
+    return K.patch(xml, edits);
+  }
   function content(d, record, generated, ctx, emitShape, pres) {
     const before = d.keep.before, master = !record.lkey, fragment = record.fragment;
     const fresh = K.parse(generated); let xml = fragment.xml;
@@ -83,11 +133,7 @@
     const title = !master && record.key === 'title';
     const titleChanged = title && !same(d.titleDeco, before.titleDeco);
     if (!same(currentDeco, oldDeco) || titleChanged) {
-      const tree = find(K.parse(xml), 'spTree'), shapes = kids(tree).filter(e => shapeNames.has(e.localName) && !find(e, 'ph'));
-      const out = (titleChanged && d.titleDeco ? d.titleDeco : currentDeco || []).map(s => emitShape(s, ctx, d)).join('');
-      const edits = shapes.map((e, i) => { const p = X.source.get(e); return { start: p.start, end: p.end, value: i ? '' : out }; });
-      if (shapes.length) xml = K.patch(xml, edits);
-      else xml = changeAt(xml, tree, K.mergeBag(raw(tree), { __append: [out] }));
+      xml = decorations(xml, d, fragment, titleChanged && d.titleDeco ? d.titleDeco : currentDeco, oldDeco, ctx, emitShape);
     }
     const background = master ? d.bg : title && !same(d.titleBg, before.titleBg) ? d.titleBg : d.layoutBgs?.[record.lkey];
     const oldBackground = master ? before.bg : title && !same(d.titleBg, before.titleBg) ? before.titleBg : before.layoutBgs?.[record.lkey];

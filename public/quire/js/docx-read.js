@@ -428,7 +428,7 @@
     for (const id in imported) {
       const s = imported[id];
       if (!s.isDefault || !CANON[s.type] || id === CANON[s.type]) continue;
-      if (haveDefault[s.type] || imported[CANON[s.type]]) { delete s.isDefault; continue; }
+      if (haveDefault[s.type] || imported[CANON[s.type]]) { s.keep = { defaultStyleRepair: true }; delete s.isDefault; continue; }
       rename[id] = CANON[s.type];
       haveDefault[s.type] = true;
     }
@@ -535,13 +535,19 @@
     const numRel = relOfType('numbering');
     const numX = numRel ? await xml(numRel.target) : null;
     const numPicMedia = {};
+    const numPictures = {};
     const numRels = numRel ? await rels(numRel.target) : {};
     if (numX) {
+      const numContext = { pkg: doc.pkg, part: numRel.target }, presentLevels = new Map();
+      L.preserve.properties(doc.numbering, numX, 'numbering', numContext);
       for (const pb of kids(numX, 'numPicBullet')) {
+        const id = at(pb, 'numPicBulletId');
+        numPictures[id] = { id, fragment: L.preserve.pictureBullet(pb, { pkg: doc.pkg, part: numRel.target }) };
         const im = desc(pb, 'imagedata') || desc(pb, 'blip');
         const r = im && (rid(im, 'id') || rid(im, 'embed'));
         if (r && numRels[r]) { const m = await loadMedia(numRels[r].target); if (m) numPicMedia[at(pb, 'numPicBulletId')] = m; }
       }
+      doc.numbering.keep = { pictures: Object.values(numPictures) };
       const lvlOf = (lv) => {
         const fmtEl = kid(lv, 'numFmt');
         const o = {
@@ -556,10 +562,14 @@
         o.pPrValues = { ind: L.clone(o.ind), tabPos: o.tabPos };
         if (kid(lv, 'isLgl')) o.isLgl = true;
         if (kid(lv, 'lvlRestart')) o.restart = num(kid(lv, 'lvlRestart'), 'val', 0) - 1;
-        if (kid(lv, 'pStyle')) o.pStyle = rn(at(kid(lv, 'pStyle'), 'val'));
-        if (kid(lv, 'lvlPicBulletId')) { const m = numPicMedia[at(kid(lv, 'lvlPicBulletId'), 'val')]; if (m) o.picture = m; }
+        if (kid(lv, 'pStyle')) o.pStyle = at(kid(lv, 'pStyle'), 'val');
+        const pictureId = at(kid(lv, 'lvlPicBulletId'), 'val');
+        if (pictureId != null && numPicMedia[pictureId]) o.picture = numPicMedia[pictureId];
         if (o.fmt === 'bullet') o.glyph = bulletGlyph(o.text, o.rPr.font);
+        if (pictureId != null && numPictures[pictureId]) o.pictureKeep = { ...numPictures[pictureId], values: { picture: o.picture, fmt: o.fmt, text: o.text, glyph: o.glyph } };
         if (kid(lv, 'legacy')) o.legacy = true;
+        L.preserve.properties(o, lv, 'lvl', numContext);
+        if (o.pStyle) o.pStyle = rn(o.pStyle);
         return o;
       };
       for (const an of kids(numX, 'abstractNum')) {
@@ -568,9 +578,13 @@
         for (const lv of kids(an, 'lvl')) levels[num(lv, 'ilvl', 0)] = lvlOf(lv);
         for (let i = 0; i < 9; i++) if (!levels[i]) levels[i] = D.numLevel(i, 'decimal', `%${i + 1}.`);
         const a = { id, levels, multi: at(kid(an, 'multiLevelType'), 'val') || 'hybridMultilevel' };
-        if (kid(an, 'numStyleLink')) a.styleLink = rn(at(kid(an, 'numStyleLink'), 'val'));
-        if (kid(an, 'styleLink')) a.styleDef = rn(at(kid(an, 'styleLink'), 'val'));
+        if (kid(an, 'numStyleLink')) a.styleLink = at(kid(an, 'numStyleLink'), 'val');
+        if (kid(an, 'styleLink')) a.styleDef = at(kid(an, 'styleLink'), 'val');
         if (kid(an, 'name')) a.name = at(kid(an, 'name'), 'val');
+        L.preserve.properties(a, an, 'abstractNum', numContext);
+        if (a.styleLink) a.styleLink = rn(a.styleLink);
+        if (a.styleDef) a.styleDef = rn(a.styleDef);
+        presentLevels.set(a, kids(an, 'lvl').map(lv => num(lv, 'ilvl', 0)));
         doc.numbering.abs[id] = a;
       }
       for (const n of kids(numX, 'num')) {
@@ -581,9 +595,9 @@
           const e = {};
           if (kid(o, 'startOverride')) e.start = num(kid(o, 'startOverride'), 'val', 1);
           if (kid(o, 'lvl')) e.lvl = lvlOf(kid(o, 'lvl'));
-          ov[l] = e;
+          ov[l] = L.preserve.properties(e, o, 'lvlOverride', numContext);
         }
-        doc.numbering.nums[id] = { abs: at(kid(n, 'abstractNumId'), 'val'), ov };
+        doc.numbering.nums[id] = L.preserve.properties({ abs: at(kid(n, 'abstractNumId'), 'val'), ov }, n, 'num', numContext);
       }
       /* numStyleLink: an abstract definition that defers to a numbering style */
       for (const k in doc.numbering.abs) {
@@ -592,8 +606,13 @@
         const st = styles[a.styleLink];
         const nid = st && st.pPr && st.pPr.num && st.pPr.num.id;
         const target = nid && doc.numbering.nums[nid] && doc.numbering.abs[doc.numbering.nums[nid].abs];
-        if (target && target !== a) a.levels = target.levels;
+        if (target && target !== a) {
+          a.x.ownLevels = a.levels;
+          a.levels = target.levels;
+          a.x.linkedLevels = L.preserve.objectSignature(a.levels, 'levels');
+        }
       }
+      for (const [a, present] of presentLevels) L.preserve.numberingLevels(a, present);
     }
     function bulletGlyph(text, font) {
       if (!text) return '';
@@ -671,6 +690,15 @@
         switch (c.localName) {
           case 'p': { const p = parseP(c, ctx); if (p) out.push(p); break; }
           case 'tbl': { const t = parseTbl(c, ctx); if (t) out.push(t); break; }
+          case 'br': case 'cr': {
+            // Damaged files sometimes put a break directly in a body/cell.
+            // Recover its position in a valid paragraph instead of losing pages.
+            let p = out.at(-1);
+            if (p?.t !== 'p') { p = D.para(); out.push(p); }
+            if (ctx.pendingBm.length) { p.runs.push(...ctx.pendingBm); ctx.pendingBm = []; }
+            p.runs.push(breakItem(c, {}, true));
+            break;
+          }
           case 'sdt': {
             const sc = kid(c, 'sdtContent');
             if (!sc) break;
@@ -723,12 +751,18 @@
     }
 
     /* inline content */
+    function breakItem(el, props, recovered) {
+      const type = el.localName === 'cr' ? 'line' : at(el, 'type');
+      return D.item('br', { type: type === 'page' ? 'page' : type === 'column' ? 'column' : 'line',
+        clear: at(el, 'clear') || undefined, ...(recovered ? { recoveredPlacement: true } : {}) }, props);
+    }
     function parseInline(el, p, ctx, inh) {
       const ac = L.preserve.readAlternates(el, p.runs, ctx, doc, 'inline', inh);
       for (const c of el.children) {
         const from = p.runs.length;
         switch (c.localName) {
           case 'r': parseRun(c, p, ctx, inh); break;
+          case 'br': case 'cr': p.runs.push(breakItem(c, L.clone(inh), true)); break;
           case 'hyperlink': {
             const r = rid(c);
             const link = {};
@@ -827,12 +861,7 @@
           }
           case 'delText': if (!inInstr(ctx)) text(c.textContent); break;
           case 'tab': push(D.item('tab', null, base)); break;
-          case 'br': {
-            const ty = at(c, 'type');
-            push(D.item('br', { type: ty === 'page' ? 'page' : ty === 'column' ? 'column' : 'line', clear: at(c, 'clear') || undefined }, base));
-            break;
-          }
-          case 'cr': push(D.item('br', { type: 'line' }, base)); break;
+          case 'br': case 'cr': push(breakItem(c, base)); break;
           case 'noBreakHyphen': text('‑'); break;
           case 'softHyphen': text('­'); break;
           case 'sym': {
@@ -1077,6 +1106,7 @@
       /* zero-width columns get a minimal width */
       g = g.map((x) => (x > 0 ? L.round(x, 2) : 4));
       const t = D.table(rows, g, tp);
+      if (grid.length !== g.length || grid.some((w, i) => Math.abs(w - g[i]) > 0.0001)) t.keep = { gridRepair: true };
       return t;
     }
 
@@ -1127,7 +1157,7 @@
       }
       if (s.pgW <= 0) s.pgW = 612;
       if (s.pgH <= 0) s.pgH = 792;
-      return s;
+      return L.preserve.properties(s, el, 'sectPr', { pkg: doc.pkg, part: ctx.part });
     }
 
     /* ---- drawings (DrawingML) ---- */

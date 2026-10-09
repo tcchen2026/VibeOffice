@@ -247,6 +247,7 @@
     if (ctx.writer && sh.keep?.frame) {
       const kept = L.frames.emit(sh, ctx);
       if (kept != null) return kept;
+      (ctx.convertedFrames ||= new Map()).set(String(id), { key: sh.keep.frame.fragment.key, label: sh.keep.frame.label });
     }
     if (ctx.writer && sh.keep?.media) {
       const kept = L.preserve.emitShape(sh, ctx, () => shapeXML({ ...sh, keep: null }, ctx, design));

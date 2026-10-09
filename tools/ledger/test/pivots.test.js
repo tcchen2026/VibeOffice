@@ -4,17 +4,22 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { execFileSync } = require('node:child_process');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} };
 require('../../../public/ledger/js/ops.js');
 const O = L.ops, K = L.opc;
 const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
 const rangeFile = path.join(corpus, 'excel/libreoffice__0bef51ea4c70__Pivot1_Row.xlsx');
-const sources = path.join(corpus, 'results/ledger-preservation-2026-10-08/source-fixtures');
 const output = process.env.PIVOT_RESULTS;
+const sources = process.env.PIVOT_FIXTURES || (output ? path.join(output, 'fixtures') : fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-pivot-fixtures-')));
+let generated = false;
 const rows = [];
 async function open(t, file = rangeFile) {
-  if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus and generate pivot source fixtures first: ' + file); return null; }
+  if (!generated && !fs.existsSync(file) && file.startsWith(sources + path.sep) && fs.existsSync(rangeFile)) {
+    execFileSync(process.env.PYTHON || 'python3', [path.join(__dirname, 'pivot-fixtures.py'), path.join(corpus, 'excel'), sources]); generated = true;
+  }
+  if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus: ' + file); return null; }
   const wb = await L.xlsxRead.read(fs.readFileSync(file));
   Object.defineProperty(wb, '_testFile', { value: file });
   return wb;
@@ -80,10 +85,13 @@ test('source and output geometry, renames, partial deletions and shared snapshot
   s = await save(wb, 'output-rows');
   assert.equal(childAttr(s.pkg, pivot(wb).part, 'location', 'ref'), 'A5:C10');
   assert.equal(childAttr(s.pkg, pivot(wb).part, 'location', 'firstDataRow'), '1');
+  assert(!s.losses.some(x => x.id.startsWith('pivot-layout:')), 'moving the whole result keeps its layout');
   wb.undo.undo();
   O.insertLines(dst(wb), 'r', 7, -1);
   s = await save(wb, 'output-shrink');
   assert.equal(childAttr(s.pkg, pivot(wb).part, 'location', 'ref'), 'A3:C7');
+  assert(s.losses.some(x => x.id.startsWith('pivot-layout:')), 'a row deleted inside the result is reported');
+  assert.equal(rootAttr(s.pkg, cache(wb).part, 'refreshOnLoad'), '1', 'and Excel rebuilds the result');
   wb.undo.undo();
   const snap = O.snapSheet(src(wb)); O.insertLines(src(wb), 'c', 1, 1); O.restoreSheet(src(wb), snap);
   assert.equal(cache(wb).refresh, undefined);
@@ -96,6 +104,31 @@ test('source and output geometry, renames, partial deletions and shared snapshot
   assert.equal(childAttr(s.pkg, cache(wb).part, 'worksheetSource', 'ref'), 'C1:E6');
 });
 
+test('a whole-column source stays whole when rows are inserted or deleted', async t => {
+  const wb = await open(t); if (!wb) return;
+  const F = L.formula, ref = cache(wb).sources[0].ref;
+  cache(wb).sources[0].ref = F.parseRange(F.colName(ref.c1) + ':' + F.colName(ref.c2));
+  const whole = F.rangeName(cache(wb).sources[0].ref);
+  O.insertLines(src(wb), 'r', 3, -2);
+  const s = await save(wb, 'whole-column-source');
+  assert.equal(childAttr(s.pkg, cache(wb).part, 'worksheetSource', 'ref'), whole);
+  assert.equal(rootAttr(s.pkg, cache(wb).part, 'refreshOnLoad'), '1');
+});
+test('a whole-row source stays whole but still loses a deleted used field', async t => {
+  const wb = await open(t); if (!wb) return;
+  const F = L.formula, ref = cache(wb).sources[0].ref;
+  assert.equal(ref.c1, 0, 'the fixture source starts in column A');
+  cache(wb).sources[0].ref = F.parseRange((ref.r1 + 1) + ':' + (ref.r2 + 1));
+  const whole = F.rangeName(cache(wb).sources[0].ref);
+  O.insertLines(src(wb), 'c', 0, 1);
+  assert.deepEqual(cache(wb).columns.slice(0, 4), [null, 0, 1, 2], 'a column inserted at A shifts every field');
+  let s = await save(wb, 'whole-row-insert');
+  assert.equal(childAttr(s.pkg, cache(wb).part, 'worksheetSource', 'ref'), whole);
+  assert(s.pkg.has(pivot(wb).part)); wb.undo.undo();
+  O.insertLines(src(wb), 'c', 2, -1);
+  s = await save(wb, 'whole-row-delete-field');
+  assert(!s.pkg.has(pivot(wb).part)); assert(s.losses.some(x => /source column/.test(x.what)));
+});
 test('deleting a source or a used field removes definitions; output edits remain and are reported', async t => {
   const wb = await open(t); if (!wb) return;
   O.tx(wb, 'output', () => O.put(dst(wb), 3, 2, { v: 1234 }));

@@ -228,7 +228,7 @@
       if (MM.type !== 'directory' && k < recs.length - 1) {
         /* each letter becomes its own section */
         const last = bl[bl.length - 1].t === 'p' ? bl[bl.length - 1] : (bl.push(D.para()), bl[bl.length - 1]);
-        last.sect = Object.assign(L.clone(src.sect), { type: 'nextPage' });
+        last.sect = Object.assign(L.opc.duplicate(src.sect), { type: 'nextPage' });
       }
       out.main.blocks.push(...bl);
     });

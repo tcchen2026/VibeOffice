@@ -1054,14 +1054,14 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
       }
     });
   };
-  A.rotate = (deg) => E.commit('Rotate', () => { for (const s of E.selected()) if (s.type !== 'table') { if (s.type === 'line') { const [a, b] = L.geom.lineEnds(s); const cx = s.x + s.w / 2, cy = s.y + s.h / 2; L.geom.setLineEnds(s, L.rotPt(a[0], a[1], cx, cy, deg), L.rotPt(b[0], b[1], cx, cy, deg)); } else s.rot = (((s.rot || 0) + deg) % 360 + 360) % 360; } });
-  A.flip = (axis) => E.commit('Flip', () => {
+  A.rotate = (deg) => { if (!E.selected().every(M.canRotate)) return; E.commit('Rotate', () => { for (const s of E.selected()) { if (s.type === 'line') { const [a, b] = L.geom.lineEnds(s); const cx = s.x + s.w / 2, cy = s.y + s.h / 2; L.geom.setLineEnds(s, L.rotPt(a[0], a[1], cx, cy, deg), L.rotPt(b[0], b[1], cx, cy, deg)); } else s.rot = (((s.rot || 0) + deg) % 360 + 360) % 360; } }); };
+  A.flip = (axis) => { if (!E.selected().every(M.canRotate)) return; E.commit('Flip', () => {
     for (const s of E.selected()) {
       if (s.type === 'group') { const g = s; for (const k of g.kids) { if (axis === 'h') { k.x = g.x + g.w - (k.x - g.x) - k.w; k.flipH = !k.flipH; } else { k.y = g.y + g.h - (k.y - g.y) - k.h; k.flipV = !k.flipV; } k.rot = k.rot ? 360 - k.rot : 0; } continue; }
       if (axis === 'h') s.flipH = !s.flipH; else s.flipV = !s.flipV;
       if (s.rot) s.rot = (360 - s.rot) % 360;
     }
-  });
+  }); };
   A.nudge = function (dx, dy, fine) {
     const step = fine ? 1 : E.grid.snap ? E.grid.size : 1;
     const shapes = E.selected();

@@ -7,6 +7,7 @@
   const kids = el => Array.from(el?.children || []);
   const attr = (el, name) => Array.from(el?.attributes || []).find(a => a.localName === name && a.prefix !== 'xmlns')?.value;
   const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  P.pictureBulletIntact = level => level.pictureKeep && ['picture', 'fmt', 'text', 'glyph'].every(key => same(level[key], level.pictureKeep.values[key]));
   const coreRel = N.pkg + '/metadata/core-properties';
   P.commentMetadata = doc => Object.entries(doc.comments).map(([id, c]) => [id, c.keep?.paraId, c.parent ?? null, !!c.done]);
   P.keepCommentExtension = doc => doc.keep?.commentExtension && same(P.commentMetadata(doc), doc.keep.commentExtension.values);
@@ -90,7 +91,7 @@
     // Capture before compatibility choices are normalised. A property fragment
     // belongs to this element, even when the element itself is inside a choice.
     const nodes = Array.from(root.getElementsByTagName('*'));
-    for (const el of nodes) if (wordNS(el.namespaceURI) && ['rPr', 'pPr', 'tbl', 'tblPr', 'drawing', 'pict', 'object', 'control', 'altChunk', 'contentPart'].includes(el.localName)) originalProperties.set(el, K.raw(el));
+    for (const el of nodes) if (wordNS(el.namespaceURI) && ['rPr', 'pPr', 'sectPr', 'numbering', 'abstractNum', 'num', 'lvlOverride', 'lvl', 'numPicBullet', 'tbl', 'tblPr', 'drawing', 'pict', 'object', 'control', 'altChunk', 'contentPart'].includes(el.localName)) originalProperties.set(el, K.raw(el));
     // Leave an anchor when compatibility normalisation selects an empty branch.
     // captureAC still reads the immutable source text, without this sentinel.
     for (const el of nodes) if (el.namespaceURI === N.mc && ['Choice', 'Fallback'].includes(el.localName) && !el.children.length) el.appendChild(el.ownerDocument.createElementNS('urn:vibeoffice:keep', 'keep'));
@@ -99,24 +100,91 @@
       fallback.appendChild(el.ownerDocument.createElementNS('urn:vibeoffice:keep', 'keep')); el.appendChild(fallback);
     }
   };
+  P.pictureBullet = (el, context) => K.fragment(K.alternate(el) ? el : K.parse(originalProperties.get(el) || K.raw(el)), context);
   const alternatives = e => e.namespaceURI === N.mc && ['AlternateContent', 'Choice', 'Fallback'].includes(e.localName);
   const propertyChildren = el => kids(el).flatMap(c => alternatives(c) ? propertyChildren(c) : [c]);
   P.propertyFields = Object.freeze({
     rPr: { rStyle: ['style'], rFonts: ['font', 'fontEA', 'fontCS', 'hint'], b: ['b'], bCs: ['bCs'], i: ['i'], iCs: ['iCs'], caps: ['caps'], smallCaps: ['smallCaps'], strike: ['strike'], dstrike: ['dstrike'], outline: ['outline'], shadow: ['shadow'], emboss: ['emboss'], imprint: ['imprint'], noProof: ['noProof'], vanish: ['hidden'], webHidden: ['webHidden'], color: ['color'], spacing: ['spacing'], w: ['w'], kern: ['kern'], position: ['pos'], sz: ['sz'], szCs: ['szCs', 'sz'], highlight: ['hl'], u: ['u', 'uColor'], effect: ['effect'], bdr: ['border'], shd: ['shd'], vertAlign: ['vert'], rtl: ['rtl'], cs: ['cs'], em: ['em'], lang: ['lang', 'langEA'], specVanish: ['specVanish'], rPrChange: ['chg'] },
     pPr: { pStyle: ['style'], keepNext: ['keepNext'], keepLines: ['keepLines'], pageBreakBefore: ['pageBreakBefore'], framePr: ['frame', 'dropCap'], widowControl: ['widow'], numPr: ['num'], suppressLineNumbers: ['noLineNum'], pBdr: ['borders'], shd: ['shd'], tabs: ['tabs'], suppressAutoHyphens: ['noHyphen'], bidi: ['bidi'], snapToGrid: ['noSnap'], spacing: ['sp'], ind: ['ind'], contextualSpacing: ['contextual'], mirrorIndents: ['mirrorInd'], jc: ['jc'], textDirection: ['textDir'], textAlignment: ['textAlign'], outlineLvl: ['outline'], pPrChange: ['chg'] },
     tblPr: { tblStyle: ['style'], tblpPr: ['float'], bidiVisual: ['bidi'], tblStyleRowBandSize: ['rowBand'], tblStyleColBandSize: ['colBand'], tblW: ['w'], jc: ['jc'], tblCellSpacing: ['spacing'], tblInd: ['ind'], tblBorders: ['borders'], shd: ['shd'], tblLayout: ['layout'], tblCellMar: ['cellMar'], tblLook: ['look'], tblCaption: ['caption'], tblDescription: ['desc'] },
+    sectPr: { headerReference: ['refs.hdr'], footerReference: ['refs.ftr'], footnotePr: ['fnPr'], endnotePr: ['enPr'], type: ['type'], pgSz: ['pgW', 'pgH', 'orient', 'paperCode'], pgMar: ['mt', 'mr', 'mb', 'ml', 'hdr', 'ftr', 'gutter'], paperSrc: ['paperSrc'], pgBorders: ['borders'], lnNumType: ['lnNum'], pgNumType: ['pgNum'], cols: ['cols'], formProt: ['formProt'], vAlign: ['vAlign'], titlePg: ['titlePg'], textDirection: ['textDir'], bidi: ['bidi'], docGrid: ['docGrid'] },
+    lvl: { start: ['start'], numFmt: ['fmt', 'custFmt'], lvlRestart: ['restart'], pStyle: ['pStyle'], isLgl: ['isLgl'], suff: ['suff'], lvlText: ['text'], lvlPicBulletId: ['picture', 'fmt', 'text', 'glyph'], legacy: ['legacy'], lvlJc: ['jc'], pPr: ['pPr', 'ind', 'tabPos'], rPr: ['rPr'] },
+    abstractNum: { multiLevelType: ['multi'], name: ['name'], styleLink: ['styleDef'], numStyleLink: ['styleLink'] },
+    num: { abstractNumId: ['abs'] },
+    lvlOverride: { startOverride: ['start'] },
+    numbering: {},
   });
+  const numberTypes = { numbering: 'w:CT_Numbering', abstractNum: 'w:CT_AbstractNum', num: 'w:CT_Num', lvlOverride: 'w:CT_NumLvl', lvl: 'w:CT_Lvl' };
+  const ownedChildren = { pPr: ['rPr', 'sectPr'], numbering: ['numPicBullet', 'abstractNum', 'num'], abstractNum: ['lvl'], num: ['abstractNumId', 'lvlOverride'], lvlOverride: ['lvl'], lvl: ['pPr', 'rPr', 'lvlPicBulletId'] };
   const propertyKeys = (kind, el) => wordNS(el.namespaceURI) ? P.propertyFields[kind][el.localName] : kind === 'rPr' && /word\/2010\/wordml$/.test(el.namespaceURI || '') ? ({ shadow: ['shadow'], textFill: ['color'], textOutline: ['outline'] }[el.localName]) : undefined;
-  const propertyValues = (model, keys) => JSON.stringify(keys.map(k => model[k] ?? null), (k, v) => k === 'x' && v?.fragment ? undefined : v);
+  const field = (model, path) => path.split('.').reduce((v, k) => v?.[k], model);
+  const propertyValues = (model, keys) => JSON.stringify(keys.map(k => field(model, k) ?? null), (k, v) => k === 'x' && v?.fragment ? undefined : v);
+  const sectionAttributes = {
+    pgSz: { w: 'pgW', h: 'pgH', orient: 'orient', code: 'paperCode' },
+    pgMar: { top: 'mt', right: 'mr', bottom: 'mb', left: 'ml', header: 'hdr', footer: 'ftr', gutter: 'gutter' },
+    paperSrc: { first: 'paperSrc.first', other: 'paperSrc.other' },
+    pgNumType: { fmt: 'pgNum.fmt', start: 'pgNum.start', chapStyle: 'pgNum.chapStyle', chapSep: 'pgNum.chapSep' },
+    lnNumType: { countBy: 'lnNum.countBy', start: 'lnNum.start', distance: 'lnNum.distance', restart: 'lnNum.restart' },
+    docGrid: { type: 'docGrid.type', linePitch: 'docGrid.linePitch', charSpace: 'docGrid.charSpace' },
+  };
+  function sectionChild(el, fresh, model, kept) {
+    const fields = sectionAttributes[el.localName];
+    if (!fields || fresh.length !== 1) return fresh.map(K.raw);
+    const keys = P.propertyFields.sectPr[el.localName], values = JSON.parse(kept.values[expanded(el)]);
+    const before = Object.fromEntries(keys.map((k, i) => [k, values[i]])), changes = {};
+    for (const [name, path] of Object.entries(fields)) if (!same(field(model, path), field(before, path))) {
+      // Margin start/end are the logical aliases used by Strict sources.
+      const aliases = name === 'left' ? ['left', 'start'] : name === 'right' ? ['right', 'end'] : [name];
+      const old = Array.from(el.attributes).filter(a => aliases.includes(a.localName) && a.prefix && wordNS(el.lookupNamespaceURI(a.prefix)));
+      const value = attr(fresh[0], name);
+      if (old.length) for (const a of old) changes[a.name] = value;
+      else if (value != null) {
+        let prefix = el.prefix || 'w', n = 0;
+        while (el.lookupNamespaceURI(prefix) && el.lookupNamespaceURI(prefix) !== el.namespaceURI) prefix = 'w' + ++n;
+        if (!el.lookupNamespaceURI(prefix)) changes['xmlns:' + prefix] = el.namespaceURI;
+        changes[prefix + ':' + name] = value;
+      }
+    }
+    return [K.attributes(K.raw(el), changes)];
+  }
+  const propertyRanks = new Map();
   P.properties = function (model, el, kind, context) {
     if (!el) return model;
     const fragment = K.fragment(K.parse(originalProperties.get(el) || K.raw(el)), context), tree = K.parse(fragment.xml);
-    model.x = { key: D.nid(), fragment, values: Object.fromEntries(propertyChildren(tree).map(c => [expanded(c), propertyValues(model, propertyKeys(kind, c) || [])])) };
+    model.x = { key: D.nid(), fragment, owner: el.parentNode?.localName, values: Object.fromEntries(propertyChildren(tree).map(c => [expanded(c), propertyValues(model, propertyKeys(kind, c) || [])])) };
+    // Absent section/list properties are meaningful. Do not introduce writer
+    // defaults unless their owning model fields were edited.
+    if (kind === 'sectPr' || numberTypes[kind]) for (const [name, keys] of Object.entries(P.propertyFields[kind])) model.x.values['{' + N.w + '}' + name] = propertyValues(model, keys);
     return model;
   };
-  P.propertyXML = function (kind, model, generated, ctx) {
-    const kept = model.x, root = '<w:' + kind + ' xmlns:w="' + N.w + '">' + generated + '</w:' + kind + '>';
+  // Required attributes belong to the model. Preserve other attributes and the
+  // source prefix instead of rebuilding the wrapper and discarding extensions.
+  const propertyAttributes = (xml, values) => {
+    if (!values || !Object.keys(values).length) return xml;
+    const el = K.parse(xml), changes = {};
+    for (const [name, value] of Object.entries(values)) {
+      const old = Array.from(el.attributes).find(a => a.localName === name && a.prefix && wordNS(el.lookupNamespaceURI(a.prefix)));
+      if (old) changes[old.name] = value;
+      else {
+        let prefix = el.prefix || 'w', n = 0;
+        while (el.lookupNamespaceURI(prefix) && !wordNS(el.lookupNamespaceURI(prefix))) prefix = 'w' + ++n;
+        if (!el.lookupNamespaceURI(prefix)) changes['xmlns:' + prefix] = N.w;
+        changes[prefix + ':' + name] = value;
+      }
+    }
+    return K.attributes(xml, changes);
+  };
+  P.propertyXML = function (kind, model, generated, ctx, attributes) {
+    const kept = model.x, root = propertyAttributes('<w:' + kind + ' xmlns:w="' + N.w + '">' + generated + '</w:' + kind + '>', attributes);
     if (!kept) return generated ? root : '';
+    let repaired = false;
+    const type = numberTypes[kind] || { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr', sectPr: 'w:CT_SectPr' }[kind];
+    if (!propertyRanks.has(type)) {
+      const ranks = new Map();
+      K.schema.types[type].forEach((slot, i) => slot.forEach(name => ranks.set('{' + K.schema.namespaces[name.split(':')[0]] + '}' + name.split(':')[1], i)));
+      propertyRanks.set(type, ranks);
+    }
+    const ranks = propertyRanks.get(type);
     const original = K.parse(kept.fragment.xml), fresh = kids(K.parse(root)), present = new Set(propertyChildren(original).map(expanded));
     // Paragraph-mark revisions belong to CT_ParaRPr. They precede CT_RPr's
     // shared property sequence; pPr's nested mark/section are regenerated too.
@@ -130,20 +198,106 @@
       for (const e of kids(tree)) {
         if (mark(e)) { replacements[expanded(e)] = []; continue; }
         const name = expanded(e), keys = propertyKeys(kind, e);
-        const always = kind === 'pPr' && wordNS(e.namespaceURI) && ['rPr', 'sectPr'].includes(e.localName);
-        if (always || keys && kept.values[name] !== propertyValues(model, keys)) replacements[name] = fresh.filter(c => expanded(c) === name).map(K.raw);
+        const always = wordNS(e.namespaceURI) && ownedChildren[kind]?.includes(e.localName);
+        if (always || keys && kept.values[name] !== propertyValues(model, keys)) {
+          const next = fresh.filter(c => expanded(c) === name);
+          replacements[name] = kind === 'sectPr' ? sectionChild(e, next, model, kept) : next.map(K.raw);
+        }
       }
-      if (outer) for (const c of fresh) if (!mark(c) && !present.has(expanded(c))) replacements[expanded(c)] = fresh.filter(e => expanded(e) === expanded(c)).map(K.raw);
-      return K.merge(xml, replacements, { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr' }[kind]);
+      if (outer) for (const c of fresh) if (!mark(c) && !present.has(expanded(c))) {
+        const keys = propertyKeys(kind, c);
+        const owned = wordNS(c.namespaceURI) && ownedChildren[kind]?.includes(c.localName);
+        if (owned || kind !== 'sectPr' && !numberTypes[kind] || keys && kept.values[expanded(c)] !== propertyValues(model, keys)) replacements[expanded(c)] = fresh.filter(e => expanded(e) === expanded(c)).map(K.raw);
+      }
+      // Invalid source properties can be copied into several runs by text edits.
+      // Normalize their spelling/order before that multiplies the source errors;
+      // retain extension attributes and every unrelated property.
+      const copiedSymbol = kind === 'rPr' && kept.owner === 'lvl' && kept.fragment.copy;
+      const content = kind === 'pPr' && kept.owner === 'p' || kind === 'rPr' && ['r', 'pPr'].includes(kept.owner) || copiedSymbol;
+      if (!content) return K.merge(xml, replacements, type);
+      // The SDK's CT_RPrList excludes highlight (unlike ordinary CT_RPr).
+      // Keep invalid originals in place, but do not multiply that error when
+      // copying a list. No-highlight is redundant; colored highlights become
+      // the equivalent supported background shading, with a conversion notice.
+      if (copiedSymbol) {
+        const name = '{' + N.w + '}highlight';
+        const highlight = Object.hasOwn(replacements, name) ? replacements[name].map(K.parse) : kids(tree).filter(e => expanded(e) === name);
+        if (highlight.length) {
+          const value = attr(highlight[0], 'val'), color = L.R?.HIGHLIGHT[value];
+          if (value === 'none' || color) {
+            replacements[name] = [];
+            if (color) replacements['{' + N.w + '}shd'] = ['<w:shd xmlns:w="' + N.w + '" w:val="clear" w:color="auto" w:fill="' + color.slice(1) + '"/>'];
+            repaired = true;
+          }
+        }
+      }
+      const groups = new Map(); let previous = -1, unordered = false, unknown = false;
+      for (const e of kids(tree)) {
+        const name = expanded(e), rank = ranks.get(name);
+        if (!wordNS(e.namespaceURI) || mark(e)) continue;
+        if (rank == null) { unknown = true; continue; }
+        unordered ||= rank < previous; previous = rank;
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(e);
+      }
+      // Only content properties are duplicated by splitting text. Leave styles,
+      // table defaults and ambiguous source properties intact: choosing between
+      // conflicting values or unknown Word children requires an explicit edit.
+      const conflicting = [...groups.values()].some(group => group.some(e => K.raw(e) !== K.raw(group[0])));
+      if (unknown || conflicting) return K.merge(xml, replacements, type);
+      for (const [name, group] of groups) {
+        if (Object.hasOwn(replacements, name)) continue;
+        let value = K.raw(group[0]);
+        const duplicate = group.length > 1 && group.every(e => K.raw(e) === value);
+        if (wordNS(group[0].namespaceURI) && group[0].localName === 'color') {
+          const color = attr(group[0], 'val'), key = (group[0].prefix ? group[0].prefix + ':' : '') + 'val';
+          if (/^#[\da-f]{6}$/i.test(color || '')) value = K.attributes(value, { [key]: color.slice(1) });
+          else if (color == null && attr(group[0], 'themeColor')) value = K.attributes(value, { [key]: 'auto' });
+        }
+        if (duplicate || value !== K.raw(group[0])) { replacements[name] = [value]; repaired = true; }
+      }
+      if (unordered) {
+        // merge() keeps an untouched fragment byte-for-byte unless asked to
+        // replace a child. Replacing an identical child also orders this repair.
+        const first = [...groups].find(([name]) => !Object.hasOwn(replacements, name));
+        if (first && !Object.keys(replacements).length) replacements[first[0]] = first[1].map(K.raw);
+        repaired = true;
+      }
+      return K.merge(xml, replacements, type);
     };
     try {
       let xml = merge(kept.fragment.xml, true);
       const marks = fresh.filter(mark).map(K.raw).join('');
       if (marks) { const tree = K.parse(xml); xml = inner(xml, tree, marks + kids(tree).map(K.raw).join('')); }
-      return ctx.writer.emit(K.slice(kept.fragment, xml), ctx.part);
+      if (repaired) ctx.writer.loss({ id: 'property:repair:' + (kept.fragment.source || '') + ':' + kept.fragment.part, what: 'Invalid source formatting was normalized for compatibility.', where: kept.fragment.part, action: 'conversion' });
+      return ctx.writer.emit(K.slice(kept.fragment, propertyAttributes(xml, attributes)), ctx.part);
     } catch (error) {
-      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (kind === 'rPr' ? 'text' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
+      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (numberTypes[kind] ? 'list' : kind === 'rPr' ? 'text' : kind === 'sectPr' ? 'section' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
       return generated ? root : '';
+    }
+  };
+  P.numberingLevels = function (abstract, present) {
+    abstract.x.absentLevels = Object.fromEntries(abstract.levels.flatMap((level, i) => present.includes(i) ? [] : [[i, P.objectSignature(level, 'level')]]));
+  };
+  P.materializeNumbering = function (abstract) {
+    if (!abstract.styleLink || !abstract.x?.linkedLevels || abstract.x.linkedLevels === P.objectSignature(abstract.levels, 'levels')) return abstract;
+    // The dialog edited the effective levels of a numbering style. Make that
+    // list independent; its former delegate and other users retain their values.
+    const copy = K.duplicate(abstract);
+    delete copy.styleLink;
+    delete copy.x.absentLevels;
+    delete copy.x.ownLevels;
+    copy.x.materialized = true;
+    return copy;
+  };
+  P.writeNumberingLevel = (abstract, i) => abstract.levels[i] && (!abstract.x?.absentLevels || !Object.hasOwn(abstract.x.absentLevels, i) || abstract.x.absentLevels[i] !== P.objectSignature(abstract.levels[i], 'level'));
+  P.prepareNumbering = function (numbering, writer) {
+    for (const [kind, models] of [['abstractNumId', numbering.abs], ['numId', numbering.nums]]) for (const [id, model] of Object.entries(models)) {
+      writer.ids.reserve('numbering', kind, id);
+      const f = model.x?.fragment, definition = f?.ids.find(i => i.kind === kind && i.definition);
+      if (!definition) continue;
+      if (f.copy) writer.ids.copy(f.copy, f.copyDefinitions || f.ids.filter(i => i.definition));
+      writer.ids.bind(definition.source, 'numbering', kind, definition.id, id, 'numbering', f.copy);
     }
   };
   P.rangeMarker = function (el, context) {

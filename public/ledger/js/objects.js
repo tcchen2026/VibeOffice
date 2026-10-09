@@ -91,12 +91,25 @@
     for (const d of to.drawings) if (d.objectKeep) d.objectKeep = { ...d.objectKeep, copy };
     for (const d of to.drawings) L.slicers.copy(d, to);
   };
-  X.begin = function (sh, pack, owner) {
-    const ids = new Map(), used = new Set(), w = pack.writer;
-    let next = Math.max(1024, ...sh.drawings.map(d => d.id || 0));
+  X.begin = function (sh, pack, owner, vml) {
+    const ids = new Map(vml.objects), used = new Set(ids.values()), w = pack.writer;
+    const names = new Map(), named = [], takenNames = new Set();
+    for (const d of sh.drawings) if (active(d)) {
+      const el = d.objectKeep.groups.flatMap(g => all(K.parse(g.fragment.xml))).find(e => item(e) && +at(e, 'shapeId') === d.objectKeep.id && at(e, 'name'));
+      if (!el) continue;
+      const name = at(el, 'name'); named.push({ d, name });
+      if (!d.objectKeep.copy) { names.set(d, name); takenNames.add(name.toLowerCase()); }
+    }
+    for (const { d, name } of named) if (!names.has(d)) {
+      let fresh = name, n = +(name.match(/\d+$/)?.[0] || 0), base = name.replace(/\d+$/, '');
+      if (base === name) base += ' ';
+      while (takenNames.has(fresh.toLowerCase())) fresh = base + ++n;
+      takenNames.add(fresh.toLowerCase()); names.set(d, fresh);
+    }
+    let next = Math.max(1024, ...used, ...sh.drawings.map(d => d.id || 0));
     for (const d of sh.drawings) {
-      let id = d.id;
-      if (!(id > 0) || used.has(id) || d.objectKeep && (id < 1025 || id > 268435456)) {
+      let id = ids.get(d) || d.id;
+      if (!ids.has(d) && (!(id > 0) || used.has(id) || d.objectKeep && (id < 1025 || id > 268435456))) {
         do { next = next < 268435456 ? next + 1 : 1025; } while (used.has(next));
         id = next;
       }
@@ -104,7 +117,7 @@
       w.ids.reserve(owner, 'shape', id);
       if (d.objectKeep && !active(d)) w.loss({ id: 'worksheet-object:' + sh.id + ':' + id, what: 'The edited embedded object or control was converted to its displayed drawing.', where: sh.name + ': ' + d.name, action: 'conversion' });
     }
-    return { sh, pack, ids, used, next, owner, copiedParts: new Map() };
+    return { sh, pack, ids, used, next, owner, vml, names, copiedParts: new Map() };
   };
   // Strip only the linked top-level identity from generic ID remapping. Its
   // drawing, worksheet entry and VML preview must use the same chosen value.
@@ -117,6 +130,11 @@
     const id = state.ids.get(d), old = d.objectKeep.id;
     let f = linked(fragment, old, id, false);
     const tree = K.parse(f.xml), patches = [];
+    const name = state.names.get(d);
+    if (name && d.objectKeep.copy) for (const e of all(tree)) if (e.localName === 'cNvPr' && +at(e, 'id') === id && at(e, 'name') !== name) {
+      const p = L.xmlTree.source.get(e), updated = L.xmlTree.source.get(K.parse(K.attributes(K.raw(e), { name })));
+      patches.push({ start: p.start, end: p.openEnd, value: updated.text.slice(updated.start, updated.openEnd) });
+    }
     for (const e of all(tree)) if (e.localName === 'compatExt' && at(e, 'spid') === '_x0000_s' + old) {
       const p = L.xmlTree.source.get(e), a = p.attrs.find(a => a.name === 'spid'); patches.push({ start: a.start, end: a.end, value: '_x0000_s' + id });
     }
@@ -152,7 +170,7 @@
       if (item(el)) {
         const d = members.find(d => d.objectKeep.id === +at(el, 'shapeId')); if (!d) return '';
         const id = state.ids.get(d), attrs = { shapeId: id };
-        if (d.objectKeep.copy && id !== d.objectKeep.id && at(el, 'name')) attrs.name = at(el, 'name') + '_Copy' + id;
+        if (state.names.has(d)) attrs.name = state.names.get(d);
         raw = K.attributes(raw, attrs);
         return same(d.anchor, d.objectKeep.anchor) ? raw : anchorXML(raw, d.anchor);
       }
@@ -252,6 +270,66 @@
     }
     return anchor?.type === 'abs' ? K.setBox(xml, anchor) : xml;
   }
+  // VML shape ids come in blocks of 1024 named by o:idmap; each sheet's drawing owns its block(s).
+  const blocks = tree => (at(all(tree).find(e => e.localName === 'idmap' && e.namespaceURI === K.KNOWN_NS.o), 'data') || '').split(/[\s,]+/).map(Number).filter(n => n > 0);
+  const vmlKey = (v, copy, id = v.id) => JSON.stringify([v.source, v.part, copy || '', +id]);
+  function vmlLinked(fragment, copy, state) {
+    return K.slice(fragment, fragment.xml.replace(/\u0001id:(\d+)\u0001/g, (token, n) => {
+      const i = fragment.ids[+n], id = i.kind === 'vml:_x0000_s' && state.identities.get(vmlKey({ source: i.source, part: i.scope }, copy, i.id));
+      return id ? (i.prefix || '') + id : token;
+    }));
+  }
+  // Allocate linked drawing/worksheet/VML identities together. Original notes and
+  // objects keep their ids; only new or copied members need fresh slots.
+  X.idmaps = function (wb) {
+    const own = new Map(), taken = new Set(), out = new Map();
+    for (const sh of wb.sheets) {
+      const v = sh.extra.vml; if (!v || v.unparsed || v.sheet !== sh.id || v.source !== wb.pkg?.id) continue;
+      let b = [], reserved = []; try { const tree = K.package(v.source).xml(v.part); b = blocks(tree); reserved = all(tree).filter(e => e.namespaceURI === V && e.localName !== 'shapetype').map(vmlId); } catch (_) {}
+      if (b.length && !b.some(n => taken.has(n))) { own.set(sh, { original: v, list: b, reserved }); b.forEach(n => taken.add(n)); }
+    }
+    const fresh = after => { let b = after + 1; while (taken.has(b)) b++; taken.add(b); return b; };
+    for (const sh of wb.sheets) {
+      const o = own.get(sh), list = o ? o.list.slice() : [fresh(0)], used = new Set(o?.reserved), claimed = new Set();
+      let next = Math.max(list[0] * 1024, ...used);
+      const state = { blocks: list, objects: new Map(), notes: new Map(), identities: new Map() }, requests = new Map(), bindings = [];
+      const member = (object, v, copied, map) => {
+        const key = v?.id > 0 ? vmlKey(v, copied) : object;
+        if (map) bindings.push({ object, map, key });
+        if (requests.has(key)) return;
+        const keep = o && !copied && v?.source === o.original.source && v.part === o.original.part && v.id > 0 && !claimed.has(v.id) && list.includes(Math.floor(v.id / 1024));
+        requests.set(key, keep ? v.id : 0);
+        if (keep) claimed.add(v.id);
+      };
+      for (const d of sh.drawings) if (active(d) && d.objectKeep.vml) {
+        const v = d.objectKeep.vml, copy = d.objectKeep.copy;
+        member(d, v, copy, state.objects);
+        for (const i of v.fragment.ids) if (i.definition && i.kind === 'vml:_x0000_s') member(null, { source: i.source, part: i.scope, id: +i.id }, copy);
+      }
+      // A nested control has its own worksheet entry but its VML is owned by a
+      // group. Give the entry the identity already allocated to that child.
+      for (const d of sh.drawings) if (active(d) && !d.objectKeep.vml && sh.extra.vml) {
+        const v = { ...sh.extra.vml, id: d.objectKeep.id }, key = vmlKey(v, d.objectKeep.copy);
+        if (requests.has(key)) bindings.push({ object: d, map: state.objects, key });
+      }
+      for (const cm of sh.comments.values()) member(cm, cm.keepVml, cm.keepVml?.fragment.copy, state.notes);
+      for (const [key, retained] of requests) {
+        if (retained) { state.identities.set(key, retained); continue; }
+        do {
+          next++;
+          if (next % 1024 === 0 || !list.includes(Math.floor(next / 1024))) {
+            let block = Math.min(...list.filter(b => b * 1024 + 1 > next));
+            if (!Number.isFinite(block)) { block = fresh(Math.max(...list)); list.push(block); }
+            next = block * 1024 + 1;
+          }
+        } while (used.has(next));
+        used.add(next); state.identities.set(key, next);
+      }
+      for (const { object, map, key } of bindings) map.set(object, state.identities.get(key));
+      out.set(sh, state);
+    }
+    return out;
+  };
   X.vml = function (generated, base, state) {
     const { sh, pack } = state, w = pack.writer, original = sh.extra.vml, source = original && K.package(original.source);
     const members = sh.drawings.filter(d => active(d) && d.objectKeep.vml), notes = [...sh.comments.values()];
@@ -261,8 +339,10 @@
     const originalRoot = original && !original.unparsed && source.xml(original.part);
     const from = sameOwner ? original.part : null;
     pack.bind(base, from, 'regenerated');
-    const target = pack.part(base), used = new Set(members.map(d => state.ids.get(d)));
-    let next = Math.max(1024, ...used, ...(original?.shapes || []).map(shapeId));
+    const target = pack.part(base);
+    // A copied or moved drawing takes this sheet's blocks; its notes are renumbered into them.
+    const alloc = state.vml.blocks, own = originalRoot ? blocks(originalRoot) : [];
+    const rebase = !!originalRoot && !(sameOwner && own[0] === alloc[0]), extend = !!originalRoot && alloc.join(',') !== own.join(',');
     const shapes = [], supports = new Map(), rawNotes = kids(K.parse(generated)).filter(e => e.namespaceURI === V && e.localName === 'shape');
     const support = (pkg, part) => {
       const key = pkg.id + ':' + part; if (supports.has(key)) return;
@@ -271,7 +351,7 @@
     let unchanged = !!sameOwner && !original.unparsed;
     for (const d of members) {
       const v = d.objectKeep.vml, pkg = K.package(v.source); support(pkg, v.part);
-      let f = linked(v.fragment, v.id, state.ids.get(d), true);
+      let f = vmlLinked(v.fragment, d.objectKeep.copy, state.vml);
       f = K.slice(f, vmlGeometry(f.xml, d.anchor, d.objectKeep.anchor, sh));
       if (d.objectKeep.copy) f = K.duplicate(f);
       unchanged &&= v.part === original?.part && v.source === source?.id && v.id === state.ids.get(d) && same(d.anchor, d.objectKeep.anchor) && !d.objectKeep.copy;
@@ -279,10 +359,10 @@
     }
     for (let i = 0; i < notes.length; i++) {
       const cm = notes[i], v = cm.keepVml;
-      let id = v?.id; if (!(id > 0) || used.has(id)) id = ++next; used.add(id);
+      const id = state.vml.notes.get(cm);
       if (v) {
         const pkg = K.package(v.source); support(pkg, v.part);
-        let f = linked(v.fragment, v.id, id, true), xml = f.xml;
+        let f = vmlLinked(v.fragment, v.fragment.copy, state.vml), xml = f.xml;
         const old = v.values, tree = K.parse(xml), patches = [];
         const client = all(tree).find(e => e.localName === 'ClientData' && e.namespaceURI === EX);
         textPatch(xml, kids(client).find(e => e.localName === 'Row'), cm.r, patches);
@@ -305,12 +385,14 @@
       } else { shapes.push({ xml: K.attributes(K.raw(rawNotes[i]), { id: '_x0000_s' + id }) }); unchanged = false; }
     }
     const originalIds = original?.shapes || [];
-    unchanged &&= shapes.length === originalIds.length;
+    unchanged &&= shapes.length === originalIds.length && !rebase && !extend;
     if (unchanged) { pack.bind(base, original.part, 'opaque'); return source.bytes(original.part); }
     if (original?.unparsed) w.loss({ id: 'vml:' + sh.id, what: 'The damaged VML drawing could not be merged; its readable notes were rebuilt.', where: sh.name, action: 'conversion' });
     let xml = originalRoot ? K.raw(originalRoot) : K.raw(K.parse(generated));
     const tree = K.parse(xml), changes = [];
     for (const e of kids(tree)) if (e.namespaceURI === V && !['shapetype', 'background'].includes(e.localName)) { const p = L.xmlTree.source.get(e); changes.push({ start: p.start, end: p.end, value: '' }); }
+    const idmap = (rebase || extend) && all(tree).find(e => e.localName === 'idmap' && e.namespaceURI === K.KNOWN_NS.o);
+    if (idmap) { const p = L.xmlTree.source.get(idmap); changes.push({ start: p.start, end: p.end, value: K.attributes(K.raw(idmap), { data: alloc.join(',') }) }); }
     xml = K.patch(xml, changes);
     const template = K.parse(xml), known = new Set(kids(template).filter(e => e.localName === 'shapetype').map(e => at(e, 'id'))), added = [];
     for (const { pkg, part, tree } of supports.values()) for (const el of kids(tree)) if (el.localName === 'shapetype') {

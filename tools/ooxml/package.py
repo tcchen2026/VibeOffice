@@ -30,6 +30,7 @@ P = {'http://schemas.openxmlformats.org/presentationml/2006/main', 'http://purl.
 A = {'http://schemas.openxmlformats.org/drawingml/2006/main', 'http://purl.oclc.org/ooxml/drawingml/main'}
 S = {'http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'http://purl.oclc.org/ooxml/spreadsheetml/main'}
 W14 = 'http://schemas.microsoft.com/office/word/2010/wordml'
+V = 'urn:schemas-microsoft-com:vml'
 LEGACY_COMMENTS = '{http://schemas.microsoft.com/office/word/2010/11/wordml}commentsEx'
 MODERN_COMMENTS = '{http://schemas.microsoft.com/office/word/2012/wordml}commentsEx'
 # each preset shape's adjustment names, from the generated schema facts the apps use
@@ -212,6 +213,8 @@ class Package:
         references = []
         caches = set()
         pivot_refs = []
+        previews = defaultdict(list)
+        frames, part_targets = set(), []
         comment_counts = {}
         for part, root in self.xml.items():
             if split(root.tag)[0] in W and split(root.tag)[1] == 'comments':
@@ -233,9 +236,10 @@ class Package:
                         self.issue('unresolved-rid', part, val, path)
                 scope = part
                 kind = None
+                ident = at(el, 'id')
                 if tag == 'docPr' and 'wordprocessingDrawing' in ns:
                     kind, scope = 'docPr', 'word'
-                elif tag == 'cNvPr':
+                elif tag == 'cNvPr' and 'office/drawing/2008/diagram' not in ns:   # PowerPoint's SmartArt drawing caches use id 0 throughout (41/57 corpus decks)
                     kind = 'shape'
                 elif tag == 'cTn' and ns in P:
                     kind = 'timing'
@@ -253,8 +257,15 @@ class Package:
                     if id_ in caches:
                         self.issue('duplicate-cache-id', part, id_, path)
                     caches.add(id_)
-                if kind and at(el, 'id') is not None:
-                    key = (scope, kind, at(el, 'id'))
+                elif ns == V and tag != 'shapetype' and part.endswith('.vml') and re.fullmatch(r'_x0000_s\d+', ident or ''):
+                    # Excel and PowerPoint drawing parts name each shape once (Word repeats VML ids in its own files);
+                    # Excel's numbered ids are unique across the whole workbook (0 of 951 corpus workbooks repeat
+                    # one; Excel Online writes the placeholder _x0000_s-1 in several parts)
+                    kind = 'vml'
+                    if part.startswith('xl/'):
+                        scope = 'workbook-vml'
+                if kind and ident is not None:
+                    key = (scope, kind, ident)
                     allowance = 1
                     if kind == 'comment-reference':
                         related = list(self.rels.get(part, {}).values()) + list(self.rels.get(main, {}).values())
@@ -286,8 +297,14 @@ class Package:
                     found = any(at(e, 'id') == at(el, 'spid') for target in targets if target in self.xml for e in self.xml[target].iter())
                     if not found:
                         self.issue('unresolved-vml-preview', part, at(el, 'spid'), path)
+                    previews[(part, at(el, 'spid'))].append((path, branches))
                 elif ns in P and at(el, 'spid') is not None:
                     references.append((part, 'shape', at(el, 'spid'), path, branches))
+                if tag == 'cNvPr' and parent is not None and split(parent.tag)[1] == 'nvGraphicFramePr' and ns in P:
+                    frames.add((part, at(el, 'id')))
+                # diagram, chart and OLE part animations need their graphic frame
+                if ns in P and (tag == 'spTgt' and any(split(c.tag)[1] in ('graphicEl', 'oleChrtEl', 'subSp') for c in el) or tag in ('bldGraphic', 'bldDgm', 'bldOleChart')):
+                    part_targets.append((part, at(el, 'spid'), path))
                 if tag in ('stCxn', 'endCxn') and ns in A:
                     references.append((part, 'shape', at(el, 'id'), path, branches))
                 if tag == 'tn' and ns in P:
@@ -299,6 +316,24 @@ class Package:
         for scope, kind, val, path, branches in references:
             if not any(compatible(branches, bs) for _, _, bs in definitions.get((scope, kind, val), [])):
                 self.issue('unresolved-' + kind + '-id', scope, str(val), path)
+        # Excel gives each sheet's VML drawing its own block of 1024 shape ids
+        blocks = defaultdict(list)
+        for part, root in self.xml.items():
+            if part.startswith('xl/') and part.endswith('.vml'):
+                for el in root.iter('{urn:schemas-microsoft-com:office:office}idmap'):
+                    for b in re.split(r'[\s,]+', at(el, 'data') or ''):
+                        if b.isdigit(): blocks[int(b)].append(part)
+        for b, parts in blocks.items():
+            for part in parts[1:]:
+                self.issue('duplicate-vml-block', part, str(b))
+        for part, spid, path in part_targets:
+            if (part, spid) not in frames:
+                self.issue('animation-part-target', part, spid, path)
+        # each embedded object has its own preview shape
+        for (part, spid), uses in previews.items():
+            for i, (path, branches) in enumerate(uses):
+                if any(compatible(branches, bs) for _, bs in uses[:i]):
+                    self.issue('shared-vml-preview', part, spid, path)
         for part, id_, path in pivot_refs:
             if id_ not in caches:
                 self.issue('unresolved-cache-id', part, id_, path)

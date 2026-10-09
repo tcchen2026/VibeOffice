@@ -75,6 +75,12 @@ FEATURES = {
     'character styles defined': cnt(r'<w:style\b[^>]*w:type="character"', r'word/styles\.xml$'),
     'table styles defined': cnt(r'<w:style\b[^>]*w:type="table"', r'word/styles\.xml$'),
     'list definitions': cnt(r'<w:abstractNum\b', r'word/numbering\.xml$'),
+    'picture bullet definitions': cnt(r'<w:numPicBullet\b', r'word/numbering\.xml$'),
+    'picture bullet references': cnt(r'<w:lvlPicBulletId\b', r'word/numbering\.xml$'),
+    'list identities (nsid)': cnt(r'<w:nsid\b', r'word/numbering\.xml$'),
+    'list template metadata': cnt(r'<w:tmpl\b', r'word/numbering\.xml$'),
+    'legacy list settings': cnt(r'<w:legacy\b', r'word/numbering\.xml$'),
+    'list cleanup metadata': cnt(r'<w:numIdMacAtCleanup\b', r'word/numbering\.xml$'),
     'theme': lambda names, f: int(any(re.match(r'word/theme/theme\d*\.xml$', n) for n in names)),
 }
 

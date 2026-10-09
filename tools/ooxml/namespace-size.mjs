@@ -19,7 +19,14 @@ for (const file of files) {
     const part = await main(b), xml = await b.get(part).text(), compact = K.hoistNamespaces(xml);
     row.original = (await a.get(await main(a)).bytes()).length;
     row.before = new TextEncoder().encode(xml).length; row.after = new TextEncoder().encode(compact).length;
-    row.innerIgnorable = K.parse(compact).getElementsByTagName('*').filter(e => e.parentNode?.nodeType === 1 && e.getAttributeNS(K.NS.mc, 'Ignorable') != null).length;
+    const inner = K.parse(compact).getElementsByTagName('*').filter(e => e.parentNode?.nodeType === 1 && e.getAttributeNS(K.NS.mc, 'Ignorable') != null);
+    row.innerIgnorable = inner.length;
+    row.scopedIgnorable = inner.filter(e => {
+      const required = new Set(['PreserveAttributes', 'PreserveElements', 'ProcessContent'].flatMap(name => (e.getAttributeNS(K.NS.mc, name) || '').trim().split(/\s+/).filter(v => v.includes(':')).map(v => v.split(':')[0])));
+      const prefixes = e.getAttributeNS(K.NS.mc, 'Ignorable').trim().split(/\s+/).filter(Boolean);
+      return prefixes.length && prefixes.every(p => required.has(p) && e.lookupNamespaceURI(p));
+    }).length;
+    row.unexpectedIgnorable = row.innerIgnorable - row.scopedIgnorable;
     // Follow the writer-owned roles to compact the other rewritten Word parts
     // too; theme, glossary, custom XML and embedded graphs remain opaque.
     const rewritten = new Set([part]);
@@ -40,7 +47,9 @@ fs.writeFileSync(path.join(output, 'results.jsonl'), rows.map(r => JSON.stringif
 const ok = rows.filter(r => r.status === 'ok');
 const summary = { attempted: rows.length, ok: ok.length, failed: rows.length - ok.length,
   originalBytes: ok.reduce((n, r) => n + r.original, 0), beforeBytes: ok.reduce((n, r) => n + r.before, 0), afterBytes: ok.reduce((n, r) => n + r.after, 0),
-  innerIgnorable: ok.reduce((n, r) => n + r.innerIgnorable, 0) };
+  innerIgnorable: ok.reduce((n, r) => n + r.innerIgnorable, 0),
+  scopedIgnorable: ok.reduce((n, r) => n + r.scopedIgnorable, 0),
+  unexpectedIgnorable: ok.reduce((n, r) => n + r.unexpectedIgnorable, 0) };
 fs.writeFileSync(path.join(output, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
 console.log(JSON.stringify(summary));
-if (summary.failed || summary.innerIgnorable) process.exitCode = 1;
+if (summary.failed || summary.unexpectedIgnorable) process.exitCode = 1;

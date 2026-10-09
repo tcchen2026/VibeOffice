@@ -5,7 +5,6 @@
   const kids = el => Array.from(el?.children || []), all = el => el ? [el, ...Array.from(el.getElementsByTagName('*'))] : [];
   const at = (el, name) => el?.getAttribute(name), clone = x => JSON.parse(JSON.stringify(x));
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-  const guid = () => '{' + root.crypto.randomUUID().toUpperCase() + '}';
   const viewRel = type => /\/(slicer|timeline)$/.test(type || '');
   const cacheRel = type => /\/(slicerCache|timelineCache)$/.test(type || '');
   const rid = el => el?.getAttributeNS(N.rel, 'id') || el?.getAttributeNS(N.strictRel, 'id');
@@ -35,7 +34,16 @@
   };
   S.copy = function (d, toSheet) {
     if (!d.slicerKeep) return;
-    d.slicerKeep = { ...clone(d.slicerKeep), copy: guid(), copySheet: toSheet?.id };
+    const keep = d.slicerKeep, pkg = K.package(keep.source), ids = {}, parts = new Set((keep.views || []).map(v => v.part));
+    for (const rel of pkg.rels(pkg.main).filter(r => cacheRel(r.type) && !r.external)) {
+      const tree = xmlPart(pkg, rel.part);
+      if (keep.views?.some(v => v.cache === at(tree, 'name'))) parts.add(rel.part);
+    }
+    const sources = [...parts].map(part => K.remapGuids(pkg.text(part), keep.guidMap));
+    d.slicerKeep = K.duplicate(keep, { guidAttributes: ['uid', 'id'], guidSources: sources, guidMap: ids });
+    for (const [old, current] of Object.entries(keep.guidMap || {})) if (ids[current]) ids[old] = ids[current];
+    if (d.xml) d.xml = K.remapGuids(d.xml, ids);
+    Object.assign(d.slicerKeep, { copy: K.guid(), copySheet: toSheet?.id, guidMap: ids });
   };
   S.read = function (wb) {
     const pkg = wb.pkg; if (!pkg) return;
@@ -87,8 +95,19 @@
       const linked = c.links.flatMap(link => link.part ? aliveTables.filter(t => t.part === link.part).map(t => ({ ...link, table: t })) : [link]);
       const missing = c.table && (!table || !table.columns.some(col => col.id === c.table.column)) ||
         c.pivot && (!pivot || c.field >= 0 && pivot.columns && !pivot.columns.includes(c.field)) || c.links.length && !linked.length;
-      state.caches.push({ ...c, linked, modelTable: table, drop: !!missing, target: w.target(wb.pkg, c.part) });
+      // Excel names every cache with a workbook name (#N/A); a copy gets its own
+      const defined = wb.names.find(n => n.scope == null && n.name.toLowerCase() === c.name.toLowerCase() && String(n.ref).replace(/^=/, '') === '#N/A');
+      state.caches.push({ ...c, defined: defined && { ...defined }, linked, modelTable: table, drop: !!missing, target: w.target(wb.pkg, c.part) });
     }
+    // Copies are named as Excel names them: Slicer_Region1, Slicer_Region2 for caches; "Region 1" for views.
+    const taken = { cache: new Set([...state.caches.map(c => c.name), ...wb.names.map(n => n.name)].map(n => n.toLowerCase())),
+      view: new Set((original?.groups || []).flatMap(g => g.definitions.map(v => v.name.toLowerCase()))) }, copyNames = new Map();
+    const copyName = (kind, name, copy) => {
+      const key = JSON.stringify([kind, name, copy]); if (copyNames.has(key)) return copyNames.get(key);
+      const sep = kind === 'view' ? ' ' : '', base = name.replace(kind === 'view' ? / \d+$/ : /\d+$/, '');
+      let n = 1; while (taken[kind].has((base + sep + n).toLowerCase())) n++;
+      taken[kind].add((base + sep + n).toLowerCase()); copyNames.set(key, base + sep + n); return base + sep + n;
+    };
     for (const sh of wb.sheets) for (const d of sh.drawings) if (d.slicerKeep) {
       const keep = d.slicerKeep, entry = { d, sh, status: 'keep', names: new Map() }; state.frames.set(d, entry);
       if (!intact(d) || keep.source !== wb.pkg?.id || !keep.views?.length) {
@@ -103,15 +122,15 @@
         return c?.drop && !(c.table && keep.copySheet === sh.id && wb.tables.some(t => t.ooxmlPart === c.table.part && t.sheet === sh));
       })) { entry.status = 'omit'; continue; }
       for (const view of keep.views) {
-        const name = keep.copy ? view.name + '_Copy' + keep.copy.slice(1, 9) : view.name;
+        const name = keep.copy ? copyName('view', view.name, keep.copy) : view.name;
         entry.names.set(view.name, name);
         let cache = byName(state.caches, view.cache);
         if (cache?.table && keep.copySheet === sh.id) {
           const table = wb.tables.find(t => t.ooxmlPart === cache.table.part && t.sheet === sh);
           if (table) {
-            const copyName = cache.name + '_Copy' + keep.copy.slice(1, 9);
-            let copied = byName(state.caches, copyName);
-            if (!copied) { copied = { ...cache, name: copyName, copy: keep.copy, modelTable: table, drop: false,
+            const name = copyName('cache', cache.name, keep.copy);
+            let copied = byName(state.caches, name);
+            if (!copied) { copied = { ...cache, name, copy: keep.copy, guidMap: keep.guidMap, modelTable: table, drop: false,
               target: w.name('xl/slicerCaches', 'slicerCache', 'xml') }; state.caches.push(copied); }
             cache = copied;
           }
@@ -125,7 +144,7 @@
             w.name(view.part.slice(0, slash), view.part.slice(slash + 1).replace(/\d*\.xml$/, ''), 'xml') };
           state.groups.push(group);
         }
-        group.members.push({ name, original: view.name, cache: cache?.name || view.cache, uid: keep.copy });
+        group.members.push({ name, original: view.name, cache: cache?.name || view.cache, guidMap: keep.guidMap });
       }
     }
     // Definitions without a readable drawing have no editable owner to delete.
@@ -160,12 +179,12 @@
     if (keep.copy) {
       const patches = [];
       for (const e of all(K.parse(xml))) {
-        const attrs = payload(e) ? { name: entry.names.get(at(e, 'name')) } : e.localName === 'creationId' ? { id: keep.copy } : {};
+        const attrs = payload(e) ? { name: entry.names.get(at(e, 'name')) } : {};
         if (Object.keys(attrs).length) { const pos = L.xmlTree.source.get(e); patches.push({ start: pos.start, end: pos.end, value: K.attributes(K.raw(e), attrs) }); }
       }
       xml = K.patch(xml, patches);
     }
-    f = K.slice(f, xml); if (keep.copy) f = K.duplicate(f);
+    f = K.slice(f, xml);
     return state.pack.writer.emit(f, owner);
   };
   S.sheet = function (sh, generated, state, owner) {
@@ -197,8 +216,7 @@
       if (unchanged) { w.carry(pkg, g.part); continue; }
       const entries = g.members.map(v => {
         const el = nodes.find(e => at(e, 'name') === v.original), attrs = { name: v.name, cache: v.cache };
-        if (v.uid) for (const a of Array.from(el.attributes)) if (a.localName === 'uid') attrs[a.name] = v.uid;
-        return K.attributes(K.raw(el), attrs);
+        return K.remapGuids(K.attributes(K.raw(el), attrs), v.guidMap);
       });
       const xml = K.partXML(original, K.mergeBag(K.raw(tree), { ['{' + nodes[0].namespaceURI + '}' + nodes[0].localName]: entries }));
       if (g.target === g.part) w.claim(g.part, 'merged', g.target);
@@ -216,9 +234,7 @@
       }
       let xml = K.patch(original, patches);
       if (c.copy) {
-        const root = K.parse(xml), attrs = { name: c.name };
-        for (const a of Array.from(root.attributes)) if (a.localName === 'uid') attrs[a.name] = c.copy;
-        xml = K.attributes(xml, attrs);
+        xml = K.remapGuids(K.attributes(xml, { name: c.name }), c.guidMap);
         const t = all(K.parse(xml)).find(e => e.localName === 'tableSlicerCache'), pos = L.xmlTree.source.get(t);
         xml = K.patch(xml, [{ start: pos.start, end: pos.end, value: K.attributes(K.raw(t), { tableId: c.modelTable.id }) }]);
       }
@@ -228,6 +244,29 @@
         w.put(c.target, K.hoistNamespaces(xml), pkg.type(c.part)); w.carryRels(pkg, c.part, c.target);
       }
     }
+  };
+  // Workbook names follow their caches: dropped caches lose theirs, copies get one.
+  S.names = function (names, state) {
+    if (!state) return names;
+    const dropped = new Set(state.caches.filter(c => c.drop && !c.copy && c.defined).map(c => c.name.toLowerCase()));
+    const out = names.filter(n => n.scope != null || !dropped.has(n.name.toLowerCase()));
+    for (const c of state.caches) if (c.copy && !c.drop && c.defined) out.push({ ...c.defined, name: c.name });
+    return out;
+  };
+  // The same change patched into the file's own definedNames when the model's names are unchanged.
+  S.definedNames = function (tree, state) {
+    const caches = state?.caches || [], add = caches.filter(c => c.copy && !c.drop && c.defined);
+    const dropped = new Set(caches.filter(c => c.drop && !c.copy && c.defined).map(c => c.name.toLowerCase()));
+    if (!add.length && !dropped.size) return undefined;
+    const list = kids(tree).find(e => e.localName === 'definedNames'), ns = list?.namespaceURI || N.s;
+    const items = kids(list).filter(e => !(e.localName === 'definedName' && !e.hasAttribute('localSheetId') && dropped.has((at(e, 'name') || '').toLowerCase())))
+      .map(e => ({ name: at(e, 'name') || '', xml: K.raw(e) }));
+    for (const c of add) {   // Excel keeps the list sorted by name
+      const i = items.findIndex(e => e.name.toLowerCase() > c.name.toLowerCase());
+      items.splice(i < 0 ? items.length : i, 0, { name: c.name, xml: '<definedName xmlns="' + ns + '" name="' + L.xml.esc(c.name) + '">#N/A</definedName>' });
+    }
+    if (!items.length) return [];
+    return K.mergeBag(list ? K.raw(list) : '<definedNames xmlns="' + ns + '"/>', { ['{' + ns + '}definedName']: items.map(e => e.xml) });
   };
   S.workbook = function (fragment, xml, writer) {
     const state = writer.slicers; if (!state || !state.omitted.size && !state.caches.some(c => c.copy)) return xml;

@@ -18,6 +18,31 @@ const text = data => typeof data === 'string' ? data : new TextDecoder().decode(
 const kid = (el, name) => el.children.find(c => c.localName === name);
 const children = xml => K.parse(xml).children.map(e => e.localName);
 
+test('GUID copies remap selected definitions and references together, preserving user text and shared persons', () => {
+  const a = '{12345678-1234-4234-8234-123456789ABC}', b = '{12345678-1234-4234-8234-123456789ABD}';
+  const person = '{12345678-1234-4234-8234-123456789ABE}', guidMap = {};
+  const xml = `<thread id="${a}" personId="${person}" uri="${a}" xmlns:r="${N.rel}" r:id="${a}"><reply id="${b}" parentId="${a.toLowerCase()}"/><text>${a}</text><unknown value="${a}"/></thread>`;
+  const source = { id: a, text: a, reply: { id: b, parent: a }, personId: person,
+    fragment: { xml, deps: [], ids: [], source: 'source', part: 'thread.xml' } };
+  const options = { guidValues: [a, b], guidFields: ['id', 'parent', 'personId'] };
+  const copy = K.duplicate(source, { ...options, guidMap });
+  assert.notEqual(copy.id, source.id); assert.equal(copy.reply.parent, copy.id);
+  assert.equal(copy.personId, person); assert.equal(copy.text, a);
+  const tree = K.parse(copy.fragment.xml);
+  assert.equal(tree.getAttribute('id'), copy.id);
+  assert.equal(tree.children[0].getAttribute('parentId'), copy.id);
+  assert.equal(tree.children[0].getAttribute('id'), copy.reply.id);
+  assert.equal(tree.getAttribute('personId'), person); assert.equal(tree.getAttribute('uri'), a);
+  assert.equal(tree.getAttributeNS(N.rel, 'id'), a, 'relationships retain their own identity space');
+  assert.equal(tree.children[1].textContent, a); assert.equal(tree.children[2].getAttribute('value'), a);
+  assert.equal(K.remapGuids(xml, guidMap), copy.fragment.xml);
+  assert.deepEqual(JSON.parse(JSON.stringify(copy)), copy);
+  const second = K.duplicate(copy, { ...options, guidValues: [copy.id, copy.reply.id] });
+  assert.notEqual(second.id, copy.id); assert.equal(second.reply.parent, second.id);
+  assert.equal(K.parse(second.fragment.xml).children[0].getAttribute('parentId'), second.id);
+  assert.equal(source.fragment.xml, xml);
+});
+
 test('XML patches retain insertion order at shared boundaries and reject overlaps', () => {
   assert.equal(K.patch('abcdef', [
     { start: 1, end: 3, value: 'B' }, { start: 1, end: 1, value: 'I' },
@@ -48,6 +73,24 @@ test('feature notices describe actual assembled losses, survive drafts, and clea
   assert.equal(K.pendingLosses(doc).length, 0);
 });
 
+test('one object notice covers its opaque dependency graph without hiding unrelated losses', async () => {
+  const source = await pkg({
+    'frame.xml': '<payload/>', 'leaf.xml': '<payload/>', 'content.xml': '<content/>', 'unrelated.xml': '<payload/>',
+    '_rels/frame.xml.rels': rels(rel('rId1', N.rel + '/customXml', 'leaf.xml') + rel('rId2', N.rel + '/slide', 'content.xml')),
+    '_rels/leaf.xml.rels': rels(rel('rId1', N.rel + '/customXml', 'frame.xml')),
+    '_rels/content.xml.rels': rels(rel('rId1', N.rel + '/customXml', 'unrelated.xml')),
+  }), doc = {}, w = new K.Writer(source, { doc });
+  w.claim('content.xml', 'regenerated'); w.put('content.xml', '<content/>', 'application/xml');
+  assert.equal(w.coverLoss('missing-notice', ['unrelated.xml']), false);
+  w.loss({ id: 'converted-frame', what: 'The object was converted.', where: 'content.xml', action: 'conversion' });
+  assert.equal(w.coverLoss('converted-frame', ['frame.xml']), true);
+  const losses = w.finish().dropped;
+  assert.equal(losses.length, 2);
+  assert.deepEqual(losses.filter(e => e.id.startsWith('unreferenced:')).map(e => e.where), ['unrelated.xml']);
+  const restored = new K.Writer(source, { doc }); restored.carry(source, 'frame.xml');
+  assert.deepEqual(restored.finish().dropped, [], 'undo/recovery recomputes both the notice and its coverage');
+});
+
 test('rewritten parts hoist fragment declarations and Ignorable once, retaining scoped QName meanings', () => {
   const xml = `<w:document xmlns:w="${N.w}" xmlns:mc="${N.mc}" xmlns:x="urn:one" mc:Ignorable="x"><w:p xmlns:w="${N.w}" xmlns:z="urn:new" mc:Ignorable="z"><x:outer xmlns:x="urn:two" mc:Ignorable="x"><x:reset xmlns:x="urn:one"/><z:payload xmlns:z="urn:new"/></x:outer></w:p></w:document>`;
   const result = K.hoistNamespaces(xml), parsed = K.parse(result);
@@ -62,6 +105,16 @@ test('rewritten parts hoist fragment declarations and Ignorable once, retaining 
   assert.equal(K.hoistNamespaces(result), result);
 });
 
+test('namespace hoisting returns parts with nothing to hoist unchanged, without parsing them', () => {
+  const head = `<?xml version="1.0"?>\n<!-- a > b --><?pi x?><x:worksheet xmlns:x="${N.s}" xmlns:mc="${N.mc}" xmlns:a="urn:a" title="1 > 0" mc:Ignorable="a">`;
+  const plain = head + '<x:sheetData><x:row r="1"/></x:sheetData></x:worksheet>';
+  assert.equal(K.hoistNamespaces(plain), plain);
+  assert.equal(K.hoistNamespaces(plain.replace('<x:row r="1"/>', '<x:row r="1"/><x:c>&lt;')), plain.replace('<x:row r="1"/>', '<x:row r="1"/><x:c>&lt;'), 'malformed text is not parsed on the fast path');
+  const inner = head + '<x:sheetData><x:row xmlns:x="' + N.s + '" r="1"/></x:sheetData></x:worksheet>';
+  assert.equal(K.hoistNamespaces(inner).match(/xmlns:x=/g).length, 1, 'inner declarations still hoist');
+  const spaced = plain.replace('mc:Ignorable="a"', 'mc:Ignorable=" a "');
+  assert.match(K.hoistNamespaces(spaced), /mc:Ignorable="a"/, 'a root Ignorable list is still normalised');
+});
 test('namespace hoisting preserves default resets, attribute aliases, other MC properties and opaque bytes', async () => {
   const xml = `<root xmlns="urn:root" xmlns:k="${N.mc}"><a xmlns="urn:child" xmlns:n="urn:new" k:Ignorable="n" k:ProcessContent="n:payload"><b xmlns="urn:root"/><n:payload/></a><unqualified xmlns=""/></root>`;
   const result = K.hoistNamespaces(xml), parsed = K.parse(result);
@@ -106,6 +159,29 @@ test('new revision IDs avoid preserved changes and copied changes get distinct I
   assert.equal(id, '1');
   assert.match(w.emit(fragment, 'word/document.xml'), /w:id="2147483647"/);
   assert.match(w.emit(K.duplicate(fragment), 'word/document.xml'), /w:id="2"/);
+});
+
+test('revision-only parts reserve later IDs before emitting a copied section', async () => {
+  const source = `<w:body xmlns:w="${N.w}"><w:sectPr><w:sectPrChange w:id="10" w:author="Author"><w:sectPr/></w:sectPrChange></w:sectPr><w:sectPr><w:sectPrChange w:id="11" w:author="Author"><w:sectPr/></w:sectPrChange></w:sectPr></w:body>`;
+  const p = await pkg({ 'word/document.xml': source }), w = new K.Writer(p);
+  const fragments = p.xml('word/document.xml').children.map(e => K.fragment(e, { pkg: p, part: 'word/document.xml' }));
+  assert.match(w.emit(fragments[0], 'word/document.xml'), /w:id="10"/);
+  assert.match(w.emit(K.duplicate(fragments[1]), 'word/document.xml'), /w:id="12"/);
+  assert.match(w.emit(fragments[1], 'word/document.xml'), /w:id="11"/);
+  assert.equal(w.ids.fresh('document', 'revision'), '13');
+});
+
+test('picture-bullet definitions and copied level references share their numbering identity', async () => {
+  const source = `<w:numbering xmlns:w="${N.w}"><w:numPicBullet w:numPicBulletId="4"><w:pict/></w:numPicBullet><w:lvlPicBulletId w:val="4"/></w:numbering>`;
+  const p = await pkg({ 'word/numbering.xml': source }), w = new K.Writer(p);
+  const [definition, reference] = p.xml('word/numbering.xml').children.map(e => K.fragment(e, { pkg: p, part: 'word/numbering.xml' }));
+  const copied = K.duplicate({ definition, reference });
+  assert.match(w.emit(copied.reference, 'word/numbering.xml'), /w:val="5"/);
+  assert.match(w.emit(copied.definition, 'word/numbering.xml'), /w:numPicBulletId="5"/);
+  assert.match(w.emit(definition, 'word/numbering.xml'), /w:numPicBulletId="4"/);
+  assert.match(w.emit(reference, 'word/numbering.xml'), /w:val="4"/);
+  w.ids.reserve('numbering', 'numPicBulletId', '2147483647');
+  assert.equal(w.ids.fresh('numbering', 'numPicBulletId'), '1');
 });
 
 test('baseline bytes are immutable; the graph retains full types, sharing, cycles and external URLs', async () => {

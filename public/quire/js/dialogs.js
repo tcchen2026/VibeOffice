@@ -540,6 +540,7 @@
     function load() {
       const lv = abs.levels[cur];
       numText.value = (lv.text || '').replace(/%(\d)/g, (m, x) => `{${x}}`);
+      if (!Array.from(numStyle.options).some(o => o.value === lv.fmt)) numStyle.appendChild(h('option', { value: lv.fmt }, lv.custFmt || 'Original format'));
       numStyle.value = lv.fmt;
       start.set(lv.start == null ? 1 : lv.start);
       align.value = lv.jc || 'left';
@@ -559,9 +560,11 @@
     }
     function save() {
       const lv = abs.levels[cur];
+      if (lv.fmt !== numStyle.value) delete lv.custFmt;
       lv.fmt = numStyle.value;
       if (lv.fmt === 'bullet') { lv.text = bullet.raw || bullet.ch; lv.glyph = bullet.ch; lv.rPr = Object.assign({}, fontR, { font: bullet.font }); }
       else { lv.text = numText.value.replace(/\{(\d)\}/g, '%$1'); delete lv.glyph; lv.rPr = Object.assign({}, fontR); if (lv.rPr.font && /symbol|wingdings/i.test(lv.rPr.font)) delete lv.rPr.font; }
+      if (lv.pictureKeep && !L.preserve.pictureBulletIntact(lv)) delete lv.picture;
       lv.start = start.get();
       lv.jc = align.value;
       const at = alignedAt.get() || 0, ind = indentAt.get() || 0;
@@ -662,7 +665,7 @@
             let endP = cont.blocks[prevI];
             if (!endP || endP.t !== 'p') { endP = D.para(); cont.blocks.splice(tb.i, 0, endP); }
             D.touch(endP);
-            endP.sect = L.clone(D.sectOfBlock(d, Math.max(0, prevI)).sect);
+            if (!endP.sect) endP.sect = L.opc.duplicate(D.sectOfBlock(d, Math.max(0, prevI)).sect);
             const after = A().curSect();
             D.touchKey(after.holder, 'sect');
             const sc = after.holder === d ? d.sect : after.holder.sect;
@@ -756,7 +759,7 @@
           if (tb.i === 0) { for (const sc of D.sections(d)) assign(sc.endPara || d); return E.sel; }
           if (!endP || endP.t !== 'p') { endP = D.para(); cont.blocks.splice(tb.i, 0, endP); }
           D.touch(endP);
-          endP.sect = L.clone(D.sectOfBlock(d, tb.i - 1).sect);
+          if (!endP.sect) endP.sect = L.opc.duplicate(D.sectOfBlock(d, tb.i - 1).sect);
           endP.sect.type = endP.sect.type || 'nextPage';
           d._idxDirty = true;
           const after = A().curSect();

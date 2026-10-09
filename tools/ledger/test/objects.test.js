@@ -9,7 +9,8 @@ const K = L.opc, O = L.ops, output = process.env.OBJECT_RESULTS, results = [];
 const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
 const fixtures = { control: 'libreoffice__1b04d082bd6e__button-form-control.xlsx', ole: 'poi__2a89697e0dc6__58325_lt.xlsx',
   named: 'libreoffice__8d005aca2c1d__tdf161365.xlsx', mixed: 'poi__9028285d4065__bug66827.xlsx',
-  vml: 'libreoffice__9f0dba934b74__tdf166724_cellAnchor.xlsx', properties: 'poi__448351c00314__60512.xlsm' };
+  vml: 'libreoffice__9f0dba934b74__tdf166724_cellAnchor.xlsx', properties: 'poi__448351c00314__60512.xlsm',
+  notes: 'poi__c613ea5875fa__SimpleWithComments.xlsx', grouped: 'poi__90ce92f078bd__45540_form_Header.xlsx' };
 async function open(t, kind) {
   const file = path.join(corpus, 'excel', fixtures[kind]);
   if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus: ' + file); return; }
@@ -98,4 +99,94 @@ test('non-comment VML survives note changes and removal without rebuilding its s
   wb.undo.undo(); s = await save(wb, 'note-delete-undo'); equalBytes(s.pkg.bytes(vmlPart(wb.pkg)), wb.pkg.bytes(vmlPart(wb.pkg)));
   O.tx(wb, 'Insert note', () => O.setComment(sh, 9, 3, { r: 9, c: 3, author: 'Test', text: 'New note' }));
   s = await save(wb, 'note-add'); assert.deepEqual(caption(s.pkg).sort(), ['Note', 'Note', 'Text']);
+});
+
+// Spreadsheet VML: every part has its own idmap blocks and numbers its shapes inside them.
+const blocks = pkg => pkg.names.filter(n => n.endsWith('.vml')).map(part => {
+  const els = all(pkg, part), idmap = els.find(e => e.localName === 'idmap').getAttribute('data').split(',').map(Number);
+  return { part, idmap, ids: els.filter(e => e.namespaceURI === K.KNOWN_NS.v && e.localName !== 'shapetype').map(e => e.getAttributeNS(K.KNOWN_NS.o, 'spid') || e.getAttribute('id')).filter(id => /^_x0000_s\d+$/.test(id || '')).map(id => +id.slice(8)) };
+});
+const check = pkg => {
+  const list = blocks(pkg), maps = list.flatMap(b => b.idmap), ids = list.flatMap(b => b.ids);
+  assert.equal(new Set(maps).size, maps.length, 'unique idmap blocks ' + JSON.stringify(list.map(b => [b.part, b.idmap])));
+  assert.equal(new Set(ids).size, ids.length, 'unique note shape ids');
+  for (const b of list) for (const id of b.ids) assert(b.idmap.includes(Math.floor(id / 1024)), id + ' outside ' + b.part + ' block ' + b.idmap);
+  return list;
+};
+test('each sheet\'s notes use their own VML id block, across new, original and copied sheets', async t => {
+  const wb = await open(t, 'notes'); if (!wb) return;
+  const original = await save(wb, 'notes-save');
+  assert.deepEqual(check(original.pkg).map(b => b.idmap), [[1]]);
+  const fresh = O.addSheet(wb, 'New notes', 0);
+  O.setComment(fresh, 0, 0, { author: 'Test', text: 'first', visible: false });
+  O.setComment(fresh, 1, 1, { author: 'Test', text: 'second', visible: false });
+  O.copySheet(wb, wb.sheets[1], wb.sheets.length);
+  const saved = await save(wb, 'notes-new-and-copied');
+  assert.equal(check(saved.pkg).length, 3);
+  equalBytes(saved.pkg.bytes(vmlPart(wb.pkg)), wb.pkg.bytes(vmlPart(wb.pkg)), 'the original sheet keeps its VML bytes');
+});
+
+test('a sheet with more notes than one VML block holds gets further blocks, never another sheet\'s', async t => {
+  const wb = await open(t, 'notes'); if (!wb) return;
+  const many = O.addSheet(wb, 'Many notes', 0);
+  for (let r = 0; r < 1025; r++) many.comments.set(L.model.key(r, 0), { r, c: 0, author: 'Test', text: 'note ' + r, visible: false });
+  const original = wb.sheets[1];
+  for (let r = 0; r < 1100; r++) original.comments.set(L.model.key(r, 9), { r, c: 9, author: 'Test', text: 'more ' + r, visible: false });
+  O.copySheet(wb, wb.sheets[1], wb.sheets.length);
+  const list = check((await save(wb, 'notes-many-blocks')).pkg);
+  assert.equal(list.reduce((n, b) => n + b.ids.length, 0), 1025 + 2 * (1100 + 3));
+  assert(list.some(b => b.idmap.length > 1));
+});
+
+test('retained notes need no new ids: a reopened sheet keeps its single block and saves unchanged', async t => {
+  const wb = await open(t, 'notes'); if (!wb) return;
+  const sh = O.addSheet(wb, 'Half block', 0);
+  for (let r = 0; r < 512; r++) sh.comments.set(L.model.key(r, 0), { r, c: 0, author: 'Test', text: 'note ' + r, visible: false });
+  const first = await save(wb, 'notes-512');
+  const reopened = await L.xlsxRead.read(first.bytes); Object.defineProperty(reopened, '_input', { value: wb._input });
+  const second = await save(reopened, 'notes-512-resave');
+  for (const part of first.pkg.names.filter(n => n.endsWith('.vml'))) equalBytes(second.pkg.bytes(part), first.pkg.bytes(part), part);
+  assert.deepEqual(check(second.pkg).map(b => b.idmap.length), [1, 1]);
+});
+
+test('copied controls and OLE previews use their destination sheet blocks alongside notes', async t => {
+  for (const kind of ['control', 'ole']) {
+    const wb = await open(t, kind); if (!wb) return;
+    O.copySheet(wb, wb.sheets[0], wb.sheets.length);
+    O.copySheet(wb, wb.sheets[0], wb.sheets.length);
+    for (const sh of wb.sheets) O.setComment(sh, 100, 10, { r: 100, c: 10, author: 'Test', text: 'note' });
+    const saved = await save(wb, 'copy-blocks-' + kind), pkg = saved.pkg;
+    check(pkg);
+    for (const part of pkg.names.filter(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n))) {
+      const vml = pkg.rels(part).find(r => /\/vmlDrawing$/.test(r.type)); if (!vml) continue;
+      const previewIds = new Set(all(pkg, vml.part).map(e => e.getAttributeNS(K.KNOWN_NS.o, 'spid') || e.getAttribute('id')));
+      for (const e of all(pkg, part).filter(e => ['control', 'oleObject'].includes(e.localName))) assert(previewIds.has('_x0000_s' + e.getAttribute('shapeId')), 'sheet entry and VML preview use the same id');
+    }
+  }
+});
+
+test('copied control names follow the worksheet numeric sequence', async t => {
+  const wb = await open(t, 'control'); if (!wb) return;
+  const sh = wb.sheets[0], d = L.sheetObjects.copy(sh.drawings[0]); d.id++;
+  O.setDrawings(sh, sh.drawings.concat(d));
+  const pkg = (await save(wb, 'control-names')).pkg;
+  assert.deepEqual(all(pkg, sheet(pkg)).filter(e => e.localName === 'control').map(e => e.getAttribute('name')), ['Button 1', 'Button 2']);
+});
+
+test('nested VML controls and their worksheet entries share the copied sheet identities', async t => {
+  const wb = await open(t, 'grouped'); if (!wb) return;
+  const original = wb.sheets[0]; O.copySheet(wb, original, 1); O.copySheet(wb, original, 2);
+  const saved = await save(wb, 'nested-copy'), pkg = saved.pkg;
+  check(pkg);
+  equalBytes(pkg.bytes(vmlPart(wb.pkg)), wb.pkg.bytes(vmlPart(wb.pkg)), 'the original group stays byte-identical');
+  for (const part of pkg.names.filter(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n))) {
+    const vml = pkg.rels(part).find(r => /\/vmlDrawing$/.test(r.type)); if (!vml) continue;
+    const ids = new Set(all(pkg, vml.part).map(e => e.getAttributeNS(K.KNOWN_NS.o, 'spid') || e.getAttribute('id')));
+    const entries = all(pkg, part).filter(e => ['control', 'oleObject'].includes(e.localName));
+    assert(entries.length > 20, 'real fixture includes controls inside its VML group');
+    for (const e of entries) assert(ids.has('_x0000_s' + e.getAttribute('shapeId')), 'nested entry points to its preview');
+  }
+  wb.undo.undo(); wb.undo.undo();
+  const undone = await save(wb, 'nested-copy-undo');
+  equalBytes(undone.pkg.bytes(vmlPart(wb.pkg)), wb.pkg.bytes(vmlPart(wb.pkg)));
 });

@@ -289,7 +289,7 @@
             if (sh.type === 'table' && (k === 'n' || k === 's')) continue;
             fr.appendChild(h('div', { class: 'hd', 'data-h': k, 'data-sid': id, style: `left:${HPOS[k][0] * 100}%;top:${HPOS[k][1] * 100}%` }));
           }
-          if (sh.type !== 'table' && E.sel.length === 1 || (sh.type !== 'table' && E.sel.length > 1)) {
+          if (E.selected().every(M.canRotate)) {
             fr.appendChild(h('div', { class: 'hd-rotline' }));
             fr.appendChild(h('div', { class: 'hd hd-rot', 'data-h': 'rot', 'data-sid': id }));
           }
@@ -502,6 +502,7 @@
     if (!f) return;
     const sh = f.shape;
     if (hd === 'move') { startMove(e, sid, true); return; }
+    if (hd === 'rot' && !E.selected().every(M.canRotate)) return;
     E.scroller.setPointerCapture(e.pointerId);
     const orig = L.clone(sh);
     const others = E.sel.filter((x) => x !== sid).map((x) => E.find(x)).filter(Boolean).map((of) => ({ f: of, o: L.clone(of.shape) }));

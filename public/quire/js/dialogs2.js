@@ -32,7 +32,7 @@
       const cur = D.sectFor(d, pos.p);
       const np = O.splitPara(pos);
       D.touch(pos.p);
-      pos.p.sect = L.clone(cur);
+      pos.p.sect = L.opc.duplicate(cur);
       /* the new section (after the break) carries the requested start type */
       const after = A().curSect ? null : null; void after;
       const tb = D.topBlock(d, np.p);
@@ -96,7 +96,16 @@
     const mode = G.radios('pf-m', [['cont', '&Continue from previous section'], ['start', 'Start &at:']], pn.start != null ? 'start' : 'cont');
     const startAt = G.num(pn.start != null ? pn.start : 1, { min: 0, id: 'pf-start' });
     ui.dialog({ title: 'Page Number Format', width: 330, body: h('div', { class: 'col' }, G.f('Number &format:', fmt, 'wide'), chap, ui.group('Page numbering', mode, startAt)), buttons: [{ label: 'OK', primary: true, onClick: () => {
-      E.edit('Page Number Format', () => { D.touchKey(s.holder, 'sect'); const sc = s.holder === d ? d.sect : s.holder.sect; sc.pgNum = { fmt: fmt.value, start: mode.get() === 'start' ? startAt.get() : null, chapStyle: chap.input.checked ? 1 : undefined }; return E.sel; });
+      E.edit('Page Number Format', () => {
+        D.touchKey(s.holder, 'sect');
+        const sc = s.holder === d ? d.sect : s.holder.sect;
+        sc.pgNum = Object.assign({}, sc.pgNum, { fmt: fmt.value, start: mode.get() === 'start' ? startAt.get() : null });
+        if (chap.input.checked !== !!pn.chapStyle) {
+          if (chap.input.checked) sc.pgNum.chapStyle = 1;
+          else { delete sc.pgNum.chapStyle; delete sc.pgNum.chapSep; }
+        }
+        return E.sel;
+      });
     } }, { label: 'Cancel' }] });
   }
 

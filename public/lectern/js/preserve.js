@@ -100,6 +100,11 @@
     return output;
   };
   P.reportLosses = writer => {
+    const pkg = writer.pkg, losses = writer.doc.losses || [];
+    if (pkg) for (const record of writer.doc.keep?.frames || []) {
+      const notice = losses.find(e => e.phase === 'save' && (e.id === 'frame:' + record.key || e.id.startsWith('frame:' + pkg.id + '|' + record.part + '|' + record.key + '|')));
+      if (notice) writer.coverLoss(notice.id, pkg.rels(record.part).filter(r => !r.external && record.rels.includes(r.id)).map(r => r.part));
+    }
     K.reportFeatures(writer, {
       accepts: el => ['sld', 'notes', 'sldMaster', 'sldLayout'].includes(el.localName) && [N.p, 'http://purl.oclc.org/ooxml/presentationml/main'].includes(el.namespaceURI),
       classify: el => ['http://purl.oclc.org/ooxml/presentationml/main', N.p].includes(el.namespaceURI) && el.localName === 'control' ? 'controls' :
@@ -186,16 +191,19 @@
   const missing = fragment => fragment.deps.find(d => !d.type || !d.external && !K.package(d.source)?.has(d.part));
   P.valid = shape => !!shape.keep?.media && shape.keep.media.content === value(shape, CONTENT) && !missing(shape.keep.media.frame);
   const shapeRefs = el => all(el).flatMap(e => e.hasAttribute('spid') ? [e.getAttribute('spid')] : []);
+  // Targets that exist only inside a graphic frame: a diagram, chart or OLE part, or the frame's own build entry.
+  const partRefs = el => all(el).flatMap(e => e.localName === 'spTgt' && kids(e).some(k => ['graphicEl', 'oleChrtEl', 'subSp'].includes(k.localName)) || ['bldGraphic', 'bldDgm', 'bldOleChart'].includes(e.localName) && e.hasAttribute('spid') ? [e.getAttribute('spid')] : []);
   // Prune the timing property, never the slide content DOM. Atomic behaviours and
   // their now-empty containers go with their deleted target; sibling sequences stay.
-  P.pruneTiming = function (xml, allowed, media = allowed, modeled = false) {
+  // converted: ids of graphic frames now written as plain shapes, whose part-level targets are gone.
+  P.pruneTiming = function (xml, allowed, media = allowed, modeled = false, converted = new Set()) {
     const root = K.parse(xml), text = XML.source.get(root).text;
     const atomic = new Set(['video', 'audio', 'cmd', 'set', 'anim', 'animClr', 'animEffect', 'animMotion', 'animRot', 'animScale', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic']);
     function visit(el, inMain = false) {
       const pos = XML.source.get(el), tag = el.localName, refs = shapeRefs(el), ctn = kid(el, 'cTn');
       inMain ||= tag === 'cTn' && el.getAttribute('nodeType') === 'mainSeq';
       const cls = ctn?.getAttribute('presetClass');
-      if (atomic.has(tag) && refs.some(id => !allowed.has(id))) return '';
+      if (atomic.has(tag) && (refs.some(id => !allowed.has(id)) || partRefs(el).some(id => converted.has(id)))) return '';
       if (['video', 'audio', 'cmd'].includes(tag) && refs.some(id => !media.has(id))) return '';
       if (tag === 'par' && cls && (modeled && inMain && ['entr', 'exit', 'emph', 'path'].includes(cls) || cls === 'mediacall' && refs.some(id => !media.has(id)))) return '';
       if (tag === 'seq' && ctn?.getAttribute('nodeType') === 'interactiveSeq' && shapeRefs(kid(ctn, 'stCondLst')).some(id => !allowed.has(id))) return '';
@@ -351,7 +359,12 @@
     const live = new Set(); L.model.walk(slide.shapes, shape => { live.add(shape.id); return true; });
     const previous = slide.keep?.anims ? JSON.parse(slide.keep.anims).filter(a => live.has(a.sid)) : [];
     const edited = !!kept && JSON.stringify(previous) !== P.anims(slide);
-    if (xml) xml = P.pruneTiming(xml, allowed, media, edited);
+    const converted = ctx.convertedFrames || new Map();
+    if (xml) {
+      const targets = new Set(partRefs(K.parse(xml)));
+      for (const [id, record] of converted) if (targets.has(id)) ctx.writer.loss({ id: 'frame-timing:' + record.key, what: record.label + ': its animation by parts was removed with the original object.', where: ctx.part, action: 'drop' });
+      xml = P.pruneTiming(xml, allowed, media, edited, converted);
+    }
     if (!xml) {
       const rootId = ctx.writer.ids.fresh(ctx.part, 'timing'), mainId = ctx.writer.ids.fresh(ctx.part, 'timing');
       xml = '<p:timing xmlns:p="' + N.p + '"><p:tnLst><p:par><p:cTn id="' + rootId + '" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="' + mainId + '" dur="indefinite" nodeType="mainSeq"><p:childTnLst/></p:cTn></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>';
@@ -395,7 +408,7 @@
       const list = kid(node, 'childTnLst');
       xml = append(xml, list || node, list ? add[where] : '<p:childTnLst>' + add[where] + '</p:childTnLst>');
     }
-    xml = P.pruneTiming(xml, allowed, media);
+    xml = P.pruneTiming(xml, allowed, media, false, converted);
     if (!media.size && !all(K.parse(xml)).some(e => ['audio', 'video', 'cmd', 'set', 'anim', 'animEffect', 'animClr', 'animMotion', 'animRot', 'animScale'].includes(e.localName))) return '';
     return xml;
   };

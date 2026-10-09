@@ -9,6 +9,7 @@
   const T = L.txt;
   const editing = () => L.te.active();
   const hasSel = () => E().selected().length > 0;
+  const canRotate = () => hasSel() && E().selected().every(L.model.canRotate);
   const hasSlide = () => !!E().slide();
   const normal = () => A().view === 'normal' || A().view === 'master';
   const textCtx = () => editing() || L.fmt.textShapes().length > 0;
@@ -171,11 +172,11 @@
   C('distH', { label: 'Distribute &Horizontally', icon: 'distH', enabled: () => E().selected().length > 1 || A().opts.alignToSlide, run: () => A().distribute('h') });
   C('distV', { label: 'Distribute &Vertically', icon: 'distV', enabled: () => E().selected().length > 1 || A().opts.alignToSlide, run: () => A().distribute('v') });
   C('alignToSlide', { label: 'Relative to &Slide', checked: () => !!A().opts.alignToSlide, run: () => { A().opts.alignToSlide = !A().opts.alignToSlide; } });
-  C('freeRotate', { label: 'Free Ro&tate', icon: 'freeRotate', enabled: hasSel, run: () => ui.toast('Drag the green rotation handle to rotate. Hold Shift for 15° steps.') });
-  C('rotateLeft', { label: 'Rotate &Left 90°', icon: 'rotateL', tip: 'Rotate Left 90°', enabled: hasSel, run: () => A().rotate(-90) });
-  C('rotateRight', { label: 'Rotate &Right 90°', icon: 'rotateR', enabled: hasSel, run: () => A().rotate(90) });
-  C('flipH', { label: 'Flip &Horizontal', icon: 'flipH', enabled: hasSel, run: () => A().flip('h') });
-  C('flipV', { label: 'Flip &Vertical', icon: 'flipV', enabled: hasSel, run: () => A().flip('v') });
+  C('freeRotate', { label: 'Free Ro&tate', icon: 'freeRotate', enabled: canRotate, run: () => ui.toast('Drag the green rotation handle to rotate. Hold Shift for 15° steps.') });
+  C('rotateLeft', { label: 'Rotate &Left 90°', icon: 'rotateL', tip: 'Rotate Left 90°', enabled: canRotate, run: () => A().rotate(-90) });
+  C('rotateRight', { label: 'Rotate &Right 90°', icon: 'rotateR', enabled: canRotate, run: () => A().rotate(90) });
+  C('flipH', { label: 'Flip &Horizontal', icon: 'flipH', enabled: canRotate, run: () => A().flip('h') });
+  C('flipV', { label: 'Flip &Vertical', icon: 'flipV', enabled: canRotate, run: () => A().flip('v') });
   C('nudgeUp', { label: '&Up', enabled: hasSel, run: () => A().nudge(0, -1) });
   C('nudgeDown', { label: '&Down', enabled: hasSel, run: () => A().nudge(0, 1) });
   C('nudgeLeft', { label: '&Left', enabled: hasSel, run: () => A().nudge(-1, 0) });

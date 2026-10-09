@@ -414,6 +414,7 @@
     const hS = ui.spin({ value: IN(s0.h), min: 0, max: 56, step: 0.01, unit: '"', onChange: (v) => { ch.h = PT(v); if (lock.input.checked && s0.h) { ch.w = s0.w * (PT(v) / s0.h); wS.set(IN(ch.w)); } } });
     const wS = ui.spin({ value: IN(s0.w), min: 0, max: 56, step: 0.01, unit: '"', onChange: (v) => { ch.w = PT(v); if (lock.input.checked && s0.w) { ch.h = s0.h * (PT(v) / s0.w); hS.set(IN(ch.h)); } } });
     const rS = ui.spin({ value: s0.rot || 0, min: -360, max: 360, step: 1, unit: '°', dec: 1, onChange: (v) => { ch.rot = ((v % 360) + 360) % 360; } });
+    rS.setDisabled(!shapes.every(M.canRotate));
     const lock = ui.check('Lock &aspect ratio', !!s0.lockAspect, (v) => { ch.lockAspect = v; });
     let natW = 0, natH = 0;
     const origLbl = h('div', { class: 'tp-note' });
@@ -494,7 +495,7 @@
                 if (s.type === 'group') { if (ch.x != null || ch.y != null) M.translate(s, 0, 0); M.scaleGroup(s, ob, s); }
                 if (s.type === 'table' && (ch.w != null || ch.h != null)) E().scaleTable(s, Object.assign(L.clone(s), ob));
               } else { if (ch.w != null) s.w = ch.w; if (ch.h != null) s.h = ch.h; }
-              if (ch.rot != null && s.type !== 'table') s.rot = ch.rot;
+              if (ch.rot != null && M.canRotate(s)) s.rot = ch.rot;
               if (ch.lockAspect != null) s.lockAspect = ch.lockAspect;
               if (s.type === 'image') {
                 if (ch.crop) {

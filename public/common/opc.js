@@ -322,8 +322,8 @@
     }
     key(source, scope, kind, id) { return JSON.stringify([source, scope, kind, this.canonical(id)]); }
     copy(instance, definitions) { this.copies.set(instance, new Set(definitions.map(d => this.key(d.source, d.scope, d.kind, d.id)))); }
-    bind(source, scope, kind, id, target, destination = scope) {
-      this.mapping.set(JSON.stringify([this.key(source, scope, kind, id), destination, '']), this.reserve(destination, kind, target));
+    bind(source, scope, kind, id, target, destination = scope, copy = '') {
+      this.mapping.set(JSON.stringify([this.key(source, scope, kind, id), destination, copy || '']), this.reserve(destination, kind, target));
     }
     resolve(source, scope, kind, id, options = {}) {
       const original = this.key(source, scope, kind, id), dest = options.scope || scope;
@@ -370,6 +370,7 @@
     else if (isS && name === 'cacheId') { kind = 'cache'; scope = 'workbook'; definition = tag === 'pivotCache'; }
     else if (isW && name === 'val' && ['numId', 'abstractNumId'].includes(tag)) { kind = tag; scope = 'numbering'; }
     else if (isW && ((tag === 'num' && name === 'numId') || (tag === 'abstractNum' && name === 'abstractNumId'))) { kind = name; scope = 'numbering'; definition = true; }
+    else if (isW && (tag === 'numPicBullet' && name === 'numPicBulletId' || tag === 'lvlPicBulletId' && name === 'val')) { kind = 'numPicBulletId'; scope = 'numbering'; definition = tag === 'numPicBullet'; }
     else if (isW && tag === 'id' && name === 'val' && el.parentNode?.localName === 'sdtPr') { kind = 'control'; scope = 'document'; definition = true; }
     else if (isS && name === 'dxfId') { kind = 'dxf'; scope = 'styles'; }
     return kind ? { kind, scope, id: a.value, definition } : null;
@@ -429,8 +430,46 @@
     });
     return { ...fragment, xml, deps, ids, record: null };
   };
-  K.duplicate = function (object) {
+  K.guid = () => '{' + root.crypto.randomUUID().toUpperCase() + '}';
+  const isGuid = value => /^\{?[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}\}?$/i.test(value || '');
+  const guidKey = value => '{' + value.replace(/[{}]/g, '').toUpperCase() + '}';
+  // Only identity attributes are rewritten. GUID-looking text, links, extension
+  // URIs and other user data are not identities merely because they look alike.
+  K.remapGuids = function (xml, mapping, names = ['uid', 'id', 'parentId', 'personId', 'mentionId', 'mentionpersonId']) {
+    if (!mapping || typeof mapping !== 'function' && !Object.keys(mapping).length) return xml;
+    const edits = [];
+    walk(K.parse(xml), el => {
+      for (const a of attrs(el)) if (names.includes(a.localName) && isGuid(a.value) && !relAttr(el, a)) {
+        const next = typeof mapping === 'function' ? mapping(a.value) : mapping[a.value] || mapping[guidKey(a.value)];
+        if (next && next !== a.value) {
+          const p = XML.source.get(el).attrs.find(p => p.name === a.name);
+          edits.push({ start: p.start, end: p.end, value: next });
+        }
+      }
+    });
+    return K.patch(xml, edits);
+  };
+  K.duplicate = function (object, options = {}) {
     const copy = JSON.parse(JSON.stringify(object)), fragments = [];
+    // GUID definitions can also live in model fields and in parts emitted by an
+    // app-owned writer. Return their shared mapping through guidMap so those
+    // parts use the same identities. The copy owns the map, including in history.
+    const guidMap = options.guidMap || {}, fields = options.guidFields || [], names = options.guidAttributes || [];
+    const allocate = id => { if (isGuid(id)) { const key = guidKey(id); guidMap[key] ||= guidMap[id] || K.guid(); guidMap[id] = guidMap[key]; } };
+    for (const id of options.guidValues || []) allocate(id);
+    const scan = xml => { if (names.length) walk(K.parse(xml), el => { for (const a of attrs(el)) if (names.includes(a.localName) && !relAttr(el, a)) allocate(a.value); }); };
+    for (const xml of options.guidSources || []) scan(xml);
+    function guids(v, rewrite = false) {
+      if (!v || typeof v !== 'object') return;
+      for (const [key, value] of Object.entries(v)) {
+        if (typeof value === 'string' && key === 'xml' && /^\s*</.test(value)) {
+          if (rewrite) v[key] = K.remapGuids(value, guidMap); else scan(value);
+        } else if (typeof value === 'string' && fields.includes(key)) {
+          if (rewrite) v[key] = guidMap[value] || (isGuid(value) && guidMap[guidKey(value)]) || value; else if (!options.guidValues) allocate(value);
+        } else if (value && typeof value === 'object') guids(value, rewrite);
+      }
+    }
+    if (names.length || fields.length || options.guidValues?.length) { guids(copy); guids(copy, true); }
     const visit = v => {
       if (!v || typeof v !== 'object') return;
       if (typeof v.xml === 'string' && Array.isArray(v.deps) && Array.isArray(v.ids)) { fragments.push(v); return; }
@@ -577,7 +616,30 @@
   // Fragments are self-contained in history/clipboard, but a rewritten part
   // needs only one set of namespace declarations. Keep real local rebindings:
   // removing an inner reset after a different ancestor binding changes names.
+  // End of the root start tag, past the declaration, comments and processing instructions (-1 if unsure).
+  function rootOpenEnd(xml) {
+    let i = 0;
+    for (;;) {
+      i = xml.indexOf('<', i); if (i < 0) return -1;
+      if (xml[i + 1] === '?') { i = xml.indexOf('?>', i); if (i < 0) return -1; i += 2; continue; }
+      if (xml.startsWith('<!--', i)) { i = xml.indexOf('-->', i); if (i < 0) return -1; i += 3; continue; }
+      if (xml[i + 1] === '!') return -1;
+      break;
+    }
+    for (let j = i + 1, quote = null; j < xml.length; j++) {
+      const c = xml[j];
+      if (quote) { if (c === quote) quote = null; } else if (c === '"' || c === "'") quote = c; else if (c === '>') return j + 1;
+    }
+    return -1;
+  }
   K.hoistNamespaces = function (xml) {
+    // Fast path for large generated parts (worksheets): nothing below the root declares a
+    // namespace or lists Ignorable, and the root's own list is already normal.
+    const end = rootOpenEnd(xml);
+    if (end > 0 && xml.indexOf('xmlns', end) < 0 && xml.indexOf('Ignorable', end) < 0) {
+      const m = /[\s:]Ignorable\s*=\s*(["'])([^"']*)\1/.exec(xml.slice(0, end));
+      if (!m || m[2] === m[2].trim().split(/\s+/).filter(Boolean).join(' ')) return xml;
+    }
     const tree = K.parse(xml), rootPos = XML.source.get(tree);
     const bindings = new Map(), additions = {}, edits = [], ignorable = new Set();
     const declarations = new Map(), nodes = [];
@@ -853,12 +915,13 @@
       if (pkg?.main && pkg.xml(pkg.main)?.namespaceURI?.startsWith(strictBase)) this.standardFormatNotice();
       this.names = new Set((pkg?.names || []).map(n => n.toLowerCase())); this.mapping = new Map();
       this.classes = new Map(); this.omitted = new Set(); this.carried = new Set(); this.relationships = new Map(); this.emitted = new Set();
+      this.explained = new Set();
       this.ids = new Identities();
       if (pkg) {
         for (const name of pkg.names) {
           this.mapping.set(this.key(pkg, name), name);
           const text = /\.(xml|vml)$/i.test(name) ? pkg.text(name) : null;
-          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|sdtPr|dxf/.test(text)) continue;
+          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|PicBulletId|sdtPr|dxf|_x0000_|PrChange|numberingChange|cellIns|cellDel|cellMerge|\b(?:ins|del|moveFrom|moveTo)\b/.test(text)) continue;
           let tree; try { tree = K.parse(text); } catch (e) { continue; } // carried opaque if the original XML is malformed
           walk(tree, el => {
             if (el.localName === 'dxfs' && el.namespaceURI === NS.s) elements(el).forEach((e, i) => this.ids.reserve('styles', 'dxf', i));
@@ -869,6 +932,20 @@
       }
     }
     loss(entry) { return K.loss(this.doc, { ...entry, phase: 'save' }); }
+    // A specific object notice accounts for its unreachable opaque dependencies.
+    // This changes reporting only; shared parts can still be carried by another
+    // owner, and traversal stops at every merged/regenerated content boundary.
+    coverLoss(id, parts) {
+      if (!this.pkg || !this.doc.losses?.some(e => e.id === id && e.phase === 'save')) return false;
+      const pending = parts.slice();
+      while (pending.length) {
+        const part = pending.pop(), key = this.key(this.pkg, part);
+        if (!this.pkg.has(part) || this.explained.has(key) || this.mode(this.pkg, part) !== 'opaque') continue;
+        this.explained.add(key);
+        for (const rel of this.pkg.rels(part)) if (!rel.external) pending.push(rel.part);
+      }
+      return true;
+    }
     standardFormatNotice() { this.loss({ id: 'ooxml:strict-to-transitional', what: 'This file will be saved in the standard Office Open XML format (Transitional).', where: 'Strict Open XML', action: 'conversion' }); }
     key(pkg, part) { return JSON.stringify([pkg.id, part]); }
     name(dir, base, ext) {
@@ -1048,7 +1125,7 @@
       }
       if (this.pkg) for (const name of this.pkg.names) {
         if (name === '[Content_Types].xml' || name.endsWith('.rels') || this.mode(this.pkg, name) !== 'opaque') continue;
-        if (!this.parts.has(this.mapping.get(this.key(this.pkg, name))) && !this.omitted.has(this.key(this.pkg, name))) {
+        if (!this.parts.has(this.mapping.get(this.key(this.pkg, name))) && !this.omitted.has(this.key(this.pkg, name)) && !this.explained.has(this.key(this.pkg, name))) {
           this.loss({ id: 'unreferenced:' + this.pkg.id + ':' + name, what: 'This preserved part has no remaining reference in the saved file.', where: name, action: 'drop' });
         }
       }

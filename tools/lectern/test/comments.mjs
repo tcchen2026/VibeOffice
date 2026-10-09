@@ -11,7 +11,7 @@ const legacy = 'poi__788ee515a5cd__45545_Comment.pptx';
 const cases = [
   ...['copy', 'delete', 'paste', 'draft'].map(scenario => ({ file: legacy, scenario })),
   { file: 'openxml-sdk__5085cad8803f__[HC]viewPr-PresentationViewProperties-showComments-1.pptx', scenario: 'strict-copy' },
-  ...['save', 'copy', 'copy-shape', 'delete-shape', 'text', 'paste', 'draft'].map(scenario => ({ file: 'modern-comments.pptx', scenario: 'modern-' + scenario })),
+  ...['save', 'copy', 'copy-shape', 'delete-shape', 'copy-delete-shape', 'text', 'paste', 'draft'].map(scenario => ({ file: 'modern-comments.pptx', scenario: 'modern-' + scenario })),
 ];
 fs.mkdirSync(out, { recursive: true });
 const match = new RegExp(process.argv[4] || ''), selected = cases.filter(c => match.test(c.scenario));
@@ -79,7 +79,8 @@ async function run(o) {
         for (const e of all(root)) {
           if (e.localName === 'sldMk') {
             check(e.getAttribute('sldId') === id.getAttribute('id'), 'Comment anchors another slide');
-            if (e.hasAttribute('cId')) check(all(slide).some(c => c.localName === 'creationId' && c.getAttribute('val') === e.getAttribute('cId')), 'Slide creation identity mismatch');
+            check(e.hasAttribute('cId'), 'Comment slide marker is missing its creation ID');
+            check(all(slide).some(c => c.localName === 'creationId' && c.getAttribute('val') === e.getAttribute('cId')), 'Slide creation identity mismatch');
           }
           if (/^(sp|grpSp|graphicFrame|cxnSp|pic|ink)Mk$/.test(e.localName)) {
             const shape = shapes.get(e.getAttribute('id')); check(shape, 'Comment shape missing');
@@ -110,7 +111,11 @@ async function run(o) {
     A.pasteItem(clip); expected += owner.keep.comments.length;
   } else if (scenario !== 'save') {
     H.push('Comment ' + scenario);
-    if (['copy', 'draft'].includes(scenario)) { M.insertSlides(source, 1, [M.dupSlide(owner)]); expected += owner.keep.comments.length; }
+    if (['copy', 'draft', 'copy-delete-shape'].includes(scenario)) {
+      const copy = M.dupSlide(owner);
+      if (scenario === 'copy-delete-shape') copy.shapes = copy.shapes.filter(s => !s.keep?.commentAnchor);
+      M.insertSlides(source, 1, [copy]); expected += owner.keep.comments.length;
+    }
     else if (scenario === 'delete') { source.slides.splice(source.slides.indexOf(owner), 1); expected -= owner.keep.comments.length; }
     else {
       const shape = owner.shapes.find(s => s.keep?.commentAnchor); check(shape, 'Anchored shape missing');
@@ -135,6 +140,6 @@ async function run(o) {
     await __corpusHooks.open(new File([blob], info.draftName || info.name), { draft: true, name: info.name, saved: true, lossState: info.lossState });
     await save('recovered');
   }
-  if (scenario === 'delete-shape' || scenario === 'text') check(L.pres.losses.some(e => e.id.startsWith('comment-anchor:')), 'Anchor conversion was not reported');
+  if (['delete-shape', 'copy-delete-shape', 'text'].includes(scenario)) check(L.pres.losses.some(e => e.id.startsWith('comment-anchor:')), 'Anchor conversion was not reported');
   return { status: 'ok', expectedSlides, artifacts, losses: L.pres.losses };
 }

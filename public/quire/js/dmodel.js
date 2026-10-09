@@ -269,6 +269,9 @@
   };
   D.addNum = function (doc, abs) {
     const nb = doc.numbering;
+    // Source definitions need an independent fragment identity. Fresh templates
+    // retain this API's in-place id assignment (also used by Markdown import).
+    if (L.opc && abs.x) abs = L.opc.duplicate(abs);
     let aid = 0; while (nb.abs[aid] != null) aid++;
     abs.id = aid;
     nb.abs[aid] = abs;

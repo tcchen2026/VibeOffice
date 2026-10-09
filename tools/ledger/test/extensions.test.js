@@ -73,6 +73,9 @@ test('moving, copying and deleting bar ranges keeps links balanced through undo 
   assert.equal(all(moved.tree).find(e => e.namespaceURI === E.XM && e.localName === 'sqref').textContent, 'A3');
   O.copySheet(wb, sh, 1); const copied = await save(wb, 'copy-sheet');
   assert.equal((await L.xlsxRead.read(copied.bytes)).sheets[1].cf[0].rules[0].x14id === sh.cf[0].rules[0].x14id, false);
+  const repeat = await save(wb, 'copy-sheet-repeat');
+  const ids = pkg => pkg.names.filter(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n)).flatMap(p => xrules(pkg.xml(p)).map(e => e.getAttribute('id')));
+  assert.deepEqual(ids(repeat.pkg), ids(copied.pkg), 'copied data-bar identities remain stable between saves');
   O.tx(wb, 'Remove formatting', () => O.removeRangeRules(sh, { r1: 2, c1: 0, r2: 2, c2: 0 }, 'cf'));
   assert.equal(xrules((await save(wb, 'delete-rule')).tree).length, 0);
   wb.undo.undo(); const undone = await save(wb, 'delete-rule-undo'); assert.equal(xrules(undone.tree).length, 1);

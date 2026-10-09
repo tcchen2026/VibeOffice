@@ -18,7 +18,9 @@ picture = match[1]
 width = int(re.search(r'<a:ext cx="(\d+)"', picture)[1])
 x = int(re.search(r'<a:off x="(\d+)"', picture)[1])
 first = picture.replace(f'cx="{width}"', f'cx="{width // 2}"')
+first = re.sub(r'<a:xfrm\b[^>]*>', '<a:xfrm rot="1800000" flipH="1">', first, count=1)
 second = re.sub(r'(<p:cNvPr\b[^>]*\bid=")\d+', r'\g<1>100001', first)
+second = second.replace('rot="1800000" flipH="1"', 'rot="4200000" flipV="1"', 1)
 second = second.replace(f'x="{x}"', f'x="{x + width // 2}"')
 xml = xml[:match.start(1)] + first + second + xml[match.end(1):]
 parts[name] = xml.encode()

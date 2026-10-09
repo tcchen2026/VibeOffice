@@ -188,7 +188,7 @@
       x += `<w:pgBorders w:offsetFrom="${b.offsetFrom === 'page' ? 'page' : 'text'}"${b.display && b.display !== 'allPages' ? ` w:display="${b.display}"` : ''}>${['top', 'left', 'bottom', 'right'].map((k) => (b[k] && b[k].val !== 'nil' ? borderEl(k, Object.assign({ space: b.offsetFrom === 'page' ? 24 : 4 }, b[k])) : '')).join('')}</w:pgBorders>`;
     }
     if (s.lnNum) x += `<w:lnNumType w:countBy="${s.lnNum.countBy || 1}"${s.lnNum.start ? ` w:start="${s.lnNum.start}"` : ''}${s.lnNum.distance ? ` w:distance="${tw(s.lnNum.distance)}"` : ''} w:restart="${s.lnNum.restart || 'newPage'}"/>`;
-    if (s.pgNum && (s.pgNum.start != null || (s.pgNum.fmt && s.pgNum.fmt !== 'decimal'))) x += `<w:pgNumType${s.pgNum.fmt && s.pgNum.fmt !== 'decimal' ? ` w:fmt="${s.pgNum.fmt}"` : ''}${s.pgNum.start != null ? ` w:start="${s.pgNum.start}"` : ''}/>`;
+    if (s.pgNum && (s.pgNum.start != null || s.pgNum.chapStyle || s.pgNum.chapSep || (s.pgNum.fmt && s.pgNum.fmt !== 'decimal'))) x += `<w:pgNumType${s.pgNum.fmt && s.pgNum.fmt !== 'decimal' ? ` w:fmt="${X(s.pgNum.fmt)}"` : ''}${s.pgNum.start != null ? ` w:start="${s.pgNum.start}"` : ''}${s.pgNum.chapStyle ? ` w:chapStyle="${X(s.pgNum.chapStyle)}"` : ''}${s.pgNum.chapSep ? ` w:chapSep="${X(s.pgNum.chapSep)}"` : ''}/>`;
     const c = s.cols || { n: 1 };
     if (c.n > 1 && c.eq === false && c.w && c.w.length) x += `<w:cols w:num="${c.n}" w:equalWidth="0"${c.sep ? ' w:sep="1"' : ''}>${c.w.map((cc) => `<w:col w:w="${tw(cc.w)}" w:space="${tw(cc.space || 0)}"/>`).join('')}</w:cols>`;
     else x += `<w:cols w:space="${tw(c.space != null ? c.space : 36)}"${c.n > 1 ? ` w:num="${c.n}"` : ''}${c.sep ? ' w:sep="1"' : ''}/>`;
@@ -197,8 +197,8 @@
     if (s.titlePg) x += '<w:titlePg/>';
     if (s.textDir) x += `<w:textDirection w:val="${s.textDir}"/>`;
     if (s.bidi) x += '<w:bidi/>';
-    x += s.docGrid && s.docGrid.linePitch ? `<w:docGrid${s.docGrid.type ? ` w:type="${s.docGrid.type}"` : ''} w:linePitch="${s.docGrid.linePitch}"/>` : '<w:docGrid w:linePitch="360"/>';
-    return `<w:sectPr>${x}</w:sectPr>`;
+    x += s.docGrid && (s.docGrid.type || s.docGrid.linePitch || s.docGrid.charSpace) ? `<w:docGrid${s.docGrid.type ? ` w:type="${X(s.docGrid.type)}"` : ''}${s.docGrid.linePitch ? ` w:linePitch="${s.docGrid.linePitch}"` : ''}${s.docGrid.charSpace ? ` w:charSpace="${s.docGrid.charSpace}"` : ''}/>` : '<w:docGrid w:linePitch="360"/>';
+    return L.preserve.propertyXML('sectPr', s, x, ctx);
   }
   function notePrXML(tag, pr, inSettings) {
     let x = '';
@@ -364,7 +364,10 @@
       case 'text': return runWrap(r, textXML(it.text, del), ctx);
       case 'tab': return runWrap(r, '<w:tab/>', ctx);
       case 'ptab': return runWrap(r, `<w:ptab w:relativeTo="${it.rel || 'margin'}" w:alignment="${it.al || 'left'}" w:leader="${it.leader || 'none'}"/>`, ctx);
-      case 'br': return runWrap(r, it.type === 'page' ? '<w:br w:type="page"/>' : it.type === 'column' ? '<w:br w:type="column"/>' : `<w:br${it.clear ? ` w:clear="${it.clear}"` : ''}/>`, ctx);
+      case 'br':
+        if (it.recoveredPlacement) ctx.writer.loss({ id: 'break-placement:' + ctx.part, where: ctx.part, action: 'conversion',
+          what: 'Page or line breaks outside their required text runs were moved into standard paragraphs and runs.' });
+        return runWrap(r, it.type === 'page' ? '<w:br w:type="page"/>' : it.type === 'column' ? '<w:br w:type="column"/>' : `<w:br${it.clear ? ` w:clear="${it.clear}"` : ''}/>`, ctx);
       case 'ruby': {
         const pr = it.pr || {};
         const prx = ['rubyAlign', 'hps', 'hpsRaise', 'hpsBaseText', 'lid'].filter((k) => pr[k] != null).map((k) => `<w:${k} w:val="${X(String(pr[k]))}"/>`).join('');
@@ -606,6 +609,7 @@
     return `<w:p>${pPr}${runs}</w:p>`;
   }
   function tableXML(t, ctx) {
+    if (t.keep?.gridRepair) ctx.writer.loss({ id: 'table-grid:' + ctx.part, what: 'Incomplete or unusable table column widths were reconstructed. Table layout may change.', where: ctx.part, action: 'conversion' });
     const map = L.R.tblMap(t);
     const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { full: true }), ctx);
     let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}</w:tblGrid>`;
@@ -638,6 +642,7 @@
     const order = Object.values(doc.styles).sort((a, b) => (a.id === 'Normal' ? -1 : b.id === 'Normal' ? 1 : 0));
     for (const s of order) {
       if (!s || !s.id) continue;
+      if (s.keep?.defaultStyleRepair) ctx.writer.loss({ id: 'default-styles:' + ctx.part, what: 'Conflicting default styles were normalized. Text layout may change.', where: ctx.part, action: 'conversion' });
       const type = s.type || 'paragraph';
       let st = `<w:style w:type="${type}"${s.isDefault ? ' w:default="1"' : ''}${s.custom ? ' w:customStyle="1"' : ''} w:styleId="${X(s.id)}"><w:name w:val="${X(s.name || s.id)}"/>`;
       if (s.basedOn && doc.styles[s.basedOn]) st += `<w:basedOn w:val="${X(s.basedOn)}"/>`;
@@ -675,14 +680,16 @@
     return x + '</w:styles>';
   }
   function lvlXML(lv, i, ctx) {
-    let x = `<w:lvl w:ilvl="${i}"><w:start w:val="${lv.start != null ? lv.start : 1}"/>`;
+    let x = `<w:start w:val="${lv.start != null ? lv.start : 1}"/>`;
     x += lv.custFmt ? `<w:numFmt w:val="custom" w:format="${X(lv.custFmt)}"/>` : `<w:numFmt w:val="${lv.fmt || 'decimal'}"/>`;
     if (lv.restart != null) x += `<w:lvlRestart w:val="${lv.restart + 1}"/>`;
     if (lv.pStyle) x += `<w:pStyle w:val="${X(lv.pStyle)}"/>`;
     if (lv.isLgl) x += '<w:isLgl/>';
     if (lv.suff && lv.suff !== 'tab') x += `<w:suff w:val="${lv.suff}"/>`;
     x += `<w:lvlText w:val="${X(lv.text == null ? '' : lv.text)}"/>`;
-    if (lv.pictureId != null) x += `<w:lvlPicBulletId w:val="${lv.pictureId}"/>`;
+    const pictureId = ctx.pictureBullet(lv);
+    if (pictureId != null) x += `<w:lvlPicBulletId w:val="${X(pictureId)}"/>`;
+    if (lv.legacy) x += '<w:legacy w:legacy="1"/>';
     x += `<w:lvlJc w:val="${lv.jc || 'left'}"/>`;
     const pp = { ...lv.pPr };
     if (!lv.pPrValues || lv.tabPos !== lv.pPrValues.tabPos) {
@@ -693,34 +700,66 @@
     }
     x += pPrXML(pp, ctx);
     x += rPrXML(lv.rPr || {}, null, ctx);
-    return x + '</w:lvl>';
+    return L.preserve.propertyXML('lvl', lv, x, ctx, { ilvl: i });
   }
   function numberingXML(doc, ctx) {
     const nb = doc.numbering;
-    let x = HEAD + `<w:numbering xmlns:w="${NS.w}" xmlns:r="${NS.r}">`;
+    let x = '';
+    const pictures = new Map(); let pictureXML = '';
+    const picture = record => {
+      const f = record.fragment, key = JSON.stringify([f.source, f.part, record.id, f.copy || '']);
+      if (!pictures.has(key)) {
+        try {
+          pictureXML += ctx.writer.emit(f, ctx.part);
+          pictures.set(key, ctx.writer.ids.resolve(f.source, 'numbering', 'numPicBulletId', record.id, { primary: ctx.writer.pkg?.id, copy: f.copy }));
+        } catch (error) {
+          pictures.set(key, null);
+          ctx.writer.loss({ id: 'picture-bullet:' + key, what: 'A picture bullet could not be retained: ' + error.message, where: ctx.part, action: 'conversion' });
+        }
+      }
+      return pictures.get(key);
+    };
+    // Definitions belong to the numbering model, including unused originals.
+    // Imported levels bring their own definition and dependency references.
+    for (const record of nb.keep?.pictures || []) picture(record);
+    ctx = Object.assign({}, ctx, { pictureBullet: lv => {
+      if (!lv.pictureKeep) return null;
+      if (L.preserve.pictureBulletIntact(lv)) return picture(lv.pictureKeep);
+      ctx.writer.loss({ id: 'picture-bullet-edit:' + lv.pictureKeep.fragment.source + ':' + lv.pictureKeep.id, what: 'Editing this list symbol replaced its original picture bullet.', where: ctx.part, action: 'conversion' });
+      return null;
+    } });
+    // Collect imported pictures before writing any abstract/concrete definitions.
+    for (const a of Object.values(nb.abs)) for (const lv of a.levels) if (lv?.pictureKeep && L.preserve.pictureBulletIntact(lv)) picture(lv.pictureKeep);
+    for (const n of Object.values(nb.nums)) for (const o of Object.values(n.ov || {})) if (o.lvl?.pictureKeep && L.preserve.pictureBulletIntact(o.lvl)) picture(o.lvl.pictureKeep);
+    x += pictureXML;
     const absIds = Object.keys(nb.abs);
     const absMap = new Map();
-    absIds.forEach((k, i) => absMap.set(String(k), i));
+    absIds.forEach(k => absMap.set(String(k), String(k)));
     for (const k of absIds) {
       const a = nb.abs[k];
-      let ax = `<w:abstractNum w:abstractNumId="${absMap.get(String(k))}"><w:multiLevelType w:val="${a.multi || 'hybridMultilevel'}"/>`;
+      let ax = `<w:multiLevelType w:val="${a.multi || 'hybridMultilevel'}"/>`;
       if (a.name) ax += `<w:name w:val="${X(a.name)}"/>`;
       if (a.styleDef) ax += `<w:styleLink w:val="${X(a.styleDef)}"/>`;
       if (a.styleLink && !a.styleDef) ax += `<w:numStyleLink w:val="${X(a.styleLink)}"/>`;
-      if (!a.styleLink || a.styleDef) for (let i = 0; i < 9; i++) ax += lvlXML(a.levels[i] || D.numLevel(i, 'decimal', `%${i + 1}.`), i, ctx);
-      x += ax + '</w:abstractNum>';
+      if (!a.styleLink || a.styleDef) {
+        for (let i = 0; i < 9; i++) if (L.preserve.writeNumberingLevel(a, i)) ax += lvlXML(a.levels[i], i, ctx);
+      } else if (a.x?.ownLevels) {
+        for (let i = 0; i < 9; i++) if (!Object.hasOwn(a.x.absentLevels || {}, i)) ax += lvlXML(a.x.ownLevels[i], i, ctx);
+      }
+      if (a.x?.materialized) ctx.writer.loss({ id: 'numbering-style:' + a.x.key, what: 'Editing this list replaced its numbering-style link with direct list formatting.', where: ctx.part, action: 'conversion' });
+      x += L.preserve.propertyXML('abstractNum', a, ax, ctx, { abstractNumId: absMap.get(String(k)) });
     }
     for (const id of Object.keys(nb.nums)) {
       const n = nb.nums[id];
       if (!absMap.has(String(n.abs))) continue;
-      let nx = `<w:num w:numId="${ctx.numMap(id)}"><w:abstractNumId w:val="${absMap.get(String(n.abs))}"/>`;
+      let nx = `<w:abstractNumId w:val="${absMap.get(String(n.abs))}"/>`;
       for (const l of Object.keys(n.ov || {})) {
         const o = n.ov[l];
-        nx += `<w:lvlOverride w:ilvl="${l}">${o.start != null ? `<w:startOverride w:val="${o.start}"/>` : ''}${o.lvl ? lvlXML(o.lvl, +l, ctx) : ''}</w:lvlOverride>`;
+        nx += L.preserve.propertyXML('lvlOverride', o, `${o.start != null ? `<w:startOverride w:val="${o.start}"/>` : ''}${o.lvl ? lvlXML(o.lvl, +l, ctx) : ''}`, ctx, { ilvl: l });
       }
-      x += nx + '</w:num>';
+      x += L.preserve.propertyXML('num', n, nx, ctx, { numId: ctx.numMap(id) });
     }
-    return x + '</w:numbering>';
+    return HEAD + L.preserve.propertyXML('numbering', nb, x, ctx);
   }
   function settingsXML(doc, opts) {
     const s = doc.settings;
@@ -853,6 +892,7 @@
     D.reindex(doc);
     const ranges = L.preserve.prepareRanges(doc);
     const objects = L.preserve.prepareObjects(doc, pack.writer);
+    L.preserve.prepareNumbering(doc.numbering, pack.writer);
     /* --- context shared by every story --- */
     const bmIds = new Map();
     const mediaMap = new Map();
@@ -1072,7 +1112,7 @@
     add('word/styles.xml', stylesXML(doc, stylesCtx));
     docRels.add(RT('styles'), 'styles.xml');
     overrides.push(['word/styles.xml', CT.styles]);
-    const usesNumbering = Object.keys(doc.numbering.nums).length > 0;
+    const usesNumbering = Object.keys(doc.numbering.nums).length > 0 || Object.keys(doc.numbering.abs).length > 0 || doc.numbering.keep?.pictures?.length || doc.numbering.x;
     if (usesNumbering) {
       add('word/numbering.xml', numberingXML(doc, mkCtx(pack.rels('word/numbering.xml'), false)));
       docRels.add(RT('numbering'), 'numbering.xml');

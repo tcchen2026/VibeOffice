@@ -9,6 +9,7 @@ const files = { slicers: 'SlicersOnPivotAndTable.xlsx', timeline: 'Timelines_Mis
 const all = root => [root, ...root.getElementsByTagName('*')], attr = (e, k) => e.getAttribute(k);
 const parts = pkg => pkg.names.filter(n => /\/(slicerCaches|slicers|timelineCaches|timelines)\/.*\.xml$/.test(n));
 const drawings = pkg => pkg.names.filter(n => /^xl\/drawings\/drawing\d+\.xml$/.test(n));
+const cacheNames = pkg => all(pkg.xml(pkg.main)).filter(e => e.localName === 'definedName' && e.textContent === '#N/A' && /^(Slicer|NativeTimeline)_/.test(attr(e, 'name'))).map(e => attr(e, 'name'));
 const views = pkg => drawings(pkg).flatMap(n => all(pkg.xml(n)).filter(e => /\/(slicer|timeslicer)$/.test(e.namespaceURI || '') && ['slicer', 'timeslicer'].includes(e.localName)));
 async function open(t, kind) {
   const file = path.join(dir, files[kind]); if (!fs.existsSync(file)) { t.skip('Fetch: sh tools/corpora.sh ~/corpora ledger-features'); return; }
@@ -20,6 +21,8 @@ function refs(pkg) {
   const names = definitions.map(e => attr(e, 'name')); assert.equal(new Set(names).size, names.length, 'unique view names');
   for (const e of views(pkg)) assert(names.includes(attr(e, 'name')), 'drawing has a view definition');
   for (const e of definitions) assert(caches.some(c => attr(c, 'name') === attr(e, 'cache')), 'view has a cache');
+  for (const n of [...names, ...caches.map(c => attr(c, 'name'))]) assert(!/_Copy/.test(n), 'copies are named as Excel names them: ' + n);
+  for (const n of cacheNames(pkg)) assert(caches.some(c => attr(c, 'name') === n), 'workbook name ' + n + ' has its cache');
   const ids = pkg.names.filter(n => /^xl\/tables\/.*\.xml$/.test(n)).map(n => attr(pkg.xml(n), 'id'));
   const sheets = all(pkg.xml(pkg.main)).filter(e => e.localName === 'sheet');
   for (const cache of caches) for (const el of all(cache)) {
@@ -73,9 +76,22 @@ test('a copied table sheet has an independent slicer cache that survives source-
   const wb = await open(t, 'slicers'); if (!wb) return;
   const source = wb.sheets[0]; O.copySheet(wb, source, 1);
   let saved = await save(wb, 'copy-sheet'); assert.equal(views(saved.pkg).length, 3);
+  const names = cacheNames(saved.pkg); assert.equal(names.length, parts(saved.pkg).filter(n => /slicerCaches\//.test(n)).length, 'one workbook name per cache');
+  assert(names.includes('Slicer_Region2'), names.join(' '));
   O.deleteSheet(wb, source); saved = await save(wb, 'copy-sheet-delete-source');
   assert.equal(views(saved.pkg).length, 1); assert(saved.losses.some(e => e.action === 'drop'));
   wb.undo.undo(); await save(wb, 'copy-sheet-delete-source-undo');
+});
+test('copying a copied slicer sheet gives each definition stable independent GUIDs', async t => {
+  const wb = await open(t, 'slicers'); if (!wb) return;
+  const first = O.copySheet(wb, wb.sheets[0], wb.sheets.length);
+  O.copySheet(wb, first, wb.sheets.length);
+  const saved = await save(wb, 'copy-twice'), repeated = await save(wb, 'copy-twice-repeat');
+  const guids = pkg => parts(pkg).flatMap(part => all(pkg.xml(part)).flatMap(e => e.attributes.filter(a => a.localName === 'uid').map(a => a.value)));
+  const ids = guids(saved.pkg);
+  assert(ids.length > guids(wb.pkg).length);
+  assert.equal(new Set(ids).size, ids.length, 'separate view/cache definitions have independent GUIDs');
+  assert.deepEqual(guids(repeated.pkg), ids, 'save does not generate new copy identities');
 });
 test('shared filter caches remove only the deleted pivot and undo restores all connections', async t => {
   const wb = await open(t, 'shared'); if (!wb) return;

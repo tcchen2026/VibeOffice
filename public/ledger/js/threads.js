@@ -9,7 +9,6 @@
   const at = (el, key) => el?.getAttribute(key);
   const clone = value => JSON.parse(JSON.stringify(value));
   const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-  const guid = () => '{' + root.crypto.randomUUID().toUpperCase() + '}';
   const note = cm => ({ text: cm.text, author: cm.author, runs: cm.runs });
   const values = t => ({ id: t.id, parent: t.parent, personId: t.personId, date: t.date, text: t.text, done: t.done, mentions: t.mentions });
   const related = (pkg, part, kind) => pkg?.rels(part).find(r => r.type === RT + kind && !r.external);
@@ -58,7 +57,36 @@
     }
   };
   T.active = cm => cm.thread?.length && same(note(cm), cm.threadKeep?.note);
-  const rootId = cm => cm.thread?.find(t => !t.parent)?.id;
+  const rootComment = cm => cm.thread?.find(t => !t.parent);
+  const rootId = cm => rootComment(cm)?.id;
+  T.editText = cm => T.active(cm) ? rootComment(cm)?.text ?? cm.text : cm.text;
+  T.editNote = function (cm, rootText) {
+    const first = cm && rootComment(cm), previous = cm?.threadKeep?.note;
+    if (!first || !previous || rootText === undefined && cm.text === previous.text) return cm;
+    const text = String(rootText ?? cm.text ?? ''), before = first.text;
+    let start = 0, end = before.length, nextEnd = text.length;
+    while (start < end && start < nextEnd && before[start] === text[start]) start++;
+    while (end > start && nextEnd > start && before[end - 1] === text[nextEnd - 1]) { end--; nextEnd--; }
+    const intact = before ? text.indexOf(before) : -1;
+    // Mentions outside the replaced text keep their identities; those after it
+    // move with their text. Replacing a mentioned name removes that mention only.
+    const mentions = first.mentions.flatMap(m => {
+      const at = Number(m.startIndex), length = Number(m.length);
+      if (!Number.isInteger(at) || !Number.isInteger(length) || at < 0 || length < 1 || at + length > before.length) return [];
+      if (intact >= 0 && text.indexOf(before, intact + 1) < 0) return [{ ...m, startIndex: String(at + intact) }];
+      if (at + length <= start) return [{ ...m }];
+      if (at >= end) return [{ ...m, startIndex: String(at + nextEnd - end) }];
+      // Several edits can surround an untouched name. Keep its unique match;
+      // ambiguous repeated names cannot safely acquire a mention by guessing.
+      const name = before.slice(at, at + length), match = text.indexOf(name);
+      if (before.indexOf(name) === at && before.indexOf(name, at + 1) < 0 && match >= 0 && text.indexOf(name, match + 1) < 0) return [{ ...m, startIndex: String(match) }];
+      return [];
+    });
+    const edited = { ...cm, thread: cm.thread.map(t => t === first ? { ...t, text, mentions } : t), runs: undefined };
+    edited.text = edited.thread.map(t => t.text).join('\n\n');
+    edited.threadKeep = { ...cm.threadKeep, note: clone(note(edited)) };
+    return edited;
+  };
   T.author = cm => T.active(cm) && rootId(cm) ? 'tc=' + rootId(cm) : cm.thread?.length && /^tc=\{/.test(cm.author || '') ? cm.thread[0].author : cm.author;
   T.noteAttributes = cm => T.active(cm) && rootId(cm) ? ' xmlns:xr="' + XR + '" xr:uid="' + rootId(cm) + '"' : '';
   T.noteNamespaces = ' xmlns:mc="' + K.NS.mc + '" xmlns:xr="' + XR + '" mc:Ignorable="xr"';
@@ -72,25 +100,12 @@
   // Copied definitions and parent/mention references change together. Person
   // IDs are shared unless the destination uses the same ID for another person.
   T.copy = function (cm, wb) {
-    const copy = clone(cm);
-    if (copy.keepNote) {
-      const f = copy.keepNote.fragment, tree = K.parse(f.xml), uid = Array.from(tree.attributes).find(a => a.localName === 'uid' && attrNS(tree, a) === XR);
-      if (uid) f.xml = K.attributes(f.xml, { [uid.name]: guid() });
-    }
-    if (!copy.thread?.length) return copy;
-    const ids = new Map(copy.thread.map(t => [t.id, guid()])), existing = new Map(people(wb).map(p => [p.id, p.xml])), persons = new Map();
+    const definitions = (cm.thread || []).flatMap(t => [t.id, ...t.mentions.map(m => m.mentionId)]);
+    const existing = new Map(people(wb).map(p => [p.id, p.xml]));
     for (const sh of wb.sheets) for (const c of sh.comments.values()) for (const p of c.threadKeep?.people || []) existing.set(p.id, p.xml);
-    for (const p of copy.threadKeep.people) {
-      if (existing.has(p.id) && personKey(existing.get(p.id)) !== personKey(p.xml)) {
-        const id = guid(); persons.set(p.id, id); p.id = id; p.xml = K.attributes(p.xml, { id });
-      }
-    }
-    for (const t of copy.thread) {
-      t.id = ids.get(t.id); if (ids.has(t.parent)) t.parent = ids.get(t.parent);
-      t.personId = persons.get(t.personId) || t.personId;
-      for (const m of t.mentions) { m.mentionId = guid(); m.mentionpersonId = persons.get(m.mentionpersonId) || m.mentionpersonId; }
-    }
-    return copy;
+    for (const p of cm.threadKeep?.people || []) if (existing.has(p.id) && personKey(existing.get(p.id)) !== personKey(p.xml)) definitions.push(p.id);
+    return K.duplicate(cm, { guidValues: definitions, guidAttributes: ['uid'],
+      guidFields: ['id', 'parent', 'personId', 'mentionId', 'mentionpersonId'] });
   };
   function commentXML(cm, t, writer, owner) {
     const f = t.keep.fragment, old = t.keep.values, attrs = {};
@@ -100,19 +115,22 @@
     let xml = K.attributes(f.xml, attrs), replacements = {};
     if (t.text !== old.text) {
       replacements['{' + NS + '}text'] = '<text xmlns="' + NS + '" xml:space="preserve">' + L.xml.esc(t.text) + '</text>';
-      replacements['{' + NS + '}mentions'] = [];
-      if (t.mentions.length) writer.loss({ id: 'thread-mentions:' + t.id, what: 'Mentions were removed from the edited comment text.', where: ref, action: 'drop' });
-    } else if (!same(t.mentions, old.mentions)) {
+    }
+    if (!same(t.mentions, old.mentions)) {
       const list = kids(K.parse(xml), 'mentions')[0], entries = kids(list, 'mention');
-      replacements['{' + NS + '}mentions'] = K.mergeBag(K.raw(list), { ['{' + NS + '}mention']: entries.map((el, i) => K.attributes(K.raw(el), t.mentions[i] || {})) });
+      const byId = new Map(entries.map(el => [at(el, 'mentionId'), el]));
+      replacements['{' + NS + '}mentions'] = t.mentions.length ? K.mergeBag(list ? K.raw(list) : '<mentions xmlns="' + NS + '"/>', {
+        ['{' + NS + '}mention']: t.mentions.map(m => K.attributes(byId.has(m.mentionId) ? K.raw(byId.get(m.mentionId)) : '<mention xmlns="' + NS + '"/>', m))
+      }) : [];
+      if (old.mentions.some(m => !t.mentions.some(n => n.mentionId === m.mentionId))) writer.loss({ id: 'thread-mentions:' + t.id, what: 'Some mentions could not be kept after the comment text was edited.', where: ref, action: 'drop' });
     }
     if (Object.keys(replacements).length) xml = K.mergeBag(xml, replacements);
     return writer.emit(K.slice(f, xml), owner);
   }
   T.write = function (wb, pack) {
     const w = pack.writer, pkg = wb.pkg, needed = new Map();
-    for (let i = 0; i < wb.sheets.length; i++) {
-      const sh = wb.sheets[i], source = sh.extra.threadPart, originals = source && pkg?.xml(source), items = [];
+    for (const sh of wb.sheets) {
+      const source = sh.extra.threadPart, originals = source && pkg?.xml(source), items = [];
       for (const cm of sh.comments.values()) {
         if (T.active(cm)) {
           for (const t of cm.thread) items.push({ cm, t });
@@ -131,7 +149,7 @@
         w.put(target, K.hoistNamespaces(K.mergeBag(xml, { ['{' + NS + '}threadedComment']: items.map(({ cm, t }) => commentXML(cm, t, w, target)) })), pkg?.type(source) || 'application/vnd.ms-excel.threadedcomments+xml');
         if (source) w.carryRels(pkg, source, target);
       }
-      const owner = pack.part('xl/worksheets/sheet' + (i + 1) + '.xml'), rel = related(pkg, sh.extra.ooxmlPart, 'threadedComment');
+      const owner = pack.sheetParts.get(sh), rel = related(pkg, sh.extra.ooxmlPart, 'threadedComment');
       w.rels(owner).add(RT + 'threadedComment', K.relative(owner, target), false, rel?.id);
     }
     const rel = related(pkg, pkg?.main, 'person'), source = rel?.part, tree = source && pkg.xml(source);

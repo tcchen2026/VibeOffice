@@ -44,6 +44,18 @@ test('query definitions, original field IDs and custom column attributes survive
     }
   }
 });
+test('copied query names follow the numeric source sequence and survive repeat saves', async t => {
+  const wb = await open(t, 'empty'); if (!wb) return;
+  const source = wb.tables[0].sheet;
+  const copy = O.copySheet(wb, source, wb.sheets.length); O.copySheet(wb, copy, wb.sheets.length);
+  const one = await save(wb, 'copy-names'), two = await save(wb, 'copy-names-repeat');
+  const names = pkg => queryParts(pkg).map(p => pkg.xml(p).getAttribute('name')).sort();
+  assert.deepEqual(names(one.pkg), ['ExternalData_1', 'ExternalData_2', 'ExternalData_3']);
+  assert.deepEqual(names(two.pkg), names(one.pkg));
+  const guids = pkg => pkg.names.filter(n => /^xl\/(tables|queryTables)\/[^/]+\.xml$/.test(n)).flatMap(p => all(pkg.xml(p)).flatMap(e => e.attributes.filter(a => a.localName === 'uid').map(a => a.value)));
+  assert.equal(new Set(guids(one.pkg)).size, guids(one.pkg).length, 'copying a copy gives every definition a fresh UID');
+  assert.deepEqual(guids(two.pkg), guids(one.pkg), 'identities are allocated during the copy, not on each save');
+});
 test('inserted query-table columns are unbound; retained columns keep their identities through history', async t => {
   const wb = await open(t, 'basic'); if (!wb) return;
   const tab = wb.tables[0], sh = tab.sheet, ids = tab.columns.map(c => c.id), before = JSON.stringify(tab.columns);
@@ -67,6 +79,18 @@ test('deleted fields stay excluded from query refresh and full-table deletion is
   assert(saved.losses.some(e => e.action === 'drop'));
   wb.undo.undo(); assert.equal(wb.tables.length, 1); await save(wb, 'delete-table-undo');
   wb.undo.undo(); await save(wb, 'delete-column-undo');
+});
+test('a column inserted after a deletion never takes the deleted column\'s field', async t => {
+  const wb = await open(t, 'basic'); if (!wb) return;
+  const tab = wb.tables[0], sh = tab.sheet, high = Math.max(...tab.columns.map(c => c.id));
+  const index = tab.columns.findIndex(c => c.id === high), name = tab.columns[index].name;
+  O.insertLines(sh, 'c', tab.ref.c1 + index, -1);
+  O.insertLines(sh, 'c', tab.ref.c1 + 1, 1);
+  const added = tab.columns[1]; assert(added.id > high, 'fresh column id');
+  const q = (await save(wb, 'delete-then-insert')).pkg.xml(queryParts(wb.pkg)[0]), fields = all(q).filter(e => e.localName === 'queryTableField');
+  assert(!fields.some(f => f.getAttribute('tableColumnId') === String(high)), 'the deleted field is not bound');
+  assert(all(q).some(e => e.localName === 'deletedField' && e.getAttribute('name') === name));
+  assert.equal(fields.find(f => f.getAttribute('tableColumnId') === String(added.id))?.getAttribute('dataBound'), '0');
 });
 test('editing query results or a header keeps the external field and undo does not retain save mutations', async t => {
   const wb = await open(t, 'basic'); if (!wb) return;
@@ -95,6 +119,8 @@ test('range query copies retain sheet-scoped destination names through moves, un
   const copy = O.copySheet(wb, sh, 0, 'Copied query');
   const local = wb.names.find(n => n.scope === 0); assert(local.ref.includes('Copied query'));
   let saved = await save(wb, 'copy-range-query'); assert.equal(queryParts(saved.pkg).length, 2);
+  const queryName = wb.pkg.xml(queryParts(wb.pkg)[0]).getAttribute('name');
+  assert(queryParts(saved.pkg).every(p => saved.pkg.xml(p).getAttribute('name') === queryName), 'range query names stay aligned with their copied sheet-scoped destinations');
   wb.undo.undo(); assert.equal(JSON.stringify(wb.names), before); await save(wb, 'copy-range-query-undo'); wb.undo.redo();
   O.insertLines(copy, 'r', 0, 2); saved = await save(wb, 'range-rows');
   const draft = await L.xlsxRead.read(saved.bytes); Object.defineProperty(draft, '_input', { value: wb._input });

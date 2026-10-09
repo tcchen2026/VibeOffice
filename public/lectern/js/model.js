@@ -647,6 +647,9 @@
     return L.unionBounds(g.kids.map((k) => (k.type === 'group' ? M.groupBounds(k) : L.rotBounds(k))));
   };
   /* move a shape (and group children) */
+  // A retained graphic frame has no Office-supported rotation transform. Keep its
+  // preview and payload together until an editor for that object owns the transform.
+  M.canRotate = s => s.type !== 'table' && !s.keep?.frame && (s.kids || []).every(M.canRotate);
   M.translate = function (s, dx, dy) {
     s.x += dx; s.y += dy;
     if (s.type === 'group') for (const k of s.kids) M.translate(k, dx, dy);

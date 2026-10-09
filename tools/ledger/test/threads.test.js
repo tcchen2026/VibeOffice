@@ -49,16 +49,32 @@ test('row shifts and deletion move every reply and keep legacy links; undo resto
   O.insertLines(sh, 'r', 3, -1); s = await save(wb, 'delete'); assert.equal(all(s.pkg).length, 0);
   wb.undo.undo(); s = await save(wb, 'delete-undo'); assert.equal(all(s.pkg).length, 2);
 });
-test('editing a displayed note converts its thread with an undoable notice', async t => {
+test('editing a displayed note updates the root while retaining replies, identities and undo', async t => {
   const wb = await open(t); if (!wb) return;
   const c = cm(wb), sh = wb.sheets[0];
+  assert.equal(L.threads.editText(c), c.thread[0].text, 'Edit the root, not the legacy summary and replies');
   O.tx(wb, 'Edit Comment', () => O.setComment(sh, c.r, c.c, { ...c, text: 'Changed note', runs: undefined }));
-  let s = await save(wb, 'note-edit'); assert.equal(all(s.pkg).length, 0);
-  assert(s.losses.some(e => e.id.startsWith('thread-conversion:')));
-  const reread = await L.xlsxRead.read(s.bytes); assert.equal([...reread.sheets[0].comments.values()][0].text, 'Changed note');
-  assert.equal([...reread.sheets[0].comments.values()][0].author, c.thread[0].author);
+  let s = await save(wb, 'note-edit'); assert.equal(all(s.pkg).length, 2);
+  assert.equal(all(s.pkg)[0].getAttribute('id'), rootId);
+  assert.equal(all(s.pkg)[0].getElementsByTagName('text')[0].textContent, 'Changed note');
+  assert.equal(K.raw(all(s.pkg)[1]), K.raw(all(wb.pkg)[1]), 'Reply XML is unchanged');
+  assert.deepEqual(s.pkg.bytes(person), wb.pkg.bytes(person));
+  assert(!s.losses.some(e => e.id.startsWith('thread-conversion:')));
+  const reread = await L.xlsxRead.read(s.bytes), reopened = cm(reread);
+  assert.equal(reopened.thread[0].text, 'Changed note');
+  assert.equal(reopened.thread[1].text, c.thread[1].text);
+  assert.equal(reopened.thread[1].parent, rootId);
+  assert.equal(reopened.author, 'tc=' + rootId);
+  assert.equal(L.threads.editText(reopened), 'Changed note');
+  const summaryAsRoot = L.threads.editNote(reopened, reopened.text);
+  assert.equal(summaryAsRoot.thread[0].text, reopened.text, 'Explicit root edits may equal the previous summary');
+  assert.equal(summaryAsRoot.thread[1].text, reopened.thread[1].text);
+  assert.equal(c.thread[0].text, 'a comment on A2', 'The undo baseline was not mutated');
   wb.undo.undo(); s = await save(wb, 'note-edit-undo'); assert.deepEqual(s.pkg.bytes(part), wb.pkg.bytes(part));
   assert(!s.losses.some(e => e.id.startsWith('thread-conversion:')));
+  wb.undo.redo(); s = await save(wb, 'note-edit-redo');
+  assert.equal(all(s.pkg)[0].getElementsByTagName('text')[0].textContent, 'Changed note');
+  assert.equal(all(s.pkg).length, 2);
 });
 test('copied sheets remap comment definitions, parent links and legacy author identities together', async t => {
   const wb = await open(t); if (!wb) return;
@@ -96,6 +112,34 @@ async function mentionFixture() {
   if (output) { source = path.join(output, 'mentions-no-legacy.xlsx'); fs.writeFileSync(source, bytes); }
   return { bytes, source, personId, mentionId };
 }
+test('root edits retain and shift untouched mentions and report only replaced mentions', async t => {
+  if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus'); return; }
+  const f = await mentionFixture(), wb = await open(t, f.bytes), sh = wb.sheets[0];
+  const edit = text => { const c = cm(wb); O.tx(wb, 'Edit Comment', () => O.setComment(sh, c.r, c.c, { ...c, text, runs: undefined })); };
+  assert.equal(L.threads.editNote(cm(wb), 'Good morning Ada!').thread[0].mentions[0].startIndex, '13');
+  assert.equal(L.threads.editNote(cm(wb), 'Good morning Ada and Ada!').thread[0].mentions.length, 0, 'Ambiguous names do not acquire a mention by guessing');
+  edit('Review Hello Ada, updated');
+  let s = await save(wb, 'mention-append', f.source);
+  let mention = all(s.pkg)[0].getElementsByTagName('mention')[0];
+  assert.equal(mention.getAttribute('startIndex'), '13'); assert.equal(mention.getAttribute('mentionId'), f.mentionId);
+  assert(!s.losses.some(e => e.id.startsWith('thread-')));
+  edit('Now Review Hello Ada, updated'); s = await save(wb, 'mention-shift', f.source);
+  mention = all(s.pkg)[0].getElementsByTagName('mention')[0];
+  assert.equal(mention.getAttribute('startIndex'), '17'); assert.equal(mention.getAttribute('length'), '3');
+  assert.equal(mention.getAttribute('mentionpersonId'), f.personId);
+  assert(!s.losses.some(e => e.id.startsWith('thread-')));
+  edit('Now Review Hello Eve, updated'); s = await save(wb, 'mention-replace', f.source);
+  assert.equal(all(s.pkg)[0].getElementsByTagName('mention').length, 0);
+  assert(s.losses.some(e => e.id.startsWith('thread-mentions:')));
+  assert(!s.losses.some(e => e.id.startsWith('thread-conversion:')));
+  assert.equal(K.raw(all(s.pkg)[1]), K.raw(all(wb.pkg)[1]));
+  wb.undo.undo(); s = await save(wb, 'mention-replace-undo', f.source);
+  assert.equal(all(s.pkg)[0].getElementsByTagName('mention')[0].getAttribute('startIndex'), '17');
+  assert(!s.losses.some(e => e.id.startsWith('thread-')));
+  wb.undo.redo(); s = await save(wb, 'mention-replace-redo', f.source);
+  assert.equal(all(s.pkg)[0].getElementsByTagName('mention').length, 0);
+  const reread = await L.xlsxRead.read(s.bytes); assert.equal(cm(reread).thread[0].text, 'Now Review Hello Eve, updated');
+});
 test('threads without legacy notes load; cross-workbook paste retains mentions and adds their persons', async t => {
   if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus'); return; }
   const f = await mentionFixture(), wb = await open(t, f.bytes), c = cm(wb);

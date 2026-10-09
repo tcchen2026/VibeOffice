@@ -6,6 +6,86 @@
   const kids = el => Array.from(el?.children || []);
   const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   P.filterValues = c => JSON.stringify([c.values, c.blank, c.dates]);
+  P.sheetFormatValues = sh => ({
+    baseColWidth: sh.baseColW != null && sh.baseColW !== 8 ? sh.baseColW : undefined,
+    defaultColWidth: sh.defColW != null ? sh.defColW : undefined,
+    defaultRowHeight: sh.defRowH != null ? sh.defRowH : L.model.defaultRowPt(sh),
+    customHeight: sh.defRowH != null ? '1' : undefined, zeroHeight: sh.zeroHeight ? '1' : undefined,
+    outlineLevelRow: sh.outline?.levelRow || undefined, outlineLevelCol: sh.outline?.levelCol || undefined,
+  });
+  function keepSheetProperty(sh, el, values, tag) {
+    if (!sh.wb.pkg) return;
+    const ctx = { pkg: sh.wb.pkg, part: sh.extra.ooxmlPart };
+    const keep = { values, fragment: el ? K.fragment(el, ctx) : null };
+    // Pre-release Excel used a different schema (including different units).
+    // Its format element is not a valid child of the current worksheet schema.
+    if (['http://schemas.microsoft.com/office/excel/2005/8/worksheet',
+      'http://schemas.microsoft.com/office/excel/2006/2'].includes(el?.namespaceURI)) {
+      keep.fragment = null; keep.legacyNamespace = true;
+    }
+    if (keep.fragment?.record) {
+      const tree = K.parse(keep.fragment.xml);
+      // A wrapper that also owns columns/views cannot be emitted by this one
+      // property: that would duplicate or resurrect separately edited content.
+      if ([...tree.getElementsByTagName('*')].some(e => e.namespaceURI !== N.mc && e.localName !== tag)) {
+        keep.fragment = K.fragment(K.parse(K.raw(el)), ctx); keep.converted = true;
+      }
+    }
+    return keep;
+  }
+  function sheetPropertyXML(sh, writer, owner, tag, keep, current, generated, notice) {
+    if (!keep) return generated();
+    if (keep.legacyNamespace) {
+      writer.loss({ id: notice.id + '-legacy:' + sh.id, where: sh.name, action: 'conversion', what: notice.legacy });
+      return generated();
+    }
+    if (keep.converted) writer.loss({ id: notice.id + '-alternative:' + sh.id, where: sh.name, action: 'conversion', what: notice.alternative });
+    const changes = {};
+    for (const [name, value] of Object.entries(current)) if (!same(value, keep.values[name])) changes[name] = value;
+    if (!keep.fragment) return Object.keys(changes).length ? generated(changes) : '';
+    // A file's automatic row height is authoritative too. Comparing model
+    // fields avoids replacing it merely because our font metrics differ.
+    let xml = keep.fragment.xml;
+    if (Object.keys(changes).length) {
+      const tree = K.parse(xml), edits = [];
+      for (const el of [tree, ...tree.getElementsByTagName('*')]) if (el.localName === tag && [N.s, 'http://purl.oclc.org/ooxml/spreadsheetml/main'].includes(el.namespaceURI)) {
+        const pos = L.xmlTree.source.get(el);
+        edits.push({ start: pos.start, end: pos.end, value: K.attributes(K.raw(el), changes) });
+      }
+      xml = K.patch(xml, edits);
+    }
+    return writer.emit(K.slice(keep.fragment, xml), owner);
+  }
+  P.keepSheetFormat = (sh, el) => { sh.extra.formatKeep = keepSheetProperty(sh, el, P.sheetFormatValues(sh), 'sheetFormatPr'); };
+  P.sheetFormatXML = (sh, writer, owner) => sheetPropertyXML(sh, writer, owner, 'sheetFormatPr', sh.extra.formatKeep,
+    P.sheetFormatValues(sh), () => K.attributes('<sheetFormatPr xmlns="' + N.s + '"/>', P.sheetFormatValues(sh)), {
+      id: 'sheet-format', legacy: 'Worksheet size settings from a pre-release Excel format were converted to current Excel settings.',
+      alternative: 'A worksheet-format alternative that also contained other worksheet settings was converted to its displayed properties.' });
+  P.pageSetupValues = sh => {
+    const p = sh.print, values = { paperSize: p.paper || 1, scale: Math.round(p.scale || 100),
+      firstPageNumber: p.firstPage != null ? p.firstPage : undefined,
+      fitToWidth: p.fit ? (p.fitW == null ? 0 : p.fitW) : undefined, fitToHeight: p.fit ? (p.fitH == null ? 0 : p.fitH) : undefined,
+      pageOrder: p.pageOrder === 'overThenDown' ? 'overThenDown' : 'downThenOver',
+      orientation: p.orientation === 'landscape' ? 'landscape' : 'portrait', blackAndWhite: p.bw ? '1' : '0',
+      draft: p.draft ? '1' : '0', cellComments: p.comments || 'none', useFirstPageNumber: p.firstPage != null ? '1' : '0',
+      errors: p.errors || 'displayed', horizontalDpi: p.dpi, verticalDpi: p.dpi };
+    if (sh.kind === 'chartsheet') for (const key of ['scale', 'fitToWidth', 'fitToHeight', 'pageOrder', 'cellComments', 'errors']) delete values[key];
+    return values;
+  };
+  P.keepPageSetup = (sh, el) => { sh.extra.pageSetupKeep = keepSheetProperty(sh, el, P.pageSetupValues(sh), 'pageSetup'); };
+  P.pageSetupXML = (sh, writer, owner) => {
+    const values = P.pageSetupValues(sh), generated = changes => {
+      const attrs = changes || { ...values };
+      if (!changes) for (const [key, value] of Object.entries({ paperSize: 1, scale: 100, fitToWidth: 1, fitToHeight: 1,
+        pageOrder: 'downThenOver', blackAndWhite: '0', draft: '0', cellComments: 'none', useFirstPageNumber: '0', errors: 'displayed' })) {
+        if (attrs[key] === value) delete attrs[key];
+      }
+      return K.attributes('<pageSetup xmlns="' + N.s + '"/>', attrs);
+    };
+    return sheetPropertyXML(sh, writer, owner, 'pageSetup', sh.extra.pageSetupKeep, values, generated, {
+      id: 'page-setup', legacy: 'Page settings from a pre-release Excel format were converted to current Excel settings.',
+      alternative: 'A page-setup alternative that also contained other worksheet settings was converted to its displayed properties.' });
+  };
   P.parts = Object.freeze([
     ['xl/styles.xml', RT('styles'), 'regenerated'],
     ['xl/sharedStrings.xml', RT('sharedStrings'), 'regenerated'],
@@ -144,6 +224,7 @@
       const pivotCaches = L.pivots.workbook(wb, tree, writer);
       if (pivotCaches !== undefined) set('pivotCaches', pivotCaches);
       if (!same(current.names, old.names)) set('definedNames', generatedChild('definedNames'));
+      else { const names = L.slicers.definedNames(tree, writer.slicers); if (names !== undefined) set('definedNames', names); }
       if (!same(current.protection, old.protection)) set('workbookProtection', generatedChild('workbookProtection'));
       const patch = (tag, fields, forced = {}) => {
         const before = kids(tree).find(e => e.localName === tag), after = kids(fresh).find(e => e.localName === tag);

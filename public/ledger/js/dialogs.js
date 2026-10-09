@@ -740,7 +740,8 @@
     const author = (A().opts.userName || 'Ledger User');
     const box = h('div', { class: 'cmt-edit' });
     const ta = h('textarea', { 'aria-label': 'Comment', spellcheck: 'true' });
-    ta.value = cm ? cm.text || '' : author + ':\n';
+    const initialText = cm ? L.threads.editText(cm) || '' : author + ':\n';
+    ta.value = initialText;
     box.appendChild(ta);
     Object.assign(box.style, { left: (wrapR.left + q.x + q.w + 12) + 'px', top: Math.max(wrapR.top + 2, wrapR.top + q.y - 6) + 'px', width: (cm && cm.w ? cm.w * 96 / 72 : 150) + 'px', height: (cm && cm.h ? cm.h * 96 / 72 : 80) + 'px' });
     document.body.appendChild(box);
@@ -753,8 +754,8 @@
       document.removeEventListener('pointerdown', outside, true);
       if (save) {
         const text = ta.value;
-        const same = cm && cm.text === text;
-        if (!same) tryRun(() => O.tx(w, cm ? 'Edit Comment' : 'Insert Comment', () => O.setComment(s, r, c, Object.assign({}, cm || { author, visible: false }, { text, runs: undefined, w: box.offsetWidth * 0.75 || undefined, h: box.offsetHeight * 0.75 || undefined }))));
+        const same = cm && initialText === text;
+        if (!same) tryRun(() => O.tx(w, cm ? 'Edit Comment' : 'Insert Comment', () => O.setComment(s, r, c, L.threads.editNote(Object.assign({}, cm || { author, visible: false }, { text, runs: undefined, w: box.offsetWidth * 0.75 || undefined, h: box.offsetHeight * 0.75 || undefined }), text))));
       }
       G().paint(); G().syncObjects(); G().focus();
     };

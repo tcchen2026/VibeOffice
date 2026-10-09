@@ -106,6 +106,8 @@ references, bookmark/permission endpoints, and pivot cache references. Alternate
 checked without falsely counting mutually exclusive IDs as duplicates. Output is JSONL; a failure exits
 nonzero. `node --test tools/ooxml/*.test.mjs` exercises malformed packages, cycles, shared dependencies,
 alternate branches, target swaps and ordered text.
+`audit.test.mjs` also checks that a cell-reader timeout remains a failed, timed-out attempt instead of
+being mislabeled as an unreadable style; genuine style errors stay separate.
 
 ### Office conventions: tools/ooxml/conventions.py
 
@@ -125,7 +127,8 @@ slide-6 repair was such a case); run it with every full corpus run. Findings and
 ### Shared preservation core
 
 `node --test tools/ooxml/opc.test.mjs` tests the Node-safe `L.opc` API: immutable bytes, full relationship
-types, cyclic/shared graphs, reserved names and IDs, duplicate reference remapping, namespace/QName
+types, cyclic/shared graphs, reserved names and IDs, duplicate reference remapping (including GUID
+definitions, shared-person references, copies of copies and unchanged GUID-looking text), namespace/QName
 scope, original nested AlternateContent emitted once, cross-document dependency transport, loss
 acknowledgement, property merging, Strict-to-Transitional conversion and DrawingML/Word/spreadsheet/VML
 geometry adapters. These tests do not replace real-file comparisons or Office acceptance. API contracts
@@ -149,6 +152,9 @@ cross-document clipboard. `finish()` checks relationship targets and returns `{f
 Loss acknowledgement is per entry; autosave must neither show a dialog nor acknowledge entries.
 Package ownership, object preservation and save-dialog integration are implemented in all three apps.
 Current corpus limits and pending Office acceptance are listed in each app’s save table.
+`office-batch.mjs` also supports list-alignment edits, independent list copies (optionally after
+an alignment edit), and the chapter-number/continuous-section review. Use the same manifest against
+the frozen current and previous writers before handing these files to Office.
 
 `opc-order.js` contains ordering and ID-bound facts for 27 types, generated from the official
 [ECMA-376 Part 4 schemas](https://ecma-international.org/publications-and-standards/standards/ecma-376/), and each preset shape's adjustment values (names, order, defaults) from Part 1's `presetShapeDefinitions.xml`.
@@ -171,18 +177,28 @@ failed comparisons rather than silently excluding them.
 
 `node tools/ooxml/namespace-size.mjs ORIGINALS SAVED OUTPUT [LIMIT=400]` isolates namespace compaction
 on existing Word saves. It reports original/before/after main-part sizes and compacts writer-owned
-parts while keeping opaque dependency bytes. It is a serialization benchmark, not an app round trip;
+parts while keeping opaque dependency bytes. Descendant `Ignorable` declarations required by local
+`PreserveAttributes`, `PreserveElements` or `ProcessContent` are counted as `scopedIgnorable`;
+only `unexpectedIgnorable` declarations fail the measurement. It is a serialization benchmark, not an app round trip;
 use fresh browser saves, package/SDK comparisons and Office samples for integration checks. Run
 `conventions.py` on its output and every full corpus run, recording newly introduced signatures.
 `tools/quire/test/comment-office-copies.py BATCH PREVIOUS_BATCH OUTPUT` recreates the bounded first
 Word comment-repair isolation round. Package checks now reject excess comment references beyond
 their matching definitions; comparison also rejects automatic pre-release thread-namespace promotion.
+They also reject a shape ID repeated within a PowerPoint VML part or across spreadsheet VML parts (`duplicate-vml-id`), two
+embedded objects sharing one preview (`shared-vml-preview`), two spreadsheet VML parts sharing an
+`o:idmap` block (`duplicate-vml-block`) and diagram/chart/OLE part animations whose target is not a
+graphic frame (`animation-part-target`). None occurs in the 4,697 pinned originals.
 
 Ledger's `pivots.test.js` and `threads.test.js` use the pinned public inputs (`VO_CORPORA` overrides
 `~/corpora`). `PIVOT_RESULTS=DIR` / `THREAD_RESULTS=DIR` retain the emitted edit/history states and
-their source paths for package/SDK comparisons. The thread test also authors a mention/no-legacy-note
+their source paths for package/SDK comparisons. Pivot source fixtures are generated automatically from
+the pinned input into `PIVOT_RESULTS/fixtures` (or a temporary directory); `PIVOT_FIXTURES` overrides
+that destination. They do not depend on an earlier results directory. The thread test also authors a mention/no-legacy-note
 fixture missing from the public corpus. `node tools/ledger/test/threads-ui.mjs INPUT.xlsx OUTPUT`
 checks the real Paste Special, undo/redo and suite draft/recovery hooks on a thread in the first sheet.
+Add `--edit` to first edit its root through the actual comment editor; replies and untouched mentions
+must survive, including edits around both ends of a mentioned name and later clipboard/draft recovery.
 `objects.test.js` uses `OBJECT_RESULTS=DIR` to retain controls/OLE/VML edit states from the same corpus.
 `node tools/ledger/test/objects-ui.mjs INPUT.xlsx OUTPUT` checks object paste into another workbook,
 undo/redo and actual draft recovery, including the dependent payload bytes.
@@ -200,10 +216,18 @@ history saves (`EXCEL_CORPUS` overrides `~/corpora/excel`).
 `node tools/ledger/test/tables-ui.mjs INPUT.xlsx OUTPUT` checks inserted query columns, sheet
 copy, scoped names, undo/redo and actual draft recovery.
 `recovery.test.js` covers readable cells in damaged packages and unchanged mixed date/text filters.
+`sheet-properties.test.js` uses `SHEET_PROPERTY_RESULTS=DIR` to retain automatic row-height,
+dimension-edit, sheet-copy and history saves from public workbooks. It also checks literal boolean
+view flags and compatibility alternatives around worksheet-format properties.
+`page-setup.test.js` uses `PAGE_SETUP_RESULTS=DIR` to retain absent-default, paper/quality-edit,
+printer-dependency, chart-sheet, copy and history checks from public workbooks.
 For the independent cell audit after `corpus.js --scenarios text`, set `SCENARIO=text` when running
 `tools/ledger/test/loss-audit.py`: only A1 on the first ordinary worksheet is excluded as the intended
 edit. Dependent array-result recalculation still appears in the report. ZIP directory markers are
 excluded from feature-part counts.
+
+`node tools/ledger/test/scroll-ui.mjs` scrolls a sheet with the mouse wheel in all four directions
+and with the arrow keys, with and without frozen panes, letting the page repaint between steps.
 
 Build the SDK validator and install the independent workbook reader in a test environment:
 
@@ -233,10 +257,35 @@ combines package checks and SDK comparison, accounting for unsuccessful driver a
 It validates every emitted artifact, including before-edit, undo, redo, second-save and recovered
 draft states. A diagnostic comparison requires a validatable original; standalone validation of
 repaired output is reported separately when its original cannot be opened by the SDK.
+Reusing an earlier SDK comparison requires an unchanged SDK/version, the same original SHA-256,
+and byte-identical content for every uncompressed member of the saved package. Record the source
+report and equivalence proof, rerun package checks if their rules changed, and validate all other
+states normally. Preserve fresh failures/timeouts in the raw reports even when an identical artifact
+has earlier successful independent evidence; disclose that reuse in the run README.
 `--dotnet PATH` selects the SDK runtime. `--lo PDF_DIRECTORY` additionally converts original and saved
 files using LibreOffice with its own temporary profile, checks conversion success and extracts page
 counts with `pdfinfo`. Unedited saves must keep the page count; edit scenarios can record
 `expectedPages` or `expectedSlides`. LibreOffice and the validator cannot certify acceptance by Office itself.
+
+For a full rendering pass over already saved artifacts, use
+`python3 tools/ooxml/render.py MANIFEST.jsonl OUTPUT --jobs 4`. Each manifest row names `app`, `file`,
+`scenario`, `original`, `saved` and the driver `status`; `originalSha256`/`savedSha256` pin the inputs.
+The optional `expectedPages` overrides comparison with the original PDF count. The tool uses warm,
+isolated LibreOffice processes through the distribution's Python UNO bindings (`--uno-python`, default
+`/usr/bin/python3`), with read-only loading, no macro/link updates and a timeout per document.
+It stores PDFs, page counts and every failed/excluded attempt outside the repo. Exact member-byte
+fingerprints plus filenames and rendering-environment identities deduplicate history/draft states;
+changed members cannot reuse a render. Raw hashes identify malformed or oversized packages.
+`--resume` requires the same manifest/environment and verifies pinned input hashes before using
+completed rows. Rendering failures and page-count differences remain separate from driver and SDK
+results; a successful PDF export alone is not a lossless-save claim.
+Failed conversions retire their worker. A lost worker connection gets one fresh-process retry,
+with the first failure retained in `workerAttempts`; timeouts and document errors are not retried.
+After reviewing a harness-only change that leaves loading/export unchanged, a fresh output may use
+`--reuse-successes PRIOR_OUTPUT --reuse-reason "reviewed change and rationale"`. This imports only
+successful PDFs with verified source/package/PDF hashes and identical LibreOffice, fonts, limits
+and rendering policy. Each reused record identifies the old engine and cache entry. Failed attempts
+stay in the original report and are attempted again; never publish worker-cascade errors as app failures.
 
 ### Lectern preservation
 
@@ -254,12 +303,15 @@ pass merely because the remaining package is valid.
 `tools/lectern/test/designs.mjs OUTPUT [SCENARIO_REGEX]` checks imported design edits, independent
 copies, unused-master retention, history and draft recovery. It checks that unrelated layouts
 retain their exact bytes, theme effects retain their expanded XML, and new layouts allocate unique
-shape IDs including the structural group. Reports follow the same
+shape IDs including the structural group. It also covers interleaved unread master/layout shapes,
+stacking order, deletion, addition and edited default run properties. Reports follow the same
 package/SDK and LibreOffice comparison workflow.
 
 `node tools/lectern/test/frames.mjs OUTPUT_DIR [SCENARIO_REGEX]` exercises opaque SmartArt, OLE,
 ink, 3-D and chartEx previews with geometry/content edits, copies, deletion, ungrouping, clipboard
-renditions and drafts. Run `python3 tools/lectern/test/frame-fixtures.py FIXTURE_DIR` first for its
+renditions and drafts. Every saved state must have unique VML preview IDs and part animations aimed
+at graphic frames (an embedded object copied twice; edited SmartArt animated by parts). Run
+`python3 tools/lectern/test/frame-fixtures.py FIXTURE_DIR` first for its
 multiple-member fallback case; `FRAME_FIXTURES` overrides the default sibling `frames-fixtures/`
 directory. The fixture is derived from a public SDK chartEx input, with explicit provenance.
 
@@ -323,6 +375,28 @@ replacement, alternatives, range/object identity and history. `node tools/quire/
 ~/corpora/word OUTDIR` edits authored bound-text, date and checkbox controls, emitting before/edit/undo/
 copy/draft/recovered files. `node tools/quire/test/objects.mjs ~/corpora/word OUTDIR` transfers authored
 OLE/SmartArt objects between browser tabs, edits converted content, undoes it and recovers a draft.
+`node tools/quire/test/sections.mjs ~/corpora/word OUTDIR` checks section XML, absent defaults,
+header relationships and alternatives through actual saves, margin edits, undo/redo and draft recovery.
+Its generated fixture also exercises the page-number dialog, section insertion, page setup/columns
+forward at new and existing boundaries, multi-column index insertion and merged letters. Add
+`--fixture` to run only these focused cases, including copied revision IDs through history and drafts.
+It writes the original and each saved state for package/SDK and external rendering comparisons.
+
+`node tools/quire/test/picture-bullets.mjs ~/corpora/word OUTDIR` exercises the public SDK picture-bullet
+fixture through the list dialog, symbol conversion, undo/redo, actual draft recovery and an import
+with colliding source IDs. It compares retained definition XML and image bytes and checks unused
+definitions after all list references have been removed.
+
+`node tools/quire/test/numbering.mjs ~/corpora/word OUTDIR` exercises the public custom-format and
+style-linked numbering fixtures through list commands, independent copies, repeated imports,
+undo/redo and actual draft recovery. An optional final `custom` or `style` selects one fixture.
+The loss audit also inventories picture bullets, list identities/templates, legacy settings and
+cleanup metadata; the numbering harness compares metadata values and original level counts.
+
+`node tools/quire/test/recovered-breaks.mjs ~/corpora/word OUTDIR` checks the public malformed-break
+fixture through text edits, deletion, undo/redo and actual draft recovery. It verifies valid saved
+break placement and that the Compatibility Checker follows surviving recovered content.
+
 `node tools/quire/test/drawing-properties.mjs ~/corpora/word OUTDIR` checks authored picture/shape
 properties and watermarks, plus generated row/cell alternatives with populated and empty choices.
 It writes originals and every edit/history/draft state, checking that deletion cannot restore hidden

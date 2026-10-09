@@ -127,6 +127,8 @@ def cells(path):
                         st = (c.number_format, bool(fo.b), bool(fo.i), fo.u or None, round(float(fo.sz or 11), 1), col(fo.color),
                               fi.fill_type if getattr(fi, 'fill_type', None) else None, col(getattr(fi, 'fgColor', None)) if getattr(fi, 'fill_type', None) == 'solid' else None,
                               bo.left.style, bo.right.style, bo.top.style, bo.bottom.style, None if al.horizontal == 'general' else al.horizontal, None if al.vertical == 'bottom' else al.vertical, bool(al.wrap_text))
+                    except Slow:
+                        raise
                     except Exception as error:
                         raise ValueError('Cannot compare cell style at ' + str(c.coordinate)) from error
                     d[(c.row, c.column)] = (v, st)

@@ -450,6 +450,7 @@
   O.setComment = function (sh, r, c, cm) {
     const k = M.key(r, c);
     const old = sh.comments.get(k) || null;
+    cm = L.threads.editNote(cm);
     const apply = (v) => { if (v) sh.comments.set(k, Object.assign({}, v, { r, c })); else sh.comments.delete(k); };
     apply(cm);
     sh.wb.undo.op(() => apply(old), () => apply(cm));
@@ -1037,14 +1038,19 @@
       copy = wb.addSheet(name, to);
       const snap = snapSheet(sh);
       restoreSheet(copy, snap);
+      const extensions = L.sheetExtensions.copy({ cf: copy.cf, dv: copy.dv, sparklines: copy.sparklines, extensions: sh.extra.extensions });
+      Object.assign(copy, { cf: extensions.cf, dv: extensions.dv, sparklines: extensions.sparklines });
       copy.comments = new Map(Array.from(copy.comments, ([key, cm]) => [key, L.threads.copy(cm, wb)]));
       copy.wb = wb;
       copy.view = JSON.parse(JSON.stringify(sh.view));
       copy.print = JSON.parse(JSON.stringify(sh.print));
       copy.tabColor = sh.tabColor; copy.defColW = sh.defColW; copy.baseColW = sh.baseColW; copy.defRowH = sh.defRowH; copy.outline = Object.assign({}, sh.outline);
+      copy.fileDefRowH = sh.fileDefRowH; copy.zeroHeight = sh.zeroHeight;
+      if (sh.extra.formatKeep) copy.extra.formatKeep = L.opc.duplicate(sh.extra.formatKeep);
+      if (sh.extra.pageSetupKeep) copy.extra.pageSetupKeep = L.opc.duplicate(sh.extra.pageSetupKeep);
       copy.drawings = sh.drawings.map((d) => Object.assign({}, d, { anchor: JSON.parse(JSON.stringify(d.anchor)), chart: d.chart ? JSON.parse(JSON.stringify(d.chart)) : d.chart }));
       L.sheetObjects.copySheet(sh, copy);
-      if (sh.extra.extensions) copy.extra.extensions = L.opc.duplicate(sh.extra.extensions);
+      if (sh.extra.extensions) copy.extra.extensions = extensions.extensions;
       L.tableKeep.copySheet(sh, copy);
       wb.names = oldNames.map(n => ({ ...n, scope: n.scope == null ? n.scope : wb.sheets.indexOf(oldOrder[n.scope]) }));
       /* sheet-scoped names are duplicated for the copy */

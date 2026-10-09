@@ -1,15 +1,16 @@
 // Actual clipboard, undo and suite snapshot/recovery hooks. Input may be the
 // mentions-no-legacy.xlsx fixture emitted by threads.test.js with THREAD_RESULTS.
+// --edit also edits the root in the real comment editor before copying/recovery.
 import fs from 'node:fs';
 import path from 'node:path';
 import { openPage, ensureServer } from '../../ooxml/cdp.mjs';
-const [source, output] = process.argv.slice(2);
-if (!source || !output) throw Error('Usage: threads-ui.mjs INPUT.xlsx OUTPUT');
+const [source, output, mode] = process.argv.slice(2);
+if (!source || !output) throw Error('Usage: threads-ui.mjs INPUT.xlsx OUTPUT [--edit]');
 fs.mkdirSync(output, { recursive: true });
 const data = fs.readFileSync(source).toString('base64'), stop = await ensureServer();
 const page = await openPage('ledger', { persistence: false });
 try {
-  const result = await page.evaluate(`(${run.toString()})(${JSON.stringify(data)})`);
+  const result = await page.evaluate(`(${run.toString()})(${JSON.stringify(data)}, ${JSON.stringify(mode === '--edit')})`);
   for (const kind of ['draft', 'recovered']) {
     fs.writeFileSync(path.join(output, kind + '.xlsx'), Buffer.from(result[kind], 'base64')); delete result[kind];
   }
@@ -22,12 +23,27 @@ try {
   if (result.status !== 'ok') process.exitCode = 1;
 } finally { await page.close(); stop(); }
 
-async function run(data) {
+async function run(data, edit) {
   const h = __corpusHooks; VO.opened = () => {};
   await h.open(new File([Uint8Array.from(atob(data), c => c.charCodeAt(0))], 'threads.xlsx'));
   let doc = h.current(), wb = doc.wb;
-  const first = [...wb.sheets[0].comments.values()].find(c => c.thread);
+  let first = [...wb.sheets[0].comments.values()].find(c => c.thread);
   if (!first) throw Error('Input needs a thread on its first sheet');
+  if (edit) {
+    const original = structuredClone(first);
+    L.dlg.comment(first.r, first.c, first);
+    const ta = document.querySelector('.cmt-edit textarea');
+    if (ta.value !== original.thread[0].text) throw Error('Comment editor must show only the root text');
+    ta.value = 'Review ' + ta.value + ' EDITED';
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    first = wb.sheets[0].comments.get(L.model.key(first.r, first.c));
+    if (first.thread[0].text !== 'Review ' + original.thread[0].text + ' EDITED' || JSON.stringify(first.thread.slice(1)) !== JSON.stringify(original.thread.slice(1))) throw Error('Root edit lost or changed replies');
+    if (first.thread[0].mentions.length !== original.thread[0].mentions.length) throw Error('Root edit lost an untouched mention');
+    for (let i = 0; i < first.thread[0].mentions.length; i++) if (Number(first.thread[0].mentions[i].startIndex) !== Number(original.thread[0].mentions[i].startIndex) + 7) throw Error('Mention did not follow the root edit');
+    wb.undo.undo();
+    if (wb.sheets[0].comments.get(L.model.key(first.r, first.c)).thread[0].text !== original.thread[0].text) throw Error('Root edit undo failed');
+    wb.undo.redo();
+  }
   const before = [...wb.sheets[0].comments.values()].filter(c => c.thread).length;
   L.grid.selectRange({ r1: first.r, c1: first.c, r2: first.r, c2: first.c });
   L.clip.copy({ clipboardData: { setData() {} } }, false);
@@ -42,11 +58,17 @@ async function run(data) {
   doc = h.current(); wb = doc.wb; comments = [...wb.sheets[0].comments.values()].filter(c => c.thread);
   const copy = comments.find(c => c.r === 20 && c.c === 10);
   if (comments.length !== before + 1 || copy?.thread.length !== first.thread.length || copy.thread[0].mentions.length !== first.thread[0].mentions.length || copy.thread.some(t => t.parent && !copy.thread.some(p => p.id === t.parent))) throw Error('Draft lost threads, parent links or mentions');
+  if (edit && (copy.thread[0].text !== first.thread[0].text || copy.thread[0].mentions.some((m, i) => m.startIndex !== first.thread[0].mentions[i].startIndex))) throw Error('Draft lost edited root text or mention offsets');
   const saved = await L.xlsxWrite.write(wb);
+  if (edit) {
+    const original = comments.find(c => c.r === first.r && c.c === first.c);
+    L.grid.selectRange({ r1: original.r, c1: original.c, r2: original.r, c2: original.c });
+    L.dlg.comment(original.r, original.c, original);
+  }
   const encode = async blob => {
     const bytes = new Uint8Array(await blob.arrayBuffer()); let text = '';
     for (let i = 0; i < bytes.length; i += 32768) text += String.fromCharCode(...bytes.subarray(i, i + 32768));
     return btoa(text);
   };
-  return { status: 'ok', threads: comments.length, comments: comments.reduce((n, c) => n + c.thread.length, 0), draft: await encode(draft), recovered: await encode(saved) };
+  return { status: 'ok', threads: comments.length, comments: comments.reduce((n, c) => n + c.thread.length, 0), rootEdited: !!edit, draft: await encode(draft), recovered: await encode(saved) };
 }

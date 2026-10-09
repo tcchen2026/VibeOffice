@@ -16,7 +16,7 @@ import zipfile
 
 XS = '{http://www.w3.org/2001/XMLSchema}'
 SELECT = {
-    'w': ['CT_RPr', 'CT_PPr', 'CT_SectPr', 'CT_Settings', 'CT_TblPr', 'CT_TcPr', 'CT_TrPr'],
+    'w': ['CT_RPr', 'CT_PPr', 'CT_SectPr', 'CT_Settings', 'CT_TblPr', 'CT_TcPr', 'CT_TrPr', 'CT_Numbering', 'CT_AbstractNum', 'CT_Num', 'CT_NumLvl', 'CT_Lvl'],
     'a': ['CT_GroupShapeProperties', 'CT_TextBody', 'CT_ShapeProperties', 'CT_EffectList', 'CT_TextBodyProperties', 'CT_TextParagraphProperties', 'CT_TextCharacterProperties', 'CT_Blip', 'CT_BlipFillProperties', 'CT_NonVisualDrawingProps'],
     'wp': ['CT_Anchor', 'CT_Inline'],
     'p': ['CT_Shape', 'CT_Picture', 'CT_GroupShape', 'CT_GraphicalObjectFrame', 'CT_Connector', 'CT_Presentation', 'CT_PresentationProperties', 'CT_ViewProperties', 'CT_Slide', 'CT_CommonSlideData', 'CT_SlideLayout', 'CT_NotesMaster', 'CT_NotesSlide', 'CT_SlideMaster'],
@@ -100,8 +100,9 @@ def main():
             if tag == 'maxInclusive': bound['max'] = value
             if tag == 'maxExclusive': bound['max'] = value - 1
         limits[kind] = bound
-    # Word's tracked-change IDs use the SDK's Int32Value (CT_TrackChange@id).
-    limits['revision'] = {'min': 0, 'max': 2147483647}
+    # Word's tracked-change and numbering IDs use the SDK's Int32Value.
+    for kind in ('revision', 'numPicBulletId', 'numId', 'abstractNumId'):
+        limits[kind] = {'min': 0, 'max': 2147483647}
     # every preset shape's adjustment values, in order, with their defaults (presetShapeDefinitions.xml)
     data1 = part1.read_bytes()
     with zipfile.ZipFile(io.BytesIO(data1)) as outer, zipfile.ZipFile(io.BytesIO(outer.read('OfficeOpenXML-DrawingMLGeometries.zip'))) as g:

@@ -48,6 +48,37 @@ test('OLE spid resolves in its related VML preview rather than slide shape IDs',
   assert.equal(run('check', await pkg('ole-vml', parts('_x0000_s1030'))).status, 'ok');
   assert.ok(run('check', await pkg('ole-missing-vml', parts('_x0000_s1031'))).issues.some(i => i.code === 'unresolved-vml-preview'));
 });
+test('VML drawing parts name each shape once and each embedded object has its own preview', async () => {
+  const parts = (ids, spids) => ({ 'slide.xml': slide(spids.map(id => `<p:oleObj spid="${id}"/>`).join('')),
+    '_rels/slide.xml.rels': rels(rel('vml', 'vml.vml', 'vmlDrawing')),
+    'vml.vml': `<xml xmlns:v="urn:schemas-microsoft-com:vml">${ids.map(id => `<v:shape id="${id}"/>`).join('')}</xml>`,
+    '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/></Types>' });
+  assert.equal(run('check', await pkg('vml-unique', parts(['_x0000_s1025', '_x0000_s1026'], ['_x0000_s1025', '_x0000_s1026']))).status, 'ok');
+  const codes = run('check', await pkg('vml-duplicate', parts(['_x0000_s1026', '_x0000_s1025', '_x0000_s1026'], ['_x0000_s1026', '_x0000_s1025', '_x0000_s1026']))).issues.map(i => i.code);
+  assert.ok(codes.includes('duplicate-vml-id'));
+  assert.ok(codes.includes('shared-vml-preview'));
+});
+test('each spreadsheet VML drawing has its own shape id block', async () => {
+  const vml = (data, id) => `<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="${data}"/></o:shapelayout><v:shape id="_x0000_s${id}"/></xml>`;
+  const types = '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/></Types>';
+  assert.equal(run('check', await pkg('vml-blocks', { '[Content_Types].xml': types, 'xl/drawings/a.vml': vml(1, 1025), 'xl/drawings/b.vml': vml(2, 2049) })).status, 'ok');
+  assert.ok(run('check', await pkg('vml-id-across-sheets', { '[Content_Types].xml': types, 'xl/drawings/a.vml': vml('1,2', 2049), 'xl/drawings/b.vml': vml(3, 2049) })).issues.some(i => i.code === 'duplicate-vml-id'));
+  assert.ok(run('check', await pkg('vml-block-clash', { '[Content_Types].xml': types, 'xl/drawings/a.vml': vml(1, 1025), 'xl/drawings/b.vml': vml(1, 1025) })).issues.some(i => i.code === 'duplicate-vml-block'));
+});
+test('SmartArt drawing caches may repeat shape id 0, as PowerPoint writes them', async () => {
+  const DSP = 'http://schemas.microsoft.com/office/drawing/2008/diagram';
+  const sp = `<dsp:sp modelId="{1}"><dsp:nvSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvSpPr/></dsp:nvSpPr></dsp:sp>`;
+  assert.equal(run('check', await pkg('dsp-zero', { 'drawing.xml': `<dsp:drawing xmlns:dsp="${DSP}"><dsp:spTree>${sp}${sp}</dsp:spTree></dsp:drawing>` })).status, 'ok');
+  assert.ok(run('check', await pkg('slide-zero', { 'slide.xml': slide(picture(0) + picture(0)) })).issues.some(i => i.code === 'duplicate-shape-id'));
+});
+test('diagram, chart and OLE part animations target a graphic frame', async () => {
+  const target = '<p:timing><p:tnLst><p:par><p:cTn id="1"><p:childTnLst><p:set><p:cBhvr><p:cTn id="2"/><p:tgtEl><p:spTgt spid="4"><p:graphicEl><a:dgm id="{00000000-0000-0000-0000-000000000001}"/></p:graphicEl></p:spTgt></p:tgtEl></p:cBhvr></p:set></p:childTnLst></p:cTn></p:par></p:tnLst><p:bldLst><p:bldGraphic spid="4" grpId="0"/></p:bldLst></p:timing>';
+  const frame = '<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Diagram"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr></p:graphicFrame>';
+  const group = '<p:grpSp><p:nvGrpSpPr><p:cNvPr id="4" name="Diagram"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr></p:grpSp>';
+  assert.equal(run('check', await pkg('part-anim-frame', { 'slide.xml': slide(`<p:cSld><p:spTree>${frame}</p:spTree></p:cSld>${target}`) })).status, 'ok');
+  const issues = run('check', await pkg('part-anim-group', { 'slide.xml': slide(`<p:cSld><p:spTree>${group}</p:spTree></p:cSld>${target}`) })).issues;
+  assert.equal(issues.filter(i => i.code === 'animation-part-target').length, 2);
+});
 test('Word repair regressions: duplicate comment references and promoted pre-release threads', async () => {
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
   const duplicate = await pkg('comment-reference', { 'word/document.xml': `<w:document xmlns:w="${W}"><w:body><w:p><w:r><w:commentReference w:id="0"/><w:commentReference w:id="0"/></w:r></w:p></w:body></w:document>` });
