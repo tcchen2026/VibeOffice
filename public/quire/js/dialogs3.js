@@ -743,7 +743,7 @@
     } }, { label: 'Cancel' }] });
   };
   G.about = function () {
-    ui.dialog({ title: 'About Quire', width: 400, body: h('div', { class: 'col', style: 'align-items:center;text-align:center;gap:8px' }, h('span', { html: L.icons.app ? L.icons.app(48) : '' }), h('b', { text: 'Quire 2003 Web Edition', style: 'font-size:15px;color:#0b2e7c' }), h('div', { text: 'A word processor in the style of Microsoft Office Word 2003 that reads and writes Office Open XML (.docx) documents.' }), h('div', { class: 'tp-note', text: 'Microsoft, Word and Office are trademarks of Microsoft Corporation. Quire is an independent program and is not affiliated with Microsoft.' }), h('div', { class: 'tp-note', text: `Version ${L.VERSION || '1.0'}` })), buttons: [{ label: 'OK', primary: true }] });
+    ui.dialog({ title: 'About Quire', width: 400, body: h('div', { class: 'col', style: 'align-items:center;text-align:center;gap:8px' }, h('span', { html: L.icons.app ? L.icons.app(48) : '' }), h('b', { text: 'Quire 2003 Web Edition', style: 'font-size:15px;color:#0b2e7c' }), h('div', { text: 'A word processor in the style of Microsoft Office Word 2003 that reads and writes Office Open XML (.docx) documents.' }), h('div', { class: 'tp-note', text: 'Microsoft, Word and Office are trademarks of Microsoft Corporation. Quire is an independent program and is not affiliated with Microsoft.' }), h('div', { class: 'tp-note', text: `Version ${L.VERSION}` })), buttons: [{ label: 'OK', primary: true }] });
   };
   G.newFromTemplate = function () {
     const cats = L.templates.categories();

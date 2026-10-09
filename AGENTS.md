@@ -19,6 +19,7 @@ Each app is classic `<script>` files (no ES modules) that attach to one global n
 | [docs/lectern.md](docs/lectern.md) | Lectern: source layout, opening, saving, known limits |
 | [docs/suite.md](docs/suite.md) | Start Center, `common/suite.js` (app launch, Recent Files), PWA manifest, service worker |
 | [docs/testing.md](docs/testing.md) | Test workflow and tools |
+| [docs/LOSSLESS_SAVE.md](docs/LOSSLESS_SAVE.md) | Same-format save: design summary, what was done, working rules, to do |
 
 Keep them current: a change to an app's features, formats or source layout updates its `docs/<app>.md`. No per-app READMEs. User-facing docs (README, `docs/<app>.md`) send people to https://vibeoffice.work; running it locally on 127.0.0.1 belongs in docs/testing.md. Screenshots for public docs show no local recent files or drafts (close the task panes).
 
@@ -52,7 +53,7 @@ Keep them current: a change to an app's features, formats or source layout updat
 
 ## Working with other sessions
 
-Several agents work in this repository at once. Commit only your own files and hunks (stage hunks when a file also holds someone else's edits); never commit, revert or rewrite another session's uncommitted changes. Leave a finding for the owner in NEXT_PLAN.md instead of fixing inside their in-progress files.
+Several agents work in this repository at once. Commit only your own files and hunks (stage hunks when a file also holds someone else's edits); never commit, revert or rewrite another session's uncommitted changes. Leave a finding for the owner in the relevant plan's To do (preservation: docs/LOSSLESS_SAVE.md) instead of fixing inside their in-progress files.
 
 ## Testing
 

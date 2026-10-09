@@ -18,6 +18,7 @@
 (function () {
   'use strict';
   const VO = (window.VO = {});
+  VO.VERSION = 'dev';   // the published copy says YYYY.MM.<commit> (stamped by the sync script)
   const BASE = new URL('..', document.currentScript.src).href;   // public/
   VO.base = BASE;
 

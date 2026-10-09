@@ -122,7 +122,7 @@ Office review even when SDK and LibreOffice checks pass.
 saved files contain that no Office-authored original in the corpus does: attributes, child elements,
 child order, enumerated values, preset adjustment sets, content-type forms, relationship types. Markup
 already in a file's own original is not counted. It finds Office-rejected output the SDK accepts (the
-slide-6 repair was such a case); run it with every full corpus run. Findings and fixes: NEXT_PLAN.md.
+slide-6 repair was such a case); run it with every full corpus run. Open findings: docs/LOSSLESS_SAVE.md.
 
 ### Shared preservation core
 

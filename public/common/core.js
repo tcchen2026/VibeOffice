@@ -7,7 +7,7 @@
 (function (root) {
   'use strict';
   const L = root.L || (root.L = {});
-  L.VERSION = '1.0.0';
+  L.VERSION = root.VO?.VERSION || 'dev';   // one version for the suite: common/suite.js
   L.APP_ID = L.APP_ID || 'vibeoffice';
   L.APP_NAME = L.APP_NAME || 'VibeOffice';
   L.APP = L.APP || L.APP_NAME;
