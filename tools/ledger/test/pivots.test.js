@@ -127,17 +127,17 @@ test('a whole-row source stays whole but still loses a deleted used field', asyn
   assert(s.pkg.has(pivot(wb).part)); wb.undo.undo();
   O.insertLines(src(wb), 'c', 2, -1);
   s = await save(wb, 'whole-row-delete-field');
-  assert(!s.pkg.has(pivot(wb).part)); assert(s.losses.some(x => /source column/.test(x.what)));
+  assert(!s.pkg.has(pivot(wb).part)); assert(s.losses.some(x => x.notify && /plain cells, because a column it uses was deleted/.test(x.what)));
 });
 test('deleting a source or a used field removes definitions; output edits remain and are reported', async t => {
   const wb = await open(t); if (!wb) return;
   O.tx(wb, 'output', () => O.put(dst(wb), 3, 2, { v: 1234 }));
   let s = await save(wb, 'output-edit');
-  assert(s.losses.some(x => x.id.startsWith('pivot-output:')));
+  assert(s.losses.some(x => x.id.startsWith('pivot-output:') && x.notify));
   assert(s.pkg.has(pivot(wb).part)); wb.undo.undo();
   O.insertLines(src(wb), 'c', 2, -1);
   s = await save(wb, 'delete-field'); assert(!s.pkg.has(pivot(wb).part));
-  assert(!s.pkg.has(cache(wb).part)); assert(s.losses.some(x => /source column/.test(x.what)));
+  assert(!s.pkg.has(cache(wb).part)); assert(s.losses.some(x => x.notify && /plain cells, because a column it uses was deleted/.test(x.what)));
   wb.undo.undo(); s = await save(wb, 'delete-field-undo'); assert(s.pkg.has(pivot(wb).part));
   O.deleteSheet(wb, src(wb)); s = await save(wb, 'delete-source');
   assert(!s.pkg.has(pivot(wb).part)); assert(!s.pkg.has(cache(wb).part));

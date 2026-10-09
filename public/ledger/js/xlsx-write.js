@@ -740,7 +740,7 @@
           sheetEntries.push({ sh, part, kind: relation.type });
           continue;
         }
-        pack.writer.loss({ id: 'sheet-conversion:' + sh.sheetId, what: sh.kind === 'macrosheet' ? 'The Excel 4.0 macro sheet is converted to an ordinary worksheet.' : 'The dialog sheet is converted to an ordinary worksheet.', where: sh.name, action: 'conversion' });
+        pack.writer.loss({ id: 'sheet-conversion:' + sh.sheetId, what: sh.kind === 'macrosheet' ? 'This Excel 4.0 macro sheet will be saved as an ordinary worksheet, and its macros will no longer run.' : 'This dialog sheet will be saved as an ordinary worksheet, and its dialog will no longer work.', where: sh.name, place: sh.name, notify: true, action: 'conversion' });
       }
       pack.bind(part, sh.extra.ooxmlPart);
       const rels = relsFor(part);

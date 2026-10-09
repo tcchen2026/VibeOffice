@@ -58,7 +58,7 @@
       if (tag === 'fldSimple' || tag === 'fldChar' && attr(el, 'fldCharType') === 'begin') return 'fields';
       return ({ sdt: 'controls', bookmarkStart: 'bookmarks', permStart: 'permissions', comment: 'comments', footnote: 'footnotes', endnote: 'endnotes', ins: 'revisions', del: 'revisions' })[tag];
     },
-    labels: { bodies: 'Content in additional document bodies could not be retained', finalSections: 'Conflicting final section definitions could not all be retained', xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: 'Inline direction wrappers were converted to ordinary text', moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
+    labels: { bodies: { text: 'Some text in this file is outside the main document and won\'t be saved', notify: true }, finalSections: 'Conflicting final section definitions could not all be retained', xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: 'Inline direction wrappers were converted to ordinary text', moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
   });
   P.merge = function (doc, base, source, generated, writer) {
     const original = writer.pkg.xml(source), fragment = K.fragment(original, { pkg: writer.pkg, part: source });
@@ -551,6 +551,10 @@
     }
     return groups;
   };
+  // Told when a kept object can only be saved as what Quire shows of it; compatibility wrappers stay silent
+  const objectNouns = { SmartArt: 'SmartArt', 'Embedded object': 'embedded object', 'Form control': 'form control', 'Embedded content': 'embedded content', 'Embedded document': 'embedded document', Drawing: 'drawing' };
+  const objectNotice = (label, why) => /^Compatibility /.test(label) ? { what: label + ' was converted' + why, notify: false } :
+    { what: 'This ' + (objectNouns[label] || 'drawing') + ' will be saved as ordinary content' + why, place: objectNouns[label] ? undefined : label, notify: true };
   P.objectXML = function (object, name, ctx, record = opaqueStore(object)?.[name]) {
     if (!record) return null;
     if (object.watermark && !P.keepWatermark(ctx.doc)) {
@@ -559,7 +563,7 @@
     }
     const group = ctx.objects.get(objectKey(record));
     if (!group?.intact) {
-      ctx.writer.loss({ id: 'object:' + record.key + ':' + (record.fragment.copy || ''), what: record.label + ': editing its converted content replaced the original markup.', where: ctx.part, action: 'conversion' });
+      ctx.writer.loss({ id: 'object:' + record.key + ':' + (record.fragment.copy || ''), ...objectNotice(record.label, ', because it was edited here.'), where: ctx.part, action: 'conversion' });
       return null;
     }
     if (group.emitted) return '';
@@ -611,7 +615,8 @@
       if (record.drawing) xml = P.mergeDrawing(xml, object, record.drawing, ctx);
       group.emitted = true; return xml;
     } catch (error) {
-      ctx.writer.loss({ id: 'object:' + record.key, what: record.label + ' could not be retained: ' + error.message, where: ctx.part, action: 'conversion' });
+      const notice = objectNotice(record.label, ', because the original couldn\'t be kept.');
+      ctx.writer.loss({ id: 'object:' + record.key, ...notice, notify: notice.notify && !K.sourceMissing(error), detail: error.message, where: ctx.part, action: 'conversion' });
       group.intact = false; return null;
     }
   };
@@ -672,8 +677,11 @@
   const propertyStores = new Set(['{6C3C8BC8-F283-45AE-878A-BAB7291924A1}', '{6668398D-A668-4E3E-A5EB-62B293D839F1}']);
   const plainPr = pr => { const o = { ...pr }; delete o.sdts; delete o.sdte; return o; };
   const typed = c => ['date', 'dropDownList', 'comboBox', 'checkbox'].includes(c.type);
-  const controlLoss = (doc, c, why, writer) => {
-    const entry = { id: 'control:' + c.key, what: c.name + ': ' + why, where: c.shell.part, action: 'conversion' };
+  const controlKinds = { date: 'date picker', dropDownList: 'drop-down list', comboBox: 'combo box', checkbox: 'check box' };
+  // Silent unless notify: removals the user made and binding bookkeeping are recorded only
+  const controlLoss = (doc, c, what, { writer, notify = false, detail } = {}) => {
+    const entry = { id: 'control:' + c.key, what: notify ? 'This ' + (controlKinds[c.type] || 'content control') + ' ' + what : c.name + ': ' + what, detail, where: c.shell.part,
+      place: notify && c.name !== 'Content control' ? c.name : undefined, action: 'conversion', notify };
     if (writer) writer.loss(entry);
     else { D.touchKey(doc, 'losses'); K.loss(doc, entry); }
   };
@@ -756,7 +764,7 @@
       next.control.edited = true;
       if (typed(c) && same(c.value, next.control.value)) {
         next.control.converted = true; delete next.control.binding;
-        controlLoss(doc, c, 'typing converted the typed control to unbound text.');
+        controlLoss(doc, c, 'will be saved as ordinary text, because text was typed into it.', { notify: true });
       } else if (next.control.binding) {
         const binding = next.control.binding;
         if (binding.part && binding.xpath && !binding.complex) {
@@ -765,7 +773,7 @@
           (doc.keep.boundUpdates || (doc.keep.boundUpdates = {}))[binding.storeID + ':' + binding.xpath] = { ...binding };
         } else {
           delete next.control.binding; next.control.unbound = true;
-          controlLoss(doc, c, 'the edited value could not be written to its XML binding; the control was unbound.');
+          controlLoss(doc, c, 'has a new value that can\'t be stored with the document\'s data, so Word may show its old value.', { notify: true });
         }
       }
     }
@@ -896,7 +904,7 @@
     P.inlineControls(p); P.inlineControls(q);
     const scan = P.controls(doc);
     for (const [key, r] of scan.records) if (r.start.pr && ((r.end?.owner === p) || (r.start.owner === q))) {
-      P.removeControl(scan, key); controlLoss(doc, r.control, 'joining across its boundary converted the control to ordinary content.');
+      P.removeControl(scan, key); controlLoss(doc, r.control, 'will be saved as ordinary text, because paragraphs were joined across it.', { notify: true });
     }
     if (q.pPr.sdte) p.pPr.sdte = [...(p.pPr.sdte || []), ...q.pPr.sdte];
     delete q.pPr.sdte;
@@ -985,7 +993,7 @@
       if (c.binding?.part && !propertyStores.has(c.binding.storeID)) ctx.writer.keepRel(ctx.mainPart, { source: c.binding.source, owner: c.shell.part, type: RT('customXml'), part: c.binding.part, target: K.relative(c.shell.part, c.binding.part) });
       return ctx.writer.emit(K.slice(c.shell, xml), ctx.part).replace(SLOT, () => content);
     }
-    catch (error) { controlLoss(ctx.doc, c, 'the original properties could not be retained: ' + error.message, ctx.writer); return content; }
+    catch (error) { controlLoss(ctx.doc, c, 'couldn\'t be kept and will be saved as ordinary text.', { writer: ctx.writer, notify: !K.sourceMissing(error), detail: error.message }); return content; }
   };
   P.controlSequence = function (objects, prop, render, ctx) {
     const stack = [{ xml: '' }];
@@ -999,7 +1007,7 @@
         stack.pop(); stack.at(-1).xml += P.controlXML(current.control, current.xml, ctx);
       }
     }
-    while (stack.length > 1) { const r = stack.pop(); controlLoss(ctx.doc, r.control, 'an incomplete control boundary was removed.', ctx.writer); stack.at(-1).xml += r.xml; }
+    while (stack.length > 1) { const r = stack.pop(); controlLoss(ctx.doc, r.control, 'an incomplete control boundary was removed.', { writer: ctx.writer }); stack.at(-1).xml += r.xml; }
     return stack[0].xml;
   };
   P.writeBindings = function (doc, writer) {
@@ -1043,7 +1051,7 @@
         } else output = inner(xml, target, K.esc(String(update.value)));
         writer.put(dest, output, source.type(part)); writer.carryRels(source, part, dest);
       } catch (error) {
-        writer.loss({ id: 'binding:' + update.storeID + ':' + update.xpath, what: 'The edited content control value could not be written to its XML store: ' + error.message, where: part || update.storeID, action: 'conversion' });
+        writer.loss({ id: 'binding:' + update.storeID + ':' + update.xpath, what: 'A content control has a new value that can\'t be stored with the document\'s data, so Word may show its old value.', detail: error.message, where: part || update.storeID, action: 'conversion', notify: true });
       }
     }
   };

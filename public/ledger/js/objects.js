@@ -124,7 +124,7 @@
       }
       used.add(id); ids.set(d, id);
       w.ids.reserve(owner, 'shape', id);
-      if (d.objectKeep && !active(d)) w.loss({ id: 'worksheet-object:' + sh.id + ':' + id, what: 'The edited embedded object or control was converted to its displayed drawing.', where: sh.name + ': ' + d.name, action: 'conversion' });
+      if (d.objectKeep && !active(d)) w.loss({ id: 'worksheet-object:' + sh.id + ':' + id, what: 'An embedded object or control you edited will be saved as a picture and will no longer work.', where: sh.name + ': ' + d.name, place: sh.name + ': ' + d.name, action: 'conversion', notify: true });
     }
     return { sh, pack, ids, used, next, owner, vml, names, activeX, copiedParts: new Map() };
   };
@@ -297,7 +297,7 @@
       const xml = unchanged || !g.ids.length ? g.fragment.xml : project(g.fragment.xml, members, state);
       if (!xml) continue;
       try { values.push(pack.writer.emit(copiedParts(K.slice(g.fragment, xml), members, state), state.owner)); }
-      catch (error) { pack.writer.loss({ id: 'sheet-object:' + g.key, what: 'The preserved worksheet object has incomplete dependencies: ' + error.message, where: sh.name, action: 'drop' }); }
+      catch (error) { pack.writer.loss({ id: 'sheet-object:' + g.key, what: 'An object on this sheet couldn\'t be kept and will be removed.', detail: error.message, where: sh.name, place: sh.name, action: 'drop', notify: !K.sourceMissing(error) }); }
     }
     if (values.length <= 1) return values.join('');
     return combineLists(values, name);

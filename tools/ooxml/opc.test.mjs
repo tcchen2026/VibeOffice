@@ -461,6 +461,25 @@ test('the loss ledger acknowledges each entry independently and reports invalida
   K.attach(doc, p); assert.equal(JSON.parse(JSON.stringify(doc)).pkg, undefined); assert.equal(doc.pkg, p);
 });
 
+test('the checker shows only notify entries; audit catch-alls stay recorded for the drivers', async () => {
+  const p = await pkg({ 'main.xml': '<main/>', 'orphan.xml': '<provenance/>', 'gone.xml': '<payload/>', 'signature.xml': '<signature/>',
+    '_rels/.rels': rels(rel('doc', N.rel + '/officeDocument', 'main.xml') + rel('sig', N.pkg + '/digital-signature/origin', 'signature.xml')) });
+  const doc = {}, w = new K.Writer(p, { doc }); w.carryRels(p, '', '');
+  w.omit('gone.xml', 'Removed with the object the user deleted.');
+  w.finish();
+  const orphan = doc.losses.find(e => e.id.startsWith('unreferenced:'));
+  assert.equal(orphan?.where, 'orphan.xml'); assert.equal(orphan.notify, false);
+  assert.equal(doc.losses.find(e => e.where === 'gone.xml').notify, false, 'omit is silent unless asked');
+  assert.deepEqual(K.noticeLosses(doc).map(e => e.id.split(':')[0]), ['signature']);
+  assert.match(K.noticeLosses(doc)[0].what, /^The digital signature will be removed/);
+  const next = new K.Writer(p, { doc: {} }); next.omit('gone.xml', 'Pivot table saved as plain cells.', { notify: true, place: 'Sheet1: Pivot1' });
+  assert.deepEqual(K.noticeLosses(next.doc).map(e => [e.what, e.place]), [['Pivot table saved as plain cells.', 'Sheet1: Pivot1']]);
+  // An object whose part the original already lacked was broken before the save: writers record it silently
+  const broken = await pkg({ 'main.xml': '<main/>', '_rels/main.xml.rels': rels(rel('rId1', N.rel + '/image', 'media/absent.png')) });
+  const error = (() => { try { new K.Writer(broken, { doc: {} }).carry(broken, 'main.xml'); } catch (e) { return e; } })();
+  assert.ok(K.sourceMissing(error), String(error)); assert.ok(!K.sourceMissing(new Error('Cannot preserve main.xml: deleted dependency')));
+});
+
 test('save losses are recomputed without clearing reader or edit losses and their acknowledgements', () => {
   const doc = {};
   K.loss(doc, { id: 'edited', what: 'The user replaced an unsupported object.', action: 'conversion' });

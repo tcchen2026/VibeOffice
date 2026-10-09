@@ -147,6 +147,10 @@
     pres.keep.frames = records;
   };
   F.consumes = (pres, part, rel) => (pres.keep?.frames || []).some(f => f.part === part && f.rels.includes(rel.id));
+  // What the user is told when a kept object can only be saved as its preview
+  const savedAs = (label, why) => 'This ' + (({ 'New chart': 'chart', Ink: 'ink drawing', 'Embedded object': 'embedded object' })[label] || label) +
+    ' will be saved as ' + (label === 'Embedded object' ? 'a picture' : 'ordinary shapes') + why;
+  const slidePlace = (pres, part) => { const i = pres.slides.findIndex(s => s.keep?.part === part); return i < 0 ? undefined : 'Slide ' + (i + 1); };
   F.prepare = function (pres, writer) {
     const groups = new Map(), seen = new Set(), converted = new Map();
     containers(pres, list => {
@@ -166,7 +170,9 @@
       group.moved = group.entries.some(e => JSON.stringify(box(e.shape)) !== JSON.stringify(e.shape.keep.frame.box));
     }
     for (const record of [...(pres.keep?.frames || []), ...converted.values()]) if (!seen.has(record.key)) {
-      writer.loss({ id: 'frame:' + record.key, what: record.label + (converted.has(record.key) ? ' was converted to editable shapes.' : ' was removed.'), where: record.part, action: converted.has(record.key) ? 'conversion' : 'drop' });
+      // Removed objects were deleted by the user; converted ones were ungrouped or edited
+      if (converted.has(record.key)) writer.loss({ id: 'frame:' + record.key, what: savedAs(record.label, ', because it was edited here.'), where: record.part, place: slidePlace(pres, record.part), action: 'conversion', notify: true });
+      else writer.loss({ id: 'frame:' + record.key, what: record.label + ' was removed.', where: record.part, action: 'drop', notify: false });
     }
     return groups;
   };
@@ -291,8 +297,8 @@
   F.emit = function (shape, ctx) {
     const record = shape.keep?.frame; if (!record) return null;
     const group = ctx.frames?.get(key(record.fragment));
-    const loss = why => ctx.writer.loss({ id: 'frame:' + key(record.fragment), what: record.label + ': ' + why, where: ctx.part, action: 'conversion' });
-    if (!group?.intact) { loss('editing its preview replaced the original object.'); return null; }
+    const loss = (what, error) => ctx.writer.loss({ id: 'frame:' + key(record.fragment), what, detail: error?.message, where: ctx.part, place: ctx.place, action: 'conversion', notify: !K.sourceMissing(error) });
+    if (!group?.intact) { loss(savedAs(record.label, ', because it was edited here.')); return null; }
     if (group.emitted) return '';
     try {
       const fragment = dependencies(record, shape, ctx, group.moved || ctx.inGroup);
@@ -303,7 +309,7 @@
       }
       xml = L.comments.shapeIdentity(shape, ctx, xml);
       group.emitted = true; return xml;
-    } catch (error) { group.intact = false; loss('the original object could not be retained: ' + error.message); return null; }
+    } catch (error) { group.intact = false; loss(savedAs(record.label, ', because the original couldn\'t be kept.'), error); return null; }
   };
   F.references = function (item) {
     const refs = [];

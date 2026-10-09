@@ -435,14 +435,20 @@
    * Snapshot writers never call this UI or acknowledge a loss.
    */
   ui.compatibility = async function (doc, entries) {
-    const pending = L.opc.pendingLosses(doc, entries);
+    const pending = L.opc.noticeLosses(doc, entries);
     if (!pending.length) return [];
+    // One line per message, with every place it applies to
+    const groups = new Map();
+    for (const e of pending) {
+      if (!groups.has(e.what)) groups.set(e.what, []);
+      if (e.place && !groups.get(e.what).includes(e.place)) groups.get(e.what).push(e.place);
+    }
     const list = h('ul', { style: 'max-height:240px;overflow:auto;margin:8px 0;padding-left:22px' });
-    for (const e of pending) list.appendChild(h('li', { style: 'margin-bottom:8px' },
-      h('div', { text: e.what }), e.where ? h('div', { class: 'hint', text: e.where }) : null));
+    for (const [what, places] of groups) list.appendChild(h('li', { style: 'margin-bottom:8px' },
+      h('div', { text: what }), places.length ? h('div', { class: 'hint', text: places.length > 4 ? places.slice(0, 4).join(', ') + ' and ' + (places.length - 4) + ' more' : places.join(', ') }) : null));
     const body = h('div', { class: 'col' },
-      h('div', { text: 'The following features cannot be saved completely in this file. They will be converted or removed if you continue.' }), list,
-      h('div', { text: 'To keep working without saving these changes, click Cancel.' }));
+      h('div', { text: 'Some of this file can\'t be saved exactly as it was:' }), list,
+      h('div', { text: 'Click Continue to save anyway, or Cancel to go back to your document without saving.' }));
     const result = await ui.dialog({ title: 'Compatibility Checker', width: 540, body,
       buttons: [{ label: '&Continue', primary: true }, { label: 'Cancel', cancel: true }] }).done;
     return result === 0 ? pending : null;

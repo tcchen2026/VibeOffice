@@ -97,7 +97,7 @@ the current feature and edit-behaviour tables are in [Quire](quire.md#what-a-sav
 formats have their own rules.
 
 - OOXML preservation uses `common/opc.js`: immutable package bytes stay outside JSON history; model fragments carry source identities and dependency references. Classify parts as opaque, merged or regenerated. Preserve original identities unless every referrer is regenerated; duplicates remap definitions and references together. Merge settings-like parts only; regenerate content parts with model-attached fragments. Record conversions and drops in the document's loss ledger.
-- Save and drafts keep the main-part variant and encryption. Save As changes the filename/type only after a successful download. Show unacknowledged loss entries in the Compatibility Checker after preparing the file and before download; acknowledge only a successful user save. Drafts neither show nor acknowledge the checker. Recompute writer losses on every save so cancelling a conversion does not poison the next save.
+- Save and drafts keep the main-part variant and encryption. Save As changes the filename/type only after a successful download. Show the unacknowledged entries marked `notify` in the Compatibility Checker after preparing the file and before download (see [What the user is told](#what-the-user-is-told)); acknowledge only a successful user save. Drafts neither show nor acknowledge the checker. Recompute writer losses on every save so cancelling a conversion does not poison the next save.
 - Preserved content-control boundaries and binding updates participate in undo. Keep boundaries balanced through edits and paste, remap copied identities together, and roll back the whole transaction when a content/deletion lock forbids it. Typed value commands retain their binding; ordinary typing that converts a typed control records that conversion.
 - Retained formatting belongs to individual properties: compare the owning model fields, replace only the property the user changed, and keep its siblings. Capture property alternatives before normalisation and emit changed children in Office-compatible schema order. Copy range endpoints together with fresh identities; report incomplete ranges at save.
 - Rewritten parts hoist repeated namespace declarations. Keep a minimal local `mc:Ignorable` list when a scoped `PreserveAttributes`, `PreserveElements` or `ProcessContent` rule requires it; moving that processing rule to root would widen its scope.
@@ -110,10 +110,9 @@ formats have their own rules.
 | Merged | Start with the original settings-like part and replace only model-owned properties in schema order |
 | Regenerated | Write model content and attached fragments; preserve identities used by any retained referrer |
 
-Strict inputs save as Transitional OOXML after the approved compatibility notice. This explicitly
+Strict inputs save as Transitional OOXML with a recorded conversion entry (not shown: Office reads both alike). This explicitly
 converts retained XML namespaces and vocabulary; binary dependencies remain unchanged. It preserves
-the document/template/slideshow and macro variant. A cancelled save does not acknowledge the notice,
-and draft recovery keeps it pending until a successful user save.
+the document/template/slideshow and macro variant.
 
 `L.opc.open` reads the immutable baseline; `attach` keeps it out of JSON snapshots. `fragment` records
 namespace context, relationship attributes and identity definitions/references. `captureAC` runs on
@@ -153,6 +152,23 @@ features in regenerated parts, so retained wrappers do not warn merely because t
 simpler model. Chart/drawing regeneration and notes-page formatting conversion report at their
 writer branches. Cancelling a conversion and then saving the original representation clears its
 save-time notice; only a completed download acknowledges current notices.
+
+### What the user is told
+
+Every entry is recorded (corpus drivers and tests read `doc.losses`), but the Compatibility Checker
+shows only entries with `notify: true`: the user loses content or a working feature. That covers an
+object removed, SmartArt/OLE/ink saved as shapes or a picture, a slicer, control, comment thread or
+media that stops working, macros or a signature removed, pivot cells Office will overwrite, and parts
+of a damaged file that could not be read. Silent: repairs of damaged or invalid input that keep the
+content, format normalisation (Strict to Transitional, pre-release markup), formatting details behind
+an edit the user made, objects the original already lacked a part for (`L.opc.sourceMissing`), and
+audit catch-alls. The unreferenced-part and `reportFeatures` entries are bug alarms for corpus runs:
+a real loss should get its own notice where it happens.
+
+Shown entries are plain sentences about the user's content ("This SmartArt will be saved as ordinary
+shapes, because it was edited here."), with `place` in the user's terms (a sheet, cell, slide or
+control name). Part names and error text go in `where` and `detail`, never in the dialog. The dialog
+groups identical messages and lists their places.
 
 An Office review batch contains at most 15 files and a checklist. Before handoff, compare the new save
 with the previous writer's save of the same input and explain each difference. Automated validators

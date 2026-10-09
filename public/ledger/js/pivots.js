@@ -113,7 +113,7 @@
     for (const c of p.caches) if (!c.drop && c.sources.some(s => area(wb, s).missing)) c.drop = 'The pivot source was deleted.';
     for (const t of p.tables) {
       const c = p.caches.find(c => c.id === t.cache);
-      if (!t.drop && (!sheet(wb, t.sheet) || c?.drop)) t.drop = !sheet(wb, t.sheet) ? 'The worksheet containing the pivot table was deleted.' : c.drop;
+      if (!t.drop && (!sheet(wb, t.sheet) || c?.drop)) { t.drop = !sheet(wb, t.sheet) ? 'The worksheet containing the pivot table was deleted.' : c.drop; t.notify = !!sheet(wb, t.sheet); }
     }
   }
   P.current = wb => { const p = clone(state(wb)); validate(wb, p); return p; };
@@ -190,8 +190,9 @@
         if (n < 0) {
           const from = Math.max(at, rg.c1) - rg.c1, to = Math.min(at - n - 1, rg.c2) - rg.c1;
           const removed = to >= from ? cache.columns.slice(from, to + 1) : [];
-          for (const t of p.tables) if (!t.drop && t.cache === cache.id && t.used.some(i => removed.includes(i)))
-            t.drop = 'A source column used by the pivot table was deleted. Its remaining result cells are kept.';
+          for (const t of p.tables) if (!t.drop && t.cache === cache.id && t.used.some(i => removed.includes(i))) {
+            t.drop = 'A source column used by the pivot table was deleted. Its remaining result cells are kept.'; t.notify = true;
+          }
           if (to >= from) cache.columns.splice(from, to - from + 1);
         } else if (at > rg.c1 && at <= rg.c2 || kept && at - rg.c1 < cache.columns.length) cache.columns.splice(at - rg.c1, 0, ...Array(n).fill(null));
       }
@@ -262,7 +263,12 @@
       }
     }
     for (const t of p.tables) {
-      if (t.drop) { if (!t.copy) w.omit(t.part, t.drop); else w.loss({ id: 'pivot-copy:' + t.sheet + ':' + t.name, what: t.drop, where: t.name, action: 'drop' }); continue; }
+      if (t.drop) {
+        // Told only when the result stays behind as plain cells; a deleted sheet or output takes the pivot with it
+        const notice = t.notify ? { what: 'This pivot table will be saved as plain cells, because ' + (/source column/.test(t.drop) ? 'a column it uses was deleted from its source data.' : 'its source data was deleted.'), place: (sheet(wb, t.sheet)?.name || '') + ': ' + t.name, notify: true } : { what: t.drop, notify: false };
+        if (!t.copy) w.omit(t.part, notice.what, { notify: notice.notify, place: notice.place }); else w.loss({ id: 'pivot-copy:' + t.sheet + ':' + t.name, what: notice.what, place: notice.place, notify: notice.notify, where: t.name, action: 'drop' });
+        continue;
+      }
       let xml = pkg.text(t.part), tree = K.parse(xml), loc = kid(tree, 'location');
       const attrs = {}, originalRef = F.parseRange(at(loc, 'ref'));
       if (!same(t.ref, originalRef)) attrs.ref = F.rangeName(t.ref);
@@ -284,8 +290,9 @@
       const sh = sheet(wb, t.sheet), owner = pack.sheetParts.get(sh);
       const rel = relation(pkg, sh.extra.ooxmlPart || '', 'pivotTable').find(r => r.part === t.part);
       w.rels(owner).add(K.NS.rel + '/pivotTable', K.relative(owner, target), false, t.copy ? undefined : rel?.id);
-      if (t.reshaped) w.loss({ id: 'pivot-layout:' + t.sheet + ':' + t.name, what: 'Rows or columns were inserted or deleted inside a pivot table. Excel rebuilds it from its source when the file opens.', where: sh.name + '!' + F.rangeName(t.ref), action: 'conversion' });
-      if (t.edited) w.loss({ id: 'pivot-output:' + t.sheet + ':' + t.name, what: 'Cells in a pivot result were edited. Excel can replace these values when the pivot is refreshed.', where: sh.name + '!' + F.rangeName(t.ref), action: 'conversion' });
+      const changed = 'Changes made inside this pivot table will be replaced when Excel refreshes it.', place = sh.name + ': ' + t.name;
+      if (t.reshaped) w.loss({ id: 'pivot-layout:' + t.sheet + ':' + t.name, what: changed, place, notify: true, where: sh.name + '!' + F.rangeName(t.ref), action: 'conversion' });
+      if (t.edited) w.loss({ id: 'pivot-output:' + t.sheet + ':' + t.name, what: changed, place, notify: true, where: sh.name + '!' + F.rangeName(t.ref), action: 'conversion' });
     }
   };
   P.workbook = function (wb, tree, writer) {

@@ -113,8 +113,8 @@
       if (!intact(d) || keep.source !== wb.pkg?.id || !keep.views?.length) {
         entry.status = 'convert';
         w.loss({ id: 'slicer-conversion:' + sh.id + ':' + d.id, what: keep.source !== wb.pkg?.id ?
-          'The pasted filter has no source table or pivot in this workbook. Its displayed shape is kept.' :
-          'The edited slicer or timeline was converted to its displayed shape.', where: sh.name, action: 'conversion' });
+          'A pasted slicer or timeline will be saved as a plain shape and won\'t filter anything, because its table or pivot table isn\'t in this workbook.' :
+          'A slicer or timeline you edited will be saved as a plain shape and will no longer filter data.', where: sh.name, place: sh.name, action: 'conversion', notify: true });
         continue;
       }
       if (keep.views.some(v => {

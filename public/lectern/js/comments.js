@@ -177,7 +177,7 @@
         const id = w.rels(ctx.part).add(record.type, K.relative(ctx.part, target), false, copy ? undefined : record.id);
         relIds.set(record.id, id);
       } catch (error) {
-        w.loss({ id: 'comments:' + slide.id + ':' + record.part, what: 'These slide comments could not be retained: ' + error.message, where: record.part, action: 'drop' });
+        w.loss({ id: 'comments:' + slide.id + ':' + record.part, what: 'Comments on this slide couldn\'t be kept and will be removed.', detail: error.message, where: record.part, place: ctx.place, action: 'drop', notify: !L.opc.sourceMissing(error) });
       }
     }
     const extensions = (slide.keep?.commentExt || []).flatMap(f => {

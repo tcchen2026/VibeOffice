@@ -55,7 +55,7 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
 | Format | Open | Save |
 | --- | --- | --- |
 | Word Document `.docx` / `.docm` | yes | yes |
-| Strict Open XML `.docx` | yes | standard Transitional OOXML, with a Compatibility Checker notice |
+| Strict Open XML `.docx` | yes | standard Transitional OOXML (recorded, not shown) |
 | Word Template `.dotx` / `.dotm` | yes | yes |
 | Web Page `.htm` / `.html` | yes | yes (single file, images inlined) |
 | Rich Text Format `.rtf` | yes | yes |
@@ -114,8 +114,8 @@ Checks (tools in docs/testing.md):
 
 Quire keeps package dependencies, control boundaries, text/section properties and opaque object XML beside
 its editable model. Save and drafts retain DOCX/DOCM/DOTX/DOTM and encryption. The Compatibility
-Checker reports conversions from the prepared output before a user download. Drafts retain notices
-silently, and cancelling a conversion does not leave its notice on a later preserving save.
+Checker shows, before a user download, only the losses that cost the user content or a working
+feature (see docs/suite.md, What the user is told). Drafts retain notices silently, and cancelling a conversion does not leave its notice on a later preserving save.
 
 The current pinned **2,902-file** run uses frozen writer `984eaf3`, including section and numbering
 preservation. **2,880 save/reopen and draft-recovery attempts complete**, with **22 failures** in each
@@ -128,7 +128,7 @@ unvalidatable originals remain failures. Comment, formatting, compatibility-attr
 break-recovery and structure-loss notice corrections are included in this full run. Two initial text
 timeouts pass focused retries; the original failed attempts remain recorded alongside those results.
 Retained content properties normalize known invalid order, redundant identical properties and
-unambiguous color spelling, with one Compatibility Checker notice per affected source part.
+unambiguous color spelling, with one recorded notice per affected source part.
 Styles, conflicting values and unknown Word children remain intact. A corpus scan found 74 candidate
 files; all save/reopen, and all 71 with validatable originals add no package/SDK errors. The three
 unvalidatable originals remain failures. Independent previous-writer comparisons find only the
@@ -139,7 +139,7 @@ Newly generated drawings reserve both document drawing IDs and part-local shape 
 one object cannot collide with the identity of an unrelated retained group.
 An Office-found comment repair is also fixed: pre-release comment extensions retain their original
 namespace and unchanged bytes, and a comment is written with one reference. Removing a duplicate
-reference records a Compatibility Checker entry. The pinned scan finds one saved file with excess
+reference records a loss entry. The pinned scan finds one saved file with excess
 anchors and 55 automatic extension-namespace promotions; the corrected point-comment save and a
 current-format reply control both pass Word. The current full run includes these corrections.
 
@@ -208,7 +208,7 @@ These corrections passed Word in Office batch 7 files 01–02 and are included i
 `~/corpora/results/lossless-evening-review-2026-10-09/`.
 The render review also found seven misplaced breaks in `tdf108714`, which the reader previously
 skipped. Recovering them in valid paragraphs/runs retains all four pages on save and text edit,
-with a Compatibility Checker notice. The pinned scan finds one affected readable input and
+with a recorded notice. The pinned scan finds one affected readable input and
 records 33 archive/XML read failures separately. Seven command states and seven corpus
 save/edit/history/draft states add no package/SDK diagnostics; 25 browser assertions and all 27
 Quire unit tests pass. All seven emitted corpus states retain four LibreOffice pages.

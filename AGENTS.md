@@ -39,7 +39,7 @@ Keep them current: a change to an app's features, formats or source layout updat
 - Before handing files to the user for Office, diff the new save against the previous writer's save of the same input; unexplained differences are suspects. Two overlapping faults made one Office round misleading.
 - New IDs and names (list, shape, VML, slicer, control, creation IDs) follow what Office-authored files in the corpus do, not a local max+1 or a made-up suffix.
 - A fix's regression test must fail on the previous commit; run it there before committing.
-- A notice says exactly what happened: "converted" only if the value was converted, otherwise name what was dropped.
+- A notice says exactly what happened: "converted" only if the value was converted, otherwise name what was dropped. Show it to the user (`notify: true`) only when they lose content or a working feature, in plain words about their content with a place they recognise; everything else is recorded silently for tests (docs/suite.md, What the user is told).
 - Narrow Office failures by bisection: copies that each change one thing, with whole-file controls (without the suspect part, the part alone), at most about 8 per round, each with a checklist.
 
 ## Tools (details in docs/testing.md)

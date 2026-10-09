@@ -205,7 +205,7 @@ async function checker() {
   const M = window.__matrix, L = window.L, h = window.__corpusHooks;
   M.checks = []; M.saved = []; M.decision = 'saved';
   let doc = M.model();
-  const loss = n => L.opc.loss(doc, { id: 'matrix:' + n, what: 'This test object cannot be represented after the edit.', where: 'Test object ' + n, action: 'conversion' });
+  const loss = n => L.opc.loss(doc, { id: 'matrix:' + n, what: 'This test object will be saved as a picture.', where: 'test/object' + n + '.xml', place: 'Test object ' + n, action: 'conversion', notify: true });
   loss(1);
   const draft = await h.snapshot(h.current()), info = M.info();
   M.check(!L.ui.dialogOpen() && L.opc.pendingLosses(doc).length === 1, 'Draft is silent and does not acknowledge losses');
@@ -227,9 +227,15 @@ async function checker() {
   const count = M.saved.length;
   await L.app.save();
   M.check(M.saved.length === count + 1 && !L.ui.dialogOpen(), 'Repeat save is quiet');
+  // Recorded-only entries (repairs, audit catch-alls) never open the checker
+  L.opc.loss(doc, { id: 'matrix:silent', what: 'This preserved part has no remaining reference in the saved file.', where: 'customXml/provenance.xml', action: 'drop', notify: false });
+  await L.app.save();
+  M.check(M.saved.length === count + 2 && !L.ui.dialogOpen(), 'A recorded-only entry saves without the checker');
   loss(2); M.pending = L.app.save();
   await M.until(() => M.dialog('Compatibility Checker'), 'new loss checker');
-  M.check(M.dialog('Compatibility Checker').textContent.includes('Test object 2') && !M.dialog('Compatibility Checker').textContent.includes('Test object 1'), 'New loss warns without repeating acknowledged entries');
+  const text = M.dialog('Compatibility Checker').textContent;
+  M.check(text.includes('Test object 2') && !text.includes('Test object 1'), 'New loss warns without repeating acknowledged entries');
+  M.check(!/provenance|\.xml/.test(text), 'The checker shows places, not package part names');
 }
 
 async function macroConversion(o) {

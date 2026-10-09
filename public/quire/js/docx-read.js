@@ -147,7 +147,7 @@
     doc.theme = { major: 'Calibri Light', minor: 'Calibri', colors: Object.assign({}, X.DEFAULT_THEME) };
     doc.src = { mainPath };
     try { L.opc.attach(doc, await L.opc.open(zip)); }
-    catch (error) { L.opc.loss(doc, { id: 'package', what: 'Some original package data could not be retained: ' + error.message, where: mainPath, action: 'drop' }); }
+    catch (error) { L.opc.loss(doc, { id: 'package', what: 'Part of this file couldn\'t be read. Anything in it that VibeOffice can\'t edit itself, such as macros or embedded objects, won\'t be saved.', detail: error.message, where: mainPath, action: 'drop', notify: true }); }
     doc.keep = { media: {}, stores: storeParts };
     const propertyContext = el => ({ pkg: doc.pkg, part: xmlParts.get(el.ownerDocument || el) || mainPath });
 

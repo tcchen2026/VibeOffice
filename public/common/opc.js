@@ -7,6 +7,10 @@
   'use strict';
   const L = root.L || (root.L = {}), XML = L.xmlTree;
   const K = (L.opc = {});
+  /* The original file itself lacks a part or relationship: an object kept from it was already broken,
+     so converting it loses nothing the user had (recorded, not shown). */
+  const sourceMissing = message => Object.assign(new Error(message), { code: 'OOXML_SOURCE_MISSING' });
+  K.sourceMissing = error => error?.code === 'OOXML_SOURCE_MISSING';
   const NS = K.NS = Object.freeze({
     rel: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
     strictRel: 'http://purl.oclc.org/ooxml/officeDocument/relationships',
@@ -296,7 +300,7 @@
     const names = new Set(), pending = [start];
     while (pending.length) {
       const part = pending.pop(); if (names.has(part)) continue;
-      if (!pkg.has(part)) throw new Error('Missing dependency: ' + part);
+      if (!pkg.has(part)) throw sourceMissing('Missing dependency: ' + part);
       names.add(part);
       for (const r of pkg.rels(part)) if (!r.external) pending.push(r.part);
     }
@@ -487,6 +491,13 @@
     }
     return copy;
   };
+  /* A loss entry: { id, what, where, action, notify?, place?, detail? }. Every entry is recorded
+     for the corpus drivers and tests; only notify: true entries reach the Compatibility Checker.
+     Notify only when the user loses content or a working feature (an object removed, SmartArt
+     saved as shapes, macros dropped, values Office will overwrite). Repairs of damaged input,
+     format normalisation, formatting details behind an edit the user made, and audit catch-alls
+     stay silent. `what` is then a plain sentence about the user's content; `place` says where in
+     their terms (a sheet, cell or slide); part names and error text go in `where` and `detail`. */
   K.loss = function (doc, entry) {
     if (!entry.id || !entry.what || !['conversion', 'drop'].includes(entry.action)) throw new Error('Loss needs identity, description and action');
     const list = doc.losses || (doc.losses = []), previous = list.findIndex(e => e.id === entry.id);
@@ -495,6 +506,8 @@
   };
   const lossKey = e => JSON.stringify([e.id, e.what, e.where || '', e.action]);
   K.pendingLosses = (doc, entries = doc.losses || []) => entries.filter(e => !(doc.acknowledgedLosses || []).includes(lossKey(e)));
+  /** The unacknowledged entries the user is told about before a save. */
+  K.noticeLosses = (doc, entries) => K.pendingLosses(doc, entries).filter(e => e.notify === true);
   K.acknowledge = (doc, entries) => { doc.acknowledgedLosses = Array.from(new Set([...(doc.acknowledgedLosses || []), ...entries.map(lossKey)])); };
   K.lossState = doc => ({ entries: doc.losses || [], acknowledged: doc.acknowledgedLosses || [] });
   K.recoverLosses = function (doc, state) {
@@ -526,7 +539,9 @@
       const data = writer.parts.get(writer.mapping.get(key)), after = data == null ? new Map() : count(K.parse(typeof data === 'string' ? data : XML.decode(data)));
       for (const [feature, total] of original) {
         const missing = total - (after.get(feature) || 0);
-        if (missing > 0) writer.loss({ id: 'content:' + part + ':' + feature, what: labels[feature] + ' (' + missing + ').', where: part, action: 'conversion' });
+        // A measured catch-all: user deletions count too, so only labels marked notify are shown
+        const label = typeof labels[feature] === 'string' ? { text: labels[feature] } : labels[feature];
+        if (missing > 0) writer.loss({ id: 'content:' + part + ':' + feature, what: label.text + ' (' + missing + ').', where: part, action: 'conversion', notify: !!label.notify });
       }
     }
   };
@@ -982,10 +997,10 @@
       return target;
     }
     mode(pkg, part) { return this.classes.get(this.key(pkg, part)) || 'opaque'; }
-    omit(part, why, pkg = this.pkg) {
+    omit(part, why, { pkg = this.pkg, notify = false, place } = {}) {
       const key = this.key(pkg, part); this.omitted.add(key);
       const target = this.mapping.get(key); if (target) { this.parts.delete(target); this.relationships.delete(target); }
-      this.loss({ id: 'part:' + key, what: why, where: part, action: 'drop' });
+      this.loss({ id: 'part:' + key, what: why, where: part, action: 'drop', notify, place });
     }
     put(name, data, type) {
       if (data == null) throw new Error('No bytes for ' + name);
@@ -1010,9 +1025,9 @@
     }
     keepRel(owner, dep) {
       const pkg = packages.get(dep.source) || this.pkg;
-      if (!pkg || !dep.type) throw new Error('Unresolved relationship ' + (dep.id || '') + ' in ' + (dep.owner || owner));
+      if (!pkg || !dep.type) throw sourceMissing('Unresolved relationship ' + (dep.id || '') + ' in ' + (dep.owner || owner));
       if (signatureRel(dep.type)) {
-        this.loss({ id: 'signature:' + pkg.id, what: 'The digital signature becomes invalid when this file is saved.', where: dep.owner || '/', action: 'drop' });
+        this.loss({ id: 'signature:' + pkg.id, what: 'The digital signature will be removed. Saving changes to a signed file always invalidates its signature.', where: dep.owner || '/', action: 'drop', notify: true });
         return null;
       }
       let target = dep.target;
@@ -1039,7 +1054,7 @@
         if (seen.has(key)) continue;
         seen.add(key);
         if (this.omitted.has(key)) throw new Error('Cannot preserve ' + part + ': deleted dependency ' + name);
-        if (!pkg.has(name)) throw new Error('Missing dependency: ' + name);
+        if (!pkg.has(name)) throw sourceMissing('Missing dependency: ' + name);
         if (this.mode(pkg, name) !== 'opaque') continue;
         for (const r of pkg.rels(name)) if (!r.external && !signatureRel(r.type)) pending.push(r.part);
       }
@@ -1048,7 +1063,7 @@
     _carry(pkg, part) {
       const key = this.key(pkg, part), dest = this.target(pkg, part);
       if (!dest || this.carried.has(key)) return dest;
-      if (!pkg.has(part)) throw new Error('Missing dependency: ' + part);
+      if (!pkg.has(part)) throw sourceMissing('Missing dependency: ' + part);
       this.carried.add(key); // mark before following edges: layouts can point back at masters
       if (this.mode(pkg, part) !== 'opaque') return dest;
       this.put(dest, pkg.bytes(part), pkg.type(part) || this.contentType?.(pkg, part));
@@ -1075,7 +1090,7 @@
       return dest;
     }
     copyPart(pkg, part, dest, references = {}) {
-      if (!pkg.has(part)) throw new Error('Missing dependency: ' + part);
+      if (!pkg.has(part)) throw sourceMissing('Missing dependency: ' + part);
       const rels = new Rels();
       for (const r of pkg.rels(part)) {
         if (signatureRel(r.type)) { this.keepRel(dest, { source: pkg.id, owner: part, ...r }); continue; }
@@ -1132,7 +1147,9 @@
       if (this.pkg) for (const name of this.pkg.names) {
         if (name === '[Content_Types].xml' || name.endsWith('.rels') || this.mode(this.pkg, name) !== 'opaque') continue;
         if (!this.parts.has(this.mapping.get(this.key(this.pkg, name))) && !this.omitted.has(this.key(this.pkg, name)) && !this.explained.has(this.key(this.pkg, name))) {
-          this.loss({ id: 'unreferenced:' + this.pkg.id + ':' + name, what: 'This preserved part has no remaining reference in the saved file.', where: name, action: 'drop' });
+          // Audit catch-all for the test drivers (often a part the original never used); a real loss
+          // the user should hear about gets its own notice where it happens.
+          this.loss({ id: 'unreferenced:' + this.pkg.id + ':' + name, what: 'This preserved part has no remaining reference in the saved file.', where: name, action: 'drop', notify: false });
         }
       }
       /* As Office writes it: Defaults for .rels, .xml and every extension whose parts all share one type
@@ -1247,7 +1264,7 @@
           if (modes.get(base) === 'opaque') continue;
           for (const rel of pkg.rels(source)) {
             const type = K.relationshipType(rel.type);
-            if (options.format && !options.format.macro && /\/vbaProject$/.test(type)) { writer.omit(rel.part, 'Macros cannot be saved in the selected file type.'); continue; }
+            if (options.format && !options.format.macro && /\/vbaProject$/.test(type)) { writer.omit(rel.part, 'Macros will be removed, because the selected file type can\'t store them. To keep them, save as a macro-enabled file type.', { notify: true }); continue; }
             if (options.consumes?.(base, rel, type)) continue;
             try { writer.keepRel(owner, { source: pkg.id, owner: source, ...rel }); }
             catch (error) { writer.loss({ id: 'relationship:' + source + ':' + rel.id, what: 'The original relationship could not be retained: ' + error.message, where: source || '/', action: 'drop' }); }

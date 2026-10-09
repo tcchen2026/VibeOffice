@@ -71,7 +71,7 @@ async function check(data, feature) {
     D.tx('Edit one drawing property', () => { D.touch(p); it[feature] = expected; });
     const edited = await save('edited');
     for (const tag of ['glow', 'reflection', 'softEdge', 'scene3d', 'sp3d', 'extLst']) assert(count(edited, tag) === count(before, tag), tag + ' changed with another property');
-    assert(!doc.losses?.some(e => /converted content|could not be retained/.test(e.what)), 'Drawing property edit converted its frame: ' + JSON.stringify(doc.losses));
+    assert(!doc.losses?.some(e => /will be saved as ordinary content|^Compatibility .* was converted/.test(e.what)), 'Drawing property edit converted its frame: ' + JSON.stringify(doc.losses));
     const reopened = []; D.walk(edited.main, p => { if (p.t === 'p') for (const i of p.runs) if (i.keep?.opaque && i.t === it.t) reopened.push(i); });
     assert(reopened.some(i => feature === 'crop' ? Math.abs(i.crop?.l - expected.l) < 0.0001 : Math.abs(i.shadow?.dx - expected.dx) < 0.01), 'The changed drawing property did not reopen');
   } else if (feature === 'watermark') {

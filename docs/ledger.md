@@ -118,7 +118,7 @@ printer itself.
 | --- | --- | --- |
 | Excel Workbook `.xlsx`, Macro-Enabled `.xlsm`, Templates `.xltx` / `.xltm` | yes | yes (VBA projects are kept, not run) |
 | Password-protected `.xlsx` / `.xlsm` | yes: Office 2007 "standard" and Office 2010+ "agile" encryption (AES with SHA-1/256/384/512) | yes: Tools ▸ Options ▸ Security, or Save As ▸ General Options (AES-256 with SHA-512, as Excel 2013+) |
-| Strict Open XML `.xlsx` | yes | standard Transitional OOXML, with a Compatibility Checker notice |
+| Strict Open XML `.xlsx` | yes | standard Transitional OOXML (recorded, not shown) |
 | CSV `.csv`, text `.txt` / `.tsv` / `.prn` | yes: UTF-8, UTF-16 and Windows-1252 detected; the Text Import Wizard for delimited and fixed-width text | yes: CSV (UTF-8) and tab-delimited text, what each cell shows, as Excel does |
 | XML Spreadsheet 2003 `.xml` | yes | yes |
 | Web Page `.htm` / `.html` | yes: each table on the page becomes a sheet | yes: one self-contained page per workbook |
@@ -196,8 +196,9 @@ focused package/SDK and LibreOffice checks and are accepted in Excel. Evidence:
 
 Ledger regenerates worksheets and keeps original package dependencies, workbook settings, style
 indices and shared strings. Save and drafts retain all four OOXML variants and encryption. The
-Compatibility Checker reports conversions from the prepared output before a user download,
-including edited imported charts and opaque drawings. Drafts retain notices silently.
+Compatibility Checker shows, before a user download, only the losses that cost the user content or a
+working feature (see docs/suite.md, What the user is told); repairs and edited-chart formatting are recorded silently.
+Drafts retain notices silently.
 
 The pinned 951-file corpus saves and reopens **935 workbooks**, with **11 failures and 5 exclusions**.
 Cell edit/save/undo/redo completes in **933**, with **11 failures and 7 exclusions**; draft recovery
@@ -237,8 +238,8 @@ part in `tdf76115` explicitly.
 | Kept; Excel samples accepted | Controls, OLE, non-comment VML and sheet custom properties | All 40 relevant workbooks save without new package/SDK errors: 344/344 control references, 370/370 control/ActiveX parts, 26/26 OLE entries, 367/367 non-note VML shapes and 31/31 sheet properties. All 43 VML parts retain their original bytes |
 | Kept; Excel samples accepted | Slicers and timelines | Three pinned supplemental workbooks retain 7/7 views and 12/12 definition/cache parts byte for byte; edits cover shared pivots, table copies, source deletion and drafts. OLAP cases remain unmeasured |
 | Kept; Excel samples accepted | Query tables and column metadata | Ten public workbooks retain 23/23 query parts and 10/10 connections parts byte for byte, with 20/20 query tables and 68/68 column identities. Eight focused cases cover column edits, copies, deletion and history |
-| Converted, with a notice | Edited imported charts, opaque drawing contents and macro/dialog sheets | Regenerate the edited model content; report its conversion before download |
-| Dropped, with a notice | Missing or unreferenced package dependencies; VBA in macro-free Save As | One source connection dependency is missing; two unreferenced custom-XML parts are not reattached. Macro removal requires the selected format and successful save |
+| Converted, with a notice | Edited imported charts, opaque drawing contents and macro/dialog sheets | Regenerate the edited model content. The checker shows edited objects/controls, slicers and macro/dialog sheets; chart formatting conversions are recorded only |
+| Dropped, with a notice | Missing or unreferenced package dependencies; VBA in macro-free Save As | One source connection dependency is missing; two unreferenced custom-XML parts are not reattached (recorded only). Macro removal is shown and requires the selected format and successful save |
 
 Package figures compare bytes, content types, original rIds and intended targets. The user accepted
 both Excel files in Office batch 1 (XLSM and custom XML/external links); the namespace sample also
@@ -283,7 +284,7 @@ results are in `~/corpora/results/office-accepted-2026-10-09/`.
 |---|---|
 | Edit cells around an unedited raw shape | Keep its original XML, compatibility alternatives and relationships |
 | Move a drawing | Update its worksheet anchor |
-| Edit chart contents or a converted shape | Regenerate the modeled content with a Compatibility Checker notice; general per-property preservation remains pending |
+| Edit chart contents or a converted shape | Regenerate the modeled content with a recorded notice; general per-property preservation remains pending |
 | Copy/duplicate or delete | Controls and OLE follow the ownership rules below; other opaque-frame ownership remains part of the remaining Ledger work |
 
 ### Pivots, threads, controls and extensions: current edit limits
@@ -311,7 +312,7 @@ an external connection. Excel performs any requested refresh when it opens the s
 | Defined-name source | Retain the name and its scope, and use the current name formula when it resolves to a range. Keep formula-based names intact; if a source cannot be bounded safely, request refresh after workbook value or structure changes instead of inventing a range. |
 | External source | Keep the connection, external source metadata and cached records unchanged. Local edits do not execute the connection or rewrite its source. |
 | Consolidation source | Keep every source area and its page-field metadata. Shift or rename each local area by its owning sheet; retain external areas unchanged. |
-| Change a value or formula in a local source | Keep the current cache records and set `refreshOnLoad="1"` on the cache definition. Formatting-only edits do not request refresh. The Compatibility Checker explains that Excel must refresh the cached result. |
+| Change a value or formula in a local source | Keep the current cache records and set `refreshOnLoad="1"` on the cache definition. Formatting-only edits do not request refresh. The refresh request is recorded, not shown. |
 | Insert/delete source rows or columns | Shift each affected area and request refresh; a whole-column (`A:D`) or whole-row source stays whole along that axis. Keep field identities and cached records. Deleting a used field removes its affected pivot definition with a notice, retaining the remaining result cells. |
 | Insert/delete rows or columns around the output | Shift the pivot `location` with its displayed cells. Lines inserted or deleted inside the output shrink or grow `location`, request refresh so Excel rebuilds the layout, and are reported. If the whole output is deleted, remove that pivot and report it. |
 | Edit a value or formula inside the output | Allow the cell edit and retain the pivot. Report that Excel can overwrite that edit on refresh; never silently discard the edit while saving. |
@@ -436,7 +437,7 @@ not reintroduce the repeated namespace declarations removed by the namespace fol
 | Insert/delete columns through a table | Keep retained column IDs, mark new columns as unbound, and record deleted bound fields so a later refresh does not restore them |
 | Insert/delete rows or columns | Shift table, filter and sort ranges together |
 | Copy a table's worksheet | Give the table independent query parts and fresh UIDs; use numeric query-name suffixes. Retain field links and duplicate sheet-scoped destination names for range queries |
-| Delete a table or its worksheet | Remove its query parts with a Compatibility Checker entry; keep workbook-owned connections |
+| Delete a table or its worksheet | Remove its query parts with a recorded entry; keep workbook-owned connections |
 | Undo/redo or recover a draft | Restore table membership, columns, scoped names and query changes; saving does not mutate model headings |
 
 Eight focused cases produce **23 unique passing package/SDK states**, plus **two actual browser

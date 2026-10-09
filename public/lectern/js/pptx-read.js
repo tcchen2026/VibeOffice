@@ -841,7 +841,7 @@
     const W = L.round(pt(num(sz, 'cx', 9144000)), 3), H = L.round(pt(num(sz, 'cy', 6858000)), 3);
     const pres = L.model.newPresentation({ w: W, h: H, empty: true });
     if (pkg) L.opc.attach(pres, pkg);
-    if (packageError) L.opc.loss(pres, { id: 'package:unreadable', what: 'Some original package bytes could not be retained: ' + packageError, where: presPath, action: 'drop' });
+    if (packageError) L.opc.loss(pres, { id: 'package:unreadable', what: 'Part of this file couldn\'t be read. Anything in it that VibeOffice can\'t edit itself, such as macros or embedded objects, won\'t be saved.', detail: String(packageError), where: presPath, action: 'drop', notify: true });
     pres.designs = {};
     pres.firstNum = num(presX, 'firstSlideNum', 1);
 

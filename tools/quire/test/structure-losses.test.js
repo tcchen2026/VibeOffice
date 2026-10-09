@@ -23,9 +23,9 @@ test('discarded extra body text has an explicit save notice that survives draft 
   const source = await pkg(first + second), doc = {};
   save(source, doc, first + second); assert.equal(doc.losses.length, 0);
   save(source, doc, first); assert.equal(doc.losses.length, 1);
-  assert.match(doc.losses[0].what, /Content in additional document bodies.*\(1\)/);
+  assert.match(doc.losses[0].what, /outside the main document and won't be saved.*\(1\)/);
   const recovered = {}; K.recoverLosses(recovered, K.lossState(doc));
-  assert.equal(K.pendingLosses(recovered)[0].what, doc.losses[0].what);
+  assert.equal(K.noticeLosses(recovered)[0].what, doc.losses[0].what, 'the user is still told after draft recovery');
   save(source, doc, first + second); assert.equal(doc.losses.length, 0, 'a preserving save clears the cancelled conversion');
 });
 
@@ -35,6 +35,7 @@ test('only omitted body-level final sections produce the malformed-structure not
   save(source, doc, '<w:body>' + ordinarySection + '<w:sectPr/></w:body>');
   assert.equal(doc.losses.length, 1);
   assert.match(doc.losses[0].what, /Conflicting final section definitions.*\(1\)/);
+  assert.equal(K.noticeLosses(doc).length, 0, 'a repaired structure is recorded, not shown');
   const valid = await pkg('<w:body>' + ordinarySection + '<w:sectPr/></w:body>');
   save(valid, doc, '<w:body><w:sectPr/></w:body>');
   assert.equal(doc.losses.length, 0, 'ordinary section deletion is not an extra-final-section loss');

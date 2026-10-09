@@ -944,7 +944,7 @@
       if (rootClash) rootId = writer.ids.fresh(part, 'shape');
       const idMap = new Map();
       const ctx = {
-        writer, frames, part, rels: sRels, media: mediaSync(sRels, part), svg: svgSync(sRels, part), slideIndex, fieldId: fieldIds(part),
+        writer, frames, part, place: 'Slide ' + n, rels: sRels, media: mediaSync(sRels, part), svg: svgSync(sRels, part), slideIndex, fieldId: fieldIds(part),
         slideTarget: index => K.relative(part, slideParts[index]),
         nextId: (mid) => {
           if (idMap.has(mid)) return idMap.get(mid);

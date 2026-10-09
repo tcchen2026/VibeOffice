@@ -111,7 +111,7 @@
         ['http://purl.oclc.org/ooxml/drawingml/main', N.a].includes(el.namespaceURI) && el.localName === 'fld' ? 'fields' : null,
       labels: { controls: 'Some original form controls were converted to previews or removed', fields: 'Some original text fields were converted to ordinary text' },
     });
-    if (writer.doc.repaired?.parts?.length) writer.loss({ id: 'read:damaged', what: 'Some damaged source parts could not be fully read and may be incomplete in this save.', where: writer.doc.repaired.parts.join(', '), action: 'conversion' });
+    if (writer.doc.repaired?.parts?.length) writer.loss({ id: 'read:damaged', what: 'Part of this file is damaged. Whatever couldn\'t be read from it won\'t be saved.', notify: true, where: writer.doc.repaired.parts.join(', '), action: 'conversion' });
   };
   P.mergePackage = function (pres, base, source, generated, writer) {
     const fragment = K.fragment(writer.pkg.xml(source), { pkg: writer.pkg, part: source });
@@ -302,7 +302,7 @@
     const keep = shape.keep?.media;
     if (!keep) return null;
     if (!P.valid(shape)) {
-      ctx.writer.loss({ id: 'media:' + shape.id, what: missing(keep.frame) ? 'The media object refers to data missing from the original file.' : 'Replacing this media picture converts it to a picture without playback.', where: shape.name, action: 'conversion' });
+      ctx.writer.loss({ id: 'media:' + shape.id, ...(missing(keep.frame) ? { what: 'The media object refers to data missing from the original file.', notify: false } : { what: 'This video or sound will be saved as a picture and will no longer play, because its picture was replaced.', notify: true, place: ctx.place }), where: shape.name, action: 'conversion' });
       return null;
     }
     let xml = ctx.writer.emit(keep.frame, ctx.part);

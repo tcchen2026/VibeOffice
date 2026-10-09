@@ -294,7 +294,8 @@ stay in the original report and are attempted again; never publish worker-cascad
 `node tools/ooxml/conversions.mjs OUTPUT_DIR [SCENARIO_REGEX]` checks conversion notices on public
 Word/Excel/PowerPoint files and verifies that reverting an edit removes its save-time notice.
 `node tools/ooxml/save-matrix.mjs OUTPUT_DIR --checker-only` checks silent drafts, recovery,
-cancellation, download failure, successful acknowledgement and newly introduced notices in all apps.
+cancellation, download failure, successful acknowledgement, newly introduced notices and recorded-only
+entries that must save without the dialog, in all apps.
 Feature inventories decode UTF-16 parts and count retained SmartArt text on both sides.
 
 `node tools/lectern/test/properties.mjs OUTPUT_DIR [SCENARIO_REGEX]` checks per-property edits,

@@ -1161,7 +1161,7 @@
     const wrels = await pkg.rels(wbPart);
     const wb = new M.Workbook();
     try { L.opc.attach(wb, await L.opc.open(zip)); }
-    catch (error) { L.opc.loss(wb, { id: 'package', what: 'Some original package data could not be retained: ' + error.message, where: wbPart, action: 'drop' }); }
+    catch (error) { L.opc.loss(wb, { id: 'package', what: 'Part of this file couldn\'t be read. Anything in it that VibeOffice can\'t edit itself, such as macros or embedded objects, won\'t be saved.', detail: error.message, where: wbPart, action: 'drop', notify: true }); }
     wb.ooxmlFormat = L.opc.variant(wb.pkg, 'xlsx');
     wb.strict = /purl\.oclc\.org/.test(wbEl.lookupNamespaceURI(wbEl.prefix) || '');
     const wpr = kid(wbEl, 'workbookPr');

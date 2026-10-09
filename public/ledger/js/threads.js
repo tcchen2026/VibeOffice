@@ -135,7 +135,7 @@
         if (T.active(cm)) {
           for (const t of cm.thread) items.push({ cm, t });
           for (const p of cm.threadKeep.people) needed.set(p.id, p.xml);
-        } else if (cm.thread?.length) w.loss({ id: 'thread-conversion:' + sh.id + ':' + rootId(cm), what: 'The edited threaded comment was converted to an ordinary note.', where: sh.name + '!' + F.cellName(cm.r, cm.c), action: 'conversion' });
+        } else if (cm.thread?.length) w.loss({ id: 'thread-conversion:' + sh.id + ':' + rootId(cm), what: 'A comment thread you edited will be saved as an ordinary note. Excel will show it as a note, not as a conversation.', where: sh.name + '!' + F.cellName(cm.r, cm.c), place: sh.name + '!' + F.cellName(cm.r, cm.c), action: 'conversion', notify: true });
       }
       if (!items.length) { if (source) w.omit(source, 'The comments on this sheet were deleted or converted to ordinary notes.'); continue; }
       const old = kids(originals, 'threadedComment'), positions = new Map(old.map((e, index) => [at(e, 'id'), index]));

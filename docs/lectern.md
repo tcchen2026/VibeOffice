@@ -42,7 +42,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 
 File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible, and legacy binary `.ppt` files get a clear message.
 
-Strict inputs save as standard Transitional OOXML, with a Compatibility Checker notice. Same-format
+Strict inputs save as standard Transitional OOXML (recorded, not shown). Same-format
 saves retain the macro, template or slideshow variant and any opening password.
 
 **Password-protected presentations** ask for the password, as PowerPoint does, and say so when it is wrong. Decryption happens in the browser (Agile encryption from Office 2010 on, Standard encryption from Office 2007). A presentation opened with a password is saved with the same password; Tools ▸ Options ▸ Security sets, changes or removes it (AES-256 with SHA-512, the scheme PowerPoint 2013 and later use).
@@ -74,8 +74,8 @@ Pictures survive a round trip in every form they come in: SVG pictures keep the 
 Imported video and audio retain their original media bytes, links, pictures and playback timing on
 save. Lectern displays their poster pictures; the video sample passed Office batch 1.
 Moving, resizing, cropping, duplicating, copying between decks and draft recovery preserve the media.
-Replacing the media picture converts it to an ordinary picture and records that conversion. The
-Compatibility Checker shows recorded conversions before the user downloads a saved file.
+Replacing the media picture converts it to an ordinary picture; the Compatibility Checker tells the
+user before the download that it will no longer play.
 
 ## Testing against real presentations
 
@@ -99,8 +99,9 @@ from package/SDK results. All 15 batch-4 samples and the batch-7 corrections pas
 including the corrected fixture described below. Reports: `~/corpora/results/lossless-final-984eaf3/lectern/`.
 
 Lectern regenerates slides and keeps package dependencies and unsupported properties beside the model.
-Save and drafts retain all six OOXML variants and encryption. The Compatibility Checker reports
-conversions from the prepared output before a user download; drafts retain those notices silently.
+Save and drafts retain all six OOXML variants and encryption. The Compatibility Checker shows, before
+a user download, only the losses that cost the user content or a working feature (see docs/suite.md, What the user is told);
+drafts retain those notices silently.
 
 The pinned **844-file** run completes **837 saves and 837 draft recoveries**, with **6 failures and
 1 password exclusion** in each scenario. Text edit/save/undo/redo completes in **548**, excludes
@@ -218,7 +219,7 @@ All 15 batch-4 samples passed PowerPoint. Reports:
 | Insert or copy slides | Use fresh IDs above the source maximum; join the preceding slide's section (the following section when inserting first). Copies are not automatically added to custom shows |
 | Move slides | Join the destination section and retain original slide IDs; custom shows keep their own playback order |
 | Delete slides | Remove their section and custom-show references; retain empty section definitions |
-| Delete every slide in a custom show | Remove that show with a Compatibility Checker entry; a selected removed show switches to all slides |
+| Delete every slide in a custom show | Remove that show with a recorded entry; a selected removed show switches to all slides |
 | Undo/redo or recover a draft | Restore slide membership and original identities; draft recovery retains pending notices |
 
 The 18-deck sweep and all 26 edit/history/draft states introduce no package/SDK diagnostics.
