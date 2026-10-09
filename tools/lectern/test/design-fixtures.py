@@ -14,6 +14,7 @@ with zipfile.ZipFile(args.corpus / 'libreoffice__07eb8b76b2cf__master-slides.ppt
     parts = {n: z.read(n) for n in z.namelist()}
 P = 'http://schemas.openxmlformats.org/presentationml/2006/main'
 A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+MC = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
 for name, data in list(parts.items()):
     if not re.fullmatch(r'ppt/slide(?:Masters|Layouts)/[^/]+\.xml', name):
         continue
@@ -29,6 +30,10 @@ for name, data in list(parts.items()):
                '<a:ext cx="381000" cy="381000"/></p:xfrm><a:graphic><a:graphicData uri="urn:vibeoffice:test:unread">'
                '<test:object xmlns:test="urn:vibeoffice:test:unread" value="retain this object"/>'
                '</a:graphicData></a:graphic></p:graphicFrame>')
+    # Office repairs the invented graphic type when it is active content. Keep
+    # this preservation probe in an unsupported choice with an empty fallback.
+    unknown = (f'<mc:AlternateContent xmlns:mc="{MC}" xmlns:test="urn:vibeoffice:test:unread">'
+               f'<mc:Choice Requires="test">{unknown}</mc:Choice><mc:Fallback/></mc:AlternateContent>')
     xml = data.decode('utf-8-sig')
     end = re.search(r'</(?:\w+:)?spTree>', xml).start()
     parts[name] = (xml[:end] + shape(ident, 381000) + unknown + shape(ident + 2, 1143000) + xml[end:]).encode()

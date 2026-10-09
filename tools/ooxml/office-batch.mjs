@@ -61,6 +61,10 @@ async function save(c, data) {
       }
       changed.push(c.edit === 'numbering-copy' ? 'Started an independent list at the selected paragraph' : 'Right-aligned the selected list level');
       if (c.copyAfter) changed.push('Copied the edited list as an independent definition');
+    } else if (c.edit === 'index-columns') {
+      const p = doc.main.blocks[1], pos = D.pos(p, Math.min(5, D.plen(p))); L.ed.sel = { a: pos, f: pos };
+      L.fields.insertGenerated('INDEX \\c "2"', { columns: 2 });
+      changed.push('Inserted a two-column index in the second section');
     } else if (c.edit === 'section-review') {
       D.tx('Change top margin', () => { D.touchKey(doc, 'sect'); doc.sect.mt += 9; });
       const p = doc.main.blocks.at(-1), pos = D.pos(p, Math.min(5, D.plen(p))); L.ed.sel = { a: pos, f: pos };
@@ -114,6 +118,14 @@ async function save(c, data) {
       if (step.kind === 'lines') O.insertLines(sh, step.axis, table ? table.ref[step.axis + '1'] + step.offset : step.at, step.count);
       else if (step.kind === 'value') O.tx(doc, 'Review cell edit', () => O.put(sh, step.row, step.col, { ...sh.get(step.row, step.col), v: step.value, f: undefined }));
       else if (step.kind === 'copy-sheet') { O.copySheet(doc, sh, doc.sheets.length); if (step.deleteSource) O.deleteSheet(doc, sh); }
+      else if (step.kind === 'copy-control') {
+        const source = sh.drawings.find(d => d.objectKeep); if (!source) throw new Error('Missing control');
+        for (let i = 0; i < (step.count || 1); i++) {
+          const copy = L.sheetObjects.copy(source); copy.id = Math.max(...sh.drawings.map(d => d.id || 0)) + 1;
+          if (copy.anchor.from) { copy.anchor.from.r += 5 * (i + 1); copy.anchor.to.r += 5 * (i + 1); }
+          O.tx(doc, 'Copy control', () => O.setDrawings(sh, sh.drawings.concat(copy)));
+        }
+      }
       else if (step.kind === 'delete-sheet') O.deleteSheet(doc, sh);
       else if (step.kind === 'note') O.tx(doc, 'Review note', () => O.setComment(sh, step.row, step.col, { r: step.row, c: step.col, author: 'Review', text: step.text }));
       else if (step.kind === 'thread-text') {
@@ -145,7 +157,7 @@ async function save(c, data) {
       let shape, list;
       const select = shapes => {
         for (const sh of shapes) {
-          if (!shape && (!step.needle || sourceShape(sh).includes(step.needle))) { shape = sh; list = shapes; }
+          if (!shape && (!step.frame || sh.keep?.frame) && (!step.needle || sourceShape(sh).includes(step.needle))) { shape = sh; list = shapes; }
           if (!shape && sh.kids) select(sh.kids);
         }
       };
@@ -170,6 +182,19 @@ async function save(c, data) {
       } else if (step.kind === 'design-copy') {
         const copy = K.duplicate(doc.designs[slide.design]); copy.id = L.uid('dsn'); copy.colors.accent1 = '#AA2244';
         doc.designs[copy.id] = copy; slide.design = copy.id;
+      } else if (step.kind === 'design-decoration') {
+        const design = M.design(doc, slide), layout = step.layout && design.keep.layoutParts[0];
+        const list = layout ? design.layoutDecos[layout.lkey] : design.deco;
+        const decoration = list.find(s => s.name === (step.name || 'Review decoration 1'));
+        if (!decoration) throw new Error('Missing design decoration');
+        M.translate(decoration, step.dx || 12, step.dy || 8);
+      } else if (step.kind === 'ungroup-frame') {
+        M.walk(slide.shapes, sh => { if (!shape && (step.type === 'chart' ? sh.type === 'chart' : sh.keep?.frame?.label === 'Embedded object')) shape = sh; return true; });
+        if (!shape) throw new Error('Missing graphic frame');
+        L.ed.goto(doc.slides.indexOf(slide), { force: true }); L.app.view = 'normal'; L.app.focusArea = 'editor';
+        const list = L.ed.find(shape.id).list;
+        const group = { id: L.uid('group'), type: 'group', name: 'Rotated group', x: shape.x, y: shape.y, w: shape.w, h: shape.h, rot: 45, kids: [shape] };
+        list.splice(list.indexOf(shape), 1, group); L.ed.select([group.id]); L.hist.clear(); L.app.ungroup();
       } else if (step.kind === 'transition') Object.assign(slide.trans, step.properties);
       else if (step.kind === 'animation') {
         if (!slide.anims.length) throw new Error('No modeled animation'); slide.anims[0].dur += 200;

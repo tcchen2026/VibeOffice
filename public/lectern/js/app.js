@@ -991,7 +991,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
         const kids = g.kids;
         if (g.rot) {
           const cx = g.x + g.w / 2, cy = g.y + g.h / 2;
-          for (const k of kids) { const [nx, ny] = L.rotPt(k.x + k.w / 2, k.y + k.h / 2, cx, cy, g.rot); M.translate(k, nx - (k.x + k.w / 2), ny - (k.y + k.h / 2)); k.rot = ((k.rot || 0) + g.rot) % 360; }
+          for (const k of kids) { const [nx, ny] = L.rotPt(k.x + k.w / 2, k.y + k.h / 2, cx, cy, g.rot); M.translate(k, nx - (k.x + k.w / 2), ny - (k.y + k.h / 2)); if (M.canRotate(k)) k.rot = ((k.rot || 0) + g.rot) % 360; }
         }
         f.list.splice(f.list.indexOf(g), 1, ...kids);
         out.push(...kids.map((k) => k.id));

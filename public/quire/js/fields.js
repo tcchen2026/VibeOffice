@@ -654,10 +654,13 @@
         const cont = D.touchList(d.main);
         const before = D.para([], {});
         const curSect = D.sectOfBlock(d, tb0.i).sect;
-        before.sect = Object.assign(L.opc.duplicate(curSect), { type: 'continuous' });
+        // The original section's start belongs before the index. Both the index
+        // and the following remainder start continuously within that section.
+        before.sect = L.opc.duplicate(curSect);
         const endP = cont.blocks[tb1.i];
         D.touch(endP);
         endP.sect = Object.assign(endP.sect || L.opc.duplicate(curSect), { type: 'continuous', cols: { n: opts.columns, space: 36, eq: true, w: [] } });
+        D.touchKey(curSect, 'type'); curSect.type = 'continuous';
         cont.blocks.splice(tb0.i, 0, before);
         d._idxDirty = true;
       }

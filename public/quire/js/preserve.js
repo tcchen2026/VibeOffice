@@ -50,13 +50,15 @@
     classify: el => {
       if (!wordNS(el.namespaceURI)) return null;
       const tag = el.localName;
+      if (tag === 'body') return 'bodies';
+      if (tag === 'sectPr' && wordNS(el.parentNode?.namespaceURI) && el.parentNode.localName === 'body') return 'finalSections';
       if (['smartTag', 'customXml'].includes(tag)) return 'xml';
       if (['dir', 'bdo'].includes(tag)) return 'direction';
       if (['moveFrom', 'moveTo'].includes(tag)) return 'moves';
       if (tag === 'fldSimple' || tag === 'fldChar' && attr(el, 'fldCharType') === 'begin') return 'fields';
       return ({ sdt: 'controls', bookmarkStart: 'bookmarks', permStart: 'permissions', comment: 'comments', footnote: 'footnotes', endnote: 'endnotes', ins: 'revisions', del: 'revisions' })[tag];
     },
-    labels: { xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: 'Inline direction wrappers were converted to ordinary text', moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
+    labels: { bodies: 'Content in additional document bodies could not be retained', finalSections: 'Conflicting final section definitions could not all be retained', xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: 'Inline direction wrappers were converted to ordinary text', moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
   });
   P.merge = function (doc, base, source, generated, writer) {
     const original = writer.pkg.xml(source), fragment = K.fragment(original, { pkg: writer.pkg, part: source });

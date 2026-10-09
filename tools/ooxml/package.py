@@ -225,11 +225,39 @@ class Package:
             for el, path, branches in walk(root):
                 ns, tag = split(el.tag)
                 parent = parents.get(el)
+                if ns in A and tag == 'graphicData' and el.get('uri') == 'urn:vibeoffice:test:unread':
+                    # Batch 7: our unguarded synthetic frame repairs in Office,
+                    # even in its original fixture. Do not reject unfamiliar
+                    # real-world graphic types on this limited evidence.
+                    choice = parent
+                    while choice is not None and choice.tag != '{' + MC + '}Choice':
+                        choice = parents.get(choice)
+                    ac = parents.get(choice)
+                    guarded = (choice is not None and '{urn:vibeoffice:test:unread}' in choice.get('Requires', '').split()
+                               and ac is not None and ac.tag == '{' + MC + '}AlternateContent'
+                               and ac.find('{' + MC + '}Fallback') is not None)
+                    if not guarded:
+                        self.issue('unguarded-test-graphic', part, 'Synthetic graphic type needs an unsupported Choice and a Fallback.', path)
+                if ns in P and tag == 'xfrm' and parent is not None and split(parent.tag) == (ns, 'graphicFrame'):
+                    orientation = [name for name in ('rot', 'flipH', 'flipV') if name in el.attrib]
+                    if orientation:
+                        self.issue('graphic-frame-orientation', part, ', '.join(orientation), path)
                 if ns == W14 and tag in ('noFill', 'solidFill', 'gradFill', 'blipFill', 'pattFill', 'grpFill'):
                     if parent is None or parent.tag not in ('{' + W14 + '}textFill', '{' + W14 + '}textOutline'):
                         self.issue('wordart-fill-outside-property', part, tag, path)
                 if ns in W and tag == 'ins' and parent is not None and parent.tag == '{' + ns + '}del':
                     self.issue('inserted-inside-deleted', part, 'Word writes the insertion outside the deletion.', path)
+                if ns in S and tag == 'control':
+                    rel = self.rels.get(part, {}).get(at(el, 'id'), {})
+                    if rel.get('type', '').endswith('/control'):
+                        name, shape = at(el, 'name') or '', at(el, 'shapeId')
+                        if not name or not name[0].isalpha() or any(not (c.isalnum() or c == '_') for c in name):
+                            self.issue('activex-control-name', part, name, path)
+                        targets = [r['target'] for r in self.rels.get(part, {}).values() if r['type'].endswith('/vmlDrawing') and not r['external']]
+                        previews_ = [e for target in targets if target in self.xml for e in self.xml[target].iter()
+                                     if split(e.tag)[0] == V and at(e, 'spid') == '_x0000_s' + str(shape)]
+                        if any(at(e, 'id') != name for e in previews_):
+                            self.issue('activex-vml-name', part, name + ' / ' + str(shape), path)
                 for key, val in el.attrib.items():
                     ans, name = split(key)
                     if (ans in R or (ans == 'urn:schemas-microsoft-com:office:office' and name == 'relid')) and val and val not in self.rels.get(part, {}):

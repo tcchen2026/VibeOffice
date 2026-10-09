@@ -32,7 +32,7 @@
     const b = K.getBox(K.raw(src.tree)), map = ctx.map || (v => v);
     const cnv = all(src.tree).find(e => e.localName === 'cNvPr');
     return { id: L.uid('s'), type: 'image', name: at(cnv, 'name') || src.label, numId: +(at(cnv, 'id') || 0),
-      ...map({ x: b.x || 0, y: b.y || 0, w: b.w ?? 100, h: b.h ?? 60 }), rot: b.rot || 0,
+      ...map({ x: b.x || 0, y: b.y || 0, w: b.w ?? 100, h: b.h ?? 60 }), rot: b.rot || 0, flipH: !!b.flipH, flipV: !!b.flipV,
       missingLabel: src.label, media: null, geom: 'rect', crop: { l: 0, t: 0, r: 0, b: 0 }, img: {}, line: { t: 'none' } };
   };
   F.attach = function (models, working, original, parent, pkg, part) {

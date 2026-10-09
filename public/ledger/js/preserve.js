@@ -5,6 +5,12 @@
   const RT = name => N.rel + '/' + name;
   const kids = el => Array.from(el?.children || []);
   const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const preview2006 = 'http://schemas.microsoft.com/office/excel/2006/2';
+  const previewDrawing = 'http://schemas.openxmlformats.org/drawingml/2006/3/main';
+  const previewXML = P.previewXML = xml => !xml.includes(preview2006) && !xml.includes(previewDrawing) ? xml : xml
+    .replace(/(\bxmlns(?::[\w.-]+)?\s*=\s*)(["'])http:\/\/schemas\.microsoft\.com\/office\/excel\/2006\/2\2/g, (_, key, quote) => key + quote + N.s + quote)
+    .replace(/(\bxmlns(?::[\w.-]+)?\s*=\s*)(["'])http:\/\/schemas\.openxmlformats\.org\/drawingml\/2006\/3\/main\2/g, (_, key, quote) => key + quote + N.a + quote)
+    .replace(/(<\/?)([\w.-]+:)?sstItem(?=[\s/>])/g, '$1$2si');
   P.filterValues = c => JSON.stringify([c.values, c.blank, c.dates]);
   P.sheetFormatValues = sh => ({
     baseColWidth: sh.baseColW != null && sh.baseColW !== 8 ? sh.baseColW : undefined,
@@ -62,13 +68,14 @@
       id: 'sheet-format', legacy: 'Worksheet size settings from a pre-release Excel format were converted to current Excel settings.',
       alternative: 'A worksheet-format alternative that also contained other worksheet settings was converted to its displayed properties.' });
   P.pageSetupValues = sh => {
-    const p = sh.print, values = { paperSize: p.paper || 1, scale: Math.round(p.scale || 100),
+    const p = sh.print, dpi = sh.extra.pageSetupKeep?.legacyNamespace && !(p.dpi > 0) ? undefined : p.dpi;
+    const values = { paperSize: p.paper || 1, scale: Math.round(p.scale || 100),
       firstPageNumber: p.firstPage != null ? p.firstPage : undefined,
       fitToWidth: p.fit ? (p.fitW == null ? 0 : p.fitW) : undefined, fitToHeight: p.fit ? (p.fitH == null ? 0 : p.fitH) : undefined,
       pageOrder: p.pageOrder === 'overThenDown' ? 'overThenDown' : 'downThenOver',
       orientation: p.orientation === 'landscape' ? 'landscape' : 'portrait', blackAndWhite: p.bw ? '1' : '0',
       draft: p.draft ? '1' : '0', cellComments: p.comments || 'none', useFirstPageNumber: p.firstPage != null ? '1' : '0',
-      errors: p.errors || 'displayed', horizontalDpi: p.dpi, verticalDpi: p.dpi };
+      errors: p.errors || 'displayed', horizontalDpi: dpi, verticalDpi: dpi };
     if (sh.kind === 'chartsheet') for (const key of ['scale', 'fitToWidth', 'fitToHeight', 'pageOrder', 'cellComments', 'errors']) delete values[key];
     return values;
   };
@@ -109,6 +116,7 @@
     try {
       original = wb.pkg.xml(source);
       if (original?.localName !== 'styleSheet') throw new Error('The original style table has no valid root element.');
+      if (original.namespaceURI === preview2006) original = K.parse(previewXML(K.raw(original)));
     } catch (error) {
       writer.loss({ id: 'styles:malformed', what: 'The damaged style table was rebuilt from the readable cell formatting.', where: source, action: 'conversion' });
       return { id: i => i || 0, xml: () => generated };
@@ -170,6 +178,11 @@
       },
       xml() {
         const replacements = {};
+        if (wb.extra.previewThemeColors) {
+          const colors = kids(original).find(e => e.localName === 'colors');
+          if (colors) replacements['{' + N.s + '}colors'] = kids(colors).some(e => e.localName !== 'themeColors') ?
+            K.mergeBag(K.raw(colors), { ['{' + N.s + '}themeColors']: '' }) : [];
+        }
         for (const [tag, added] of Object.entries(appended)) if (added.length) {
           const el = kids(original).find(e => e.localName === tag);
           const raw = el ? K.raw(el) : '<' + tag + ' xmlns="' + N.s + '"/>';
@@ -194,6 +207,8 @@
   });
   P.begin = function (wb, format) {
     const pkg = wb.pkg;
+    const previewBook = pkg?.main && pkg.xml(pkg.main)?.namespaceURI === preview2006;
+    const previewTheme = /http:\/\/schemas\.microsoft\.com\/office\/officeart\/2005\/8\/oartml/.test(wb.themeXml || '');
     const consumed = new Set([RT('officeDocument'), ...P.parts.map(p => p[1]),
       RT('dialogsheet'), 'http://schemas.microsoft.com/office/2006/relationships/xlMacrosheet', 'http://schemas.microsoft.com/office/2006/relationships/xlIntlMacrosheet',
       ...['worksheet', 'chartsheet', 'externalLink', 'drawing', 'image', 'chart', 'hyperlink', 'comments', 'vmlDrawing', 'table', 'control', 'ctrlProp', 'oleObject', 'customProperty'].map(RT)]);
@@ -202,8 +217,34 @@
       (type === RT('queryTable') && wb.extra.queries?.some(q => q.part === rel.part)) ||
       (type === RT('pivotTable') && wb.extra.pivots?.tables.some(t => t.part === rel.part)),
       convert: base => base === 'xl/theme/theme1.xml' ? L.xlsxWrite.themeXml(wb) : null,
-      merge: (base, source, data, writer) => P.merge(wb, base, source, data, writer) });
+      merge: (base, source, data, writer) => P.merge(wb, base, source, data, writer),
+      audit: writer => {
+        if (!previewBook && !previewTheme) return;
+        for (const [part, data] of writer.parts) {
+          if (!part.startsWith('xl/') || !part.endsWith('.xml')) continue;
+          let text = typeof data === 'string' ? data : L.xml.decode(data);
+          if (previewBook && (text.includes(preview2006) || text.includes(previewDrawing))) {
+            const converted = previewXML(text);
+            if (converted !== text) { writer.put(part, converted); text = converted; }
+          }
+          if (previewTheme && /\/theme\//.test(part) && text.includes('http://schemas.microsoft.com/office/officeart/2005/8/oartml')) writer.put(part, L.xlsxWrite.themeXml(wb));
+          if (previewBook && wb.extra.previewThemeColors && /\/theme\//.test(part)) {
+            const scheme = [...K.parse(text).getElementsByTagName('*')].find(e => e.localName === 'clrScheme');
+            if (scheme) {
+              const names = ['lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink'], replacements = {};
+              names.forEach((name, i) => { const color = wb.theme.colors[i]; if (color) replacements['{' + N.a + '}' + name] = '<a:' + name + ' xmlns:a="' + N.a + '"><a:srgbClr val="' + color.slice(-6) + '"/></a:' + name + '>'; });
+              const pos = L.xmlTree.source.get(scheme);
+              writer.put(part, K.hoistNamespaces(K.patch(text, [{ start: pos.start, end: pos.end, value: K.mergeBag(K.raw(scheme), replacements) }])));
+            }
+          }
+        }
+        if (previewBook) writer.loss({ id: 'preview-workbook-schema', where: pkg.main, action: 'conversion', what: 'Workbook settings, styles, theme colours, shared text and calculation metadata from a pre-release Excel format were converted to current Excel markup.' });
+        if (previewTheme) writer.loss({ id: 'preview-theme', where: 'Workbook theme', action: 'conversion', what: 'A pre-release Excel theme was rebuilt from its readable colours and fonts; unsupported theme details were removed.' });
+      } });
     output.bind('xl/workbook.xml', pkg?.main, 'merged');
+    for (const sh of wb.sheets) if (sh.extra.invalidVisibility) output.writer.loss({
+      id: 'sheet-visibility:' + sh.id, where: sh.name, action: 'conversion',
+      what: 'An invalid worksheet visibility setting (' + sh.extra.invalidVisibility + ') was replaced with ' + sh.state + '. This can change which sheets are printed.' });
     for (const [base, type, mode, root] of P.parts) {
       const rel = pkg?.rels(root ? '' : pkg.main).find(r => K.relationshipType(r.type) === type && !r.external);
       output.bind(base, rel?.part, base === 'xl/theme/theme1.xml' && !same(wb.themeXml, wb.extra.keepValues?.themeXml) ? 'regenerated' : mode);
@@ -211,7 +252,9 @@
     return output;
   };
   P.merge = function (wb, base, source, generated, writer) {
-    const fragment = K.fragment(writer.pkg.xml(source), { pkg: writer.pkg, part: source });
+    let root = writer.pkg.xml(source);
+    if (base === 'xl/workbook.xml' && root.namespaceURI === preview2006) root = K.parse(previewXML(K.raw(root)));
+    const fragment = K.fragment(root, { pkg: writer.pkg, part: source });
     const old = wb.extra.keepValues || {}, current = P.values(wb), fresh = K.parse(generated);
     let xml = fragment.xml;
     if (base === 'xl/workbook.xml') {

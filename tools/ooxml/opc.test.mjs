@@ -18,6 +18,32 @@ const text = data => typeof data === 'string' ? data : new TextDecoder().decode(
 const kid = (el, name) => el.children.find(c => c.localName === name);
 const children = xml => K.parse(xml).children.map(e => e.localName);
 
+test('list copies get fresh eight-digit nsids while unchanged numbering retains its source spelling', async () => {
+  const part = 'word/numbering.xml', xml = `<w:numbering xmlns:w="${N.w}"><w:abstractNum w:abstractNumId="1"><w:nsid w:val="FFFFFFFE"/></w:abstractNum><w:abstractNum w:abstractNumId="2"><w:nsid w:val="ffffffff"/></w:abstractNum></w:numbering>`;
+  const p = await pkg({ [part]: xml }), w = new K.Writer(p), f = K.fragment(p.xml(part).children[1], { pkg: p, part });
+  const nsid = value => kid(K.parse(value), 'nsid').getAttribute('w:val');
+  assert.equal(nsid(w.emit(f, part)), 'ffffffff');
+  const a = K.duplicate(f), b = K.duplicate(f), first = nsid(w.emit(a, part)), second = nsid(w.emit(b, part));
+  assert.match(first, /^[0-9A-F]{8}$/); assert.match(second, /^[0-9A-F]{8}$/);
+  assert.equal(new Set(['FFFFFFFE', 'FFFFFFFF', first, second]).size, 4);
+  assert.equal(nsid(w.emit(JSON.parse(JSON.stringify(a)), part)), first, 'history retains the copied identity');
+});
+
+test('identity pre-scan ignores revision words in ordinary spreadsheet and slide text', async () => {
+  const sheet = `<worksheet xmlns="${N.s}"><sheetData><row><c><is><t>ins del moveFrom moveTo</t></is></c></row></sheetData></worksheet>`;
+  const strings = `<sst xmlns="${N.s}"><si><t>del documento</t></si></sst>`;
+  const slide = `<p:sld xmlns:p="${N.p}" xmlns:a="${N.a}"><a:t>del libro</a:t></p:sld>`;
+  const word = `<q:document xmlns:q="${N.w}"><q:ins q:id="99"/></q:document>`;
+  const p = await pkg({ 'xl/worksheets/sheet1.xml': sheet, 'xl/sharedStrings.xml': strings, 'ppt/slides/slide1.xml': slide, 'word/document.xml': word });
+  const parse = K.parse, seen = [];
+  try {
+    K.parse = xml => { seen.push(xml); return parse(xml); };
+    const w = new K.Writer(p);
+    assert(!seen.some(xml => [sheet, strings, slide].includes(xml)), 'ordinary words must not force a DOM parse');
+    assert(seen.includes(word)); assert.equal(w.ids.fresh('document', 'revision'), '100');
+  } finally { K.parse = parse; }
+});
+
 test('GUID copies remap selected definitions and references together, preserving user text and shared persons', () => {
   const a = '{12345678-1234-4234-8234-123456789ABC}', b = '{12345678-1234-4234-8234-123456789ABD}';
   const person = '{12345678-1234-4234-8234-123456789ABE}', guidMap = {};

@@ -60,8 +60,13 @@
   O.dup = dup;
   /** a cell keeps its style even when emptied */
   function emptyKeepStyle(cell) {
-    if (!cell || !cell.s) return null;
-    return { v: null, s: cell.s };
+    if (!cell || !cell.s && cell.keep?.style == null) return null;
+    const blank = { v: null, s: cell.s };
+    if (cell.keep?.style != null) {
+      const { source, style, modelStyle } = cell.keep;
+      blank.keep = { source, style, modelStyle };
+    }
+    return blank;
   }
   /**
    * Parse what the user typed. Returns {kind:'formula', f} | {kind:'value', v, fmt}
@@ -233,8 +238,9 @@
         }
         if (what === 'formats' || what === 'all') {
           sh.each(rg.r1, rg.c1, rg.r2, rg.c2, (cell, r, c) => {
-            if (!cell.s) return;
+            if (!cell.s && cell.keep?.style == null) return;
             const n = dup(cell); delete n.s;
+            if (n.keep) { n.keep = { ...n.keep }; delete n.keep.style; delete n.keep.modelStyle; }
             O.put(sh, r, c, n.v == null && n.f == null && !n.am ? null : n);
           });
           /* row / column styles of whole rows / columns */

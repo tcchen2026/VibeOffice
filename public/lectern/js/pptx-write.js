@@ -88,9 +88,12 @@
   }
   function xfrm(sh, tag, extra) {
     const a = [];
-    if (sh.rot) a.push(`rot="${Math.round((((sh.rot % 360) + 360) % 360) * 60000)}"`);
-    if (sh.flipH) a.push('flipH="1"');
-    if (sh.flipV) a.push('flipV="1"');
+    // Presentation graphic frames support position and extent only.
+    if (tag !== 'p:xfrm') {
+      if (sh.rot) a.push(`rot="${Math.round((((sh.rot % 360) + 360) % 360) * 60000)}"`);
+      if (sh.flipH) a.push('flipH="1"');
+      if (sh.flipV) a.push('flipV="1"');
+    }
     return `<${tag || 'a:xfrm'}${a.length ? ' ' + a.join(' ') : ''}><a:off x="${emu(sh.x)}" y="${emu(sh.y)}"/><a:ext cx="${Math.max(0, emu(sh.w))}" cy="${Math.max(0, emu(sh.h))}"/>${extra || ''}</${tag || 'a:xfrm'}>`;
   }
   function geomXML(sh) {

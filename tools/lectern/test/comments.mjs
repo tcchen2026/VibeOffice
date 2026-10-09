@@ -12,6 +12,8 @@ const cases = [
   ...['copy', 'delete', 'paste', 'draft'].map(scenario => ({ file: legacy, scenario })),
   { file: 'openxml-sdk__5085cad8803f__[HC]viewPr-PresentationViewProperties-showComments-1.pptx', scenario: 'strict-copy' },
   ...['save', 'copy', 'copy-shape', 'delete-shape', 'copy-delete-shape', 'text', 'paste', 'draft'].map(scenario => ({ file: 'modern-comments.pptx', scenario: 'modern-' + scenario })),
+  { file: 'modern-comments-ordered.pptx', scenario: 'modern-order', edit: 'save' },
+  { file: 'modern-comments-no-creation.pptx', scenario: 'modern-creation', edit: 'save' },
 ];
 fs.mkdirSync(out, { recursive: true });
 const match = new RegExp(process.argv[4] || ''), selected = cases.filter(c => match.test(c.scenario));
@@ -22,7 +24,7 @@ try {
   for (const c of selected) {
     const row = { ...c, attempted: true }; page.errors.length = 0;
     try {
-      const input = path.join(c.file === 'modern-comments.pptx' ? fixtures : corpus, c.file);
+      const input = path.join(c.file.startsWith('modern-comments') ? fixtures : corpus, c.file);
       const result = await page.evaluate(`(${run.toString()})(${JSON.stringify({ ...c, data: fs.readFileSync(input).toString('base64') })})`);
       for (const [state, data] of Object.entries(result.artifacts)) {
         const dir = path.join(out, state === 'saved' ? c.scenario : c.scenario + '-' + state);
@@ -46,7 +48,7 @@ async function run(o) {
   const all = e => e ? [e, ...e.getElementsByTagName('*')] : [];
   const kids = (e, name) => Array.from(e?.children || []).filter(c => !name || c.localName === name);
   const check = (ok, msg) => { if (!ok) throw Error(msg); };
-  const scenario = o.scenario.replace(/^(modern|strict)-/, ''), modern = o.scenario.startsWith('modern-');
+  const scenario = o.edit || o.scenario.replace(/^(modern|strict)-/, ''), modern = o.scenario.startsWith('modern-');
   const artifacts = {}, bytes = Uint8Array.from(atob(o.data), c => c.charCodeAt(0));
   VO.opened = () => {}; H.clear(); await __corpusHooks.open(new File([bytes], o.file));
   const source = L.pres, originals = source.pkg, initial = source.slides.length;
@@ -68,6 +70,13 @@ async function run(o) {
         if (isModern) {
           modernCount++;
           check(all(slide).some(e => e.localName === 'commentRel' && e.getAttributeNS(N.rel, 'id') === rel.id), 'Modern slide relationship missing');
+          if (o.scenario === 'modern-order') {
+            const original = originals.xml(owner.keep.part);
+            for (const place of ['', 'cSld']) {
+              const uris = root => kids(kids(place ? kids(root, place)[0] : root, 'extLst')[0]).map(e => e.getAttribute('uri'));
+              check(JSON.stringify(uris(slide)) === JSON.stringify(uris(original)), 'Comment extensions changed sibling order');
+            }
+          }
         }
         for (const c of all(root).filter(e => ['cm', 'reply'].includes(e.localName))) {
           const aid = c.getAttribute('authorId'), key = isModern ? c.getAttribute('id') : aid + ':' + c.getAttribute('idx');
@@ -127,7 +136,7 @@ async function run(o) {
   const edited = expected, expectedSlides = L.pres.slides.length;
   const saved = await save('saved');
   if (scenario === 'save') {
-    for (const r of owner.keep.comments) check(originals.text(r.part) === saved.text(r.part), 'Unchanged comments rewritten');
+    if (o.scenario !== 'modern-creation') for (const r of owner.keep.comments) check(originals.text(r.part) === saved.text(r.part), 'Unchanged comments rewritten');
     for (const r of originals.rels(originals.main).filter(r => /\/(commentAuthors|authors)$/.test(r.type))) check(originals.text(r.part) === saved.text(r.part), 'Unchanged author records rewritten');
   } else {
     check(H.doUndo(), 'Undo missing'); expected = originalCounts; await save('undo');

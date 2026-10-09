@@ -10,7 +10,8 @@ const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
 const fixtures = { control: 'libreoffice__1b04d082bd6e__button-form-control.xlsx', ole: 'poi__2a89697e0dc6__58325_lt.xlsx',
   named: 'libreoffice__8d005aca2c1d__tdf161365.xlsx', mixed: 'poi__9028285d4065__bug66827.xlsx',
   vml: 'libreoffice__9f0dba934b74__tdf166724_cellAnchor.xlsx', properties: 'poi__448351c00314__60512.xlsm',
-  notes: 'poi__c613ea5875fa__SimpleWithComments.xlsx', grouped: 'poi__90ce92f078bd__45540_form_Header.xlsx' };
+  notes: 'poi__c613ea5875fa__SimpleWithComments.xlsx', grouped: 'poi__90ce92f078bd__45540_form_Header.xlsx',
+  activex: 'libreoffice__e80921817d6f__activex_checkbox.xlsx' };
 async function open(t, kind) {
   const file = path.join(corpus, 'excel', fixtures[kind]);
   if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus: ' + file); return; }
@@ -171,6 +172,53 @@ test('copied control names follow the worksheet numeric sequence', async t => {
   O.setDrawings(sh, sh.drawings.concat(d));
   const pkg = (await save(wb, 'control-names')).pkg;
   assert.deepEqual(all(pkg, sheet(pkg)).filter(e => e.localName === 'control').map(e => e.getAttribute('name')), ['Button 1', 'Button 2']);
+});
+
+test('ActiveX copies keep valid control names as VML ids, including names without a numeric suffix', async t => {
+  for (const renamed of [false, true]) {
+    let wb = await open(t, 'activex'); if (!wb) return;
+    if (renamed) {
+      // Derived from the public control: change only its worksheet/display name.
+      const entries = wb.pkg.names.map(name => ({ name, data: /\.(xml|vml)$/.test(name) ?
+        wb.pkg.text(name).replace(/CheckBox1343/g, 'cmdOK') : wb.pkg.bytes(name) }));
+      const bytes = new Uint8Array(await (await L.zip.write(entries)).arrayBuffer());
+      const dir = output ? path.join(output, 'original') : fs.mkdtempSync(path.join(os.tmpdir(), 'vo-activex-'));
+      fs.mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, 'activex-named.xlsx'); fs.writeFileSync(file, bytes);
+      if (!output) t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+      wb = await L.xlsxRead.read(bytes); Object.defineProperty(wb, '_input', { value: file });
+    }
+    const sh = wb.sheets[0], first = sh.drawings[0], name = renamed ? 'cmdOK' : 'CheckBox1343';
+    const verify = pkg => {
+      for (const part of pkg.names.filter(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n))) {
+        const controls = all(pkg, part).filter(e => e.localName === 'control');
+        const names = new Map();
+        const vml = pkg.rels(part).find(r => /\/vmlDrawing$/.test(r.type));
+        for (const e of controls) {
+          const id = e.getAttribute('shapeId'), name = e.getAttribute('name');
+          assert.match(name, /^[A-Za-z][A-Za-z0-9_]*$/, 'VBA-safe control name');
+          assert(!names.has(name) || names.get(name) === id, 'unique name outside alternate branches'); names.set(name, id);
+          const shape = all(pkg, vml.part).find(e => e.namespaceURI === K.KNOWN_NS.v && e.getAttributeNS(K.KNOWN_NS.o, 'spid') === '_x0000_s' + id);
+          assert.equal(shape?.getAttribute('id'), name, 'VML shape id equals its ActiveX control name');
+        }
+      }
+      check(pkg);
+    };
+    const addCopy = d => O.tx(wb, 'Copy control', () => {
+      const copy = L.sheetObjects.copy(d); copy.id = Math.max(...sh.drawings.map(d => d.id)) + 1;
+      copy.anchor.from.r += 5; copy.anchor.to.r += 5; O.setDrawings(sh, sh.drawings.concat(copy)); return copy;
+    });
+    addCopy(first); addCopy(sh.drawings[1]);
+    const copied = await save(wb, 'activex-copy'); verify(copied.pkg);
+    const names = new Set(all(copied.pkg, sheet(copied.pkg)).filter(e => e.localName === 'control').map(e => e.getAttribute('name')));
+    assert.deepEqual(names, new Set(renamed ? ['cmdOK', 'cmdOK1', 'cmdOK2'] : [name, 'CheckBox1344', 'CheckBox1345']));
+    wb.undo.undo(); wb.undo.undo();
+    equalBytes((await save(wb, 'activex-copy-undo')).pkg.bytes(vmlPart(wb.pkg)), wb.pkg.bytes(vmlPart(wb.pkg)));
+    wb.undo.redo(); wb.undo.redo(); verify((await save(wb, 'activex-copy-redo')).pkg);
+    O.copySheet(wb, sh, wb.sheets.length); verify((await save(wb, 'activex-sheet-copy')).pkg);
+    const reopened = await L.xlsxRead.read(copied.bytes); Object.defineProperty(reopened, '_input', { value: wb._input });
+    verify((await save(reopened, 'activex-recovered')).pkg);
+  }
 });
 
 test('nested VML controls and their worksheet entries share the copied sheet identities', async t => {

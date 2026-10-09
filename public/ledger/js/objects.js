@@ -81,28 +81,37 @@
   X.copy = d => {
     const value = clone(d);
     if (value.objectKeep) value.objectKeep.copy = uid();
+    if (value.keep?.picture) value.keep.picture = K.duplicate(value.keep.picture);
     L.slicers.copy(value);
     return value;
   };
   X.copySheet = (from, to) => {
     if (from.extra.vml) to.extra.vml = clone(from.extra.vml);
     if (from.extra.objectGroups) to.extra.objectGroups = clone(from.extra.objectGroups);
-    const copy = uid();
-    for (const d of to.drawings) if (d.objectKeep) d.objectKeep = { ...d.objectKeep, copy };
+    const copies = new Map();
+    for (const d of to.drawings) if (d.objectKeep) {
+      const prior = d.objectKeep.copy || '';
+      if (!copies.has(prior)) copies.set(prior, uid());
+      d.objectKeep = { ...d.objectKeep, copy: copies.get(prior) };
+    }
     for (const d of to.drawings) L.slicers.copy(d, to);
+    for (const d of to.drawings) if (d.keep?.picture) d.keep.picture = K.duplicate(d.keep.picture);
   };
   X.begin = function (sh, pack, owner, vml) {
     const ids = new Map(vml.objects), used = new Set(ids.values()), w = pack.writer;
-    const names = new Map(), named = [], takenNames = new Set();
+    const names = new Map(), named = [], takenNames = new Set(), activeX = new Set();
     for (const d of sh.drawings) if (active(d)) {
-      const el = d.objectKeep.groups.flatMap(g => all(K.parse(g.fragment.xml))).find(e => item(e) && +at(e, 'shapeId') === d.objectKeep.id && at(e, 'name'));
-      if (!el) continue;
+      const entries = d.objectKeep.groups.flatMap(g => all(K.parse(g.fragment.xml)).filter(e => item(e) && +at(e, 'shapeId') === d.objectKeep.id).map(el => ({ el, g })));
+      const el = entries.find(e => at(e.el, 'name'))?.el; if (!el) continue;
+      if (entries.some(({ el, g }) => K.slice(g.fragment, K.raw(el)).deps.some(r => /\/control$/.test(r.type)))) activeX.add(d);
       const name = at(el, 'name'); named.push({ d, name });
       if (!d.objectKeep.copy) { names.set(d, name); takenNames.add(name.toLowerCase()); }
     }
     for (const { d, name } of named) if (!names.has(d)) {
-      let fresh = name, n = +(name.match(/\d+$/)?.[0] || 0), base = name.replace(/\d+$/, '');
-      if (base === name) base += ' ';
+      let stem = activeX.has(d) ? name.replace(/[^\p{L}\p{N}_]/gu, '_') : name;
+      if (activeX.has(d) && !/^\p{L}/u.test(stem)) stem = 'Control' + stem;
+      let fresh = stem, n = +(stem.match(/\d+$/)?.[0] || 0), base = stem.replace(/\d+$/, '');
+      if (base === stem && !activeX.has(d)) base += ' ';
       while (takenNames.has(fresh.toLowerCase())) fresh = base + ++n;
       takenNames.add(fresh.toLowerCase()); names.set(d, fresh);
     }
@@ -117,7 +126,7 @@
       w.ids.reserve(owner, 'shape', id);
       if (d.objectKeep && !active(d)) w.loss({ id: 'worksheet-object:' + sh.id + ':' + id, what: 'The edited embedded object or control was converted to its displayed drawing.', where: sh.name + ': ' + d.name, action: 'conversion' });
     }
-    return { sh, pack, ids, used, next, owner, vml, names, copiedParts: new Map() };
+    return { sh, pack, ids, used, next, owner, vml, names, activeX, copiedParts: new Map() };
   };
   // Strip only the linked top-level identity from generic ID remapping. Its
   // drawing, worksheet entry and VML preview must use the same chosen value.
@@ -149,6 +158,48 @@
   X.frame = function (d, state, owner, size) {
     if (!active(d) || !d.keep?.frame) return '';
     return state.pack.writer.emit(X.drawing(d, d.keep.frame, state, size), owner);
+  };
+  const pictureValues = d => Object.fromEntries(['media', 'imgLink', 'crop', 'lineXml', 'rot', 'flipH', 'flipV', 'name', 'descr', 'hidden', 'link'].map(key => [key, d[key]]));
+  X.keepPicture = (d, fragment) => { d.keep.picture = { fragment, id: d.id, anchor: clone(d.anchor), values: clone(pictureValues(d)) }; };
+  X.picture = function (d, generated, state, owner) {
+    const keep = d.keep?.picture; if (!keep) return generated;
+    let f = linked(keep.fragment, keep.id, state.ids.get(d), false), xml = K.transitionalXML(f.xml);
+    const current = pictureValues(d), changed = key => !same(current[key], keep.values[key]);
+    const fresh = K.parse('<root xmlns:xdr="' + K.KNOWN_NS.xdr + '" xmlns:a="' + N.a + '" xmlns:r="' + N.rel + '">' + generated + '</root>');
+    const generatedChild = tag => { const el = all(fresh).find(e => e.localName === tag); return el ? K.raw(el) : ''; };
+    const patch = (tag, fn) => {
+      const tree = K.parse(xml), el = all(tree).find(e => e.localName === tag); if (!el) return;
+      const p = L.xmlTree.source.get(el); xml = K.patch(xml, [{ start: p.start, end: p.end, value: fn(K.raw(el)) }]);
+    };
+    patch('cNvPr', raw => {
+      const attrs = {}; for (const key of ['name', 'descr', 'hidden']) if (changed(key)) attrs[key] = key === 'hidden' ? (d.hidden ? '1' : undefined) : d[key];
+      raw = K.attributes(raw, attrs);
+      if (changed('link')) {
+        const id = d.link && state.pack.writer.rels(owner).add(N.rel + '/hyperlink', d.link, true);
+        raw = K.merge(raw, { ['{' + N.a + '}hlinkClick']: id ? '<a:hlinkClick xmlns:a="' + N.a + '" xmlns:r="' + N.rel + '" r:id="' + L.xml.esc(id) + '"/>' : '' }, 'a:CT_NonVisualDrawingProps');
+      }
+      return raw;
+    });
+    const fill = {};
+    if (changed('crop')) fill['{' + N.a + '}srcRect'] = generatedChild('srcRect');
+    if (changed('media') || changed('imgLink')) {
+      fill['{' + N.a + '}blip'] = generatedChild('blip');
+      const blip = all(K.parse(xml)).find(e => e.localName === 'blip');
+      if (kids(blip).length) state.pack.writer.loss({ id: 'picture-content:' + state.sh.id + ':' + state.ids.get(d), what: 'Replacing this picture removes effects and extensions attached to its original image.', where: state.sh.name + ': ' + (d.name || 'Picture'), action: 'conversion' });
+    }
+    if (Object.keys(fill).length) patch('blipFill', raw => K.merge(raw, fill, 'a:CT_BlipFillProperties'));
+    if (changed('lineXml')) patch('spPr', raw => K.merge(raw, { ['{' + N.a + '}ln']: d.lineXml || '' }, 'a:CT_ShapeProperties'));
+    const box = {};
+    if (!same(d.anchor, keep.anchor)) {
+      const bounds = a => { const p = a.type === 'abs' ? a : position(state.sh, a.from), q = a.type === 'two' ? position(state.sh, a.to) : null;
+        return { x: p.x, y: p.y, w: q ? q.x - p.x : a.w, h: q ? q.y - p.y : a.h }; };
+      const before = bounds(keep.anchor), after = bounds(d.anchor), source = K.getBox(xml);
+      for (const key of ['x', 'y', 'w', 'h']) if (before[key] !== after[key]) box[key] = (source[key] ?? before[key]) + after[key] - before[key];
+    }
+    for (const key of ['rot', 'flipH', 'flipV']) if (changed(key)) box[key] = d[key] || 0;
+    if (Object.keys(box).length) xml = K.setBox(xml, box);
+    f = K.slice(f, xml);
+    return state.pack.writer.emit(f, owner);
   };
   function textPatch(xml, el, value, patches) {
     if (!el || el.textContent === String(value)) return;
@@ -242,7 +293,7 @@
     if (name === 'customProperties') for (const g of sh.extra.objectGroups || []) if (g.names[0] === name && !groups.has(g.key + ':')) groups.set(g.key + ':', { group: g, members: [] });
     const values = [];
     for (const { group: g, members } of groups.values()) {
-      const unchanged = g.ids.length === members.length && members.every(d => state.ids.get(d) === d.objectKeep.id && same(d.anchor, d.objectKeep.anchor));
+      const unchanged = g.ids.length === members.length && members.every(d => !d.objectKeep.copy && state.ids.get(d) === d.objectKeep.id && same(d.anchor, d.objectKeep.anchor));
       const xml = unchanged || !g.ids.length ? g.fragment.xml : project(g.fragment.xml, members, state);
       if (!xml) continue;
       try { values.push(pack.writer.emit(copiedParts(K.slice(g.fragment, xml), members, state), state.owner)); }
@@ -349,9 +400,19 @@
       supports.set(key, { pkg, part, tree: pkg.xml(part) });
     };
     let unchanged = !!sameOwner && !original.unparsed;
+    const controlNames = new Map([...state.activeX].filter(d => d.objectKeep.copy).map(d => [state.ids.get(d), state.names.get(d)]));
     for (const d of members) {
       const v = d.objectKeep.vml, pkg = K.package(v.source); support(pkg, v.part);
       let f = vmlLinked(v.fragment, d.objectKeep.copy, state.vml);
+      // ActiveX binds its worksheet name to v:shape@id; o:spid remains the
+      // numeric preview identity. This also covers controls inside VML groups.
+      const patches = [];
+      for (const el of all(K.parse(f.xml))) if (el.namespaceURI === V && el.localName !== 'shapetype') {
+        const name = controlNames.get(vmlId(el)); if (!name) continue;
+        const pos = L.xmlTree.source.get(el), next = L.xmlTree.source.get(K.parse(K.attributes(K.raw(el), { id: name })));
+        patches.push({ start: pos.start, end: pos.openEnd, value: next.text.slice(next.start, next.openEnd) });
+      }
+      f = K.slice(f, K.patch(f.xml, patches));
       f = K.slice(f, vmlGeometry(f.xml, d.anchor, d.objectKeep.anchor, sh));
       if (d.objectKeep.copy) f = K.duplicate(f);
       unchanged &&= v.part === original?.part && v.source === source?.id && v.id === state.ids.get(d) && same(d.anchor, d.objectKeep.anchor) && !d.objectKeep.copy;

@@ -238,7 +238,9 @@
       // Replaced extensions must not first carry their old dependencies. A copied
       // comment extension otherwise adds a second relationship to the source thread.
       const generated = tag === 'extLst' && kid(parent, tag);
-      const retained = generated ? K.slice(f, K.mergeBag(f.xml, Object.fromEntries(kids(generated).map(e => [e.getAttribute('uri'), ''])), e => e.getAttribute('uri'))) : f;
+      // Leave an empty slot at each original URI so replacement keeps its order.
+      const retained = generated ? K.slice(f, K.mergeBag(f.xml, Object.fromEntries(kids(generated).map(e => [e.getAttribute('uri'),
+        '<p:ext xmlns:p="' + N.p + '" uri="' + K.esc(e.getAttribute('uri')) + '"/>'])), e => e.getAttribute('uri'))) : f;
       let text = Q.emit(retained, ctx); if (text == null) continue;
       if (tag === 'extLst') text = extensions(text, raw(kid(parent, tag)));
       const next = K.merge(raw(parent), { ['{' + N.p + '}' + tag]: text }, where === 'common' ? 'p:CT_CommonSlideData' : 'p:CT_Slide');

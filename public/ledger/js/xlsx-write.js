@@ -230,6 +230,7 @@
         try {
           root = wb.pkg.xml(source);
           if (root?.localName !== 'sst') throw new Error('The original string table has no valid root element.');
+          if (root.namespaceURI === 'http://schemas.microsoft.com/office/excel/2006/2') root = K.parse(L.preserve.previewXML(K.raw(root)));
         } catch (error) {
           writer.loss({ id: 'strings:malformed', what: 'The damaged shared-string table was rebuilt from the readable cell text.', where: source, action: 'conversion' });
           return;
@@ -374,7 +375,7 @@
       if (headers && headers.size) for (const [k, name] of headers) { const rr = Math.floor(k / 16384), cc = k % 16384; if (rr === r && !cells[cc]) (extra || (extra = [])).push([cc, cellXml({ v: name }, rr, cc, ctx, name)]); }
       cells.forEach((cell, c) => {
         if (!cell || c >= M.MAXC) return;
-        if (cell.v == null && cell.f == null && !cell.s && !cell.dt && !(headers && headers.has(r * 16384 + c))) return;
+        if (cell.v == null && cell.f == null && !cell.s && cell.keep?.style == null && !cell.dt && !(headers && headers.has(r * 16384 + c))) return;
         parts.push(extra ? [c, cellXml(cell, r, c, ctx, headers.get(r * 16384 + c))] : cellXml(cell, r, c, ctx, headers ? headers.get(r * 16384 + c) : undefined));
         if (first < 0) first = c;
         last = c;
@@ -631,8 +632,10 @@
 
   /* ------------------------------------------------------------ drawings */
   const XDR = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing', NS_A = 'http://schemas.openxmlformats.org/drawingml/2006/main', NS_C = 'http://schemas.openxmlformats.org/drawingml/2006/chart';
-  const emu = (pt) => Math.max(0, Math.round((pt || 0) * EMU));
-  const ptXml = (tag, p) => `<xdr:${tag}><xdr:col>${p.c}</xdr:col><xdr:colOff>${emu(p.cOff)}</xdr:colOff><xdr:row>${p.r}</xdr:row><xdr:rowOff>${emu(p.rOff)}</xdr:rowOff></xdr:${tag}>`;
+  const coordinate = (pt) => Math.round((pt || 0) * EMU);
+  const emu = (pt) => Math.max(0, coordinate(pt));
+  // Anchor positions and cell offsets are signed; only extents are nonnegative.
+  const ptXml = (tag, p) => `<xdr:${tag}><xdr:col>${p.c}</xdr:col><xdr:colOff>${coordinate(p.cOff)}</xdr:colOff><xdr:row>${p.r}</xdr:row><xdr:rowOff>${coordinate(p.rOff)}</xdr:rowOff></xdr:${tag}>`;
   /** size in points of an anchor (for xfrm / ext) */
   function anchorSize(sh, a) {
     if (a.type !== 'two' || !a.to) return { w: a.w || 72, h: a.h || 72 };
@@ -861,7 +864,7 @@
         let open, close = '<xdr:clientData' + (d.unlocked ? ' fLocksWithSheet="0"' : '') + (d.noPrint ? ' fPrintsWithSheet="0"' : '') + '/>';
         if (a.type === 'two' && a.from && a.to) { open = `<xdr:twoCellAnchor${a.editAs && a.editAs !== 'twoCell' ? ` editAs="${a.editAs}"` : ''}>` + ptXml('from', a.from) + ptXml('to', a.to); close += '</xdr:twoCellAnchor>'; }
         else if (a.type === 'one' && a.from) { open = '<xdr:oneCellAnchor>' + ptXml('from', a.from) + `<xdr:ext cx="${emu(a.w)}" cy="${emu(a.h)}"/>`; close += '</xdr:oneCellAnchor>'; }
-        else { open = `<xdr:absoluteAnchor><xdr:pos x="${emu(a.x)}" y="${emu(a.y)}"/><xdr:ext cx="${emu(a.w)}" cy="${emu(a.h)}"/>`; close += '</xdr:absoluteAnchor>'; }
+        else { open = `<xdr:absoluteAnchor><xdr:pos x="${coordinate(a.x)}" y="${coordinate(a.y)}"/><xdr:ext cx="${emu(a.w)}" cy="${emu(a.h)}"/>`; close += '</xdr:absoluteAnchor>'; }
         let obj = L.sheetObjects.frame(d, objects, drels.owner, sz);
         const nameAttr = esc(d.name || (d.kind === 'chart' ? 'Chart ' : d.kind === 'image' ? 'Picture ' : 'Shape ') + (id - 1));
         if (obj) { /* preserved picture representation of a control or embedded object */ }
@@ -873,6 +876,7 @@
           obj = `<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${id}" name="${nameAttr}"${d.descr ? ` descr="${esc(d.descr)}"` : ''}/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>` +
             `<xdr:blipFill><a:blip xmlns:r="${NS_R}"${blipRefs}/>${crop}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>` +
             `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}><a:off x="0" y="0"/><a:ext cx="${emu(sz.w)}" cy="${emu(sz.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${d.lineXml || ''}</xdr:spPr></xdr:pic>`;
+          obj = L.sheetObjects.picture(d, obj, objects, drels.owner);
         } else if (d.kind === 'chart') {
           let rid;
           if (d.chart?.dirty && (d.part || d.xml)) pack.writer.loss({ id: 'chart-edit:' + (d.part || d.id), what: 'Editing this chart replaces its original chart-specific formatting and extensions.', where: sh.name, action: 'conversion' });

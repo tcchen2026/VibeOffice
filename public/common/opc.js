@@ -311,7 +311,7 @@
     space(scope, kind) { const key = JSON.stringify([scope, SHARED_SPACE[kind] || kind]); if (!this.spaces.has(key)) this.spaces.set(key, { used: new Set(), high: 0 }); return this.spaces.get(key); }
     reserve(scope, kind, id) { const s = this.space(scope, kind), value = this.canonical(id); s.used.add(value); if (/^\d+$/.test(value)) s.high = Math.max(s.high, +value); return String(id); }
     fresh(scope, kind) {
-      const s = this.space(scope, kind), limits = K.schema?.limits[kind] || { min: 0, max: Number.MAX_SAFE_INTEGER };
+      const s = this.space(scope, kind), limits = kind === 'nsid' ? { min: 1, max: 0xFFFFFFFF } : K.schema?.limits[kind] || { min: 0, max: Number.MAX_SAFE_INTEGER };
       let candidate = Math.max(limits.min, s.high + 1);
       // Bounded OOXML integer spaces can end at the original maximum. In that
       // case use a free legal value, never overflow and never rebind an old ID.
@@ -345,6 +345,9 @@
     if (isW && tag === 'control' && name === 'name') {
       const m = /^(.*?)(\d+)$/.exec(a.value), prefix = m ? m[1] : a.value + '_';
       return { kind: 'controlName:' + prefix, scope: 'document', id: m ? m[2] : '0', prefix, literal: a.value, definition: true };
+    }
+    if (isW && tag === 'nsid' && name === 'val' && /^[\da-f]{8}$/i.test(a.value)) {
+      return { kind: 'nsid', scope: 'numbering', id: String(parseInt(a.value, 16)), hex: 8, literal: a.value, definition: true };
     }
     if (ns === K.KNOWN_NS.v && (tag === 'shapetype' && name === 'id' || name === 'type' && a.value.startsWith('#'))) {
       const reference = name === 'type', value = a.value.replace(/^#/, ''), m = /^(_x0000_t)(\d+)$/.exec(value);
@@ -768,7 +771,7 @@
   K.getBox = function (xml) {
     const root = K.parse(xml), nodes = anchorNodes(root), pt = v => +v / 12700;
     const frame = nodes.frames[0], off = frame && direct(frame, 'off'), ext = frame && direct(frame, 'ext');
-    const box = off && ext ? { x: pt(off.getAttribute('x')), y: pt(off.getAttribute('y')), w: pt(ext.getAttribute('cx')), h: pt(ext.getAttribute('cy')), rot: +(frame.getAttribute('rot') || 0) / 60000, flipH: frame.getAttribute('flipH') === '1', flipV: frame.getAttribute('flipV') === '1' } : {};
+    const box = off && ext ? { x: pt(off.getAttribute('x')), y: pt(off.getAttribute('y')), w: pt(ext.getAttribute('cx')), h: pt(ext.getAttribute('cy')), rot: +(frame.getAttribute('rot') || 0) / 60000, flipH: /^(1|true)$/.test(frame.getAttribute('flipH')), flipV: /^(1|true)$/.test(frame.getAttribute('flipV')) } : {};
     if (nodes.word.length) {
       const w = nodes.word[0], size = direct(w, 'extent'); box.kind = w.localName;
       if (size) { box.w = pt(size.getAttribute('cx')); box.h = pt(size.getAttribute('cy')); }
@@ -820,8 +823,10 @@
       const off = direct(frame, 'off'), ext = direct(frame, 'ext');
       if (!nodes.word.length && !nodes.sheet.length) { if (box.x != null) attr(off, 'x', emu(box.x)); if (box.y != null) attr(off, 'y', emu(box.y)); }
       if (box.w != null) attr(ext, 'cx', Math.max(0, emu(box.w))); if (box.h != null) attr(ext, 'cy', Math.max(0, emu(box.h)));
-      if (box.rot != null) attr(frame, 'rot', Math.round(box.rot * 60000));
-      for (const key of ['flipH', 'flipV']) if (box[key] != null) attr(frame, key, box[key] ? '1' : '0');
+      if (![NS.p, 'http://purl.oclc.org/ooxml/presentationml/main'].includes(frame.namespaceURI)) {
+        if (box.rot != null) attr(frame, 'rot', Math.round(box.rot * 60000));
+        for (const key of ['flipH', 'flipV']) if (box[key] != null) attr(frame, key, box[key] ? '1' : '0');
+      }
     }
     for (const word of nodes.word) {
       const ext = direct(word, 'extent'); if (box.w != null) attr(ext, 'cx', Math.max(0, emu(box.w))); if (box.h != null) attr(ext, 'cy', Math.max(0, emu(box.h)));
@@ -921,7 +926,7 @@
         for (const name of pkg.names) {
           this.mapping.set(this.key(pkg, name), name);
           const text = /\.(xml|vml)$/i.test(name) ? pkg.text(name) : null;
-          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|PicBulletId|sdtPr|dxf|_x0000_|PrChange|numberingChange|cellIns|cellDel|cellMerge|\b(?:ins|del|moveFrom|moveTo)\b/.test(text)) continue;
+          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|PicBulletId|sdtPr|dxf|_x0000_|PrChange|numberingChange|cellIns|cellDel|cellMerge|<(?:[\w.-]+:)?(?:nsid|ins|del|moveFrom|moveTo)(?=[\s/>])/.test(text)) continue;
           let tree; try { tree = K.parse(text); } catch (e) { continue; } // carried opaque if the original XML is malformed
           walk(tree, el => {
             if (el.localName === 'dxfs' && el.namespaceURI === NS.s) elements(el).forEach((e, i) => this.ids.reserve('styles', 'dxf', i));
@@ -1104,6 +1109,7 @@
       });
       const ids = fragment.ids.map(i => {
         const value = this.ids.resolve(i.source, i.scope, i.kind, i.id, { primary: this.pkg?.id, copy: localCopy(i), scope: i.scope === fragment.part ? owner : i.scope });
+        if (i.hex) return value === i.id ? i.literal : (+value).toString(16).toUpperCase().padStart(i.hex, '0');
         return i.literal && value === i.id ? i.literal : (i.prefix || '') + value;
       });
       let xml = fragment.xml.replace(/\u0001(rel|id):(\d+)\u0001/g, (_, kind, n) => {

@@ -124,6 +124,10 @@ async function check(data, kind) {
   const newNums = elements(copied, 'num').map(e => attr(e, 'numId'));
   assert(new Set(newIds).size === newIds.length && originalIds.every(id => newIds.includes(id)) && newIds.length === originalIds.length + 1, 'New list changed or collided with an original abstract ID');
   assert(new Set(newNums).size === newNums.length && originalNumIds.every(id => newNums.includes(id)) && newNums.length === originalNumIds.length + 1, 'New list changed or collided with a concrete ID');
+  const nsids = pkg => elements(pkg, 'nsid').map(e => attr(e, 'val').toUpperCase());
+  const originalNsids = nsids(source), copiedNsids = nsids(copied);
+  const addedNsids = current.abs.x?.fragment.ids.some(i => i.kind === 'nsid') ? 1 : 0;
+  assert(copiedNsids.length === originalNsids.length + addedNsids && copiedNsids.filter(id => !originalNsids.includes(id)).length === addedNsids, 'New list reused an original nsid');
   assert(D.undo(), 'Missing copy undo'); await save('copy-undo');
   // Reusing one imported model also checks that two copy cohorts stay distinct.
   const foreign = (await L.docx.read(bytes(data))).doc;
@@ -133,6 +137,8 @@ async function check(data, kind) {
     const imported = await save('import-' + i), definitions = elements(imported, 'abstractNum').map(e => attr(e, 'abstractNumId'));
     assert(new Set(definitions).size === definitions.length, 'Imported definitions collide');
     assert(elements(imported, 'abstractNumId').every(e => definitions.includes(attr(e, 'val'))), 'Imported concrete list has a missing abstract definition');
+    const importedNsids = nsids(imported).filter(id => !originalNsids.includes(id));
+    assert(new Set(importedNsids).size === importedNsids.length && importedNsids.length === i * originalNsids.length, 'Imported list identities collide');
   }
   return { artifacts, checks };
 }

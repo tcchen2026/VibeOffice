@@ -153,7 +153,9 @@ Loss acknowledgement is per entry; autosave must neither show a dialog nor ackno
 Package ownership, object preservation and save-dialog integration are implemented in all three apps.
 Current corpus limits and pending Office acceptance are listed in each app’s save table.
 `office-batch.mjs` also supports list-alignment edits, independent list copies (optionally after
-an alignment edit), and the chapter-number/continuous-section review. Use the same manifest against
+an alignment edit), two-column index insertion, repeated control copies followed by a sheet copy,
+master/layout decoration edits, and ungrouping charts or retained frames. A frame selector can target
+an opaque preview without relying on XML text inside its alternatives. Use the same manifest against
 the frozen current and previous writers before handing these files to Office.
 
 `opc-order.js` contains ordering and ID-bound facts for 27 types, generated from the official
@@ -392,6 +394,18 @@ style-linked numbering fixtures through list commands, independent copies, repea
 undo/redo and actual draft recovery. An optional final `custom` or `style` selects one fixture.
 The loss audit also inventories picture bullets, list identities/templates, legacy settings and
 cleanup metadata; the numbering harness compares metadata values and original level counts.
+It also checks fresh `nsid` identities for independent copies. `index-sections.mjs OUTDIR` exercises
+multi-column index insertion in final and non-final sections, including page starts, undo/redo and
+actual draft recovery.
+
+`tools/ooxml/prescan-bench.mjs` measures the shared writer's identity scan on a generated large sheet
+containing ordinary words such as “del”; it reports elapsed time and heap growth separately from
+whole-file save time. `tools/ooxml/lectern-review.test.mjs` checks chart rotation policy, placeholder
+flips, single-member alternative orientation and comment-extension order. The browser harness
+`tools/lectern/test/graphic-rotation.mjs OUTDIR` exercises actual chart/OLE commands and ungrouping.
+`tools/ledger/test/pictures.test.js` checks retained picture properties through geometry/crop edits,
+copying, deletion, history and recovery. The package checker additionally rejects orientation on
+PowerPoint graphic-frame transforms and inconsistent ActiveX worksheet/VML names.
 
 `node tools/quire/test/recovered-breaks.mjs ~/corpora/word OUTDIR` checks the public malformed-break
 fixture through text edits, deletion, undo/redo and actual draft recovery. It verifies valid saved

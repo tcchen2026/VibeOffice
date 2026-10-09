@@ -142,6 +142,7 @@ test('numbering edits retain legacy details, level attributes, alternatives and 
 
 test('numbering metadata follows its owner while deleted levels stay deleted and new IDs remain linked', () => {
   const d = doc(), ctx = { ...context(d), part: 'word/numbering.xml' };
+  ctx.writer.pkg = { id: 'test' };
   const a = P.properties({ id: '42', multi: 'singleLevel', levels: [D.numLevel(0, 'decimal', '%1.'), D.numLevel(1, 'decimal', '%2.')] }, K.parse(`<w:abstractNum xmlns:w="${K.NS.w}" w:abstractNumId="42"><w:nsid w:val="ABCD0123"/><w:multiLevelType w:val="singleLevel"/><w:tmpl w:val="01020304"/><w:lvl w:ilvl="0"/></w:abstractNum>`), 'abstractNum', { part: ctx.part, source: 'test' });
   P.numberingLevels(a, [0]);
   assert.equal(P.writeNumberingLevel(a, 0), true); assert.equal(P.writeNumberingLevel(a, 1), false);
@@ -154,6 +155,9 @@ test('numbering metadata follows its owner while deleted levels stay deleted and
   assert.notEqual(copied.x.fragment.copy, a.x.fragment.copy);
   assert.equal(ctx.writer.ids.resolve('test', 'numbering', 'abstractNumId', '42', { copy: copied.x.fragment.copy }), String(copied.id));
   assert.equal(ctx.writer.ids.resolve('test', 'numbering', 'abstractNumId', '42'), '42');
+  const xmlCopy = P.propertyXML('abstractNum', copied, '<w:multiLevelType w:val="singleLevel"/>', ctx, { abstractNumId: copied.id });
+  assert.doesNotMatch(xmlCopy, /w:nsid w:val="ABCD0123"/);
+  assert.match(xmlCopy, /w:nsid w:val="[0-9A-F]{8}"/);
 });
 
 test('copied list formatting replaces an invalid highlight with equivalent shading', () => {

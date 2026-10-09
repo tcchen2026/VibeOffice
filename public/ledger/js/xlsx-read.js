@@ -226,6 +226,13 @@
     const fills = kids(kid(el, 'fills'), 'fill').map((f) => fill(f));
     const borders = kids(kid(el, 'borders'), 'border').map(border);
     const colors = kid(el, 'colors');
+    const previewColors = el.namespaceURI === 'http://schemas.microsoft.com/office/excel/2006/2' && kid(colors, 'themeColors');
+    if (previewColors) {
+      wb.extra.previewThemeColors = kids(previewColors, 'rgbColor').map(e => at(e, 'rgb'));
+      const names = ['lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink'];
+      wb.theme.scheme ||= {};
+      wb.extra.previewThemeColors.forEach((color, i) => { if (color && names[i]) wb.theme.scheme[names[i]] = wb.theme.colors[i] = '#' + color.slice(-6).toUpperCase(); });
+    }
     const idx = kid(colors, 'indexedColors');
     if (idx) {
       const pal = M.INDEXED.slice();
@@ -309,7 +316,7 @@
     XML.scan(text, 0, text.length, (name, kind, attrs, before) => {
       if (inT && before) { const t = XML.unx(XML.chars(before)); if (!inRPh) { if (cur) cur.t += t; siText += t; } }
       switch (name) {
-        case 'si':
+        case 'si': case 'sstItem':
           if (kind === 1) { runs = null; cur = null; siText = ''; }
           else if (kind === 2) out.push(runs && runs.some((r) => r.font) ? { text: siText, runs } : siText);
           else out.push('');
@@ -388,7 +395,7 @@
     return v;
   }
   /** parse <sheetData> into the sheet */
-  function readSheetData(text, from, to, sh, ctx) {
+  function readSheetData(text, from, to, sh, ctx, rowUnit = 1) {
     const { sst, xf } = ctx;
     const shared = ctx.sharedF = new Map();
     let r = -1, c = -1, row = null;
@@ -450,7 +457,7 @@
       const s = cAttr.s ? +cAttr.s : 0;
       if (s) { const id = xf[s]; if (id) cell.s = id; }
       if (cAttr.s != null && xf[s] != null && ctx.wb.pkg) cell.keep = { ...cell.keep, source: ctx.wb.pkg.id, style: s, modelStyle: cell.s || 0 };
-      if (cell.v == null && cell.f == null && !cell.s && !cell.dt) { /* nothing to keep */ }
+      if (cell.v == null && cell.f == null && !cell.s && cell.keep?.style == null && !cell.dt) { /* nothing to keep */ }
       else {
         if (!row) row = sh.rowObj(r);
         row.cells[c] = cell;
@@ -467,7 +474,7 @@
           r = a.r ? +a.r - 1 : r + 1;
           c = -1;
           row = null;
-          const ht = a.ht != null ? parseFloat(a.ht) : null;
+          const ht = a.ht != null ? parseFloat(a.ht) / rowUnit : null;
           const hidden = a.hidden === '1' || a.hidden === 'true';
           const lvl = a.outlineLevel ? +a.outlineLevel : 0;
           const coll = a.collapsed === '1' || a.collapsed === 'true';
@@ -560,6 +567,8 @@
     const sd = sliceSheetData(text);
     let el;
     try { el = XML.parse(sd.rest); } catch (e) { el = XML.parse(sd.rest.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')); }
+    const preview2005 = el.namespaceURI === 'http://schemas.microsoft.com/office/excel/2005/8/worksheet';
+    const rowUnit = preview2005 ? 20 : 1;
     L.sheetObjects.capture(sh, part, sd.rest);
     L.opc.captureAC(el, sd.rest);
     resolveAC(el);
@@ -614,17 +623,21 @@
     if (fp) {
       if (at(fp, 'defaultColWidth') != null) sh.defColW = num(fp, 'defaultColWidth', null);
       if (at(fp, 'baseColWidth') != null) sh.baseColW = num(fp, 'baseColWidth', 8);
-      if (at(fp, 'defaultRowHeight') != null && (bool(fp, 'customHeight', false) || bool(fp, 'zeroHeight', false))) sh.defRowH = num(fp, 'defaultRowHeight', null);
-      if (at(fp, 'defaultRowHeight') != null) sh.fileDefRowH = num(fp, 'defaultRowHeight', null);
+      if (at(fp, 'defaultRowHeight') != null && (bool(fp, 'customHeight', false) || bool(fp, 'zeroHeight', false))) sh.defRowH = num(fp, 'defaultRowHeight', 0) / rowUnit;
+      if (at(fp, 'defaultRowHeight') != null) sh.fileDefRowH = num(fp, 'defaultRowHeight', 0) / rowUnit;
       if (bool(fp, 'zeroHeight', false)) sh.zeroHeight = true;
       if (at(fp, 'outlineLevelRow')) sh.outline.levelRow = num(fp, 'outlineLevelRow', 0);
       if (at(fp, 'outlineLevelCol')) sh.outline.levelCol = num(fp, 'outlineLevelCol', 0);
     }
     L.preserve.keepSheetFormat(sh, fp);
     for (const col of kids(kid(el, 'cols'), 'col')) {
-      const mn = num(col, 'min', 1) - 1, mx = Math.min(num(col, 'max', 1) - 1, 16383);
+      const offset = preview2005 ? 0 : 1;
+      const mn = Math.max(0, num(col, 'min', offset) - offset), mx = Math.min(num(col, 'max', offset) - offset, 16383);
       const o = {};
       if (at(col, 'width') != null) o.w = num(col, 'width', 8.43);
+      // The 2005 preview stores column widths in 1/256-character units and
+      // numbers columns from zero; the 2006 preview already uses OOXML units.
+      if (preview2005 && at(col, 'defaultWidth') != null) o.w = num(col, 'defaultWidth', 2158) / 256;
       if (bool(col, 'customWidth', false)) o.custom = true;
       if (bool(col, 'hidden', false)) o.hidden = true;
       if (bool(col, 'bestFit', false)) o.bestFit = true;
@@ -642,7 +655,7 @@
       for (let c = mn; c <= mx; c++) sh.cols[c] = Object.assign({}, o);
     }
     /* cells */
-    if (sd.to > sd.from) readSheetData(text, sd.from, sd.to, sh, ctx);
+    if (sd.to > sd.from) readSheetData(text, sd.from, sd.to, sh, ctx, rowUnit);
     /* protection */
     const sp = kid(el, 'sheetProtection');
     if (sp && bool(sp, 'sheet', false)) {
@@ -1012,6 +1025,10 @@
       if (d.kind === 'shape' && ctx.wb.pkg) d.keep = { source: ctx.wb.pkg.id, part };
       if (d.kind === 'image' && owned.has(d.id) && originalShapes.has(obj)) d.keep = { source: ctx.wb.pkg.id, part,
         frame: K.fragment(K.parse(originalShapes.get(obj)), { pkg: ctx.wb.pkg, part }) };
+      else if (d.kind === 'image' && ctx.wb.pkg && originalShapes.has(obj)) {
+        d.keep = { source: ctx.wb.pkg.id, part };
+        L.sheetObjects.keepPicture(d, K.fragment(K.parse(originalShapes.get(obj)), { pkg: ctx.wb.pkg, part }));
+      }
       const cd = kid(a, 'clientData');
       if (cd && at(cd, 'fLocksWithSheet') === '0') d.unlocked = true;
       if (cd && at(cd, 'fPrintsWithSheet') === '0') d.noPrint = true;
@@ -1201,6 +1218,7 @@
       if (r && !r.external) sh.extra.ooxmlPart = r.target;
       const state = at(s, 'state');
       if (state === 'hidden' || state === 'veryHidden') sh.state = state;
+      else if (state && state !== 'visible') sh.extra.invalidVisibility = state;
       sheetParts.push({ sh, part: r ? r.target : null });
     }
     /* defined names (before formulas are calculated) */

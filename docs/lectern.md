@@ -91,11 +91,12 @@ Office review batches are documented in [testing.md](testing.md).
 
 ## What a save keeps, converts and drops
 
-The full LibreOffice pass on the versioned `56de065` artifacts renders **836/837 unedited saves**,
+The full LibreOffice pass on the versioned `984eaf3` artifacts renders **836/837 unedited saves**,
 with **zero** page-count differences among pairs that render. Across **5,302** attempted states,
 **4,939** pass the paired render/count check, **71** fail and **292** are excluded. Failures include
 missing outputs, unrenderable originals and LibreOffice crashes; they remain recorded separately
-from package/SDK results. PowerPoint acceptance is still pending. Reports: `~/corpora/results/lo-final-2026-10-09/`.
+from package/SDK results. All 15 batch-4 samples and the batch-7 corrections passed PowerPoint,
+including the corrected fixture described below. Reports: `~/corpora/results/lossless-final-984eaf3/lectern/`.
 
 Lectern regenerates slides and keeps package dependencies and unsupported properties beside the model.
 Save and drafts retain all six OOXML variants and encryption. The Compatibility Checker reports
@@ -105,10 +106,12 @@ The pinned **844-file** run completes **837 saves and 837 draft recoveries**, wi
 1 password exclusion** in each scenario. Text edit/save/undo/redo completes in **548**, excludes
 **290** without editable text and fails in **6**. Across **5,302 emitted or attempted states**, package/SDK
 comparison has **4,914 OK, 96 failed and 292 excluded**, with **no new diagnostics**. Failed originals
-and incomplete recovered decks remain failures. The current full writer is `56de065`;
-reports retain every original attempt. SDK evidence is reused for 4,607 states only after the original
-hash and every saved ZIP member match the previous validated output; package checks are fresh.
-The remaining 695 attempted states use the normal validator, with all statuses matching the preceding run.
+and incomplete recovered decks remain failures. The current full writer is `984eaf3`.
+Two initial text/draft timeouts pass a focused retry with a 240-second deadline; the original failed
+attempts remain recorded. SDK evidence is reused for 4,608 states only after the original hash and
+every saved ZIP member match the previous validated output; package checks are fresh. Four PDF
+count comparisons are corrected for authored hidden slides, with unchanged slide identities,
+visibility and PDF hashes; those original failed comparisons also remain in the primary report.
 
 The independent inventory compares **827 readable pairs** and records **17 failed comparisons**.
 All **58,022 counted words** and every inventoried feature remain after an unchanged save, including
@@ -120,14 +123,14 @@ Counts alone do not establish rendering fidelity; the edit checks below verify o
 | Kept | Video/audio and playback | 29/29 media relationships in 17 decks; 16/16 media play/pause behaviors; original frames, links and media bytes survive |
 | Kept | Package metadata and fonts | 111/111 custom-XML, 67/67 XML-property, 33/33 tag, 70/70 custom-property, 12/12 font, 7/7 VBA and 1/1 label relationships |
 | Kept | Notes and handout dependencies | 932/932 notes-master references, 97/97 handout masters and 29/29 comment-author relationships; unedited notes keep header/footer text |
-| Kept; PowerPoint edit acceptance pending | Sections and custom shows | All 18 relevant decks retain 32/32 sections and 8/8 custom shows with unchanged expanded XML. Eight focused edit cases / 26 saved states pass package/SDK comparison |
-| Kept; PowerPoint edit acceptance pending | Comments | The 30 relevant decks retain 39/39 comment/author parts: 37 byte-identical, two Strict parts converted to Transitional. Copy/delete/paste ownership and modern anchors are implemented |
-| Kept; PowerPoint edit acceptance pending | Animation and transitions | Original timing and all 482 transition elements in the 214-deck property sweep remain; editing a modeled animation retains unrelated interactive sequences |
-| Kept; PowerPoint edit acceptance pending | Masters and layouts | All 54 masters and 276 layouts in the 13 unused-master decks remain; 52 masters and every layout retain exact bytes. Two damaged source masters require conversion |
-| Kept; PowerPoint edit acceptance pending | SmartArt, OLE and newer charts | 184/184 SmartArt, 71/71 OLE entries and 4/4 chartEx frames remain attached to their slides across all 135 relevant inputs; three missing drawing-cache references are removed with a notice |
-| Kept; PowerPoint edit acceptance pending | Ink and 3-D models | 44/44 ink/content-part entries and 2/2 3-D models; unavailable previews have editable placeholder frames |
-| Kept; PowerPoint edit acceptance pending | Extended visual effects | The property sweep retains all 18 glow, 30 reflection, 16 soft-edge, 36 inner-shadow, 136 scene3d, 123 sp3d and 6 picture-treatment entries; unknown run/paragraph details remain with their properties |
-| Kept; PowerPoint edit acceptance pending | Program/macro actions and shape tags | All 29 action settings and 13 slide/shape tag lists remain in the property sweep; copied tag parts and shape identities are independent |
+| Kept; PowerPoint samples accepted | Sections and custom shows | All 18 relevant decks retain 32/32 sections and 8/8 custom shows with unchanged expanded XML. Eight focused edit cases / 26 saved states pass package/SDK comparison |
+| Kept; PowerPoint samples accepted | Comments | The 30 relevant decks retain 39/39 comment/author parts: 37 byte-identical, two Strict parts converted to Transitional. Copy/delete/paste ownership and modern anchors are implemented |
+| Kept; PowerPoint samples accepted | Animation and transitions | Original timing and all 482 transition elements in the 214-deck property sweep remain; editing a modeled animation retains unrelated interactive sequences |
+| Kept; PowerPoint samples accepted | Masters and layouts | All 54 masters and 276 layouts in the 13 unused-master decks remain; 52 masters and every layout retain exact bytes. Two damaged source masters require conversion |
+| Kept; PowerPoint samples accepted | SmartArt, OLE and newer charts | 184/184 SmartArt, 71/71 OLE entries and 4/4 chartEx frames remain attached to their slides across all 135 relevant inputs; three missing drawing-cache references are removed with a notice |
+| Kept; PowerPoint samples accepted | Ink and 3-D models | 44/44 ink/content-part entries and 2/2 3-D models; unavailable previews have editable placeholder frames |
+| Kept; PowerPoint samples accepted | Extended visual effects | The property sweep retains all 18 glow, 30 reflection, 16 soft-edge, 36 inner-shadow, 136 scene3d, 123 sp3d and 6 picture-treatment entries; unknown run/paragraph details remain with their properties |
+| Kept; PowerPoint samples accepted | Program/macro actions and shape tags | All 29 action settings and 13 slide/shape tag lists remain in the property sweep; copied tag parts and shape identities are independent |
 | Converted, with a notice | Edited opaque contents, imported charts and notes formatting | The text script converts 67 selected SmartArt previews and removes two effects targeting one converted object's parts; untouched inventoried features remain |
 | Dropped, with a notice | Missing source dependencies, invalidated signatures and VBA in macro-free Save As | Damaged source parts cannot be reconstructed; explicit deletion and format changes remove their owned parts |
 
@@ -143,10 +146,12 @@ unrelated losses still reported.
 
 Documented exceptions are damaged or missing source dependencies, signatures invalidated by a save,
 Strict-to-Transitional conversion, edited chart/opaque-frame content, and edited notes-page formatting.
-Form-control or field markup that requires conversion is also reported. Full-corpus LibreOffice
-rendering is not complete; the **15 PowerPoint batch-4 samples rebuilt from `56de065`** pass package/SDK and LibreOffice with
-expected counts. Their previous-writer differences are reviewed. **PowerPoint acceptance is pending**
-at `~/Downloads/lossless-check/office-batch-4/CHECKLIST.md`.
+Form-control or field markup that requires conversion is also reported. The full-corpus LibreOffice
+results are above. The **15 PowerPoint batch-4 samples rebuilt from `56de065`** pass package/SDK
+and LibreOffice with expected counts. Their previous-writer differences are reviewed, and the user
+accepted all 15 in PowerPoint. Fresh LibreOffice checks of those exact handed-off files also pass;
+hashes and results are in `~/corpora/results/office-accepted-2026-10-09/`. The accepted checklist is
+`~/Downloads/lossless-check/office-batch-4/CHECKLIST.md`.
 
 The user accepted the PPTM video, VBA and authors/handout samples in Office batch 1. The slide-6
 repair is fixed and confirmed in PowerPoint: presets write complete adjustment lists and masters
@@ -155,9 +160,9 @@ counts. Strict conversion passes **85 presentations / 340 emitted states** again
 package/SDK diagnostics; the Strict presentation sample passed Office batch 2. Rewritten parts now
 hoist fragment namespace declarations and `mc:Ignorable` to the root. The fresh namespace sample
 passes PowerPoint, package/SDK and LibreOffice with unchanged slide count. Opaque parts retain their
-bytes. Current full reports and exceptions are in `~/corpora/results/review-final-56de065/lectern/`.
-The convention scan has 166 signatures, with no additions; removing spurious rotation/flip attributes
-on retained ink transforms removes three signatures. Focused checks remain in
+bytes. Current full reports and exceptions are in `~/corpora/results/lossless-final-984eaf3/lectern/`.
+The convention scan has 163 signatures, with no additions; removing rotation/flip attributes from
+graphic-frame transforms removes three signatures from the preceding scan. Focused checks remain in
 `~/corpora/results/lectern-group-2026-10-09/` and `~/corpora/results/review-fixes-2026-10-09/`.
 
 ### Media: edit behavior
@@ -195,7 +200,13 @@ states pass package/SDK checks and cover geometry, theme changes, styles, indepe
 last-slide deletion, new layouts, interleaved unread shapes, stacking order, undo/redo and actual drafts.
 The corrected design-style case is included. Three earlier edited samples and the unread-decoration
 regression open in LibreOffice with expected slide counts.
-PowerPoint batch 4 acceptance remains pending. Reports:
+Office batch 7 file 13 and its synthetic source both offered repair. Removing the invented graphic
+type passed PowerPoint with both decoration edits intact. The fixture now guards that test object
+inside an unsupported compatibility choice with an empty fallback. Its actual writer output passes
+PowerPoint, package/SDK and LibreOffice; two movement scenarios retain save/undo/redo behavior.
+The checker rejects the unguarded test type, and its regression fails on the previous checker.
+No production writer changed for this fixture defect. Evidence: `~/corpora/results/office-batch-7-repair-2026-10-09/`.
+All 15 batch-4 samples passed PowerPoint. Reports:
 `~/corpora/results/lectern-preservation-2026-10-09/designs-*` and
 `~/corpora/results/review-fixes-2026-10-09/designs*`.
 
@@ -214,7 +225,7 @@ The 18-deck sweep and all 26 edit/history/draft states introduce no package/SDK 
 Large slide IDs and empty sections are covered by a public one-slide deck with ten sections.
 Two edited samples and four history states open in LibreOffice with the expected inserted/deleted
 slide counts. The browser edit driver and app load report no console errors.
-The full group measurement is above; PowerPoint batch 4 acceptance remains pending. Reports:
+The full group measurement is above; all 15 batch-4 samples passed PowerPoint. Reports:
 `~/corpora/results/lectern-preservation-2026-10-09/membership-*`.
 
 ### Comments: edit behavior
@@ -237,7 +248,7 @@ modern authors but no modern comment threads; it passes the SDK's Microsoft365 t
 only their own thread relationship, and re-anchored comments must match a declared slide creation ID.
 Two earlier edited samples, four history states and the corrected text-anchor sample open in
 LibreOffice with expected slide counts.
-PowerPoint acceptance remains pending in batch 4. Reports:
+All 15 batch-4 samples passed PowerPoint. Reports:
 `~/corpora/results/lectern-preservation-2026-10-09/comments-*` and
 `~/corpora/results/review-fixes-2026-10-09/*comments*`.
 
@@ -247,7 +258,8 @@ PowerPoint acceptance remains pending in batch 4. Reports:
 |---|---|
 | Text outside an opaque object | Keep its original frame and dependent parts |
 | Move or resize its preview | Update the outer frame; retain each member's orientation, internal 3-D coordinates, data and effects |
-| Rotate or flip a preserved preview | Rotation and flip controls are disabled, including for groups containing preserved frames; the existing orientation remains |
+| Rotate or flip a preserved preview or chart | Rotation and flip controls are disabled, including for groups containing these objects; the existing orientation remains |
+| Ungroup a rotated group containing a graphic frame | Reposition the frame without adding rotation or flips; retain its original payload |
 | Copy or paste the object | Independent dependent parts and remapped identities; import preview renditions, diagram cache links and OLE/VML preview identities |
 | Change converted content or ungroup SmartArt | Save the edited group/picture and record the conversion; animations of its parts are removed with their own notice |
 | Delete the object | Remove its original frame; do not restore it from package parts |
@@ -261,11 +273,21 @@ including a schema-authored fallback with two displayed members. The two OLE ide
 and the missing-cache correction were rerun separately; the original measurements remain recorded.
 Three orientation regressions add nine passing save/undo/redo package/SDK comparisons: disabled
 preview rotation/flip and moved wrappers whose members have different rotations and flips.
+The stronger single-preview fixture checks different Choice/Fallback orientations and fails on the
+old frame code. Together with chart/OLE ungrouping, it adds 14 passing package/SDK comparisons.
+Single-frame placeholders now retain both flips; `p:xfrm` never receives rotation/flip attributes.
+Modern comment extensions retain their original sibling slots, including when a slide needs a new
+creation ID; both added comment cases pass package/SDK checks. All five selected PowerPoint saves
+open in LibreOffice with unchanged slide counts. A scan finds seven illegal frame transforms in
+five preceding full-run saves and none in readable originals; the writer correction prevents them.
+These changes are measured in the `984eaf3` refresh. Office batch 7 files 09–12 and 14 passed;
+file 13's corrected master/layout fixture also passed, as described above. Evidence:
+`~/corpora/results/lossless-evening-review-2026-10-09/`.
 Of 959 diagram, embedding, ink and model dependency parts, 928 are byte-identical, ten are Strict
 conversions, three remove missing optional cache references, and 18 are unreferenced orphan parts
 in one damaged source. Five edited samples open in LibreOffice with expected slide counts.
 All four pages load without console errors.
-PowerPoint batch 4 acceptance remains pending. Reports:
+All 15 batch-4 samples passed PowerPoint. Reports:
 `~/corpora/results/lectern-preservation-2026-10-09/frames-*`.
 
 An object conversion/removal notice also accounts for its unreachable opaque dependency parts;
@@ -298,7 +320,7 @@ states pass, including text edits, geometry, copies, deletion, detached clipboar
 Four edited samples open in LibreOffice with unchanged counts. UTF-16 package XML is decoded
 correctly, retaining a six-slide template previously read as empty; its save/edit/history states
 also pass SDK and LibreOffice. The corpus driver now compares original, opened and saved slide
-counts. Four pages load without console errors. PowerPoint batch 4 acceptance remains pending. Reports: `~/corpora/results/lectern-preservation-2026-10-09/properties-*`.
+counts. Four pages load without console errors. All 15 batch-4 samples passed PowerPoint. Reports: `~/corpora/results/lectern-preservation-2026-10-09/properties-*`.
 
 ## Known limits
 

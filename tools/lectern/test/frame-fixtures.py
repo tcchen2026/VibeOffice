@@ -15,6 +15,10 @@ name = 'ppt/slides/slide1.xml'
 xml = parts[name].decode('utf-8-sig')
 match = re.search(r'<mc:Fallback>(.*?)</mc:Fallback>', xml, re.S)
 picture = match[1]
+single = re.sub(r'<a:xfrm\b[^>]*>', '<a:xfrm rot="1800000" flipH="1">', picture, count=1)
+single_parts = dict(parts, **{name: (xml[:match.start(1)] + single + xml[match.end(1):]).encode()})
+with zipfile.ZipFile(a.output / 'single-oriented-fallback.pptx', 'w', zipfile.ZIP_DEFLATED) as z:
+    for entry, data in single_parts.items(): z.writestr(entry, data)
 width = int(re.search(r'<a:ext cx="(\d+)"', picture)[1])
 x = int(re.search(r'<a:off x="(\d+)"', picture)[1])
 first = picture.replace(f'cx="{width}"', f'cx="{width // 2}"')

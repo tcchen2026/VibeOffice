@@ -237,13 +237,13 @@
         }
       }
     }
-    /** recompute the used range (cells with value, formula or non-default style) */
+    /** recompute the used range, including retained source styles on blank cells */
     recalcBounds() {
       let mr = -1, mc = -1;
       this.rows.forEach((row, r) => {
         if (!row) return;
         let any = false;
-        row.cells.forEach((cell, c) => { if (cell && (cell.v != null || cell.f != null || cell.s)) { any = true; if (c > mc) mc = c; } });
+        row.cells.forEach((cell, c) => { if (cell && (cell.v != null || cell.f != null || cell.s || cell.keep?.style != null)) { any = true; if (c > mc) mc = c; } });
         if (any && r > mr) mr = r;
       });
       this.maxR = mr; this.maxC = mc;
@@ -311,7 +311,7 @@
     if (t && t[sz]) return t[sz];
     return Math.round(sz * 1.275 * 4) / 4;
   };
-  M.defaultRowPt = (sh) => (sh.defRowH != null ? sh.defRowH : M.fontRowPt(sh.wb.defaultFont));
+  M.defaultRowPt = (sh) => sh.defRowH ?? (sh.extra.formatKeep?.legacyNamespace ? sh.fileDefRowH : null) ?? M.fontRowPt(sh.wb.defaultFont);
   M.rowPt = function (sh, r) {
     const row = sh.rows[r];
     if (row) { if (row.hidden) return 0; if (row.ht != null && (row.customHeight || row.auto == null)) return row.ht; if (row.auto != null) return row.auto; }

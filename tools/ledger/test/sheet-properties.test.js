@@ -44,6 +44,7 @@ test('worksheet dimension edits keep sibling attributes and undo restores exact 
   const sh = wb.sheets[0], original = attributes(format(wb.pkg)), descent = '{' + K.KNOWN_NS.x14ac + '}dyDescent';
   assert.equal(original[descent], '0.2');
   assert.deepEqual(attributes(format((await save(wb, 'save')).pkg)), original);
+  assert(wb.losses.some(e => e.id === 'sheet-visibility:' + sh.id && e.what.includes('(show)')));
   O.sheetProp(wb, sh, 'defColW', 20, 'Default column width');
   assert.deepEqual(attributes(format((await save(wb, 'column-width')).pkg)), { ...original, defaultColWidth: '20' });
   wb.undo.undo(); assert.deepEqual(attributes(format((await save(wb, 'column-width-undo')).pkg)), original);
@@ -65,7 +66,19 @@ test('pre-release worksheet sizes convert to the current schema with a notice th
   for (const kind of ['beta', 'early']) {
     const wb = await open(t, kind); if (!wb) continue;
     const sh = wb.sheets[0], initial = await save(wb, 'legacy-save');
+    if (kind === 'beta') {
+      const text = book => book.sheets.flatMap(s => s.rows.flatMap(r => r ? r.cells.filter(c => c && typeof c.v === 'string').map(c => c.v) : []));
+      assert.deepEqual(text(wb), ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetuer', 'adipiscing', 'elit', 'Nunc', 'at']);
+      const reread = await L.xlsxRead.read(initial.bytes); assert.deepEqual(text(reread), text(wb));
+      assert.deepEqual(reread.theme.colors, wb.theme.colors);
+    }
     assert.equal(format(initial.pkg).namespaceURI, K.NS.s);
+    assert.equal(initial.pkg.xml(initial.pkg.main).namespaceURI, K.NS.s);
+    assert.equal(initial.pkg.xml(initial.pkg.main).children.filter(e => e.localName === 'sheets').length, 1);
+    for (const part of initial.pkg.names.filter(p => p.startsWith('xl/') && p.endsWith('.xml'))) {
+      const root = initial.pkg.xml(part);
+      assert(!/^http:\/\/schemas\.microsoft\.com\/office\/(excel\/2006\/2|officeart\/2005\/8\/oartml)/.test(root.namespaceURI || ''), part + ' retains an obsolete root namespace');
+    }
     assert(wb.losses.some(e => e.id === 'sheet-format-legacy:' + sh.id));
     O.sheetProp(wb, sh, 'defRowH', 26, 'Default row height');
     const edited = await save(wb, 'legacy-height');
@@ -74,6 +87,24 @@ test('pre-release worksheet sizes convert to the current schema with a notice th
     wb.undo.undo();
     assert.deepEqual(attributes(format((await save(wb, 'legacy-undo')).pkg)), attributes(format(initial.pkg)));
   }
+});
+test('the 2005 preview converts twip heights and zero-based fixed-point column widths', async t => {
+  const wb = await open(t, 'early'); if (!wb) return;
+  const sh = wb.sheets[0];
+  assert.equal(sh.rows[4].ht, 18.75); assert.equal(sh.rows[5].ht, 32.85);
+  assert.equal(sh.fileDefRowH, 15);
+  assert.equal(L.model.defaultRowPt(sh), 15);
+  assert.equal(sh.cols[0]?.w, 10.625); assert.equal(sh.cols[6]?.w, 13.375);
+  const saved = await save(wb, 'legacy-units'), root = saved.pkg.xml(sh.extra.ooxmlPart);
+  assert.equal(child(root, 'sheetFormatPr').getAttribute('defaultRowHeight'), '15');
+  assert.equal(child(root, 'sheetFormatPr').getAttribute('customHeight'), null);
+  const reread = await L.xlsxRead.read(saved.bytes);
+  assert.equal(reread.sheets[0].rows[4].ht, 18.75);
+  assert.equal(reread.sheets[0].rows[5].ht, 32.85);
+  assert.equal(reread.sheets[0].cols[0].w, 10.625);
+  O.sheetProp(wb, sh, 'defRowH', 24, 'Default row height');
+  assert.equal(format((await save(wb, 'legacy-units-height')).pkg).getAttribute('defaultRowHeight'), '24');
+  wb.undo.undo(); assert.equal(format((await save(wb, 'legacy-units-undo')).pkg).getAttribute('defaultRowHeight'), '15');
 });
 test('missing worksheet format stays absent and alternatives keep unread siblings', () => {
   const wb = new L.model.Workbook(), sh = wb.addSheet('Sheet1');

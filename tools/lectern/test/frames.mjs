@@ -20,6 +20,7 @@ const samples = [
 ];
 const cases = samples.flatMap(([name, file, scenarios]) => scenarios.map(edit => ({ file, kind: name.replace(/-.*/, ''), edit, scenario: name + '-' + edit })));
 cases.push(...['geometry', 'copy', 'paste-partial', 'delete', 'rotation'].map(edit => ({ file: 'multiple-fallback.pptx', kind: 'chartEx', multi: true, edit, scenario: 'multiple-' + edit })));
+cases.push({ file: 'single-oriented-fallback.pptx', kind: 'chartEx', single: true, edit: 'geometry', scenario: 'single-oriented-geometry' });
 const selected = cases.filter(c => new RegExp(filter).test(c.scenario));
 fs.mkdirSync(out, { recursive: true });
 const results = path.join(out, 'results.jsonl');
@@ -29,7 +30,7 @@ try {
   for (const c of selected) {
     const row = { ...c, attempted: true }; page.errors.length = 0;
     try {
-      const input = path.join(c.multi ? process.env.FRAME_FIXTURES || path.join(path.dirname(out), 'frames-fixtures') : corpus, c.file);
+      const input = path.join(c.multi || c.single ? process.env.FRAME_FIXTURES || path.join(path.dirname(out), 'frames-fixtures') : corpus, c.file);
       const result = await page.evaluate(`(${run.toString()})(${JSON.stringify({ ...c, data: fs.readFileSync(input).toString('base64') })})`);
       for (const [state, data] of Object.entries(result.artifacts)) {
         const dir = path.join(out, state === 'saved' ? c.scenario : c.scenario + '-' + state);
@@ -81,6 +82,7 @@ async function run(o) {
   check(shape, 'No owned ' + o.kind + ' frame');
   const members = o.multi ? slide.shapes.filter(s => s.keep?.frame?.fragment.key === shape.keep.frame.fragment.key) : [shape];
   if (o.multi) check(members.length === 2, 'Expected two fallback members');
+  if (o.single) check(slide.shapes.filter(s => s.keep?.frame?.fragment.key === shape.keep.frame.fragment.key).length === 1, 'Expected one fallback member');
   const piece = count(K.parse(shape.keep.frame.fragment.xml)), after = { ...before };
   E.goto(pres.slides.indexOf(slide), { force: true }); A.view = 'normal'; A.focusArea = 'editor'; E.select([shape.id]); H.clear();
   if (o.edit === 'rotation') {
@@ -105,8 +107,8 @@ async function run(o) {
     }
     for (const r of pkg.rels(pkg.main).filter(r => r.type.endsWith('/slide'))) {
       const tree = pkg.xml(r.part), spids = all(tree).filter(e => e.localName === 'oleObj' && e.hasAttribute('spid')).map(e => e.getAttribute('spid'));
-      if (o.multi && ['geometry', 'rotation'].includes(o.edit)) {
-        const orientations = root => all(root).filter(e => e.localName === 'Fallback').flatMap(e => all(e).filter(e => e.localName === 'xfrm').map(e => [+(e.getAttribute('rot') || 0), /^(1|true)$/.test(e.getAttribute('flipH')), /^(1|true)$/.test(e.getAttribute('flipV'))]));
+      if ((o.multi || o.single) && ['geometry', 'rotation'].includes(o.edit)) {
+        const orientations = root => all(root).filter(e => ['Choice', 'Fallback'].includes(e.localName)).flatMap(e => all(e).filter(e => e.localName === 'xfrm').map(e => [+(e.getAttribute('rot') || 0), /^(1|true)$/.test(e.getAttribute('flipH')), /^(1|true)$/.test(e.getAttribute('flipV'))]));
         check(JSON.stringify(orientations(tree)) === JSON.stringify(orientations(pres.pkg.xml(r.part))), 'Moving or resizing a wrapper changed member orientation');
       }
       check(new Set(spids).size === spids.length, 'Embedded objects share a preview on ' + r.part + ': ' + spids.join(' '));

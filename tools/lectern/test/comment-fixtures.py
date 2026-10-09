@@ -73,3 +73,16 @@ with zipfile.ZipFile(a.output / 'modern-comments.pptx', 'w', zipfile.ZIP_DEFLATE
     for name, data in parts.items():
         z.writestr(name, data)
 print(a.output / 'modern-comments.pptx')
+
+# Unknown extensions on both sides expose delete-and-append reordering.
+before = '<p:ext uri="urn:review:before"><v:detail xmlns:v="urn:review:metadata" value="before"/></p:ext>'
+after = '<p:ext uri="urn:review:after"><v:detail xmlns:v="urn:review:metadata" value="after"/></p:ext>'
+ordered = dict(parts)
+ordered['ppt/slides/slide1.xml'] = parts['ppt/slides/slide1.xml'].replace(b'<p:extLst>', ('<p:extLst>' + before).encode()).replace(b'</p:extLst>', (after + '</p:extLst>').encode())
+for filename, contents in [('modern-comments-ordered.pptx', ordered), ('modern-comments-no-creation.pptx', parts)]:
+    contents = dict(contents)
+    if filename.endswith('no-creation.pptx'):
+        contents['ppt/slides/slide1.xml'] = contents['ppt/slides/slide1.xml'].replace(creation.encode(), b'')
+    with zipfile.ZipFile(a.output / filename, 'w', zipfile.ZIP_DEFLATED) as z:
+        for name, data in contents.items(): z.writestr(name, data)
+    print(a.output / filename)

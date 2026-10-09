@@ -20,7 +20,7 @@ Each app is classic `<script>` files (no ES modules) that attach to one global n
 | [docs/suite.md](docs/suite.md) | Start Center, `common/suite.js` (app launch, Recent Files), PWA manifest, service worker |
 | [docs/testing.md](docs/testing.md) | Test workflow and tools |
 
-Keep them current: a change to an app's features, formats or source layout updates its `docs/<app>.md`. No per-app READMEs.
+Keep them current: a change to an app's features, formats or source layout updates its `docs/<app>.md`. No per-app READMEs. User-facing docs (README, `docs/<app>.md`) send people to https://vibeoffice.work; running it locally on 127.0.0.1 belongs in docs/testing.md. Screenshots for public docs show no local recent files or drafts (close the task panes).
 
 ## Design rules
 
@@ -37,6 +37,9 @@ Keep them current: a change to an app's features, formats or source layout updat
 - Schema-valid is not Office-valid: the Open XML SDK and LibreOffice passed decks PowerPoint repaired (a preset's partial adjustment list; a master and layout sharing an ID). Write what Office writes, not merely what the schema allows; when unsure, look at how Office-authored files in the corpus do it.
 - Every Office-found defect becomes a `tools/ooxml/package.py` rule with a test, plus a corpus scan for how widespread it is.
 - Before handing files to the user for Office, diff the new save against the previous writer's save of the same input; unexplained differences are suspects. Two overlapping faults made one Office round misleading.
+- New IDs and names (list, shape, VML, slicer, control, creation IDs) follow what Office-authored files in the corpus do, not a local max+1 or a made-up suffix.
+- A fix's regression test must fail on the previous commit; run it there before committing.
+- A notice says exactly what happened: "converted" only if the value was converted, otherwise name what was dropped.
 - Narrow Office failures by bisection: copies that each change one thing, with whole-file controls (without the suspect part, the part alone), at most about 8 per round, each with a checklist.
 
 ## Tools (details in docs/testing.md)
@@ -47,8 +50,14 @@ Keep them current: a change to an app's features, formats or source layout updat
 - `tools/ledger/test/`: Ledger's Node harnesses (unit tests, `.xlsx` round trip, recalculation, CSV) and Playwright UI checks.
 - `tools/lectern/test/`: Lectern's real-deck harness (open, render, save, reopen in Chromium), UI checks for passwords and charts, encrypted-save check (see docs/lectern.md).
 
+## Working with other sessions
+
+Several agents work in this repository at once. Commit only your own files and hunks (stage hunks when a file also holds someone else's edits); never commit, revert or rewrite another session's uncommitted changes. Leave a finding for the owner in NEXT_PLAN.md instead of fixing inside their in-progress files.
+
 ## Testing
 
 1. Ledger engine changes: `node --test tools/ledger/test/*.test.js`.
 2. File-format changes: round-trip real files (`node tools/ledger/test/roundtrip.js file.xlsx`) and open the saved file in LibreOffice.
-3. Look: `node tools/shot.mjs <app>/` with steps for the change; check every app still loads without console errors or external requests (fonts aside, until they are vendored).
+3. Look: `node tools/shot.mjs <app>/` with steps for the change; check every app still loads without console errors or external requests (fonts aside, until they are vendored). UI checks pause between steps so the page repaints, as with real input: bursts of synthetic events hid a Ledger scroll bug.
+4. Shared save code (`public/common/opc.js` and the writers) runs on every part of every file: time a change on a large file (a 30 MB sheet) as well as on the corpus. A regex pre-scan or a full parse there costs seconds and gigabytes.
+5. Prefer a focused regression test per fix; run the full corpus once per feature group and before each Office batch, not after every fix.
