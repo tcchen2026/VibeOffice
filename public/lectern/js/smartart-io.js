@@ -156,9 +156,16 @@
       '<dgm:constr type="w" for="ch" forName="centre" refType="w" fact="0.3"/><dgm:constr type="h" for="ch" forName="centre" refType="w" refFor="ch" refForName="centre"/><dgm:constr type="w" for="ch" forName="node" refType="w" refFor="ch" refForName="centre" fact="0.6"/><dgm:constr type="h" for="ch" forName="node" refType="w" refFor="ch" refForName="node"/><dgm:constr type="primFontSz" for="ch" forName="centre" op="equ" val="65"/><dgm:constr type="primFontSz" for="ch" forName="node" op="equ" val="65"/>',
       `<dgm:forEach name="centres" axis="ch" ptType="node" cnt="1">${textNode('centre', 'node0', 'ellipse', null, '', 'self')}<dgm:forEach name="kids" axis="ch" ptType="node"><dgm:forEach name="lines" axis="self" ptType="parTrans"><dgm:layoutNode name="line" styleLbl="parChTrans1D2"><dgm:alg type="conn"><dgm:param type="dim" val="1D"/><dgm:param type="begPts" val="auto"/><dgm:param type="endPts" val="auto"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst><dgm:constr type="begPad"/><dgm:constr type="endPad"/></dgm:constrLst><dgm:ruleLst/></dgm:layoutNode></dgm:forEach>${textNode('node', 'node1', 'ellipse', null, '', 'self')}</dgm:forEach></dgm:forEach>`),
     /* the diagram arranges its top items side by side; each is a root over its sub-items (a branch) */
-    orgChart: () => root('<dgm:alg type="hierChild"><dgm:param type="linDir" val="fromL"/></dgm:alg>',
-      '<dgm:constr type="w" for="des" forName="node" refType="w" fact="0.24"/><dgm:constr type="h" for="des" forName="node" refType="w" refFor="des" refForName="node" fact="0.55"/><dgm:constr type="primFontSz" for="des" forName="node" op="equ" val="65"/><dgm:constr type="w" for="des" forName="node2" refType="w" refFor="des" refForName="node"/><dgm:constr type="h" for="des" forName="node2" refType="h" refFor="des" refForName="node"/><dgm:constr type="primFontSz" for="des" forName="node2" refType="primFontSz" refFor="des" refForName="node" op="equ"/><dgm:constr type="sibSp" refType="w" refFor="des" refForName="node" fact="0.25"/><dgm:constr type="sp" refType="h" refFor="des" refForName="node" fact="0.7"/>',
-      `<dgm:forEach name="tops" axis="ch" ptType="node"><dgm:layoutNode name="branch"><dgm:alg type="hierRoot"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/>${textNode('node', 'node1', 'rect', null, '', 'self')}<dgm:layoutNode name="kids"><dgm:alg type="hierChild"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/><dgm:forEach name="rep" axis="ch" ptType="node"><dgm:forEach name="lines" axis="self" ptType="parTrans"><dgm:layoutNode name="line" styleLbl="parChTrans1D2"><dgm:alg type="conn"><dgm:param type="dim" val="1D"/><dgm:param type="connRout" val="bend"/><dgm:param type="begPts" val="bCtr"/><dgm:param type="endPts" val="tCtr"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst/><dgm:ruleLst/></dgm:layoutNode></dgm:forEach><dgm:layoutNode name="branch2"><dgm:alg type="hierRoot"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/>${textNode('node2', 'node1', 'rect', null, '', 'self')}<dgm:layoutNode name="kids2"><dgm:alg type="hierChild"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/><dgm:forEach name="more" ref="rep"/></dgm:layoutNode></dgm:layoutNode></dgm:forEach></dgm:layoutNode></dgm:layoutNode></dgm:forEach>`),
+    /* the diagram arranges its top items side by side; each is a root over its sub-items (a branch): its text,
+       then its children in a row, each a branch again (one definition, repeated through ref). A child's connector
+       joins its parent's text to its own; top items have no parent text, so no connector */
+    orgChart: () => {
+      const gaps = `<dgm:constrLst><dgm:constr type="sibSp" refType="w" refFor="des" refForName="node" fact="0.25"/><dgm:constr type="secSibSp" refType="w" refFor="des" refForName="node" fact="0.25"/><dgm:constr type="sp" refType="h" refFor="des" refForName="node" fact="0.7"/></dgm:constrLst>`;
+      const line = `<dgm:forEach name="line" axis="self" ptType="parTrans"><dgm:layoutNode name="conn" styleLbl="parChTrans1D2"><dgm:alg type="conn"><dgm:param type="dim" val="1D"/><dgm:param type="connRout" val="bend"/><dgm:param type="srcNode" val="node"/><dgm:param type="dstNode" val="node"/><dgm:param type="begPts" val="bCtr"/><dgm:param type="endPts" val="tCtr"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst><dgm:constr type="begPad"/><dgm:constr type="endPad"/></dgm:constrLst><dgm:ruleLst/></dgm:layoutNode></dgm:forEach>`;
+      return root('<dgm:alg type="hierChild"><dgm:param type="linDir" val="fromL"/></dgm:alg>',
+        '<dgm:constr type="w" for="des" forName="node" refType="w" fact="0.24"/><dgm:constr type="h" for="des" forName="node" refType="w" refFor="des" refForName="node" fact="0.55"/><dgm:constr type="primFontSz" for="des" forName="node" op="equ" val="65"/><dgm:constr type="sibSp" refType="w" refFor="des" refForName="node" fact="0.25"/>',
+        `<dgm:forEach name="rep" axis="ch" ptType="node">${line}<dgm:layoutNode name="branch"><dgm:alg type="hierRoot"/>${shape('')}<dgm:presOf/>${gaps}<dgm:ruleLst/>${textNode('node', 'node1', 'rect', null, '', 'self')}<dgm:layoutNode name="kids"><dgm:alg type="hierChild"/>${shape('')}<dgm:presOf/>${gaps}<dgm:ruleLst/><dgm:forEach name="more" ref="rep"/></dgm:layoutNode></dgm:layoutNode></dgm:forEach>`);
+    },
     pyramid: () => root('<dgm:alg type="pyra"><dgm:param type="linDir" val="fromT"/><dgm:param type="pyraAcctPos" val="aft"/></dgm:alg>',
       '<dgm:constr type="w" for="ch" forName="node" refType="w"/><dgm:constr type="h" for="ch" forName="node" refType="h"/><dgm:constr type="primFontSz" for="ch" forName="node" op="equ" val="65"/>',
       `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'trapezoid')}</dgm:forEach>`),
@@ -196,14 +203,14 @@
   };
 
   /* ---------------------------------------------------------------- quick styles */
-  const LABELS = ['node0', 'node1', 'lnNode1', 'vennNode1', 'alignNode1', 'trAlignAcc1', 'revTx', 'sibTrans2D1', 'parChTrans1D2', 'bgShp'];
+  const LABELS = ['node0', 'node1', 'lnNode1', 'vennNode1', 'alignNode1', 'alignAcc1', 'trAlignAcc1', 'revTx', 'sibTrans2D1', 'parChTrans1D2', 'bgShp'];
   const STYLE = { simple: [2, 0], white: [3, 0], subtle: [2, 1], moderate: [0, 2], intense: [0, 3] };   // [line ref, effect ref]
   IO.styleXML = (id) => {
     const [ln, fx] = STYLE[id] || STYLE.simple;
     const lbl = (n) => {
       const line = n === 'revTx' || n === 'sibTrans2D1' ? 0 : n === 'parChTrans1D2' ? 2 : ln;
       const fill = n === 'revTx' || n === 'parChTrans1D2' ? 0 : 1;
-      const font = `<a:fontRef idx="minor"><a:schemeClr val="${n === 'revTx' || n === 'vennNode1' ? 'tx1' : 'lt1'}"/></a:fontRef>`;
+      const font = `<a:fontRef idx="minor"><a:schemeClr val="${['revTx', 'vennNode1', 'alignAcc1', 'bgShp'].includes(n) ? 'tx1' : 'lt1'}"/></a:fontRef>`;
       return `<dgm:styleLbl name="${n}"><dgm:scene3d><a:camera prst="orthographicFront"/><a:lightRig rig="threePt" dir="t"/></dgm:scene3d><dgm:sp3d/><dgm:txPr/><dgm:style><a:lnRef idx="${line}"><a:scrgbClr r="0" g="0" b="0"/></a:lnRef><a:fillRef idx="${fill}"><a:scrgbClr r="0" g="0" b="0"/></a:fillRef><a:effectRef idx="${n === 'revTx' ? 0 : fx}"><a:scrgbClr r="0" g="0" b="0"/></a:effectRef>${font}</dgm:style></dgm:styleLbl>`;
     };
     const name = (window.L.diagram && L.diagram.STYLES.find((s) => s[0] === id) || [0, 'Simple Fill'])[1];
@@ -226,6 +233,8 @@
       if (n === 'vennNode1') { f = fills.replace(/<\/a:schemeClr>/g, '<a:alpha val="50000"/></a:schemeClr>'); tx = sc('tx1'); }
       if (n === 'sibTrans2D1') { f = clr([sc(base, '<a:alpha val="45000"/>')]); line = `<dgm:linClrLst meth="repeat">${sc(base, '<a:alpha val="45000"/>')}</dgm:linClrLst>`; }
       if (n === 'parChTrans1D2') { f = clr([sc(base)]); line = `<dgm:linClrLst meth="repeat">${sc(base)}</dgm:linClrLst>`; }
+      /* the sub-item cards and the pyramid behind cards: a pale tint of the colour, dark text (as diagram.js paints them) */
+      if (n === 'alignAcc1' || n === 'bgShp') { f = clr([sc(base, `<a:alpha val="${n === 'bgShp' ? 25000 : 18000}"/>`)]); line = `<dgm:linClrLst meth="repeat">${sc(base)}</dgm:linClrLst>`; tx = sc('tx1'); }
       if (n === 'revTx') { f = clr([sc('lt1', '<a:alpha val="0"/>')]); line = `<dgm:linClrLst meth="repeat">${sc('dk1', '<a:alpha val="0"/>')}</dgm:linClrLst>`; tx = sc('tx1'); }
       return `<dgm:styleLbl name="${n}">${f}${line}<dgm:effectClrLst/><dgm:txLinClrLst/><dgm:txFillClrLst meth="repeat">${tx}</dgm:txFillClrLst><dgm:txEffectClrLst/></dgm:styleLbl>`;
     };
