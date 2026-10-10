@@ -87,6 +87,24 @@
       '<dgm:constr type="w" for="ch" forName="node" refType="h"/><dgm:constr type="h" for="ch" forName="node" refType="h"/><dgm:constr type="ctrX" for="ch" forName="node" refType="w" fact="0.5"/><dgm:constr type="ctrY" for="ch" forName="node" refType="h" fact="0.5"/><dgm:constr type="primFontSz" for="ch" forName="node" op="equ" val="65"/>',
       `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'ellipse')}</dgm:forEach>`),
   };
+  /* items in a line (any direction), optionally joined by arrows or overlapping */
+  const linear = (geom, dir, o) => () => root(`<dgm:alg type="lin"><dgm:param type="linDir" val="${dir}"/></dgm:alg>`,
+    nodeSize(1, (o && o.aspect) || 0.6) + ((o && o.sp) != null ? `<dgm:constr type="sp" refType="w" refFor="ch" refForName="node" fact="${o.sp}"/>` : '') + (o && o.arrows ? '<dgm:constr type="w" for="ch" forName="arrow" refType="w" refFor="ch" refForName="node" fact="0.22"/><dgm:constr type="h" for="ch" forName="arrow" op="equ"/>' : ''),
+    `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', (o && o.styleLbl) || 'node1', geom, (o && o.adj) || [])}${o && o.arrows ? arrowNode('sibTrans2D1') : ''}</dgm:forEach>`);
+  Object.assign(LAYOUT, {
+    stackedList: LAYOUT.verticalBullet, vBox: LAYOUT.verticalBullet, linedList: LAYOUT.verticalBullet,
+    hBullet: linear('rect', 'fromL', { aspect: 0.3, sp: 0.06 }),
+    stepUp: linear('roundRect', 'fromL', { sp: 0.1, adj: [[1, 0.1]] }),
+    continuousArrow: linear('roundRect', 'fromL', { aspect: 0.5, sp: 0.12, adj: [[1, 0.16667]] }),
+    vProcess: linear('roundRect', 'fromT', { aspect: 0.3, arrows: true, adj: [[1, 0.1]] }),
+    timeline: linear('ellipse', 'fromL', { aspect: 1, sp: 1.5 }),
+    continuousCycle: LAYOUT.cycle,
+    hierarchy: LAYOUT.orgChart, hHierarchy: LAYOUT.orgChart,
+    linearVenn: linear('ellipse', 'fromL', { aspect: 1, sp: -0.25, styleLbl: 'vennNode1' }),
+    funnel: LAYOUT.pyramid, pyramidList: LAYOUT.pyramid,
+    invertedPyramid: () => LAYOUT.pyramid().replace('<dgm:param type="linDir" val="fromT"/>', '<dgm:param type="linDir" val="fromB"/>'),
+    matrix: LAYOUT.blockList,
+  });
   IO.layoutXML = (id) => {
     const lay = L.smartart.get(id) || L.smartart.LAYOUTS[0];
     return HEAD + `<dgm:layoutDef xmlns:dgm="${NS_DGM}" xmlns:a="${NS_A}" uniqueId="${URN}layout/${lay.id}"><dgm:title val="${X(lay.name)}"/><dgm:desc val="${X(lay.desc)}"/><dgm:catLst><dgm:cat type="${CAT[lay.cat] || 'list'}" pri="${10000 + L.smartart.LAYOUTS.indexOf(lay)}"/></dgm:catLst>${SAMPLE}${(LAYOUT[lay.id] || LAYOUT.blockList)()}</dgm:layoutDef>`;

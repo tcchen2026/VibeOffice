@@ -35,9 +35,14 @@
     let a = s.alpha == null ? 1 : s.alpha;
     if (scheme === 'range' && s.colorCnt > 1) a *= 1 - 0.6 * (s.colorIdx || 0) / (s.colorCnt - 1);
     if (scheme === 'colorful' && s.role === 'conn') c = pal.slot('accent1');
+    /* sub-item cards: a pale tint of the item's colour, with an outline when the layout asks for one */
+    if (s.role === 'child' && s.tint && !s.noFill) return { fill: { t: 'solid', c, a: 0.18 }, line: s.line ? { c, w: 1, dash: 'solid' } : { t: 'none' }, shadow: null, text: 'tx1' };
     if (s.role === 'child' || s.noFill) return { fill: { t: 'none' }, line: { t: 'none' }, shadow: null, text: 'tx1' };
     if (s.role === 'conn') return { fill: { t: 'none' }, line: { c, w: 1.5, dash: 'solid' }, shadow: null };
-    if (s.role === 'arrow') return { fill: { t: 'solid', c, a: a * 0.45 }, line: { t: 'none' }, shadow: null };
+    if (s.role === 'ring') return { fill: { t: 'none' }, line: { c, a: 0.4, w: 8, dash: 'solid' }, shadow: null };
+    if (s.role === 'bg') return { fill: { t: 'solid', c, a: 0.25 }, line: { t: 'none' }, shadow: null };
+    if (s.role === 'marker') return { fill: { t: 'solid', c, a: 1 }, line: { c: 'lt1', w: 1.5, dash: 'solid' }, shadow: null };
+    if (s.role === 'arrow') return { fill: { t: 'solid', c, a: a * (s.big ? 0.3 : 0.45) }, line: { t: 'none' }, shadow: null };
     const solid = { t: 'solid', c, a };
     const grad = (top) => ({ t: 'grad', stops: [{ p: 0, c, a: a * top }, { p: 1, c, a }], ang: 90, path: 'lin' });
     const shadow = (o, dy, blur) => ({ c: '#000000', a: o, dx: 0, dy, blur });
@@ -64,11 +69,15 @@
     const p = paint(s, sa, pal);
     const key = `${s.itemId}:${s.role}:${keep.n[s.itemId + s.role] = (keep.n[s.itemId + s.role] || 0) + 1}`;
     const base = { id: keep.ids[key] || L.uid('s'), type: 'shape', name: (SA.get(sa.layout) || {}).name + ' ' + s.role, x: s.x, y: s.y, w: Math.max(s.w, 0.01), h: Math.max(s.h, 0.01), rot: s.rot || 0, fill: p.fill, line: p.line, shadow: p.shadow, sa: { item: s.itemId, role: s.role } };
+    if (s.flipV) base.flipV = true;
     if (s.geom === 'path') {
       const cmds = s.path.map(([x, y], i) => [i ? 'L' : 'M', x - s.x, y - s.y]);
       return Object.assign(base, { geom: 'custom', path: { paths: [{ w: base.w, h: base.h, cmds, fill: 'none', stroke: true }] } });
     }
-    Object.assign(base, { geom: s.geom });
+    if (s.geom === 'poly') {
+      const cmds = s.poly.map(([x, y], i) => [i ? 'L' : 'M', x - s.x, y - s.y]).concat([['Z']]);
+      Object.assign(base, { geom: 'custom', path: { paths: [{ w: base.w, h: base.h, cmds, fill: 'norm', stroke: true }] } });
+    } else Object.assign(base, { geom: s.geom });
     const defAdj = (L.geom.get(s.geom) || {}).adj;
     if (defAdj) {
       base.adj = L.clone(defAdj);
@@ -80,7 +89,7 @@
       const ps = s.text.lines.map((ln) => (ln.lvl
         ? T.para(ln.t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, { sz, color: p.text }, 1)
         : T.para(ln.t, { algn: s.text.align === 'l' ? 'l' : 'ctr', bu: { t: 'none' } }, { sz, color: p.text })));
-      base.tx = T.body(ps, { anchor: s.text.anchor === 't' ? 't' : 'ctr', wrap: true, autofit: 'none', ins: [inset, inset, inset, inset] });
+      base.tx = T.body(ps, { anchor: s.text.anchor === 't' || s.text.anchor === 'b' ? s.text.anchor : 'ctr', wrap: true, autofit: 'none', ins: [inset, inset, inset, inset] });
       base.txRect = [b.x - s.x, b.y - s.y, b.x + b.w - s.x, b.y + b.h - s.y].map((v) => L.round(v, 3));
     }
     return base;
@@ -142,7 +151,7 @@
       const tr = s.rot ? ` transform="rotate(${L.round(s.rot, 1)} ${L.round(s.x + s.w / 2, 1)} ${L.round(s.y + s.h / 2, 1)})"` : '';
       if (s.geom === 'path') out += `<polyline points="${s.path.map((q) => q.map((v) => L.round(v, 1)).join(',')).join(' ')}" fill="none"${stroke}/>`;
       else if (s.noFill) out += s.text ? s.text.lines.map((ln, i) => `<rect x="${L.round(s.text.box.x + 3, 1)}" y="${L.round(s.text.box.y + 2 + i * 4, 1)}" width="${L.round(s.text.box.w * 0.5, 1)}" height="1.6" fill="#999"/>`).join('') : '';
-      else out += `<path d="${shapePath(s)}" ${fill}${stroke}${tr}/>`;
+      else out += `<path d="${shapePath(s)}" ${fill}${stroke}${s.flipV ? ` transform="translate(0 ${L.round(2 * s.y + s.h, 1)}) scale(1 -1)"` : tr}/>`;
     }
     return `<svg width="${w}" height="${hh}" viewBox="0 0 ${w} ${hh}" aria-hidden="true">${out}</svg>`;
   };
@@ -150,6 +159,7 @@
     const { x, y, w, h: hh } = s, a = (s.adj || [])[0], r = (v) => L.round(v, 1);
     const P = (pts) => 'M' + pts.map((q) => q.map(r).join(',')).join('L') + 'Z';
     switch (s.geom) {
+      case 'poly': return P(s.poly);
       case 'ellipse': return `M${r(x)},${r(y + hh / 2)}a${r(w / 2)},${r(hh / 2)} 0 1 0 ${r(w)},0a${r(w / 2)},${r(hh / 2)} 0 1 0 ${r(-w)},0Z`;
       case 'triangle': return P([[x + w / 2, y], [x + w, y + hh], [x, y + hh]]);
       case 'trapezoid': { const i = ((a == null ? 25000 : a) / 100000) * Math.min(w, hh); return P([[x + i, y], [x + w - i, y], [x + w, y + hh], [x, y + hh]]); }
@@ -160,9 +170,10 @@
   }
   function sampleItems(layout) {
     const it = (t, kids) => ({ id: t, text: '', kids: kids || [] });
-    if (layout === 'orgChart') return [it('a', [it('b'), it('c'), it('d')])];
+    const lay = SA.get(layout) || {};
+    if (lay.tree) return [it('a', [it('b', layout === 'orgChart' ? [] : [it('b1'), it('b2')]), it('c'), it('d')])];
     if (layout === 'radial') return [it('a', [it('b'), it('c'), it('d'), it('e')])];
-    if (layout === 'verticalBullet') return [it('a', [it('a1'), it('a2')]), it('b', [it('b1')])];
+    if (lay.levels === 2) return [it('a', [it('a1'), it('a2')]), it('b', [it('b1')]), it('c', [it('c1')])].slice(0, layout === 'verticalBullet' ? 2 : 3);
     return SA.blank(layout).map((x, i) => it('n' + i));
   }
 
@@ -175,7 +186,9 @@
     const show = () => { const lay = SA.get(pick); big.innerHTML = DG.thumb(pick, 190, 150); title.textContent = lay.name; desc.textContent = lay.desc; L.$$('button', grid).forEach((b) => b.classList.toggle('on', b.dataset.lay === pick)); };
     const fill = () => {
       L.clear(grid);
-      for (const lay of SA.LAYOUTS.filter((l) => cat === 'all' || l.cat === cat)) {
+      const shown = SA.LAYOUTS.filter((l) => cat === 'all' || l.cat === cat);
+      if (shown.length && !shown.some((l) => l.id === pick)) pick = shown[0].id;
+      for (const lay of shown) {
         const b = h('button', { type: 'button', class: 'sa-cell', 'data-lay': lay.id, 'aria-label': lay.name, 'data-tip': lay.name, html: DG.thumb(lay.id, 74, 58) });
         b.addEventListener('click', () => { pick = lay.id; show(); });
         b.addEventListener('dblclick', () => { pick = lay.id; d.buttons[0].click(); });
@@ -189,7 +202,7 @@
       b.addEventListener('click', () => { cat = k; L.$$('.sa-cat', cats).forEach((x) => x.classList.toggle('on', x === b)); fill(); });
       cats.append(b);
     }
-    const d = ui.dialog({ title: current ? 'Change SmartArt Layout' : 'Choose a SmartArt Graphic', width: 640,
+    const d = ui.dialog({ title: current ? 'Change SmartArt Layout' : 'Choose a SmartArt Graphic', width: 720,
       body: h('div', { class: 'sa-gallery' }, cats, grid, h('div', { class: 'sa-side' }, big, title, desc)),
       buttons: [{ label: 'OK', primary: true, onClick: () => cb(pick) }, { label: 'Cancel' }] });
     fill();

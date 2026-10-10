@@ -14,12 +14,12 @@ const BOX = { x: 72, y: 144, w: 576, h: 252 };
 const measure = (t, size) => t.length * size * 0.5;
 
 const items = (n, kids = 0) => Array.from({ length: n }, (_, i) => ({ id: 'n' + i, text: 'Step ' + (i + 1), kids: Array.from({ length: kids }, (_, j) => ({ id: `n${i}k${j}`, text: 'Detail ' + j, kids: [] })) }));
-const shown = (id, list) => (id === 'radial' ? [list[0], ...(list[0].kids.length ? list[0].kids : list.slice(1))] : id === 'orgChart' ? SA.outline(list).map((o) => o.item) : list);
+const shown = (lay, list) => (lay.id === 'radial' ? [list[0], ...(list[0].kids.length ? list[0].kids : list.slice(1))] : lay.tree ? SA.outline(list).map((o) => o.item) : list);
 
 for (const lay of SA.LAYOUTS) {
   test(`${lay.name}: shapes inside the box for 1–7 items`, () => {
     for (let n = 1; n <= 7; n++) {
-      const list = lay.id === 'orgChart' || lay.id === 'radial' ? [{ id: 'top', text: 'Top', kids: items(n - 1 || 1) }] : items(n, lay.levels > 1 ? 2 : 0);
+      const list = lay.tree || lay.id === 'radial' ? [{ id: 'top', text: 'Top', kids: items(n - 1 || 1) }] : items(n, lay.levels > 1 ? 2 : 0);
       const { shapes } = SA.layout(lay.id, list, BOX, { measure });
       for (const s of shapes) {
         for (const k of ['x', 'y', 'w', 'h']) assert.ok(Number.isFinite(s[k]), `${lay.id} n=${n} ${s.role}.${k}`);
@@ -27,7 +27,7 @@ for (const lay of SA.LAYOUTS) {
         assert.ok(s.x >= BOX.x - 0.5 && s.y >= BOX.y - 0.5 && s.x + s.w <= BOX.x + BOX.w + 0.5 && s.y + s.h <= BOX.y + BOX.h + 0.5, `${lay.id} n=${n} ${s.role} ${JSON.stringify([s.x, s.y, s.w, s.h])} outside`);
       }
       const nodes = shapes.filter((s) => s.role === 'node');
-      assert.deepEqual(nodes.map((s) => s.itemId).sort(), shown(lay.id, list).map((it) => it.id).sort(), `${lay.id} n=${n}: one node per item`);
+      assert.deepEqual(nodes.map((s) => s.itemId).sort(), shown(lay, list).map((it) => it.id).sort(), `${lay.id} n=${n}: one node per item`);
       const sizes = new Set(nodes.map((s) => s.fontSize));
       assert.equal(sizes.size, 1, `${lay.id} n=${n}: one text size for the items`);
       const [size] = sizes;

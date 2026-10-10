@@ -62,7 +62,18 @@ A chart that is not edited in Lectern is saved exactly as it came: its XML, the 
 
 ## SmartArt
 
-Insert ▸ Diagram (SmartArt on the ribbon, or the diagram icon of a content placeholder) opens a gallery of layouts by category, each pictured in the design's colours: Basic Block List, Vertical Bullet List, Basic Process, Basic Chevron Process, Basic Cycle, Basic Radial, Organization Chart, Basic Pyramid, Basic Venn and Basic Target. The new diagram takes an empty content placeholder, or the middle of the slide.
+Insert ▸ Diagram (SmartArt on the ribbon, or the diagram icon of a content placeholder) opens a gallery of 26 layouts by category, each pictured in the design's colours:
+
+| Category | Layouts |
+|---|---|
+| List | Basic Block List, Vertical Bullet List, Stacked List, Horizontal Bullet List, Lined List, Vertical Box List |
+| Process | Basic Process, Basic Chevron Process, Step Up Process, Continuous Arrow Process, Vertical Process, Basic Timeline |
+| Cycle | Basic Cycle, Basic Radial, Continuous Cycle |
+| Hierarchy | Organization Chart, Hierarchy, Horizontal Hierarchy |
+| Relationship | Basic Venn, Basic Target, Linear Venn, Funnel |
+| Matrix | Basic Matrix |
+| Pyramid | Basic Pyramid, Inverted Pyramid, Pyramid List |
+ The new diagram takes an empty content placeholder, or the middle of the slide.
 
 * **Text pane** (opens on insert; Text Pane on the Diagram toolbar or SmartArt Tools ▸ Design): one line per item. Enter adds an item, Tab and Shift+Tab demote and promote it, Alt+Shift+↑/↓ move it, Backspace on an empty line removes it; the diagram follows as you type. Text typed into a shape on the slide goes back to its item too.
 * **Diagram toolbar / SmartArt Tools:** Add Shape (after, before, above, below), Promote, Demote, Move Up, Move Down, Change Layout (keeps the text), Change Colors (one accent, Colorful, Gradient Range), Styles (Simple Fill, White Outline, Subtle, Moderate, Intense), Reset Graphic, Convert to Shapes. Delete on a shape removes its item.
@@ -70,7 +81,7 @@ Insert ▸ Diagram (SmartArt on the ribbon, or the diagram icon of a content pla
 * **Saving:** a diagram made or edited here is saved as real SmartArt: the data (its items), our own layout, style and colour definitions (`urn:vibeoffice.work/diagram/…`, written from our layouts, not copied from Office's), and the drawing of its shapes for applications that do not lay SmartArt out themselves. Model ids are stable, so an unedited diagram saves byte for byte. Reopened in Lectern, it is editable again.
 * **SmartArt from other files** (PowerPoint's own layouts) is shown and kept as before (*Opaque frames*); editing its contents converts it to shapes, with a notice.
 
-Checked (2026-10-10): a deck with one diagram per layout passes the Open XML SDK validator and `package.py`; LibreOffice 25.2 draws all ten from the saved drawing, re-saves them as SmartArt, and Lectern reopens that copy with all ten editable; reopening and editing one diagram rewrites only its parts (the other nine byte-identical). PowerPoint opened our hand-written process diagram with and without the drawing and edited it (text pane, Add Shape, Change Colors); after Add Shape it laid the boxes out taller than our engine does, which a later PowerPoint check of every layout will settle.
+Checked (2026-10-10): a deck with one diagram per layout (26) passes the Open XML SDK validator and `package.py`; LibreOffice 25.2 draws every one from the saved drawing (upside-down layers are drawn as outlines so their text stays upright); reopened in Lectern all 26 are editable, and editing one rewrites only its parts (the other 25 byte-identical). With the first ten, LibreOffice also re-saved them as SmartArt and Lectern reopened that copy with all ten editable. PowerPoint opened our hand-written process diagram with and without the drawing and edited it (text pane, Add Shape, Change Colors); after Add Shape it laid the boxes out taller than our engine does, which a later PowerPoint check of every layout will settle.
 
 ## Slide size
 
