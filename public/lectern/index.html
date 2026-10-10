@@ -245,12 +245,12 @@
 @media (max-width: 820px) {
   .taskpane { position: absolute; right: 0; top: 0; bottom: 0; z-index: 40; width: min(262px, 88vw); box-shadow: -3px 0 8px var(--tip-shadow-c); }
   .main { position: relative; }
-  .helpbox input { width: 110px; }
+  .cmd-search input { width: 120px; }
 }
 @media (max-width: 640px) {
   .leftpane { position: absolute; left: 0; top: 0; bottom: 0; z-index: 39; width: min(170px, 60vw); box-shadow: 3px 0 8px var(--tip-shadow-c); }
   .notes { height: 56px; }
-  .helpbox { display: none; }
+  .cmd-search { display: none; }
   .tb-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .tb-row::-webkit-scrollbar { display: none; }
 }
@@ -307,6 +307,7 @@
 <script src="js/pptx-write.js"></script>
 <script src="js/commands.js"></script>
 <script src="js/templates.js"></script>
+<script src="../common/search.js"></script>
 <script src="../common/ribbon.js"></script>
 <script src="js/ribbon.js"></script>
 <script src="js/app.js"></script>

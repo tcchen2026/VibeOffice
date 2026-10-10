@@ -502,7 +502,7 @@ support for every formula or external data source.
 | `js/xlsx-read.js`, `js/xlsx-write.js`, `js/csv.js`, `js/xmlss.js` | File formats |
 | `../common/dml.js`, `../common/charts.js`, `js/xchart.js`, `js/drawing.js`, `../common/geometry.js`, `../common/metafile.js` | DrawingML, chart model and SVG drawing, Chart Wizard, pictures and AutoShapes, WMF/EMF |
 | `js/filter.js`, `js/print.js`, `../common/spell.js`, `js/spell.js`, `js/panes.js` | AutoFilter, printing and Print Preview, the shared spelling engine with Ledger's Spelling dialog and AutoCorrect, task panes and templates |
-| `../common/ui.js`, `../common/icons.js`, `../common/looks.css`, `../common/ui.css`, `js/commands.js`, `js/dialogs*.js`, `js/app.js` | Menus, toolbars and dialogs; original 16×16 icons; the command registry; the application controller |
+| `../common/ui.js`, `../common/search.js`, `../common/icons.js`, `../common/looks.css`, `../common/ui.css`, `js/commands.js`, `js/dialogs*.js`, `js/app.js` | Menus, toolbars and dialogs; Search commands; original 16×16 icons; the command registry; the application controller |
 | `js/ribbon.js`, `../common/ribbon.js` | The Paper 2016 look's ribbon: Excel's tabs and groups over Ledger's commands ([suite.md](suite.md#the-ribbon)) |
 | `../common/dict/` | Spelling word lists (English U.S. and U.K.) and their licences (shared with Quire) |
 | `tools/ledger/test/` | The test harnesses described above (Node.js and Playwright) |

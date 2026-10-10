@@ -141,7 +141,7 @@
 :is([data-look="paper"], [data-look="paper2016"]) .menurow { padding: 4px 8px 2px; }
 :is([data-look="paper"], [data-look="paper2016"]) .mb-item { padding: 3px 9px; border: 0; border-radius: 6px; }
 :is([data-look="paper"], [data-look="paper2016"]) .mb-item.open { background: var(--p-accent-soft); color: var(--p-accent-ink); border: 0; }
-:is([data-look="paper"], [data-look="paper2016"]) .helpbox input { height: 24px; border-radius: 12px; padding: 0 10px; }
+:is([data-look="paper"], [data-look="paper2016"]) .cmd-search input { height: 24px; border-radius: 12px; padding: 0 10px 0 24px; }
 :is([data-look="paper"], [data-look="paper2016"]) .toolbars { padding: 2px 6px 6px; }
 :is([data-look="paper"], [data-look="paper2016"]) .tb-row { gap: 4px 8px; }
 :is([data-look="paper"], [data-look="paper2016"]) .toolbar { border: 1px solid var(--p-line); border-radius: 10px; padding: 0 3px; height: 30px; }

@@ -271,10 +271,10 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 @media (max-width: 820px) {
   .taskpane { position: absolute; right: 0; top: 0; bottom: 0; z-index: 40; width: min(262px, 88vw); box-shadow: -3px 0 8px var(--tip-shadow-c); }
   .docmap { position: absolute; left: 0; top: 0; bottom: 0; z-index: 39; width: min(200px, 60vw); box-shadow: 3px 0 8px var(--tip-shadow-c); }
-  .helpbox input { width: 110px; }
+  .cmd-search input { width: 120px; }
 }
 @media (max-width: 640px) {
-  .helpbox { display: none; }
+  .cmd-search { display: none; }
   .tb-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .tb-row::-webkit-scrollbar { display: none; }
   .work.rulers { grid-template-rows: 0 1fr; }
@@ -389,6 +389,7 @@ body.bluebg .pages .pc, body.bluebg .pages .pc span { color: #fff !important; }
 <script src="js/dialogs2.js"></script>
 <script src="js/dialogs3.js"></script>
 <script src="js/find.js"></script>
+<script src="../common/search.js"></script>
 <script src="../common/ribbon.js"></script>
 <script src="js/ribbon.js"></script>
 <script src="js/app.js"></script>

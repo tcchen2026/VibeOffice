@@ -496,9 +496,7 @@
     ];
     const row = L.$('#menurow');
     A.menuBar = ui.menuBar(row, menus);
-    const q = h('input', { type: 'text', id: 'helpq', placeholder: 'Type a question for help', 'aria-label': 'Type a question for help' });
-    q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { L.panes.helpQuery = q.value; L.panes.task.show('help'); q.value = ''; G().focus(); } e.stopPropagation(); });
-    row.appendChild(h('div', { class: 'helpbox' }, q, h('span', { class: 'dd-arrow', style: 'margin-left:3px' })));
+    row.appendChild(ui.searchBox());
   }
 
   /* ------------------------------------------------------------ toolbars */

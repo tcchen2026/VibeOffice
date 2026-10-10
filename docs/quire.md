@@ -361,7 +361,7 @@ compatibility results are archived with the run history rather than mixed into c
 | `../common/dict/` | Spelling word lists, thesaurus, licences (shared with Ledger) |
 | `js/outline.js`, `js/rulers.js`, `js/panes.js` | Outline view, rulers, task panes (Research/Thesaurus, Clip Art, Styles…), Document Map, thumbnails, Print Preview, Reading Layout |
 | `js/mailmerge.js`, `js/templates.js` | Mail Merge wizard and toolbar, document templates |
-| `../common/ui.js`, `../common/icons.js`, `../common/looks.css`, `../common/ui.css` | Menus, toolbars, dialogs, colour pickers, original 16×16 icon set, the looks (shared) |
+| `../common/ui.js`, `../common/search.js`, `../common/icons.js`, `../common/looks.css`, `../common/ui.css` | Menus, toolbars, dialogs, colour pickers, Search commands, original 16×16 icon set, the looks (shared) |
 | `js/commands.js`, `js/dialogs*.js`, `js/find.js`, `js/app.js` | Command registry, all dialogs, Find and Replace, application controller |
 | `js/ribbon.js`, `../common/ribbon.js` | The Paper 2016 look's ribbon: Word's tabs and groups over Quire's commands ([suite.md](suite.md#the-ribbon)) |
 

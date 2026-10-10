@@ -22,7 +22,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | `../common/numfmt.js` | Excel number formats (dates, currency, percentages, sections) for chart axes and data labels |
 | `../common/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types with `js/chart-draw.js`) |
 | `js/chart-draw.js` | Drawing of charts that come from PowerPoint 2007 and later (see *Charts* below) |
-| `../common/ui.js`, `../common/icons.js`, `../common/clipart.js`, `../common/looks.css`, `../common/ui.css` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips |
+| `../common/ui.js`, `../common/search.js`, `../common/icons.js`, `../common/clipart.js`, `../common/looks.css`, `../common/ui.css` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips, Search commands |
 | `js/ribbon.js`, `../common/ribbon.js` | The Paper 2016 look's ribbon: PowerPoint's tabs and groups over Lectern's commands ([suite.md](suite.md#the-ribbon)) |
 | `js/editor.js` | Slide editing surface: select, move, resize, rotate, crop, draw, grid |
 | `js/textedit.js` | Rich text editing, bullets, levels, AutoCorrect, tables |

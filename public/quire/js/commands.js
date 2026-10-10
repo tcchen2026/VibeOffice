@@ -456,7 +456,7 @@
   C('arrangeAll', { label: '&Arrange All', enabled: () => false, run: () => {} });
   C('splitWindow', { label: '&Split', checked: () => !!A.splitOn, run: () => A.toggleSplit() });
   C('help', { label: 'Quire &Help', menuLabel: 'Quire &Help', icon: 'help', key: 'F1', tip: 'Help', run: pane('help') });
-  C('showAssistant', { label: 'Show the &Assistant', run: () => ui.toast('The Assistant is resting. Type a question in the Help box at the top right instead.', 4000) });
+  C('showAssistant', { label: 'Show the &Assistant', run: () => ui.toast('The Assistant is resting. Press F1 for Help, or find a command with Search commands at the top right (Alt+Q).', 4000) });
   C('gettingStarted', { label: '&Getting Started', run: pane('getting-started') });
   C('keyboardHelp', { label: '&Keyboard Shortcuts', run: () => { if (L.panes) { L.panes.helpTopic = 'keys'; pane('help')(); } } });
   C('about', { label: '&About Quire', run: dlg('about') });

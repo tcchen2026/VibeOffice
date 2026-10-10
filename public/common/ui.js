@@ -225,7 +225,7 @@
       return false;
     };
     bar.openIndex = (i) => { if (ui.barKeys && ui.barKeys.active()) ui.barKeys.index(i); else open(i, true); };
-    bar.menus = menus;
+    bar.menus = ui.menus = menus;   // also read by Search commands (common/search.js)
     container.appendChild(bar);
     return bar;
   };

@@ -199,36 +199,6 @@
     else fit();
   }
 
-  /* Search commands: the labels of every command; Enter runs the first match */
-  function searchBox() {
-    const inp = h('input', { type: 'search', class: 'rb-search', placeholder: 'Search commands', 'aria-label': 'Search commands', spellcheck: 'false', autocomplete: 'off' });
-    const matches = () => {
-      const q = inp.value.trim().toLowerCase();
-      if (!q) return [];
-      const seen = new Set();
-      return Object.keys(ui.cmds).filter((id) => {
-        const c = ui.cmds[id], lab = cmdLabel(id).toLowerCase();
-        if (!c.label || id.startsWith('tb_') || seen.has(lab) || !lab.includes(q)) return false;
-        seen.add(lab);
-        return true;
-      }).sort((a, b) => cmdLabel(a).toLowerCase().indexOf(q) - cmdLabel(b).toLowerCase().indexOf(q)).slice(0, 12);
-    };
-    const show = () => {
-      const m = matches();
-      ui.closeMenus();
-      if (!m.length) return;
-      const r = inp.getBoundingClientRect();
-      ui.openMenu(m.map((id) => ({ cmd: id, run: () => { inp.value = ''; ui.exec(id); } })), { left: r.left, bottom: r.bottom });
-    };
-    inp.addEventListener('input', show);
-    inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { const m = matches(); if (m.length) { ui.closeMenus(); inp.value = ''; ui.hooks.refocus(); ui.exec(m[0]); } e.preventDefault(); }
-      if (e.key === 'Escape') { inp.value = ''; ui.closeMenus(); ui.hooks.refocus(); }
-      e.stopPropagation();
-    });
-    return inp;
-  }
-
   /* KeyTips: Alt or F10 shows a letter on each tab (and a number on the Quick Access Toolbar); the letter opens
      the tab and shows letters on its commands. Esc goes back a level. */
   let tips = null;
@@ -318,7 +288,7 @@
     panelEl = h('div', { class: 'rb-panel' });
     const pin = h('button', { class: 'rb-pin', type: 'button', 'aria-label': 'Collapse the Ribbon (Ctrl+F1)', 'data-tip': 'Collapse the Ribbon (Ctrl+F1)', html: '<svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 5l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>' });
     pin.addEventListener('click', () => RB.collapse());
-    el = h('div', { class: 'ribbon' }, h('div', { class: 'rb-bar' }, qat, tabsEl, searchBox()), h('div', { class: 'rb-panelwrap' }, panelEl, pin));
+    el = h('div', { class: 'ribbon' }, h('div', { class: 'rb-bar' }, qat, tabsEl, ui.searchBox()), h('div', { class: 'rb-panelwrap' }, panelEl, pin));
     L.$('.cmdbars').prepend(el);
     drawTabs();
     if (L.store.get('ribbonCollapsed', false)) el.classList.add('collapsed');

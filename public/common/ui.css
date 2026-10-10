@@ -21,9 +21,17 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .mb-item { padding: 3px 7px 4px; border: 1px solid transparent; cursor: default; white-space: nowrap; user-select: none; }
 .mb-item:hover { background: linear-gradient(var(--hot-a), var(--hot-b)); border-color: var(--hot-border); }
 .mb-item.open { background: linear-gradient(var(--tb-a), var(--menu-open)); border-color: var(--menu-border); border-bottom-color: transparent; position: relative; z-index: 1001; }
-.helpbox { margin-left: auto; flex: none; display: flex; align-items: center; gap: 2px; }
-.helpbox input { width: 170px; height: 19px; border: 1px solid var(--combo-border); padding: 1px 4px; color: var(--ink-3); }
-.helpbox input::placeholder { color: var(--hint-ink); }
+.cmd-search { margin-left: auto; flex: none; position: relative; display: flex; align-items: center; }
+.cmd-search .cs-glass { position: absolute; left: 6px; color: var(--hint-ink); pointer-events: none; }
+.cmd-search input { width: 190px; height: 19px; border: 1px solid var(--combo-border); padding: 1px 4px 1px 22px; background: var(--surface); color: var(--ink-3); font: inherit; }
+.cmd-search input::placeholder { color: var(--hint-ink); }
+.cmd-search input::-webkit-search-cancel-button { cursor: pointer; }
+.menu.cs-pop { padding: 2px; }
+.cs-pop .m-lbl { overflow: hidden; text-overflow: ellipsis; }
+.cs-pop .m-lbl b { font-weight: bold; }
+.cs-where { margin-left: 10px; color: var(--muted); font-size: 0.92em; }
+.cs-pop .m-item.dis .cs-where { color: inherit; }
+.cs-none { padding-left: 28px; }
 .toolbars { display: flex; flex-direction: column; gap: 0; padding: 0 2px 2px; }
 .tb-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 2px 3px; min-height: 26px; }
 .toolbar { display: inline-flex; align-items: center; height: 26px; padding: 0 2px 0 0; border-radius: 3px; border-bottom: 1px solid var(--tb-border); border-right: 1px solid var(--tb-edge);
@@ -326,7 +334,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .rb-ctx-name { align-self: center; padding: 0 2px 0 8px; font-size: 10px; font-weight: bold; color: var(--rb-ctx); white-space: nowrap; }
 .rb-ctx-tabs { display: flex; }
 .rb-tab.ctx { color: var(--rb-ctx); }
-.rb-search { flex: none; align-self: center; width: 190px; height: 22px; margin-bottom: 3px; padding: 0 8px; border: 1px solid var(--rb-line); border-radius: 11px; background: var(--surface); color: var(--ink); font: inherit; }
+.rb-bar .cmd-search { margin-left: 0; align-self: center; margin-bottom: 3px; }
+.rb-bar .cmd-search input { height: 22px; padding: 0 8px 0 22px; border: 1px solid var(--rb-line); border-radius: 11px; color: var(--ink); }
 .rb-panel { display: flex; height: 96px; border-top: 1px solid var(--rb-line); border-bottom: 1px solid var(--chrome-line); background: var(--rb-panel); overflow: hidden; }
 .rb-groups { display: flex; align-items: stretch; padding: 3px 2px 0; }
 .rb-group { flex: none; display: flex; flex-direction: column; padding: 0 5px; border-right: 1px solid var(--rb-line); }
