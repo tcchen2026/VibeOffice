@@ -16,10 +16,10 @@ Open https://vibeoffice.work/ledger/. The app is `public/ledger/`; paths below a
 they start with `tools/`. To run it locally, see [testing.md](testing.md). Everything runs in the browser; there is no back end and no network
 service behind any feature. Two things are fetched at run time: the spelling word lists in
 `../common/dict/`, shared with Quire (which is why the site should be served rather than opened from disk — from a `file://` page
-everything works except Tools ▸ Spelling), and, from Google Fonts when it can be reached, the
-metric-compatible faces Carlito, Caladea, Arimo, Tinos and Cousine, which stand in for Calibri, Cambria,
-Arial, Times New Roman and Courier New so that text fits cells the way it does in Excel. Offline, the
-browser's own fonts are used.
+everything works except Tools ▸ Spelling), and, from the site's own `../fonts/` and only when the
+computer lacks the real font, the metric-compatible faces Carlito, Caladea and Gelasio, which stand
+in for Calibri, Cambria and Georgia so that text fits cells the way it does in Excel. Arial, Times New
+Roman and Courier New use the computer's own copies or, on Linux, the Liberation fonts of the same widths.
 
 `index.html` is generated: edit `tools/ledger/build/template.html`, `tools/ledger/build/*.css` or the
 script list in `tools/ledger/build/make.py`, then run `python3 tools/ledger/build/make.py`.
@@ -474,7 +474,7 @@ support for every formula or external data source.
 - One window per workbook (Window ▸ New Window is not available); the binary `.xls` format is not read.
 - Spelling is English only (U.S. and U.K.).
 - Fonts are drawn with what the browser has. Calibri, Cambria, Arial, Times New Roman and Courier New
-  are drawn with their metric-compatible stand-ins (installed, or loaded from Google Fonts), so column
+  are drawn with the real font when installed, otherwise its metric-compatible stand-in, so column
   fits and `####` decisions match Excel's; with other substitutes a number that just fits in Excel may
   show as `####`, and a few fonts have no stand-in at all.
 

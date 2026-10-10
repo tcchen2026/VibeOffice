@@ -158,6 +158,11 @@
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
+  /* Safari's Lockdown Mode takes IndexedDB away (the name is undefined), which Recent Files, unsaved
+     versions and opening files from here need */
+  const noStorage = typeof indexedDB === 'undefined';
+  if (noStorage) alert('VibeOffice.work keeps Recent Files and unsaved changes in this browser, and Safari\'s Lockdown Mode turns that off.\n\n' +
+    'To allow it for this site only: tap aA in the address bar, tap Website Settings, and turn off Lockdown Mode. Safari reloads the page.');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
     for (const k in attrs || {}) if (attrs[k] != null) el.setAttribute(k, attrs[k]);
@@ -218,7 +223,7 @@
   let urls = [];
   async function render() {
     let list = [];
-    try { list = await VO.recent.list(); } catch (e) { status('Recent Files are not available in this browser (' + e.message + ').'); }
+    if (!noStorage) try { list = await VO.recent.list(); } catch (e) { status('Recent Files are not available in this browser (' + e.message + ').'); }
     if (view !== 'recent') return;   // switched to Create File meanwhile
     for (const u of urls) URL.revokeObjectURL(u);
     urls = [];

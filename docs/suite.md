@@ -6,6 +6,7 @@
 | `public/common/suite.js` | `window.VO`, loaded by the Start Center and before every app's own scripts |
 | `public/manifest.webmanifest` | Install metadata: icons, shortcuts, file handlers, screenshots |
 | `public/sw.js` | Service worker (dev mode: no caching) |
+| `public/fonts/` | Metric-compatible stand-ins for Calibri, Cambria and Georgia (Carlito, Caladea, Gelasio; 1.1 MB) as WOFF2, since macOS, iOS and Linux lack them, `fonts.css` and `LICENSES.txt` (SIL OFL 1.1); rebuilt by `tools/fonts.py`. Pages name the real font first (`L.fontStack`), so a browser downloads a file only when the machine lacks the real font; `L.embedFonts` puts the ones a page names into a standalone export. The Font boxes (`L.fontSections`) follow Office's sections: Theme Fonts (headings, body), Recently Used Fonts, All Fonts (`L.FONT_LIST`, the frequently used Office fonts, plus the document's own), and in Chrome/Edge a first item that loads the computer's fonts (Local Font Access, after the user allows it; kept in this browser as `vibeoffice.localFonts`). Beside a name this computer lacks is the font that draws it (`L.fontNote`: an installed substitute, a stand-in, or "not installed") |
 | `public/icons/` | `icon.svg` (rounded, transparent corners) and `icon-maskable.svg` (full bleed, artwork inside the 40 % safe circle), and the PNGs made from them |
 
 ## Start Center
@@ -34,6 +35,8 @@ No page draws a title bar of its own: the browser tab, or the system title bar o
 | `<app>/?recent=<key>` | a blank document, then that Recent Files entry |
 
 The query is removed from the address once read, so a reload starts clean. Opening the file replaces the untouched blank document (each app already does this for its own File ▸ Open), so it ends up in one window.
+
+File ▸ Exit closes the app's documents (asking to save each; Cancel stays) and calls `VO.exit()`: an app window the Start Center opened (installed) closes, showing the Start Center behind it; a tab goes to the Start Center.
 
 Each app, in its `A.init`, picks template, blank or sample from `VO.launch` and finishes with
 
@@ -182,6 +185,8 @@ and LibreOffice do not establish Office acceptance. Keep run history outside the
 One list for everything a user worked on, shown in four places: the Start Center (cards), each app's File menu (1–4), its Getting Started pane (Open) and its Document Recovery pane. Every entry really reopens.
 
 IndexedDB database `vibeoffice`, store `recent`: `{ key, app, name, size, time, file, thumb, draft }`, keyed `<app>:<file name>`, or `<app>:~<id>` for a document that was never saved. The browser has no file paths, so the list keeps a **copy of the file**: `file` is the one opened or last saved; `draft` (`{ file, name, time, lossState }`) is the **unsaved version**. Two files with the same name in different folders share an entry. At most 30 entries, but an entry with unsaved changes is never dropped; files over 50 MB are not kept. Every page hears about changes over the `BroadcastChannel` `vibeoffice` (`VO.onRecentChange`); `VO.recent.cache` is the list for menus.
+
+**Keeping the data.** Safari clears a site's data after about 7 days without a visit; the first time a document's unsaved version is stored, `navigator.storage.persist()` asks the browser to keep it (Safari and Chrome decide without asking the user). Where IndexedDB is missing (Safari's Lockdown Mode), the Start Center shows an alert explaining how to turn Lockdown Mode off for the site.
 
 **Autosave.** The app calls `VO.changed(doc)` when a document changes; 15 s later (longer for documents that are slow to write: 30 × the time the last write took) `hooks.snapshot(doc)` writes it in the app's own format (including macro, template and slideshow variants; password-protected documents stay encrypted) into the entry's `draft`. `VO.opened(file, doc)` and `VO.saved(name, blob, doc)` tie the document to its entry; saving clears the draft (and retires the `~` entry of a never-saved document); No in "Do you want to save the changes…?" calls `VO.discard(doc)`, which throws the draft away. Closing the tab or a crash leaves it. Draft metadata also keeps pending and acknowledged compatibility entries; recovery restores them silently so the next user save can report an earlier conversion. Quire's Tools ▸ Options ▸ Save ▸ "Save AutoRecover info" turns it off.
 

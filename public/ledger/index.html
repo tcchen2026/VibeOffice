@@ -7,9 +7,7 @@
 <meta name="theme-color" content="#2a64c8">
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&family=Cousine:ital,wght@0,400;0,700;1,400;1,700&family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=Caladea:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <link rel="stylesheet" href="../common/luna.css">
 <style>
 /* text boxes in a field stretch to the dialog's width (Ledger's and Quire's dialogs; Lectern's set their own widths) */
@@ -27,7 +25,7 @@
 .fb-btns .fb-x, .fb-btns .fb-ok { display: none; }
 .fbar.editing .fb-btns .fb-x, .fbar.editing .fb-btns .fb-ok { display: flex; }
 .fb-edit { flex: 1; min-width: 0; position: relative; }
-.fb-input { display: block; width: 100%; height: 20px; min-height: 20px; border: 1px solid #7B9EBD; background: #fff; padding: 2px 4px; resize: none; outline: none; overflow: hidden; font: 13px/14px Arimo, Arial, sans-serif; white-space: pre; tab-size: 4; }
+.fb-input { display: block; width: 100%; height: 20px; min-height: 20px; border: 1px solid #7B9EBD; background: #fff; padding: 2px 4px; resize: none; outline: none; overflow: hidden; font: 13px/14px Arial, Arimo, sans-serif; white-space: pre; tab-size: 4; }
 .fb-input.multi { white-space: pre-wrap; overflow: auto; position: absolute; top: 0; left: 0; right: 0; z-index: 30; box-shadow: 1px 2px 4px rgba(0,0,0,.25); }
 .fb-input[readonly] { color: #555; }
 /* ---------- grid ---------- */
@@ -63,7 +61,7 @@
 .gobj.chart { background: #fff; overflow: hidden; }
 .gobj.chart svg { display: block; width: 100%; height: 100%; }
 .gobj.shape svg { position: absolute; left: 0; top: 0; overflow: visible; }
-.gobj .tbx { position: absolute; inset: 0; overflow: hidden; padding: 3px 5px; font: 11px Arimo, Arial, sans-serif; white-space: pre-wrap; outline: none; }
+.gobj .tbx { position: absolute; inset: 0; overflow: hidden; padding: 3px 5px; font: 11px Arial, Arimo, sans-serif; white-space: pre-wrap; outline: none; }
 .gobj .oh { position: absolute; width: 7px; height: 7px; background: #fff; border: 1px solid #000; margin: -4px 0 0 -4px; z-index: 2; }
 .gobj .oh-nw { left: 0; top: 0; cursor: nwse-resize; } .gobj .oh-n { left: 50%; top: 0; cursor: ns-resize; } .gobj .oh-ne { left: 100%; top: 0; cursor: nesw-resize; }
 .gobj .oh-e { left: 100%; top: 50%; cursor: ew-resize; } .gobj .oh-se { left: 100%; top: 100%; cursor: nwse-resize; } .gobj .oh-s { left: 50%; top: 100%; cursor: ns-resize; }
@@ -93,7 +91,7 @@
 .tabnav button { width: 15px; height: 15px; border: 1px solid transparent; background: none; padding: 0; display: flex; align-items: center; justify-content: center; }
 .tabnav button:hover { border-color: #7f9db9; background: #fff; }
 .tabrow .tabs { flex: none; position: relative; overflow: hidden; display: flex; align-items: flex-start; width: 60%; min-width: 60px; padding-left: 4px; }
-.stab { position: relative; flex: none; height: 17px; padding: 0 13px; margin-right: -8px; font: 11px/16px Tahoma, Arimo, Arial, sans-serif; color: #000; cursor: default; white-space: nowrap; z-index: 1; }
+.stab { position: relative; flex: none; height: 17px; padding: 0 13px; margin-right: -8px; font: 11px/16px Tahoma, Arial, Arimo, sans-serif; color: #000; cursor: default; white-space: nowrap; z-index: 1; }
 .stab::before { content: ""; position: absolute; inset: 0 0 0 0; background: #6b6b6b; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 8px 100%); }
 .stab::after { content: ""; position: absolute; inset: 0 1px 1px 1px; background: var(--tabc, #ECE9D8); clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 8px 100%); }
 .stab span { position: relative; z-index: 1; }
@@ -120,7 +118,7 @@
 .nf-wrap { display: flex; gap: 10px; flex-wrap: wrap; }
 .nf-cats { width: 120px; height: 210px; }
 .nf-right { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
-.nf-sample { border: 1px solid #919b9c; background: #fff; height: 22px; padding: 2px 4px; white-space: nowrap; overflow: hidden; font: 11px Arimo, Arial, sans-serif; }
+.nf-sample { border: 1px solid #919b9c; background: #fff; height: 22px; padding: 2px 4px; white-space: nowrap; overflow: hidden; font: 11px Arial, Arimo, sans-serif; }
 .nf-list { width: 100%; height: 120px; }
 .nf-desc { color: #333; line-height: 1.35; min-height: 30px; }
 .al-orient { width: 96px; height: 110px; border: 1px solid #919b9c; background: #fff; position: relative; touch-action: none; }
@@ -152,10 +150,10 @@
 .ct-subs button.on { border-color: #000; background: #dce6f8; }
 .chart-prev { border: 1px solid #919b9c; background: #fff; height: 190px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .ps-ori { display: flex; gap: 14px; align-items: center; }
-.hf-prev { height: 44px; border: 1px solid #919b9c; background: #fff; display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 4px 8px; font: 10px Arimo, Arial, sans-serif; white-space: pre; overflow: hidden; }
+.hf-prev { height: 44px; border: 1px solid #919b9c; background: #fff; display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 4px 8px; font: 10px Arial, Arimo, sans-serif; white-space: pre; overflow: hidden; }
 .hf-prev div:nth-child(2) { text-align: center; } .hf-prev div:nth-child(3) { text-align: right; }
 .hf-secs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.hf-secs textarea { width: 100%; height: 90px; font: 11px Arimo, Arial, sans-serif; }
+.hf-secs textarea { width: 100%; height: 90px; font: 11px Arial, Arimo, sans-serif; }
 .hf-tools { display: flex; gap: 2px; margin: 6px 0; flex-wrap: wrap; }
 .hf-tools button { width: 26px; height: 24px; }
 .find-res { max-height: 150px; overflow: auto; background: #fff; border: 1px solid #919b9c; margin-top: 6px; }
@@ -169,19 +167,19 @@
 .dlg.collapsed .dlg-body > *:not(.ref-keep), .dlg.collapsed .dlg-foot { display: none; }
 .cf-cond { border: 1px solid #d0d0bf; border-radius: 3px; padding: 6px 8px; margin-bottom: 6px; }
 .cf-cond .cf-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.cf-prev { flex: 1; min-width: 120px; height: 24px; border: 1px solid #919b9c; display: flex; align-items: center; justify-content: center; background: #fff; font: 11px Arimo, Arial, sans-serif; }
+.cf-prev { flex: 1; min-width: 120px; height: 24px; border: 1px solid #919b9c; display: flex; align-items: center; justify-content: center; background: #fff; font: 11px Arial, Arimo, sans-serif; }
 .aufmt-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 330px; overflow: auto; padding: 4px; background: #fff; border: 1px solid #919b9c; }
 .aufmt-grid button { border: 2px solid transparent; background: #fff; padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .aufmt-grid button.on { border-color: #000; }
-.aufmt-grid table { border-collapse: collapse; font: 8px Arimo, Arial, sans-serif; }
+.aufmt-grid table { border-collapse: collapse; font: 8px Arial, Arimo, sans-serif; }
 .aufmt-grid td { width: 22px; height: 10px; padding: 0 2px; text-align: right; }
 .watch-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
 .watch-tbl th { background: #ece9d8; font-weight: normal; text-align: left; padding: 1px 4px; border: 1px solid #ccc; }
 .watch-tbl td { padding: 1px 4px; border: 1px solid #eee; white-space: nowrap; }
-.eval-box { background: #fff; border: 1px solid #919b9c; padding: 6px; min-height: 60px; font: 12px Cousine, "Courier New", monospace; white-space: pre-wrap; word-break: break-all; }
+.eval-box { background: #fff; border: 1px solid #919b9c; padding: 6px; min-height: 60px; font: 12px "Courier New", Cousine, monospace; white-space: pre-wrap; word-break: break-all; }
 .eval-box u { text-decoration: underline; font-weight: bold; }
 .form-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center; max-height: 320px; overflow: auto; }
-.tw-prev { height: 130px; overflow: auto; background: #fff; border: 1px solid #919b9c; font: 11px Cousine, "Courier New", monospace; white-space: pre; }
+.tw-prev { height: 130px; overflow: auto; background: #fff; border: 1px solid #919b9c; font: 11px "Courier New", Cousine, monospace; white-space: pre; }
 .tw-prev table { border-collapse: collapse; }
 .tw-prev td { border-right: 1px solid #bbb; padding: 0 4px; }
 .tw-prev tr:first-child td { background: #ece9d8; }
@@ -215,7 +213,7 @@
 .gobj.chart { border: 1px solid #000; }
 .gobj.chart.sel { outline: none; }
 .gobj-ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; white-space: pre-line; background: #f4f4f4; color: #666; font: 11px Tahoma, var(--ui-font); border: 1px dashed #999; }
-.gobj-t { position: absolute; inset: 0; padding: 3px 6px; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; font: 10pt Arimo, Arial, sans-serif; color: #000; display: flex; flex-direction: column; outline: none; }
+.gobj-t { position: absolute; inset: 0; padding: 3px 6px; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; font: 10pt Arial, Arimo, sans-serif; color: #000; display: flex; flex-direction: column; outline: none; }
 .gobj-t.v-ctr { justify-content: center; } .gobj-t.v-b { justify-content: flex-end; }
 .gobj.editing .gobj-t { cursor: text; user-select: text; -webkit-user-select: text; }
 .gobj-hs { position: absolute; inset: 0; pointer-events: none; }
@@ -259,13 +257,13 @@
 .tiw-delims { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .tiw-cap { margin-top: 4px; }
 .tiw-preview { border: 1px solid #7f9db9; background: #fff; height: 150px; overflow: auto; outline: none; }
-.tiw-pre { margin: 0; padding: 2px 4px; font: 12px/1.3 Cousine, "Courier New", monospace; white-space: pre; }
+.tiw-pre { margin: 0; padding: 2px 4px; font: 12px/1.3 "Courier New", Cousine, monospace; white-space: pre; }
 .tiw-fixed { position: relative; padding-top: 18px; }
 .tiw-ruler { position: absolute; left: 4px; right: 0; top: 0; height: 16px; border-bottom: 1px solid #999; font: 9px Tahoma, sans-serif; }
 .tiw-ruler span { position: absolute; top: 2px; }
 .tiw-break { position: absolute; top: 14px; bottom: 0; width: 0; border-left: 1px solid #000; }
 .tiw-break::before { content: ""; position: absolute; top: -4px; left: -4px; border: 4px solid transparent; border-top-color: #000; }
-.tiw-table { border-collapse: collapse; font: 12px Arimo, Arial, sans-serif; }
+.tiw-table { border-collapse: collapse; font: 12px Arial, Arimo, sans-serif; }
 .tiw-table th { background: #ECE9D8; border: 1px solid #aaa; padding: 1px 6px; font-weight: normal; text-align: left; cursor: default; }
 .tiw-table td { border-right: 1px solid #ddd; padding: 1px 6px; white-space: pre; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
 .tiw-table th.on, .tiw-table td.on { background: #000; color: #fff; }
@@ -292,7 +290,7 @@
 .fc-cats { width: 130px; display: flex; flex-direction: column; gap: 3px; }
 .fc-cats .lbox { height: 250px; }
 .fc-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.fc-sample { min-height: 18px; padding: 1px 4px; font: 12px Arimo, Arial, sans-serif; white-space: nowrap; overflow: hidden; }
+.fc-sample { min-height: 18px; padding: 1px 4px; font: 12px Arial, Arimo, sans-serif; white-space: nowrap; overflow: hidden; }
 .fc-opts { display: flex; flex-direction: column; gap: 5px; }
 .fc-opts .lbox { height: 120px; }
 .fc-desc { color: #333; line-height: 1.35; margin-top: auto; }
@@ -363,7 +361,7 @@
 .fa-result { text-align: right; color: #333; }
 .fa-desc { line-height: 1.4; }
 .fa-total { border-top: 1px solid #d0d0bf; padding-top: 4px; }
-.ev-text { background: #fff; border: 1px solid #7f9db9; padding: 6px; min-height: 60px; font: 12px Cousine, "Courier New", monospace; white-space: pre-wrap; word-break: break-all; }
+.ev-text { background: #fff; border: 1px solid #7f9db9; padding: 6px; min-height: 60px; font: 12px "Courier New", Cousine, monospace; white-space: pre-wrap; word-break: break-all; }
 .ev-text u { text-decoration: underline; font-weight: bold; }
 /* Page Setup */
 .ps-margins { display: grid; grid-template-columns: repeat(3, auto); gap: 8px 16px; padding: 6px; }

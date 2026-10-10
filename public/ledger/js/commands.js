@@ -39,7 +39,8 @@
   cmd('print', { label: '&Print...', icon: 'print', key: 'Ctrl+P', run: run(() => D().print()) });
   cmd('printQuick', { label: 'Print', tip: 'Print', icon: 'print', run: run(() => L.print.exportPDF({ quick: true })) });
   cmd('properties', { label: 'Propert&ies', icon: 'properties', run: run(() => D().properties()) });
-  cmd('exitApp', { label: 'E&xit', run: () => A().closeWorkbook(true) });
+  /* close every workbook (asking to save each), then return to the Start Center */
+  cmd('exitApp', { label: 'E&xit', run: async () => { for (;;) { const last = A().books.length <= 1; if (!(await A().closeWorkbook())) return; if (last) break; } if (window.VO) VO.exit(); } });
 
   /* ------------------------------------------------------------ Edit */
   cmd('undo', { label: '&Undo', icon: 'undo', key: 'Ctrl+Z', get menuLabel() { return wb() && wb().undo.canUndo() ? '&Undo ' + wb().undo.undoLabel : "Can't &Undo"; }, enabled: () => wb() && wb().undo.canUndo(), run: () => A().undo() });

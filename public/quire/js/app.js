@@ -259,7 +259,7 @@
       preview: (v) => { const s = A.styleOptions().find((x) => x.label === v); return s ? s.css : ''; },
       value: stState, onChange: (v) => A.applyStyleByName(v),
     });
-    const fontCombo = ui.combo({ id: 'tb-font', width: 136, tip: 'Font', options: () => A.fontOptions(), preview: (v) => `font-family:${L.fontStack(v)};font-size:13px`, listCls: 'fonts', value: () => { const v = E.uniformRun('font'); return v || ''; }, onChange: (v) => A.setFont(v) });
+    const fontCombo = ui.combo({ id: 'tb-font', width: 136, tip: 'Font', options: () => A.fontOptions(), preview: (v) => `font-family:${L.fontStack(v)};font-size:13px`, note: L.fontNote, listCls: 'fonts', value: () => { const v = E.uniformRun('font'); return v || ''; }, onChange: (v) => A.setFont(v) });
     const sizeCombo = ui.combo({ id: 'tb-size', width: 40, tip: 'Font Size', options: () => L.SIZE_LIST, value: () => { const v = E.uniformRun('sz'); return v ? String(L.round(v, 1)) : ''; }, onChange: (v) => A.setFontSize(parseFloat(v)) });
     const zoomCombo = ui.combo({ id: 'tb-zoom', width: 74, tip: 'Zoom', options: () => ['500%', '200%', '150%', '100%', '75%', '50%', '25%', '10%', 'Page Width', 'Text Width', 'Whole Page', 'Two Pages'], value: () => Math.round(LY.zoom * 100) + '%', onChange: (v) => A.zoomTo(v) });
     A.toolbarsEl = {
@@ -303,13 +303,11 @@
       h('span', { class: 'browse' }, ui.tbButton('browsePrev'), ui.tbDrop('', 'browseObj', (r) => A.browseMenu(r), 'Select Browse Object'), ui.tbButton('browseNext')));
   }
   A.fontOptions = () => {
-    const recent = (A.opts.recentFonts || []).filter((f) => L.FONT_LIST.includes(f) || true).slice(0, 4);
-    const docFonts = new Set();
-    for (const k in doc().styles) { const r = doc().styles[k].rPr; if (r && r.font) docFonts.add(r.font); }
-    const all = Array.from(new Set(L.FONT_LIST.concat(Array.from(docFonts)))).sort((a, b) => a.localeCompare(b));
-    return recent.length ? recent.concat(all.filter((f) => !recent.includes(f))) : all;
+    const docFonts = [doc().defaults.rPr.font];
+    for (const k in doc().styles) { const r = doc().styles[k].rPr; if (r && r.font) docFonts.push(r.font); }
+    return L.fontSections({ major: doc().theme?.major, minor: doc().theme?.minor, extra: docFonts });
   };
-  A.setFont = (v) => { if (!v) return; A.opts.recentFonts = [v].concat((A.opts.recentFonts || []).filter((f) => f !== v)).slice(0, 6); A.saveOpts(); E.formatRun({ font: v }, 'Font'); E.refocus(); };
+  A.setFont = (v) => { if (!v) return; L.addRecentFont(v); E.formatRun({ font: v }, 'Font'); E.refocus(); };
   A.setFontSize = (v) => { if (!(v > 0)) return; v = L.clamp(Math.round(v * 2) / 2, 1, 1638); E.formatRun({ sz: v }, 'Font Size'); E.refocus(); };
   function styleState() {
     const d = doc();
@@ -686,13 +684,15 @@
     /* a new document opens in its own window, as in Word; an untouched blank one is simply replaced */
     A.loadDoc(d, 'Document' + A.untitled, { newWindow: !pristine() });
   };
+  /** close the current document (asking to save); false when the user cancels */
   A.closeDocument = async function () {
-    if (!(await confirmDiscard())) return;
-    if (A.docs.length <= 1) { A.docs = []; A.cur = -1; A.untitled++; A.loadDoc(D.newDoc(), 'Document' + A.untitled); return; }
+    if (!(await confirmDiscard())) return false;
+    if (A.docs.length <= 1) { A.docs = []; A.cur = -1; A.untitled++; A.loadDoc(D.newDoc(), 'Document' + A.untitled); return true; }
     const i = A.cur;
     A.docs.splice(i, 1);
     A.cur = -1; /* nothing to stash: the closed window is gone */
     A.switchTo(Math.max(0, i - 1));
+    return true;
   };
   A.openDialog = async function () {
     const files = await L.pickFiles('.docx,.docm,.dotx,.dotm,.doc,.txt,.htm,.html,.rtf,.xml,.md,.markdown,.zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document');

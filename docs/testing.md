@@ -13,7 +13,7 @@ Drives a page in the Chromium listening on CDP 127.0.0.1:9222 (start one with `c
     node tools/shot.mjs ledger/ '[{"wait":1000,"shot":"ledger.png"}]'
     node tools/shot.mjs quire/ steps.json --w 1440 --h 900 --out /tmp/shots
 
-Each step is `{ "js": "...", "wait": ms, "shot": "name.png|jpg" }`; `js` is an async function body run in the page, and its return value is printed. The app's namespace is `window.L`. At the end the tool lists console errors, exceptions and every request that left 127.0.0.1 (today: the Google Fonts requests). It opens and closes its own tab; never close the browser's other tabs.
+Each step is `{ "js": "...", "wait": ms, "shot": "name.png|jpg" }`; `js` is an async function body run in the page, and its return value is printed. The app's namespace is `window.L`. At the end the tool lists console errors, exceptions and every request that left 127.0.0.1 (there should be none). It opens and closes its own tab; never close the browser's other tabs.
 
 The install screenshots in the manifest (`public/<app>/preview.jpg`) are 1280×720:
 

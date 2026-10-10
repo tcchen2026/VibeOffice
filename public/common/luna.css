@@ -82,6 +82,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .m-key { padding-left: 18px; color: inherit; }
 .m-sub { font-size: 7px; text-align: right; }
 .m-sep { height: 1px; margin: 2px 2px 2px 28px; background: var(--sep-dark); }
+.m-head { padding: 3px 8px; font-weight: bold; color: #1b3f7c; background: #e3e9f3; border-block: 1px solid #c6d2e6; }
+.combo-list .m-key { color: #6d6d6d; }
 .menu.combo-list .m-lbl { font-size: 13px; }
 .menu.combo-list.fonts .m-item { min-height: 24px; }
 .menu.combo-list.styles .m-lbl { font-size: 11px; }

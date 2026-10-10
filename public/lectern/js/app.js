@@ -181,7 +181,7 @@
   }
   function buildToolbars() {
     const host = L.$('#toolbars');
-    const fontCombo = ui.combo({ id: 'tb-font', width: 136, tip: 'Font', options: () => L.FONT_LIST, preview: (v) => `font-family:${L.fontStack(v)};font-size:13px`, listCls: 'fonts', value: () => { const s = textState(); return s ? s.font : ''; }, enabled: () => !!textState(), onChange: (v) => A.setFontName(v) });
+    const fontCombo = ui.combo({ id: 'tb-font', width: 136, tip: 'Font', options: () => { const d = E.slide() && L.pres.designs[E.slide().design]; return L.fontSections({ major: d?.fonts?.major, minor: d?.fonts?.minor }); }, preview: (v) => `font-family:${L.fontStack(v)};font-size:13px`, note: L.fontNote, listCls: 'fonts', value: () => { const s = textState(); return s ? s.font : ''; }, enabled: () => !!textState(), onChange: (v) => A.setFontName(v) });
     const sizeCombo = ui.combo({ id: 'tb-size', width: 44, tip: 'Font Size', options: () => L.SIZE_LIST, value: () => { const s = textState(); return s && s.sz ? String(L.round(s.sz, 1)) : ''; }, enabled: () => !!textState(), onChange: (v) => A.setFontSize(parseFloat(v)) });
     const zoomCombo = ui.combo({ id: 'tb-zoom', width: 52, tip: 'Zoom', options: () => ['Fit', '400%', '200%', '150%', '100%', '75%', '66%', '50%', '33%', '25%'], value: () => (E.zoom === 'fit' ? 'Fit' : E.zoomPct() + '%'), onChange: (v) => { if (/fit/i.test(v)) E.setZoom('fit'); else { const n = parseFloat(v); if (n > 0) E.setZoom(n / 100); } } });
     A.toolbarsEl = {
@@ -359,6 +359,8 @@
   };
   /** slide size for new presentations (Page Setup ▸ "Use for new presentations") */
   A.newSize = () => { const z = A.opts.slideSize; return z && z.w > 0 && z.h > 0 ? { w: z.w, h: z.h } : {}; };
+  /** File ▸ Exit: ask to save, then return to the Start Center */
+  A.exit = async function () { if (await confirmDiscard() && window.VO) VO.exit(); };
   A.closePresentation = async function () {
     if (!(await confirmDiscard())) return;
     A.loadPres(M.newPresentation(Object.assign({ design: 'default' }, A.newSize())), 'Presentation1');
@@ -530,8 +532,9 @@
     const slides = pres.slides.filter((s) => !s.hidden).map((s) => inlineMedia(new XMLSerializer().serializeToString(L.render.slide(pres, s, { mode: 'thumb', index: pres.slides.indexOf(s) })), map));
     const notes = pres.slides.filter((s) => !s.hidden).map((s) => s.notes || '');
     const title = L.esc(pres.props.title || A.fileName);
+    const fonts = await L.embedFonts(slides.join(''));   // the stand-ins the slides name, inside the page
     return new Blob([`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&family=Cousine:wght@400;700&family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=Caladea:wght@400;700&display=swap">
+<style>${fonts}</style>
 <style>html,body{height:100%;margin:0;background:#1e1e1e;color:#eee;font:13px Tahoma,Verdana,sans-serif}#stage{position:absolute;left:0;top:0;transform-origin:0 0}#bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;align-items:center;justify-content:center;padding:8px;background:rgba(0,0,0,.6)}button{font:inherit;padding:4px 12px}#notes{max-width:70ch;white-space:pre-wrap;color:#ccc}${slideCSS()}</style></head><body>
 <div id="stage"></div><div id="bar"><button id="prev" aria-label="Previous slide">◀</button><span id="num"></span><button id="next" aria-label="Next slide">▶</button></div>
 <script>const S=${JSON.stringify(slides)};const N=${JSON.stringify(notes)};const W=${pres.W},H=${pres.H};let i=0;const st=document.getElementById('stage');
@@ -1131,7 +1134,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
   A.applyFontColor = function (c) {
     L.fmt.run((r) => { const n = Object.assign({}, r); if (c) n.color = c; else delete n.color; delete n.fill; return n; }, 'Font Color', (wa) => { wa.fill = c ? { t: 'solid', c, a: 1 } : { t: 'solid', c: 'tx1', a: 1 }; });
   };
-  A.setFontName = (v) => { if (!v) return; L.fmt.run((r) => Object.assign({}, r, { font: v }), 'Font', (wa) => { wa.font = v; }); };
+  A.setFontName = (v) => { if (!v) return; L.addRecentFont(v); L.fmt.run((r) => Object.assign({}, r, { font: v }), 'Font', (wa) => { wa.font = v; }); };
   A.setFontSize = (v) => { if (!(v > 0)) return; v = L.clamp(v, 1, 4000); L.fmt.run((r) => Object.assign({}, r, { sz: v }), 'Font Size'); };
   A.toggleRun = function (key) {
     const st = L.fmt.state();

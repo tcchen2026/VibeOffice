@@ -30,7 +30,7 @@
   C('printPreview', { label: 'Print Pre&view', icon: 'preview', tip: 'Print Preview', run: () => A().setView('preview') });
   C('print', { label: '&Print...', icon: 'print', key: 'Ctrl+P', tip: 'Print', run: () => L.dlg.print() });
   C('properties', { label: 'Propert&ies', icon: 'properties', run: () => L.dlg.properties() });
-  C('exitApp', { label: 'E&xit', icon: 'exit', run: () => A().closePresentation() });
+  C('exitApp', { label: 'E&xit', icon: 'exit', run: () => A().exit() });
 
   /* ---------- Edit ---------- */
   C('undo', { label: '&Undo', icon: 'undo', key: 'Ctrl+Z', get menuLabel() { return L.hist.undo.length ? '&Undo ' + L.hist.undo[L.hist.undo.length - 1].label : "&Can't Undo"; }, enabled: () => L.hist.undo.length > 0, run: () => A().undo() });

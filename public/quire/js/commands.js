@@ -234,7 +234,8 @@
   C('sendMail', { label: '&Mail Recipient (as Attachment)...', icon: 'mail', tip: 'E-mail', run: async () => { await A.exportAs('docx'); A.status('Saved a copy to attach to your e-mail message.', 6000); } });
   C('permission', { label: '&Permission', icon: 'permission', tip: 'Permission (Unrestricted Access)', run: pane('protect') });
   C('properties', { label: 'Propert&ies', icon: 'properties', run: dlg('properties') });
-  C('exitApp', { label: 'E&xit', run: async () => { const n = A.docs ? A.docs.length : 1; for (let k = 0; k < n; k++) { const before = A.docs.length; await A.closeDocument(); if (A.docs.length === before && before > 1) return; } } });
+  /* close every document (asking to save each), then return to the Start Center */
+  C('exitApp', { label: 'E&xit', run: async () => { for (;;) { const last = A.docs.length <= 1; if (!(await A.closeDocument())) return; if (last) break; } if (window.VO) VO.exit(); } });
 
   /* ================= Edit ================= */
   C('undo', { get label() { return D.canUndo() ? '&Undo ' + D.undoLabel() : "&Can't Undo"; }, tip: 'Undo', icon: 'undo', key: 'Ctrl+Z', enabled: () => D.canUndo() && !viewing(), run: () => { D.undo(); } });

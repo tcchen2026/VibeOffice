@@ -92,20 +92,21 @@
     updateStatus();
   }
   A.switchBook = (i) => { if (i === A.cur || !A.books[i]) return; A.cur = i; showBook(); };
-  A.closeWorkbook = async function (all) {
+  /** close the current workbook (asking to save); false when the user cancels */
+  A.closeWorkbook = async function () {
     const b = book();
-    if (!b) return;
+    if (!b) return true;
     if (b.dirty) {
       const r = await ui.msg(`Do you want to save the changes you made to '${b.name}'?`, { icon: 'warn', buttons: ['&Yes', '&No', 'Cancel'] });
-      if (r === 2 || r == null) return;
-      if (r === 0) { const ok = await A.save(); if (!ok) return; }
+      if (r === 2 || r == null) return false;
+      if (r === 0) { const ok = await A.save(); if (!ok) return false; }
       if (r === 1 && window.VO) VO.discard(b);   // its unsaved version goes too
     }
     A.books.splice(A.cur, 1);
-    if (!A.books.length) { A.newWorkbook(); return; }
+    if (!A.books.length) { A.newWorkbook(); return true; }
     A.cur = Math.min(A.cur, A.books.length - 1);
     showBook();
-    void all;
+    return true;
   };
   function updateTitle() {
     const b = book();
@@ -505,7 +506,7 @@
   function buildToolbars() {
     const host = L.$('#toolbars');
     host.textContent = '';
-    const fontCombo = ui.combo({ id: 'fontname', width: 128, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.FONT_LIST, preview: (v) => `font-family:${LY.fontStack(v)}`, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, 'Font'); G().paint(); } });
+    const fontCombo = ui.combo({ id: 'fontname', width: 128, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.fontSections({ major: wb().theme?.major, minor: wb().theme?.minor }), preview: (v) => `font-family:${LY.fontStack(v)}`, note: L.fontNote, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; L.addRecentFont(v); O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, 'Font'); G().paint(); } });
     const sizeCombo = ui.combo({ id: 'fontsize', width: 42, tip: 'Font Size', value: () => String((curStyle().font || {}).sz || 10), options: () => L.SIZE_LIST, onChange: (v) => { const n = parseFloat(v); if (!(n >= 1 && n <= 409)) { ui.msg('The number must be between 1 and 409.', { icon: 'warn' }); return; } if (G().guardProtect('formatCells')) return; O.format(sh(), G().ranges(), { font: { sz: n } }, 'Font Size'); O.tx(wb(), 'AutoFit', () => { for (const r of A.selRows()) O.autoRow(sh(), r); }); G().paint(); } });
     const zoomCombo = ui.combo({ id: 'zoombox', width: 52, tip: 'Zoom', value: () => (sh().view.zoom || 100) + '%', options: () => ['200%', '100%', '75%', '50%', '25%', 'Selection'], onChange: (v) => { if (/^sel/i.test(v)) { A.zoomToSelection(); return; } const n = parseInt(v, 10); if (n >= 10 && n <= 400) G().setZoom(n); else ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); } });
     const sumSplit = ui.tbSplit('autoSum', (at) => ui.openMenu([

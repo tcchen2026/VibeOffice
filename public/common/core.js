@@ -373,43 +373,141 @@
     'arial': '"Arimo","Liberation Sans",Helvetica,sans-serif',
     'arial black': '"Arial Black","Arimo",sans-serif',
     'arial narrow': '"Arial Narrow","Arimo",sans-serif',
-    'helvetica': '"Helvetica Neue","TeX Gyre Heros","Nimbus Sans","Arimo",sans-serif',
+    'helvetica': '"Helvetica Neue","TeX Gyre Heros","Nimbus Sans",Arial,"Arimo",sans-serif',
     'times new roman': '"Tinos","Liberation Serif",Times,serif',
-    'times': '"Tinos","TeX Gyre Termes",serif',
+    'times': '"Times New Roman","Tinos","TeX Gyre Termes",serif',
     'courier new': '"Cousine","Liberation Mono",Courier,monospace',
-    'courier': '"Cousine",monospace',
+    'courier': '"Courier New","Cousine",monospace',
     'calibri': '"Carlito",Candara,"Segoe UI",sans-serif',
     'calibri light': '"Carlito",sans-serif',
+    'aptos': 'Calibri,"Carlito",sans-serif',
+    'aptos display': '"Calibri Light",Calibri,"Carlito",sans-serif',
+    'aptos narrow': '"Arial Narrow",Calibri,"Carlito",sans-serif',
+    'liberation sans': 'Arial,"Arimo",sans-serif',
+    'liberation serif': '"Times New Roman","Tinos",serif',
+    'liberation mono': '"Courier New","Cousine",monospace',
     'cambria': '"Caladea",Georgia,serif',
-    'georgia': '"Gelasio","DejaVu Serif","Tinos",serif',
-    'garamond': '"EB Garamond","Tinos",serif',
-    'book antiqua': '"Palatino Linotype",Palatino,"TeX Gyre Pagella","P052","URW Palladio L","Tinos",serif',
-    'palatino linotype': 'Palatino,"Book Antiqua","TeX Gyre Pagella","P052","URW Palladio L","Tinos",serif',
-    'palatino': '"Palatino Linotype","Book Antiqua","TeX Gyre Pagella","P052","Tinos",serif',
-    'century schoolbook': '"New Century Schoolbook","TeX Gyre Schola","C059","Tinos",serif',
-    'century': '"Century Schoolbook","TeX Gyre Schola","C059","Tinos",serif',
-    'consolas': '"Inconsolata","DejaVu Sans Mono","Cousine",monospace',
-    'bookman old style': '"Bookman","TeX Gyre Bonum","URW Bookman","URW Bookman L","Tinos",serif',
-    'century gothic': '"TeX Gyre Adventor","URW Gothic","URW Gothic L","Futura","Arimo",sans-serif',
-    'tahoma': '"DejaVu Sans Condensed",Verdana,"Arimo",sans-serif',
-    'verdana': '"DejaVu Sans",Tahoma,"Arimo",sans-serif',
-    'trebuchet ms': '"Segoe UI","Arimo",sans-serif',
+    'georgia': '"Gelasio","DejaVu Serif","Times New Roman","Tinos",serif',
+    'garamond': '"EB Garamond","Times New Roman","Tinos",serif',
+    'book antiqua': '"Palatino Linotype",Palatino,"TeX Gyre Pagella","P052","URW Palladio L","Times New Roman","Tinos",serif',
+    'palatino linotype': 'Palatino,"Book Antiqua","TeX Gyre Pagella","P052","URW Palladio L","Times New Roman","Tinos",serif',
+    'palatino': '"Palatino Linotype","Book Antiqua","TeX Gyre Pagella","P052","Times New Roman","Tinos",serif',
+    'century schoolbook': '"New Century Schoolbook","TeX Gyre Schola","C059","Times New Roman","Tinos",serif',
+    'century': '"Century Schoolbook","TeX Gyre Schola","C059","Times New Roman","Tinos",serif',
+    'consolas': '"Inconsolata","DejaVu Sans Mono","Courier New","Cousine",monospace',
+    'bookman old style': '"Bookman","TeX Gyre Bonum","URW Bookman","URW Bookman L","Times New Roman","Tinos",serif',
+    'century gothic': '"TeX Gyre Adventor","URW Gothic","URW Gothic L","Futura",Arial,"Arimo",sans-serif',
+    'tahoma': '"DejaVu Sans Condensed",Verdana,Arial,"Arimo",sans-serif',
+    'verdana': '"DejaVu Sans",Tahoma,Arial,"Arimo",sans-serif',
+    'trebuchet ms': '"Segoe UI",Arial,"Arimo",sans-serif',
     'comic sans ms': '"Comic Neue","Chalkboard SE",cursive',
     'impact': 'Haettenschweiler,"Arial Black",sans-serif',
-    'lucida console': 'Monaco,"DejaVu Sans Mono","Cousine",monospace',
-    'segoe ui': '"Arimo",sans-serif',
-    'franklin gothic medium': '"Libre Franklin","Arimo",sans-serif',
+    'lucida console': 'Monaco,"DejaVu Sans Mono","Courier New","Cousine",monospace',
+    'segoe ui': 'Arial,"Arimo",sans-serif',
+    'franklin gothic medium': '"Libre Franklin",Arial,"Arimo",sans-serif',
     'wingdings': '"Segoe UI Symbol",sans-serif',
     'symbol': '"Segoe UI Symbol",serif',
   };
   L.fontStack = function (name) {
     if (!name) return 'Arial,"Arimo",sans-serif';
     const n = String(name).replace(/"/g, '');
-    const fb = FONT_FALLBACK[n.toLowerCase()] || '"Arimo",sans-serif';
+    const fb = FONT_FALLBACK[n.toLowerCase()] || 'Arial,"Arimo",sans-serif';
     return `"${n}",${fb}`;
   };
-  L.FONT_LIST = ['Arial', 'Arial Black', 'Arial Narrow', 'Book Antiqua', 'Bookman Old Style', 'Calibri', 'Calibri Light', 'Cambria', 'Century Gothic', 'Comic Sans MS', 'Courier New',
-    'Franklin Gothic Medium', 'Garamond', 'Georgia', 'Impact', 'Lucida Console', 'Palatino Linotype', 'Segoe UI', 'Symbol', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana', 'Wingdings'];
+  /* Which family in a stack the browser will draw with: an installed font (detected by measuring
+     text against the generic fallbacks), or one of the suite's own stand-ins in public/fonts/. */
+  const installed = new Map();
+  let probe = null;
+  L.fontInstalled = function (family) {
+    if (installed.has(family)) return installed.get(family);
+    if (!probe) probe = document.createElement('canvas').getContext('2d');
+    const text = 'mmmmmmmmmmlli1WQ@ ', width = (font) => { probe.font = '72px ' + font; return probe.measureText(text).width; };
+    const yes = ['monospace', 'serif', 'sans-serif'].some((g) => width(`"${family}",${g}`) !== width(g));
+    installed.set(family, yes);
+    return yes;
+  };
+  const standIns = () => new Set(Array.from(document.fonts || [], (f) => f.family.replace(/["']/g, '')));
+  /** the family that draws `name` (an Office font name): itself when installed, else its stand-in */
+  L.fontUsed = function (name) {
+    const own = standIns();
+    for (const f of L.fontStack(name).split(',').map((s) => s.trim().replace(/^"|"$/g, ''))) {
+      if (['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy'].includes(f)) return f;
+      if (own.has(f) || L.fontInstalled(f)) return f;
+    }
+    return 'sans-serif';
+  };
+  /** the Font boxes' note beside an Office font name: what draws it on this computer, if not itself */
+  L.fontNote = function (name) {
+    if (L.localFonts().includes(name)) return '';   // listed by the browser as installed here
+    const used = L.fontUsed(name);
+    if (used.toLowerCase() === String(name).toLowerCase()) return '';
+    return ['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy'].includes(used) ? 'not installed' : used;
+  };
+  /** @font-face rules for a standalone export (an HTML page): the stand-ins from public/fonts/ that
+   * `markup` names, as data: URLs, with bold/italic faces only if the markup uses them. */
+  L.embedFonts = async function (markup) {
+    const base = (root.VO?.base || new URL('..', location.href).href) + 'fonts/';
+    const css = await (await fetch(base + 'fonts.css')).text();
+    const bold = /bold|font-weight[:=]\s*"?[6-9]00/i.test(markup), italic = /italic/i.test(markup);
+    const files = new Map();   // one rule per file: a variable font's regular and bold share it
+    for (const rule of css.match(/@font-face\s*\{[^}]*\}/g) || []) {
+      const family = /font-family:\s*'([^']+)'/.exec(rule)[1], file = /url\('([^']+)'\)/.exec(rule)[1];
+      const style = /font-style:\s*(\w+)/.exec(rule)[1], weight = +/font-weight:\s*(\d+)/.exec(rule)[1];
+      if (!markup.includes(family) || (!bold && weight > 400) || (!italic && style === 'italic')) continue;
+      if (!files.has(file)) files.set(file, { family, style, weights: [] });
+      files.get(file).weights.push(weight);
+    }
+    const rules = [];
+    for (const [file, f] of files) {
+      const bytes = new Uint8Array(await (await fetch(base + file)).arrayBuffer());
+      let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      const weight = f.weights.length > 1 ? Math.min(...f.weights) + ' ' + Math.max(...f.weights) : f.weights[0];
+      rules.push(`@font-face{font-family:'${f.family}';font-style:${f.style};font-weight:${weight};src:url(data:font/woff2;base64,${btoa(bin)}) format('woff2')}`);
+    }
+    return rules.join('\n');
+  };
+  /* the Font boxes: the fonts English Office users pick most, by Office's names (documents add their own) */
+  L.FONT_LIST = ['Aptos', 'Aptos Display', 'Aptos Narrow', 'Arial', 'Arial Black', 'Calibri', 'Calibri Light', 'Cambria', 'Century Gothic', 'Comic Sans MS', 'Consolas',
+    'Courier New', 'Garamond', 'Georgia', 'Impact', 'Palatino Linotype', 'Segoe UI', 'Symbol', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana', 'Wingdings'];
+  /** the Font box list in Office's sections: Theme Fonts (the document's heading and body fonts),
+   * Recently Used Fonts, All Fonts (L.FONT_LIST plus fonts the document uses), then the computer's
+   * fonts once loaded (Chrome and Edge: the first item loads them). Items are strings,
+   * { heading } rows or { value, label }. */
+  L.fontSections = function ({ major, minor, extra = [] } = {}) {
+    const out = [], recent = L.store.get('recentFonts', []).slice(0, 5), local = L.localFonts();
+    // Chrome and Edge can list the computer's fonts (Local Font Access, after the user allows it)
+    if (typeof root.queryLocalFonts === 'function') out.push({ label: local.length ? 'Reload fonts on your computer...' : 'Load all fonts on your computer...', run: L.loadLocalFonts }, { sep: true });
+    if (major || minor) {
+      out.push({ heading: 'Theme Fonts' });
+      if (major) out.push({ value: major, label: major + ' (Headings)' });
+      if (minor) out.push({ value: minor, label: minor + ' (Body)' });
+    }
+    if (recent.length) out.push({ heading: 'Recently Used Fonts' }, ...recent);
+    const all = Array.from(new Set(L.FONT_LIST.concat(extra.filter(Boolean)))).sort((x, y) => x.localeCompare(y));
+    out.push({ heading: 'All Fonts' }, ...all);
+    const more = local.filter((f) => !all.includes(f));
+    if (more.length) out.push({ heading: 'Fonts on This Computer' }, ...more);
+    return out;
+  };
+  /* the families queryLocalFonts() found, kept in this browser for every app of the suite */
+  const LOCAL_FONTS = 'vibeoffice.localFonts';
+  let localCache = null;
+  L.localFonts = () => { if (!localCache) { try { localCache = JSON.parse(localStorage.getItem(LOCAL_FONTS)) || []; } catch (e) { localCache = []; } } return localCache; };
+  L.loadLocalFonts = async function () {
+    try {
+      const families = Array.from(new Set((await root.queryLocalFonts()).map((f) => f.family))).sort((x, y) => x.localeCompare(y));
+      localCache = families;
+      try { localStorage.setItem(LOCAL_FONTS, JSON.stringify(families)); } catch (e) { /* storage off: kept for this page only */ }
+      return families.length;
+    } catch (e) {
+      L.ui?.msg('The fonts on this computer could not be listed' + (e.name === 'NotAllowedError' || e.name === 'SecurityError' ? ': permission was not given. You can allow it in the site settings of your browser.' : ': ' + (e.message || e)), { icon: 'warn' });
+      return 0;
+    }
+  };
+  /** remember a font picked in a Font box (for Recently Used Fonts) */
+  L.addRecentFont = function (name) {
+    if (name) L.store.set('recentFonts', [name].concat(L.store.get('recentFonts', []).filter((f) => f !== name)).slice(0, 10));
+  };
   /* the Font Size box of Word and Excel; Lectern sets PowerPoint's list in its app.js */
   L.SIZE_LIST = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
 

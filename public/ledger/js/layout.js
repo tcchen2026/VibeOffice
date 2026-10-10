@@ -55,34 +55,8 @@
   };
 
   /* ------------------------------------------------------------ fonts */
-  /* metric-compatible stand-ins served from Google Fonts */
-  const STACK = {
-    calibri: 'Carlito, Calibri, "Segoe UI", Arial, sans-serif',
-    'calibri light': 'Carlito, "Calibri Light", Calibri, sans-serif',
-    arial: 'Arimo, Arial, "Liberation Sans", Helvetica, sans-serif',
-    'arial narrow': '"Arial Narrow", Arimo, Arial, sans-serif',
-    helvetica: 'Arimo, Helvetica, Arial, sans-serif',
-    'times new roman': 'Tinos, "Times New Roman", "Liberation Serif", Times, serif',
-    times: 'Tinos, Times, "Times New Roman", serif',
-    'courier new': 'Cousine, "Courier New", "Liberation Mono", monospace',
-    courier: 'Cousine, Courier, monospace',
-    cambria: 'Caladea, Cambria, Georgia, serif',
-    'liberation sans': 'Arimo, "Liberation Sans", Arial, sans-serif',
-    'liberation serif': 'Tinos, "Liberation Serif", serif',
-    'liberation mono': 'Cousine, "Liberation Mono", monospace',
-    verdana: 'Verdana, "DejaVu Sans", Arimo, sans-serif',
-    tahoma: 'Tahoma, Verdana, Arimo, sans-serif',
-    'segoe ui': '"Segoe UI", Arimo, sans-serif',
-    georgia: 'Georgia, Tinos, serif',
-    'comic sans ms': '"Comic Sans MS", "Comic Neue", cursive',
-    aptos: 'Aptos, Carlito, Calibri, sans-serif',
-    'aptos narrow': '"Aptos Narrow", Carlito, Calibri, sans-serif',
-  };
-  LY.fontStack = (name) => {
-    const k = String(name || 'Arial').toLowerCase();
-    if (STACK[k]) return STACK[k];
-    return '"' + String(name).replace(/"/g, '') + '", Arimo, Arial, sans-serif';
-  };
+  /* the suite's stacks (common/core.js): the real font first, then its metric-compatible stand-in */
+  LY.fontStack = (name) => L.fontStack(name || 'Arial');
   /** canvas font string for a style font at zoom z (sizes in points) */
   LY.cssFont = (f, z, scale) => {
     const px = ((f.sz || 11) * 96) / 72 * (z || 1) * (scale || 1);

@@ -170,7 +170,8 @@
       if (r.u === 'none') delete r.u;
       preview(pv.firstChild, r);
       pv.firstChild.textContent = sample();
-      pvCap.textContent = st.font && !L.FONT_LIST.includes(st.font) ? 'This font is not installed; the closest available font is used on screen.' : 'This is a TrueType font. This font will be used on both printer and screen.';
+      const note = st.font ? L.fontNote(st.font) : '';
+      pvCap.textContent = note ? `${st.font} is not installed on this computer; ${note} is used on screen and in print.` : 'This is a TrueType font. This font will be used on both printer and screen.';
     }
     upd();
     /* character spacing */

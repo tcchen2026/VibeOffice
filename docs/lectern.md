@@ -329,5 +329,5 @@ counts. Four pages load without console errors. All 15 batch-4 samples passed Po
 * SmartArt is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped. When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
 * Embedded OLE objects and ActiveX controls import as their preview pictures.
-* Fonts that aren't installed fall back to metric-compatible web fonts (Arimo, Tinos, Cousine, Carlito, Caladea).
+* Fonts that aren't installed fall back to metric-compatible ones: Carlito, Caladea and Gelasio (for Calibri, Cambria and Georgia) are served with the site, and Save as Web Page embeds the ones its slides name; Arial, Times New Roman and Courier New use the computer's own copies or the Liberation/Arimo/Tinos/Cousine fonts of the same widths where installed.
 * Spelling uses the browser's spell checker.

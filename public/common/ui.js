@@ -104,6 +104,7 @@
     const rows = [];
     list.forEach((it) => {
       if (it.sep) { el.appendChild(h('div', { class: 'm-sep' })); return; }
+      if (it.heading) { el.appendChild(h('div', { class: 'm-head', text: it.heading })); return; }
       if (it.custom) { const c = it.custom(() => ui.closeMenus()); el.appendChild(c); return; }
       const disabled = it.disabled || (it.enabled && !it.enabled());
       const checked = it.checked && it.checked();
@@ -257,7 +258,9 @@
     b.addEventListener('click', () => { const r = b.getBoundingClientRect(); menuFn({ left: r.left, bottom: r.bottom }, b); });
     return b;
   };
-  /** editable combo box (font name / size / zoom) */
+  /** editable combo box (font name / size / zoom); o.options() may include { heading } rows, { sep }, { value, label }
+   * and { label, run } actions (the list reopens after the action);
+   * o.note(v): grey text beside an option in the list */
   ui.combo = function (o) {
     const wrap = h('div', { class: 'combo', style: `width:${o.width || 120}px`, 'data-tip': o.tip || '' });
     const inp = h('input', { type: 'text', class: 'combo-in', id: o.id, 'aria-label': o.tip || o.id, autocomplete: 'off', spellcheck: 'false' });
@@ -275,16 +278,25 @@
     btn.addEventListener('click', () => {
       ui.hooks.commitEdit();
       const r = wrap.getBoundingClientRect();
-      const opts = o.options();
-      ui.openMenu(opts.map((v) => ({
-        label: String(v).replace(/&/g, '&&'),
-        html: '', run: () => { inp.value = v; o.onChange(String(v)); ui.hooks.refocus(); },
-        checked: () => String(v) === String(o.value()),
-        style: o.preview ? o.preview(v) : null,
-      })), { left: r.left, bottom: r.bottom }, { cls: 'combo-list' + (o.listCls ? ' ' + o.listCls : '') });
+      // options: strings, { heading } section rows, or { value, label }
+      ui.openMenu(o.options().map((x) => {
+        if (x && x.heading) return { heading: x.heading };
+        if (x && x.sep) return { sep: true };
+        if (x && x.run) return { label: x.label, run: async () => { await x.run(); btn.click(); } };   // an action, then the list again
+        const v = x && typeof x === 'object' ? x.value : x;
+        return {
+          label: String(x && x.label || v).replace(/&/g, '&&'), value: v,
+          html: '', run: () => { inp.value = v; o.onChange(String(v)); ui.hooks.refocus(); },
+          checked: () => String(v) === String(o.value()),
+          key: o.note ? o.note(v) : '',
+        };
+      }), { left: r.left, bottom: r.bottom }, { cls: 'combo-list' + (o.listCls ? ' ' + o.listCls : '') });
       if (o.preview) {
         const menu = document.querySelector('.menu.combo-list');
-        if (menu) L.$$('.m-item', menu).forEach((row, i) => { const st = o.preview(opts[i]); if (st) L.$('.m-lbl', row).style.cssText = st; });
+        // each row in its own font once scrolled into view: a long list (the computer's fonts) opens at once
+        const show = (row) => { const st = o.preview(row._it.value); if (st) L.$('.m-lbl', row).style.cssText = st; };
+        const io = menu && 'IntersectionObserver' in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } }), { root: menu }) : null;
+        if (menu) L.$$('.m-item', menu).forEach((row) => row._it.value == null ? null : io ? io.observe(row) : show(row));
       }
       const m = document.querySelector('.menu.combo-list .m-item.chk');
       if (m) m.scrollIntoView({ block: 'nearest' });

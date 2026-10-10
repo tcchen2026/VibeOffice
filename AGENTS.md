@@ -25,9 +25,10 @@ Keep them current: a change to an app's features, formats or source layout updat
 
 ## Design rules
 
+- **Important: interoperability with Microsoft Office.** A file saved here opens in Word, Excel and PowerPoint without a repair prompt, with everything the user did not change intact and their edits as they made them. The UI uses Office's names (fonts, features, file types), so it matches what Office shows.
 - Static files, vanilla JavaScript, no frameworks and no build step at run time. Ledger's `index.html` is generated: edit `tools/ledger/build/` and run `python3 tools/ledger/build/make.py`, never the output.
 - Everything runs in the browser; documents never leave the machine. No back end, no accounts.
-- Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`. (Open gap: the three apps still load the metric-compatible fonts from Google Fonts.)
+- Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`, fonts in `public/fonts/` (`tools/fonts.py`, with their licences).
 - Compatibility is measured against files other people wrote (public test corpora), compared with outside references (the page or cell values the authoring application stored, LibreOffice, openpyxl, python-pptx), and the result is written down in the app's doc with numbers.
 - Saved files must open in the authoring application's newer versions and in LibreOffice; what an app cannot edit it keeps and writes back unchanged.
 - Follow the [Preservation contracts](docs/suite.md#preservation) for OOXML ownership, identities, edits, history/copy, drafts and loss reporting.
@@ -59,6 +60,6 @@ Several agents work in this repository at once. Commit only your own files and h
 
 1. Ledger engine changes: `node --test tools/ledger/test/*.test.js`.
 2. File-format changes: round-trip real files (`node tools/ledger/test/roundtrip.js file.xlsx`) and open the saved file in LibreOffice.
-3. Look: `node tools/shot.mjs <app>/` with steps for the change; check every app still loads without console errors or external requests (fonts aside, until they are vendored). UI checks pause between steps so the page repaints, as with real input: bursts of synthetic events hid a Ledger scroll bug.
+3. Look: `node tools/shot.mjs <app>/` with steps for the change; check every app still loads without console errors or external requests. UI checks pause between steps so the page repaints, as with real input: bursts of synthetic events hid a Ledger scroll bug.
 4. Shared save code (`public/common/opc.js` and the writers) runs on every part of every file: time a change on a large file (a 30 MB sheet) as well as on the corpus. A regex pre-scan or a full parse there costs seconds and gigabytes.
 5. Prefer a focused regression test per fix; run the full corpus once per feature group and before each Office batch, not after every fix.

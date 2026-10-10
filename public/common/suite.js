@@ -92,6 +92,15 @@
     const all = (await VO.recent.list()).filter((e) => !e.draft);
     if (all.length > MAX_RECENT) await tx('recent', 'readwrite', (s) => { for (const e of all.slice(MAX_RECENT)) s.delete(e.key); });
   };
+  /* Safari clears a site's data after about 7 days without a visit, unsaved versions included; once a
+     document has unsaved changes, ask the browser to keep the data (Safari and Chrome decide without
+     asking the user; Firefox may ask) */
+  let persistAsked = false;
+  const keepData = () => {
+    if (persistAsked || !navigator.storage || !navigator.storage.persist) return;
+    persistAsked = true;
+    navigator.storage.persisted().then((yes) => yes || navigator.storage.persist()).catch(() => {});
+  };
   VO.recent = {
     /** newest first: { key, app, name, size, time, file: Blob|null (opened or saved), thumb: Blob|null,
      *  draft: { file: Blob, name, time } | null (unsaved changes) }; a never-saved document has only a draft */
@@ -124,6 +133,7 @@
       e.time = e.draft.time;
       await tx('recent', 'readwrite', (s) => s.put(e));
       changed();
+      keepData();
     },
     /** throw the unsaved version away; a document that was never saved leaves the list */
     async discardDraft(key) {
@@ -150,6 +160,12 @@
     const standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: window-controls-overlay)').matches;
     if (standalone && window.open(url, '_blank')) return;
     location.href = url;
+  };
+  /** File ▸ Exit, after the app has closed its documents: an app window the Start Center opened
+   * (installed) closes and shows the Start Center behind it; a tab goes to the Start Center */
+  VO.exit = () => {
+    if (window.opener && !window.opener.closed) { window.close(); if (window.closed) return; }
+    location.href = BASE;
   };
   /** open a file in the app made for it; false if no app opens this kind of file */
   VO.handoff = async (file) => {

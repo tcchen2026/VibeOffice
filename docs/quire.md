@@ -10,7 +10,7 @@ Everything runs in the browser: there is no back end, no account and no network 
 feature. The proofing dictionaries are fetched at run time from `../common/dict/` (shared with Ledger),
 so the site is served rather than opened from disk (a `file://` page cannot fetch them; editing still
 works, but spelling and the thesaurus stay off). To run it locally, see [testing.md](testing.md).
-The metric-compatible fonts (see *Rendering notes*) currently come from Google Fonts when it can be reached.
+The metric-compatible fonts (see *Rendering notes*) are served with the site from `public/fonts/`.
 
 ## Proofing tools (offline)
 
@@ -46,7 +46,8 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   and some generators) get a simple diagram built from the SmartArt data.
 - Fonts are drawn with the fonts installed on your computer. When a document uses a font you don't
   have, Quire substitutes a metric-compatible one where one exists (Carlito for Calibri, Caladea for
-  Cambria, Tinos/Arimo/Cousine for Times New Roman/Arial/Courier New, Gelasio for Georgia, TeX Gyre
+  Cambria and Gelasio for Georgia, served with the site; Liberation or Tinos/Arimo/Cousine for Times New
+  Roman/Arial/Courier New where installed; TeX Gyre
   fonts for Palatino, Bookman, Century Schoolbook and Century Gothic), so line breaks and page counts
   stay close to Word's.
 
