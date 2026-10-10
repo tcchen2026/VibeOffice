@@ -29,10 +29,23 @@
 ## Why VibeOffice
 
 - **Familiar.** The menus, toolbars and task panes of the classic Office 2003 look, so there is nothing new to learn.
-- **Real files.** Open what colleagues send you, and save files built to open in Microsoft Office and LibreOffice. Each app is tested against thousands of real documents from public test collections; the results are in its doc.
+- **Lossless editing.** Open what colleagues send you, and save files built to open in Microsoft Office and LibreOffice, without losing what you didn't touch (below).
 - **Private.** Everything runs on your machine. There is no server behind it, no upload and no sign-in.
-- **Faithful.** When a file uses a feature VibeOffice can't edit yet (VBA macros, for example), it keeps that part and writes it back unchanged when you save. If a save would change something it can't keep, it tells you first.
 - **Installable.** In Chrome or Edge, install it from the Start Center. It then opens .docx, .xlsx and .pptx files from your file manager.
+
+## Lossless editing
+
+The goal: edit a Word, Excel or PowerPoint file here, save it in the same format, and send it to someone who uses Microsoft Office. It opens for them without an error or repair message, with your changes in place and everything else exactly as it was.
+
+- **What VibeOffice can't edit for now, it keeps.** VBA macros, embedded objects, SmartArt, video and audio, ink, 3-D models, custom XML and Office's newer extensions are written back byte for byte. Content it does edit keeps its original names and IDs, so links, comments and animations still point where they did.
+- **Edits change only what you changed.** Move or resize an object VibeOffice can't edit, and only its position changes. Set a shape's shadow, and its unsupported attributes stay.
+- **Each app's own features survive:**
+  - **Word:** content controls and their data bindings, comments, watermarks, section and numbering properties.
+  - **Excel:** pivot tables (refreshed by Excel when their source changed), slicers and timelines, threaded comments with @mentions, form controls, query tables.
+  - **PowerPoint:** media, sections and custom shows, comments, unused slide layouts, tags, actions and effects.
+- **Nothing lost silently.** If a save would drop something you would miss, the Compatibility Checker will show a warning.
+
+4,697 real files from public test collections (LibreOffice, Apache POI, Open XML SDK) are opened, saved, edited, undone and recovered, and every save is compared with the original. Where the apps stand today, the known gaps and what comes next: [docs/LOSSLESS_SAVE.md](docs/LOSSLESS_SAVE.md).
 
 ## The apps
 
@@ -42,7 +55,7 @@
 | [Ledger](docs/ledger.md) | Spreadsheet | .xlsx, .xlsm, .xltx, .xltm, .csv, XML Spreadsheet 2003, .htm; PDF |
 | [Lectern](docs/lectern.md) | Presentations | .pptx, .pptm, .ppsx, .ppsm, .potx, .potm; PDF, PNG, .htm |
 
-Start at [vibeoffice.work](https://vibeoffice.work), the Start Center: open a file, pick one from Recent Files, or create a document, spreadsheet or presentation from a blank page or a template.
+Start at vibeoffice.work, the Start Center: open a file, pick one from Recent Files, or create a document, spreadsheet or presentation from a blank page or a template.
 
 ## Feedback and contributing
 
@@ -52,6 +65,6 @@ VibeOffice is plain HTML and JavaScript with no build step. Read [AGENTS.md](AGE
 
 ## License
 
-Apache License 2.0, see [LICENSE](LICENSE). The proofing word lists and thesaurus in `public/common/dict/` carry their own licences, listed in `public/common/dict/LICENSES.txt`.
+Apache License 2.0, see [LICENSE](LICENSE). Two folders carry their own licences, listed in each folder's `LICENSES.txt`: the proofing word lists and thesaurus in `public/common/dict/`, and the fonts in `public/fonts/` (Carlito, Caladea and Gelasio, under the SIL Open Font License 1.1).
 
 VibeOffice is an independent project. Microsoft, Word, Excel, PowerPoint and Office are trademarks of Microsoft Corporation; VibeOffice is not affiliated with Microsoft.

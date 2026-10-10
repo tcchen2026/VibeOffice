@@ -4,7 +4,8 @@
 the same format: what the user did not touch comes back as it was, and what cannot come back is
 reported before the save. Conversions to other formats (PDF, CSV, Markdown, .ppt) are out of scope.
 
-**Status: done.** All planned preservation features are in, and Office batches 1–7 are all accepted.
+**Status:** all planned preservation features are in, and Office batches 1–7 are all accepted. Known
+gaps, including a few files that still lose content without a warning, are under To do.
 Known exceptions are documented in each app doc's "What a save keeps, converts and drops". Work from
 here starts from a specific failing input, not another broad run.
 
