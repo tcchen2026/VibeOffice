@@ -253,7 +253,7 @@
   C('replace', { label: 'R&eplace...', icon: 'replace', key: 'Ctrl+H', enabled: () => !viewing(), run: dlg('find', 'replace') });
   C('goTo', { label: '&Go To...', key: 'Ctrl+G', run: dlg('find', 'goto') });
   C('links', { label: 'Lin&ks...', enabled: () => false, run: () => {} });
-  C('editObject', { get label() { const it = L.drawing && L.drawing.selectedItem(); return it && it.t === 'chart' ? 'Chart &Object' : it && it.wordart ? 'WordArt &Object' : '&Object'; }, enabled: () => selectedObjIs((it) => it.t === 'chart' || !!it.wordart), run: () => A.formatObject(true) });
+  C('editObject', { get label() { const it = L.drawing && L.drawing.selectedItem(); return it && it.t === 'chart' ? 'Chart &Object' : it && it.wordart ? 'LettersArt &Object' : '&Object'; }, enabled: () => selectedObjIs((it) => it.t === 'chart' || !!it.wordart), run: () => A.formatObject(true) });
 
   /* ================= View ================= */
   C('viewNormal', { label: '&Normal', icon: 'normalView', key: 'Ctrl+Alt+N', radio: true, checked: () => A.view === 'normal', run: () => A.setView('normal') });
@@ -262,7 +262,7 @@
   C('viewReading', { label: 'R&eading Layout', icon: 'read', tip: 'Read', radio: true, checked: () => A.view === 'reading', run: () => A.setView(A.view === 'reading' ? A.prevView || 'print' : 'reading') });
   C('viewOutline', { label: '&Outline', icon: 'outlineView', key: 'Ctrl+Alt+O', radio: true, checked: () => A.view === 'outline', run: () => A.setView('outline') });
   C('taskPane', { label: 'Tas&k Pane', icon: 'taskpane', key: 'Ctrl+F1', checked: () => A.taskOpen(), run: () => A.toggleTask() });
-  const TBNAMES = { standard: 'Standard', formatting: 'Formatting', drawing: 'Drawing', tables: 'Tables and Borders', reviewing: 'Reviewing', picture: 'Picture', outlining: 'Outlining', headerFooter: 'Header and Footer', mailMerge: 'Mail Merge', wordart: 'WordArt' };
+  const TBNAMES = { standard: 'Standard', formatting: 'Formatting', drawing: 'Drawing', tables: 'Tables and Borders', reviewing: 'Reviewing', picture: 'Picture', outlining: 'Outlining', headerFooter: 'Header and Footer', mailMerge: 'Mail Merge', wordart: 'LettersArt' };
   for (const k in TBNAMES) C('tb_' + k, { label: TBNAMES[k], tip: TBNAMES[k], checked: () => A.tbShown(k), run: () => A.toggleToolbar(k) });
   C('ruler', { label: '&Ruler', icon: 'ruler', checked: () => !!A.opts.ruler, run: () => { A.opts.ruler = !A.opts.ruler; A.saveOpts(); A.updateRulers(); } });
   C('docMap', { label: '&Document Map', icon: 'docMap', checked: () => !!A.opts.docMap, run: () => A.toggleDocMap() });
@@ -291,7 +291,7 @@
   C('insertClipArt', { label: '&Clip Art...', icon: 'clipart', tip: 'Insert Clip Art', enabled: canEdit, run: pane('clipart') });
   C('insertPicture', { label: '&From File...', icon: 'picture', tip: 'Insert Picture', enabled: canEdit, run: () => A.insertPictureDialog() });
   C('newDrawing', { label: '&New Drawing', icon: 'drawing', enabled: canEdit, run: () => A.openAutoShapes() });
-  C('insertWordArt', { label: '&WordArt...', icon: 'wordart', tip: 'Insert WordArt', enabled: canEdit, run: dlg('wordart') });
+  C('insertWordArt', { label: '&LettersArt...', icon: 'wordart', tip: 'Insert LettersArt', keys: 'WordArt', enabled: canEdit, run: dlg('wordart') });
   C('insertChart', { label: 'C&hart', icon: 'chart', enabled: canEdit, run: () => A.insertChart() });
   C('insertExcel', { label: 'Insert Spreadsheet', icon: 'excel', tip: 'Insert Spreadsheet', enabled: canEdit, run: () => L.tables.insert(4, 5, { worksheet: true }) });
   C('insertDiagram', { label: 'Dia&gram...', icon: 'diagram', tip: 'Insert Diagram or Organization Chart', enabled: canEdit, run: dlg('diagram') });
@@ -318,7 +318,7 @@
   C('autoFormat', { label: '&AutoFormat...', enabled: canEdit, run: dlg('autoFormatDoc') });
   C('stylesPane', { label: '&Styles and Formatting...', icon: 'stylesPane', tip: 'Styles and Formatting', key: 'Ctrl+Alt+Shift+S', run: pane('styles') });
   C('revealFormatting', { label: 'Re&veal Formatting...', icon: 'reveal', key: 'Shift+F1', run: pane('reveal') });
-  C('formatObject', { get label() { const it = L.drawing && L.drawing.selectedItem(); return it ? (it.t === 'img' ? 'P&icture...' : it.tb ? 'Text B&ox...' : it.wordart ? 'Word&Art...' : it.t === 'chart' ? 'Ch&art...' : 'AutoSha&pe...') : 'Obj&ect...'; }, icon: 'formatPicture', tip: 'Format Object', enabled: () => objSel(), run: () => A.formatObject() });
+  C('formatObject', { get label() { const it = L.drawing && L.drawing.selectedItem(); return it ? (it.t === 'img' ? 'P&icture...' : it.tb ? 'Text B&ox...' : it.wordart ? 'Letters&Art...' : it.t === 'chart' ? 'Ch&art...' : 'AutoSha&pe...') : 'Obj&ect...'; }, icon: 'formatPicture', tip: 'Format Object', enabled: () => objSel(), run: () => A.formatObject() });
   /* character */
   C('bold', { label: 'Bold', icon: 'bold', key: 'Ctrl+B', enabled: canEdit, checked: () => !!run().b, run: () => E.toggleRun('b', undefined, 'Bold') });
   C('italic', { label: 'Italic', icon: 'italic', key: 'Ctrl+I', enabled: canEdit, checked: () => !!run().i, run: () => E.toggleRun('i', undefined, 'Italic') });
@@ -513,7 +513,7 @@
   C('flipV', { label: 'Flip &Vertical', icon: 'flipV', enabled: () => canEdit() && selectedObjIs((it) => it.t === 'shape' || it.t === 'img'), run: () => L.drawing.modifySelected('Flip', (it) => { it.flipV = !it.flipV || undefined; }) });
   C('setDefaults', { label: 'Set AutoShape &Defaults', enabled: () => selectedObjIs((it) => it.t === 'shape'), run: () => { const it = L.drawing.selectedItem(); A.shapeDefaults = { fill: L.clone(it.fill), line: L.clone(it.line), shadow: it.shadow ? L.clone(it.shadow) : undefined }; A.status('New AutoShapes will use these settings.'); } });
   C('wordartEdit', { label: 'Edit Te&xt...', enabled: () => canEdit() && selectedObjIs((it) => !!it.wordart), run: () => L.dlg.wordart(true) });
-  C('wordartGallery', { label: 'WordArt Gallery', icon: 'waGallery', enabled: () => canEdit() && selectedObjIs((it) => !!it.wordart), run: () => L.dlg.wordart('gallery') });
+  C('wordartGallery', { label: 'LettersArt Gallery', icon: 'waGallery', enabled: () => canEdit() && selectedObjIs((it) => !!it.wordart), run: () => L.dlg.wordart('gallery') });
 
   /* ================= Outlining ================= */
   const ol = (fn, ...a) => () => L.outline && L.outline[fn](...a);

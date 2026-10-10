@@ -366,7 +366,7 @@
       shapes, which applications without a SmartArt engine show */
   function diagramFrameXML(sh, id, ctx, design) {
     L.diagram.capture(sh);   // formatting given to its shapes since the last layout
-    if (sh.sa.converted) ctx.writer.loss({ id: 'smartart-layout:' + sh.id, what: `This SmartArt is saved with Lectern's ${(L.smartart.get(sh.sa.layout) || {}).name} layout and its own colours and style, because it was edited here.`, where: sh.name || ctx.part, place: ctx.place, action: 'conversion' });
+    if (sh.sa.converted) ctx.writer.loss({ id: 'smartart-layout:' + sh.id, what: `This IntelliArt is saved with Lectern's ${(L.smartart.get(sh.sa.layout) || {}).name} layout and its own colours and style, because it was edited here.`, where: sh.name || ctx.part, place: ctx.place, action: 'conversion' });
     const IO = L.saIO, NS_DGM = IO.NS.dgm, NS_DSP = IO.NS.dsp;
     const ctD = 'application/vnd.openxmlformats-officedocument.drawingml.';
     const rel = (name, type) => ctx.rels.add(type, K.relative(ctx.part, name));
@@ -375,7 +375,7 @@
       /* the drawing is a part of its own: picture fills and text links (relationships of the slide) are not written in it */
       let kf = k.fill;
       if (kf && !['solid', 'grad', 'none', 'patt'].includes(kf.t)) {
-        ctx.writer.loss({ id: 'smartart-fill:' + sh.id + ':' + i, what: 'A picture fill on a shape of this SmartArt is saved as the diagram\'s colour.', where: sh.name || ctx.part, place: ctx.place, action: 'conversion', notify: true });
+        ctx.writer.loss({ id: 'smartart-fill:' + sh.id + ':' + i, what: 'A picture fill on a shape of this IntelliArt is saved as the diagram\'s colour.', where: sh.name || ctx.part, place: ctx.place, action: 'conversion', notify: true });
         kf = { t: 'solid', c: 'accent1', a: 1 };
       }
       const fill = kf ? fillXML(kf, ctx, design) : '';

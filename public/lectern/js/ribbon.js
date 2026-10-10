@@ -37,9 +37,9 @@
         { label: 'Slides', items: [{ split: 'newSlide', size: 'large', label: 'New Slide', menu: open(['newSlide', 'duplicateSlide', '-', 'slidesFromFiles', 'slidesFromOutline']) }] },
         { label: 'Tables', items: [{ cmd: 'insertTable', size: 'large', label: 'Table' }] },
         { label: 'Images', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', 'photoAlbum'] },
-        { label: 'Illustrations', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => A().menus.autoShapes(r) }, { cmd: 'insertDiagram', size: 'large', label: 'SmartArt' }, { cmd: 'insertChart', size: 'large', label: 'Chart' }] },
+        { label: 'Illustrations', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => A().menus.autoShapes(r) }, { cmd: 'insertDiagram', size: 'large', label: 'IntelliArt' }, { cmd: 'insertChart', size: 'large', label: 'Chart' }] },
         { label: 'Links', items: [{ cmd: 'hyperlink', size: 'large', label: 'Hyperlink' }, { cmd: 'actionSettings', size: 'large', label: 'Action' }] },
-        { label: 'Text', items: [{ cmd: 'textBox', size: 'large', label: 'Text Box' }, { cmd: 'headerFooter', size: 'large', label: 'Header & Footer' }, { cmd: 'insertWordArt', size: 'large', label: 'WordArt' }, 'insertDateTime', 'insertSlideNumber', 'vTextBox'] },
+        { label: 'Text', items: [{ cmd: 'textBox', size: 'large', label: 'Text Box' }, { cmd: 'headerFooter', size: 'large', label: 'Header & Footer' }, { cmd: 'insertWordArt', size: 'large', label: 'LettersArt' }, 'insertDateTime', 'insertSlideNumber', 'vTextBox'] },
         { label: 'Symbols', items: [{ cmd: 'insertSymbol', size: 'large', label: 'Symbol' }] },
         { label: 'Media', items: [{ cmd: 'insertMedia', size: 'large', label: 'Media' }] },
       ] },
@@ -77,12 +77,12 @@
           { label: 'Close', items: [{ cmd: 'closeMaster', size: 'large', label: 'Close Master View' }] },
         ] },
       ] },
-      { id: 'smartart', set: 'SmartArt Tools', when: ctx('diagram'), tabs: [
+      { id: 'smartart', set: 'IntelliArt Tools', when: ctx('diagram'), tabs: [
         { id: 'smartartDesign', label: 'Design', groups: [
           { label: 'Create Graphic', items: [{ split: 'diagramAddShape', size: 'large', label: 'Add Shape', menu: open(['diagramAddAfter', 'diagramAddBefore', 'diagramAddAbove', 'diagramAddBelow']) },
             { row: ['diagramPromote', 'diagramDemote'] }, { row: ['diagramMoveUp', 'diagramMoveDown'] }, { cmd: 'diagramTextPane', size: 'large' }] },
           { label: 'Layouts', items: [{ drop: 'Change Layout', icon: 'layout', size: 'large', menu: (r) => L.diagram.layoutMenu(r) }] },
-          { label: 'SmartArt Styles', items: [{ drop: 'Change Colors', icon: 'colorPic', size: 'large', menu: (r) => L.diagram.colorsMenu(r) }, { drop: 'Styles', icon: 'themes', size: 'large', menu: (r) => L.diagram.styleMenu(r) }] },
+          { label: 'IntelliArt Styles', items: [{ drop: 'Change Colors', icon: 'colorPic', size: 'large', menu: (r) => L.diagram.colorsMenu(r) }, { drop: 'Styles', icon: 'themes', size: 'large', menu: (r) => L.diagram.styleMenu(r) }] },
           { label: 'Reset', items: [{ cmd: 'diagramReset', size: 'large' }, 'diagramToShapes'] },
         ] },
         { id: 'smartartFormat', label: 'Format', groups: [
@@ -118,10 +118,10 @@
           { label: 'Alignment', items: ['cellTop', 'cellMiddle', 'cellBottom'] },
         ] },
       ] },
-      { id: 'wordart', set: 'WordArt Tools', when: ctx('wordart'), tabs: [
+      { id: 'wordart', set: 'LettersArt Tools', when: ctx('wordart'), tabs: [
         { id: 'wordartFormat', label: 'Format', groups: [
           { label: 'Text', items: [{ cmd: 'wordartEdit', size: 'large', label: 'Edit Text' }, 'wordartGallery'] },
-          { label: 'WordArt Styles', launcher: 'formatObject', items: [{ drop: 'WordArt Shape', icon: 'waShape', size: 'large', menu: (r) => A().menus.waShape(r) }, 'waSameHeight', 'waVertical'] },
+          { label: 'LettersArt Styles', launcher: 'formatObject', items: [{ drop: 'LettersArt Shape', icon: 'waShape', size: 'large', menu: (r) => A().menus.waShape(r) }, 'waSameHeight', 'waVertical'] },
         ] },
       ] },
     ],

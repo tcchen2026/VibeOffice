@@ -18,7 +18,7 @@
     if (!it0) return;
     const it = L.clone(it0);
     const isImg = it.t === 'img', isShape = it.t === 'shape', isTb = !!it.tb, isWA = !!it.wordart, isLine = isShape && (it.geom === 'line' || L.geom.isLine(it.geom));
-    const title = isImg ? 'Format Picture' : isTb ? 'Format Text Box' : isWA ? 'Format WordArt' : it.t === 'chart' ? 'Format Object' : 'Format AutoShape';
+    const title = isImg ? 'Format Picture' : isTb ? 'Format Text Box' : isWA ? 'Format LettersArt' : it.t === 'chart' ? 'Format Object' : 'Format AutoShape';
     /* Colors and Lines */
     let fill = it.fill ? L.clone(it.fill) : { t: 'none' };
     const fillBtn = G.color(fill.t === 'solid' ? String(fill.c || '#FFFFFF').replace('#', '') : null, { id: 'fo-fill', mode: 'fill', automatic: false, noneText: fill.t === 'none' ? 'No Fill' : fill.t === 'grad' ? 'Gradient' : fill.t === 'patt' ? 'Pattern' : fill.t === 'img' ? 'Picture' : 'No Fill', onChange: (v) => { fill = v ? { t: 'solid', c: '#' + v, a: 1 - transp.get() / 100 } : { t: 'none' }; } });

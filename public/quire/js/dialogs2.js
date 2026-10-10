@@ -494,7 +494,7 @@
 
   /* ================= Insert Object ================= */
   G.insertObject = function () {
-    const types = [['chart', 'Chart'], ['equation', 'Equation'], ['wordart', 'WordArt'], ['excel', 'Spreadsheet (table)'], ['document', 'Document (inserted as text)'], ['picture', 'Bitmap Image']];
+    const types = [['chart', 'Chart'], ['equation', 'Equation'], ['wordart', 'LettersArt'], ['excel', 'Spreadsheet (table)'], ['document', 'Document (inserted as text)'], ['picture', 'Bitmap Image']];
     const lb = G.listBox(types.map(([v, l]) => ({ value: v, label: l })), 'chart', { height: 160, onDbl: () => ok.click() });
     const dlg = ui.dialog({ title: 'Object', width: 360, body: ui.tabs([{ label: '&Create New', body: h('div', { class: 'col' }, h('label', { text: 'Object type:' }), lb) }, { label: 'Create from &File', body: h('div', { class: 'col' }, h('div', { class: 'tp-note', text: 'Insert the contents of a .docx, .txt or .htm file, or a picture.' }), ui.button('&Browse...', () => { dlg.close(null); A().insertFileDialog(); })) }]), buttons: [{ label: 'OK', primary: true, onClick: () => {
       const v = lb.get();
@@ -566,27 +566,27 @@
   ];
   G.wordart = function (mode) {
     const it = mode && L.drawing.selectedItem();
-    if (mode === true && it && it.wordart) { editText(it, (wa) => L.drawing.modifySelected('Edit WordArt', (x) => { x.wordart = Object.assign({}, x.wordart, wa); })); return; }
+    if (mode === true && it && it.wordart) { editText(it, (wa) => L.drawing.modifySelected('Edit LettersArt', (x) => { x.wordart = Object.assign({}, x.wordart, wa); })); return; }
     let pick = 0;
     const grid = h('div', { class: 'wa-grid' });
     WA_STYLES.forEach((s, i) => {
-      const b = h('button', { type: 'button', class: i === 0 ? 'on' : '', 'aria-label': 'WordArt style ' + (i + 1) });
-      const sh = { t: 'shape', w: 66, h: 40, fill: Object.assign({ a: 1 }, s.fill), line: s.line ? Object.assign({ dash: 'solid' }, s.line) : { t: 'none' }, warp: s.warp, shadow: s.shadow ? Object.assign({ c: '#808080', a: 0.6 }, s.shadow) : undefined, wordart: { text: 'WordArt', font: 'Arial Black', b: s.b, i: s.i } };
+      const b = h('button', { type: 'button', class: i === 0 ? 'on' : '', 'aria-label': 'LettersArt style ' + (i + 1) });
+      const sh = { t: 'shape', w: 66, h: 40, fill: Object.assign({ a: 1 }, s.fill), line: s.line ? Object.assign({ dash: 'solid' }, s.line) : { t: 'none' }, warp: s.warp, shadow: s.shadow ? Object.assign({ c: '#808080', a: 0.6 }, s.shadow) : undefined, wordart: { text: 'LettersArt', font: 'Arial Black', b: s.b, i: s.i } };
       b.appendChild(L.drawing.wordartSVG(sh));
       b.addEventListener('click', () => { pick = i; L.$$('button', grid).forEach((x) => x.classList.toggle('on', x === b)); });
       b.addEventListener('dblclick', () => ok.click());
       grid.appendChild(b);
     });
-    const dlg = ui.dialog({ title: 'WordArt Gallery', width: 470, body: h('div', { class: 'col' }, h('div', { text: 'Select a WordArt style:' }), grid), buttons: [{ label: 'OK', primary: true, onClick: () => {
+    const dlg = ui.dialog({ title: 'LettersArt Gallery', width: 470, body: h('div', { class: 'col' }, h('div', { text: 'Select a LettersArt style:' }), grid), buttons: [{ label: 'OK', primary: true, onClick: () => {
       const s = WA_STYLES[pick];
-      if (mode === 'gallery' && it) { L.drawing.modifySelected('WordArt Gallery', (x) => { x.fill = Object.assign({ a: 1 }, s.fill); x.line = s.line ? Object.assign({ dash: 'solid' }, s.line) : { t: 'none' }; x.warp = s.warp; x.shadow = s.shadow ? Object.assign({ c: '#808080', a: 0.6 }, s.shadow) : undefined; }); return; }
+      if (mode === 'gallery' && it) { L.drawing.modifySelected('LettersArt Gallery', (x) => { x.fill = Object.assign({ a: 1 }, s.fill); x.line = s.line ? Object.assign({ dash: 'solid' }, s.line) : { t: 'none' }; x.warp = s.warp; x.shadow = s.shadow ? Object.assign({ c: '#808080', a: 0.6 }, s.shadow) : undefined; }); return; }
       const init = E.sel && !E.collapsed() ? O.textRange(...E.range(), ' ').trim().slice(0, 200) : 'Your Text Here';
       setTimeout(() => editText({ wordart: { text: init, font: 'Arial Black', sz: 36, b: s.b, i: s.i } }, (wa) => {
         const lines = wa.text.split('\n');
         const longest = Math.max(...lines.map((l) => l.length), 1);
         const w = Math.min(468, longest * wa.sz * 0.62 + 10), hh = lines.length * wa.sz * 1.15 + 6;
-        const shape = { t: 'shape', geom: 'rect', w: L.round(w, 2), h: L.round(hh, 2), fill: Object.assign({ a: 1 }, s.fill), line: s.line ? Object.assign({ dash: 'solid' }, s.line) : { t: 'none' }, warp: s.warp, shadow: s.shadow ? Object.assign({ c: '#808080', a: 0.6 }, s.shadow) : undefined, wordart: wa, name: 'WordArt ' + D.nid() };
-        E.edit('Insert WordArt', () => O.insertItem(E.deleteSelection(), shape));
+        const shape = { t: 'shape', geom: 'rect', w: L.round(w, 2), h: L.round(hh, 2), fill: Object.assign({ a: 1 }, s.fill), line: s.line ? Object.assign({ dash: 'solid' }, s.line) : { t: 'none' }, warp: s.warp, shadow: s.shadow ? Object.assign({ c: '#808080', a: 0.6 }, s.shadow) : undefined, wordart: wa, name: 'LettersArt ' + D.nid() };
+        E.edit('Insert LettersArt', () => O.insertItem(E.deleteSelection(), shape));
       }), 0);
     } }, { label: 'Cancel' }] });
     const ok = dlg.buttons[0];
@@ -600,7 +600,7 @@
     ta.value = wa.text;
     const upd = () => { ta.style.fontFamily = L.fontStack(font.value); ta.style.fontWeight = b.input.checked ? 'bold' : 'normal'; ta.style.fontStyle = i.input.checked ? 'italic' : 'normal'; };
     upd();
-    ui.dialog({ title: 'Edit WordArt Text', width: 440, focus: ta, body: h('div', { class: 'col' }, G.row(G.f('&Font:', font), G.f('&Size:', size), b, i), h('label', { for: 'wa-text', html: '<u>T</u>ext:' }), ta), buttons: [{ label: 'OK', primary: true, onClick: () => done({ text: ta.value || ' ', font: font.value, sz: +size.value, b: b.input.checked || undefined, i: i.input.checked || undefined }) }, { label: 'Cancel' }] });
+    ui.dialog({ title: 'Edit LettersArt Text', width: 440, focus: ta, body: h('div', { class: 'col' }, G.row(G.f('&Font:', font), G.f('&Size:', size), b, i), h('label', { for: 'wa-text', html: '<u>T</u>ext:' }), ta), buttons: [{ label: 'OK', primary: true, onClick: () => done({ text: ta.value || ' ', font: font.value, sz: +size.value, b: b.input.checked || undefined, i: i.input.checked || undefined }) }, { label: 'Cancel' }] });
   }
 
   /* ================= Table dialogs ================= */

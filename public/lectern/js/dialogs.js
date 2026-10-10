@@ -390,7 +390,7 @@
     if (!shapes.length) return;
     const s0 = shapes[0];
     const isPic = s0.type === 'image', isLine = s0.type === 'line', isWA = s0.type === 'wordart', isTable = s0.type === 'table';
-    const title = isPic ? 'Format Picture' : isLine ? 'Format AutoShape' : isWA ? 'Format WordArt' : s0.ph ? 'Format Placeholder' : s0.type === 'text' ? 'Format Text Box' : isTable ? 'Format Table' : 'Format AutoShape';
+    const title = isPic ? 'Format Picture' : isLine ? 'Format AutoShape' : isWA ? 'Format LettersArt' : s0.ph ? 'Format Placeholder' : s0.type === 'text' ? 'Format Text Box' : isTable ? 'Format Table' : 'Format AutoShape';
     const ch = {}; /* changes */
     const srcFill = isWA ? s0.wa.fill : s0.fill;
     const srcLine = isWA ? s0.wa.line : s0.line;
@@ -953,14 +953,14 @@
     let pick = current != null ? current : 0;
     const grid = h('div', { class: 'wa-grid' });
     WA_STYLES.forEach((st, i) => {
-      const b = h('button', { type: 'button', 'aria-label': 'WordArt style ' + (i + 1), class: i === pick ? 'on' : '' });
-      const sh = { w: 66, h: 46, wa: Object.assign({}, st, { text: 'WordArt', vert: false }) };
+      const b = h('button', { type: 'button', 'aria-label': 'LettersArt style ' + (i + 1), class: i === pick ? 'on' : '' });
+      const sh = { w: 66, h: 46, wa: Object.assign({}, st, { text: 'LettersArt', vert: false }) };
       b.appendChild(L.render.wordart(sh, design(), {}));
       b.addEventListener('click', () => { L.$$('button', grid).forEach((x) => x.classList.remove('on')); b.classList.add('on'); pick = i; });
       b.addEventListener('dblclick', () => { okb.click(); });
       grid.appendChild(b);
     });
-    const d = ui.dialog({ title: 'WordArt Gallery', body: h('div', { class: 'col' }, h('label', { text: 'Select a WordArt style:' }), grid), width: 470, buttons: [{ label: 'OK', primary: true, onClick: () => cb(pick) }, { label: 'Cancel' }] });
+    const d = ui.dialog({ title: 'LettersArt Gallery', body: h('div', { class: 'col' }, h('label', { text: 'Select a LettersArt style:' }), grid), width: 470, buttons: [{ label: 'OK', primary: true, onClick: () => cb(pick) }, { label: 'Cancel' }] });
     const okb = d.buttons[0];
   };
   D.wordartText = function (init, cb) {
@@ -972,7 +972,7 @@
     const sync = () => { ta.style.fontFamily = L.fontStack(font.value); ta.style.fontWeight = b.input.checked ? '700' : '400'; ta.style.fontStyle = i.input.checked ? 'italic' : 'normal'; };
     font.addEventListener('change', sync); b.input.addEventListener('change', sync); i.input.addEventListener('change', sync);
     sync();
-    ui.dialog({ title: 'Edit WordArt Text', body: h('div', { class: 'col' }, h('div', { class: 'row' }, ui.field('&Font:', font), ui.field('&Size:', size), b, i), h('label', { for: 'wa-text', html: '<u>T</u>ext:' }), ta), width: 470, focus: '#wa-text', buttons: [{ label: 'OK', primary: true, onClick: () => cb({ text: ta.value, font: font.value, b: b.input.checked, i: i.input.checked, size: +size.value }) }, { label: 'Cancel' }] });
+    ui.dialog({ title: 'Edit LettersArt Text', body: h('div', { class: 'col' }, h('div', { class: 'row' }, ui.field('&Font:', font), ui.field('&Size:', size), b, i), h('label', { for: 'wa-text', html: '<u>T</u>ext:' }), ta), width: 470, focus: '#wa-text', buttons: [{ label: 'OK', primary: true, onClick: () => cb({ text: ta.value, font: font.value, b: b.input.checked, i: i.input.checked, size: +size.value }) }, { label: 'Cancel' }] });
   };
 
   /* ---------- Photo Album ---------- */

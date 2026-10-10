@@ -525,7 +525,7 @@
     }
     const shapeFill = isWA ? '<a:noFill/>' : isLine ? '<a:noFill/>' : fillXML(it.fill || { t: 'none' }, ctx);
     const shapeLine = isWA ? '<a:ln><a:noFill/></a:ln>' : lineXML(it.line || { t: 'none' });
-    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb ? 'Text Box ' : isWA ? 'WordArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${it.tb || it.tbLink || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${isWA ? '<a:normAutofit/>' : it.autofit ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
+    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb ? 'Text Box ' : isWA ? 'LettersArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${it.tb || it.tbLink || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${isWA ? '<a:normAutofit/>' : it.autofit ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
   }
   function groupXML(g, ctx, x, y, id, nested) {
     let kids = '';

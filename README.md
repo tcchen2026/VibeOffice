@@ -20,7 +20,7 @@
       <b><a href="https://vibeoffice.work/ledger/">Ledger</a></b><br>Spreadsheet
     </td>
     <td align="center" width="33%">
-      <a href="https://vibeoffice.work/lectern/"><img src="docs/images/lectern.png" alt="Lectern, the presentation editor, with a cycle diagram, WordArt and a chart on a slide"></a><br>
+      <a href="https://vibeoffice.work/lectern/"><img src="docs/images/lectern.png" alt="Lectern, the presentation editor, with a cycle diagram, LettersArt and a chart on a slide"></a><br>
       <b><a href="https://vibeoffice.work/lectern/">Lectern</a></b><br>Presentations
     </td>
   </tr>
@@ -37,7 +37,7 @@
 
 The goal: edit a Word, Excel or PowerPoint file here, save it in the same format, and send it to someone who uses Microsoft Office. It opens for them without an error or repair message, with your changes in place and everything else exactly as it was.
 
-- **What VibeOffice can't edit for now, it keeps.** VBA macros, embedded objects, SmartArt, video and audio, ink, 3-D models, custom XML and Office's newer extensions are written back byte for byte. Content it does edit keeps its original names and IDs, so links, comments and animations still point where they did.
+- **What VibeOffice can't edit for now, it keeps.** VBA macros, embedded objects, SmartArt in layouts it does not have, video and audio, ink, 3-D models, custom XML and Office's newer extensions are written back byte for byte. Content it does edit keeps its original names and IDs, so links, comments and animations still point where they did.
 - **Edits change only what you changed.** Move or resize an object VibeOffice can't edit, and only its position changes. Set a shape's shadow, and its unsupported attributes stay.
 - **Each app's own features survive:**
   - **Word:** content controls and their data bindings, comments, watermarks, section and numbering properties.

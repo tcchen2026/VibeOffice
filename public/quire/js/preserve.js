@@ -552,7 +552,7 @@
     return groups;
   };
   // Told when a kept object can only be saved as what Quire shows of it; compatibility wrappers stay silent
-  const objectNouns = { SmartArt: 'SmartArt', 'Embedded object': 'embedded object', 'Form control': 'form control', 'Embedded content': 'embedded content', 'Embedded document': 'embedded document', Drawing: 'drawing' };
+  const objectNouns = { SmartArt: 'IntelliArt', 'Embedded object': 'embedded object', 'Form control': 'form control', 'Embedded content': 'embedded content', 'Embedded document': 'embedded document', Drawing: 'drawing' };
   const objectNotice = (label, why) => /^Compatibility /.test(label) ? { what: label + ' was converted' + why, notify: false } :
     { what: 'This ' + (objectNouns[label] || 'drawing') + ' will be saved as ordinary content' + why, place: objectNouns[label] ? undefined : label, notify: true };
   P.objectXML = function (object, name, ctx, record = opaqueStore(object)?.[name]) {

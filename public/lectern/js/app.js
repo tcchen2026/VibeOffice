@@ -205,11 +205,11 @@
         ui.tbDrop('', 'fillColor', A.menus.tableFill, 'Fill Color'),
         '|', ui.tbDrop('Table', null, (r) => ui.openMenu(['insertTable', '-', 'colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', '-', 'selectTable', '-', 'tableBordersFill'], r), 'Table'),
         'mergeCells', 'splitCell', '|', 'cellTop', 'cellMiddle', 'cellBottom', '|', 'distRows', 'distCols']),
-      wordart: ui.toolbar('wordart', 'WordArt', ['insertWordArt', ui.tbButton('wordartEdit', { label: 'Edit Text...' }), 'wordartGallery', ui.tbButton('formatObject', { icon: 'formatPicture' }),
-        ui.tbDrop('', 'waShape', A.menus.waShape, 'WordArt Shape'),
+      wordart: ui.toolbar('wordart', 'LettersArt', ['insertWordArt', ui.tbButton('wordartEdit', { label: 'Edit Text...' }), 'wordartGallery', ui.tbButton('formatObject', { icon: 'formatPicture' }),
+        ui.tbDrop('', 'waShape', A.menus.waShape, 'LettersArt Shape'),
         'waSameHeight', 'waVertical',
-        ui.tbDrop('', 'alignCenter', (r) => ui.openMenu([['l', '&Left Align'], ['ctr', '&Center'], ['r', '&Right Align']].map(([k, n]) => ({ label: n, run: () => A.waSet({ algn: k }) })), r), 'WordArt Alignment'),
-        ui.tbDrop('', 'charSpacing', (r) => ui.openMenu([[-3, '&Very Tight'], [-1.5, '&Tight'], [0, '&Normal'], [2, '&Loose'], [4, 'V&ery Loose']].map(([k, n]) => ({ label: n, run: () => A.waSet({ spc: k }) })), r), 'WordArt Character Spacing')]),
+        ui.tbDrop('', 'alignCenter', (r) => ui.openMenu([['l', '&Left Align'], ['ctr', '&Center'], ['r', '&Right Align']].map(([k, n]) => ({ label: n, run: () => A.waSet({ algn: k }) })), r), 'LettersArt Alignment'),
+        ui.tbDrop('', 'charSpacing', (r) => ui.openMenu([[-3, '&Very Tight'], [-1.5, '&Tight'], [0, '&Normal'], [2, '&Loose'], [4, 'V&ery Loose']].map(([k, n]) => ({ label: n, run: () => A.waSet({ spc: k }) })), r), 'LettersArt Character Spacing')]),
       master: ui.toolbar('master', 'Slide Master View', ['insertTitleMaster', 'deleteTitleMaster', '|', ui.tbButton('closeMaster', { label: 'Close Master View' })]),
       sorter: ui.toolbar('sorter', 'Slide Sorter', ['hideSlide', 'rehearse', '|', 'summarySlide', 'speakerNotes', '|', ui.tbButton('transitionPane', { label: 'Transition' }), ui.tbButton('slideDesign', { label: 'Design' }), ui.tbButton('newSlide', { label: 'New Slide' })]),
     };
@@ -218,7 +218,7 @@
     /* SmartArt (js/diagram.js): the Diagram toolbar of a selected diagram */
     const DGM = () => L.diagram;
     A.toolbarsEl.diagram = ui.toolbar('diagram', 'Diagram', [ui.tbSplit('diagramAddShape', (r) => ui.openMenu(['diagramAddAfter', 'diagramAddBefore', 'diagramAddAbove', 'diagramAddBelow'], r)), 'diagramPromote', 'diagramDemote', 'diagramMoveUp', 'diagramMoveDown', '|',
-      ui.tbDrop('&Layout', 'layout', (r) => DGM().layoutMenu(r), 'Change Layout'), ui.tbDrop('', 'colorPic', (r) => DGM().colorsMenu(r), 'Change Colors'), ui.tbDrop('', 'themes', (r) => DGM().styleMenu(r), 'SmartArt Styles'), '|', 'diagramTextPane', 'diagramReset', 'diagramToShapes']);
+      ui.tbDrop('&Layout', 'layout', (r) => DGM().layoutMenu(r), 'Change Layout'), ui.tbDrop('', 'colorPic', (r) => DGM().colorsMenu(r), 'Change Colors'), ui.tbDrop('', 'themes', (r) => DGM().styleMenu(r), 'IntelliArt Styles'), '|', 'diagramTextPane', 'diagramReset', 'diagramToShapes']);
     const row3 = h('div', { class: 'tb-row' }, A.toolbarsEl.picture, A.toolbarsEl.tables, A.toolbarsEl.wordart, A.toolbarsEl.diagram, A.toolbarsEl.master, A.toolbarsEl.sorter);
     host.append(row1, row2, row3);
     A.tbRows = [row1, row2, row3];
@@ -1490,8 +1490,8 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
         const maxLen = Math.max(...lines.map((x) => x.length), 1);
         const hh = Math.min(L.pres.H * 0.6, o.size * 1.5 * lines.length);
         const w = Math.min(L.pres.W * 0.85, maxLen * o.size * 0.75);
-        L.hist.push('Insert WordArt');
-        const sh = { id: L.uid('s'), type: 'wordart', name: 'WordArt ' + (slide.shapes.length + 1), x: (L.pres.W - w) / 2, y: (L.pres.H - hh) / 2, w, h: hh, rot: 0, wa: Object.assign(L.clone(st), { text: o.text, font: o.font, b: o.b, i: o.i, style: idx }) };
+        L.hist.push('Insert LettersArt');
+        const sh = { id: L.uid('s'), type: 'wordart', name: 'LettersArt ' + (slide.shapes.length + 1), x: (L.pres.W - w) / 2, y: (L.pres.H - hh) / 2, w, h: hh, rot: 0, wa: Object.assign(L.clone(st), { text: o.text, font: o.font, b: o.b, i: o.i, style: idx }) };
         slide.shapes.push(sh);
         E.sel = [sh.id];
         E.render(); E.touched(); A.updateToolbars();
@@ -1501,14 +1501,14 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
   A.editWordArt = function () {
     const s = E.primary();
     if (!s || s.type !== 'wordart') return;
-    L.dlg.wordartText(s.wa, (o) => E.commit('Edit WordArt Text', () => { Object.assign(s.wa, { text: o.text, font: o.font, b: o.b, i: o.i }); }));
+    L.dlg.wordartText(s.wa, (o) => E.commit('Edit LettersArt Text', () => { Object.assign(s.wa, { text: o.text, font: o.font, b: o.b, i: o.i }); }));
   };
   A.wordartRestyle = function () {
     const s = E.primary();
-    L.dlg.wordartGallery((idx) => E.commit('WordArt Style', () => { for (const x of E.selected()) if (x.type === 'wordart') { const st = L.clone(L.dlg.WA_STYLES[idx]); x.wa = Object.assign(x.wa, { fill: st.fill, line: st.line, shadow: st.shadow, warp: st.warp, style: idx }); } }), s && s.wa ? s.wa.style : 0);
+    L.dlg.wordartGallery((idx) => E.commit('LettersArt Style', () => { for (const x of E.selected()) if (x.type === 'wordart') { const st = L.clone(L.dlg.WA_STYLES[idx]); x.wa = Object.assign(x.wa, { fill: st.fill, line: st.line, shadow: st.shadow, warp: st.warp, style: idx }); } }), s && s.wa ? s.wa.style : 0);
   };
-  A.waSet = (o) => E.commit('WordArt', () => { for (const s of E.selected()) if (s.type === 'wordart') Object.assign(s.wa, o); });
-  A.waToggle = (k) => E.commit('WordArt', () => { for (const s of E.selected()) if (s.type === 'wordart') s.wa[k] = !s.wa[k]; });
+  A.waSet = (o) => E.commit('LettersArt', () => { for (const s of E.selected()) if (s.type === 'wordart') Object.assign(s.wa, o); });
+  A.waToggle = (k) => E.commit('LettersArt', () => { for (const s of E.selected()) if (s.type === 'wordart') s.wa[k] = !s.wa[k]; });
   A.createPhotoAlbum = async function (pics, layout, frame, caps) {
     const pres = L.pres;
     const did = (pres.slides[E.idx] || pres.slides[0] || {}).design || Object.keys(pres.designs)[0];
@@ -1999,7 +1999,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     s.trans = { type: 'push', dir: 'l', spd: 'med', click: true, after: null };
     /* 8 */
     s = add('blank');
-    const wa = { id: L.uid('s'), type: 'wordart', name: 'WordArt 1', x: pres.W * 0.15, y: pres.H * 0.3, w: pres.W * 0.7, h: pres.H * 0.32, rot: 0, wa: Object.assign(L.clone(L.dlg.WA_STYLES[4]), { text: 'Thank you', font: 'Arial Black', b: true, warp: 'textArchUp', style: 4 }) };
+    const wa = { id: L.uid('s'), type: 'wordart', name: 'LettersArt 1', x: pres.W * 0.15, y: pres.H * 0.3, w: pres.W * 0.7, h: pres.H * 0.32, rot: 0, wa: Object.assign(L.clone(L.dlg.WA_STYLES[4]), { text: 'Thank you', font: 'Arial Black', b: true, warp: 'textArchUp', style: 4 }) };
     s.shapes.push(wa);
     const q = M.newTextBox(pres, s, pres.W * 0.15, pres.H * 0.66, pres.W * 0.7, 36, true);
     q.tx.ps = [T.para('Questions? expansion@harborandpine.example', { algn: 'ctr' }, { sz: 20, color: 'tx1' })];

@@ -14,7 +14,7 @@ const FIRST = {
   quire: {
     bold: 'bold', image: 'insertPicture', margins: 'pageSetup', hyperlnk: 'hyperlink', 'word count': 'wordCount',
     graph: 'insertChart', synonym: 'thesaurus', settings: 'optionsDlg', strikethrough: 'strike', pdf: 'exportPDF',
-    'track changes': 'trackChanges', 'page numbers': 'pageNumbers', uppercase: 'changeCase', 'find': 'find',
+    'track changes': 'trackChanges', 'page numbers': 'pageNumbers', uppercase: 'changeCase', 'find': 'find', wordart: 'insertWordArt', lettersart: 'insertWordArt', 'word art': 'insertWordArt',
   },
   ledger: {
     bold: 'bold', image: 'insertPicture', margins: 'pageSetup', freeze: 'freezePanes', sum: 'autoSum',
@@ -23,6 +23,7 @@ const FIRST = {
   lectern: {
     image: 'insertPicture', 'bars:present': 'showFromStart', 'ribbon:present': 'showFromStart', pdf: 'saveAs', 'new slide': 'newSlide',
     hyperlnk: 'hyperlink', graph: 'insertChart', 'speaker notes': 'speakerNotes', 'notes page': 'viewNotes', options: 'optionsDlg',
+    smartart: 'insertDiagram', smart: 'insertDiagram', intelliart: 'insertDiagram', wordart: 'insertWordArt', 'org chart': 'insertDiagram',
   },
 };
 

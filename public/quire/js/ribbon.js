@@ -105,7 +105,7 @@
         { id: 'drawingFormat', label: 'Format', groups: [
           { label: 'Insert Shapes', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => A().openAutoShapes(r) }, 'textBox'] },
           { label: 'Shape Styles', launcher: 'formatObject', items: [{ split: 'fillColor', menu: (r, b) => A().objColorMenu(b, 'fill') }, { split: 'lineColor', menu: (r, b) => A().objColorMenu(b, 'line') }, { drop: 'Shadow', icon: 'shadowStyle', menu: (r) => A().objShadowMenu(r) }] },
-          { label: 'WordArt Styles', items: [{ cmd: 'wordartGallery', size: 'large', label: 'WordArt Styles' }, 'wordartEdit'] },
+          { label: 'LettersArt Styles', items: [{ cmd: 'wordartGallery', size: 'large', label: 'LettersArt Styles' }, 'wordartEdit'] },
           { label: 'Arrange', items: [{ drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, 'bringFront', 'sendBack', 'groupObj', 'ungroupObj', 'rotateRight'] },
         ] },
       ] },

@@ -206,7 +206,7 @@ an edit the user made, objects the original already lacked a part for (`L.opc.so
 audit catch-alls. The unreferenced-part and `reportFeatures` entries are bug alarms for corpus runs:
 a real loss should get its own notice where it happens.
 
-Shown entries are plain sentences about the user's content ("This SmartArt will be saved as ordinary
+Shown entries are plain sentences about the user's content ("This IntelliArt will be saved as ordinary
 shapes, because it was edited here."), with `place` in the user's terms (a sheet, cell, slide or
 control name). Part names and error text go in `where` and `detail`, never in the dialog. The dialog
 groups identical messages and lists their places.

@@ -31,7 +31,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | `js/slideshow.js` | Full-screen show, 58 transitions, 50+ entrance/emphasis/exit/motion-path effects, pen, rehearse timings |
 | `js/preserve.js` | Package ownership and settings merges; model-attached media, playback, property invalidation and clipboard dependencies |
 | `js/comments.js` | Legacy/modern comment ownership, author dependencies, copied identities and anchors |
-| `js/diagram.js`, `js/smartart-io.js`, `../common/smartart.js` | SmartArt: the diagram object, gallery, text pane, Diagram toolbar and SmartArt Tools; its SmartArt parts; the layout engine (see *SmartArt*) |
+| `js/diagram.js`, `js/smartart-io.js`, `../common/smartart.js` | IntelliArt (SmartArt): the diagram object, gallery, text pane, Diagram toolbar and SmartArt Tools; its SmartArt parts; the layout engine (see *IntelliArt (SmartArt)*) |
 | `js/frames.js` | Opaque frame membership, geometry, diagram/VML dependencies and preview clipboard transport |
 | `js/pptx-read.js` | PresentationML import (themes, masters, layouts, placeholders, table styles, charts, SmartArt, custom geometry, animations; repairs damaged packages) |
 | `js/pptx-write.js` | PresentationML export (validated against the OOXML schema) |
@@ -60,9 +60,9 @@ Charts read from a file are drawn the way PowerPoint draws them:
 
 A chart that is not edited in Lectern is saved exactly as it came: its XML, the embedded Excel workbook, the chart style and colour parts and any theme override travel with it, so PowerPoint can still open the data in Excel. Once the datasheet or chart options are changed (double-click the chart), the chart is written from Lectern's model, keeping colours, labels, axis settings and gap width. New charts keep the PowerPoint 2003 look.
 
-## SmartArt
+## IntelliArt (SmartArt)
 
-Insert ▸ Diagram (SmartArt on the ribbon, or the diagram icon of a content placeholder) opens a gallery of 26 layouts by category, each pictured in the design's colours:
+IntelliArt is Lectern's name for its diagrams; in the file they are Office SmartArt. Insert ▸ Diagram (IntelliArt on the ribbon, or the diagram icon of a content placeholder) opens a gallery of 26 layouts by category, each pictured in the design's colours:
 
 | Category | Layouts |
 |---|---|
@@ -75,8 +75,8 @@ Insert ▸ Diagram (SmartArt on the ribbon, or the diagram icon of a content pla
 | Pyramid | Basic Pyramid, Inverted Pyramid, Pyramid List |
  The new diagram takes an empty content placeholder, or the middle of the slide.
 
-* **Text pane** (opens on insert; Text Pane on the Diagram toolbar or SmartArt Tools ▸ Design): one line per item. Enter adds an item, Tab and Shift+Tab demote and promote it, Alt+Shift+↑/↓ move it, Backspace on an empty line removes it; the diagram follows as you type. Text typed into a shape on the slide goes back to its item too.
-* **Diagram toolbar / SmartArt Tools:** Add Shape (after, before, above, below), Promote, Demote, Move Up, Move Down, Change Layout (keeps the text), Change Colors (one accent, Colorful, Gradient Range), Styles (Simple Fill, White Outline, Subtle, Moderate, Intense), Reset Graphic, Convert to Shapes. Delete on a shape removes its item.
+* **Text pane** (opens on insert; Text Pane on the Diagram toolbar or IntelliArt Tools ▸ Design): one line per item. Enter adds an item, Tab and Shift+Tab demote and promote it, Alt+Shift+↑/↓ move it, Backspace on an empty line removes it; the diagram follows as you type. Text typed into a shape on the slide goes back to its item too.
+* **Diagram toolbar / IntelliArt Tools:** Add Shape (after, before, above, below), Promote, Demote, Move Up, Move Down, Change Layout (keeps the text), Change Colors (one accent, Colorful, Gradient Range), Styles (Simple Fill, White Outline, Subtle, Moderate, Intense), Reset Graphic, Convert to Shapes. Delete on a shape removes its item.
 * **Formatting one shape** (fill, outline, font colour, bold, italic, through the usual commands) is kept on its item: it survives Add Shape, a new layout or resizing, is saved in the SmartArt data as PowerPoint stores it (the point's shape properties and text run), and comes back on reopening. Reset Graphic removes it.
 * **Layout:** resizing lays the diagram out again. All items show their text at one size, the largest at which every item fits (with room to spare for applications that draw text wider). Colours are theme slots, so a new design recolours the diagram; accents too close to the slide background are skipped and light fills get dark text.
 * **Saving:** a diagram made or edited here is saved as real SmartArt: the data (its items), our own layout, style and colour definitions (`urn:vibeoffice.work/diagram/…`, written from our layouts, not copied from Office's), and the drawing of its shapes for applications that do not lay SmartArt out themselves. Model ids are stable, so an unedited diagram saves byte for byte. Reopened in Lectern, it is editable again.
@@ -355,7 +355,7 @@ counts. Four pages load without console errors. All 15 batch-4 samples passed Po
 ## Known limits
 
 * Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
-* SmartArt in a layout Lectern does not have is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped; PowerPoint SmartArt edited here takes our layout of the same name, so its look in PowerPoint changes to ours (*SmartArt*). When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
+* SmartArt in a layout Lectern does not have is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped; PowerPoint SmartArt edited here takes our layout of the same name, so its look in PowerPoint changes to ours (*IntelliArt (SmartArt)*). When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
 * Embedded OLE objects and ActiveX controls import as their preview pictures.
 * Fonts that aren't installed fall back to metric-compatible ones: Carlito, Caladea and Gelasio (for Calibri, Cambria and Georgia) are served with the site, and Save as Web Page embeds the ones its slides name; Arial, Times New Roman and Courier New use the computer's own copies or the Liberation/Arimo/Tinos/Cousine fonts of the same widths where installed.

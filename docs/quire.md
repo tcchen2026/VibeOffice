@@ -355,7 +355,7 @@ compatibility results are archived with the run history rather than mixed into c
 | `js/fields.js` | Field engine (PAGE, DATE, REF, SEQ, TOC, INDEX, IF, formulas, …), footnotes and endnotes |
 | `js/review.js` | Track changes, comments, balloons, Reviewing pane, compare documents |
 | `js/tables.js` | Tables and Borders toolbar, table styles, draw/erase, merge/split, sort, formulas |
-| `js/drawing.js`, `js/drawtool.js`, `../common/geometry.js`, `../common/charts.js`, `../common/metafile.js`, `../common/clipart.js` | Pictures, AutoShapes, WordArt, diagrams, charts, WMF/EMF, clip art |
+| `js/drawing.js`, `js/drawtool.js`, `../common/geometry.js`, `../common/charts.js`, `../common/metafile.js`, `../common/clipart.js` | Pictures, AutoShapes, LettersArt (WordArt), diagrams, charts, WMF/EMF, clip art |
 | `js/autocorrect.js`, `../common/spell.js`, `js/spell.js` | AutoCorrect, AutoFormat as you type, AutoText; the shared spelling engine and Quire's Spelling and Grammar (offline) |
 | `js/omml.js` | Office Math (OMML) to MathML for equations |
 | `../common/dict/` | Spelling word lists, thesaurus, licences (shared with Ledger) |

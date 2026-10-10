@@ -549,7 +549,7 @@
     return pts;
   }
   R.wordart = function (sh, design, ctx) {
-    const wa = sh.wa || { text: 'WordArt' };
+    const wa = sh.wa || { text: 'LettersArt' };
     const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
     const svg = s('svg', { class: 'wa', width: L.round(w, 2), height: L.round(hh, 2), viewBox: `0 0 ${L.round(w, 3)} ${L.round(hh, 3)}`, preserveAspectRatio: 'none', overflow: 'visible' });
     const defs = s('defs');

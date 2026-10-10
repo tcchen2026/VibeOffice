@@ -60,7 +60,7 @@
   C('viewBW', { label: '&Pure Black and White', radio: true, checked: () => !!A().opts.bw, run: () => A().setColorMode('bw') });
   C('taskPane', { label: 'Tas&k Pane', icon: 'taskpane', key: 'Ctrl+F1', checked: () => A().taskOpen(), run: () => A().toggleTask() });
   C('slidesPane', { label: 'Slides and Outline Pane', checked: () => A().leftOpen(), run: () => A().toggleLeft() });
-  for (const [id, label] of [['standard', '&Standard'], ['formatting', '&Formatting'], ['drawing', '&Drawing'], ['outlining', '&Outlining'], ['picture', '&Picture'], ['tables', '&Tables and Borders'], ['wordart', '&WordArt']]) {
+  for (const [id, label] of [['standard', '&Standard'], ['formatting', '&Formatting'], ['drawing', '&Drawing'], ['outlining', '&Outlining'], ['picture', '&Picture'], ['tables', '&Tables and Borders'], ['wordart', '&LettersArt']]) {
     C('tb_' + id, { label, checked: () => A().tbShown(id), run: () => A().toggleToolbar(id) });
   }
   C('ruler', { label: '&Ruler', icon: 'ruler', checked: () => !!A().opts.ruler, run: () => { A().opts.ruler = !A().opts.ruler; A().saveOpts(); E().layout(); } });
@@ -81,8 +81,8 @@
   C('insertClipArt', { label: '&Clip Art...', icon: 'clipart', tip: 'Insert Clip Art', run: () => L.panes.task.show('clipart') });
   C('insertPicture', { label: '&From File...', icon: 'picture', tip: 'Insert Picture', run: (arg) => A().insertPictureDialog(arg && arg.ph) });
   C('photoAlbum', { label: '&New Photo Album...', icon: 'photoAlbum', run: () => L.dlg.photoAlbum() });
-  C('insertWordArt', { label: '&WordArt...', icon: 'wordart', tip: 'Insert WordArt', run: () => A().insertWordArtDialog() });
-  C('insertDiagram', { label: 'Dia&gram...', icon: 'diagram', tip: 'Insert SmartArt Graphic', run: (arg) => L.diagram.gallery((k) => L.diagram.insert(k, arg && arg.ph)) });
+  C('insertWordArt', { label: '&LettersArt...', icon: 'wordart', tip: 'Insert LettersArt', keys: 'WordArt', run: () => A().insertWordArtDialog() });
+  C('insertDiagram', { label: 'Dia&gram...', icon: 'diagram', tip: 'Insert IntelliArt Graphic', keys: 'IntelliArt SmartArt organization chart org', run: (arg) => L.diagram.gallery((k) => L.diagram.insert(k, arg && arg.ph)) });
   C('textBox', { label: 'Te&xt Box', icon: 'textbox', tip: 'Text Box', checked: () => !!(E().tool && E().tool.kind === 'text' && !E().tool.vert), run: () => E().setTool(E().tool && E().tool.kind === 'text' ? null : { kind: 'text' }) });
   C('vTextBox', { label: '&Vertical Text Box', icon: 'vtextbox', checked: () => !!(E().tool && E().tool.kind === 'text' && E().tool.vert), run: () => E().setTool({ kind: 'text', vert: true }) });
   C('insertChart', { label: 'C&hart...', icon: 'chart', tip: 'Insert Chart', run: (arg) => A().insertChart(arg && arg.ph) });
@@ -99,7 +99,7 @@
   C('slideDesign', { label: 'Slide D&esign...', tbLabel: 'Design', icon: 'design', tip: 'Slide Design', run: () => L.panes.task.show('design') });
   C('slideLayout', { label: 'Slide &Layout...', icon: 'layout', run: () => L.panes.task.show('layout') });
   C('background', { label: 'Bac&kground...', icon: 'background', enabled: hasSlide, run: () => L.dlg.background() });
-  C('formatObject', { get label() { const s = E().selected()[0]; return s ? (s.type === 'image' ? 'P&icture...' : s.type === 'wordart' ? 'Word&Art...' : s.ph ? 'Pla&ceholder...' : s.type === 'text' ? 'Text B&ox...' : s.type === 'table' ? 'Ta&ble...' : 'AutoSha&pe...') : 'AutoSha&pe...'; }, icon: 'formatPicture', enabled: hasSel, run: (arg) => L.dlg.formatShape(arg) });
+  C('formatObject', { get label() { const s = E().selected()[0]; return s ? (s.type === 'image' ? 'P&icture...' : s.type === 'wordart' ? 'Letters&Art...' : s.ph ? 'Pla&ceholder...' : s.type === 'text' ? 'Text B&ox...' : s.type === 'table' ? 'Ta&ble...' : 'AutoSha&pe...') : 'AutoSha&pe...'; }, icon: 'formatPicture', enabled: hasSel, run: (arg) => L.dlg.formatShape(arg) });
   C('alignLeft', { label: 'Align &Left', icon: 'alignLeft', key: 'Ctrl+L', radio: true, enabled: textCtx, checked: () => { const s = fmtState(); return !!s && s.algn === 'l'; }, run: () => A().setAlign('l') });
   C('alignCenter', { label: '&Center', icon: 'alignCenter', key: 'Ctrl+E', radio: true, enabled: textCtx, checked: () => { const s = fmtState(); return !!s && s.algn === 'ctr'; }, run: () => A().setAlign('ctr') });
   C('alignRight', { label: 'Align &Right', icon: 'alignRight', key: 'Ctrl+R', radio: true, enabled: textCtx, checked: () => { const s = fmtState(); return !!s && s.algn === 'r'; }, run: () => A().setAlign('r') });
@@ -212,7 +212,7 @@
 
   /* ---------- WordArt ---------- */
   C('wordartEdit', { label: 'Edit Te&xt...', icon: 'editText', tbLabel: 'Edit Text...', enabled: () => E().selected().length === 1 && isWA(), run: () => A().editWordArt() });
-  C('wordartGallery', { label: 'WordArt Gallery', icon: 'waGallery', enabled: isWA, run: () => A().wordartRestyle() });
-  C('waSameHeight', { label: 'WordArt Same Letter Heights', icon: 'sameHeight', enabled: isWA, checked: () => { const s = E().primary(); return !!(s && s.wa && s.wa.cap); }, run: () => A().waToggle('cap') });
-  C('waVertical', { label: 'WordArt Vertical Text', icon: 'vertText', enabled: isWA, checked: () => { const s = E().primary(); return !!(s && s.wa && s.wa.vert); }, run: () => A().waToggle('vert') });
+  C('wordartGallery', { label: 'LettersArt Gallery', icon: 'waGallery', enabled: isWA, run: () => A().wordartRestyle() });
+  C('waSameHeight', { label: 'LettersArt Same Letter Heights', icon: 'sameHeight', enabled: isWA, checked: () => { const s = E().primary(); return !!(s && s.wa && s.wa.cap); }, run: () => A().waToggle('cap') });
+  C('waVertical', { label: 'LettersArt Vertical Text', icon: 'vertText', enabled: isWA, checked: () => { const s = E().primary(); return !!(s && s.wa && s.wa.vert); }, run: () => A().waToggle('vert') });
 })();

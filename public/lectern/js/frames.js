@@ -11,7 +11,7 @@
   const rootNames = new Set(['sp', 'pic', 'cxnSp', 'grpSp', 'graphicFrame', 'contentPart', 'model3d']);
   function label(root) {
     const nodes = all(root);
-    if (nodes.some(e => e.localName === 'relIds' && /\/diagram$/.test(e.namespaceURI))) return 'SmartArt';
+    if (nodes.some(e => e.localName === 'relIds' && /\/diagram$/.test(e.namespaceURI))) return 'IntelliArt';
     if (nodes.some(e => e.localName === 'oleObj')) return 'Embedded object';
     if (nodes.some(e => e.localName === 'contentPart')) return 'Ink';
     if (nodes.some(e => e.localName === 'model3d')) return '3-D model';
@@ -268,7 +268,7 @@
         const target = privateCopy ? copy(dep.dataPart) : w.target(pkg, dep.dataPart);
         if (!privateCopy) { w.claim(dep.dataPart, 'merged', target, pkg); w.carryRels(pkg, dep.dataPart, target); }
         w.put(target, K.patch(X.source.get(tree).text, edits), pkg.type(dep.dataPart));
-        w.loss({ id: 'diagram-cache:' + ctx.part + ':' + dep.dataPart, what: 'A reference to a SmartArt drawing cache missing from the original file was removed; its data and layout are retained.', where: dep.dataPart, action: 'conversion' });
+        w.loss({ id: 'diagram-cache:' + ctx.part + ':' + dep.dataPart, what: 'A reference to an IntelliArt drawing cache missing from the original file was removed; its data and layout are retained.', where: dep.dataPart, action: 'conversion' });
       } else if (/\/vmlDrawing$/.test(dep.type)) {
         const kept = vml(record, dep, shape, ctx, changed); relIds.set(dep.id, kept.id);
         for (const entry of kept.spids) spids.set(...entry);

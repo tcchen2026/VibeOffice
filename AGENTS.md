@@ -25,7 +25,7 @@ Keep them current: a change to an app's features, formats or source layout updat
 
 ## Design rules
 
-- **Important: interoperability with Microsoft Office.** A file saved here opens in Word, Excel and PowerPoint without a repair prompt, with everything the user did not change intact and their edits as they made them. The UI uses Office's names (fonts, features, file types), so it matches what Office shows.
+- **Important: interoperability with Microsoft Office.** A file saved here opens in Word, Excel and PowerPoint without a repair prompt, with everything the user did not change intact and their edits as they made them. The UI uses Office's names (fonts, features, file types), so it matches what Office shows, except for brand-like feature names, which get our own: **IntelliArt** for SmartArt and **LettersArt** for WordArt. The code keeps Office's names everywhere (identifiers, file names, comments, command ids, model types such as `wordart` and `smartart.js`), so it maps directly onto the file format; docs say SmartArt or WordArt when they mean the file format.
 - Static files, vanilla JavaScript, no frameworks and no build step at run time. Ledger's `index.html` is generated: edit `tools/ledger/build/` and run `python3 tools/ledger/build/make.py`, never the output.
 - Everything runs in the browser; documents never leave the machine. No back end, no accounts.
 - Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`, fonts in `public/fonts/` (`tools/fonts.py`), word lists in `public/common/dict/` (`tools/dict.py` for British English), each with their licences.

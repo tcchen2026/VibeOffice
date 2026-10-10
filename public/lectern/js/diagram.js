@@ -141,7 +141,7 @@
     if (!g.sa.office) return;
     delete g.sa.office;
     g.sa.converted = true;
-    ui.toast(`This SmartArt now uses Lectern's ${(SA.get(g.sa.layout) || {}).name} layout, so it can be edited here.`, 4000);
+    ui.toast(`This IntelliArt now uses Lectern's ${(SA.get(g.sa.layout) || {}).name} layout, so it can be edited here.`, 4000);
   }
   /** after a change: undo point, lay out, draw, keep the text pane in step */
   function change(g, label, fn, coalesce) {
@@ -161,7 +161,7 @@
     /* like PowerPoint, an empty content placeholder on the slide takes the diagram */
     const ph = phId ? E().shape(phId) : slide.shapes.find((s) => s.ph && ['obj', 'body'].includes(s.ph.type || 'body') && T.isEmpty(s.tx));
     const box = ph ? { x: ph.x, y: ph.y, w: ph.w, h: ph.h } : { x: L.pres.W * 0.15, y: L.pres.H * 0.22, w: L.pres.W * 0.7, h: L.pres.H * 0.66 };
-    L.hist.push('Insert SmartArt');
+    L.hist.push('Insert IntelliArt');
     const lay = SA.get(layout) || SA.LAYOUTS[0];
     const g = { id: L.uid('s'), type: 'group', name: lay.name + ' ' + (slide.shapes.length + 1), rot: 0, x: box.x, y: box.y, w: box.w, h: box.h,
       sa: { layout: lay.id, colors: 'accent1', style: 'simple', items: SA.blank(lay.id) }, kids: [] };
@@ -265,7 +265,7 @@
       b.addEventListener('click', () => { cat = k; L.$$('.sa-cat', cats).forEach((x) => x.classList.toggle('on', x === b)); fill(); });
       cats.append(b);
     }
-    const d = ui.dialog({ title: current ? 'Change SmartArt Layout' : 'Choose a SmartArt Graphic', width: 720,
+    const d = ui.dialog({ title: current ? 'Change IntelliArt Layout' : 'Choose an IntelliArt Graphic', width: 720,
       body: h('div', { class: 'sa-gallery' }, cats, grid, h('div', { class: 'sa-side' }, big, title, desc)),
       buttons: [{ label: 'OK', primary: true, onClick: () => cb(pick) }, { label: 'Cancel' }] });
     fill();
@@ -342,7 +342,7 @@
   DG.set = (key, val, g) => {
     g = g || DG.current();
     if (!g || g.sa[key] === val) return;
-    const label = { layout: 'Change Layout', colors: 'Change Colors', style: 'SmartArt Style' }[key];
+    const label = { layout: 'Change Layout', colors: 'Change Colors', style: 'IntelliArt Style' }[key];
     change(g, label, () => { g.sa[key] = val; if (key === 'layout') g.name = (SA.get(val) || {}).name + ' ' + g.name.split(' ').pop(); });
   };
   DG.reset = (g) => {
@@ -422,9 +422,9 @@
     L.clear(b);
     const g = DG.current();
     paneG = g ? g.id : null;
-    if (!g) { b.append(h('div', { class: 'tp-note', text: 'Select a SmartArt graphic to type its text here.' }), h('div', { class: 'tp-row' }, ui.button('Insert SmartArt...', () => ui.exec('insertDiagram'), { class: 'btn' }))); return; }
+    if (!g) { b.append(h('div', { class: 'tp-note', text: 'Select an IntelliArt graphic to type its text here.' }), h('div', { class: 'tp-row' }, ui.button('Insert IntelliArt...', () => ui.exec('insertDiagram'), { class: 'btn' }))); return; }
     b.append(h('div', { class: 'tp-h', text: 'Type your text here' }));
-    const list = h('div', { class: 'sa-pane', role: 'tree', 'aria-label': 'SmartArt text' });
+    const list = h('div', { class: 'sa-pane', role: 'tree', 'aria-label': 'IntelliArt text' });
     for (const row of rowsOf(g)) {
       const inp = h('input', { type: 'text', class: 'sa-row', value: row.item.text, placeholder: '[Text]', 'aria-label': 'Item, level ' + (row.level + 1), 'data-item': row.item.id, style: `margin-left:${row.level * 16}px` });
       inp.addEventListener('focus', () => { paneItem = row.item.id; selectItem(g, row.item.id); L.hist.breakCoalesce(); });
@@ -469,7 +469,7 @@
     paneFocus = false;
   }
   DG.showPane = (on) => { const TP = L.panes && L.panes.task; if (!TP) return; if (on === false) { if (TP.current === 'diagramText') L.app.toggleTask(false); return; } TP.show('diagramText'); };
-  if (L.panes && L.panes.task) L.panes.task.register({ id: 'diagramText', title: 'SmartArt Text', render(b) { renderPane(b); }, refresh(b, reason) { if (reason === 'selection') { const g = DG.current(); if (g && g.id === paneG && b.contains(document.activeElement)) return; } renderPane(b); } });
+  if (L.panes && L.panes.task) L.panes.task.register({ id: 'diagramText', title: 'IntelliArt Text', render(b) { renderPane(b); }, refresh(b, reason) { if (reason === 'selection') { const g = DG.current(); if (g && g.id === paneG && b.contains(document.activeElement)) return; } renderPane(b); } });
 
   /* ---------------------------------------------------------------- menus for the toolbar and the ribbon */
   DG.layoutMenu = (r) => {
@@ -508,7 +508,7 @@
   C('diagramTextPane', { label: 'Text Pane', icon: 'taskpane', enabled: inDiagram, checked: () => !!(L.panes && L.panes.task.current === 'diagramText' && L.panes.task.el && !L.panes.task.el.hidden), run: () => { const on = ui.checked('diagramTextPane'); DG.showPane(!on); } });
   C('diagramLayout', { label: 'Change &Layout...', icon: 'layout', enabled: inDiagram, run: () => { const g = DG.current(); DG.gallery((k) => DG.set('layout', k, g), g.sa.layout); } });
   C('diagramColors', { label: 'Change Colors', icon: 'colorPic', enabled: inDiagram, run: () => {} });
-  C('diagramStyle', { label: 'SmartArt Styles', icon: 'themes', enabled: inDiagram, run: () => {} });
+  C('diagramStyle', { label: 'IntelliArt Styles', icon: 'themes', enabled: inDiagram, run: () => {} });
   C('diagramReset', { label: 'Reset Graphic', icon: 'resetGraphic', enabled: inDiagram, run: () => DG.reset() });
   C('diagramToShapes', { label: 'Convert to Shapes', icon: 'toShapes', enabled: inDiagram, run: () => DG.toShapes() });
 })();

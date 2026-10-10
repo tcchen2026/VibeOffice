@@ -17,6 +17,7 @@
 
   /* everyday words and spellings → the words Office's command names use ('|' between alternatives) */
   const SYN = {
+    smartart: 'intelliart', wordart: 'lettersart', diagram: 'intelliart|diagram', diagrams: 'intelliart|diagram', orgchart: 'intelliart|organization chart', fontwork: 'lettersart',
     image: 'picture|from file', images: 'picture|from file', pdf: 'pdf|save as', png: 'save as', html: 'web page|save as', photo: 'picture|photo album', photos: 'picture|photo album', pic: 'picture', img: 'picture',
     graph: 'chart', graphs: 'chart', plot: 'chart', colour: 'color', colours: 'color', grey: 'gray', centre: 'center', centred: 'center',
     remove: 'delete|clear', erase: 'delete|clear|eraser', strikethrough: 'strike', crossed: 'strike',
@@ -111,11 +112,12 @@
          also answers to the submenu's name (Insert ▸ Picture ▸ From File) */
       const label = layout === 'ribbon' && rb && rb.label ? rb.label : norm(c.label);
       const path = (layout === 'ribbon' ? rb && rb.where : mp || toolbar.get(id)) || null;
-      const alias = [norm(c.label), layout !== 'ribbon' && mp && mp.length > 1 ? mp[mp.length - 1] : ''].join(' ');
+      /* c.keys: more words the command answers to */
+      const alias = [norm(c.label), c.keys || '', layout !== 'ribbon' && mp && mp.length > 1 ? mp[mp.length - 1] : ''].join(' ');
       const key = label.toLowerCase() + '|' + (path || []).join('/');
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ id, label, alias, path, tip: norm(c.tip || ''), icon: c.icon, placed: !!path, toggle: id.startsWith('tb_') });
+      out.push({ id, label, alias, keys: (c.keys || '').toLowerCase(), path, tip: norm(c.tip || ''), icon: c.icon, placed: !!path, toggle: id.startsWith('tb_') });
     }
     if (layout !== 'ribbon') for (const a of actions) {
       const key = a.label.toLowerCase() + '|' + a.path.join('/');
@@ -158,13 +160,13 @@
       for (const q of qs) { const w = wordScore(q, e); if (!w) { s = 0; break; } s += w; }
       if (!s) continue;
       const lab = e.label.toLowerCase();
-      if (lab === full) s += 6; else if (lab.startsWith(full)) s += 3;
+      if (lab === full) s += 6; else if (lab.startsWith(full) || (e.keys && (' ' + e.keys).includes(' ' + full))) s += 3;
       if (e.placed) s += 0.5;
       if (e.toggle) s -= 4;   // showing a toolbar is rarely what is meant
       if (e.run) s -= 1.5;    // menu entries that are not commands (open windows, recent files) after commands
       if (e.id && recent.includes(e.id)) s += 0.5;
       const on = enabledOf(e);
-      if (on) s += 0.75;
+      if (on) s += 2;   // what can run now before what cannot
       scored.push({ e, s, on });
     }
     scored.sort((a, b) => b.s - a.s || a.e.label.length - b.e.label.length);
