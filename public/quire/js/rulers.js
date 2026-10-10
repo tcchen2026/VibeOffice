@@ -20,10 +20,10 @@
     hanging: '<svg width="9" height="9"><path d="M4.5 1l4 5h-8z" fill="#fff" stroke="#000"/></svg>',
   };
   const MARK = {
-    first: '<svg width="9" height="7"><path d="M0.5 0.5h8v2l-4 4-4-4z" fill="#e8eef9" stroke="#3b5a8c"/></svg>',
-    hang: '<svg width="9" height="7"><path d="M4.5 0.5l4 4v2h-8v-2z" fill="#e8eef9" stroke="#3b5a8c"/></svg>',
-    left: '<svg width="9" height="5"><rect x="0.5" y="0.5" width="8" height="4" fill="#e8eef9" stroke="#3b5a8c"/></svg>',
-    right: '<svg width="9" height="7"><path d="M4.5 0.5l4 4v2h-8v-2z" fill="#e8eef9" stroke="#3b5a8c"/></svg>',
+    first: '<svg width="9" height="7"><path d="M0.5 0.5h8v2l-4 4-4-4z" style="fill:var(--indent-fill);stroke:var(--indent-line)"/></svg>',
+    hang: '<svg width="9" height="7"><path d="M4.5 0.5l4 4v2h-8v-2z" style="fill:var(--indent-fill);stroke:var(--indent-line)"/></svg>',
+    left: '<svg width="9" height="5"><rect x="0.5" y="0.5" width="8" height="4" style="fill:var(--indent-fill);stroke:var(--indent-line)"/></svg>',
+    right: '<svg width="9" height="7"><path d="M4.5 0.5l4 4v2h-8v-2z" style="fill:var(--indent-fill);stroke:var(--indent-line)"/></svg>',
   };
   RU.mount = function (hEl, vEl, cEl) {
     H = hEl; V = vEl; corner = cEl;
@@ -37,6 +37,7 @@
     H.addEventListener('dblclick', (e) => { if (e.target.closest('.rmark.tabstop')) { L.dlg && L.dlg.tabs(); return; } L.dlg && (state && e.clientX > state.x0 && e.clientX < state.x0 + state.w ? L.dlg.tabs() : L.dlg.pageSetup()); });
     V.addEventListener('pointerdown', onVDown);
     V.addEventListener('dblclick', () => L.dlg && L.dlg.pageSetup());
+    L.onLook(() => RU.draw());   /* the canvas follows the look */
   };
   RU.drawSoon = L.rafThrottle(() => RU.draw());
   let state = null;
@@ -82,10 +83,10 @@
       const pgB = g.pg;
       textL = pageL + pgB.bodyLeft * z; textR = textL + pgB.bodyW * z;
     } else { pageL = g.x0 - hr.left - 20; pageR = g.x0 - hr.left + g.w + 20; textL = g.x0 - hr.left; textR = textL + g.w; }
-    c.fillStyle = '#c9d6ee'; c.fillRect(Math.max(0, pageL), 4, Math.max(0, pageR - pageL), hr.height - 8);
+    c.fillStyle = L.lookColor('ruler-off', '#c9d6ee'); c.fillRect(Math.max(0, pageL), 4, Math.max(0, pageR - pageL), hr.height - 8);
     /* text area (or the cell / column) is white */
     const colL = g.x0 - hr.left, colR = colL + g.w;
-    c.fillStyle = '#fff';
+    c.fillStyle = L.lookColor('ruler', '#fff');
     if (g.ci || (g.sect.cols && g.sect.cols.n > 1)) {
       /* white for each column or table cell boundary */
       if (g.ci) {
@@ -101,7 +102,7 @@
     const origin = g.ci ? colL : textL;
     const unit = D.unit === 'cm' || D.unit === 'mm' ? 28.3465 : 72;
     const sub = unit === 72 ? 8 : 4;
-    c.strokeStyle = '#444'; c.fillStyle = '#222';
+    c.strokeStyle = L.lookColor('ruler-tick', '#444'); c.fillStyle = L.lookColor('ruler-ink', '#222');
     c.font = '9px Tahoma, Arial, sans-serif';
     c.textAlign = 'center';
     c.lineWidth = 1;
@@ -135,7 +136,7 @@
       H.appendChild(m);
     }
     /* default tab ticks after the last custom tab */
-    c.strokeStyle = '#777';
+    c.strokeStyle = L.lookColor('ruler-deftab', '#777');
     const defTab = (doc().settings.defTab || 36) * pxPt;
     const lastTab = Math.max(l, ...(pp.tabs || []).map((t) => t.pos * pxPt));
     if (defTab > 4) for (let x = Math.ceil((lastTab + 1) / defTab) * defTab; base + x < colR; x += defTab) { c.beginPath(); c.moveTo(base + x + 0.5, hr.height - 3); c.lineTo(base + x + 0.5, hr.height - 1); c.stroke(); }
@@ -171,13 +172,13 @@
     const z = g.z, pxPt = D.PX * z;
     const top = g.pr.top - vr.top, bottom = g.pr.bottom - vr.top;
     const pg = g.pg;
-    c.fillStyle = '#c9d6ee'; c.fillRect(4, top, vr.width - 8, bottom - top);
+    c.fillStyle = L.lookColor('ruler-off', '#c9d6ee'); c.fillRect(4, top, vr.width - 8, bottom - top);
     const tT = top + pg.bodyTop * z, tB = bottom - pg.bodyBottomGap * z;
-    c.fillStyle = '#fff'; c.fillRect(4, tT, vr.width - 8, Math.max(0, tB - tT));
+    c.fillStyle = L.lookColor('ruler', '#fff'); c.fillRect(4, tT, vr.width - 8, Math.max(0, tB - tT));
     const unit = D.unit === 'cm' || D.unit === 'mm' ? 28.3465 : 72;
     const sub = unit === 72 ? 8 : 4;
     const step = (unit / sub) * pxPt;
-    c.strokeStyle = '#444'; c.fillStyle = '#222'; c.font = '9px Tahoma, Arial, sans-serif'; c.textAlign = 'center';
+    c.strokeStyle = L.lookColor('ruler-tick', '#444'); c.fillStyle = L.lookColor('ruler-ink', '#222'); c.font = '9px Tahoma, Arial, sans-serif'; c.textAlign = 'center';
     if (step > 1.5) {
       const kmin = Math.ceil((Math.max(0, top) - tT) / step), kmax = Math.floor((Math.min(vr.height, bottom) - tT) / step);
       for (let k = kmin; k <= kmax; k++) {
@@ -187,7 +188,7 @@
       }
     }
     /* table row boundaries */
-    if (g.ci) { const tblEl = g.frag.closest('table.tbl'); if (tblEl) { c.fillStyle = '#7f95bd'; for (const tr of tblEl.querySelectorAll(':scope > tbody > tr')) { const rr = tr.getBoundingClientRect(); c.fillRect(4, rr.bottom - vr.top - 1, vr.width - 8, 2); } } }
+    if (g.ci) { const tblEl = g.frag.closest('table.tbl'); if (tblEl) { c.fillStyle = L.lookColor('ruler-row', '#7f95bd'); for (const tr of tblEl.querySelectorAll(':scope > tbody > tr')) { const rr = tr.getBoundingClientRect(); c.fillRect(4, rr.bottom - vr.top - 1, vr.width - 8, 2); } } }
     state.v = { vr, tT, tB, top, bottom };
   }
 

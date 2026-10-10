@@ -503,26 +503,37 @@
 
   /* ------------------------------------------------------------ toolbars */
   const TB = {};
+  /* the toolbars' boxes and buttons with menus, also used by the ribbon (js/ribbon.js): each call makes a new one */
+  A.parts = {
+    font: (o) => ui.combo(Object.assign({ id: 'fontname', width: 128, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.fontSections({ major: wb().theme?.major, minor: wb().theme?.minor }), preview: (v) => `font-family:${LY.fontStack(v)}`, note: L.fontNote, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; L.addRecentFont(v); O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, 'Font'); G().paint(); } }, o)),
+    size: (o) => ui.combo(Object.assign({ id: 'fontsize', width: 42, tip: 'Font Size', value: () => String((curStyle().font || {}).sz || 10), options: () => L.SIZE_LIST, onChange: (v) => { const n = parseFloat(v); if (!(n >= 1 && n <= 409)) { ui.msg('The number must be between 1 and 409.', { icon: 'warn' }); return; } if (G().guardProtect('formatCells')) return; O.format(sh(), G().ranges(), { font: { sz: n } }, 'Font Size'); O.tx(wb(), 'AutoFit', () => { for (const r of A.selRows()) O.autoRow(sh(), r); }); G().paint(); } }, o)),
+    zoom: (o) => ui.combo(Object.assign({ id: 'zoombox', width: 52, tip: 'Zoom', value: () => (sh().view.zoom || 100) + '%', options: () => ['200%', '100%', '75%', '50%', '25%', 'Selection'], onChange: (v) => { if (/^sel/i.test(v)) { A.zoomToSelection(); return; } const n = parseInt(v, 10); if (n >= 10 && n <= 400) G().setZoom(n); else ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); } }, o)),
+  };
+  A.menus = {
+    autoSum: (at) => ui.openMenu([
+      { label: '&Sum', run: () => A.autoSum('SUM') }, { label: '&Average', run: () => A.autoSum('AVERAGE') }, { label: '&Count', run: () => A.autoSum('COUNT') }, { label: '&Max', run: () => A.autoSum('MAX') }, { label: 'M&in', run: () => A.autoSum('MIN') }, '-', { label: 'More &Functions...', run: () => L.dlg.insertFunction() },
+    ], at),
+    fill: (at, el) => ui.colorMenu(el, { mode: 'fill', grid: true }, (c) => { if (c.none) A.applyFill(null); else if (typeof c === 'string') { A.lastFill = c; A.applyFill(c); } ui.refresh(); }),
+    fontColor: (at, el) => ui.colorMenu(el, { mode: 'font', grid: true }, (c) => { if (c.auto) A.applyFontColor(null); else if (typeof c === 'string') { A.lastFontColor = c; A.applyFontColor(c); } ui.refresh(); }),
+    borders: (at, el) => borderPalette(el),
+    draw: (at) => ui.openMenu([{ label: '&Bring to Front', run: () => L.drawing.order('front') }, { label: '&Send to Back', run: () => L.drawing.order('back') }], at),
+  };
   function buildToolbars() {
     const host = L.$('#toolbars');
     host.textContent = '';
-    const fontCombo = ui.combo({ id: 'fontname', width: 128, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.fontSections({ major: wb().theme?.major, minor: wb().theme?.minor }), preview: (v) => `font-family:${LY.fontStack(v)}`, note: L.fontNote, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; L.addRecentFont(v); O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, 'Font'); G().paint(); } });
-    const sizeCombo = ui.combo({ id: 'fontsize', width: 42, tip: 'Font Size', value: () => String((curStyle().font || {}).sz || 10), options: () => L.SIZE_LIST, onChange: (v) => { const n = parseFloat(v); if (!(n >= 1 && n <= 409)) { ui.msg('The number must be between 1 and 409.', { icon: 'warn' }); return; } if (G().guardProtect('formatCells')) return; O.format(sh(), G().ranges(), { font: { sz: n } }, 'Font Size'); O.tx(wb(), 'AutoFit', () => { for (const r of A.selRows()) O.autoRow(sh(), r); }); G().paint(); } });
-    const zoomCombo = ui.combo({ id: 'zoombox', width: 52, tip: 'Zoom', value: () => (sh().view.zoom || 100) + '%', options: () => ['200%', '100%', '75%', '50%', '25%', 'Selection'], onChange: (v) => { if (/^sel/i.test(v)) { A.zoomToSelection(); return; } const n = parseInt(v, 10); if (n >= 10 && n <= 400) G().setZoom(n); else ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); } });
-    const sumSplit = ui.tbSplit('autoSum', (at) => ui.openMenu([
-      { label: '&Sum', run: () => A.autoSum('SUM') }, { label: '&Average', run: () => A.autoSum('AVERAGE') }, { label: '&Count', run: () => A.autoSum('COUNT') }, { label: '&Max', run: () => A.autoSum('MAX') }, { label: 'M&in', run: () => A.autoSum('MIN') }, '-', { label: 'More &Functions...', run: () => L.dlg.insertFunction() },
-    ], at));
-    const fillSplit = ui.tbSplit('fillColorApply', (at, el) => ui.colorMenu(el, { mode: 'fill', grid: true }, (c) => { if (c.none) A.applyFill(null); else if (typeof c === 'string') { A.lastFill = c; A.applyFill(c); } ui.refresh(); }));
-    const fontSplit = ui.tbSplit('fontColorApply', (at, el) => ui.colorMenu(el, { mode: 'font', grid: true }, (c) => { if (c.auto) A.applyFontColor(null); else if (typeof c === 'string') { A.lastFontColor = c; A.applyFontColor(c); } ui.refresh(); }));
-    const borderSplit = ui.tbSplit('bordersApply', (at, el) => borderPalette(el));
+    const fontCombo = A.parts.font(), sizeCombo = A.parts.size(), zoomCombo = A.parts.zoom();
+    const sumSplit = ui.tbSplit('autoSum', A.menus.autoSum);
+    const fillSplit = ui.tbSplit('fillColorApply', A.menus.fill);
+    const fontSplit = ui.tbSplit('fontColorApply', A.menus.fontColor);
+    const borderSplit = ui.tbSplit('bordersApply', A.menus.borders);
     TB.standard = ui.toolbar('standard', 'Standard', ['newBook', 'open', 'save', '|', 'printQuick', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'formatPainter', '|', 'undo', 'redo', '|', 'hyperlink', sumSplit, 'sortAsc', 'sortDesc', '|', 'chartWizard', ui.tbButton('tb_drawing', { icon: 'drawing' }), zoomCombo, '|', 'help']);
     TB.formatting = ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, '|', 'bold', 'italic', 'underline', '|', 'alignLeft', 'alignCenter', 'alignRight', 'mergeCenter', '|', 'currencyStyle', 'percentStyle', 'commaStyle', 'incDecimal', 'decDecimal', '|', 'decIndent', 'incIndent', '|', borderSplit, fillSplit, fontSplit]);
-    TB.borders = ui.toolbar('borders', 'Borders', [ui.tbSplit('bordersApply', (at, el) => borderPalette(el)), ui.tbButton('borderNone', { icon: 'bordersNone' }), ui.tbButton('borderOutline', { icon: 'bordersOut' })]);
+    TB.borders = ui.toolbar('borders', 'Borders', [ui.tbSplit('bordersApply', A.menus.borders), ui.tbButton('borderNone', { icon: 'bordersNone' }), ui.tbButton('borderOutline', { icon: 'bordersOut' })]);
     TB.auditing = ui.toolbar('auditing', 'Formula Auditing', ['traceError', '|', 'tracePrecedents', 'traceDependents', 'removeArrows', '|', 'insertComment', 'validation', 'circleInvalid', 'clearCircles', '|', 'watchWindow', 'evaluateFormula']);
     TB.reviewing = ui.toolbar('reviewing', 'Reviewing', ['insertComment', 'showHideComment', 'deleteComment', '|', 'showComments']);
     TB.list = ui.toolbar('list', 'List', [ui.tbDrop('&List', null, (at) => ui.openMenu(['insertRows', 'insertCols', '-', 'sortDlg', 'autoFilter', '-', 'totalRow', 'convertToRange'], at)), 'totalRow']);
     TB.chart = ui.toolbar('chart', 'Chart', [ui.tbDrop('Chart Type', 'chart', (at) => L.chartWizard && L.chartWizard.typeMenu(at)), ui.tbButton('formatObject', { label: 'Format' })]);
-    TB.drawing = ui.toolbar('drawing', 'Drawing', [ui.tbDrop('D&raw', 'draw', (at) => ui.openMenu([{ label: '&Bring to Front', run: () => L.drawing.order('front') }, { label: '&Send to Back', run: () => L.drawing.order('back') }], at)), '|',
+    TB.drawing = ui.toolbar('drawing', 'Drawing', [ui.tbDrop('D&raw', 'draw', A.menus.draw), '|',
       ui.tbButton('insertShape', { icon: 'rect' }), ui.tbButton('insertTextBox'), ui.tbButton('insertPicture'), '|', ui.tbButton('fillColorApply')]);
     const row1 = h('div', { class: 'tb-row' }), row2 = h('div', { class: 'tb-row' });
     row1.append(TB.standard, TB.formatting);
@@ -543,6 +554,12 @@
     } }], { left: r.left, bottom: r.bottom }, { cls: 'grid-menu' });
   }
   A.toolbarVisible = (id) => { const v = A.opts.toolbars[id]; if (v === 'auto') return id === 'chart' ? !!(G().selectedObject() && G().selectedObject().kind === 'chart') : id === 'picture' ? !!(G().selectedObject() && G().selectedObject().kind === 'image') : id === 'list' ? !!A.tableAt() : false; return !!v; };
+  /** what is selected, for the ribbon's contextual tabs: 'chart', 'picture', 'shape', 'list' */
+  A.inContext = (k) => {
+    const o = G().selectedObject();
+    if (k === 'list') return !!A.tableAt();
+    return !!o && (k === 'chart' ? o.kind === 'chart' : k === 'picture' ? o.kind === 'image' : k === 'shape' ? o.kind === 'shape' : false);
+  };
   A.toggleToolbar = (id, force) => { const cur = A.toolbarVisible(id); A.opts.toolbars[id] = force != null ? force : !cur; A.updateToolbars(); A.saveOpts(); };
   A.updateToolbars = function () {
     for (const id in TB) { const v = A.toolbarVisible(id); TB[id].hidden = !v; }
@@ -1393,6 +1410,7 @@
     buildMenus();
     buildShortcuts();
     buildToolbars();
+    L.ribbonUI.init();
     buildStatus();
     buildTabNav();
     buildNameBox();

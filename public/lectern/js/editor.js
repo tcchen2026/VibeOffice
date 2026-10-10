@@ -128,6 +128,7 @@
     el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up);
   }
 
+  L.onLook(() => { if (E.rulerH) E.drawRulers(); });   /* the canvas follows the look */
   E.drawRulers = function () {
     const show = !!(L.app && L.app.opts.ruler) && E.view !== 'sorter';
     E.rulerH.hidden = E.rulerV.hidden = !show;
@@ -142,11 +143,11 @@
       c.style.width = size + 'px'; c.style.height = '18px';
       const g = c.getContext('2d');
       g.scale(dpr, dpr);
-      g.fillStyle = '#fff'; g.fillRect(0, 0, size, 18);
+      g.fillStyle = L.lookColor('ruler', '#fff'); g.fillRect(0, 0, size, 18);
       const off = (horiz ? E.ox - E.scroller.scrollLeft : E.oy - E.scroller.scrollTop);
-      g.fillStyle = '#c5d6f3';
+      g.fillStyle = L.lookColor('ruler-off-2', '#c5d6f3');
       g.fillRect(0, 0, off, 18); g.fillRect(off + len * s, 0, size, 18);
-      g.strokeStyle = '#4b5d7e'; g.fillStyle = '#334'; g.font = '9px Tahoma, Verdana, sans-serif'; g.textAlign = 'center';
+      g.strokeStyle = L.lookColor('ruler-tick-2', '#4b5d7e'); g.fillStyle = L.lookColor('ruler-ink-2', '#334'); g.font = '9px Tahoma, Verdana, sans-serif'; g.textAlign = 'center';
       const mid = len / 2;
       for (let pt = 0; pt <= len + 0.1; pt += 9) {
         const x = Math.round(off + pt * s) + 0.5;

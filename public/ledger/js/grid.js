@@ -75,6 +75,7 @@
   G.refocus = G.focus;
 
   /* ------------------------------------------------------------ painting */
+  L.onLook(() => { L.render.lookColors(); G.paint(); });   /* headers and selection follow the look */
   G.paint = function (now) {
     dirty = true;
     if (now === true) { draw(); return; }

@@ -329,6 +329,33 @@
     wrapText: `${lines(2, 3, 12, 1, 0)}<path d="M2 7.5h9a2 2 0 010 4H8" fill="none" stroke="${K}"/><path d="M9 10l-1.5 1.5L9 13" fill="none" stroke="${K}"/>${lines(2, 13, 5, 1, 0)}`,
     orientation: `${txt(2, 14, 'ab', 7, K, 'normal')}<path d="M6 12L13 3" stroke="${B}" stroke-width="1.3"/><path d="M13.5 2.3l-.3 3-2.4-1.6z" fill="${B}"/>`,
   });
+  /* commands the ribbon shows that had no toolbar icon (common/ribbon.js) */
+  Object.assign(I, {
+    bookmark: `${pg()}<path d="M8.5 1.5v6.5l1.6-1.5 1.6 1.5V1.5z" fill="${B2}" stroke="${B}" stroke-linejoin="round"/>`,
+    crossRef: `${pg()}${tl(4, 4.5, 7, 2, 2.5)}${arrow('M4.5 11.5h6M8.5 9.5l2 2-2 2')}`,
+    field: `<rect x="1.5" y="4.5" width="13" height="7" fill="#e4e4e4" stroke="${GR}"/>${txt(3.4, 10.4, '{ }', 6.5, K)}`,
+    object: `<rect x="1.5" y="2.5" width="13" height="11" fill="#fff" stroke="#556"/><rect x="4.5" y="5.5" width="7" height="5" fill="${LB}" stroke="${B}"/><path d="M4.5 10.5l2.5-3 1.5 1.5 1-1 2 2.5" fill="none" stroke="${G}"/>`,
+    insertFile: `${page(4, 1, 11, 14)}${tl(6, 5, 6, 3, 2.5)}${arrow('M0.8 10h5M4 8l2 2-2 2')}`,
+    themes: `<rect x="1.5" y="1.5" width="13" height="13" rx="1.5" fill="#fff" stroke="#556"/><rect x="3" y="3" width="4.5" height="4.5" fill="${B2}"/><rect x="8.5" y="3" width="4.5" height="4.5" fill="${G}"/><rect x="3" y="8.5" width="4.5" height="4.5" fill="${Y}"/><rect x="8.5" y="8.5" width="4.5" height="4.5" fill="${R}"/>`,
+    watermark: `${pg()}<path d="M4.5 12l7-8" stroke="#b9c7df" stroke-width="2.4" stroke-linecap="round"/>`,
+    hyphenation: `${txt(0.8, 11, 'ab', 7, K, 'normal')}<path d="M9.5 8.5h2.5" stroke="${B}" stroke-width="1.6"/>${txt(12.4, 11, 'c', 7, K, 'normal')}`,
+    tabStops: `<rect x="1.5" y="4.5" width="13" height="7" fill="#fff" stroke="#556"/><path d="M4 6v3.5h2.5M10 6v3.5h2.5" fill="none" stroke="${K}" stroke-width="1.2"/>`,
+    toc: `${pg()}<path d="M4 4.5h4M4 7.5h5M5 10.5h4" stroke="${K}"/><path d="M9 4.5h2.5M10 7.5h1.5M9.5 10.5h2" stroke="${GR}" stroke-dasharray="0.7 0.8"/>`,
+    endnote: `${pg()}${tl(4, 4, 8, 3, 2)}<path d="M4 10.5h4" stroke="${K}"/>${txt(4, 14.2, 'i', 5, B)}${lines(6.5, 13, 5, 1, 0, GR)}`,
+    caption: `<rect x="2.5" y="1.5" width="11" height="8" fill="${LB}" stroke="${B}"/><path d="M4 8l2.5-3 2 2 1.5-1.5 2 2.5" fill="none" stroke="${G}"/><path d="M3 12.5h10M3 14.5h6" stroke="${K}"/>`,
+    thesaurus: `<path d="M2.5 1.5h9.5v11H4a1.5 1.5 0 0 0-1.5 1.5z" fill="${LB}" stroke="${B}"/><path d="M2.5 14a1.5 1.5 0 0 1 1.5-1.5h8v2H4a1.5 1.5 0 0 1-1.5-.5" fill="#fff" stroke="${B}"/>${txt(5, 9.5, 'A', 6.5, B)}`,
+    language: `<circle cx="8" cy="8" r="6.2" fill="${LB}" stroke="${B}"/><path d="M1.8 8h12.4M8 1.8c-2.6 3.2-2.6 9.2 0 12.4M8 1.8c2.6 3.2 2.6 9.2 0 12.4M3 4.8h10M3 11.2h10" fill="none" stroke="${B}" stroke-width=".8"/>`,
+    compare: `${page(1, 1, 9, 11)}${page(6, 4, 9, 11)}${tl(8, 8, 4.5, 3, 2)}`,
+    newWindow: `<rect x="1.5" y="2.5" width="11" height="9" fill="#fff" stroke="#556"/><path d="M1.5 4h11" stroke="${B2}" stroke-width="2"/><circle cx="12" cy="12" r="3.3" fill="${G}"/><path d="M12 10v4M10 12h4" stroke="#fff" stroke-width="1.3"/>`,
+    arrangeAll: `<rect x="1.5" y="1.5" width="13" height="6" fill="#fff" stroke="#556"/><path d="M1.5 2.8h13" stroke="${B2}" stroke-width="1.6"/><rect x="1.5" y="8.5" width="13" height="6" fill="#fff" stroke="#556"/><path d="M1.5 9.8h13" stroke="${B2}" stroke-width="1.6"/>`,
+    macros: `<rect x="1.5" y="2.5" width="13" height="11" fill="#fff" stroke="#556"/><path d="M6 5.2v5.6L11 8z" fill="${G}" stroke="#1f6f28" stroke-linejoin="round"/>`,
+    headingRows: `<rect x="1.5" y="2.5" width="13" height="11" fill="#fff" stroke="#556"/><rect x="2" y="3" width="12" height="3" fill="${B2}"/><path d="M1.5 9.5h13M6 6v7.5M10 6v7.5" stroke="#556" stroke-width=".8"/>`,
+    selectTable: `<rect x="2.5" y="3.5" width="11" height="9" fill="#fff" stroke="#556"/><path d="M2.5 6.5h11M2.5 9.5h11M6.5 3.5v9M10 3.5v9" stroke="#556" stroke-width=".7"/><rect x="0.5" y="1.5" width="15" height="13" fill="none" stroke="${B}" stroke-dasharray="1.5 1"/>`,
+    splitTable: `<rect x="1.5" y="1.5" width="13" height="5" fill="#fff" stroke="#556"/><rect x="1.5" y="9.5" width="13" height="5" fill="#fff" stroke="#556"/><path d="M6 1.5v5M10 1.5v5M6 9.5v5M10 9.5v5" stroke="#556" stroke-width=".7"/><path d="M0.5 8h15" stroke="${R}" stroke-dasharray="1.5 1"/>`,
+    autofit: `<rect x="1.5" y="3.5" width="13" height="9" fill="#fff" stroke="#556"/><path d="M6 3.5v9M10 3.5v9" stroke="#556" stroke-width=".7"/>${arrow('M3 8h10M4.5 6.5L3 8l1.5 1.5M11.5 6.5L13 8l-1.5 1.5')}`,
+    condFormat: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#556"/><path d="M1.5 5.5h13M1.5 10h13M6 1.5v13" stroke="#556" stroke-width=".7"/><rect x="7" y="2.5" width="6.5" height="2.2" fill="${G}"/><rect x="7" y="6.8" width="3.5" height="2.2" fill="${Y}"/><rect x="7" y="11.2" width="5" height="2.2" fill="${R}"/>`,
+    tableToText: `<rect x="1.5" y="1.5" width="6" height="6" fill="#fff" stroke="#556"/><path d="M4.5 1.5v6M1.5 4.5h6" stroke="#556" stroke-width=".7"/>${arrow('M8.5 4.5h3M10.5 3l1.5 1.5-1.5 1.5')}${lines(3, 10.5, 11, 3, 2)}`,
+  });
   /* content-placeholder palette icons are the toolbar icons drawn larger */
   I.ct_table = I.table; I.ct_chart = I.chart; I.ct_clipart = I.clipart; I.ct_picture = I.picture; I.ct_diagram = I.diagram; I.ct_media = I.movie;
   I.resetPicture = `${I.picture}<path d="M11.5 1.5a3.5 3.5 0 103.5 3.5" fill="none" stroke="${R}" stroke-width="1.3"/>`;

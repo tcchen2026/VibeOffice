@@ -2,6 +2,9 @@
 
 A Word 2003–style word processor written in plain HTML and vanilla JavaScript (no build step, no
 libraries). It reads and writes Office Open XML (`.docx`, `.docm`, `.dotx`, `.dotm`) files.
+In the suite's Paper 2016 look (Themes on the Start Center, or Tools ▸ Options ▸ General ▸ Theme) a
+ribbon with Word 2016's tabs (Home, Insert, Design, Layout, References, Mailings, Review, View and
+the tool tabs) takes the place of the menus and toolbars.
 
 ## Using it
 
@@ -16,9 +19,9 @@ The metric-compatible fonts (see *Rendering notes*) are served with the site fro
 
 | Feature | How it works |
 | --- | --- |
-| Spelling (as you type and Tools ▸ Spelling and Grammar) | Word lists for English (U.S.) and English (U.K.) in `common/dict/en_US.words` and `common/dict/en_GB.words`, expanded from the Hunspell/SCOWL dictionaries and ranked by word frequency so suggestions come out in a sensible order. Unknown words get red wavy underlines (CSS Custom Highlight API); right-click for suggestions, Ignore All and Add to Dictionary. Underlines are off when a document opens (and the dictionary is not loaded): click the spelling icon in the status bar to check that document as you type, click again to stop. |
+| Spelling (as you type and Tools ▸ Spelling and Grammar) | Word lists for English (U.S.) and English (U.K.) in `common/dict/en_US.words` and `common/dict/en_GB.words`: SCOWL's own lists at size 60 (the ones its Hunspell en_US and en_GB-ise dictionaries are made from; `tools/dict.py` rebuilds the British one), ranked by word frequency so suggestions come out in a sensible order. Unknown words get red wavy underlines (CSS Custom Highlight API); right-click for suggestions, Ignore All and Add to Dictionary. Underlines are off when a document opens (and the dictionary is not loaded): click the spelling icon in the status bar to check that document as you type, click again to stop. |
 | Grammar | A rule checker for the mistakes Word 2003 flagged most often: repeated words, a/an, capitalisation at sentence start, spacing around punctuation, commonly confused words, simple subject–verb agreement. Green wavy underlines. |
-| Thesaurus and Research pane | `common/dict/en.thes`, built from the WordNet 3.1 thesaurus (MyThes format), with meanings grouped by part of speech, related words, antonyms and a Back history. "Search This Document" finds the word in the open document. |
+| Thesaurus and Research pane | `common/dict/en.thes`, built from the WordNet-based thesaurus LibreOffice ships (`th_en_US_v2`, MyThes format), with meanings grouped by part of speech, related words, antonyms and a Back history. "Search This Document" finds the word in the open document. |
 | Custom dictionary | Tools ▸ Options ▸ Spelling & Grammar; words you add are stored in the browser. |
 | Readability statistics | Tools ▸ Options ▸ Spelling & Grammar ▸ Readability Statistics (counts, Flesch Reading Ease, Flesch–Kincaid Grade Level, passive sentences). |
 
@@ -337,7 +340,7 @@ compatibility results are archived with the run history rather than mixed into c
 
 | File | What it does |
 | --- | --- |
-| `index.html` | Window chrome, CSS (Office 2003 Luna Blue), script order |
+| `index.html` | Window chrome and page CSS, script order |
 | `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF writer, downloads |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML package graph, identity reservations, AlternateContent capture and schema-order merges |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected documents: compound-file reader/writer, AES, ECMA-376 agile and standard encryption |
@@ -358,8 +361,9 @@ compatibility results are archived with the run history rather than mixed into c
 | `../common/dict/` | Spelling word lists, thesaurus, licences (shared with Ledger) |
 | `js/outline.js`, `js/rulers.js`, `js/panes.js` | Outline view, rulers, task panes (Research/Thesaurus, Clip Art, Styles…), Document Map, thumbnails, Print Preview, Reading Layout |
 | `js/mailmerge.js`, `js/templates.js` | Mail Merge wizard and toolbar, document templates |
-| `../common/ui.js`, `../common/icons.js`, `../common/luna.css` | Menus, toolbars, dialogs, colour pickers, original 16×16 icon set, the Luna look (shared) |
+| `../common/ui.js`, `../common/icons.js`, `../common/looks.css`, `../common/ui.css` | Menus, toolbars, dialogs, colour pickers, original 16×16 icon set, the looks (shared) |
 | `js/commands.js`, `js/dialogs*.js`, `js/find.js`, `js/app.js` | Command registry, all dialogs, Find and Replace, application controller |
+| `js/ribbon.js`, `../common/ribbon.js` | The Paper 2016 look's ribbon: Word's tabs and groups over Quire's commands ([suite.md](suite.md#the-ribbon)) |
 
 Quire is an independent program. Microsoft, Word and Office are trademarks of Microsoft Corporation;
 Quire is not affiliated with Microsoft.

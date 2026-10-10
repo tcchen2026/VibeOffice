@@ -1,6 +1,6 @@
 # Lectern 2003 — Web Edition
 
-A presentation editor modeled on PowerPoint 2003 (Luna Blue), written in plain HTML and vanilla JavaScript with no frameworks and no build step. It opens and saves real `.pptx` files.
+A presentation editor modeled on PowerPoint 2003, written in plain HTML and vanilla JavaScript with no frameworks and no build step. It opens and saves real `.pptx` files. In the suite's Paper 2016 look (Themes on the Start Center, or Tools ▸ Options ▸ General ▸ Theme) a ribbon with PowerPoint 2016's tabs (Home, Insert, Design, Transitions, Animations, Slide Show, Review, View and the tool tabs) takes the place of the menus and toolbars.
 
 Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testing.md)). The app is `public/lectern/`; every path below is relative to it, except `tools/`. It runs in any modern browser (Chrome, Edge, Firefox, Safari). Everything runs locally; nothing is uploaded, including the passwords of protected presentations.
 
@@ -8,7 +8,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 
 | File | Responsibility |
 |---|---|
-| `index.html` | Window chrome, Luna CSS, slide rendering styles, script order |
+| `index.html` | Window chrome CSS, slide rendering styles, script order |
 | `../common/core.js` | Utilities, colors, fonts, file I/O, media store, PDF writer (shared, see docs/suite.md) |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected presentations: ECMA-376 Agile and Standard encryption (AES, SHA-1/SHA-2), read and write |
 | `../common/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
@@ -22,7 +22,8 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | `../common/numfmt.js` | Excel number formats (dates, currency, percentages, sections) for chart axes and data labels |
 | `../common/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types with `js/chart-draw.js`) |
 | `js/chart-draw.js` | Drawing of charts that come from PowerPoint 2007 and later (see *Charts* below) |
-| `../common/ui.js`, `../common/icons.js`, `../common/clipart.js`, `../common/luna.css` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips |
+| `../common/ui.js`, `../common/icons.js`, `../common/clipart.js`, `../common/looks.css`, `../common/ui.css` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips |
+| `js/ribbon.js`, `../common/ribbon.js` | The Paper 2016 look's ribbon: PowerPoint's tabs and groups over Lectern's commands ([suite.md](suite.md#the-ribbon)) |
 | `js/editor.js` | Slide editing surface: select, move, resize, rotate, crop, draw, grid |
 | `js/textedit.js` | Rich text editing, bullets, levels, AutoCorrect, tables |
 | `js/dialogs.js` | Font, Bullets, Format AutoShape, Fill Effects, Header & Footer, Options (with Security), etc. |

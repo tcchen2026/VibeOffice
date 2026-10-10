@@ -1,6 +1,6 @@
 # VibeOffice
 
-A static web office suite in the style of Office 2003 (Luna Blue) that opens and saves real Office Open XML files, installable as a PWA. `public/` is the site root: one folder per app, and `public/index.html`, the Start Center (as in LibreOffice: Open File, Recent Files with thumbnails, Create File from Blank or a template, Apps: Quire, Ledger, Lectern). Its About text stays general, never naming another company's product.
+A static web office suite in the style of Office 2003 that opens and saves real Office Open XML files, installable as a PWA. `public/` is the site root: one folder per app, and `public/index.html`, the Start Center (as in LibreOffice: Open File, Recent Files with thumbnails, Create File from Blank or a template, Apps: Quire, Ledger, Lectern). Its About text stays general, never naming another company's product.
 
 | App | Folder | Kind | Files |
 |---|---|---|---|
@@ -8,7 +8,7 @@ A static web office suite in the style of Office 2003 (Luna Blue) that opens and
 | Ledger | `public/ledger/` | Spreadsheet | .xlsx/.xlsm/.xltx/.xltm, CSV/text, XML Spreadsheet 2003, HTML; PDF out |
 | Lectern | `public/lectern/` | Presentations | .pptx/.pptm/.ppsx/.ppsm/.potx/.potm; PDF, PNG, HTML out |
 
-Each app is classic `<script>` files (no ES modules) that attach to one global namespace, `window.L` (also `window.Quire` / `window.Ledger` / `window.Lectern`), loaded in the order listed in its `index.html`. `public/common/` holds what the apps share: the libraries and the Luna stylesheet (one copy each: core, ui, icons, zip, sha, crypto, geometry, metafile, charts, numfmt, dml, spell engine, clipart, `luna.css`), `suite.js` (`window.VO`: launching apps, Recent Files, the service worker) and the proofing dictionaries (`common/dict/`). See docs/suite.md.
+Each app is classic `<script>` files (no ES modules) that attach to one global namespace, `window.L` (also `window.Quire` / `window.Ledger` / `window.Lectern`), loaded in the order listed in its `index.html`. `public/common/` holds what the apps share: the libraries and the stylesheets (one copy each: core, ui, icons, zip, sha, crypto, geometry, metafile, charts, numfmt, dml, spell engine, clipart, ribbon, `looks.css`, `ui.css`), `suite.js` (`window.VO`: launching apps, Recent Files, the service worker) and the proofing dictionaries (`common/dict/`). See docs/suite.md.
 
 ## Docs
 
@@ -28,10 +28,12 @@ Keep them current: a change to an app's features, formats or source layout updat
 - **Important: interoperability with Microsoft Office.** A file saved here opens in Word, Excel and PowerPoint without a repair prompt, with everything the user did not change intact and their edits as they made them. The UI uses Office's names (fonts, features, file types), so it matches what Office shows.
 - Static files, vanilla JavaScript, no frameworks and no build step at run time. Ledger's `index.html` is generated: edit `tools/ledger/build/` and run `python3 tools/ledger/build/make.py`, never the output.
 - Everything runs in the browser; documents never leave the machine. No back end, no accounts.
-- Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`, fonts in `public/fonts/` (`tools/fonts.py`, with their licences).
+- Nothing from third-party servers: no CDNs, web fonts or analytics; vendored files go in `public/common/`, fonts in `public/fonts/` (`tools/fonts.py`), word lists in `public/common/dict/` (`tools/dict.py` for British English), each with their licences.
 - Compatibility is measured against files other people wrote (public test corpora), compared with outside references (the page or cell values the authoring application stored, LibreOffice, openpyxl, python-pptx), and the result is written down in the app's doc with numbers.
 - Saved files must open in the authoring application's newer versions and in LibreOffice; what an app cannot edit it keeps and writes back unchanged.
 - Follow the [Preservation contracts](docs/suite.md#preservation) for OOXML ownership, identities, edits, history/copy, drafts and loss reporting.
+- Chrome colours come only from the look settings in `public/common/looks.css` (Classic, Paper, Paper 2016; docs/suite.md, Looks), never hard-coded; document content keeps its own colours in every look. A new setting goes into every look (`node --test tools/looks.test.mjs`).
+- A new command also goes into the app's ribbon (`js/ribbon.js`, the Paper 2016 look), where Office 2016 has it (`node --test tools/ribbon.test.mjs`).
 - Shared code lives once, in `public/common/`; never copy it into an app. A change there is checked in all three apps (load each, and screenshot what it touches). What stays app-specific goes through the hooks in docs/suite.md (app config, `ui.hooks`, `L.icons.app`, …), not through app names inside common code.
 
 ## Office acceptance (lessons from the slide-6 repair)

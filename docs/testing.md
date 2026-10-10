@@ -32,6 +32,16 @@ Check after a change to `suite.js` or to an app's start, open or save code: `<ap
 
 Templates: `node tools/templates.mjs` opens every template (`<app>/?template=<id>`) and fails on a script error or a missing preview; look at the new previews in the Create File view.
 
+## Looks
+
+`node --test tools/looks.test.mjs` checks `public/common/looks.css`: every look sets every setting, every setting the chrome uses exists, `ui.css` has no colours of its own, and each page picks the look before its stylesheets load. A change to chrome CSS is also checked in every look: the browser profile keeps `localStorage`, so set the look in a step and set it back at the end (other runs would otherwise start in it):
+
+    node tools/shot.mjs ledger/ '[{"js":"VO.look.set(\"paper\")","wait":800,"shot":"paper.png"},{"js":"VO.look.set(\"classic\")"}]'
+
+Classic must not change when only the theme machinery changes: compare screenshots of the same scenes before and after, pixel for pixel.
+
+`node --test tools/ribbon.test.mjs` loads each app in the Paper 2016 look (through `tools/shot.mjs`, so Chromium must be running) and checks its ribbon: every command id exists, every button has an icon, and every menu command is reachable from the ribbon or File, apart from the exceptions listed in the test. Run it after adding or renaming a command. A ribbon change is also looked at in a narrow window (`--w 900`, where groups fold) and with KeyTips shown (`L.app.menuBar.openIndex(0)`).
+
 ## Quire: tools/quire/test/
 
 | | |

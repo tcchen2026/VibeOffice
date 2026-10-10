@@ -9,10 +9,10 @@
   const E = L.ed;
   const TE = L.te;
 
-  /* original application icon: a lectern carrying a slide */
+  /* original application icon, drawn like Quire's and Ledger's: a page with a tile carrying a presentation screen */
   L.icons.app = function (size) {
     const sz = size || 16;
-    return `<svg class="appico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 1.5h12v8H2z" fill="#fff8e1" stroke="#b5651d"/><path d="M3 3h10v2.2H3z" fill="#e8641c"/><path d="M4 6.6h5M4 8h7" stroke="#b5651d" stroke-width=".8"/><path d="M5 10h6l1 4.5H4z" fill="#8c5a2b" stroke="#5a3a1a"/><path d="M3 14.5h10" stroke="#5a3a1a" stroke-width="1.2"/></svg>`;
+    return `<svg class="appico" width="${sz}" height="${sz}" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h8l3 3v10h-11z" fill="#fff" stroke="#a8471a"/><path d="M11.5 1.5v3h3" fill="#fbe3d6" stroke="#a8471a"/><rect x="1.5" y="4.5" width="7" height="8" fill="#d2602a" stroke="#93401a"/><path d="M2.9 6.3h4.2v3.1H2.9z" fill="none" stroke="#fff" stroke-width="1.1"/><path d="M5 9.4v1.4M3.7 11.3l1.3-.9 1.3.9" fill="none" stroke="#fff" stroke-width="1"/><path d="M9.8 6.8h3.6v2.7H9.8z" fill="none" stroke="#c99a7e"/><path d="M10 11.5h3.2" stroke="#c99a7e"/></svg>`;
   };
   /* the slide editor around commands, toolbar boxes and dialogs (common/ui.js) */
   ui.hooks = {
@@ -179,25 +179,36 @@
       ui.refresh();
     });
   }
+  /* the toolbars' boxes and menus, also used by the ribbon (js/ribbon.js): each call makes a new box */
+  A.parts = {
+    font: (o) => ui.combo(Object.assign({ id: 'tb-font', width: 136, tip: 'Font', options: () => { const d = E.slide() && L.pres.designs[E.slide().design]; return L.fontSections({ major: d?.fonts?.major, minor: d?.fonts?.minor }); }, preview: (v) => `font-family:${L.fontStack(v)};font-size:13px`, note: L.fontNote, listCls: 'fonts', value: () => { const s = textState(); return s ? s.font : ''; }, enabled: () => !!textState(), onChange: (v) => A.setFontName(v) }, o)),
+    size: (o) => ui.combo(Object.assign({ id: 'tb-size', width: 44, tip: 'Font Size', options: () => L.SIZE_LIST, value: () => { const s = textState(); return s && s.sz ? String(L.round(s.sz, 1)) : ''; }, enabled: () => !!textState(), onChange: (v) => A.setFontSize(parseFloat(v)) }, o)),
+    zoom: (o) => ui.combo(Object.assign({ id: 'tb-zoom', width: 52, tip: 'Zoom', options: () => ['Fit', '400%', '200%', '150%', '100%', '75%', '66%', '50%', '33%', '25%'], value: () => (E.zoom === 'fit' ? 'Fit' : E.zoomPct() + '%'), onChange: (v) => { if (/fit/i.test(v)) E.setZoom('fit'); else { const n = parseFloat(v); if (n > 0) E.setZoom(n / 100); } } }, o)),
+  };
+  A.menus = {
+    color: (kind) => colorDD(kind), autoShapes: (r) => openAutoShapes(r), draw: (r) => drawMenu(r), lineStyle: (r) => lineStyleMenu(r), dash: (r) => dashMenu(r), arrow: (r) => arrowMenu(r), shadow: (r) => shadowMenu(r),
+    picColor: (r) => ui.openMenu([{ label: '&Automatic', run: () => A.picMode('') }, { label: '&Grayscale', run: () => A.picMode('gray') }, { label: '&Black & White', run: () => A.picMode('bw') }, { label: '&Washout', run: () => A.picMode('wash') }], r),
+    tableBorders: (r) => ui.openMenu([{ custom: (close) => { const g = h('div', { class: 'shape-grid', style: 'grid-template-columns:repeat(4,24px)' }); for (const [k, ic, n] of [['all', 'bordersAll', 'All Borders'], ['out', 'bordersOut', 'Outside Borders'], ['in', 'bordersIn', 'Inside Borders'], ['none', 'bordersNone', 'No Border'], ['t', 'bordersTop', 'Top Border'], ['b', 'bordersBottom', 'Bottom Border'], ['l', 'bordersLeft', 'Left Border'], ['r', 'bordersRight', 'Right Border']]) { const bt = h('button', { type: 'button', 'data-tip': n, 'aria-label': n, html: L.icons.get(ic) }); bt.addEventListener('click', () => { close(); A.tableBorders(k); }); g.appendChild(bt); } return g; } }], r),
+    tableFill: (r, b) => ui.colorMenu(b, { mode: 'fill', effects: true }, async (v) => { if (v && v.none) A.tableFill({ t: 'none' }); else if (v && v.effects) { const f = await L.dlg.fillEffects({ t: 'solid', c: 'accent1' }); if (f) A.tableFill(f); } else if (typeof v === 'string') A.tableFill({ t: 'solid', c: v, a: 1 }); }),
+    waShape: (r) => ui.openMenu(L.render.WARPS.map(([k, n]) => ({ label: n, run: () => A.waSet({ warp: k }), checked: () => { const s = E.primary(); return !!(s && s.wa && (s.wa.warp || 'textPlain') === k); } })), r),
+  };
   function buildToolbars() {
     const host = L.$('#toolbars');
-    const fontCombo = ui.combo({ id: 'tb-font', width: 136, tip: 'Font', options: () => { const d = E.slide() && L.pres.designs[E.slide().design]; return L.fontSections({ major: d?.fonts?.major, minor: d?.fonts?.minor }); }, preview: (v) => `font-family:${L.fontStack(v)};font-size:13px`, note: L.fontNote, listCls: 'fonts', value: () => { const s = textState(); return s ? s.font : ''; }, enabled: () => !!textState(), onChange: (v) => A.setFontName(v) });
-    const sizeCombo = ui.combo({ id: 'tb-size', width: 44, tip: 'Font Size', options: () => L.SIZE_LIST, value: () => { const s = textState(); return s && s.sz ? String(L.round(s.sz, 1)) : ''; }, enabled: () => !!textState(), onChange: (v) => A.setFontSize(parseFloat(v)) });
-    const zoomCombo = ui.combo({ id: 'tb-zoom', width: 52, tip: 'Zoom', options: () => ['Fit', '400%', '200%', '150%', '100%', '75%', '66%', '50%', '33%', '25%'], value: () => (E.zoom === 'fit' ? 'Fit' : E.zoomPct() + '%'), onChange: (v) => { if (/fit/i.test(v)) E.setZoom('fit'); else { const n = parseFloat(v); if (n > 0) E.setZoom(n / 100); } } });
+    const fontCombo = A.parts.font(), sizeCombo = A.parts.size(), zoomCombo = A.parts.zoom();
     A.toolbarsEl = {
       standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', '|', 'print', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'painter', '|', 'undo', 'redo', '|', 'insertChart', 'insertTable', ui.tbButton('tb_tables', { icon: 'tablesBorders' }), 'hyperlink', '|', 'expandAll', 'showFormatting', 'showGrid', ui.tbSplit('viewGray', (r) => ui.openMenu(['viewColor', 'viewGray', 'viewBW'], r)), zoomCombo, 'help']),
       formatting: ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, 'bold', 'italic', 'underline', 'shadowText', '|', 'alignLeft', 'alignCenter', 'alignRight', '|', 'numbering', 'bullets', '|', 'growFont', 'shrinkFont', '|', 'promote', 'demote', '|', ui.tbSplit('fontColor', colorDD('font')), '|', ui.tbButton('slideDesign', { label: 'Design' }), ui.tbButton('newSlide', { label: 'New Slide' })]),
       outlining: ui.toolbar('outlining', 'Outlining', ['promote', 'demote', 'moveParaUp', 'moveParaDown', '|', 'summarySlide', 'showFormatting']),
-      picture: ui.toolbar('picture', 'Picture', ['insertPicture', ui.tbDrop('', 'colorPic', (r) => ui.openMenu([{ label: '&Automatic', run: () => A.picMode('') }, { label: '&Grayscale', run: () => A.picMode('gray') }, { label: '&Black & White', run: () => A.picMode('bw') }, { label: '&Washout', run: () => A.picMode('wash') }], r), 'Color'), 'picMoreContrast', 'picLessContrast', 'picMoreBright', 'picLessBright', '|', 'picCrop', 'rotateLeft', ui.tbDrop('', 'lineStyle', lineStyleMenu, 'Line Style'), '|', ui.tbButton('formatObject', { icon: 'formatPicture' }), 'picTransparent', 'picReset']),
+      picture: ui.toolbar('picture', 'Picture', ['insertPicture', ui.tbDrop('', 'colorPic', A.menus.picColor, 'Color'), 'picMoreContrast', 'picLessContrast', 'picMoreBright', 'picLessBright', '|', 'picCrop', 'rotateLeft', ui.tbDrop('', 'lineStyle', lineStyleMenu, 'Line Style'), '|', ui.tbButton('formatObject', { icon: 'formatPicture' }), 'picTransparent', 'picReset']),
       tables: ui.toolbar('tables', 'Tables and Borders', [ui.tbDrop('', 'dashStyle', (r) => ui.openMenu([{ custom: (close) => listPanel(L.dlg.DASHES.map(([k, n]) => ({ html: lineSVG(2, (L.render.dashArray(k, 2) || '').replace(/,/g, ' ')), label: n, run: () => { A.tblBorder.dash = k; } })), close) }], r), 'Border Style'),
         ui.tbDrop('', 'lineStyle', (r) => ui.openMenu([{ custom: (close) => listPanel(WEIGHTS.map((w) => ({ html: lineSVG(Math.max(0.5, w * 1.33)), label: w + ' pt', run: () => { A.tblBorder.w = w; } })), close) }], r), 'Border Width'),
         ui.tbDrop('', 'lineColor', (r, b) => ui.colorMenu(b, { mode: 'plain', grid: true }, (v) => { if (typeof v === 'string') A.tblBorder.c = v; }), 'Border Color'),
-        ui.tbDrop('', 'bordersAll', (r) => ui.openMenu([{ custom: (close) => { const g = h('div', { class: 'shape-grid', style: 'grid-template-columns:repeat(4,24px)' }); for (const [k, ic, n] of [['all', 'bordersAll', 'All Borders'], ['out', 'bordersOut', 'Outside Borders'], ['in', 'bordersIn', 'Inside Borders'], ['none', 'bordersNone', 'No Border'], ['t', 'bordersTop', 'Top Border'], ['b', 'bordersBottom', 'Bottom Border'], ['l', 'bordersLeft', 'Left Border'], ['r', 'bordersRight', 'Right Border']]) { const bt = h('button', { type: 'button', 'data-tip': n, 'aria-label': n, html: L.icons.get(ic) }); bt.addEventListener('click', () => { close(); A.tableBorders(k); }); g.appendChild(bt); } return g; } }], r), 'Borders'),
-        ui.tbDrop('', 'fillColor', (r, b) => ui.colorMenu(b, { mode: 'fill', effects: true }, async (v) => { if (v && v.none) A.tableFill({ t: 'none' }); else if (v && v.effects) { const f = await L.dlg.fillEffects({ t: 'solid', c: 'accent1' }); if (f) A.tableFill(f); } else if (typeof v === 'string') A.tableFill({ t: 'solid', c: v, a: 1 }); }), 'Fill Color'),
+        ui.tbDrop('', 'bordersAll', A.menus.tableBorders, 'Borders'),
+        ui.tbDrop('', 'fillColor', A.menus.tableFill, 'Fill Color'),
         '|', ui.tbDrop('Table', null, (r) => ui.openMenu(['insertTable', '-', 'colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', '-', 'selectTable', '-', 'tableBordersFill'], r), 'Table'),
         'mergeCells', 'splitCell', '|', 'cellTop', 'cellMiddle', 'cellBottom', '|', 'distRows', 'distCols']),
       wordart: ui.toolbar('wordart', 'WordArt', ['insertWordArt', ui.tbButton('wordartEdit', { label: 'Edit Text...' }), 'wordartGallery', ui.tbButton('formatObject', { icon: 'formatPicture' }),
-        ui.tbDrop('', 'waShape', (r) => ui.openMenu(L.render.WARPS.map(([k, n]) => ({ label: n, run: () => A.waSet({ warp: k }), checked: () => { const s = E.primary(); return !!(s && s.wa && (s.wa.warp || 'textPlain') === k); } })), r), 'WordArt Shape'),
+        ui.tbDrop('', 'waShape', A.menus.waShape, 'WordArt Shape'),
         'waSameHeight', 'waVertical',
         ui.tbDrop('', 'alignCenter', (r) => ui.openMenu([['l', '&Left Align'], ['ctr', '&Center'], ['r', '&Right Align']].map(([k, n]) => ({ label: n, run: () => A.waSet({ algn: k }) })), r), 'WordArt Alignment'),
         ui.tbDrop('', 'charSpacing', (r) => ui.openMenu([[-3, '&Very Tight'], [-1.5, '&Tight'], [0, '&Normal'], [2, '&Loose'], [4, 'V&ery Loose']].map(([k, n]) => ({ label: n, run: () => A.waSet({ spc: k }) })), r), 'WordArt Character Spacing')]),
@@ -237,6 +248,12 @@
     if (id === 'wordart') return sel.some((s) => s.type === 'wordart');
     return false;
   }
+  /** what is selected or shown, for the ribbon's contextual tabs: 'picture', 'table', 'wordart', 'shape', 'master' */
+  A.inContext = (k) => {
+    if (k === 'master') return A.view === 'master';
+    if (k === 'shape') { const p = E.primary && E.primary(); return !!(p && !p.wa && ['shape', 'line', 'group', 'text'].includes(p.type)); }
+    return ctxToolbar(k === 'table' ? 'tables' : k);
+  };
   A.toggleToolbar = (id) => { const v = A.opts.toolbars[id]; A.opts.toolbars[id] = v === true ? (['picture', 'tables', 'wordart'].includes(id) ? false : false) : true; A.saveOpts(); A.updateToolbars(); };
   A.updateToolbars = function () {
     if (!A.toolbarsEl) return;
@@ -2098,6 +2115,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     if (window.VO) VO.setIcon(L.icons.app(32));
     buildMenus();
     buildToolbars();
+    L.ribbonUI.init();
     buildStatus();
     /* opened from the Start Center: a template, or blank (a new presentation, or to open a file into); else the sample */
     const launch = window.VO && VO.launch;

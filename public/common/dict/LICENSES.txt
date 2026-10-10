@@ -1,11 +1,14 @@
 Offline proofing word lists and thesaurus (Quire, Ledger)
 ==========================================================
 
-en_US.words and en_GB.words are expanded from the Hunspell English dictionaries distributed with
-LibreOffice (https://github.com/LibreOffice/dictionaries, en/), which are derived from SCOWL.
-Word commonness levels come from the English Speller Database (SCOWL, https://github.com/en-wl/wordlist).
+en_US.words and en_GB.words are SCOWL 2020.12.07's own word lists at size 60, accents stripped
+(mk-list en_US 60 and mk-list en_GB-ise 60, http://wordlist.aspell.net): the lists SCOWL's Hunspell
+en_US and en_GB-ise dictionaries are made from (LibreOffice ships the en_US one). en_GB.words is
+rebuilt by tools/dict.py. Word commonness levels come from the English Speller Database (SCOWL,
+https://github.com/en-wl/wordlist); British-only spellings take theirs from their SCOWL size.
 
-en.thes is a trimmed copy of th_en_US_v2.dat from the same LibreOffice package, derived from WordNet.
+en.thes is a trimmed copy of th_en_US_v2.dat from LibreOffice's English dictionary package
+(https://github.com/LibreOffice/dictionaries, en/), derived from WordNet.
 
 ----- SCOWL / English Speller Database -----
 Copyright 2000-2026 by Kevin Atkinson
@@ -39,7 +42,7 @@ Australian English, then no additional copyright applies and including the
 notice before the === is sufficient.
 
 
------ Hunspell en_US / en_GB dictionaries (LibreOffice) -----
+----- SCOWL 2020.12.07 (its Copyright file) -----
 The collective work is Copyright 2000-2018 by Kevin Atkinson as well
 as any of the copyrights mentioned below:
 

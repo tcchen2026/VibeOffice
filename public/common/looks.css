@@ -1,0 +1,211 @@
+/* VibeOffice looks: every colour, font and shadow of the suite's chrome (menus, toolbars, task panes,
+ * dialogs, status bar, rulers, headers) as named settings; ui.css and each app's CSS use only these.
+ * Document content (pages, cells, slides, comments, revisions), icons and colour swatches are never
+ * themed. A look is one block keyed by data-look="…" (on <html>, set before first paint by VO.look; on any
+ * element for a preview, as the Start Center's Themes dialog does); Classic is also the default. To add a look, copy the Classic block and change the values. */
+:root, [data-look="classic"] {
+  color-scheme: light;
+  --theme-color: #2a64c8;   /* the browser's own bar (meta theme-color) */
+  --tray-radius: 3px; --ctl-radius: 2px;   /* toolbars and panels; buttons and fields */
+  --ui-font: Tahoma, "Segoe UI", Verdana, Geneva, "DejaVu Sans", sans-serif;
+  --ui-size: 11px;
+  /* command bars and toolbars */
+  --tb-a: #E3EFFF; --tb-b: #CBE1FC; --tb-c: #7BA4E0; --tb-edge: #5e85c6;
+  --dock-a: #9EBEF5; --dock-b: #C4DAFA; --chrome-line: #6f93cf;
+  --tb-border: #3B619C; --grip: #274176; --grip-hi: #fff;
+  --hot-a: #FFF4CC; --hot-b: #FFD091; --hot-border: #000080;
+  --press-a: #FE803E; --press-b: #FFDF9A;
+  --chk-a: #FFDF9A; --chk-b: #FFA64C;
+  --combo-border: #7B9EBD; --combo-sep: #c0d0ea; --hint-ink: #6b6b6b;
+  /* menus */
+  --menu-border: #002D96; --menu-hot: #FFEEC2; --menu-open: #93B5E7; --menu-face: #FCFCF9;
+  --sep-dark: #6A8CCB; --sep-light: #F1F9FF;
+  --head-ink: #1b3f7c; --head-bg: #e3e9f3; --head-line: #c6d2e6; --key-ink: #6d6d6d;
+  /* task pane and lists */
+  --pane-a: #EEF4FD; --pane-b: #D2E1F8; --pane-ink: #0B2E7C; --pane-link: #0B3FA8; --pane-line: #9db6e4;
+  --box-line: #a9bde3; --card-line: #c9d4ea; --row-line: #e3e9f5; --group-bg: #e8eef9;
+  --find-hit: #ffef8a;
+  /* text */
+  --ink: #000000; --ink-2: #222; --ink-3: #333; --ink-4: #444; --ink-5: #555; --ink-key: #223;
+  --muted: #4c5a72; --dis-ink: #8d8d8d; --dis-ink-2: #888;
+  /* surfaces, selection, grids */
+  --surface: #fff; --canvas: #9097A3; --work: #B7C6E2;
+  --sel: #316AC5; --sel-ink: #fff; --sel-line: #1b3d7a; --sel-soft: #c6d6f3; --sel-pale: #dce6f8; --sel-pale-2: #e8eefc;
+  --rule: #c5c5c5; --cell-line: #8a9bb8; --grid-line: #888; --grid-line-2: #e3e3e3; --sample-line: #b5b5b5; --bd-on: #ffe6a8;
+  --sheet-grid: #c0c0c0; --sheet-hdr-a: #f4f4f4; --sheet-hdr-b: #dcdcdc;
+  /* status bar */
+  --sb-sep: #8eaadb; --sb-sep-hi: #e7f0fd; --flag-off: #7e8ba3;
+  /* dialogs and their controls */
+  --dlg: #F2F5FA; --dlg-ink: #000; --field-border: #9DB0CE; --btn-border: #7C93BA;
+  --btn-a: #fff; --btn-b: #e7edf7; --btn-hot-b: #d6e5fa; --btn-press-a: #cfdff6; --btn-press-b: #e3ecfa; --btn-ring: #c3d5f2;
+  --btn-dis-ink: #a3a9b4; --btn-dis-line: #c9d1de; --btn-dis-bg: #f4f6fa;
+  --tab-a: #fbfcfe; --tab-b: #e4ebf6; --grp-line: #c8d3e6;
+  --spin-line: #b6c6e6; --spin-a: #f7faff; --spin-b: #c9dbf7; --spin-ink: #4d6185;
+  /* overlays and shadows */
+  --overlay: rgba(0,0,0,.08); --busy-veil: rgba(0,0,0,.1); --drop-veil: rgba(49,106,197,.18);
+  --shadow-c: rgba(0,0,0,.35); --dlg-shadow-c: rgba(16,36,80,.28);
+  --tip-bg: #ffffe1; --tip-line: #000; --tip-shadow-c: rgba(0,0,0,.25); --toast-shadow-c: rgba(0,0,0,.3);
+  /* app chrome: sheet tabs, split bars, scroll bars, print preview, dialog previews */
+  --face-2: #ECE9D8; --face-2-line: #a0a0a0; --sheet-tab-edge: #6b6b6b; --scroll-bg: #F4F4F0;
+  --split-hi: #fff; --split-mid: #c9c5b4; --split-lo: #a8a596; --split-lo-2: #888;
+  --preview-canvas: #8c8c8c; --preview-canvas-2: #808080; --preview-line: #919b9c;
+  --grp-line-2: #d0d0bf; --ctl-line: #aca899; --th-bg: #e9eef6; --th-line: #aaa; --col-line: #bbb;
+  --rule-2: #ccc; --cell-line-2: #ddd; --row-line-2: #eee; --swatch-line: #808080;
+  --sel-soft-2: #c6d6f2; --inverse: #000; --ink-6: #666; --ink-9: #999; --brand-ink: #1f3f7f;
+  --tip-link: #00c; --tip-shadow-2: rgba(0,0,0,.2);
+  --tab-line-2: #7a96c6; --tab2-a: #fdfdfd; --tab2-b: #e8eef9; --ol-ico-bar: #cfdcf3; --dd-line: #556; --sel-ink-2: #dfe8ff;
+  --thumb-line: #a3a3a3; --thumb-on: #3d6ec9; --thumb-sel: #8fb0e6; --page-shadow: #59657c; --preview-canvas-3: #8b96a8;
+  --card-line-2: #c9c9c9; --sample-line-2: #9a9a9a; --ink-7: #777;
+  /* Ledger's row and column headers and cell selection (drawn on a canvas) */
+  --hdr-a: #FFFFFF; --hdr-b: #E4ECF7; --hdr-line: #9EB6CE; --hdr-ink: #000000;
+  --hdr-sel-a: #FFE7A2; --hdr-sel-b: #F8C55E; --hdr-sel-line: #D7A43C; --hdr-all-a: #FFD58D; --hdr-all-b: #F5B54A;
+  --cell-sel: rgba(49, 74, 160, 0.20); --cell-sel-border: #000000;
+  /* Start Center and the New dialog */
+  --card-hot-border: #E3A23B; --card-thumb-bg: #f3f6fb; --card-thumb-line: #b8c7df; --start-on-b: #e6eefc; --start-rule: #a9c1ea;
+  --start-line: #c3d3ee; --error-ink: #a3300b; --badge-bg: #fde3c4; --badge-ink: #8a3b00; --rm-bg: rgba(255,255,255,.9);
+  --drop-bg: rgba(214,227,248,.85);
+  /* ribbon (looks with layout 'ribbon'; common/ribbon.js) */
+  --rb-bg: #C4DAFA; --rb-panel: #F3F7FE; --rb-line: #9DB6E4; --rb-tab-ink: #0B2E7C; --rb-tab-on-ink: #0B2E7C; --rb-tab-hot: #E3EFFF;
+  --rb-label-ink: #4c5a72; --rb-ctx: #A0620A; --rb-ctx-bg: #FFF4D6; --rb-file-ink: #0B2E7C;
+  /* rulers */
+  --white: #FFFFFF; --ruler: #FFFFFF; --ruler-off: #C9D6EE; --ruler-line: #8aa2c8; --tabsel-line: #6f87b3;
+  --ruler-mark-bg: #dfe8f7; --ruler-mark-line: #6a82ad;
+  --ruler-tick: #444; --ruler-ink: #222; --ruler-deftab: #777; --ruler-row: #7f95bd; --indent-fill: #e8eef9; --indent-line: #3b5a8c;
+  --ruler-off-2: #c5d6f3; --ruler-tick-2: #4b5d7e; --ruler-ink-2: #334;
+}
+
+/* Paper (and Paper 2016, the same with the ribbon): VibeOffice's own light look — warm paper chrome, one ink-teal accent, soft rounded shapes.
+   Values first; then the few shape rules a colour cannot express, all scoped to Paper. */
+[data-look="paper"], [data-look="paper2016"] {
+  --theme-color: #FAF8F4;
+  --tray-radius: 10px; --ctl-radius: 6px;
+  --ui-font: system-ui, "Segoe UI", "Helvetica Neue", Ubuntu, Cantarell, "DejaVu Sans", sans-serif;
+  --ui-size: 12px;
+  --p-paper: #FAF8F4; --p-paper-2: #F3F0EA; --p-line: #E2DDD4; --p-line-strong: #CFC8BC;
+  --p-accent: #0F6F74; --p-accent-ink: #0A5357; --p-accent-soft: #E2EFEE; --p-accent-mid: #C9E2E0;
+  --tb-a: #fff; --tb-b: #fff; --tb-c: #fff; --tb-edge: var(--p-line);
+  --dock-a: var(--p-paper); --dock-b: var(--p-paper); --chrome-line: var(--p-line);
+  --tb-border: var(--p-line); --grip: var(--p-line-strong); --grip-hi: transparent;
+  --hot-a: var(--p-paper-2); --hot-b: var(--p-paper-2); --hot-border: transparent;
+  --press-a: var(--p-accent-mid); --press-b: var(--p-accent-mid);
+  --chk-a: var(--p-accent-soft); --chk-b: var(--p-accent-soft);
+  --combo-border: var(--p-line); --combo-sep: transparent; --hint-ink: #7A7368;
+  --menu-border: var(--p-line); --menu-hot: var(--p-accent-soft); --menu-open: var(--p-accent-soft); --menu-face: #fff;
+  --sep-dark: var(--p-line); --sep-light: transparent;
+  --head-ink: #7A7368; --head-bg: transparent; --head-line: transparent; --key-ink: #7A7368;
+  --pane-a: var(--p-paper); --pane-b: var(--p-paper); --pane-ink: #3B372F; --pane-link: var(--p-accent); --pane-line: var(--p-line);
+  --box-line: var(--p-line); --card-line: var(--p-line); --row-line: var(--p-paper-2); --group-bg: var(--p-paper-2);
+  --find-hit: #F6E6A8;
+  --ink: #24211C; --ink-2: #2E2A24; --ink-3: #3B372F; --ink-4: #4A463F; --ink-5: #5E584E; --ink-key: #24211C;
+  --muted: #7A7368; --dis-ink: #B0A99D; --dis-ink-2: #A39C90;
+  --surface: #fff; --canvas: #E9E5DE; --work: #E9E5DE;
+  --sel: var(--p-accent); --sel-ink: #fff; --sel-line: var(--p-accent-ink); --sel-soft: var(--p-accent-mid);
+  --sel-pale: var(--p-accent-soft); --sel-pale-2: var(--p-accent-soft);
+  --rule: var(--p-line); --cell-line: var(--p-line-strong); --grid-line: var(--p-line-strong); --grid-line-2: #EFEBE4;
+  --sample-line: #D8D2C8; --bd-on: var(--p-accent-soft);
+  --sheet-grid: var(--p-line); --sheet-hdr-a: var(--p-paper); --sheet-hdr-b: var(--p-paper-2);
+  --sb-sep: var(--p-line); --sb-sep-hi: transparent; --flag-off: #B0A99D;
+  --dlg: #fff; --dlg-ink: #24211C; --field-border: var(--p-line-strong); --btn-border: var(--p-line-strong);
+  --btn-a: #fff; --btn-b: #fff; --btn-hot-b: var(--p-paper-2); --btn-press-a: var(--p-accent-soft); --btn-press-b: var(--p-accent-soft);
+  --btn-ring: transparent; --btn-dis-ink: #B5AFA5; --btn-dis-line: var(--p-line); --btn-dis-bg: #fff;
+  --tab-a: transparent; --tab-b: transparent; --grp-line: var(--p-line);
+  --spin-line: transparent; --spin-a: var(--p-paper); --spin-b: var(--p-paper); --spin-ink: #4A463F;
+  --overlay: rgba(40,32,20,.06); --busy-veil: rgba(40,32,20,.08); --drop-veil: rgba(15,111,116,.12);
+  --shadow-c: rgba(60,48,30,.16); --dlg-shadow-c: rgba(40,32,20,.22);
+  --tip-bg: #FFFDF6; --tip-line: var(--p-line-strong); --tip-shadow-c: rgba(60,48,30,.14); --toast-shadow-c: rgba(60,48,30,.16);
+  --face-2: var(--p-paper-2); --face-2-line: var(--p-line); --sheet-tab-edge: var(--p-line-strong); --scroll-bg: var(--p-paper);
+  --split-hi: #fff; --split-mid: var(--p-line); --split-lo: var(--p-line-strong); --split-lo-2: var(--p-line-strong);
+  --preview-canvas: #DDD8CF; --preview-canvas-2: #DDD8CF; --preview-line: var(--p-line-strong);
+  --grp-line-2: var(--p-line); --ctl-line: var(--p-line-strong); --th-bg: var(--p-paper-2); --th-line: var(--p-line-strong); --col-line: var(--p-line);
+  --rule-2: var(--p-line); --cell-line-2: #EFEBE4; --row-line-2: var(--p-paper-2); --swatch-line: #8C857A;
+  --sel-soft-2: var(--p-accent-mid); --inverse: var(--p-accent); --ink-6: #6B655B; --ink-9: #9A9388; --brand-ink: #24211C;
+  --tip-link: var(--p-accent); --tip-shadow-2: rgba(60,48,30,.12);
+  --tab-line-2: transparent; --tab2-a: transparent; --tab2-b: transparent; --ol-ico-bar: var(--p-accent-mid); --dd-line: var(--p-line-strong); --sel-ink-2: var(--p-accent-soft);
+  --thumb-line: var(--p-line-strong); --thumb-on: var(--p-accent); --thumb-sel: var(--p-accent-mid); --page-shadow: rgba(60,48,30,.18); --preview-canvas-3: #DDD8CF;
+  --card-line-2: var(--p-line); --sample-line-2: var(--p-line-strong); --ink-7: #8C857A;
+  --hdr-a: var(--p-paper); --hdr-b: var(--p-paper); --hdr-line: var(--p-line); --hdr-ink: #5E584E;
+  --hdr-sel-a: var(--p-accent-soft); --hdr-sel-b: var(--p-accent-soft); --hdr-sel-line: var(--p-accent); --hdr-all-a: var(--p-accent-mid); --hdr-all-b: var(--p-accent-mid);
+  --cell-sel: rgba(15,111,116,.14); --cell-sel-border: var(--p-accent);
+  --card-hot-border: var(--p-accent-mid); --card-thumb-bg: var(--p-paper-2); --card-thumb-line: var(--p-line); --start-on-b: var(--p-accent-soft); --start-rule: var(--p-line);
+  --start-line: var(--p-line); --error-ink: #A3300B; --badge-bg: #FCE7CF; --badge-ink: #8A3B00; --rm-bg: rgba(255,255,255,.9);
+  --drop-bg: rgba(226,239,238,.9);
+  --rb-bg: var(--p-paper); --rb-panel: #fff; --rb-line: var(--p-line); --rb-tab-ink: #4A463F; --rb-tab-on-ink: var(--p-accent-ink); --rb-tab-hot: var(--p-paper-2);
+  --rb-label-ink: #8C857A; --rb-ctx: #A85A1E; --rb-ctx-bg: #FBF0E4; --rb-file-ink: var(--p-accent);
+  --white: #fff; --ruler: #fff; --ruler-off: var(--p-paper-2); --ruler-line: var(--p-line); --tabsel-line: var(--p-line-strong);
+  --ruler-mark-bg: var(--p-paper-2); --ruler-mark-line: var(--p-line-strong);
+  --ruler-tick: #8C857A; --ruler-ink: #4A463F; --ruler-deftab: #B0A99D; --ruler-row: var(--p-line-strong); --indent-fill: #fff; --indent-line: #7A7368;
+  --ruler-off-2: var(--p-paper-2); --ruler-tick-2: #8C857A; --ruler-ink-2: #4A463F;
+}
+/* Paper's shapes */
+:is([data-look="paper"], [data-look="paper2016"]) .menubar::before, :is([data-look="paper"], [data-look="paper2016"]) .tb-grip { display: none; }
+:is([data-look="paper"], [data-look="paper2016"]) .menurow { padding: 4px 8px 2px; }
+:is([data-look="paper"], [data-look="paper2016"]) .mb-item { padding: 3px 9px; border: 0; border-radius: 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .mb-item.open { background: var(--p-accent-soft); color: var(--p-accent-ink); border: 0; }
+:is([data-look="paper"], [data-look="paper2016"]) .helpbox input { height: 24px; border-radius: 12px; padding: 0 10px; }
+:is([data-look="paper"], [data-look="paper2016"]) .toolbars { padding: 2px 6px 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tb-row { gap: 4px 8px; }
+:is([data-look="paper"], [data-look="paper2016"]) .toolbar { border: 1px solid var(--p-line); border-radius: 10px; padding: 0 3px; height: 30px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tb-sep { width: 1px; height: 16px; border: 0; background: var(--p-line); margin: 0 4px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tb-btn, :is([data-look="paper"], [data-look="paper2016"]) .tb-dd { height: 24px; border: 0; border-radius: 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tb-btn { min-width: 26px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tb-btn.on, :is([data-look="paper"], [data-look="paper2016"]) .tb-btn.on:hover { box-shadow: inset 0 0 0 1px var(--p-accent-mid); }
+:is([data-look="paper"], [data-look="paper2016"]) .combo { height: 24px; border-radius: 6px; overflow: hidden; }
+:is([data-look="paper"], [data-look="paper2016"]) .combo-in { height: 22px; }
+:is([data-look="paper"], [data-look="paper2016"]) .combo.focus, :is([data-look="paper"], [data-look="paper2016"]) .combo:hover { border-color: var(--p-accent); }
+:is([data-look="paper"], [data-look="paper2016"]) .combo-btn, :is([data-look="paper"], [data-look="paper2016"]) .combo-btn:hover { width: 16px; background: transparent; }
+:is([data-look="paper"], [data-look="paper2016"]) .menu { background: #fff; border-radius: 10px; padding: 4px; box-shadow: 0 6px 24px rgba(60,48,30,.14), 0 1px 3px rgba(60,48,30,.08); }
+:is([data-look="paper"], [data-look="paper2016"]) .m-item { border: 0; border-radius: 6px; min-height: 26px; }
+:is([data-look="paper"], [data-look="paper2016"]) .m-ico.on { border: 0; border-radius: 4px; }
+:is([data-look="paper"], [data-look="paper2016"]) .m-sep { margin: 4px 8px 4px 30px; }
+:is([data-look="paper"], [data-look="paper2016"]) .m-head { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 8px 8px 3px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tp-head { border: 0; padding: 8px 8px 4px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tp-title { font-size: 14px; font-weight: 600; color: var(--ink); border: 0; border-radius: 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tp-nav { border: 0; border-radius: 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tp-h { color: var(--muted); border: 0; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+:is([data-look="paper"], [data-look="paper2016"]) .tp-link { border-radius: 6px; padding: 4px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tp-link:hover { background: var(--p-accent-soft); }
+:is([data-look="paper"], [data-look="paper2016"]) .tp-link:hover span { text-decoration: none; }
+:is([data-look="paper"], [data-look="paper2016"]) .statusbar { height: 24px; color: var(--muted); }
+:is([data-look="paper"], [data-look="paper2016"]) .sb-cell { border-right: 0; padding: 0 10px; }
+:is([data-look="paper"], [data-look="paper2016"]) .floatbar { border-radius: 10px; overflow: hidden; box-shadow: 0 6px 24px rgba(60,48,30,.14); }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg { border-color: var(--p-line); border-radius: 12px; overflow: hidden; box-shadow: 0 18px 50px rgba(40,32,20,.22), 0 2px 6px rgba(40,32,20,.08); }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg-title { height: 40px; margin: 0; padding: 0 6px 0 16px; background: #fff; border: 0; color: var(--ink); font: 600 13px/1 var(--ui-font); }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg-x { width: 28px; height: 28px; border: 0; border-radius: 14px; color: var(--muted); }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg-x:hover { background: var(--p-paper-2); color: var(--ink); }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg-body { padding: 4px 16px 10px; }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg-foot { padding: 12px 16px 14px; gap: 8px; background: var(--p-paper); border-top: 1px solid var(--p-line); }
+:is([data-look="paper"], [data-look="paper2016"]) .btn { height: 28px; min-width: 80px; padding: 0 14px; border-radius: 6px; box-shadow: 0 1px 0 rgba(60,48,30,.06); }
+:is([data-look="paper"], [data-look="paper2016"]) .btn.primary { background: var(--p-accent); border-color: var(--p-accent); color: #fff; box-shadow: none; }
+:is([data-look="paper"], [data-look="paper2016"]) .btn.primary:hover:not(:disabled) { background: var(--p-accent-ink); }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg input[type=text], :is([data-look="paper"], [data-look="paper2016"]) .dlg input[type=number], :is([data-look="paper"], [data-look="paper2016"]) .dlg input[type=password], :is([data-look="paper"], [data-look="paper2016"]) .dlg select,
+:is([data-look="paper"], [data-look="paper2016"]) .dlg textarea, :is([data-look="paper"], [data-look="paper2016"]) .tp-body input[type=text], :is([data-look="paper"], [data-look="paper2016"]) .tp-body select { height: 26px; border-radius: 6px; padding: 1px 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg textarea { height: auto; }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg select[size] { height: auto; }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg fieldset, :is([data-look="paper"], [data-look="paper2016"]) .grp { border-radius: 10px; padding: 6px 10px 10px; }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg legend, :is([data-look="paper"], [data-look="paper2016"]) .grp legend { color: var(--muted); font-weight: 600; }
+:is([data-look="paper"], [data-look="paper2016"]) .spin { height: 26px; border-radius: 6px; overflow: hidden; }
+:is([data-look="paper"], [data-look="paper2016"]) .spin-in { height: 24px !important; }
+:is([data-look="paper"], [data-look="paper2016"]) .tabs-head { display: inline-flex; gap: 2px; padding: 3px; background: var(--p-paper-2); border-radius: 9px; margin-bottom: 8px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tab { border: 0; border-radius: 6px; padding: 4px 12px; top: 0; margin: 0; color: var(--ink-4); }
+:is([data-look="paper"], [data-look="paper2016"]) .tab:hover { background: rgba(255,255,255,.6); }
+:is([data-look="paper"], [data-look="paper2016"]) .tab.on { background: #fff; box-shadow: 0 1px 3px rgba(60,48,30,.15); padding: 4px 12px; top: 0; color: var(--ink); }
+:is([data-look="paper"], [data-look="paper2016"]) .tabs-body { border: 0; background: none; padding: 4px 2px; }
+:is([data-look="paper"], [data-look="paper2016"]) .listbox, :is([data-look="paper"], [data-look="paper2016"]) .preview-box, :is([data-look="paper"], [data-look="paper2016"]) .chart-preview { border-radius: 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .tooltip { border-radius: 4px; padding: 2px 7px; }
+:is([data-look="paper"], [data-look="paper2016"]) .toast { border-radius: 10px; padding: 8px 14px; }
+:is([data-look="paper"], [data-look="paper2016"]) .busy-box { border-radius: 10px; background: #fff; }
+:is([data-look="paper"], [data-look="paper2016"]) .readbar, :is([data-look="paper"], [data-look="paper2016"]) .preview-bar { border-radius: 0; }
+/* app chrome */
+:is([data-look="paper"], [data-look="paper2016"]) .lp-tabs { padding: 6px 8px; }
+:is([data-look="paper"], [data-look="paper2016"]) .lp-tab { border: 0; border-radius: 6px; padding: 3px 10px; margin: 0; }
+:is([data-look="paper"], [data-look="paper2016"]) .lp-tab.on { box-shadow: 0 1px 3px rgba(60,48,30,.15); padding-bottom: 3px; }
+:is([data-look="paper"], [data-look="paper2016"]) .drawrow { padding: 4px 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .stab { margin-right: 2px; padding: 0 12px; height: 20px; line-height: 20px; font-family: var(--ui-font); }
+:is([data-look="paper"], [data-look="paper2016"]) .stab::before { clip-path: none; background: none; }
+:is([data-look="paper"], [data-look="paper2016"]) .stab::after { clip-path: none; inset: 0; border-radius: 0 0 6px 6px; }
+:is([data-look="paper"], [data-look="paper2016"]) .stab.on::after { top: 0; box-shadow: 0 1px 3px rgba(60,48,30,.18), inset 0 2px 0 var(--p-accent); }
+:is([data-look="paper"], [data-look="paper2016"]) .tabrow { height: 22px; }
+:is([data-look="paper"], [data-look="paper2016"]) dialog { border-radius: 12px; }
+:is([data-look="paper"], [data-look="paper2016"]) dialog .dt { background: #fff; border: 0; color: var(--ink); padding: 12px 16px 4px; font-weight: 600; }
+:is([data-look="paper"], [data-look="paper2016"]) dialog form button { height: 28px; border-radius: 6px; background: var(--p-accent); border-color: var(--p-accent); color: #fff; box-shadow: none; }
+:is([data-look="paper"], [data-look="paper2016"]) .combo-in { font-size: 11px; }   /* the boxes' widths are set for 11 px text */

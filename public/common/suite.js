@@ -80,9 +80,44 @@
   const listeners = new Set();
   const notify = () => { VO.recent.refresh(); for (const fn of listeners) if (!fn.cacheOnly) fn(); };   // cache users redraw after the refresh
   const changed = () => { if (chan) chan.postMessage('recent'); notify(); };
-  if (chan) chan.addEventListener('message', (e) => { if (e.data === 'recent') notify(); });
+  if (chan) chan.addEventListener('message', (e) => { if (e.data === 'recent') notify(); else if (e.data === 'look') applyLook(storedLook()); });
   /** call fn when the Recent Files list changes (here or in another page); returns the function that stops it */
   VO.onRecentChange = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+
+  /* ------------------------------------------------------------ Looks */
+  /* the chrome's colours (common/looks.css) and, for a look with layout 'ribbon', the ribbon instead of menus and
+     toolbars (common/ribbon.js); one choice for the whole suite: <html data-look data-layout> is set before
+     the first paint by each page's head script from localStorage 'vibeoffice.look'; changing it here
+     repaints every open window of the suite. Canvas-drawn chrome (rulers, sheet headers) redraws on 'vo-look'. */
+  const LOOKS = [{ id: 'classic', name: 'Classic', note: 'The blue toolbars and menus of Office 2003.' },
+    { id: 'paper', name: 'Paper', note: 'Light and calm: warm paper tones, one teal accent, rounded shapes.' },
+    { id: 'paper2016', name: 'Paper 2016', layout: 'ribbon', note: 'Paper with tabs of commands, grouped by task, instead of menus and toolbars.' }];
+  const storedLook = () => { try { return localStorage.getItem('vibeoffice.look') || 'classic'; } catch (e) { return 'classic'; } };
+  const applyLook = (id) => {
+    const root = document.documentElement;
+    if (!LOOKS.some((l) => l.id === id)) return;
+    const changed = root.dataset.look !== id;
+    root.dataset.look = id;
+    root.dataset.layout = LOOKS.find((l) => l.id === id).layout || 'bars';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const c = getComputedStyle(root).getPropertyValue('--theme-color').trim();
+    if (meta && c) meta.content = c;
+    if (changed) window.dispatchEvent(new Event('vo-look'));
+  };
+  VO.look = {
+    /** [{ id, name, note, layout }] */
+    list: () => LOOKS.map((l) => ({ ...l })),
+    get: () => document.documentElement.dataset.look || 'classic',
+    /** 'bars' (menus and toolbars) or 'ribbon' */
+    layout: () => document.documentElement.dataset.layout || 'bars',
+    set(id) {
+      if (!LOOKS.some((l) => l.id === id)) return;
+      try { localStorage.setItem('vibeoffice.look', id); } catch (e) { /* this window still changes */ }
+      applyLook(id);
+      if (chan) chan.postMessage('look');
+    },
+  };
+  applyLook(storedLook());   // a page without the head script, or a stored look that changed meanwhile
 
   /* ------------------------------------------------------------ Recent Files */
   const MAX_RECENT = 30;
@@ -238,11 +273,11 @@
     if (!document.getElementById('vo-gallery-css')) {
       const st = document.createElement('style');
       st.id = 'vo-gallery-css';
-      st.textContent = '.vo-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;max-height:min(62vh,540px);overflow:auto;padding:6px;background:#fff;border:1px solid #7F9DB9}'
-        + '.vo-tpl{display:flex;flex-direction:column;gap:4px;padding:5px;border:1px solid transparent;border-radius:2px;background:none;text-align:left;cursor:default;font:inherit;color:#000}'
-        + '.vo-tpl:hover,.vo-tpl:focus-visible{background:#FFEEC2;border-color:#E3A23B;outline:none}'
-        + '.vo-tpl span{display:flex;align-items:center;justify-content:center;height:112px;background:#f3f6fb;border:1px solid #b8c7df;overflow:hidden}'
-        + '.vo-tpl img{max-width:100%;max-height:100%;box-shadow:0 1px 2px rgba(0,0,0,.25)}'
+      st.textContent = '.vo-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;max-height:min(62vh,540px);overflow:auto;padding:6px;background:var(--surface);border:1px solid var(--field-border)}'
+        + '.vo-tpl{display:flex;flex-direction:column;gap:4px;padding:5px;border:1px solid transparent;border-radius:2px;background:none;text-align:left;cursor:default;font:inherit;color:var(--ink)}'
+        + '.vo-tpl:hover,.vo-tpl:focus-visible{background:var(--menu-hot);border-color:var(--card-hot-border);outline:none}'
+        + '.vo-tpl span{display:flex;align-items:center;justify-content:center;height:112px;background:var(--card-thumb-bg);border:1px solid var(--card-thumb-line);overflow:hidden}'
+        + '.vo-tpl img{max-width:100%;max-height:100%;box-shadow:0 1px 2px var(--tip-shadow-c)}'
         + '.vo-tpl b{font-weight:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
         + '.vo-gal-note{margin:0 0 6px}';
       document.head.appendChild(st);

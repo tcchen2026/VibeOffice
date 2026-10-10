@@ -34,6 +34,7 @@
   /* "&x" marks the access key; "&&" and "& " stay a literal ampersand */
   const ampHTML = (s) => L.esc(s || '').replace(/&amp;&amp;/g, '\u0000').replace(/&amp;(\S)/g, '<u>$1</u>').replace(/\u0000/g, '&amp;');
   ui.stripAmp = stripAmp;
+  ui.ampHTML = ampHTML;
 
   /* ---------- tooltips ---------- */
   let tipEl = null, tipTimer = null, tipTarget = null;
@@ -195,6 +196,9 @@
     return true; /* swallow keys while a menu is open */
   };
 
+  /* the keyboard of another command-bar layout (the ribbon, common/ribbon.js) while it is shown instead of the menus:
+     { active(), byKey(ch) → handled, index(i) } */
+  ui.barKeys = null;
   /** Menu bar: menus = [{label, items}] */
   ui.menuBar = function (container, menus) {
     const bar = h('div', { class: 'menubar', role: 'menubar' });
@@ -215,11 +219,13 @@
       menuBarState = { bar, index: i, step: (d) => open((i + d + els.length) % els.length, true) };
     }
     bar.openByKey = (ch) => {
+      if (ui.barKeys && ui.barKeys.active()) return ui.barKeys.byKey(ch);
       const i = menus.findIndex((m) => /&(.)/.exec(m.label) && /&(.)/.exec(m.label)[1].toLowerCase() === ch.toLowerCase());
       if (i >= 0) { open(i, true); return true; }
       return false;
     };
-    bar.openIndex = (i) => open(i, true);
+    bar.openIndex = (i) => { if (ui.barKeys && ui.barKeys.active()) ui.barKeys.index(i); else open(i, true); };
+    bar.menus = menus;
     container.appendChild(bar);
     return bar;
   };
@@ -560,6 +566,14 @@
     return h('div', { class: 'field' + (o && o.cls ? ' ' + o.cls : '') }, h('label', { for: id || null, html: ampHTML(label) }), ctl);
   };
   ui.group = (title, ...kids) => h('fieldset', { class: 'grp' }, h('legend', { html: ampHTML(title) }), ...kids);
+  /** Tools ▸ Options ▸ General ▸ Theme: the suite's look (common/looks.css). { el, apply() }; apply on OK
+   *  changes every open window of the suite. null outside the suite (no common/suite.js). */
+  ui.lookField = () => {
+    if (!window.VO || !VO.look) return null;
+    let pick = VO.look.get();
+    const sel = ui.select(VO.look.list().map((l) => [l.id, l.name]), pick, (v) => { pick = v; }, { id: 'op-look' });
+    return { el: ui.field('Theme:', sel), apply: () => { if (pick !== VO.look.get()) VO.look.set(pick); } };
+  };
 
   /* ---------- colour pickers ---------- */
   const recent = [];

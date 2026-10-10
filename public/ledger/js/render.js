@@ -12,6 +12,13 @@
     sel: 'rgba(49, 74, 160, 0.20)', selBorder: '#000000', freeze: '#000000', pageBreak: '#0000FF',
   };
   RD.COL = COL;
+  /* the headers and the selection are chrome and follow the look (common/looks.css); gridlines, frozen
+     panes and page breaks are the sheet's own and stay */
+  const LOOKED = { hdrTop: 'hdr-a', hdrBot: 'hdr-b', hdrLine: 'hdr-line', hdrText: 'hdr-ink', hdrSelTop: 'hdr-sel-a', hdrSelBot: 'hdr-sel-b',
+    hdrSelLine: 'hdr-sel-line', hdrAllTop: 'hdr-all-a', hdrAllBot: 'hdr-all-b', sel: 'cell-sel', selBorder: 'cell-sel-border' };
+  const DEF = { ...COL };
+  RD.lookColors = () => { for (const k in LOOKED) COL[k] = L.lookColor(LOOKED[k], DEF[k]); };
+  RD.lookColors();
   RD.HL = ['#0000FF', '#008000', '#9900CC', '#800000', '#00CC33', '#CC6600', '#CC0099'];
 
   /* ------------------------------------------------------------ fills */

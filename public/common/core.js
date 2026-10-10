@@ -189,6 +189,17 @@
     del(k) { try { localStorage.removeItem(L.APP_ID + '.' + k); } catch (e) { /* ignore */ } },
   };
 
+  /* ---------- the look (common/looks.css) for chrome drawn on canvases ---------- */
+  let lookCache = {};
+  /** a look setting by name ('ruler-off' reads --ruler-off), or d where there is no page (Node) */
+  L.lookColor = (name, d) => {
+    if (!(name in lookCache)) lookCache[name] = typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim();
+    return lookCache[name] || d;
+  };
+  /** call fn after the look changes (VO.look.set, here or in another window), once the new values apply */
+  L.onLook = (fn) => { if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('vo-look', () => { lookCache = {}; fn(); }); };
+  if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('vo-look', () => { lookCache = {}; });
+
   /* ---------- file I/O ---------- */
   /**
    * Minimal PDF writer: one full-page JPEG per page.

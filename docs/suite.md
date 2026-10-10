@@ -11,7 +11,7 @@
 
 ## Start Center
 
-Modeled on LibreOffice's Start Center, drawn in the apps' Luna Blue. No title bar of its own (installed, the window has the system's). Left: Open File…, Recent Files, Create File, *Apps*: Quire (word processor), Ledger (spreadsheet), Lectern (presentations), each opening with its demo file, Install (when the browser offers it), About. Right, one of two views:
+Modeled on LibreOffice's Start Center, drawn in the suite's look (see Looks). No title bar of its own (installed, the window has the system's). Left: Open File…, Recent Files, Create File, *Apps*: Quire (word processor), Ledger (spreadsheet), Lectern (presentations), each opening with its demo file, Install (when the browser offers it), About and Themes (a dialog with a live preview of each look, see Looks). Right, one of two views:
 
 - **Recent Files** (the default): cards (thumbnail, name, app, when), each with a remove button; *Clear Recent Documents*; when the list is empty, the welcome text and the drop hint.
 - **Create File** (`#create`, so Back returns to Recent Files): Documents, Spreadsheets and Presentations, each starting with Blank (`<app>/?new`) followed by the app's templates (`<app>/?template=<id>`), with a preview of each.
@@ -69,9 +69,11 @@ One copy of everything the three apps share; a change here is a change in every 
 
 | File | What | Loaded by |
 |---|---|---|
-| `luna.css` | the Office 2003 Luna Blue look: palette, chrome, menus, toolbars, panes, dialogs, controls; each app's CSS follows and wins | all |
+| `looks.css` | the looks: every chrome colour, font and shadow as a named setting, one block per look (see Looks) | all, and the Start Center |
+| `ui.css` | the chrome: layout of menus, toolbars, task panes, dialogs, controls, status bar, from the look's settings; each app's CSS follows and wins | all |
 | `core.js` | DOM helpers, colours, units, events, storage, file saving, PDF writer, media store, fonts and substitutes, symbol bullets | all |
 | `ui.js` | commands, menus, toolbars, combo boxes, dialogs, colour menus, password and prompt boxes | all |
+| `ribbon.js` | the ribbon of the Paper 2016 look, drawn from each app's `js/ribbon.js` (see The ribbon) | all |
 | `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |
 | `zip.js`, `sha.js`, `crypto.js` | ZIP read/write; SHA; ECMA-376 encryption (password-protected files) | all |
 | `xml.js`, `opc.js`, `opc-order.js` | Portable XML tree, immutable OOXML packages, dependency and identity maps, fragment capture and geometry adapters; generated schema order and preset adjustment tables. | all |
@@ -90,6 +92,29 @@ What each app provides:
 - a spelling UI sets `L.spell.refreshSoon` if it draws underlines (Quire).
 
 Version: `VO.VERSION` in `suite.js` is the one version string (`L.VERSION` reads it); it says `dev` in the repository, and the published copy stamps it as `YYYY.MM.<6-char commit>` (for example `2026.10.8f8494`). The Start Center (under its privacy note, beside About, and in About) and each app's Help ▸ About show it.
+
+## Looks
+
+The chrome (menus, toolbars, task panes, dialogs, status bar, rulers, sheet headers) can be drawn in more than one look: **Classic** (Office 2003 blue, the default), **Paper** (warm light chrome with one teal accent and rounded shapes) and **Paper 2016** (Paper's colours with a ribbon of tabs instead of the menu bar and toolbars, see The ribbon). The user picks one on the Start Center (Themes, beside About: a card per look, its preview drawn from that look's settings via `data-look` on the card) or in Tools ▸ Options ▸ General ▸ Theme of any app; it applies to the whole suite and every open window at once.
+
+- `common/looks.css` holds every chrome colour, font and shadow as a named setting (`--chrome-line`, `--pane-ink`, `--btn-a`, `--hdr-sel-a`, …), one block per look keyed by `data-look="…"` (on `<html>`, or on any element to preview a look inside another); Classic's block is also `:root`, the default. Paper adds a few shape rules a colour cannot express (rounded trays, pill tabs), scoped `:is([data-look="paper"], [data-look="paper2016"])`; Paper 2016 shares Paper's block and adds nothing of its own but the layout. `ui.css`, each app's CSS and the Start Center use only these settings for chrome.
+- Only chrome is themed. Document content (pages, cells, slides, comments, revisions, objects and their handles, Excel's in-cell buttons), icons and colour swatches keep their colours in every look.
+- Each page's head sets `data-look` from `localStorage['vibeoffice.look']` (default `classic`) and `data-layout` (`ribbon` for Paper 2016, otherwise `bars`) on `<html>` before the stylesheets load, so a page never flashes the wrong look. The key is suite-wide (not `L.store`, which is per app).
+- `VO.look` (`suite.js`): `list()` (`[{ id, name, note, layout }]`), `get()`, `layout()` (`'bars'` or `'ribbon'`), `set(id)`. `set` saves the choice, switches this page, updates `<meta name="theme-color">` from `--theme-color`, posts `'look'` on the `vibeoffice` BroadcastChannel (other windows switch too) and fires `vo-look` on `window`. `ui.lookField()` is the Options dialogs' Theme drop-down.
+- Chrome drawn on canvases reads settings with `L.lookColor(name, fallback)` (cached, cleared on `vo-look`) and redraws through `L.onLook(fn)`: Quire's and Lectern's rulers, Ledger's row and column headers and cell selection (`RD.lookColors`). Ledger's gridlines, frozen-pane lines and page breaks are the sheet's own.
+- To add a look: copy Classic's block, give it a new `data-look` name and values, add it to `LOOKS` in `suite.js` (with `layout: 'ribbon'` for a ribbon look; the head scripts name the ribbon looks too). `node --test tools/looks.test.mjs` checks that every look sets every setting, that every setting the chrome uses exists and that `ui.css` has no colours of its own.
+
+### The ribbon
+
+In the Paper 2016 look each app shows a ribbon in place of the menu bar, toolbars and drawing bar (hidden by `[data-layout="ribbon"]` in `ui.css`); the view buttons, status bar and task pane stay. It follows Office 2016's arrangement and command names; the icons, colours and wording are our own (it is called the Paper 2016 look in the UI, and the box is "Search commands").
+
+- `common/ribbon.js` (`L.ribbonUI`) draws it from the app's `js/ribbon.js`, which sets `L.ribbonSpec = () => ({ icons, qat, file, tabs, contextual })`. It is built the first time a ribbon look is in use (`L.ribbonUI.init()` after the app's toolbars, then `L.onLook`), so Classic and Paper never build it.
+- A tab is `{ id, label: '&Home', groups: [{ label, icon, launcher: cmdId, items }] }`. Items: `'cmdId'` (small button), `{ cmd, size: 'large'|'medium', label, icon }`, `{ split: cmdId, menu: (rect, el) => … }`, `{ drop: label, icon, menu }`, `{ make: () => element }` (a combo box from the app's `A.parts`), `{ row: [...] }` (a row of small buttons, as in the Font group) and `'|'` (a new column). Buttons are `ui.tbButton` / `tbSplit` / `tbDrop`, so enabled, checked and colour swatches update through `ui.refresh` as on the toolbars. `icons` gives an icon to commands that have none of their own; large buttons scale the 16 px icon to 32 px.
+- `contextual: [{ id, set: 'Table Tools', when: () => bool, open, tabs }]`: the tool tabs appear while `when()` holds (each app's `A.inContext(kind)`), re-checked on every `ui-refresh`. A set opens when it appears while the Insert tab is showing (the object was just inserted) or when it has `open: true` (Header & Footer, Outlining, Slide Master); when it goes, the tab used before it comes back.
+- File opens the app's File menu (`file()`, command ids) as a drop-down, ending with Options, Help, About and Exit, since the ribbon has no Tools or Help menu.
+- Keyboard: Alt or F10 shows KeyTips (numbers on the Quick Access Toolbar, the access letters on the tabs); a tab's letter opens it and shows one or two letters on each command (`ui.barKeys` routes the menu bar's keys here). Esc goes back a level. Ctrl+F1 collapses the ribbon (as does a double-click on a tab or the arrow at the right, remembered per app as `ribbonCollapsed`); a tab then opens over the document. Task Pane, Ctrl+F1 in the other looks, is under View ▸ Show.
+- In a narrow window the groups fold from the right into one button each that opens the group below it.
+- Adding a command to an app: put it in that app's `js/ribbon.js` too, where Office has it. `node --test tools/ribbon.test.mjs` (needs Chromium, as `tools/shot.mjs`) checks in each app that every command id in the ribbon exists, every button has an icon, and every command of the menus can be reached from the ribbon, apart from a short list of exceptions kept in the test.
 
 Script order: `suite.js`, the app config, `core.js`, then the libraries and the app's own scripts as listed in each `index.html` (Ledger's from `tools/ledger/build/make.py`, where `'common/x'` means `public/common/x.js`).
 

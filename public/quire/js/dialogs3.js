@@ -583,9 +583,10 @@
     const balloons = ui.select([['always', 'Always'], ['never', 'Never'], ['comments', 'Only for comments/formatting']], LY.opts.balloons === false ? 'never' : 'comments', (v) => { LY.opts.balloons = v !== 'never'; rerender = true; }, { id: 'op-bal' });
     const compat = ui.select([['11', 'Microsoft Word 2003'], ['12', 'Microsoft Word 2007'], ['14', 'Microsoft Word 2010'], ['15', 'Microsoft Word 2013 and later']], String(d.settings.compat || 11), (v) => { d.settings.compat = +v; d.dirty = true; rerender = true; }, { id: 'op-compat' });
     const autoRec = G.num(o.autoSaveMin || 10, { min: 1, max: 120, id: 'op-asr' });
+    const look = ui.lookField();
     const tabs = ui.tabs([
       { label: 'View', body: h('div', { class: 'col' }, ui.group('Show', h('div', { class: 'grid2' }, opt('startupPane', 'Startup Task Pane', true), opt('highlightShow', 'Highlight', true), lyo('showBookmarks', 'Bookmarks'), opt('statusBar', 'Status bar', true), opt('screenTips', 'ScreenTips', true), lyo('fieldCodes', 'Field codes'), opt('smartTags', 'Smart tags', false), opt('animText', 'Animated text', false)), G.f('Field shading:', fieldShade)), ui.group('Formatting marks', h('div', { class: 'grid2' }, lyo('showMarks', 'All'), lyo('showHidden', 'Hidden text'))), ui.group('Print and Web Layout options', h('div', { class: 'grid2' }, lyo('textBoundaries', 'Text boundaries'), opt('vruler', 'Vertical ruler (Print view only)', true), opt('whiteSpace', 'White space between pages (Print view only)', true)))) },
-      { label: 'General', body: h('div', { class: 'col' }, opt('bgRepag', 'Background repagination', true), opt('blueBg', 'Blue background, white text', false), opt('sound', 'Provide feedback with sound', false), G.row(opt('recentOn', 'Recently used file list:', true), recentN, h('span', { text: 'entries' })), G.f('Measurement units:', units, 'wide')) },
+      { label: 'General', body: h('div', { class: 'col' }, look && look.el, opt('bgRepag', 'Background repagination', true), opt('blueBg', 'Blue background, white text', false), opt('sound', 'Provide feedback with sound', false), G.row(opt('recentOn', 'Recently used file list:', true), recentN, h('span', { text: 'entries' })), G.f('Measurement units:', units, 'wide')) },
       { label: 'Edit', body: h('div', { class: 'col' }, ui.group('Editing options', opt('typingReplaces', 'Typing replaces selection', true), opt('dragDrop', 'Drag-and-drop text editing', true), opt('ctrlClick', 'Use CTRL + Click to follow hyperlink', true), opt('smartPara', 'Use smart paragraph selection', true), chk('Overtype mode', () => E.overtype, (v) => { E.overtype = v; }), opt('smartCut', 'Smart cut and paste', true)), ui.group('Cut and paste options', opt('pasteOptions', 'Show Paste Options buttons', true))) },
       { label: 'Print', body: h('div', { class: 'col' }, ui.group('Printing options', opt('updateFieldsOnPrint', 'Update fields', false), opt('printBg', 'Background colors and images', true)), ui.group('Include with document', opt('printProps', 'Document properties', false), opt('printCodes', 'Field codes', false), opt('printHidden', 'Hidden text', false), opt('printDrawings', 'Drawing objects', true))) },
       { label: 'Save', body: h('div', { class: 'col' }, opt('promptProps', 'Prompt for document properties', false), G.row(opt('autoRecover', 'Save AutoRecover info every:', true), autoRec, h('span', { text: 'minutes' })), h('div', { class: 'tp-note', text: 'AutoRecover keeps a copy in this browser only; it is offered when Quire opens after an unexpected close.' }), G.f('Save Word files as:', ui.select([['docx', 'Word Document (*.docx)'], ['dotx', 'Word Template (*.dotx)']], 'docx', null, { id: 'op-fmt' }), 'wide')) },
@@ -618,9 +619,9 @@
       o.userInitials = uinit.value.trim();
       o.autoSaveMin = autoRec.get();
       L.store.set('userAddress', uaddr.value);
-      if (o.blueBg) document.body.classList.add('bluebg'); else document.body.classList.remove('bluebg');
       A().saveOpts();
       A().applyOpts();
+      if (look) look.apply();
       if (rerender) { LY.root.classList.toggle('marks', !!LY.opts.showMarks); LY.render(); E.restoreDom(true); }
     } }, { label: 'Cancel' }] });
   };

@@ -789,7 +789,8 @@
     const uname = h('input', { type: 'text', value: o.userName || '', style: 'width:200px' });
     const nSheets = ui.spin({ value: o.sheetsInNew || 3, min: 1, max: 255, step: 1, dec: 0 });
     const dfont = ui.select(L.FONT_LIST, o.defaultFont || 'Arial'), dsize = ui.select(L.SIZE_LIST, o.defaultSize || 10);
-    const genTab = h('div', { class: 'col' }, ck('R1C1 reference st&yle', () => !!w.r1c1, (x) => { w.r1c1 = x; }), ck('&Recently used file list', () => true, () => {}),
+    const look = ui.lookField();
+    const genTab = h('div', { class: 'col' }, look && look.el, ck('R1C1 reference st&yle', () => !!w.r1c1, (x) => { w.r1c1 = x; }), ck('&Recently used file list', () => true, () => {}),
       ui.field('Sheets in new work&book:', nSheets), h('div', { class: 'row', style: 'gap:8px' }, ui.field('Standard fon&t:', dfont), ui.field('Si&ze:', dsize)), ui.field('User &name:', uname));
     const lists = O.customLists;
     const listBox = h('div');
@@ -817,6 +818,7 @@
       o.userName = uname.value; o.sheetsInNew = Math.round(nSheets.get()); o.defaultFont = dfont.value; o.defaultSize = +dsize.value;
       if (book && (pwOpen.value || '') !== (book.password || '')) { book.password = pwOpen.value || undefined; book.dirty = true; }
       A().applyOpts();
+      if (look) look.apply();
       if (calc.mode !== 'manual') A().calculateNow();
       G().paint(true); G().syncObjects(true); A().renderTabs();
     } }, { label: 'Cancel' }] });
