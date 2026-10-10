@@ -65,11 +65,19 @@
   DG.of = (sh) => { if (!sh) return null; if (DG.isDiagram(sh)) return sh; const top = E().topOf(sh.id); return DG.isDiagram(top) ? top : null; };
   DG.current = () => DG.of(E().primary());
 
+  /* formatting the user gave one shape (fill, outline, font colour, bold, italic) is kept on its item, as
+     item.fmt[role], so it survives laying the diagram out again; Reset Graphic clears it */
+  const FMT_ROLES = ['node', 'child'];
+  const fmtOf = (sa, id, role) => { const r = id && FMT_ROLES.includes(role) && locate(sa.items, id); return (r && r.item.fmt && r.item.fmt[role]) || null; };
   function kidOf(s, sa, keep, pal) {
-    const p = paint(s, sa, pal);
+    const p = Object.assign({}, paint(s, sa, pal)), f = fmtOf(sa, s.itemId, s.role) || {};
+    if (f.fill) p.fill = L.clone(f.fill);
+    if (f.line) p.line = L.clone(f.line);
+    if (f.color) p.text = f.color;
     const key = `${s.itemId}:${s.role}:${keep.n[s.itemId + s.role] = (keep.n[s.itemId + s.role] || 0) + 1}`;
     const base = { id: keep.ids[key] || L.uid('s'), type: 'shape', name: (SA.get(sa.layout) || {}).name + ' ' + s.role, x: s.x, y: s.y, w: Math.max(s.w, 0.01), h: Math.max(s.h, 0.01), rot: s.rot || 0, fill: p.fill, line: p.line, shadow: p.shadow, sa: { item: s.itemId, role: s.role } };
     if (s.flipV) base.flipV = true;
+    if (FMT_ROLES.includes(s.role)) base.sa.gen = { fill: JSON.stringify(base.fill), line: JSON.stringify(base.line), color: p.text, b: !!f.b, i: !!f.i };
     if (s.geom === 'path') {
       const cmds = s.path.map(([x, y], i) => [i ? 'L' : 'M', x - s.x, y - s.y]);
       return Object.assign(base, { geom: 'custom', path: { paths: [{ w: base.w, h: base.h, cmds, fill: 'none', stroke: true }] } });
@@ -86,17 +94,39 @@
     }
     if (s.text) {
       const sz = s.fontSize, b = s.text.box, inset = sz * 0.25;
+      const rp = Object.assign({ sz, color: p.text }, f.b ? { b: true } : {}, f.i ? { i: true } : {});
       const ps = s.text.lines.map((ln) => (ln.lvl
-        ? T.para(ln.t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, { sz, color: p.text }, 1)
-        : T.para(ln.t, { algn: s.text.align === 'l' ? 'l' : 'ctr', bu: { t: 'none' } }, { sz, color: p.text })));
+        ? T.para(ln.t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, rp, 1)
+        : T.para(ln.t, { algn: s.text.align === 'l' ? 'l' : 'ctr', bu: { t: 'none' } }, rp)));
       base.tx = T.body(ps, { anchor: s.text.anchor === 't' || s.text.anchor === 'b' ? s.text.anchor : 'ctr', wrap: true, autofit: 'none', ins: [inset, inset, inset, inset] });
       base.txRect = [b.x - s.x, b.y - s.y, b.x + b.w - s.x, b.y + b.h - s.y].map((v) => L.round(v, 3));
     }
     return base;
   }
   /** lay the diagram out again in its box; shapes keep their ids where their item and role are the same */
+  /** what the user changed on the shapes since they were laid out, recorded on their items */
+  DG.capture = (g) => {
+    for (const k of g.kids || []) {
+      const gen = k.sa && k.sa.gen, r = gen && locate(g.sa.items, k.sa.item);
+      if (!r) continue;
+      const f = {};
+      if (JSON.stringify(k.fill) !== gen.fill) f.fill = L.clone(k.fill);
+      if (JSON.stringify(k.line) !== gen.line) f.line = L.clone(k.line);
+      const run = k.tx && k.tx.ps[0] && (k.tx.ps[0].rs[0] || k.tx.ps[0].end);
+      if (run) {
+        if (run.color && run.color !== gen.color) f.color = run.color;
+        if (!!run.b !== gen.b) f.b = !!run.b;
+        if (!!run.i !== gen.i) f.i = !!run.i;
+      }
+      if (!Object.keys(f).length) continue;
+      const fmt = (r.item.fmt = r.item.fmt || {});
+      fmt[k.sa.role] = Object.assign(fmt[k.sa.role] || {}, f);
+      for (const key of Object.keys(fmt[k.sa.role])) if (fmt[k.sa.role][key] === false) delete fmt[k.sa.role][key];
+    }
+  };
   DG.relayout = (g, d) => {
     d = d || design();
+    DG.capture(g);
     const keep = { ids: {}, n: {} }, seen = {};
     for (const k of g.kids || []) if (k.sa) { const kk = k.sa.item + k.sa.role; seen[kk] = (seen[kk] || 0) + 1; keep.ids[`${k.sa.item}:${k.sa.role}:${seen[kk]}`] = k.id; }
     const res = SA.layout(g.sa.layout, g.sa.items, { x: g.x, y: g.y, w: g.w, h: g.h }, { measure: measurer(d) });
@@ -282,7 +312,15 @@
     const label = { layout: 'Change Layout', colors: 'Change Colors', style: 'SmartArt Style' }[key];
     change(g, label, () => { g.sa[key] = val; if (key === 'layout') g.name = (SA.get(val) || {}).name + ' ' + g.name.split(' ').pop(); });
   };
-  DG.reset = (g) => { g = g || DG.current(); if (g) change(g, 'Reset Graphic', () => { g.sa.colors = 'accent1'; g.sa.style = 'simple'; }); };
+  DG.reset = (g) => {
+    g = g || DG.current();
+    if (!g) return;
+    change(g, 'Reset Graphic', () => {
+      g.sa.colors = 'accent1'; g.sa.style = 'simple';
+      for (const k of g.kids) if (k.sa) delete k.sa.gen;   // nothing to capture: the shapes start again
+      for (const o of SA.outline(g.sa.items)) delete o.item.fmt;
+    });
+  };
   /** Convert to Shapes: the same shapes, as an ordinary group */
   DG.toShapes = (g) => {
     g = g || DG.current();

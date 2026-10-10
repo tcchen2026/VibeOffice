@@ -26,17 +26,20 @@
   };
 
   const CAT = { list: 'list', process: 'process', cycle: 'cycle', hierarchy: 'hierarchy', relationship: 'relationship', pyramid: 'pyramid', matrix: 'matrix' };
-  const tBody = (text) => `<dgm:t><a:bodyPr/><a:lstStyle/><a:p>${text ? `<a:r><a:rPr lang="en-US" dirty="0"/><a:t>${X(text)}</a:t></a:r>` : '<a:endParaRPr lang="en-US" dirty="0"/>'}</a:p></dgm:t>`;
+  /* rPr: { attrs, inner } for a node's text (bold, italic, colour) */
+  const tBody = (text, rPr) => { const a = (rPr && rPr.attrs) || '', inner = (rPr && rPr.inner) || ''; const pr = (tag) => inner ? `<a:${tag} lang="en-US"${a} dirty="0">${inner}</a:${tag}>` : `<a:${tag} lang="en-US"${a} dirty="0"/>`; return `<dgm:t><a:bodyPr/><a:lstStyle/><a:p>${text ? `<a:r>${pr('rPr')}<a:t>${X(text)}</a:t></a:r>` : pr('endParaRPr')}</a:p></dgm:t>`; };
 
-  /** dgm:dataModel: the document point, one point per item, a parent/sibling transition pair per connection */
-  IO.dataXML = (sa, key, drawingRelId) => {
+  /** dgm:dataModel: the document point, one point per item, a parent/sibling transition pair per connection.
+      fmt(item) → { spPr, rPr } writes the formatting the user gave the item's shape (pptx-write.js) */
+  IO.dataXML = (sa, key, drawingRelId, fmt) => {
     const lay = L.smartart.get(sa.layout) || L.smartart.LAYOUTS[0];
     const doc = IO.guid(key + ':doc');
     const pts = [`<dgm:pt modelId="${doc}" type="doc"><dgm:prSet loTypeId="${URN}layout/${lay.id}" loCatId="${CAT[lay.cat] || 'list'}" qsTypeId="${URN}style/${sa.style || 'simple'}" qsCatId="simple" csTypeId="${URN}colors/${sa.colors || 'accent1'}" csCatId="${sa.colors === 'colorful' ? 'colorful' : 'accent1'}" phldr="1"/><dgm:spPr/>${tBody('')}</dgm:pt>`];
     const cxns = [];
     const walk = (list, parent) => list.forEach((it, i) => {
       const id = IO.guid(key + ':' + it.id), cx = IO.guid(key + ':' + it.id + ':cxn'), par = IO.guid(key + ':' + it.id + ':par'), sib = IO.guid(key + ':' + it.id + ':sib');
-      pts.push(`<dgm:pt modelId="${id}"><dgm:prSet phldrT="[Text]"${it.text ? '' : ' phldr="1"'}/><dgm:spPr/>${tBody(it.text)}</dgm:pt>`);
+      const f = (fmt && it.fmt && it.fmt.node && fmt(it.fmt.node)) || {};
+      pts.push(`<dgm:pt modelId="${id}"><dgm:prSet phldrT="[Text]"${it.text ? '' : ' phldr="1"'}/>${f.spPr ? `<dgm:spPr>${f.spPr}</dgm:spPr>` : '<dgm:spPr/>'}${tBody(it.text, f.rPr)}</dgm:pt>`);
       pts.push(`<dgm:pt modelId="${par}" type="parTrans" cxnId="${cx}"><dgm:prSet/><dgm:spPr/>${tBody('')}</dgm:pt>`);
       pts.push(`<dgm:pt modelId="${sib}" type="sibTrans" cxnId="${cx}"><dgm:prSet/><dgm:spPr/>${tBody('')}</dgm:pt>`);
       cxns.push(`<dgm:cxn modelId="${cx}" srcId="${parent}" destId="${id}" srcOrd="${i}" destOrd="0" parTransId="${par}" sibTransId="${sib}"/>`);
@@ -161,7 +164,10 @@
     if (!L.smartart.get(layout)) return null;
     const suffix = (attr, kind) => { const v = pr.getAttribute(attr) || ''; return v.startsWith(URN + kind + '/') ? v.slice((URN + kind + '/').length) : null; };
     const text = (p) => [...p.getElementsByTagNameNS(NS_A, 'p')].map((para) => [...para.getElementsByTagNameNS(NS_A, 't')].map((t) => t.textContent).join('')).join(' ');
-    const byId = new Map(pts.filter((p) => !p.getAttribute('type') || p.getAttribute('type') === 'node').map((p) => [p.getAttribute('modelId'), { id: L.smartart.newId(), text: text(p), kids: [] }]));
+    const nodePts = pts.filter((p) => !p.getAttribute('type') || p.getAttribute('type') === 'node');
+    const byId = new Map(nodePts.map((p) => [p.getAttribute('modelId'), { id: L.smartart.newId(), text: text(p), kids: [] }]));
+    /* the points, for the reader to take each item's own formatting from (pptx-read.js) */
+    const points = nodePts.map((p) => [p, byId.get(p.getAttribute('modelId'))]);
     const kids = new Map();
     for (const c of doc.getElementsByTagNameNS(NS_DGM, 'cxn')) {
       if ((c.getAttribute('type') || 'parOf') !== 'parOf') continue;
@@ -171,6 +177,8 @@
       kids.get(src).push([+c.getAttribute('srcOrd') || 0, dst]);
     }
     const build = (pid) => (kids.get(pid) || []).sort((a, b) => a[0] - b[0]).map(([, id]) => { const it = byId.get(id); it.kids = build(id); return it; });
-    return { layout, colors: suffix('csTypeId', 'colors') || 'accent1', style: suffix('qsTypeId', 'style') || 'simple', items: build(docPt.getAttribute('modelId')) };
+    const sa = { layout, colors: suffix('csTypeId', 'colors') || 'accent1', style: suffix('qsTypeId', 'style') || 'simple', items: build(docPt.getAttribute('modelId')) };
+    Object.defineProperty(sa, 'points', { value: points, enumerable: false });
+    return sa;
   };
 })();

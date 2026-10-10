@@ -1578,6 +1578,21 @@
         const dx = await xml(dm.target);
         /* a diagram Lectern wrote (our layout ids): editable again as SmartArt (js/diagram.js) */
         if (dx && L.saIO) try { sa = L.saIO.read(dx); } catch (e) { sa = null; }
+        /* an item's own formatting: its point's fill and outline, its text's colour, bold and italic */
+        if (sa) for (const [pt, item] of sa.points) {
+          const sp = kid(pt, 'spPr'), f = {};
+          const fe = sp && kids(sp).find((c) => /Fill$/.test(c.localName));
+          if (fe) f.fill = fill(fe, ctx);
+          if (sp && kid(sp, 'ln')) f.line = line(kid(sp, 'ln'), ctx);
+          const rp = desc(pt, 'rPr') || desc(pt, 'endParaRPr');
+          if (rp) {
+            if (at(rp, 'b') === '1') f.b = true;
+            if (at(rp, 'i') === '1') f.i = true;
+            const sf = kid(rp, 'solidFill'), c = sf && colorOf(sf, ctx);
+            if (c) f.color = c.c;
+          }
+          if (Object.keys(f).length) item.fmt = { node: f };
+        }
         const ext = dx && desc(dx, 'dataModelExt');
         if (ext && at(ext, 'relId') && ctx.rels[at(ext, 'relId')]) drawingPath = ctx.rels[at(ext, 'relId')].target;
       }

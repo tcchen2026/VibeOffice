@@ -186,9 +186,9 @@
     const n = around.length, S = Math.min(box.w, box.h), cx = box.x + box.w / 2, cy = box.y + box.h / 2;
     if (!n) { const d = S * 0.5; return [node(centre, 0, 1, 'ellipse', cx - d / 2, cy - d / 2, d, d, { text: { lines: linesOf(centre, false), box: tb(cx - d * 0.35, cy - d * 0.35, d * 0.7, d * 0.7), anchor: 'ctr', align: 'ctr' } })]; }
     /* centre D, satellites d = 0.6·D at radius R = D/2 + gap + d/2, shrunk when they would touch */
-    let D = S / 2.9, d = 0.6 * D, R = D / 2 + 0.25 * D + d / 2;
+    let D = S / 2.9, d = 0.8 * D, R = D / 2 + 0.2 * D + d / 2;
     const room = 2 * R * Math.sin(Math.PI / Math.max(n, 2)) * 0.85;
-    if (d > room) { d = room; R = D / 2 + 0.25 * D + d / 2; }
+    if (d > room) { d = room; R = D / 2 + 0.2 * D + d / 2; }
     const scale = S / (2 * R + d);
     D *= scale; d *= scale; R *= scale;
     const out = [node(centre, 0, n + 1, 'ellipse', cx - D / 2, cy - D / 2, D, D, { text: { lines: linesOf(centre, false), box: tb(cx - D * 0.35, cy - D * 0.35, D * 0.7, D * 0.7), anchor: 'ctr', align: 'ctr' } })];
@@ -249,9 +249,13 @@
   def('pyramid', 'Basic Pyramid', 'pyramid', 'Levels that build on one another, broadest at the bottom.', (items, box) => {
     const n = Math.max(1, items.length), a = 0.87;   // height ÷ base
     const base = Math.min(box.w, box.h / a), H = base * a, gap = n > 1 ? H * 0.015 : 0;
-    const lh = (H - (n - 1) * gap) / n, x0 = box.x + (box.w - base) / 2, y0 = box.y + (box.h - H) / 2;
+    /* the apex is taller than the other layers, so its text need not be much smaller than theirs */
+    const wt = (i) => (i === 0 && n > 1 ? 1.7 : 1), unit = (H - (n - 1) * gap) / items.reduce((s, _, i) => s + wt(i), 0) || H;
+    const x0 = box.x + (box.w - base) / 2, y0 = box.y + (box.h - H) / 2;
+    let yAt = y0;
     return items.map((it, i) => {
-      const yTop = y0 + i * (lh + gap), wTop = base * (yTop - y0) / H, wBot = base * (yTop + lh - y0) / H;
+      const lh = unit * wt(i), yTop = yAt, wTop = base * (yTop - y0) / H, wBot = base * (yTop + lh - y0) / H;
+      yAt += lh + gap;
       const x = x0 + (base - wBot) / 2;
       const inset = (wBot - wTop) / 2;
       const geom = i === 0 ? 'triangle' : 'trapezoid';
@@ -399,13 +403,13 @@
   def('funnel', 'Funnel', 'relationship', 'Ideas that narrow down through layers to one result at the bottom.', (items, box) => {
     if (!items.length) return [];
     const n = items.length, layers = n > 1 ? items.slice(0, -1) : [], last = items[n - 1];
-    const W = Math.min(box.w, box.h * 1.15), x0 = box.x + (box.w - W) / 2, d = W * 0.24;
+    const W = Math.min(box.w, box.h * 1.15), x0 = box.x + (box.w - W) / 2, d = W * 0.3;
     const fh = box.h - d * 1.05, lh = layers.length ? fh / layers.length : 0, spout = W * 0.22;
     const out = layers.map((it, i) => {
       const wTop = W - (W - spout) * i / layers.length, wBot = W - (W - spout) * (i + 1) / layers.length;
       const x = box.x + (box.w - wTop) / 2, y = box.y + i * lh, inset = (wTop - wBot) / 2;
       const hh = lh * 0.94, g = poly([[x, y], [x + wTop, y], [x + wTop - inset, y + hh], [x + inset, y + hh]]);
-      return node(it, i, n, 'poly', g.x, g.y, g.w, g.h, { poly: g.poly, text: { lines: linesOf(it, false), box: tb(x + inset, y, wBot, hh), anchor: 'ctr', align: 'ctr' } });
+      return node(it, i, n, 'poly', g.x, g.y, g.w, g.h, { poly: g.poly, text: { lines: linesOf(it, false), box: tb(x + inset * 0.5, y, wBot + inset, hh), anchor: 'ctr', align: 'ctr' } });
     });
     const cx = x0 + W / 2, y = box.y + box.h - d;
     out.push(node(last, n - 1, n, 'ellipse', cx - d / 2, y, d, d, { text: { lines: linesOf(last, false), box: tb(cx - d * 0.354, y + d * 0.146, d * 0.708, d * 0.708), anchor: 'ctr', align: 'ctr' } }));
@@ -424,10 +428,13 @@
   def('invertedPyramid', 'Inverted Pyramid', 'pyramid', 'Levels from the broadest at the top to the narrowest at the bottom.', (items, box) => {
     const n = Math.max(1, items.length), a = 0.87;
     const base = Math.min(box.w, box.h / a), H = base * a, gap = n > 1 ? H * 0.015 : 0;
-    const lh = (H - (n - 1) * gap) / n, cx = box.x + box.w / 2, y0 = box.y + (box.h - H) / 2;
+    const wt = (i) => (i === n - 1 && n > 1 ? 1.7 : 1), unit = (H - (n - 1) * gap) / items.reduce((s, _, i) => s + wt(i), 0) || H;
+    const cx = box.x + box.w / 2, y0 = box.y + (box.h - H) / 2;
     const wAt = (y) => base * (1 - (y - y0) / H);
+    let yAt = y0;
     return items.map((it, i) => {
-      const yTop = y0 + i * (lh + gap), yBot = yTop + lh, wT = wAt(yTop), wB = wAt(yBot);
+      const lh = unit * wt(i), yTop = yAt, yBot = yTop + lh, wT = wAt(yTop), wB = wAt(yBot);
+      yAt += lh + gap;
       const last = i === n - 1;
       const g = poly(last ? [[cx - wT / 2, yTop], [cx + wT / 2, yTop], [cx, yBot]] : [[cx - wT / 2, yTop], [cx + wT / 2, yTop], [cx + wB / 2, yBot], [cx - wB / 2, yBot]]);
       const tw = last ? wT * 0.5 : wB + (wT - wB) * 0.4, th = last ? lh * 0.5 : lh;

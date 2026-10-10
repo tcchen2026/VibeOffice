@@ -364,6 +364,7 @@
   /** a diagram as SmartArt: data, layout, style and colour parts (js/smartart-io.js), and the drawing of its laid-out
       shapes, which applications without a SmartArt engine show */
   function diagramFrameXML(sh, id, ctx, design) {
+    L.diagram.capture(sh);   // formatting given to its shapes since the last layout
     const IO = L.saIO, NS_DGM = IO.NS.dgm, NS_DSP = IO.NS.dsp;
     const ctD = 'application/vnd.openxmlformats-officedocument.drawingml.';
     const rel = (name, type) => ctx.rels.add(type, K.relative(ctx.part, name));
@@ -377,7 +378,11 @@
     }).join('');
     const drawing = HEAD + `<dsp:drawing xmlns:dgm="${NS_DGM}" xmlns:dsp="${NS_DSP}" xmlns:a="${NS_A}"><dsp:spTree><dsp:nvGrpSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvGrpSpPr/></dsp:nvGrpSpPr><dsp:grpSpPr/>${sps}</dsp:spTree></dsp:drawing>`;
     const dr = rel(ctx.addPart('ppt/diagrams', 'drawing', drawing, 'application/vnd.ms-office.drawingml.diagramDrawing+xml'), 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing');
-    const dm = rel(ctx.addPart('ppt/diagrams', 'data', IO.dataXML(sh.sa, sh.id, dr), ctD + 'diagramData+xml'), RT('diagramData'));
+    const fmt = (f) => ({
+      spPr: (f.fill ? fillXML(f.fill, ctx, design) : '') + (f.line ? lineXML(f.line, design) : ''),
+      rPr: f.color || f.b || f.i ? { attrs: (f.b ? ' b="1"' : '') + (f.i ? ' i="1"' : ''), inner: f.color ? `<a:solidFill>${clr(f.color, 1, design)}</a:solidFill>` : '' } : null,
+    });
+    const dm = rel(ctx.addPart('ppt/diagrams', 'data', IO.dataXML(sh.sa, sh.id, dr, fmt), ctD + 'diagramData+xml'), RT('diagramData'));
     const lo = rel(ctx.addPart('ppt/diagrams', 'layout', IO.layoutXML(sh.sa.layout), ctD + 'diagramLayout+xml'), RT('diagramLayout'));
     const qs = rel(ctx.addPart('ppt/diagrams', 'quickStyle', IO.styleXML(sh.sa.style), ctD + 'diagramStyle+xml'), RT('diagramQuickStyle'));
     const cs = rel(ctx.addPart('ppt/diagrams', 'colors', IO.colorsXML(sh.sa.colors, L.diagram.palette(design)), ctD + 'diagramColors+xml'), RT('diagramColors'));
