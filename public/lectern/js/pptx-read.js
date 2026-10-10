@@ -1574,11 +1574,14 @@
       if (!relIds) return null;
       const dm = ctx.rels[rid(relIds, 'dm')];
       let drawingPath = null, sa = null;
+      const withSa = (g) => { if (g && sa) g.sa = sa; return g; };
       if (dm) {
         const dx = await xml(dm.target);
         /* a diagram Lectern wrote (our layout ids): editable again as SmartArt (js/diagram.js) */
         if (dx && L.saIO) try { sa = L.saIO.read(dx); } catch (e) { sa = null; }
         /* an item's own formatting: its point's fill and outline, its text's colour, bold and italic */
+        /* a shape filled with a picture: not something our layouts carry, so the diagram stays as it came */
+        if (sa && sa.points.some(([pt]) => desc(pt, 'blipFill'))) sa = null;
         if (sa) for (const [pt, item] of sa.points) {
           const sp = kid(pt, 'spPr'), f = {};
           const fe = sp && kids(sp).find((c) => /Fill$/.test(c.localName));
@@ -1597,17 +1600,17 @@
         if (ext && at(ext, 'relId') && ctx.rels[at(ext, 'relId')]) drawingPath = ctx.rels[at(ext, 'relId')].target;
       }
       if (!drawingPath) { const r = Object.values(ctx.rels).find((x) => x.type === 'diagramDrawing'); if (r) drawingPath = r.target; }
-      if (!drawingPath) return smartArtFromData(relIds, base, ctx);
+      if (!drawingPath) return withSa(await smartArtFromData(relIds, base, ctx));
       const dx = await xml(drawingPath);
       const tree = dx && desc(dx, 'spTree');
-      if (!tree) return smartArtFromData(relIds, base, ctx);
+      if (!tree) return withSa(await smartArtFromData(relIds, base, ctx));
       const dRels = await rels(drawingPath);
       const dctx = Object.assign({}, ctx, { rels: dRels, partPath: drawingPath, map: (b) => ({ x: base.x + b.x, y: base.y + b.y, w: b.w, h: b.h }), layout: null, pendingMedia: ctx.pendingMedia });
       dctx.media = (id) => { const r = dRels[id]; if (!r || r.external) return null; const m = mediaCache.get(r.target); if (m) return m; ctx.pendingMedia.add(r.target); return '__pending__:' + r.target; };
       const kidsS = await shapesFrom(tree, dctx, {});
       /* dsp shapes may carry a separate text frame */
       for (const sp of kids(tree, 'sp')) void sp;
-      if (!kidsS.length) return smartArtFromData(relIds, base, ctx);
+      if (!kidsS.length) return withSa(await smartArtFromData(relIds, base, ctx));
       const g = Object.assign(base, { type: 'group', kids: kidsS, name: base.name || 'Diagram' });
       if (sa) g.sa = sa;
       return g;

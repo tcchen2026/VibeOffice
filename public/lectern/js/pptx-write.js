@@ -248,7 +248,8 @@
     if (ctx.designTemplate) return '';
     const id = ctx.nextId(sh.id);
     /* SmartArt made or edited here (js/diagram.js): written as SmartArt; one opened and not edited goes back as it came */
-    if (ctx.writer && sh.type === 'group' && sh.sa && !(sh.keep?.frame && L.frames.intact(sh, ctx))) return diagramFrameXML(sh, id, ctx, design);
+    /* (PowerPoint's own SmartArt changed only as shapes, not through its items, goes the frames' way: kept or converted) */
+    if (ctx.writer && sh.type === 'group' && sh.sa && !sh.sa.office && !(sh.keep?.frame && L.frames.intact(sh, ctx))) return diagramFrameXML(sh, id, ctx, design);
     if (ctx.writer && sh.keep?.frame) {
       const kept = L.frames.emit(sh, ctx);
       if (kept != null) return kept;
@@ -365,14 +366,22 @@
       shapes, which applications without a SmartArt engine show */
   function diagramFrameXML(sh, id, ctx, design) {
     L.diagram.capture(sh);   // formatting given to its shapes since the last layout
+    if (sh.sa.converted) ctx.writer.loss({ id: 'smartart-layout:' + sh.id, what: `This SmartArt is saved with Lectern's ${(L.smartart.get(sh.sa.layout) || {}).name} layout and its own colours and style, because it was edited here.`, where: sh.name || ctx.part, place: ctx.place, action: 'conversion' });
     const IO = L.saIO, NS_DGM = IO.NS.dgm, NS_DSP = IO.NS.dsp;
     const ctD = 'application/vnd.openxmlformats-officedocument.drawingml.';
     const rel = (name, type) => ctx.rels.add(type, K.relative(ctx.part, name));
     const sps = (sh.kids || []).map((k, i) => {
       const local = Object.assign({}, k, { x: k.x - sh.x, y: k.y - sh.y });
-      const fill = k.fill ? fillXML(k.fill, ctx, design) : '';
+      /* the drawing is a part of its own: picture fills and text links (relationships of the slide) are not written in it */
+      let kf = k.fill;
+      if (kf && !['solid', 'grad', 'none', 'patt'].includes(kf.t)) {
+        ctx.writer.loss({ id: 'smartart-fill:' + sh.id + ':' + i, what: 'A picture fill on a shape of this SmartArt is saved as the diagram\'s colour.', where: sh.name || ctx.part, place: ctx.place, action: 'conversion', notify: true });
+        kf = { t: 'solid', c: 'accent1', a: 1 };
+      }
+      const fill = kf ? fillXML(kf, ctx, design) : '';
+      if (k.tx) { local.tx = L.clone(k.tx); for (const p of local.tx.ps) for (const r of p.rs) delete r.link; }
       const ln = k.line ? lineXML(k.line, design) : '';
-      const tx = k.tx ? txBodyXML(k.tx, ctx, design, 'dsp:txBody') : '';
+      const tx = local.tx ? txBodyXML(local.tx, ctx, design, 'dsp:txBody') : '';
       const r = k.txRect, txX = r ? `<dsp:txXfrm><a:off x="${emu(local.x + r[0])}" y="${emu(local.y + r[1])}"/><a:ext cx="${Math.max(0, emu(r[2] - r[0]))}" cy="${Math.max(0, emu(r[3] - r[1]))}"/></dsp:txXfrm>` : '';
       return `<dsp:sp modelId="${IO.guid(sh.id + ':sp:' + i)}"><dsp:nvSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvSpPr/></dsp:nvSpPr><dsp:spPr>${xfrm(local)}${geomXML(k)}${fill}${ln}${shadowXML(k.shadow, design)}</dsp:spPr>${tx}${txX}</dsp:sp>`;
     }).join('');

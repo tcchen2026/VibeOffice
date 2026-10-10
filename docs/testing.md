@@ -48,6 +48,8 @@ Classic must not change when only the theme machinery changes: compare screensho
 
 `node --test tools/smartart.test.mjs` runs the layout engine (`public/common/smartart.js`) in Node: every layout, for 1 to 7 items, gives finite shapes inside the box, one shape per item it shows, and one text size within the limits. A change to the SmartArt writer (`public/lectern/js/smartart-io.js`, `diagramFrameXML` in `pptx-write.js`) is checked on a deck with one diagram per layout: save it from Lectern, run the Open XML SDK validator and `tools/ooxml/package.py check` on it, convert it with LibreOffice to PDF (does every diagram draw, with no word broken) and to PPTX, and reopen both copies in Lectern (every diagram editable again). Keep the decks and renders in `./tmp`.
 
+`python3 tools/lectern/test/smartart-office.py OUT [name]` checks SmartArt that PowerPoint made, in the corpus decks whose layouts Lectern has: unedited saves keep every diagram part byte-identical, an edit through the items gives a save with no new `package.py` findings, and that save reopens with the diagram editable (`OUT/results.json`). It removes the Recent Files entries it makes; run the SDK validator on `OUT/*-edited.pptx` too.
+
 ## Quire: tools/quire/test/
 
 | | |

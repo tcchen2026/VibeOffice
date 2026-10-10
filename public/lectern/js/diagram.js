@@ -110,7 +110,8 @@
       const gen = k.sa && k.sa.gen, r = gen && locate(g.sa.items, k.sa.item);
       if (!r) continue;
       const f = {};
-      if (JSON.stringify(k.fill) !== gen.fill) f.fill = L.clone(k.fill);
+      /* colours and gradients only: a picture fill needs a part of its own, which the SmartArt data does not have here */
+      if (JSON.stringify(k.fill) !== gen.fill && k.fill && ['solid', 'grad', 'none', 'patt'].includes(k.fill.t)) f.fill = L.clone(k.fill);
       if (JSON.stringify(k.line) !== gen.line) f.line = L.clone(k.line);
       const run = k.tx && k.tx.ps[0] && (k.tx.ps[0].rs[0] || k.tx.ps[0].end);
       if (run) {
@@ -134,9 +135,18 @@
     g.kids = res.shapes.map((s) => kidOf(s, g.sa, keep, pal));
     return g;
   };
+  /* SmartArt PowerPoint made, in a layout we have: shown as PowerPoint drew it until it is edited here; from then on
+     it is laid out and saved with our layout of the same name (the save records the change) */
+  function officeEdited(g) {
+    if (!g.sa.office) return;
+    delete g.sa.office;
+    g.sa.converted = true;
+    ui.toast(`This SmartArt now uses Lectern's ${(SA.get(g.sa.layout) || {}).name} layout, so it can be edited here.`, 4000);
+  }
   /** after a change: undo point, lay out, draw, keep the text pane in step */
   function change(g, label, fn, coalesce) {
     L.hist.push(label, coalesce);
+    officeEdited(g);
     fn();
     DG.relayout(g);
     E().renderShape(g.id);
@@ -362,12 +372,25 @@
   };
   /* an edit on the slide goes back to the item: its first paragraph is the item, the rest its sub-items */
   let editing = null;
-  L.bus.on('edit-start', () => { editing = L.te && L.te.state ? L.te.state.id : null; });
+  let editingText = null;
+  L.bus.on('edit-start', () => { editing = L.te && L.te.state ? L.te.state.id : null; const k = editing && E().shape(editing); editingText = k && k.tx ? T.plain(k.tx) : null; });
   L.bus.on('edit-end', () => {
     const id = editing;
     editing = null;
-    const k = id && E().shape(id), g = k && k.sa && DG.of(k);
-    if (!g) return;
+    const k = id && E().shape(id), g = k && DG.of(k);
+    if (!g || g === k) return;
+    if (!k.sa) {
+      /* PowerPoint's own drawing: the item whose text the shape showed */
+      const before = (editingText || '').replace(/\s+/g, ' ').trim();
+      const hit = before && SA.outline(g.sa.items).find((o) => o.item.text.replace(/\s+/g, ' ').trim() === before);
+      const now = T.plain(k.tx).replace(/\s+/g, ' ').trim();
+      if (!hit || now === before) return;
+      officeEdited(g);
+      L.hist.push('Typing');
+      hit.item.text = now;
+      DG.relayout(g); E().renderShape(g.id); E().touched(); refreshPane();
+      return;
+    }
     const r = DG.locate(g, k.sa.item);
     if (!r) return;
     const paras = (k.tx ? k.tx.ps : []).map((p) => ({ t: T.paraText(p), lvl: p.lvl || 0 }));
@@ -389,7 +412,7 @@
      here, so that each shape knows its item (clicks, on-slide typing, Delete) */
   L.bus.on('selection', () => {
     const g = DG.current();
-    if (g && g.kids.some((k) => !k.sa)) { DG.relayout(g); E().renderShape(g.id); }
+    if (g && !g.sa.office && g.kids.some((k) => !k.sa)) { DG.relayout(g); E().renderShape(g.id); }
   });
 
   /* ---------------------------------------------------------------- the text pane */

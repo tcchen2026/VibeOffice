@@ -152,19 +152,32 @@
   };
 
   /* ---------------------------------------------------------------- reading */
-  /** a diagram written by Lectern (our layout id in the data model) back to its sa record; null for others */
+  /* Office's layouts that are ours under the same name (by the id in the file; the definitions are not used) */
+  const OFFICE = { default: 'blockList', orgChart1: 'orgChart', hierarchy1: 'hierarchy', hierarchy2: 'hHierarchy', vList2: 'verticalBullet', hList1: 'hBullet',
+    process1: 'process', chevron1: 'chevron', process2: 'vProcess', hProcess11: 'timeline', cycle2: 'cycle', cycle3: 'continuousCycle', radial1: 'radial',
+    venn1: 'venn', venn3: 'linearVenn', target1: 'target', funnel1: 'funnel', matrix1: 'matrix', pyramid1: 'pyramid', pyramid2: 'pyramidList', pyramid3: 'invertedPyramid' };
+  const OFFICE_URN = 'urn:microsoft.com/office/officeart/2005/8/';
+  /** a diagram's sa record from its data model: Lectern's own, or an Office layout that is ours by another
+      id (sa.office: shown as PowerPoint drew it until edited here); null for any other layout */
   IO.read = (data) => {
     const doc = typeof data === 'string' ? new DOMParser().parseFromString(data, 'application/xml') : data;
     const pts = [...doc.getElementsByTagNameNS(NS_DGM, 'pt')];
     const docPt = pts.find((p) => p.getAttribute('type') === 'doc');
     const pr = docPt && docPt.getElementsByTagNameNS(NS_DGM, 'prSet')[0];
     const lo = pr && pr.getAttribute('loTypeId') || '';
-    if (!lo.startsWith(URN + 'layout/')) return null;
-    const layout = lo.slice((URN + 'layout/').length);
-    if (!L.smartart.get(layout)) return null;
-    const suffix = (attr, kind) => { const v = pr.getAttribute(attr) || ''; return v.startsWith(URN + kind + '/') ? v.slice((URN + kind + '/').length) : null; };
+    const office = lo.startsWith(OFFICE_URN + 'layout/');
+    const layout = lo.startsWith(URN + 'layout/') ? lo.slice((URN + 'layout/').length) : office ? OFFICE[lo.slice((OFFICE_URN + 'layout/').length).replace(/#\d+$/, '')] : null;
+    if (!layout || !L.smartart.get(layout)) return null;
+    const suffix = (attr, kind) => {
+      const v = pr.getAttribute(attr) || '';
+      if (v.startsWith(URN + kind + '/')) return v.slice((URN + kind + '/').length);
+      const o = v.startsWith(OFFICE_URN + kind + '/') ? v.slice((OFFICE_URN + kind + '/').length) : '';
+      if (kind === 'colors') return /colorful/i.test(o) ? 'colorful' : /^accent([1-6])/.test(o) ? 'accent' + o[6] : null;
+      if (kind === 'quickstyle') return /intense|3d|polished|cartoon/i.test(o) ? 'intense' : /moderate|simple[45]/i.test(o) ? 'moderate' : /simple[23]/i.test(o) ? 'subtle' : null;
+      return null;
+    };
     const text = (p) => [...p.getElementsByTagNameNS(NS_A, 'p')].map((para) => [...para.getElementsByTagNameNS(NS_A, 't')].map((t) => t.textContent).join('')).join(' ');
-    const nodePts = pts.filter((p) => !p.getAttribute('type') || p.getAttribute('type') === 'node');
+    const nodePts = pts.filter((p) => !p.getAttribute('type') || p.getAttribute('type') === 'node' || p.getAttribute('type') === 'asst');
     const byId = new Map(nodePts.map((p) => [p.getAttribute('modelId'), { id: L.smartart.newId(), text: text(p), kids: [] }]));
     /* the points, for the reader to take each item's own formatting from (pptx-read.js) */
     const points = nodePts.map((p) => [p, byId.get(p.getAttribute('modelId'))]);
@@ -177,7 +190,8 @@
       kids.get(src).push([+c.getAttribute('srcOrd') || 0, dst]);
     }
     const build = (pid) => (kids.get(pid) || []).sort((a, b) => a[0] - b[0]).map(([, id]) => { const it = byId.get(id); it.kids = build(id); return it; });
-    const sa = { layout, colors: suffix('csTypeId', 'colors') || 'accent1', style: suffix('qsTypeId', 'style') || 'simple', items: build(docPt.getAttribute('modelId')) };
+    const sa = { layout, colors: suffix('csTypeId', 'colors') || 'accent1', style: suffix('qsTypeId', office ? 'quickstyle' : 'style') || 'simple', items: build(docPt.getAttribute('modelId')) };
+    if (office) sa.office = true;
     Object.defineProperty(sa, 'points', { value: points, enumerable: false });
     return sa;
   };
