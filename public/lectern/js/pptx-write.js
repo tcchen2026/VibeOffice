@@ -370,6 +370,10 @@
     const IO = L.saIO, NS_DGM = IO.NS.dgm, NS_DSP = IO.NS.dsp;
     const ctD = 'application/vnd.openxmlformats-officedocument.drawingml.';
     const rel = (name, type) => ctx.rels.add(type, K.relative(ctx.part, name));
+    /* each item's shape takes the id of the pres point that shows it, as in PowerPoint's files */
+    IO.dataXML(sh.sa, sh.id, 'rId1');
+    const presOf = IO.lastPres || new Map(), usedPres = new Set();
+    const modelId = (k, i) => { const p = k.sa && k.sa.role === 'node' && presOf.get(IO.guid(sh.id + ':' + k.sa.item)); if (p && !usedPres.has(p)) { usedPres.add(p); return p; } return IO.guid(sh.id + ':sp:' + i); };
     const sps = (sh.kids || []).map((k, i) => {
       const local = Object.assign({}, k, { x: k.x - sh.x, y: k.y - sh.y });
       /* the drawing is a part of its own: picture fills and text links (relationships of the slide) are not written in it */
@@ -383,7 +387,7 @@
       const ln = k.line ? lineXML(k.line, design) : '';
       const tx = local.tx ? txBodyXML(local.tx, ctx, design, 'dsp:txBody') : '';
       const r = k.txRect, txX = r ? `<dsp:txXfrm><a:off x="${emu(local.x + r[0])}" y="${emu(local.y + r[1])}"/><a:ext cx="${Math.max(0, emu(r[2] - r[0]))}" cy="${Math.max(0, emu(r[3] - r[1]))}"/></dsp:txXfrm>` : '';
-      return `<dsp:sp modelId="${IO.guid(sh.id + ':sp:' + i)}"><dsp:nvSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvSpPr/></dsp:nvSpPr><dsp:spPr>${xfrm(local)}${geomXML(k)}${fill}${ln}${shadowXML(k.shadow, design)}</dsp:spPr>${tx}${txX}</dsp:sp>`;
+      return `<dsp:sp modelId="${modelId(k, i)}"><dsp:nvSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvSpPr/></dsp:nvSpPr><dsp:spPr>${xfrm(local)}${geomXML(k)}${fill}${ln}${shadowXML(k.shadow, design)}</dsp:spPr>${tx}${txX}</dsp:sp>`;
     }).join('');
     const drawing = HEAD + `<dsp:drawing xmlns:dgm="${NS_DGM}" xmlns:dsp="${NS_DSP}" xmlns:a="${NS_A}"><dsp:spTree><dsp:nvGrpSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvGrpSpPr/></dsp:nvGrpSpPr><dsp:grpSpPr/>${sps}</dsp:spTree></dsp:drawing>`;
     const dr = rel(ctx.addPart('ppt/diagrams', 'drawing', drawing, 'application/vnd.ms-office.drawingml.diagramDrawing+xml'), 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing');

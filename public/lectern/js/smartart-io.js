@@ -46,15 +46,93 @@
       walk(it.kids || [], id);
     });
     walk(sa.items || [], doc);
+    /* presentation points: what each item becomes under the layout definition. PowerPoint writes them and
+       LibreOffice needs them to lay a diagram out itself (without the drawing) */
+    try { presPoints(sa, key, lay, doc, pts, cxns); } catch (e) { /* the diagram still opens; PowerPoint rebuilds them */ }
     const ext = drawingRelId ? `<dgm:extLst><a:ext uri="http://schemas.microsoft.com/office/drawing/2008/diagram"><dsp:dataModelExt xmlns:dsp="${NS_DSP}" relId="${drawingRelId}" minVer="http://schemas.openxmlformats.org/drawingml/2006/diagram"/></a:ext></dgm:extLst>` : '';
     return HEAD + `<dgm:dataModel xmlns:dgm="${NS_DGM}" xmlns:a="${NS_A}" xmlns:r="${NS_R}"><dgm:ptLst>${pts.join('')}</dgm:ptLst><dgm:cxnLst>${cxns.join('')}</dgm:cxnLst><dgm:bg/><dgm:whole/>${ext}</dgm:dataModel>`;
   };
+
+  /* walk our layout definition over the items, as a SmartArt engine does: every layoutNode met gives a pres
+     point tied to its data point (presOf) and to the pres point above it (presParOf) */
+  function presPoints(sa, key, lay, doc, pts, cxns) {
+    const def = new DOMParser().parseFromString(IO.layoutXML(lay.id), 'application/xml');
+    const el = (e) => [...e.children];
+    const loc = (e) => e.localName;
+    /* the data tree, with each node's transition points */
+    const node = (it, i, list) => ({ id: IO.guid(key + ':' + it.id), par: IO.guid(key + ':' + it.id + ':par'), sib: IO.guid(key + ':' + it.id + ':sib'), last: i === list.length - 1, kids: [] });
+    const build = (list) => list.map((it, i) => Object.assign(node(it, i, list), { kids: build(it.kids || []) }));
+    const root = { id: doc, kids: build(sa.items || []) };
+    const des = (n) => n.kids.flatMap((k) => [k, ...des(k)]);
+    const out = [], links = [];
+    let seq = 0;
+    const srcOrd = new Map(), destOrd = new Map(), parOrd = new Map();
+    const presOf = (src, dst) => { const so = srcOrd.get(src) || 0, dO = destOrd.get(dst) || 0; srcOrd.set(src, so + 1); destOrd.set(dst, dO + 1); links.push(['presOf', src, dst, so, dO]); };
+    const byName = (name) => [...def.getElementsByTagNameNS(NS_DGM, 'forEach')].find((f) => f.getAttribute('name') === name);
+    const test = (c, ctx) => {
+      const func = c.getAttribute('func'), op = c.getAttribute('op') || 'equ', val = c.getAttribute('val');
+      let v;
+      if (func === 'var') v = c.getAttribute('arg') === 'dir' ? 'norm' : '';
+      else if (func === 'cnt') v = String(ctx.n ? (c.getAttribute('axis') === 'des' ? des(ctx.n) : ctx.n.kids).length : 0);
+      else return false;
+      const a = isNaN(+v) ? v : +v, b = isNaN(+val) ? val : +val;
+      return { equ: a === b, neq: a !== b, gt: a > b, gte: a >= b, lt: a < b, lte: a <= b }[op] || false;
+    };
+    const kids = (e, ctx, parent) => { for (const c of el(e)) visit(c, ctx, parent); };
+    function visit(e, ctx, parent) {
+      if (loc(e) === 'layoutNode') {
+        const p = { id: IO.guid(key + ':pres:' + seq++), name: e.getAttribute('name'), style: e.getAttribute('styleLbl'), assoc: ctx.id, vars: '' };
+        const vl = el(e).find((c) => loc(c) === 'varLst');
+        if (vl) p.vars = new XMLSerializer().serializeToString(vl).replace(/^<dgm:varLst[^>]*>|<\/dgm:varLst>$/g, '').replace(/ xmlns(:\w+)?="[^"]*"/g, '');
+        out.push(p);
+        if (parent) { const o = parOrd.get(parent.id) || 0; parOrd.set(parent.id, o + 1); links.push(['presParOf', parent.id, p.id, o, 0]); }
+        const po = el(e).find((c) => loc(c) === 'presOf');
+        if (po) {
+          const axis = po.getAttribute('axis');
+          if (!axis || axis === 'self') presOf(ctx.id, p.id);
+          else if (ctx.n && (axis === 'desOrSelf' || axis === 'des')) for (const d of axis === 'des' ? des(ctx.n) : [ctx.n, ...des(ctx.n)]) presOf(d.id, p.id);
+        }
+        kids(e, ctx, p);
+      } else if (loc(e) === 'forEach') {
+        const f = e.getAttribute('ref') ? byName(e.getAttribute('ref')) : e;
+        if (!f) return;
+        const axis = f.getAttribute('axis'), type = f.getAttribute('ptType'), cnt = +f.getAttribute('cnt') || Infinity;
+        let ctxs = [];
+        if (axis === 'ch' && type === 'node' && ctx.n) ctxs = ctx.n.kids.map((k) => ({ id: k.id, n: k }));
+        else if (axis === 'followSib' && type === 'sibTrans' && ctx.n && !ctx.n.last && ctx.n.sib) ctxs = [{ id: ctx.n.sib }];
+        else if (axis === 'self' && type === 'parTrans' && ctx.n && ctx.n.par) ctxs = [{ id: ctx.n.par }];
+        for (const c of ctxs.slice(0, cnt)) kids(f, c, parent);
+      } else if (loc(e) === 'choose') {
+        const pick = el(e).find((c) => loc(c) === 'if' && test(c, ctx)) || el(e).find((c) => loc(c) === 'else');
+        if (pick) kids(pick, ctx, parent);
+      }
+    }
+    const top = el(def.documentElement).find((c) => loc(c) === 'layoutNode');
+    visit(top, { id: doc, n: root }, null);
+    /* for the drawing: which pres point shows each item's text (pptx-write.js names the item's shape after it) */
+    IO.lastPres = new Map();
+    const textOf = new Map(links.filter((l) => l[0] === 'presOf' && l[3] === 0).map((l) => [l[2], l[1]]));
+    for (const p of out) { const src = textOf.get(p.id); if (src && src !== doc && !IO.lastPres.has(src) && p.style) IO.lastPres.set(src, p.id); }
+    /* each named layout node numbers its pres points (presStyleIdx of presStyleCnt), as PowerPoint does */
+    const count = new Map();
+    for (const p of out) if (p.style) count.set(p.name, (count.get(p.name) || 0) + 1);
+    const idx = new Map();
+    for (const p of out) {
+      const cnt = p.style ? count.get(p.name) : 0, i = p.style ? idx.get(p.name) || 0 : null;
+      if (p.style) idx.set(p.name, i + 1);
+      pts.push(`<dgm:pt modelId="${p.id}" type="pres"><dgm:prSet presAssocID="${p.assoc}" presName="${X(p.name)}"${p.style ? ` presStyleLbl="${X(p.style)}" presStyleIdx="${i}"` : ''} presStyleCnt="${cnt}">${p.vars ? `<dgm:presLayoutVars>${p.vars}</dgm:presLayoutVars>` : ''}</dgm:prSet><dgm:spPr/></dgm:pt>`);
+    }
+    const presId = `${URN}layout/${lay.id}`;
+    links.forEach(([type, src, dst, so, dO], i) => cxns.push(`<dgm:cxn modelId="${IO.guid(key + ':pcx:' + i)}" type="${type}" srcId="${src}" destId="${dst}" srcOrd="${so}" destOrd="${dO}" presId="${presId}"/>`));
+  }
 
   /* ---------------------------------------------------------------- layout definitions */
   const margins = (f) => ['lMarg', 'rMarg', 'tMarg', 'bMarg'].map((m) => `<dgm:constr type="${m}" refType="primFontSz" refFor="ch" refForName="node" fact="${f}"/>`).join('');
   const SAMPLE = '<dgm:sampData useDef="1"><dgm:dataModel><dgm:ptLst/><dgm:bg/><dgm:whole/></dgm:dataModel></dgm:sampData><dgm:styleData useDef="1"><dgm:dataModel><dgm:ptLst/><dgm:bg/><dgm:whole/></dgm:dataModel></dgm:styleData><dgm:clrData useDef="1"><dgm:dataModel><dgm:ptLst/><dgm:bg/><dgm:whole/></dgm:dataModel></dgm:clrData>';
   const shape = (type, adj) => `<dgm:shape${type ? ` type="${type}"` : ''} xmlns:r="${NS_R}" r:blip=""><dgm:adjLst>${(adj || []).map(([i, v]) => `<dgm:adj idx="${i}" val="${v}"/>`).join('')}</dgm:adjLst></dgm:shape>`;
-  const textNode = (name, styleLbl, geom, adj, extra) => `<dgm:layoutNode name="${name}" styleLbl="${styleLbl}"><dgm:varLst><dgm:bulletEnabled val="1"/></dgm:varLst><dgm:alg type="tx"/>${shape(geom, adj)}<dgm:presOf axis="desOrSelf" ptType="node"/><dgm:constrLst>${['lMarg', 'rMarg', 'tMarg', 'bMarg'].map((m) => `<dgm:constr type="${m}" refType="primFontSz" fact="0.25"/>`).join('')}</dgm:constrLst><dgm:ruleLst><dgm:rule type="primFontSz" val="5" fact="NaN" max="NaN"/></dgm:ruleLst>${extra || ''}</dgm:layoutNode>`;
+  /* axis 'self' where the item's sub-items have shapes of their own (trees, radial, the lists' bullet cards);
+     'desOrSelf' where they are bullets in the item's own shape */
+  const textNode = (name, styleLbl, geom, adj, extra, axis) => `<dgm:layoutNode name="${name}" styleLbl="${styleLbl}"><dgm:varLst><dgm:bulletEnabled val="1"/></dgm:varLst><dgm:alg type="tx"/>${shape(geom, adj)}<dgm:presOf axis="${axis || 'desOrSelf'}" ptType="node"/><dgm:constrLst>${['lMarg', 'rMarg', 'tMarg', 'bMarg'].map((m) => `<dgm:constr type="${m}" refType="primFontSz" fact="0.25"/>`).join('')}</dgm:constrLst><dgm:ruleLst><dgm:rule type="primFontSz" val="5" fact="NaN" max="NaN"/></dgm:ruleLst>${extra || ''}</dgm:layoutNode>`;
   const arrowNode = (styleLbl) => `<dgm:forEach name="arrows" axis="followSib" ptType="sibTrans" cnt="1"><dgm:layoutNode name="arrow" styleLbl="${styleLbl}"><dgm:alg type="conn"><dgm:param type="begPts" val="auto"/><dgm:param type="endPts" val="auto"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst><dgm:constr type="h" refType="w" fact="0.6"/><dgm:constr type="connDist"/><dgm:constr type="begPad" refType="connDist" fact="0.25"/><dgm:constr type="endPad" refType="connDist" fact="0.22"/></dgm:constrLst><dgm:ruleLst/></dgm:layoutNode></dgm:forEach>`;
   const root = (alg, constr, body, vars) => `<dgm:layoutNode name="diagram"><dgm:varLst><dgm:dir/><dgm:resizeHandles val="exact"/>${vars || ''}</dgm:varLst>${alg}${shape('')}<dgm:presOf/><dgm:constrLst>${constr}</dgm:constrLst><dgm:ruleLst/>${body}</dgm:layoutNode>`;
   const nodeSize = (w, hf, sp) => `<dgm:constr type="w" for="ch" forName="node" refType="w"/><dgm:constr type="h" for="ch" forName="node" refType="w" refFor="ch" refForName="node" fact="${hf}"/>${sp != null ? `<dgm:constr type="w" for="ch" forName="space" refType="w" refFor="ch" refForName="node" fact="${sp}"/>` : ''}<dgm:constr type="primFontSz" for="ch" forName="node" op="equ" val="65"/>`;
@@ -64,7 +142,7 @@
       `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'rect')}</dgm:forEach>`),
     verticalBullet: () => root('<dgm:alg type="lin"><dgm:param type="linDir" val="fromT"/><dgm:param type="vertAlign" val="mid"/></dgm:alg>',
       '<dgm:constr type="w" for="ch" forName="node" refType="w"/><dgm:constr type="h" for="ch" forName="node" refType="primFontSz" refFor="ch" refForName="node" fact="0.8"/><dgm:constr type="w" for="ch" forName="childText" refType="w"/><dgm:constr type="primFontSz" for="ch" forName="node" op="equ" val="65"/><dgm:constr type="primFontSz" for="ch" forName="childText" refType="primFontSz" refFor="ch" refForName="node" op="equ" fact="0.8"/><dgm:constr type="h" for="ch" forName="spacer" refType="primFontSz" refFor="ch" refForName="node" fact="0.15"/>',
-      `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'roundRect', [[1, 0.16667]])}<dgm:choose name="hasKids"><dgm:if name="kids" axis="ch" ptType="node" func="cnt" op="gte" val="1"><dgm:layoutNode name="childText" styleLbl="revTx"><dgm:varLst><dgm:bulletEnabled val="1"/></dgm:varLst><dgm:alg type="tx"><dgm:param type="stBulletLvl" val="1"/></dgm:alg>${shape('rect')}<dgm:presOf axis="des" ptType="node"/><dgm:constrLst><dgm:constr type="tMarg" refType="primFontSz" fact="0.2"/><dgm:constr type="bMarg" refType="primFontSz" fact="0.2"/><dgm:constr type="lMarg" refType="w" fact="0.08"/></dgm:constrLst><dgm:ruleLst><dgm:rule type="primFontSz" val="5" fact="NaN" max="NaN"/></dgm:ruleLst></dgm:layoutNode></dgm:if><dgm:else name="noKids"/></dgm:choose><dgm:forEach name="gap" axis="followSib" ptType="sibTrans" cnt="1"><dgm:layoutNode name="spacer"><dgm:alg type="sp"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/></dgm:layoutNode></dgm:forEach></dgm:forEach>`),
+      `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'roundRect', [[1, 0.16667]], '', 'self')}<dgm:choose name="hasKids"><dgm:if name="kids" axis="ch" ptType="node" func="cnt" op="gte" val="1"><dgm:layoutNode name="childText" styleLbl="revTx"><dgm:varLst><dgm:bulletEnabled val="1"/></dgm:varLst><dgm:alg type="tx"><dgm:param type="stBulletLvl" val="1"/></dgm:alg>${shape('rect')}<dgm:presOf axis="des" ptType="node"/><dgm:constrLst><dgm:constr type="tMarg" refType="primFontSz" fact="0.2"/><dgm:constr type="bMarg" refType="primFontSz" fact="0.2"/><dgm:constr type="lMarg" refType="w" fact="0.08"/></dgm:constrLst><dgm:ruleLst><dgm:rule type="primFontSz" val="5" fact="NaN" max="NaN"/></dgm:ruleLst></dgm:layoutNode></dgm:if><dgm:else name="noKids"/></dgm:choose><dgm:forEach name="gap" axis="followSib" ptType="sibTrans" cnt="1"><dgm:layoutNode name="spacer"><dgm:alg type="sp"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/></dgm:layoutNode></dgm:forEach></dgm:forEach>`),
     process: () => root('<dgm:choose name="direction"><dgm:if name="ltr" func="var" arg="dir" op="equ" val="norm"><dgm:alg type="lin"/></dgm:if><dgm:else name="rtl"><dgm:alg type="lin"><dgm:param type="linDir" val="fromR"/></dgm:alg></dgm:else></dgm:choose>',
       nodeSize(1, 0.6) + '<dgm:constr type="w" for="ch" forName="arrow" refType="w" refFor="ch" refForName="node" fact="0.22"/><dgm:constr type="h" for="ch" forName="arrow" op="equ"/><dgm:constr type="primFontSz" for="des" forName="arrowText" op="equ"/>',
       `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'roundRect', [[1, 0.1]])}${arrowNode('sibTrans2D1')}</dgm:forEach>`),
@@ -76,10 +154,11 @@
       `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'ellipse')}${arrowNode('sibTrans2D1')}</dgm:forEach>`),
     radial: () => root('<dgm:alg type="cycle"><dgm:param type="stAng" val="0"/><dgm:param type="spanAng" val="360"/><dgm:param type="ctrShpMap" val="fNode"/></dgm:alg>',
       '<dgm:constr type="w" for="ch" forName="centre" refType="w" fact="0.3"/><dgm:constr type="h" for="ch" forName="centre" refType="w" refFor="ch" refForName="centre"/><dgm:constr type="w" for="ch" forName="node" refType="w" refFor="ch" refForName="centre" fact="0.6"/><dgm:constr type="h" for="ch" forName="node" refType="w" refFor="ch" refForName="node"/><dgm:constr type="primFontSz" for="ch" forName="centre" op="equ" val="65"/><dgm:constr type="primFontSz" for="ch" forName="node" op="equ" val="65"/>',
-      `<dgm:forEach name="centres" axis="ch" ptType="node" cnt="1">${textNode('centre', 'node0', 'ellipse')}<dgm:forEach name="kids" axis="ch" ptType="node"><dgm:forEach name="lines" axis="self" ptType="parTrans"><dgm:layoutNode name="line" styleLbl="parChTrans1D2"><dgm:alg type="conn"><dgm:param type="dim" val="1D"/><dgm:param type="begPts" val="auto"/><dgm:param type="endPts" val="auto"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst><dgm:constr type="begPad"/><dgm:constr type="endPad"/></dgm:constrLst><dgm:ruleLst/></dgm:layoutNode></dgm:forEach>${textNode('node', 'node1', 'ellipse')}</dgm:forEach></dgm:forEach>`),
-    orgChart: () => root('<dgm:alg type="hierRoot"/>',
+      `<dgm:forEach name="centres" axis="ch" ptType="node" cnt="1">${textNode('centre', 'node0', 'ellipse', null, '', 'self')}<dgm:forEach name="kids" axis="ch" ptType="node"><dgm:forEach name="lines" axis="self" ptType="parTrans"><dgm:layoutNode name="line" styleLbl="parChTrans1D2"><dgm:alg type="conn"><dgm:param type="dim" val="1D"/><dgm:param type="begPts" val="auto"/><dgm:param type="endPts" val="auto"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst><dgm:constr type="begPad"/><dgm:constr type="endPad"/></dgm:constrLst><dgm:ruleLst/></dgm:layoutNode></dgm:forEach>${textNode('node', 'node1', 'ellipse', null, '', 'self')}</dgm:forEach></dgm:forEach>`),
+    /* the diagram arranges its top items side by side; each is a root over its sub-items (a branch) */
+    orgChart: () => root('<dgm:alg type="hierChild"><dgm:param type="linDir" val="fromL"/></dgm:alg>',
       '<dgm:constr type="w" for="des" forName="node" refType="w" fact="0.24"/><dgm:constr type="h" for="des" forName="node" refType="w" refFor="des" refForName="node" fact="0.55"/><dgm:constr type="primFontSz" for="des" forName="node" op="equ" val="65"/><dgm:constr type="w" for="des" forName="node2" refType="w" refFor="des" refForName="node"/><dgm:constr type="h" for="des" forName="node2" refType="h" refFor="des" refForName="node"/><dgm:constr type="primFontSz" for="des" forName="node2" refType="primFontSz" refFor="des" refForName="node" op="equ"/><dgm:constr type="sibSp" refType="w" refFor="des" refForName="node" fact="0.25"/><dgm:constr type="sp" refType="h" refFor="des" refForName="node" fact="0.7"/>',
-      `<dgm:forEach name="tops" axis="ch" ptType="node"><dgm:layoutNode name="branch"><dgm:alg type="hierRoot"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/>${textNode('node', 'node1', 'rect')}<dgm:layoutNode name="kids"><dgm:alg type="hierChild"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/><dgm:forEach name="rep" axis="ch" ptType="node"><dgm:forEach name="lines" axis="self" ptType="parTrans"><dgm:layoutNode name="line" styleLbl="parChTrans1D2"><dgm:alg type="conn"><dgm:param type="dim" val="1D"/><dgm:param type="connRout" val="bend"/><dgm:param type="begPts" val="bCtr"/><dgm:param type="endPts" val="tCtr"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst/><dgm:ruleLst/></dgm:layoutNode></dgm:forEach><dgm:layoutNode name="branch2"><dgm:alg type="hierRoot"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/>${textNode('node2', 'node1', 'rect')}<dgm:layoutNode name="kids2"><dgm:alg type="hierChild"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/><dgm:forEach name="more" ref="rep"/></dgm:layoutNode></dgm:layoutNode></dgm:forEach></dgm:layoutNode></dgm:layoutNode></dgm:forEach>`),
+      `<dgm:forEach name="tops" axis="ch" ptType="node"><dgm:layoutNode name="branch"><dgm:alg type="hierRoot"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/>${textNode('node', 'node1', 'rect', null, '', 'self')}<dgm:layoutNode name="kids"><dgm:alg type="hierChild"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/><dgm:forEach name="rep" axis="ch" ptType="node"><dgm:forEach name="lines" axis="self" ptType="parTrans"><dgm:layoutNode name="line" styleLbl="parChTrans1D2"><dgm:alg type="conn"><dgm:param type="dim" val="1D"/><dgm:param type="connRout" val="bend"/><dgm:param type="begPts" val="bCtr"/><dgm:param type="endPts" val="tCtr"/></dgm:alg>${shape('conn')}<dgm:presOf axis="self"/><dgm:constrLst/><dgm:ruleLst/></dgm:layoutNode></dgm:forEach><dgm:layoutNode name="branch2"><dgm:alg type="hierRoot"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/>${textNode('node2', 'node1', 'rect', null, '', 'self')}<dgm:layoutNode name="kids2"><dgm:alg type="hierChild"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/><dgm:forEach name="more" ref="rep"/></dgm:layoutNode></dgm:layoutNode></dgm:forEach></dgm:layoutNode></dgm:layoutNode></dgm:forEach>`),
     pyramid: () => root('<dgm:alg type="pyra"><dgm:param type="linDir" val="fromT"/><dgm:param type="pyraAcctPos" val="aft"/></dgm:alg>',
       '<dgm:constr type="w" for="ch" forName="node" refType="w"/><dgm:constr type="h" for="ch" forName="node" refType="h"/><dgm:constr type="primFontSz" for="ch" forName="node" op="equ" val="65"/>',
       `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', 'node1', 'trapezoid')}</dgm:forEach>`),
@@ -96,13 +175,16 @@
     `<dgm:forEach name="nodes" axis="ch" ptType="node">${textNode('node', (o && o.styleLbl) || 'node1', geom, (o && o.adj) || [])}${o && o.arrows ? arrowNode('sibTrans2D1') : ''}</dgm:forEach>`);
   Object.assign(LAYOUT, {
     stackedList: LAYOUT.verticalBullet, vBox: LAYOUT.verticalBullet, linedList: LAYOUT.verticalBullet,
-    hBullet: linear('rect', 'fromL', { aspect: 0.3, sp: 0.06 }),
+    hBullet: () => root('<dgm:alg type="lin"><dgm:param type="linDir" val="fromL"/><dgm:param type="nodeVertAlign" val="t"/></dgm:alg>',
+      '<dgm:constr type="w" for="ch" forName="column" refType="w"/><dgm:constr type="h" for="ch" forName="column" refType="h"/><dgm:constr type="w" for="ch" forName="space" refType="w" refFor="ch" refForName="column" fact="0.06"/><dgm:constr type="primFontSz" for="des" forName="node" op="equ" val="65"/><dgm:constr type="primFontSz" for="des" forName="childText" refType="primFontSz" refFor="des" refForName="node" op="equ" fact="0.7"/>',
+      `<dgm:forEach name="nodes" axis="ch" ptType="node"><dgm:layoutNode name="column"><dgm:alg type="lin"><dgm:param type="linDir" val="fromT"/></dgm:alg>${shape('')}<dgm:presOf/><dgm:constrLst><dgm:constr type="w" for="ch" forName="node" refType="w"/><dgm:constr type="h" for="ch" forName="node" refType="h" fact="0.3"/><dgm:constr type="w" for="ch" forName="childText" refType="w"/><dgm:constr type="h" for="ch" forName="childText" refType="h" fact="0.7"/></dgm:constrLst><dgm:ruleLst/>${textNode('node', 'node1', 'rect', null, '', 'self')}<dgm:layoutNode name="childText" styleLbl="alignAcc1"><dgm:varLst><dgm:bulletEnabled val="1"/></dgm:varLst><dgm:alg type="tx"><dgm:param type="stBulletLvl" val="1"/></dgm:alg>${shape('rect')}<dgm:presOf axis="des" ptType="node"/><dgm:constrLst><dgm:constr type="tMarg" refType="primFontSz" fact="0.2"/><dgm:constr type="lMarg" refType="w" fact="0.08"/></dgm:constrLst><dgm:ruleLst><dgm:rule type="primFontSz" val="5" fact="NaN" max="NaN"/></dgm:ruleLst></dgm:layoutNode></dgm:layoutNode><dgm:forEach name="gap" axis="followSib" ptType="sibTrans" cnt="1"><dgm:layoutNode name="space"><dgm:alg type="sp"/>${shape('')}<dgm:presOf/><dgm:constrLst/><dgm:ruleLst/></dgm:layoutNode></dgm:forEach></dgm:forEach>`),
     stepUp: linear('roundRect', 'fromL', { sp: 0.1, adj: [[1, 0.1]] }),
     continuousArrow: linear('roundRect', 'fromL', { aspect: 0.5, sp: 0.12, adj: [[1, 0.16667]] }),
     vProcess: linear('roundRect', 'fromT', { aspect: 0.3, arrows: true, adj: [[1, 0.1]] }),
     timeline: linear('ellipse', 'fromL', { aspect: 1, sp: 1.5 }),
     continuousCycle: LAYOUT.cycle,
-    hierarchy: LAYOUT.orgChart, hHierarchy: LAYOUT.orgChart,
+    hierarchy: LAYOUT.orgChart,
+    hHierarchy: () => LAYOUT.orgChart().replace('<dgm:alg type="hierChild"><dgm:param type="linDir" val="fromL"/></dgm:alg>', '<dgm:alg type="hierChild"><dgm:param type="linDir" val="fromT"/></dgm:alg>').replace(/<dgm:alg type="hierRoot"\/>/g, '<dgm:alg type="hierRoot"><dgm:param type="hierAlign" val="lCtrCh"/></dgm:alg>').replace(/<dgm:alg type="hierChild"\/>/g, '<dgm:alg type="hierChild"><dgm:param type="linDir" val="fromT"/><dgm:param type="chAlign" val="l"/></dgm:alg>').replace(/val="tCtr"/g, 'val="rMid"').replace(/val="bCtr"/g, 'val="lMid"'),
     linearVenn: linear('ellipse', 'fromL', { aspect: 1, sp: -0.25, styleLbl: 'vennNode1' }),
     funnel: LAYOUT.pyramid, pyramidList: LAYOUT.pyramid,
     invertedPyramid: () => LAYOUT.pyramid().replace('<dgm:param type="linDir" val="fromT"/>', '<dgm:param type="linDir" val="fromB"/>'),
