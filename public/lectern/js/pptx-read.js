@@ -1573,9 +1573,11 @@
       const relIds = kids(gd).find((c) => c.localName === 'relIds');
       if (!relIds) return null;
       const dm = ctx.rels[rid(relIds, 'dm')];
-      let drawingPath = null;
+      let drawingPath = null, sa = null;
       if (dm) {
         const dx = await xml(dm.target);
+        /* a diagram Lectern wrote (our layout ids): editable again as SmartArt (js/diagram.js) */
+        if (dx && L.saIO) try { sa = L.saIO.read(dx); } catch (e) { sa = null; }
         const ext = dx && desc(dx, 'dataModelExt');
         if (ext && at(ext, 'relId') && ctx.rels[at(ext, 'relId')]) drawingPath = ctx.rels[at(ext, 'relId')].target;
       }
@@ -1591,7 +1593,9 @@
       /* dsp shapes may carry a separate text frame */
       for (const sp of kids(tree, 'sp')) void sp;
       if (!kidsS.length) return smartArtFromData(relIds, base, ctx);
-      return Object.assign(base, { type: 'group', kids: kidsS, name: base.name || 'Diagram' });
+      const g = Object.assign(base, { type: 'group', kids: kidsS, name: base.name || 'Diagram' });
+      if (sa) g.sa = sa;
+      return g;
     }
     /**
      * SmartArt saved without its drawing (PowerPoint 2007 and some generators keep only the data model):

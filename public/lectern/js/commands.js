@@ -82,7 +82,7 @@
   C('insertPicture', { label: '&From File...', icon: 'picture', tip: 'Insert Picture', run: (arg) => A().insertPictureDialog(arg && arg.ph) });
   C('photoAlbum', { label: '&New Photo Album...', icon: 'photoAlbum', run: () => L.dlg.photoAlbum() });
   C('insertWordArt', { label: '&WordArt...', icon: 'wordart', tip: 'Insert WordArt', run: () => A().insertWordArtDialog() });
-  C('insertDiagram', { label: 'Dia&gram...', icon: 'diagram', tip: 'Insert Diagram or Organization Chart', run: (arg) => L.dlg.diagramGallery((k) => A().insertDiagram(k, arg && arg.ph)) });
+  C('insertDiagram', { label: 'Dia&gram...', icon: 'diagram', tip: 'Insert SmartArt Graphic', run: (arg) => L.diagram.gallery((k) => L.diagram.insert(k, arg && arg.ph)) });
   C('textBox', { label: 'Te&xt Box', icon: 'textbox', tip: 'Text Box', checked: () => !!(E().tool && E().tool.kind === 'text' && !E().tool.vert), run: () => E().setTool(E().tool && E().tool.kind === 'text' ? null : { kind: 'text' }) });
   C('vTextBox', { label: '&Vertical Text Box', icon: 'vtextbox', checked: () => !!(E().tool && E().tool.kind === 'text' && E().tool.vert), run: () => E().setTool({ kind: 'text', vert: true }) });
   C('insertChart', { label: 'C&hart...', icon: 'chart', tip: 'Insert Chart', run: (arg) => A().insertChart(arg && arg.ph) });

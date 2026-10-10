@@ -247,6 +247,8 @@
   function shapeXML(sh, ctx, design) {
     if (ctx.designTemplate) return '';
     const id = ctx.nextId(sh.id);
+    /* SmartArt made or edited here (js/diagram.js): written as SmartArt; one opened and not edited goes back as it came */
+    if (ctx.writer && sh.type === 'group' && sh.sa && !(sh.keep?.frame && L.frames.intact(sh, ctx))) return diagramFrameXML(sh, id, ctx, design);
     if (ctx.writer && sh.keep?.frame) {
       const kept = L.frames.emit(sh, ctx);
       if (kept != null) return kept;
@@ -358,6 +360,28 @@
       rid = ctx.rels.add(RT('chart'), ctx.part ? K.relative(ctx.part, `ppt/charts/chart${n}.xml`) : `../charts/chart${n}.xml`);
     }
     return `<p:graphicFrame><p:nvGraphicFramePr>${cNvPr(id, sh, ctx)}<p:cNvGraphicFramePr/>${phXML(sh.ph)}</p:nvGraphicFramePr>${xfrm(sh, 'p:xfrm')}<a:graphic><a:graphicData uri="${NS_C}"><c:chart xmlns:c="${NS_C}" r:id="${rid}"/></a:graphicData></a:graphic></p:graphicFrame>`;
+  }
+  /** a diagram as SmartArt: data, layout, style and colour parts (js/smartart-io.js), and the drawing of its laid-out
+      shapes, which applications without a SmartArt engine show */
+  function diagramFrameXML(sh, id, ctx, design) {
+    const IO = L.saIO, NS_DGM = IO.NS.dgm, NS_DSP = IO.NS.dsp;
+    const ctD = 'application/vnd.openxmlformats-officedocument.drawingml.';
+    const rel = (name, type) => ctx.rels.add(type, K.relative(ctx.part, name));
+    const sps = (sh.kids || []).map((k, i) => {
+      const local = Object.assign({}, k, { x: k.x - sh.x, y: k.y - sh.y });
+      const fill = k.fill ? fillXML(k.fill, ctx, design) : '';
+      const ln = k.line ? lineXML(k.line, design) : '';
+      const tx = k.tx ? txBodyXML(k.tx, ctx, design, 'dsp:txBody') : '';
+      const r = k.txRect, txX = r ? `<dsp:txXfrm><a:off x="${emu(local.x + r[0])}" y="${emu(local.y + r[1])}"/><a:ext cx="${Math.max(0, emu(r[2] - r[0]))}" cy="${Math.max(0, emu(r[3] - r[1]))}"/></dsp:txXfrm>` : '';
+      return `<dsp:sp modelId="${IO.guid(sh.id + ':sp:' + i)}"><dsp:nvSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvSpPr/></dsp:nvSpPr><dsp:spPr>${xfrm(local)}${geomXML(k)}${fill}${ln}${shadowXML(k.shadow, design)}</dsp:spPr>${tx}${txX}</dsp:sp>`;
+    }).join('');
+    const drawing = HEAD + `<dsp:drawing xmlns:dgm="${NS_DGM}" xmlns:dsp="${NS_DSP}" xmlns:a="${NS_A}"><dsp:spTree><dsp:nvGrpSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvGrpSpPr/></dsp:nvGrpSpPr><dsp:grpSpPr/>${sps}</dsp:spTree></dsp:drawing>`;
+    const dr = rel(ctx.addPart('ppt/diagrams', 'drawing', drawing, 'application/vnd.ms-office.drawingml.diagramDrawing+xml'), 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing');
+    const dm = rel(ctx.addPart('ppt/diagrams', 'data', IO.dataXML(sh.sa, sh.id, dr), ctD + 'diagramData+xml'), RT('diagramData'));
+    const lo = rel(ctx.addPart('ppt/diagrams', 'layout', IO.layoutXML(sh.sa.layout), ctD + 'diagramLayout+xml'), RT('diagramLayout'));
+    const qs = rel(ctx.addPart('ppt/diagrams', 'quickStyle', IO.styleXML(sh.sa.style), ctD + 'diagramStyle+xml'), RT('diagramQuickStyle'));
+    const cs = rel(ctx.addPart('ppt/diagrams', 'colors', IO.colorsXML(sh.sa.colors, L.diagram.palette(design)), ctD + 'diagramColors+xml'), RT('diagramColors'));
+    return `<p:graphicFrame><p:nvGraphicFramePr>${cNvPr(id, sh, ctx)}<p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr>${xfrm(sh, 'p:xfrm')}<a:graphic><a:graphicData uri="${NS_DGM}"><dgm:relIds xmlns:dgm="${NS_DGM}" r:dm="${dm}" r:lo="${lo}" r:qs="${qs}" r:cs="${cs}"/></a:graphicData></a:graphic></p:graphicFrame>`;
   }
   /** chart XML from the chart model: charts made or edited in Lectern */
   function chartXML(c, design) {
@@ -956,6 +980,8 @@
         idOf: (mid) => idMap.get(mid),
         findShape: (mid) => L.model.shapeById(s, mid),
         addChart: (xml, parts) => { chartN++; charts.push({ n: chartN, xml, parts }); return chartN; },
+        /** a new part of this slide (SmartArt): a free name in dir, added with its content type */
+        addPart: (dir, base, xml, ct) => { const name = freshName(dir, base, 'xml'); add(name, xml); overrides.push(['/' + name, ct]); return name; },
       };
       L.model.walk(s.shapes, shape => { ctx.nextId(shape.id); return true; });
       ctx.liveShapeIds = new Set(Array.from(idMap.values(), String));

@@ -84,6 +84,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `dml.js` | DrawingML helpers | Quire, Ledger |
 | `spell.js` | spelling engine: word lists (`dict/`), checking, suggestions, custom dictionary, Ignore All | Quire, Ledger |
 | `clipart.js` | built-in clip art | Quire, Lectern |
+| `smartart.js` | the SmartArt layout engine: items → shapes for each layout, one text size per role (`tools/smartart.test.mjs`) | Lectern |
 | `suite.js`, `dict/`, `templates.json` | the suite: Start Center services; word lists; template gallery | — |
 
 What each app provides:

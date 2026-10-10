@@ -294,6 +294,8 @@
     }
     return K.slice(f, xml);
   }
+  /** whether a kept frame can be written back as it came (unedited since it was opened) */
+  F.intact = (shape, ctx) => { const record = shape.keep?.frame; return !!(record && ctx.frames?.get(key(record.fragment))?.intact); };
   F.emit = function (shape, ctx) {
     const record = shape.keep?.frame; if (!record) return null;
     const group = ctx.frames?.get(key(record.fragment));

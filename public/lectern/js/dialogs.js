@@ -975,37 +975,6 @@
     ui.dialog({ title: 'Edit WordArt Text', body: h('div', { class: 'col' }, h('div', { class: 'row' }, ui.field('&Font:', font), ui.field('&Size:', size), b, i), h('label', { for: 'wa-text', html: '<u>T</u>ext:' }), ta), width: 470, focus: '#wa-text', buttons: [{ label: 'OK', primary: true, onClick: () => cb({ text: ta.value, font: font.value, b: b.input.checked, i: i.input.checked, size: +size.value }) }, { label: 'Cancel' }] });
   };
 
-  /* ---------- Diagram Gallery ---------- */
-  D.DIAGRAMS = [['org', 'Organization Chart'], ['cycle', 'Cycle Diagram'], ['radial', 'Radial Diagram'], ['pyramid', 'Pyramid Diagram'], ['venn', 'Venn Diagram'], ['target', 'Target Diagram']];
-  D.diagramGallery = function (cb) {
-    let pick = 'org';
-    const grid = h('div', { class: 'dg-grid' });
-    const desc = h('div', { class: 'tp-note', text: 'Used to show hierarchical relationships' });
-    const DESC = { org: 'Used to show hierarchical relationships', cycle: 'Used to show a process that has a continuous cycle', radial: 'Used to show relationships of elements to a core element', pyramid: 'Used to show foundation-based relationships', venn: 'Used to show areas of overlap between elements', target: 'Used to show steps toward a goal' };
-    D.DIAGRAMS.forEach(([k, n]) => {
-      const b = h('button', { type: 'button', 'aria-label': n, 'data-tip': n, class: k === pick ? 'on' : '' });
-      b.innerHTML = diagramIcon(k);
-      b.addEventListener('click', () => { L.$$('button', grid).forEach((x) => x.classList.remove('on')); b.classList.add('on'); pick = k; title.textContent = n; desc.textContent = DESC[k]; });
-      b.addEventListener('dblclick', () => okb.click());
-      grid.appendChild(b);
-    });
-    const title = h('b', { text: 'Organization Chart' });
-    const d = ui.dialog({ title: 'Diagram Gallery', body: h('div', { class: 'col' }, h('label', { text: 'Select a diagram type:' }), grid, title, desc), width: 320, buttons: [{ label: 'OK', primary: true, onClick: () => cb(pick) }, { label: 'Cancel' }] });
-    const okb = d.buttons[0];
-  };
-  function diagramIcon(k) {
-    const S = (b) => `<svg width="70" height="58" viewBox="0 0 70 58">${b}</svg>`;
-    switch (k) {
-      case 'org': return S('<rect x="25" y="4" width="20" height="12" fill="#cfe0fb" stroke="#1d4f9e"/><rect x="4" y="38" width="18" height="12" fill="#cfe0fb" stroke="#1d4f9e"/><rect x="26" y="38" width="18" height="12" fill="#cfe0fb" stroke="#1d4f9e"/><rect x="48" y="38" width="18" height="12" fill="#cfe0fb" stroke="#1d4f9e"/><path d="M35 16v11M13 27h44M13 27v11M35 27v11M57 27v11" stroke="#1d4f9e" fill="none"/>');
-      case 'cycle': return S('<path d="M35 6a23 23 0 0 1 21 14" fill="none" stroke="#3a74d6" stroke-width="5"/><path d="M56 34a23 23 0 0 1-21 18" fill="none" stroke="#e8641c" stroke-width="5"/><path d="M22 50A23 23 0 0 1 14 16" fill="none" stroke="#2f9a3a" stroke-width="5"/>');
-      case 'radial': return S('<circle cx="35" cy="29" r="9" fill="#3a74d6"/><circle cx="35" cy="8" r="6" fill="#cfe0fb" stroke="#1d4f9e"/><circle cx="56" cy="29" r="6" fill="#cfe0fb" stroke="#1d4f9e"/><circle cx="35" cy="50" r="6" fill="#cfe0fb" stroke="#1d4f9e"/><circle cx="14" cy="29" r="6" fill="#cfe0fb" stroke="#1d4f9e"/><path d="M35 14v6M41 29h9M35 38v6M20 29h6" stroke="#1d4f9e"/>');
-      case 'pyramid': return S('<path d="M35 4l9 14H26z" fill="#e8641c"/><path d="M25 20h20l8 14H17z" fill="#f5c842"/><path d="M15 36h40l9 16H6z" fill="#2f9a3a"/>');
-      case 'venn': return S('<circle cx="27" cy="22" r="15" fill="#3a74d6" fill-opacity=".55"/><circle cx="43" cy="22" r="15" fill="#e8641c" fill-opacity=".55"/><circle cx="35" cy="36" r="15" fill="#2f9a3a" fill-opacity=".55"/>');
-      case 'target': return S('<circle cx="35" cy="29" r="24" fill="#cfe0fb" stroke="#1d4f9e"/><circle cx="35" cy="29" r="16" fill="#9cbcf0" stroke="#1d4f9e"/><circle cx="35" cy="29" r="8" fill="#3a74d6" stroke="#1d4f9e"/>');
-      default: return '';
-    }
-  }
-
   /* ---------- Photo Album ---------- */
   D.photoAlbum = function () {
     const pics = [];

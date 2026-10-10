@@ -650,9 +650,9 @@
             if (sh.shadow && !hasGeom) tb.style.filter = R.shadowCSS(sh.shadow, design);
             el.appendChild(tb);
           }
-          if (empty && sh.ph && ctx.mode === 'edit' && ctx.prompts !== false) {
-            const ptype = sh.ph.type;
-            const prompt = L.model.PROMPTS[ptype] != null ? L.model.PROMPTS[ptype] : 'Click to add text';
+          if (empty && (sh.ph || (sh.sa && sh.sa.role === 'node')) && ctx.mode === 'edit' && ctx.prompts !== false) {
+            const ptype = sh.ph ? sh.ph.type : null;
+            const prompt = !sh.ph ? '[Text]' : L.model.PROMPTS[ptype] != null ? L.model.PROMPTS[ptype] : 'Click to add text';
             if (prompt) {
               const ptx = Object.assign({}, sh.tx, { ps: [L.txt.para(prompt, sh.tx.ps[0] && sh.tx.ps[0].pp, sh.tx.ps[0] && (sh.tx.ps[0].end || (sh.tx.ps[0].rs[0] && L.txt.runProps(sh.tx.ps[0].rs[0]))), sh.tx.ps[0] ? sh.tx.ps[0].lvl : 0)] });
               const pe = R.textBody(sh, ptx, design, ctx, rect, {});
@@ -665,7 +665,7 @@
               for (const [k, tip] of icons) pal.appendChild(h('button', { class: 'ph-ico', 'data-content-act': k, 'data-tip': tip, html: L.icons ? L.icons.get('ct_' + k) : '' }));
               el.appendChild(pal);
             }
-            el.classList.add('ph-empty');
+            if (sh.ph) el.classList.add('ph-empty');
           }
         }
       }

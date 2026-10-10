@@ -607,7 +607,7 @@
         const ob = { x: sh.x, y: sh.y, w: sh.w, h: sh.h };
         sh.x = L.round(ncx - w / 2, 3); sh.y = L.round(ncy - hh / 2, 3); sh.w = L.round(w, 3); sh.h = L.round(hh, 3);
         if (sh.type !== 'table' && sh.type !== 'group') { sh.flipH = flipX ? !orig.flipH : !!orig.flipH; sh.flipV = flipY ? !orig.flipV : !!orig.flipV; }
-        if (sh.type === 'group') M.scaleGroup(sh, ob, sh);
+        if (sh.type === 'group') { if (sh.sa) L.diagram.relayout(sh); else M.scaleGroup(sh, ob, sh); }
         if (sh.type === 'table') E.scaleTable(sh, orig);
         const sx = sh.w / orig.w, sy = sh.h / orig.h;
         for (const o of others) {
@@ -616,7 +616,7 @@
           s2.w = Math.max(1, o2.w * sx); s2.h = Math.max(1, o2.h * sy);
           s2.x = hd.includes('w') ? o2.x + o2.w - s2.w : o2.x;
           s2.y = hd.includes('n') ? o2.y + o2.h - s2.h : o2.y;
-          if (s2.type === 'group') M.scaleGroup(s2, ob2, s2);
+          if (s2.type === 'group') { if (s2.sa) L.diagram.relayout(s2); else M.scaleGroup(s2, ob2, s2); }
           if (s2.type === 'table') E.scaleTable(s2, o2);
         }
         live();

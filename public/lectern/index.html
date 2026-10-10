@@ -205,7 +205,7 @@
 .tex-grid { grid-template-columns: repeat(6, 44px); }
 .patt-grid button, .tex-grid button { height: 26px; border: 1px solid var(--grid-line); padding: 0; background-repeat: repeat; }
 .tex-grid button { height: 44px; }
-.patt-grid button.on, .tex-grid button.on, .bul-grid button.on, .num-grid button.on, .wa-grid button.on, .dg-grid button.on { outline: 2px solid var(--pane-link); outline-offset: 1px; }
+.patt-grid button.on, .tex-grid button.on, .bul-grid button.on, .num-grid button.on, .wa-grid button.on, .sa-cell.on { outline: 2px solid var(--pane-link); outline-offset: 1px; }
 .bul-grid, .num-grid { display: grid; grid-template-columns: repeat(4, 82px); gap: 6px; }
 .bul-grid button, .num-grid button { height: 78px; border: 1px solid var(--grid-line); background: var(--surface); display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 6px 8px; font: 12px Arial, "Arimo", sans-serif; }
 .bul-grid button div, .num-grid button div { display: flex; align-items: center; gap: 6px; }
@@ -215,8 +215,22 @@
 .wa-grid { display: grid; grid-template-columns: repeat(5, 76px); gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--grid-line); justify-content: center; }
 .wa-grid button { height: 56px; border: 1px solid var(--card-line-2); background: var(--surface); padding: 4px; overflow: hidden; position: relative; }
 .wa-grid button > svg { position: static !important; display: block; margin: auto; }
-.dg-grid { display: grid; grid-template-columns: repeat(3, 84px); gap: 8px; }
-.dg-grid button { height: 70px; border: 1px solid var(--grid-line); background: var(--surface); padding: 2px; }
+.sa-gallery { display: grid; grid-template-columns: 130px 1fr 200px; gap: 10px; height: 330px; }
+.sa-cats { display: flex; flex-direction: column; min-height: 0; max-height: none; padding: 2px; }
+.sa-cat { text-align: left; padding: 4px 8px; border: 1px solid transparent; background: none; font: inherit; color: var(--ink); }
+.sa-cat:hover { background: var(--menu-hot); }
+.sa-cat.on { background: var(--sel); color: var(--sel-ink); }
+.sa-grid { display: grid; grid-template-columns: repeat(auto-fill, 80px); grid-auto-rows: 64px; gap: 6px; align-content: start; overflow: auto; padding: 2px; border: 1px solid var(--field-border); background: var(--surface); }
+.sa-cell { display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--grid-line); background: var(--surface); }
+.sa-cell:hover { border-color: var(--hot-border); background: var(--menu-hot); }
+.sa-side { display: flex; flex-direction: column; gap: 6px; }
+.sa-big { border: 1px solid var(--field-border); background: var(--surface); padding: 4px; }
+.sa-desc { color: var(--muted); }
+.sa-menu-grid { display: grid; grid-template-columns: repeat(4, 68px); gap: 4px; padding: 4px; background: var(--surface); }
+.sa-pane { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px; }
+.sa-line { display: flex; align-items: center; gap: 4px; }
+.sa-bul { flex: none; width: 8px; color: var(--muted); }
+.sa-row { flex: 1; min-width: 0; }
 .datasheet th.corner { width: 20px; }
 .datasheet th input { font-weight: bold; }
 .datasheet th:first-child { display: flex; align-items: center; }
@@ -297,6 +311,9 @@
 <script src="../common/clipart.js"></script>
 <script src="js/dialogs.js"></script>
 <script src="js/panes.js"></script>
+<script src="../common/smartart.js"></script>
+<script src="js/diagram.js"></script>
+<script src="js/smartart-io.js"></script>
 <script src="js/slideshow.js"></script>
 <script src="js/preserve.js"></script>
 <script src="js/comments.js"></script>

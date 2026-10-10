@@ -32,7 +32,7 @@
   const DEFAULT_OPTS = {
     startupPane: true, layoutPaneOnNew: true, statusBar: true, ruler: false, showPopup: true, showPopbar: true, endBlack: true,
     smartQuotes: true, autocorrect: true, capSentence: true, spell: true, autoPreview: true, gray: false, bw: false, outlinePlain: false, alignToSlide: false,
-    toolbars: { standard: true, formatting: true, drawing: true, outlining: false, picture: 'auto', tables: 'auto', wordart: 'auto' },
+    toolbars: { standard: true, formatting: true, drawing: true, outlining: false, picture: 'auto', tables: 'auto', wordart: 'auto', diagram: 'auto' },
     grid: { show: false, snap: true, size: 6 }, leftW: 196, notesH: 92, leftOpen: true, taskOpen: true,
   };
   const A = (L.app = Object.assign(L.app || {}, {
@@ -215,7 +215,11 @@
     };
     const row1 = h('div', { class: 'tb-row' }, A.toolbarsEl.standard);
     const row2 = h('div', { class: 'tb-row' }, A.toolbarsEl.formatting, A.toolbarsEl.outlining);
-    const row3 = h('div', { class: 'tb-row' }, A.toolbarsEl.picture, A.toolbarsEl.tables, A.toolbarsEl.wordart, A.toolbarsEl.master, A.toolbarsEl.sorter);
+    /* SmartArt (js/diagram.js): the Diagram toolbar of a selected diagram */
+    const DGM = () => L.diagram;
+    A.toolbarsEl.diagram = ui.toolbar('diagram', 'Diagram', [ui.tbSplit('diagramAddShape', (r) => ui.openMenu(['diagramAddAfter', 'diagramAddBefore', 'diagramAddAbove', 'diagramAddBelow'], r)), 'diagramPromote', 'diagramDemote', 'diagramMoveUp', 'diagramMoveDown', '|',
+      ui.tbDrop('&Layout', 'layout', (r) => DGM().layoutMenu(r), 'Change Layout'), ui.tbDrop('', 'colorPic', (r) => DGM().colorsMenu(r), 'Change Colors'), ui.tbDrop('', 'themes', (r) => DGM().styleMenu(r), 'SmartArt Styles'), '|', 'diagramTextPane', 'diagramReset', 'diagramToShapes']);
+    const row3 = h('div', { class: 'tb-row' }, A.toolbarsEl.picture, A.toolbarsEl.tables, A.toolbarsEl.wordart, A.toolbarsEl.diagram, A.toolbarsEl.master, A.toolbarsEl.sorter);
     host.append(row1, row2, row3);
     A.tbRows = [row1, row2, row3];
     /* drawing toolbar */
@@ -244,18 +248,19 @@
     if (id === 'picture') return sel.some((s) => s.type === 'image');
     if (id === 'tables') return sel.some((s) => s.type === 'table');
     if (id === 'wordart') return sel.some((s) => s.type === 'wordart');
+    if (id === 'diagram') return !!(L.diagram && L.diagram.current());
     return false;
   }
-  /** what is selected or shown, for the ribbon's contextual tabs: 'picture', 'table', 'wordart', 'shape', 'master' */
+  /** what is selected or shown, for the ribbon's contextual tabs: 'picture', 'table', 'wordart', 'shape', 'diagram', 'master' */
   A.inContext = (k) => {
     if (k === 'master') return A.view === 'master';
-    if (k === 'shape') { const p = E.primary && E.primary(); return !!(p && !p.wa && ['shape', 'line', 'group', 'text'].includes(p.type)); }
+    if (k === 'shape') { const p = E.primary && E.primary(); return !!(p && !p.wa && ['shape', 'line', 'group', 'text'].includes(p.type) && !(L.diagram && L.diagram.of(p))); }
     return ctxToolbar(k === 'table' ? 'tables' : k);
   };
-  A.toggleToolbar = (id) => { const v = A.opts.toolbars[id]; A.opts.toolbars[id] = v === true ? (['picture', 'tables', 'wordart'].includes(id) ? false : false) : true; A.saveOpts(); A.updateToolbars(); };
+  A.toggleToolbar = (id) => { const v = A.opts.toolbars[id]; A.opts.toolbars[id] = v === true ? (['picture', 'tables', 'wordart', 'diagram'].includes(id) ? false : false) : true; A.saveOpts(); A.updateToolbars(); };
   A.updateToolbars = function () {
     if (!A.toolbarsEl) return;
-    for (const id of ['standard', 'formatting', 'drawing', 'outlining', 'picture', 'tables', 'wordart']) A.toolbarsEl[id].hidden = !A.tbShown(id) || (A.view === 'preview');
+    for (const id of ['standard', 'formatting', 'drawing', 'outlining', 'picture', 'tables', 'wordart', 'diagram']) A.toolbarsEl[id].hidden = !A.tbShown(id) || (A.view === 'preview');
     A.toolbarsEl.outlining.hidden = !(A.opts.toolbars.outlining === true || (L.panes.left.tab === 'outline' && A.view === 'normal' && A.opts.toolbars.outlining !== false && false));
     A.toolbarsEl.master.hidden = A.view !== 'master';
     A.toolbarsEl.sorter.hidden = A.view !== 'sorter';
@@ -955,6 +960,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
   A.deleteSel = function () {
     const shapes = E.selected();
     if (!shapes.length) return;
+    if (L.diagram && L.diagram.deleteKids(shapes)) return;
     E.commit('Clear', () => {
       const slide = E.slide();
       for (const sh of shapes) {
@@ -1503,81 +1509,6 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
   };
   A.waSet = (o) => E.commit('WordArt', () => { for (const s of E.selected()) if (s.type === 'wordart') Object.assign(s.wa, o); });
   A.waToggle = (k) => E.commit('WordArt', () => { for (const s of E.selected()) if (s.type === 'wordart') s.wa[k] = !s.wa[k]; });
-  A.insertDiagram = function (kind, phId) {
-    const slide = E.slide();
-    if (!slide) return;
-    const ph = phId ? E.shape(phId) : null;
-    const box = ph ? { x: ph.x, y: ph.y, w: ph.w, h: ph.h } : { x: L.pres.W * 0.15, y: L.pres.H * 0.22, w: L.pres.W * 0.7, h: L.pres.H * 0.66 };
-    const kids = buildDiagram(kind, box);
-    L.hist.push('Insert Diagram');
-    const g = { id: L.uid('s'), type: 'group', name: L.dlg.DIAGRAMS.find((d) => d[0] === kind)[1] + ' ' + (slide.shapes.length + 1), rot: 0, kids };
-    Object.assign(g, M.groupBounds(g));
-    if (ph) slide.shapes.splice(slide.shapes.indexOf(ph), 1, g); else slide.shapes.push(g);
-    E.sel = [g.id];
-    E.render(); E.touched();
-  };
-  function buildDiagram(kind, b) {
-    const shp = (geom, x, y, w, hh, fill, text, extra) => Object.assign({ id: L.uid('s'), type: 'shape', name: 'Diagram shape', geom, x, y, w, h: hh, rot: 0, fill, line: { c: 'tx1', w: 0.75, dash: 'solid' }, tx: T.body([T.para(text || '', { algn: 'ctr' }, { sz: Math.max(10, Math.round(Math.min(b.w, b.h) / 22)), color: 'tx1' })], { anchor: 'ctr', wrap: true }) }, extra || {});
-    const ln = (x1, y1, x2, y2) => M.newLine(L.pres, { shapes: [] }, 'line', [x1, y1], [x2, y2]);
-    const acc = (i) => ({ t: 'solid', c: ['accent1', 'accent2', 'accent3', 'accent6', 'accent5', 'accent4'][i % 6], a: 1 });
-    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-    const out = [];
-    switch (kind) {
-      case 'org': {
-        const bw = b.w * 0.26, bh = b.h * 0.2;
-        out.push(shp('rect', cx - bw / 2, b.y, bw, bh, acc(0), 'Director'));
-        const ys = b.y + b.h * 0.6;
-        out.push(ln(cx, b.y + bh, cx, b.y + bh + (ys - b.y - bh) / 2));
-        const xs = [b.x + b.w * 0.02, cx - bw / 2, b.x + b.w * 0.98 - bw];
-        out.push(ln(xs[0] + bw / 2, b.y + bh + (ys - b.y - bh) / 2, xs[2] + bw / 2, b.y + bh + (ys - b.y - bh) / 2));
-        xs.forEach((x, i) => { out.push(ln(x + bw / 2, b.y + bh + (ys - b.y - bh) / 2, x + bw / 2, ys)); out.push(shp('rect', x, ys, bw, bh, acc(0), ['Operations', 'Marketing', 'Finance'][i])); });
-        break;
-      }
-      case 'cycle': {
-        const r = Math.min(b.w, b.h) * 0.42;
-        for (let i = 0; i < 3; i++) {
-          const a0 = -90 + i * 120 + 12, a1 = a0 + 96;
-          out.push(shp('circularArrow', cx - r, cy - r, r * 2, r * 2, acc(i), '', { adj: { adj1: 9000, adj2: 1142319, adj3: 20457681, adj4: Math.round((((a0 % 360) + 360) % 360) * 60000), adj5: Math.round((((a1 % 360) + 360) % 360) * 60000) }, line: { t: 'none' } }));
-          const am = ((a0 + 48) * Math.PI) / 180;
-          out.push(shp('rect', cx + Math.cos(am) * r * 1.02 - b.w * 0.11, cy + Math.sin(am) * r * 1.02 - b.h * 0.06, b.w * 0.22, b.h * 0.12, { t: 'none' }, ['Plan', 'Do', 'Review'][i], { line: { t: 'none' }, type: 'text' }));
-        }
-        break;
-      }
-      case 'radial': {
-        const r = Math.min(b.w, b.h) * 0.38, cr = r * 0.42, sr = r * 0.3;
-        for (let i = 0; i < 4; i++) { const a = (-90 + i * 90) * Math.PI / 180; out.push(ln(cx + Math.cos(a) * cr, cy + Math.sin(a) * cr, cx + Math.cos(a) * (r - sr), cy + Math.sin(a) * (r - sr))); }
-        out.push(shp('ellipse', cx - cr, cy - cr, cr * 2, cr * 2, acc(0), 'Core'));
-        for (let i = 0; i < 4; i++) { const a = (-90 + i * 90) * Math.PI / 180; out.push(shp('ellipse', cx + Math.cos(a) * r - sr, cy + Math.sin(a) * r - sr, sr * 2, sr * 2, acc(i + 1), ['North', 'East', 'South', 'West'][i])); }
-        break;
-      }
-      case 'pyramid': {
-        const n = 4, top = b.y, base = b.y + b.h, pw = Math.min(b.w, b.h * 1.3);
-        for (let i = 0; i < n; i++) {
-          const y0 = top + (b.h * i) / n, y1 = top + (b.h * (i + 1)) / n;
-          const w0 = (pw * (y0 - top)) / b.h, w1 = (pw * (y1 - top)) / b.h;
-          const x = cx - w1 / 2, w = w1, hh = y1 - y0;
-          const cmds = i === 0 ? [['M', w / 2, 0], ['L', w, hh], ['L', 0, hh], ['Z']] : [['M', (w - w0) / 2, 0], ['L', (w + w0) / 2, 0], ['L', w, hh], ['L', 0, hh], ['Z']];
-          out.push(shp('custom', x, y0, w, hh, acc(i), ['Vision', 'Strategy', 'Programs', 'Operations'][i], { path: { paths: [{ w, h: hh, cmds, fill: 'norm', stroke: true }] } }));
-        }
-        void base;
-        break;
-      }
-      case 'venn': {
-        const r = Math.min(b.w, b.h) * 0.3;
-        [[-0.55, -0.35], [0.55, -0.35], [0, 0.55]].forEach(([dx, dy], i) => out.push(shp('ellipse', cx + dx * r - r, cy + dy * r - r, r * 2, r * 2, { t: 'solid', c: ['accent1', 'accent2', 'accent3'][i], a: 0.55 }, ['People', 'Process', 'Tools'][i])));
-        break;
-      }
-      case 'target': {
-        const r = Math.min(b.w, b.h) * 0.46;
-        [1, 0.68, 0.36].forEach((k, i) => out.push(shp('ellipse', cx - r * k, cy - r * k, r * k * 2, r * k * 2, acc(i), '', { tx: undefined })));
-        ['Awareness', 'Interest', 'Decision'].forEach((t, i) => out.push(shp('rect', cx + r * 1.05, cy - r + i * r * 0.5 + r * 0.25, b.w * 0.2, r * 0.3, { t: 'none' }, t, { type: 'text', line: { t: 'none' } })));
-        out.forEach((s) => { if (s.tx === undefined) delete s.tx; });
-        break;
-      }
-      default: break;
-    }
-    return out;
-  }
   A.createPhotoAlbum = async function (pics, layout, frame, caps) {
     const pres = L.pres;
     const did = (pres.slides[E.idx] || pres.slides[0] || {}).design || Object.keys(pres.designs)[0];

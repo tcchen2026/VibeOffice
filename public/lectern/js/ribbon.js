@@ -37,7 +37,7 @@
         { label: 'Slides', items: [{ split: 'newSlide', size: 'large', label: 'New Slide', menu: open(['newSlide', 'duplicateSlide', '-', 'slidesFromFiles', 'slidesFromOutline']) }] },
         { label: 'Tables', items: [{ cmd: 'insertTable', size: 'large', label: 'Table' }] },
         { label: 'Images', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', 'photoAlbum'] },
-        { label: 'Illustrations', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => A().menus.autoShapes(r) }, { cmd: 'insertDiagram', size: 'large', label: 'Diagram' }, { cmd: 'insertChart', size: 'large', label: 'Chart' }] },
+        { label: 'Illustrations', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => A().menus.autoShapes(r) }, { cmd: 'insertDiagram', size: 'large', label: 'SmartArt' }, { cmd: 'insertChart', size: 'large', label: 'Chart' }] },
         { label: 'Links', items: [{ cmd: 'hyperlink', size: 'large', label: 'Hyperlink' }, { cmd: 'actionSettings', size: 'large', label: 'Action' }] },
         { label: 'Text', items: [{ cmd: 'textBox', size: 'large', label: 'Text Box' }, { cmd: 'headerFooter', size: 'large', label: 'Header & Footer' }, { cmd: 'insertWordArt', size: 'large', label: 'WordArt' }, 'insertDateTime', 'insertSlideNumber', 'vTextBox'] },
         { label: 'Symbols', items: [{ cmd: 'insertSymbol', size: 'large', label: 'Symbol' }] },
@@ -75,6 +75,19 @@
         { id: 'masterTab', label: 'Slide Master', groups: [
           { label: 'Edit Master', items: [{ cmd: 'insertTitleMaster', size: 'large', label: 'Insert Title Master' }, 'deleteTitleMaster'] },
           { label: 'Close', items: [{ cmd: 'closeMaster', size: 'large', label: 'Close Master View' }] },
+        ] },
+      ] },
+      { id: 'smartart', set: 'SmartArt Tools', when: ctx('diagram'), tabs: [
+        { id: 'smartartDesign', label: 'Design', groups: [
+          { label: 'Create Graphic', items: [{ split: 'diagramAddShape', size: 'large', label: 'Add Shape', menu: open(['diagramAddAfter', 'diagramAddBefore', 'diagramAddAbove', 'diagramAddBelow']) },
+            { row: ['diagramPromote', 'diagramDemote'] }, { row: ['diagramMoveUp', 'diagramMoveDown'] }, { cmd: 'diagramTextPane', size: 'large' }] },
+          { label: 'Layouts', items: [{ drop: 'Change Layout', icon: 'layout', size: 'large', menu: (r) => L.diagram.layoutMenu(r) }] },
+          { label: 'SmartArt Styles', items: [{ drop: 'Change Colors', icon: 'colorPic', size: 'large', menu: (r) => L.diagram.colorsMenu(r) }, { drop: 'Styles', icon: 'themes', size: 'large', menu: (r) => L.diagram.styleMenu(r) }] },
+          { label: 'Reset', items: [{ cmd: 'diagramReset', size: 'large' }, 'diagramToShapes'] },
+        ] },
+        { id: 'smartartFormat', label: 'Format', groups: [
+          { label: 'Shape Styles', launcher: 'formatObject', items: [{ split: 'fillColor', label: 'Shape Fill', menu: (r, b) => A().menus.color('fill')(r, b) }, { split: 'lineColor', label: 'Shape Outline', menu: (r, b) => A().menus.color('line')(r, b) }, { drop: 'Shadow', icon: 'shadowStyle', menu: (r) => A().menus.shadow(r) }] },
+          { label: 'Arrange', items: ['bringFront', 'sendBack', { drop: 'Align', icon: 'alignC', menu: open(['distH', 'distV', 'alignToSlide']) }] },
         ] },
       ] },
       { id: 'drawing', set: 'Drawing Tools', when: ctx('shape'), tabs: [

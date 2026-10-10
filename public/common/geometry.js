@@ -629,6 +629,7 @@
       return g.fn(w, h, L.geom.adj(sh));
     },
     textRect(sh) {
+      if (sh.txRect) return sh.txRect;   // its own text area, [l, t, r, b] in the shape (SmartArt's txXfrm)
       const g = G[sh.geom];
       if (g && g.text) return g.text(sh.w, sh.h, L.geom.adj(sh));
       return [0, 0, sh.w, sh.h];
