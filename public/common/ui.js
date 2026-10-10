@@ -349,7 +349,7 @@
     dlg.style.width = Math.min(opts.width || 380, window.innerWidth - 16) + 'px';
     const titleBar = h('div', { class: 'dlg-title' }, h('span', { class: 'dlg-ttl', text: opts.title }),
       opts.help ? h('button', { class: 'dlg-x dlg-help', type: 'button', 'aria-label': 'Help', text: '?', onclick: opts.help }) : null,
-      h('button', { class: 'dlg-x', type: 'button', 'aria-label': 'Close', html: '<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1 1l7 7M8 1L1 8" stroke="#fff" stroke-width="1.8"/></svg>', onclick: () => close(null) }));
+      h('button', { class: 'dlg-x', type: 'button', 'aria-label': 'Close', html: '<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1 1l7 7M8 1L1 8" stroke="currentColor" stroke-width="1.5"/></svg>', onclick: () => close(null) }));
     const body = h('div', { class: 'dlg-body' });
     if (opts.body) body.appendChild(opts.body);
     const foot = h('div', { class: 'dlg-foot' });
@@ -434,6 +434,16 @@
     const labels = o.buttons || ['OK'];
     const d = ui.dialog({ title: o.title || L.APP, body, width: o.width || 380, buttons: labels.map((l, i) => ({ label: l, primary: i === (o.def || 0), cancel: /cancel|^no$/i.test(stripAmp(l)) })) });
     return d.done;
+  };
+  /** Help ▸ About, the same in every app: icon, name and version, the app's own paragraphs, then
+   *  the trademark note naming the Office program it follows (o: { name, text: [paragraphs], office }) */
+  ui.about = function (o) {
+    const body = h('div', { class: 'col about' },
+      h('div', { class: 'about-head' }, h('span', { html: L.icons.app ? L.icons.app(48) : '' }),
+        h('div', null, h('div', { class: 'about-name', text: o.name + ' 2003 Web Edition' }), h('div', { text: 'Version ' + L.VERSION }))),
+      ...o.text.map((t) => h('p', { text: t })),
+      h('p', { class: 'about-marks', text: `Microsoft, ${o.office} and Office are trademarks of Microsoft Corporation. ${o.name} is an independent work and is not affiliated with Microsoft.` }));
+    return ui.dialog({ title: 'About ' + o.name, width: 420, body, buttons: [{ label: 'OK', primary: true }] });
   };
   ui.prompt = function (label, value, title) {
     const inp = h('input', { type: 'text', id: 'prompt-in', value: value || '', style: 'width:100%' });

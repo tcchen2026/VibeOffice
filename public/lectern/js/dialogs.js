@@ -1109,14 +1109,7 @@
   }
 
   /* ---------- About ---------- */
-  D.about = function () {
-    const body = h('div', { class: 'row', style: 'flex-wrap:nowrap;gap:14px' },
-      h('div', { html: L.icons.app(48) }),
-      h('div', { class: 'col' },
-        h('b', { text: 'Lectern 2003 — Web Edition', style: 'font-size:13px' }),
-        h('div', { text: 'Version ' + L.VERSION }),
-        h('div', { text: 'A presentation editor in the spirit of the classic Office 2003 desktop, written in plain HTML and JavaScript. Opens and saves PowerPoint .pptx files.' }),
-        h('div', { class: 'tp-note', text: 'Lectern is an independent project and is not affiliated with or endorsed by Microsoft. PowerPoint is a trademark of Microsoft Corporation.' })));
-    ui.dialog({ title: 'About Lectern', body, width: 440, buttons: [{ label: 'OK', primary: true }] });
-  };
+  D.about = () => ui.about({ name: 'Lectern', office: 'PowerPoint', text: [
+    'A presentation editor in the style of Microsoft Office PowerPoint 2003 that runs entirely in your browser. Presentations are read and written as Office Open XML (.pptx, .pptm); nothing is uploaded.',
+    'Slide shows play in the browser, and presentations export to PDF, PNG pictures and web pages.'] });
 })();

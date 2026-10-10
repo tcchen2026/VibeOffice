@@ -978,12 +978,7 @@
     const opts = h('div', { class: 'col' }, ui.check('Show Standard and Formatting toolbars on &two rows', true, null), ui.check('Show Screen&Tips on toolbars', true, null), ui.check('Show shortcut &keys in ScreenTips', true, null));
     ui.dialog({ title: 'Customize', width: 380, body: ui.tabs([{ label: 'Toolbars', body: box }, { label: 'Options', body: opts }]), buttons: [{ label: 'Close', primary: true }] });
   };
-  D.about = function () {
-    ui.dialog({ title: 'About Ledger 2003', width: 420, body: h('div', { class: 'col about' },
-      h('div', { class: 'row', style: 'gap:12px;align-items:center' }, h('span', { html: L.icons.app ? L.icons.app(48) : '' }), h('div', null, h('div', { style: 'font:bold 16px Tahoma,sans-serif', text: 'Ledger 2003 Web Edition' }), h('div', { text: 'Version ' + L.VERSION }))),
-      h('p', { text: 'A spreadsheet in the style of Microsoft Office Excel 2003 that runs entirely in your browser. Workbooks are read and written as Office Open XML (.xlsx, .xlsm), CSV and text; nothing is uploaded.' }),
-      h('p', { text: 'The calculation engine implements more than 450 worksheet functions, array and dynamic-array formulas, structured references and iterative calculation.' }),
-      h('p', { class: 'hint', text: 'Microsoft, Excel and Office are trademarks of Microsoft Corporation. Ledger is an independent work and is not affiliated with Microsoft.' })),
-    buttons: [{ label: 'OK', primary: true }] });
-  };
+  D.about = () => ui.about({ name: 'Ledger', office: 'Excel', text: [
+    'A spreadsheet in the style of Microsoft Office Excel 2003 that runs entirely in your browser. Workbooks are read and written as Office Open XML (.xlsx, .xlsm), CSV and text; nothing is uploaded.',
+    'The calculation engine implements more than 450 worksheet functions, array and dynamic-array formulas, structured references and iterative calculation.'] });
 })(typeof window !== 'undefined' ? window : globalThis);

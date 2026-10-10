@@ -239,7 +239,7 @@
   cmd('help', { label: 'Ledger &Help', icon: 'help', key: 'F1', run: () => L.panes.task.show('help') });
   cmd('keyboardHelp', { label: '&Keyboard Shortcuts', run: () => L.panes.task.show('keys') });
   cmd('functionsHelp', { label: '&Functions Reference', run: () => D().insertFunction() });
-  cmd('about', { label: '&About Ledger 2003', run: () => D().about() });
+  cmd('about', { label: '&About Ledger', run: () => D().about() });
 
   /* ------------------------------------------------------------ sheets & misc */
   cmd('nextSheet', { label: 'Next Sheet', key: 'Ctrl+PageDown', run: () => A().nextSheet(1) });
