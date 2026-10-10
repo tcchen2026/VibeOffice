@@ -161,6 +161,7 @@
       if (lab === full) s += 6; else if (lab.startsWith(full)) s += 3;
       if (e.placed) s += 0.5;
       if (e.toggle) s -= 4;   // showing a toolbar is rarely what is meant
+      if (e.run) s -= 1.5;    // menu entries that are not commands (open windows, recent files) after commands
       if (e.id && recent.includes(e.id)) s += 0.5;
       const on = enabledOf(e);
       if (on) s += 0.75;

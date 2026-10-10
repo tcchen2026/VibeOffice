@@ -1975,7 +1975,14 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     total.tx.ps = [T.para('About 26 weeks from signed lease to opening day', { algn: 'ctr' }, { sz: 18 })];
     s.shapes.push(total);
     s.trans = { type: 'fade', spd: 'med', click: true, after: null };
-    /* 6 */
+    /* 6: a SmartArt diagram (js/diagram.js) */
+    s = add('text');
+    T.setPlain(ph(s, 'title').tx, 'How we choose a city');
+    const fn = L.diagram.make(pres, s, ph(s, 'body'), 'funnel', ['40 markets screened', '12 visited', '5 shortlisted', '4 chosen'], { style: 'subtle' });
+    s.anims = [{ id: L.uid('a'), sid: fn.id, cls: 'entr', eff: 'fade', start: 'click', dur: 500, delay: 0, by: 'all' }];
+    s.trans = { type: 'fade', spd: 'med', click: true, after: null };
+    s.notes = 'Each city has to clear foot traffic, rent and a roastery-delivery radius before we visit.';
+    /* 7 */
     s = add('text');
     T.setPlain(ph(s, 'title').tx, 'What we need from the board');
     const b6 = ph(s, 'body');
@@ -1990,7 +1997,7 @@ addEventListener('resize',fit);fit();show(0);<\/script></body></html>`], { type:
     s.shapes.push(call);
     s.anims = [{ id: L.uid('a'), sid: b6.id, cls: 'entr', eff: 'flyIn', dir: 'l', start: 'click', dur: 500, delay: 0, by: 'para' }, { id: L.uid('a'), sid: call.id, cls: 'entr', eff: 'zoom', start: 'after', dur: 500, delay: 250, by: 'all' }, { id: L.uid('a'), sid: call.id, cls: 'emph', eff: 'teeter', start: 'after', dur: 1000, delay: 0, by: 'all' }];
     s.trans = { type: 'push', dir: 'l', spd: 'med', click: true, after: null };
-    /* 7 */
+    /* 8 */
     s = add('blank');
     const wa = { id: L.uid('s'), type: 'wordart', name: 'WordArt 1', x: pres.W * 0.15, y: pres.H * 0.3, w: pres.W * 0.7, h: pres.H * 0.32, rot: 0, wa: Object.assign(L.clone(L.dlg.WA_STYLES[4]), { text: 'Thank you', font: 'Arial Black', b: true, warp: 'textArchUp', style: 4 }) };
     s.shapes.push(wa);

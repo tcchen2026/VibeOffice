@@ -164,6 +164,29 @@
     if (L.ribbonUI && L.ribbonUI.built && L.ribbonUI.built()) { ui.refresh(); setTimeout(() => L.ribbonUI.select('smartartDesign'), 60); }
   };
 
+  /** items from outline lines: '\t' before a line makes it a sub-item of the line above */
+  DG.itemsFrom = (lines) => {
+    const out = [], stack = [];
+    for (const ln of lines) {
+      const lvl = /^\t*/.exec(ln)[0].length, it = { id: SA.newId(), text: ln.slice(lvl), kids: [] };
+      stack.length = Math.min(stack.length, lvl);
+      (stack.length ? stack[stack.length - 1].kids : out).push(it);
+      stack.push(it);
+    }
+    return out;
+  };
+  /** a finished diagram for a deck being built (templates, the sample): in place of a placeholder, or in box */
+  DG.make = (pres, slide, at, layout, lines, opts) => {
+    const box = { x: at.x, y: at.y, w: at.w, h: at.h };
+    const lay = SA.get(layout) || SA.LAYOUTS[0];
+    const g = Object.assign({ id: L.uid('s'), type: 'group', name: lay.name + ' ' + (slide.shapes.length + 1), rot: 0 }, box,
+      { sa: Object.assign({ layout: lay.id, colors: 'accent1', style: 'simple', items: DG.itemsFrom(lines) }, opts || {}), kids: [] });
+    DG.relayout(g, M.design(pres, slide));
+    const i = slide.shapes.indexOf(at);
+    if (i >= 0) slide.shapes.splice(i, 1, g); else slide.shapes.push(g);
+    return g;
+  };
+
   /* ---------------------------------------------------------------- the gallery */
   /** a small SVG picture of a layout with sample items, in the design's accent colours */
   DG.thumb = (layout, w, hh, opts) => {

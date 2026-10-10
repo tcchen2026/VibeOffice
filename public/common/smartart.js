@@ -198,6 +198,14 @@
       out.push({ role: 'conn', geom: 'path', path: [p0, p1], x: Math.min(p0[0], p1[0]), y: Math.min(p0[1], p1[1]), w: Math.abs(p1[0] - p0[0]), h: Math.abs(p1[1] - p0[1]), rot: 0, itemId: it.id, level: 1, styleLbl: 'parChTrans1D2', colorIdx: i, colorCnt: n });
       out.push(node(it, i + 1, n + 1, 'ellipse', sx - d / 2, sy - d / 2, d, d, { level: 1, text: { lines: linesOf(it, false), box: tb(sx - d * 0.35, sy - d * 0.35, d * 0.7, d * 0.7), anchor: 'ctr', align: 'ctr' } }));
     });
+    /* in a wide space the circles become ellipses: everything stretched across (lines stay joined) */
+    const k = Math.min(2, box.w / (2 * R + d));
+    if (k > 1) for (const sh of out) {
+      const sx = (x) => cx + (x - cx) * k;
+      sh.x = sx(sh.x); sh.w *= k;
+      if (sh.path) sh.path = sh.path.map(([x, y]) => [sx(x), y]);
+      if (sh.text) { sh.text.box.x = sx(sh.text.box.x); sh.text.box.w *= k; }
+    }
     return out;
   }, { levels: 2 });
 
@@ -356,7 +364,7 @@
     return out;
   });
   def('vProcess', 'Vertical Process', 'process', 'Steps from top to bottom, joined by arrows.', (items, box) => {
-    const n = Math.max(1, items.length), g = 0.5, h = box.h / (n + (n - 1) * g), w = Math.min(box.w, h * 3.4), x = box.x + (box.w - w) / 2;
+    const n = Math.max(1, items.length), g = 0.5, h = box.h / (n + (n - 1) * g), w = Math.min(box.w, h * 7), x = box.x + (box.w - w) / 2;
     const out = [];
     items.forEach((it, i) => {
       const y = box.y + i * h * (1 + g);

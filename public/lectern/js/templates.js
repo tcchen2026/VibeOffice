@@ -33,36 +33,40 @@
     return t;
   }
 
+  /** a SmartArt diagram in place of the slide's body placeholder (js/diagram.js) */
+  const diagram = (pres, s, layout, lines, opts) => L.diagram.make(pres, s, s.shapes.find((x) => x.ph && x.ph.type === 'body'), layout, lines, opts);
+
   const B = {
     status(add, pres) {
       add('title', 'Project Name', ['Status report · Reporting period', 'Presented by your name']);
       add('text', 'Summary', ['Overall status: On track / At risk / Off track', 'One sentence on progress since the last report', 'One sentence on what needs attention']);
+      diagram(pres, add('text', 'Project Phases'), 'chevron', ['Discover', 'Design', 'Build', 'Launch']);
       const s = add('table', 'Milestones');
       table(pres, s, s.shapes.find((x) => x.ph && x.ph.type === 'tbl'), [['Milestone', 'Owner', 'Due', 'Status'], ['Requirements signed off', 'Name', 'Date', 'Done'], ['Design complete', 'Name', 'Date', 'On track'], ['First release', 'Name', 'Date', 'At risk'], ['Launch', 'Name', 'Date', 'Not started']], [0.42, 0.2, 0.16, 0.22]);
       add('twoText', 'Done and Next', ['Done this period', '\tWhat was finished', '\tWhat was delivered'], ['Next period', '\tWhat comes next', '\tWho does it']);
       add('text', 'Risks and Issues', ['Risk: what could go wrong', '\tImpact and what we are doing about it', 'Issue: what is already wrong', '\tWhat it blocks and who is fixing it']);
       add('text', 'Decisions Needed', ['What you need from the audience', 'By when, and what happens if it slips']);
     },
-    meeting(add) {
+    meeting(add, pres) {
       add('title', 'Team Meeting', ['Date · Time · Room or video link']);
-      add('text', 'Agenda', ['Welcome and check-in', 'Updates from last week', 'Topic for discussion', 'Action items and next steps']);
+      diagram(pres, add('text', 'Agenda'), 'vProcess', ['Welcome and check-in', 'Updates from last week', 'Topic for discussion', 'Action items and next steps']);
       add('twoText', 'Updates', ['Wins', '\tWhat went well', '\tWho to thank'], ['Blockers', '\tWhat is in the way', '\tWhat help is needed']);
       add('text', 'Discussion', ['The question to decide today', '\tOption A', '\tOption B']);
       add('text', 'Action Items', ['Action — owner — due date', 'Action — owner — due date', 'Action — owner — due date']);
       add('title', 'Thank You', ['Next meeting: date and time']);
     },
-    lesson(add) {
+    lesson(add, pres) {
       add('title', 'Lesson Title', ['Course name · Teacher name']);
       add('text', 'Today We Will', ['Learn what …', 'Practise how to …', 'Be able to explain …']);
-      add('text', 'Key Idea', ['State the idea in one sentence', '\tAn example', '\tA counter-example']);
+      diagram(pres, add('text', 'Key Idea'), 'radial', ['The idea', '\tExample', '\tWhy it matters', '\tCounter-example', '\tWhere it is used']);
       add('twoText', 'Compare', ['First thing', '\tFeature', '\tFeature'], ['Second thing', '\tFeature', '\tFeature']);
       add('text', 'Your Turn', ['A question or exercise for the class', 'How long they have, and in pairs or alone']);
       add('text', 'Summary and Homework', ['Three things to remember', 'Homework: what to do, due when']);
     },
-    event(add) {
+    event(add, pres) {
       add('title', 'Event Name', ['Day, date · Time', 'Place']);
       add('text', 'What to Expect', ['The highlight of the event', 'Who is speaking or performing', 'Food, drinks and activities']);
-      add('text', 'Programme', ['Time — opening', 'Time — main part', 'Time — break', 'Time — closing']);
+      diagram(pres, add('text', 'Programme'), 'timeline', ['Time — opening', 'Time — main part', 'Time — break', 'Time — closing']);
       add('text', 'Getting There', ['Address', 'Public transport and parking', 'Accessibility']);
       add('title', 'See You There', ['RSVP by date · contact']);
     },
