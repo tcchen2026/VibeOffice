@@ -2,8 +2,8 @@
 # installer carrying the app, built on Linux with mingw and published as a GitHub release tagged with the version
 # (tools/current-tree-version.sh, e.g. v2026.10.11-d2134d). The zip's name stays the same in every release, so
 # releases/latest/download/VibeOffice-Windows-x64.zip is always the newest.
-# Run by hand only: Actions ▸ Windows ▸ Run workflow (pick the branch). Running it again on the same commit
-# replaces the release's files.
+# Run by hand (Actions ▸ Windows ▸ Run workflow, picking the branch), or by release.yml with the other systems.
+# Running it again on the same commit replaces the release's files.
 name: Windows
 
 on:
@@ -11,6 +11,11 @@ on:
     inputs:
       prerelease:
         description: Mark the release as a pre-release
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      prerelease:
         type: boolean
         default: false
 

@@ -1,11 +1,12 @@
-# The macOS desktop app (desktop/, docs/desktop.md, macOS), built on a Mac by desktop/macos/build.sh: VibeOffice-macOS.dmg,
-# signed with Developer ID, notarized and published in the version's GitHub release (the same tag as Windows', e.g.
-# v2026.10.11-d2134d); with app_store ticked, also VibeOffice-macOS-AppStore.pkg uploaded to App Store Connect
-# (TestFlight, then review). Every run also opens the app with a few files and keeps screenshots (artifact
-# VibeOffice-macOS-smoke), and the DMG's window when there is one.
+# The macOS desktop app's direct edition (desktop/, docs/desktop.md, macOS), built on a Mac by
+# desktop/macos/build.sh: VibeOffice-macOS.dmg, signed with Developer ID, notarized and published in the version's
+# GitHub release (the same tag as Windows', e.g. v2026.10.11-d2134d). The Mac App Store edition has a workflow of its
+# own (appstore.yml). With smoke ticked the run also opens the app with a few files and keeps screenshots (artifact
+# VibeOffice-macOS-smoke), and the DMG's window when there is one; it fails unless the network rules block.
 # The signing material lives in the "release" environment's secrets (docs/desktop.md lists them). Without them the
 # app is signed ad hoc and the run makes no release: an artifact with the app and the screenshots only.
-# Run by hand only: Actions ▸ macOS ▸ Run workflow. Running it again on the same commit replaces the release's DMG.
+# Run by hand (Actions ▸ macOS ▸ Run workflow), or by release.yml with the other systems. Running it again on the same
+# commit replaces the release's DMG.
 name: macOS
 
 on:
@@ -15,8 +16,16 @@ on:
         description: Mark the release as a pre-release
         type: boolean
         default: false
-      app_store:
-        description: Also upload the App Store package to App Store Connect
+      smoke:
+        description: Try the app (a few files, the network rules) and the DMG's window, with screenshots
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      prerelease:
+        type: boolean
+        default: false
+      smoke:
         type: boolean
         default: false
 
@@ -29,7 +38,6 @@ jobs:
     environment: release
     env:
       HAVE_DEVELOPER_ID: ${{ secrets.MACOS_DEVELOPER_ID_P12 != '' }}
-      HAVE_APP_STORE: ${{ secrets.MACOS_APPSTORE_P12 != '' && secrets.MACOS_PROVISION_PROFILE != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -46,15 +54,12 @@ jobs:
             desktop/target
           key: desktop-macos-${{ hashFiles('desktop/Cargo.lock') }}
 
-      # A keychain of this run's own, with the certificates; the API key where notarytool and altool look for it
+      # A keychain of this run's own, with the Developer ID certificate; the API key where notarytool looks for it
       - name: Signing material
-        if: env.HAVE_DEVELOPER_ID == 'true' || env.HAVE_APP_STORE == 'true'
+        if: env.HAVE_DEVELOPER_ID == 'true'
         env:
           DEVELOPER_ID_P12: ${{ secrets.MACOS_DEVELOPER_ID_P12 }}
           DEVELOPER_ID_PASSWORD: ${{ secrets.MACOS_DEVELOPER_ID_PASSWORD }}
-          APPSTORE_P12: ${{ secrets.MACOS_APPSTORE_P12 }}
-          APPSTORE_PASSWORD: ${{ secrets.MACOS_APPSTORE_PASSWORD }}
-          PROVISION_PROFILE: ${{ secrets.MACOS_PROVISION_PROFILE }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
@@ -63,21 +68,12 @@ jobs:
           security create-keychain -p "$pass" "$keychain"
           security set-keychain-settings -lut 21600 "$keychain"
           security unlock-keychain -p "$pass" "$keychain"
-          import() {   # base64 .p12, its password
-            [ -n "$1" ] || return 0
-            echo "$1" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-            security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$2" -T /usr/bin/codesign -T /usr/bin/productbuild
-            rm "$RUNNER_TEMP/cert.p12"
-          }
-          import "$DEVELOPER_ID_P12" "$DEVELOPER_ID_PASSWORD"
-          import "$APPSTORE_P12" "$APPSTORE_PASSWORD"
+          echo "$DEVELOPER_ID_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$DEVELOPER_ID_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$pass" "$keychain" > /dev/null
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           security find-identity -v
-          if [ -n "$PROVISION_PROFILE" ]; then
-            echo "$PROVISION_PROFILE" | base64 --decode > "$RUNNER_TEMP/appstore.provisionprofile"
-            echo "MACOS_PROVISION_PROFILE=$RUNNER_TEMP/appstore.provisionprofile" >> "$GITHUB_ENV"
-          fi
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
           echo "ASC_KEY_PATH=$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
@@ -87,15 +83,15 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          desktop/macos/build.sh
+          desktop/macos/build.sh dmg
           echo "version=$(tools/current-tree-version.sh)" >> "$GITHUB_OUTPUT"
 
       # The app as a user starts it: alone, then with a document, a workbook as CSV and Markdown handed over as Finder
       # does (open -a), each a window of its own; a screenshot after each. Its stderr must say WebKit took the network
       # rules (desktop/src/net.rs: only https://vibeoffice.work/).
       - name: Smoke
+        if: inputs.smoke
         run: |
           app="$PWD/desktop/target/dist/VibeOffice.app"
           out="$RUNNER_TEMP/smoke"
@@ -130,7 +126,7 @@ jobs:
           grep -q '^network probe: blocked$' "$out/stderr.log" || { echo "::error::the network rules did not block the probe (stderr.log)"; exit 1; }
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && inputs.smoke
         with:
           name: VibeOffice-macOS-smoke
           path: ${{ runner.temp }}/smoke/*.*
@@ -171,17 +167,8 @@ jobs:
               --notes-file desktop/release-notes.md
           fi
 
-      - name: App Store Connect
-        if: inputs.app_store && env.HAVE_APP_STORE == 'true'
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-        run: |
-          xcrun altool --upload-app --type macos --file desktop/target/dist/VibeOffice-macOS-AppStore.pkg \
-            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
-
       - name: Remove the keychain
-        if: always() && (env.HAVE_DEVELOPER_ID == 'true' || env.HAVE_APP_STORE == 'true')
+        if: always() && env.HAVE_DEVELOPER_ID == 'true'
         run: |
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
           rm -rf ~/.appstoreconnect
