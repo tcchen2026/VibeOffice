@@ -171,9 +171,13 @@ VO.i18n.whenReady(function () {
 
   /* ---------- install, about */
   /* the title says what the suite is, for search results and tabs; the title bar of the installed app or the desktop
-     app shows the name alone. The welcome's offline and install line is the web's. */
+     app shows the name alone. The welcome's offline and install line is true where the service worker runs and Install
+     is offered (VO.offersInstall, common/suite.js): not in the desktop app or a copy of the site elsewhere. */
   if (VO.host.kind === 'desktop' || matchMedia('(display-mode: standalone), (display-mode: window-controls-overlay)').matches) document.title = 'VibeOffice.work';
-  if (VO.host.kind === 'desktop') document.querySelectorAll('.webonly').forEach((el) => { el.hidden = true; });
+  if (!VO.offersInstall) document.querySelectorAll('.webonly').forEach((el) => { el.hidden = true; });
+  /* a page served over plain http (a copy of the site; localhost and 127.0.0.1 count as secure) has no WebCrypto's
+     AES, async clipboard, Local Font Access, service worker or persistent storage: say so, so nobody expects them */
+  if (VO.host.kind === 'web' && window.isSecureContext === false) $('insecure').hidden = false;
   let installEvent = null;
   if (VO.offersInstall) window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvent = e; $('install').hidden = false; });
   window.addEventListener('appinstalled', () => { installEvent = null; $('install').hidden = true; });

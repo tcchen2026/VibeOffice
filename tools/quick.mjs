@@ -45,6 +45,7 @@ const RULES = [
   [/^public\/common\/smartart/, ['tests/smartart.test.mjs']],
   [/^public\/common\/zip\.js$|^public\/sw\.js$/, ['tests/sw.test.mjs']],
   [/^public\/common\/crypto\.js$/, ['tests/crypto.test.mjs']],
+  [/^public\/.*\.js$/, ['tests/insecure.test.mjs']],   // a page served over plain http: no randomUUID or crypto.subtle
   [/^public\/common\/spell\.js$/, ['tests/autocorrect.test.mjs']],
   [/^public\/common\/geometry\.js$|^public\/ledger\/js\/render\.js$|^tools\/patterns\//, ['tests/patterns.test.mjs']],
   [/^public\/common\/(xml|opc|opc-order)\.js$/, ['tests/ooxml/opc.test.mjs', 'tests/ooxml/check.test.mjs']],

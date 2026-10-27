@@ -540,7 +540,7 @@
       b.append(sec(L.N('1. Formatting restrictions'), fmt), sec(L.N('2. Editing restrictions'), ed, kind), sec(L.N('3. Start enforcement'), h('div', { class: 'tp-note', text: on ? 'This document is protected from unintentional editing.' : 'Are you ready to apply these settings? (You can turn them off later)' }), start));
     },
   });
-  async function hash(s) { try { const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(buf)).map((x) => x.toString(16).padStart(2, '0')).join(''); } catch (e) { return String(s.length); } }
+  async function hash(s) { const buf = await L.sha.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(buf).map((x) => x.toString(16).padStart(2, '0')).join(''); }   /* common/sha.js: also over plain http */
   /* ---------- Mail Merge wizard ---------- */
   TP.register({ id: 'mailmerge', title: 'Mail Merge', render(b) { if (L.mailmerge) L.mailmerge.renderWizard(b); else b.appendChild(h('div', { class: 'tp-note', text: 'Mail merge is not available.' })); }, refresh(b, reason) { if (reason === 'load') { L.clear(b); this.render(b); } } });
 

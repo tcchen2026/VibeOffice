@@ -1,9 +1,10 @@
 /* VibeOffice — password-protected Office files (ECMA-376 Part 2 "Office Document Cryptography"):
  * .docx, .xlsx and .pptx alike. An encrypted package is an OLE compound file holding EncryptionInfo and
  * EncryptedPackage streams. Supported: Agile encryption (Office 2010 and later, AES with SHA-1/SHA-256/
- * SHA-384/SHA-512) and Standard encryption (Office 2007, AES-ECB with SHA-1). The password hashing loop uses
- * sha.js when it is loaded (fast), else WebCrypto; AES is done here so that unpadded CBC and ECB blocks can
- * be decrypted directly. Nothing leaves the browser. */
+ * SHA-384/SHA-512) and Standard encryption (Office 2007, AES-ECB with SHA-1). Needs sha.js: the password
+ * hashing loop runs there (fast), the other hashes too where the page has no WebCrypto (plain http); AES is done
+ * here so that unpadded CBC and ECB blocks can be decrypted directly, so opening works on any page. Saving with a
+ * password encrypts with WebCrypto's AES, which only secure (https) pages have. Nothing leaves the browser. */
 (function (root) {
   'use strict';
   const L = root.L || (root.L = {});
@@ -138,7 +139,7 @@
   const digest = async (alg, ...parts) => {
     let len = 0; for (const p of parts) len += p.length;
     const buf = new Uint8Array(len); let o = 0; for (const p of parts) { buf.set(p, o); o += p.length; }
-    return new Uint8Array(await crypto.subtle.digest(alg, buf));
+    return L.sha.digest(alg, buf);   /* common/sha.js: also on a page served over plain http */
   };
   const u32 = (n) => new Uint8Array([n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]);
   const utf16 = (s) => { const b = new Uint8Array(s.length * 2); for (let i = 0; i < s.length; i++) { b[2 * i] = s.charCodeAt(i) & 255; b[2 * i + 1] = s.charCodeAt(i) >> 8; } return b; };
@@ -366,7 +367,6 @@
 
   /** decrypt an encrypted Office package; resolves to the inner .xlsx bytes */
   OC.decrypt = async function (u8, password) {
-    if (!(root.crypto && root.crypto.subtle)) throw new Error('Opening password-protected files needs a secure (https) page.');
     const c = cfb(u8);
     const info = c.stream('EncryptionInfo'), pkg = c.stream('EncryptedPackage');
     if (!info || !pkg) throw new Error('unsupported');

@@ -111,7 +111,15 @@
     return K.formats[type];
   };
   const esc = K.esc = XML.esc;
-  const uuid = () => root.crypto?.randomUUID ? root.crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  /* a random (version 4) UUID; the browser gives randomUUID only to secure (https) pages, getRandomValues to every page.
+     The suite's one source of them: K.guid below, and the apps' copies, unique keys and GUIDs (tests/insecure.test.mjs). */
+  const uuid = K.uuid = () => {
+    if (root.crypto.randomUUID) return root.crypto.randomUUID();
+    const b = root.crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const x = Array.from(b, (n) => n.toString(16).padStart(2, '0')).join('');
+    return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
+  };
   const elements = el => Array.from(el.children || []);
   const walk = (el, fn) => { if (el.nodeType === 1) fn(el); for (const c of elements(el)) walk(c, fn); };
   const attrs = el => Array.from(el.attributes || []);
@@ -437,7 +445,7 @@
     });
     return { ...fragment, xml, deps, ids, record: null };
   };
-  K.guid = () => '{' + root.crypto.randomUUID().toUpperCase() + '}';
+  K.guid = () => '{' + uuid().toUpperCase() + '}';
   const isGuid = value => /^\{?[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}\}?$/i.test(value || '');
   const guidKey = value => '{' + value.replace(/[{}]/g, '').toUpperCase() + '}';
   // Only identity attributes are rewritten. GUID-looking text, links, extension

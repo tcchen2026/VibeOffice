@@ -1,0 +1,4 @@
+# the image needs the site and its server's settings only (Dockerfile)
+*
+!public/
+!tools/docker/

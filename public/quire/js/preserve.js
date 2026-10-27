@@ -418,7 +418,7 @@
     // added definition private to this object, so both the original save and a
     // partial copy have one complete, unique type definition and matching refs.
     if (addedTypes.size) {
-      const copy = 'vml-type:' + crypto.randomUUID();
+      const copy = 'vml-type:' + K.uuid();
       for (const id of fragment.ids) if (id.kind.startsWith('vmlType') && addedTypes.has((id.prefix || '').replace(/^#/, '') + id.id)) id.copy = copy;
     }
     opaqueStore(object, true).opaque = P.registerObject(fragment, doc, label || object.name || object.alt || 'Drawing');
@@ -804,7 +804,7 @@
           if (!stores.has(storeKey)) {
             let id = D.doc?.keep?.storeCopies?.[storeKey];
             if (!id) {
-              id = '{' + crypto.randomUUID().toUpperCase() + '}';
+              id = K.guid();
               if (D.doc) { D.touchKey(D.doc, 'keep'); D.doc.keep = D.doc.keep || {}; (D.doc.keep.storeCopies || (D.doc.keep.storeCopies = {}))[storeKey] = id; }
             }
             stores.set(storeKey, id);

@@ -1,0 +1,62 @@
+# The self-hosting image (Dockerfile; docs/suite.md, Self-hosting with Docker): nginx serving public/, for linux/amd64
+# and linux/arm64, pushed to Docker Hub as <Docker ID>/vibeoffice:<version> and :latest (the version of
+# tools/current-tree-version.sh). The image is run and its answers checked before anything is pushed.
+# Needs, under Settings ▸ Secrets and variables ▸ Actions: the variable DOCKERHUB_USERNAME (the Docker ID) and the secret
+# DOCKERHUB_TOKEN (a Docker Hub personal access token with Read & Write).
+# Run by hand (Actions ▸ Docker ▸ Run workflow). Running it again on the same commit replaces both tags.
+name: Docker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Name and version
+        id: tag
+        env:
+          USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+        run: |
+          [ -n "$USERNAME" ] || { echo "::error::Set the variable DOCKERHUB_USERNAME (Settings > Secrets and variables > Actions > Variables)"; exit 1; }
+          echo "image=docker.io/$USERNAME/vibeoffice" >> "$GITHUB_OUTPUT"
+          echo "version=$(tools/current-tree-version.sh)" >> "$GITHUB_OUTPUT"
+
+      # the image as built for this machine: pages, scripts and the manifest with their types, and a folder without its
+      # slash sent to it on the published port (a relative redirect)
+      - name: Try
+        run: |
+          docker build -t vibeoffice:try .
+          docker run -d --name try -p 8080:80 vibeoffice:try
+          for i in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
+          type() { curl -fsS -o /dev/null -w '%{content_type}' "http://127.0.0.1:8080/$1"; }
+          for p in '' quire/ ledger/ lectern/; do [ "$(type "$p")" = text/html ] || { echo "::error::/$p is not a page"; exit 1; }; done
+          [ "$(type common/opc.js)" = application/javascript ] || { echo "::error::scripts have the wrong type"; exit 1; }
+          [ "$(type manifest.webmanifest)" = application/manifest+json ] || { echo "::error::the manifest has the wrong type"; exit 1; }
+          [ "$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/quire)" = http://127.0.0.1:8080/quire/ ] || { echo "::error::/quire is not sent to /quire/"; exit 1; }
+          curl -fsS http://127.0.0.1:8080/ | grep -q 'id="insecure"' || { echo "::error::the Start Center is not this one"; exit 1; }
+          docker rm -f try
+
+      # only COPY steps, so buildx makes the arm64 image without emulation
+      - name: Push
+        env:
+          USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE: ${{ steps.tag.outputs.image }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          [ -n "$TOKEN" ] || { echo "::error::Set the secret DOCKERHUB_TOKEN (Settings > Secrets and variables > Actions > Secrets)"; exit 1; }
+          echo "$TOKEN" | docker login docker.io -u "$USERNAME" --password-stdin
+          docker buildx create --use --name multi
+          docker buildx build --platform linux/amd64,linux/arm64 \
+            --label org.opencontainers.image.title=VibeOffice \
+            --label org.opencontainers.image.source="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label org.opencontainers.image.revision="$GITHUB_SHA" \
+            --label org.opencontainers.image.version="$VERSION" \
+            -t "$IMAGE:$VERSION" -t "$IMAGE:latest" --push .
+          echo "Pushed \`$IMAGE:$VERSION\` and \`$IMAGE:latest\` (linux/amd64, linux/arm64)" >> "$GITHUB_STEP_SUMMARY"

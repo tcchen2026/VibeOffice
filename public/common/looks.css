@@ -64,6 +64,7 @@
   --card-hot-border: #E3A23B; --card-thumb-bg: #f3f6fb; --card-thumb-line: #b8c7df; --start-on-b: #e6eefc; --start-rule: #a9c1ea;
   --start-line: #c3d3ee; --error-ink: #a3300b; --badge-bg: #fde3c4; --badge-ink: #8a3b00; --rm-bg: rgba(255,255,255,.9);
   --notice-bg: #eef8f1; --notice-hot: #dcf0e2; --notice-line: #9fcfae; --notice-mark: #1f8a4c; --notice-ink: #14572f;
+  --warn-bg: #fff8d6; --warn-line: #e3c86e; --warn-mark: #c98a00; --warn-ink: #4f3a00;
   --drop-bg: rgba(214,227,248,.85);
   /* ribbon (looks with layout 'ribbon'; common/ribbon.js) */
   --rb-bg: #C4DAFA; --rb-panel: #F3F7FE; --rb-line: #9DB6E4; --rb-tab-ink: #0B2E7C; --rb-tab-on-ink: #0B2E7C; --rb-tab-hot: #E3EFFF;
@@ -130,6 +131,7 @@
   --card-hot-border: var(--p-accent-mid); --card-thumb-bg: var(--p-paper-2); --card-thumb-line: var(--p-line); --start-on-b: var(--p-accent-soft); --start-rule: var(--p-line);
   --start-line: var(--p-line); --error-ink: #A3300B; --badge-bg: #FCE7CF; --badge-ink: #8A3B00; --rm-bg: rgba(255,255,255,.9);
   --notice-bg: #EBF4EE; --notice-hot: #DBEDE1; --notice-line: #B2D5BF; --notice-mark: #2E8650; --notice-ink: #1E5A36;
+  --warn-bg: #FBF4DE; --warn-line: #E5D4A6; --warn-mark: #B7791F; --warn-ink: #56421A;
   --drop-bg: rgba(226,239,238,.9);
   --rb-bg: var(--p-paper); --rb-panel: #fff; --rb-line: var(--p-line); --rb-tab-ink: #4A463F; --rb-tab-on-ink: var(--p-accent-ink); --rb-tab-hot: var(--p-paper-2);
   --rb-label-ink: #8C857A; --rb-ctx: #A85A1E; --rb-ctx-bg: #FBF0E4; --rb-file-ink: var(--p-accent);

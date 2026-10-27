@@ -8,7 +8,7 @@
   const at = (el, name) => el?.getAttribute(name);
   const clone = v => JSON.parse(JSON.stringify(v));
   const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-  const uid = () => root.crypto.randomUUID();
+  const uid = () => K.uuid();
   const shapeId = value => /^_x0000_s\d+$/.test(value || '') ? +value.slice(8) : +value || 0;
   const vmlId = el => shapeId(at(el, 'id')) || shapeId(el.getAttributeNS(K.KNOWN_NS.o, 'spid'));
   const values = d => ({ xml: d.xml, media: d.media, imgLink: d.imgLink, crop: d.crop, text: d.text,
