@@ -95,7 +95,9 @@ These are in addition to AGENTS.md.
    kept frames); part names compare case-insensitively (17 Word template thumbnails); a relationship to a part the
    original lacks no longer drops its owner (a glossary, nine charts; Office's `Target="NULL"` written back, nine
    Excel templates' themes); fields whose code holds nested fields or pictures; bookmarks and permission ranges
-   between table rows or cells; a picture's PowerPoint-for-Mac PDF version. Unedited saves losing a part the
+   between table rows or cells; a picture's PowerPoint-for-Mac PDF version; Quire's built-in styles written beside
+   a file's own styles of the same name (Word in other languages: `berschrift1` is heading 1), 565 of 2,768 saves,
+   where LibreOffice gave the file's paragraphs the second one's look. Unedited saves losing a part the
    original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -109,6 +111,9 @@ These are in addition to AGENTS.md.
      keeps the picture's reference pointing at the font table.
    - `PPTWithAttachments.pptm`: a compatibility frame (an Organization Chart) becomes an "Embedded object" rectangle.
    - Quire: duplicating a paragraph in `tdf150166`/`tdf150086` throws in `P.duplicateControls` (preserve.js).
+   - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
+     styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
+     the built-in's look until the file is reopened.
 2. **Lectern checker numbers:** run the Lectern corpus driver, which needs Playwright, to measure how
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.

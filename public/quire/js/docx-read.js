@@ -455,6 +455,16 @@
       if (nid !== id && styles[id]) delete styles[id];
       styles[nid] = s;
     }
+    /* a built-in the file has under an id of its own (Überschrift1 named "heading 1", as Word writes in other languages) stays for
+       commands that ask for it by id, but names the file's style (sameAs): the writer leaves it out and writes its uses with the file's
+       style, since two styles of one name are not what Word writes and other readers give the file's paragraphs the second one's look */
+    const own = new Set(Object.values(imported));
+    const byName = new Map(Object.values(imported).map((s) => [s.type + ':' + String(s.name).toLowerCase(), s.id]));
+    for (const k of Object.keys(styles)) {
+      const other = !own.has(styles[k]) && byName.get(styles[k].type + ':' + String(styles[k].name).toLowerCase());
+      if (other && other !== k) styles[k].sameAs = other;
+    }
+    for (const s of Object.values(styles)) if (!own.has(s)) for (const f of ['basedOn', 'next', 'link']) if (styles[s[f]]?.sameAs) s[f] = styles[s[f]].sameAs;
     /* built-in heading styles not present in the file: inherit the document's Normal look but keep their emphasis */
     if (stX) {
       for (const k of Object.keys(styles)) {

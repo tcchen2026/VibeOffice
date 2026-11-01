@@ -88,7 +88,8 @@
       const width = opts.width || availWidth(pos);
       const cur = pos.p;
       const t = D.simpleTable(nr, nc, opts.colWidth ? opts.colWidth * nc : width, { pPr: cur.pPr.style && !/^Heading/.test(cur.pPr.style) ? { style: cur.pPr.style } : {} });
-      if (opts.style) { T.ensureStyle(opts.style); t.tblPr.style = opts.style; }
+      t.tblPr.style = D.useStyle(doc(), t.tblPr.style);
+      if (opts.style) t.tblPr.style = T.ensureStyle(opts.style) || opts.style;
       if (opts.look) t.tblPr.look = Object.assign({}, opts.look);
       if (opts.autofit === 'window') t.tblPr.w = { type: 'pct', v: 5000 };
       if (opts.autofit === 'fixed' || opts.colWidth) { t.tblPr.w = { type: 'dxa', v: L.round(t.grid.reduce((a, b) => a + b, 0), 2) }; t.tblPr.layout = 'fixed'; }
@@ -974,6 +975,7 @@
     const width = availWidth(D.pos(paras[0], 0));
     E.edit('Convert Text to Table', () => {
       const t = D.simpleTable(rowsText.length, nc, opts.colWidth ? opts.colWidth * nc : width);
+      t.tblPr.style = D.useStyle(doc(), t.tblPr.style);
       rowsText.forEach((r, ri) => r.forEach((c, cix) => { const p = t.rows[ri].cells[cix].blocks[0]; p.runs = c.runs.map((x) => L.clone(x)); p.pPr = L.clone(c.src.pPr); delete p.pPr.num; D.normalize(p); }));
       const cont = D.touchList(info.cont);
       const i0 = cont.blocks.indexOf(paras[0]);
@@ -1065,13 +1067,16 @@
   T.styleId = (name) => (name === 'Table Grid' ? 'TableGrid' : name.replace(/[^A-Za-z0-9]/g, ''));
   T.ensureStyle = function (idOrName) {
     const d = doc();
-    if (d.styles[idOrName]) return idOrName;
+    if (d.styles[idOrName]) return D.useStyle(d, idOrName);
     const name = Object.keys(T.STYLES).find((n) => T.styleId(n) === idOrName || n === idOrName);
     if (!name) return null;
     const id = T.styleId(name);
-    if (d.styles[id]) return id;
+    if (d.styles[id]) return D.useStyle(d, id);
+    /* the file's own style of that name (Word in other languages gives it an id of its own) */
+    const own = Object.values(d.styles).find((s) => s && s.type === 'table' && !s.sameAs && String(s.name).toLowerCase() === name.toLowerCase());
+    if (own) return own.id;
     const def = T.STYLES[name];
-    if (!def) return 'TableGrid';
+    if (!def) return D.useStyle(d, 'TableGrid');
     D.touchKey(d, 'styles');
     d.styles[id] = { id, name, type: 'table', basedOn: 'TableNormal', builtin: true, tblPr: Object.assign({ cellMar: { l: 5.4, r: 5.4, t: 0, b: 0 } }, L.clone(def.tblPr || {})), pPr: {}, rPr: L.clone(def.rPr || {}), tcPr: L.clone(def.tcPr || {}), cond: L.clone(def.cond || {}) };
     D.stylesChanged();

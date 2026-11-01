@@ -223,6 +223,22 @@
     for (const s of st) o[s.id] = s;
     return o;
   };
+  /** the id to use for built-in style id in document d: the file's own style of that name when it has one under another id (Word in
+   *  other languages writes Überschrift1 for heading 1; the reader marks the built-in sameAs), otherwise id, added from the built-ins */
+  D.useStyle = function (d, id) {
+    const s = d.styles[id];
+    if (s) return s.sameAs && d.styles[s.sameAs] ? s.sameAs : id;
+    const b = D.builtinStyles()[id];
+    if (b) { D.touchKey(d, 'styles'); d.styles[id] = b; D.stylesChanged(); }
+    return id;
+  };
+  /** whether style id in d is one of the built-ins named: by its name, so a file's own id in another language counts (case and spaces
+   *  ignored; an id d doesn't define is compared itself) */
+  D.isStyle = (d, id, ...names) => {
+    if (!id) return false;
+    const key = (n) => String(n).toLowerCase().replace(/\s+/g, ''), own = key(d?.styles?.[id]?.name || id);
+    return names.some((n) => key(n) === own);
+  };
   D.styleDisplayName = (s) => {
     if (!s) return '';
     const n = s.name || s.id;
@@ -1084,7 +1100,7 @@
   };
   D.findStyleByName = (doc, name) => {
     const n = String(name).toLowerCase();
-    for (const k in doc.styles) { const s = doc.styles[k]; if (s.id.toLowerCase() === n || String(s.name).toLowerCase() === n || D.styleDisplayName(s).toLowerCase() === n) return s; }
+    for (const k in doc.styles) { const s = doc.styles[k]; if (s.sameAs) continue; if (s.id.toLowerCase() === n || String(s.name).toLowerCase() === n || D.styleDisplayName(s).toLowerCase() === n) return s; }
     return null;
   };
   D.uniqueStyleId = (doc, name) => { let base = String(name).replace(/[^A-Za-z0-9]/g, '') || 'Style'; let id = base, i = 1; while (doc.styles[id]) id = base + (++i); return id; };

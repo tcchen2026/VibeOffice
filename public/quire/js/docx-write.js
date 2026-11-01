@@ -74,7 +74,7 @@
       if (mark.ins) x += `<w:ins w:id="${ctx.rev()}" w:author="${X(mark.ins.author)}" ${DT(mark.ins.date)}/>`;
       if (mark.del) x += `<w:del w:id="${ctx.rev()}" w:author="${X(mark.del.author)}" ${DT(mark.del.date)}/>`;
     }
-    if (r.style) x += `<w:rStyle w:val="${X(r.style)}"/>`;
+    if (r.style) { const id = ctx?.ownStyle?.(r.style) ?? r.style; ctx?.styleRefs?.add(id); x += `<w:rStyle w:val="${X(id)}"/>`; }
     if (r.font || r.fontEA || r.fontCS) {
       const a = [];
       if (r.font) a.push(`w:ascii="${X(r.font)}" w:hAnsi="${X(r.font)}"`);
@@ -109,7 +109,7 @@
   function pPrXML(p, ctx, opts) {
     p = p || {};
     let x = '';
-    if (p.style && p.style !== 'Normal') x += `<w:pStyle w:val="${X(p.style)}"/>`;
+    if (p.style && p.style !== 'Normal') { const id = ctx?.ownStyle?.(p.style) ?? p.style; ctx?.styleRefs?.add(id); x += `<w:pStyle w:val="${X(id)}"/>`; }
     else if (p.style === 'Normal' && opts && opts.inStyle) x += '';
     if (p.keepNext != null) x += `<w:keepNext${ON(p.keepNext)}/>`;
     if (p.keepLines != null) x += `<w:keepLines${ON(p.keepLines)}/>`;
@@ -212,7 +212,7 @@
   function tblPrXML(t, ctx) {
     const p = t || {};
     let x = '';
-    if (p.style) x += `<w:tblStyle w:val="${X(p.style)}"/>`;
+    if (p.style) { const id = ctx?.ownStyle?.(p.style) ?? p.style; ctx?.styleRefs?.add(id); x += `<w:tblStyle w:val="${X(id)}"/>`; }
     if (p.float && ctx && ctx.full) {
       const f = p.float, a = [];
       if (f.l != null) a.push(`w:leftFromText="${tw(f.l)}"`);
@@ -625,7 +625,7 @@
   function tableXML(t, ctx) {
     if (t.keep?.gridRepair) ctx.writer.loss({ id: 'table-grid:' + ctx.part, what: 'Incomplete or unusable table column widths were reconstructed. Table layout may change.', where: ctx.part, action: 'conversion' });
     const map = L.R.tblMap(t);
-    const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { full: true }), ctx);
+    const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { ...ctx, full: true }), ctx);
     let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}</w:tblGrid>`;
     x += L.preserve.controlSequence(t.rows, row => row.trPr, row => L.preserve.tableMemberXML(row, ctx, () => {
       const ri = t.rows.indexOf(row);
@@ -651,17 +651,23 @@
   /* ================= styles, numbering, settings ================= */
   function stylesXML(doc, ctx) {
     const dd = doc.defaults || {};
+    /* a built-in standing in for the file's own style of its name (sameAs, docx-read) is left out: what uses it is written with the
+       file's style (ctx.ownStyle), as Word applies a document's own Heading 1 or Table Grid; still written if something names it anyway */
+    const refs = new Set(ctx.styleRefs);
+    for (const a of Object.values(doc.numbering.abs)) for (const lv of a.levels || []) if (lv?.pStyle) refs.add(ctx.ownStyle(lv.pStyle));
+    const left = new Set(Object.values(doc.styles).filter((s) => s?.sameAs && doc.styles[s.sameAs] && !refs.has(s.id)).map((s) => s.id));
+    const ref = (id) => (left.has(id) ? doc.styles[id].sameAs : id);
     let x = HEAD + `<w:styles xmlns:w="${NS.w}" xmlns:r="${NS.r}" xmlns:mc="${NS.mc}" xmlns:w14="${NS.w14}" mc:Ignorable="w14">`;
     x += `<w:docDefaults><w:rPrDefault>${rPrXML(Object.assign({ font: 'Times New Roman', sz: 12, lang: 'en-US' }, dd.rPr || {}), null, ctx)}</w:rPrDefault><w:pPrDefault>${pPrXML(dd.pPr, ctx)}</w:pPrDefault></w:docDefaults>`;
     const order = Object.values(doc.styles).sort((a, b) => (a.id === 'Normal' ? -1 : b.id === 'Normal' ? 1 : 0));
     for (const s of order) {
-      if (!s || !s.id) continue;
+      if (!s || !s.id || left.has(s.id)) continue;
       if (s.keep?.defaultStyleRepair) ctx.writer.loss({ id: 'default-styles:' + ctx.part, what: 'Conflicting default styles were normalized. Text layout may change.', where: ctx.part, action: 'conversion' });
       const type = s.type || 'paragraph';
       let st = `<w:style w:type="${type}"${s.isDefault ? ' w:default="1"' : ''}${s.custom ? ' w:customStyle="1"' : ''} w:styleId="${X(s.id)}"><w:name w:val="${X(s.name || s.id)}"/>`;
-      if (s.basedOn && doc.styles[s.basedOn]) st += `<w:basedOn w:val="${X(s.basedOn)}"/>`;
-      if (s.next && doc.styles[s.next]) st += `<w:next w:val="${X(s.next)}"/>`;
-      if (s.link && doc.styles[s.link]) st += `<w:link w:val="${X(s.link)}"/>`;
+      if (s.basedOn && doc.styles[s.basedOn]) st += `<w:basedOn w:val="${X(ref(s.basedOn))}"/>`;
+      if (s.next && doc.styles[s.next]) st += `<w:next w:val="${X(ref(s.next))}"/>`;
+      if (s.link && doc.styles[s.link]) st += `<w:link w:val="${X(ref(s.link))}"/>`;
       if (s.autoRedefine) st += '<w:autoRedefine/>';
       if (s.hidden) st += '<w:hidden/>';
       if (s.prio != null) st += `<w:uiPriority w:val="${s.prio}"/>`;
@@ -697,7 +703,7 @@
     let x = `<w:start w:val="${lv.start != null ? lv.start : 1}"/>`;
     x += lv.custFmt ? `<w:numFmt w:val="custom" w:format="${X(lv.custFmt)}"/>` : `<w:numFmt w:val="${lv.fmt || 'decimal'}"/>`;
     if (lv.restart != null) x += `<w:lvlRestart w:val="${lv.restart + 1}"/>`;
-    if (lv.pStyle) x += `<w:pStyle w:val="${X(lv.pStyle)}"/>`;
+    if (lv.pStyle) x += `<w:pStyle w:val="${X(ctx?.ownStyle?.(lv.pStyle) ?? lv.pStyle)}"/>`;
     if (lv.isLgl) x += '<w:isLgl/>';
     if (lv.suff && lv.suff !== 'tab') x += `<w:suff w:val="${lv.suff}"/>`;
     x += `<w:lvlText w:val="${X(lv.text == null ? '' : lv.text)}"/>`;
@@ -925,9 +931,11 @@
     const highNote = kind => Math.max(0, ...Object.keys(kind === 'fn' ? doc.fn : doc.en).map(x => +x || 0), ...(doc.keep?.notes?.[kind] || []).map(n => +n.id || 0)) + 1;
     let fnN = highNote('fn'), enN = highNote('en');
     const charts = [];
-    const usedPaths = new Set();
+    const usedPaths = new Set(), styleRefs = new Set();
+    /** the id to write for style id: the file's own style of its name for a built-in marked sameAs (docx-read), otherwise id */
+    const ownStyle = (id) => { const s = doc.styles[id]; return s?.sameAs && doc.styles[s.sameAs] ? s.sameAs : id; };
     const mkCtx = (rels, main) => ({
-      rels, main, doc, ranges, objects, writer: pack.writer, part: rels.owner, mainPart: pack.part('word/document.xml'),
+      rels, main, doc, ranges, objects, writer: pack.writer, styleRefs, ownStyle, part: rels.owner, mainPart: pack.part('word/document.xml'),
       drawingXML,
       rev: () => pack.writer.ids.fresh('document', 'revision'),
       docPrId: () => {
@@ -1044,7 +1052,7 @@
         const st = store[orig];
         if (!st) continue;
         let inner = blocksXML(st.blocks, ctx);
-        if (!/<w:(footnote|endnote)Ref\/>/.test(inner)) inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference'}"/></w:rPr><w:${tag}Ref/></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>`);
+        if (!/<w:(footnote|endnote)Ref\/>/.test(inner)) { const ref = ownStyle(kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference'); styleRefs.add(ref); inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${X(ref)}"/></w:rPr><w:${tag}Ref/></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>`); }
         x += `<w:${tag} w:id="${nid}">${inner}</w:${tag}>`;
       }
       return { xml: HEAD + `<w:${tag}s ${NSDECL}>${x}</w:${tag}s>`, rels };
@@ -1065,7 +1073,7 @@
         const c = doc.comments[orig];
         if (!c) continue;
         let inner = blocksXML(c.blocks, ctx);
-        if (!/annotationRef/.test(inner)) inner = prependParagraph(inner, '<w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:annotationRef/></w:r>');
+        if (!/annotationRef/.test(inner)) { const ref = ownStyle('CommentReference'); styleRefs.add(ref); inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${X(ref)}"/></w:rPr><w:annotationRef/></w:r>`); }
         const pid = c.keep?.paraId || (++paraN).toString(16).toUpperCase().padStart(8, '0');
         paraIds.set(String(orig), pid);
         /* tag the last paragraph with a paraId for threading / done state */

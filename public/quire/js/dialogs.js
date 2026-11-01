@@ -527,7 +527,7 @@
     E.edit('Outline Numbered', () => {
       D.touchKey(d, 'numbering'); D.touchKey(d, 'styles');
       const nid2 = D.addNum(d, abs);
-      for (let i = 1; i <= 9; i++) { const id = 'Heading' + i; if (!d.styles[id]) d.styles[id] = D.builtinStyles()[id]; d.styles[id].pPr = Object.assign({}, d.styles[id].pPr, { num: { id: nid2, lvl: i - 1 } }); }
+      for (let i = 1; i <= 9; i++) { const id = D.useStyle(d, 'Heading' + i); d.styles[id].pPr = Object.assign({}, d.styles[id].pPr, { num: { id: nid2, lvl: i - 1 } }); }
       D.stylesChanged();
       return E.sel;
     });
@@ -905,7 +905,7 @@
       E.edit(L.N('Theme'), () => {
         D.touchKey(d, 'styles'); D.touchKey(d, 'bg');
         const base = D.builtinStyles();
-        for (let i = 1; i <= 3; i++) { const id = 'Heading' + i; d.styles[id] = d.styles[id] || base[id]; d.styles[id].rPr = Object.assign({}, d.styles[id].rPr, { font: t ? t.head : base[id].rPr.font, color: t ? t.hc : undefined }); }
+        for (let i = 1; i <= 3; i++) { const id = D.useStyle(d, 'Heading' + i); d.styles[id].rPr = Object.assign({}, d.styles[id].rPr, { font: t ? t.head : base['Heading' + i].rPr.font, color: t ? t.hc : undefined }); }
         d.styles.Normal.rPr = Object.assign({}, d.styles.Normal.rPr, { font: t ? t.body : undefined });
         if (!t) delete d.styles.Normal.rPr.font;
         d.bg = t ? t.bg : null;

@@ -478,7 +478,7 @@
   /* ================= tables of contents, figures, index ================= */
   /** text width of the main section for right-aligned tab stops */
   const textWidth = () => { const s = doc().sect; return s.pgW - s.ml - s.mr - (s.gutter || 0); };
-  const tocStyle = (lvl) => { const d = doc(); const id = 'TOC' + lvl; if (!d.styles[id]) { const b = D.builtinStyles()[id]; if (b) { D.touchKey(d, 'styles'); d.styles[id] = b; D.stylesChanged(); } } return id; };
+  const tocStyle = (lvl) => D.useStyle(doc(), 'TOC' + lvl);
   function pageText(p) {
     const pg = LY.pageOf(D.pos(p, 0));
     if (pg < 0) return '1';
@@ -549,10 +549,8 @@
     }
     for (const e of entries) {
       const bm = F.ensureParaBookmark(e.p, '_Toc');
-      const style = isFig ? (d.styles.TableofFigures ? 'TableofFigures' : (tocStyle(1))) : tocStyle(e.level);
-      if (isFig && !d.styles.TableofFigures) { D.touchKey(d, 'styles'); d.styles.TableofFigures = D.builtinStyles().TableofFigures; D.stylesChanged(); }
-      const rp = links ? { style: 'Hyperlink', link: { anchor: bm } } : {};
-      if (links && !d.styles.Hyperlink) { D.touchKey(d, 'styles'); d.styles.Hyperlink = D.builtinStyles().Hyperlink; }
+      const style = isFig ? D.useStyle(d, 'TableofFigures') : tocStyle(e.level);
+      const rp = links ? { style: D.useStyle(d, 'Hyperlink'), link: { anchor: bm } } : {};
       /* TOC hyperlinks keep the TOC style's look (Word uses \h without visible link formatting) */
       if (links) delete rp.style;
       const runs = [D.text(e.text, rp)];
@@ -599,7 +597,7 @@
     }
     const blocks = [];
     if (!entries.size) { blocks.push(D.para([D.text('No index entries found.', { b: true })])); return blocks; }
-    const ensure = (id) => { if (!d.styles[id]) { D.touchKey(d, 'styles'); d.styles[id] = D.builtinStyles()[id]; D.stylesChanged(); } return id; };
+    const ensure = (id) => D.useStyle(d, id);
     const pageRuns = (list) => { const out = []; list.forEach((pg, i) => { if (i) out.push(D.text(sepPages)); out.push(D.text(pg.see ? pg.s : pg.s, { b: pg.b || undefined, i: pg.i || pg.see || undefined })); }); return out; };
     const keys = Array.from(entries.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     let lastLetter = null;
@@ -687,13 +685,13 @@
         const tb = D.tblInfo(d, tbl);
         const cont = D.touchList(tb.cont);
         const i = cont.blocks.indexOf(tbl);
-        p = D.para([], { style: 'Caption' });
+        p = D.para([], { style: D.useStyle(d, 'Caption') });
         cont.blocks.splice(opts.position === 'above' ? i : i + 1, 0, p);
       } else {
         const cont = D.touchList(D.info(d, pos.p).cont);
         const i = cont.blocks.indexOf(pos.p);
         if (opts.inPlace) p = pos.p;
-        else { p = D.para([], { style: 'Caption' }); cont.blocks.splice(opts.position === 'above' ? i : i + 1, 0, p); }
+        else { p = D.para([], { style: D.useStyle(d, 'Caption') }); cont.blocks.splice(opts.position === 'above' ? i : i + 1, 0, p); }
       }
       d._idxDirty = true;
       D.reindex(d);
@@ -778,9 +776,8 @@
       let id = 1;
       while (d[store][id] != null) id++;
       id = String(id);
-      const refStyle = kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference';
-      const textStyle = kind === 'fn' ? 'FootnoteText' : 'EndnoteText';
-      if (!d.styles[refStyle] || !d.styles[textStyle]) { D.touchKey(d, 'styles'); const b = D.builtinStyles(); d.styles[refStyle] = d.styles[refStyle] || b[refStyle]; d.styles[textStyle] = d.styles[textStyle] || b[textStyle]; D.stylesChanged(); }
+      const refStyle = D.useStyle(d, kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference');
+      const textStyle = D.useStyle(d, kind === 'fn' ? 'FootnoteText' : 'EndnoteText');
       const custom = opts.mark || null;
       const self = D.item(kind, { id, self: true }, { style: refStyle });
       if (custom) self.custom = custom;

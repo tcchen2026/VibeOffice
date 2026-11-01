@@ -340,6 +340,7 @@ a built-in document-property binding into another document also unbinds it and r
 | Type or change an unrelated property | Keep the original property XML, compatibility alternatives and dependencies |
 | Change font, colour, shadow, spacing or another modeled property | Replace that property; retain unrelated extensions and attributes in schema order |
 | Clear all formatting | Remove direct formatting, including retained extensions |
+| Open a file from Word in another language (styles under ids of its own: `berschrift1` for heading 1, `Textkrper2` for Body Text 2) | Save its styles without a second built-in of the same name; Heading 1, a table of contents, an index, a footnote or a comment, and anything else that asks for a built-in, uses the file's own style of that name, as Word does |
 | Copy a bookmark/permission range | Remap both endpoints; incomplete copies omit the markers |
 | Delete one range endpoint | Omit the incomplete pair on save and report it |
 | Open a range whose boundary sits between table rows or cells, or after a story's last paragraph | Keep it: a start belongs to the next cell's first paragraph, an end to the previous cell's last one, a boundary after the last paragraph to that paragraph (as Word reads them) |

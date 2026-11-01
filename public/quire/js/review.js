@@ -149,8 +149,8 @@
     let target = null;
     E.edit('Insert Comment', () => {
       D.touchKey(d, 'comments');
-      if (!d.styles.CommentText) { D.touchKey(d, 'styles'); d.styles.CommentText = D.builtinStyles().CommentText; d.styles.CommentReference = d.styles.CommentReference || D.builtinStyles().CommentReference; D.stylesChanged(); }
-      const p = D.para([], { style: 'CommentText' });
+      D.useStyle(d, 'CommentReference');
+      const p = D.para([], { style: D.useStyle(d, 'CommentText') });
       d.comments[id] = { kind: 'cmt', id, author: O.author(), initials: O.initials(), date: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), blocks: [p] };
       D.touch(b.p);
       const ib = D.splitAt(b.p, b.o);

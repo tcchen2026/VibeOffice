@@ -176,6 +176,7 @@
   function lineSpacing(mult) { E.formatPara((pPr) => { pPr.sp = Object.assign({}, pPr.sp, { line: mult, rule: 'auto' }); }, 'Line Spacing'); }
   function applyStyle(id) {
     const d = doc();
+    if (d.styles[id]) id = D.useStyle(d, id);
     if (!d.styles[id]) {
       const b = D.builtinStyles()[id];
       if (!b) return;
@@ -599,7 +600,7 @@
       if (s < 0) return;
       a = D.pos(p, s); b = D.pos(p, e);
     }
-    E.edit('Remove Hyperlink', () => { O.formatRange(a, b, (r) => { delete r.link; if (r.style === 'Hyperlink' || r.style === 'FollowedHyperlink') delete r.style; return r; }); return E.sel; });
+    E.edit('Remove Hyperlink', () => { O.formatRange(a, b, (r) => { delete r.link; if (D.isStyle(doc(), r.style, 'Hyperlink', 'FollowedHyperlink')) delete r.style; return r; }); return E.sel; });
   };
   A.formatObject = function (editContent) {
     const it = L.drawing && L.drawing.selectedItem();
