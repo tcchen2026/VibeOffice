@@ -35,6 +35,9 @@
     for (const tag of ['spPr', 'grpSpPr', 'blipFill', 'style']) {
       const el = kid(original, tag); if (el) keep[tag] = K.fragment(el, { pkg, part });
     }
+    // A picture fill inside AlternateContent (PowerPoint for Mac: a PDF version, a PNG Fallback) is kept whole
+    const fillChoice = original.localName === 'pic' && kids(original).find(e => e.localName === 'AlternateContent' && kids(e).length && kids(e).every(b => kids(b).length === 1 && kids(b)[0].localName === 'blipFill'));
+    if (fillChoice) keep.blipFillChoice = K.fragment(fillChoice, { pkg, part });
     const nv = kids(original).find(e => /^nv/.test(e.localName));
     keep.nonVisual = kids(nv).filter(e => e.localName !== 'cNvPr').map(el => K.fragment(el, { pkg, part }));
     keep.attributes = Array.from(original.attributes).filter(a => a.prefix !== 'xmlns' && a.name !== 'xmlns').map(a => ({ name: a.name, value: a.value }));
@@ -165,6 +168,11 @@
       if (changed('shadow')) replacements['{' + N.a + '}effectLst'] = shadow(original, raw(fresh));
       original = K.merge(original, replacements, tag === 'grpSpPr' ? 'a:CT_GroupShapeProperties' : 'a:CT_ShapeProperties');
       replaceIn(tag, original);
+    }
+    if (keep.blipFillChoice) {
+      if (['media', 'svgMedia', 'linkUrl', 'crop', 'img'].some(changed)) ctx.writer.loss({ id: 'picture-choice:' + shape.id, where: ctx.part, action: 'drop',
+        what: 'The other version of this picture, for PowerPoint for Mac, was removed because the picture was changed here.' });
+      else replaceIn('blipFill', Q.emit(keep.blipFillChoice, ctx));
     }
     if (keep.blipFill) {
       let original = Q.emit(keep.blipFill, ctx);

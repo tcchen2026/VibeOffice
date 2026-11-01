@@ -695,6 +695,7 @@
       return { ...r, add: (type, target, external, preferred) => r.add(/^[a-z][a-z0-9+.-]*:/i.test(type) ? type : RT + type, target, external, preferred) };
     };
     const files = [];
+    const keptEmitted = new Set(), diagramParts = new Map(); // kept objects written, private diagram parts (keptXml)
     const overrides = new Map();
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const add = (name, data, ct) => { files.push({ name, data }); if (ct) overrides.set('/' + name, ct); };
@@ -843,9 +844,43 @@
       sheetEntries.push({ sh, part, kind: 'worksheet' });
     }
 
+    // Objects kept as their original XML: a frame the model can't show, and the AlternateContent of an object shown
+    // by its Fallback while that object is unchanged. A second instance (a copy) gets fresh identities and its own
+    // diagram parts. The anchor is written around it, so moving or resizing keeps it.
+    function keptXml(d, id, owner, sh) {
+      const alternate = d.kind !== 'frame' && d.keep?.alternate;
+      if (d.kind !== 'frame' && !alternate) return '';
+      if (alternate && !L.sheetObjects.sameValues(L.sheetObjects.alternateValues(d), alternate.values)) {
+        pack.writer.loss({ id: 'alternate-edit:' + sh.id + ':' + id, where: sh.name, place: sh.name + ': ' + (d.name || 'Object'), action: 'conversion',
+          what: 'This object was edited, so only its picture will be saved; the object it stands for (an add-in, a newer chart type or a 3-D model) will be removed.', notify: true });
+        return '';
+      }
+      const source = K.package(d.keep?.source);
+      try {
+        if (!source) throw new Error('The original file is no longer available.');
+        let fragment = K.fragment(K.parse(alternate ? alternate.xml : d.xml), { pkg: source, part: d.keep.part });
+        const key = alternate ? 'a:' + d.keep.part + ':' + d.id : d.keep.key, copy = id !== d.id || keptEmitted.has(key);
+        if (copy) fragment = K.duplicate(fragment);
+        fragment = pack.writer.diagram(fragment, K.diagramRelated(source, fragment), owner, diagramParts, { copy });
+        keptEmitted.add(key);
+        return pack.writer.emit(fragment, owner);
+      } catch (error) {
+        pack.writer.loss({ id: 'kept-object:' + sh.id + ':' + id, what: (d.label === 'IntelliArt' ? 'This IntelliArt' : 'This object') + ' couldn\'t be kept and will be removed.', detail: error.message,
+          where: sh.name, place: sh.name + ': ' + (d.name || d.label || 'Object'), action: 'drop', notify: !K.sourceMissing(error) });
+        return '';
+      }
+    }
     async function drawingPart(sh, rels, objects) {
-      const list = sh.drawings.filter((d) => d && d.anchor && (d.kind === 'image' ? (wb.media && wb.media.get(d.media)) || d.imgLink : d.kind === 'chart' ? d.xml || d.chart : d.kind === 'shape'));
-      if (!list.length) return null;
+      if (sh.extra.unshownObjects) pack.writer.loss({ id: 'preview-objects:' + sh.id, where: sh.name, place: sh.name, action: 'drop', notify: true,
+        what: 'Charts and drawings in a pre-release Excel 2007 format can\'t be kept and will be removed (' + sh.extra.unshownObjects + ').' });
+      const list = sh.drawings.filter((d) => d && d.anchor && (d.kind === 'image' ? (wb.media && wb.media.get(d.media)) || d.imgLink : d.kind === 'chart' ? d.xml || d.chart : d.kind === 'shape' || d.kind === 'frame'));
+      if (!list.length) {
+        // an empty drawing, or one whose objects were all deleted, has nothing to keep (unless a copied sheet still uses it)
+        const part = sh.extra.ooxmlDrawing;
+        if (wb.pkg?.has(part) && !wb.sheets.some(s => s !== sh && s.extra.ooxmlDrawing === part && s.drawings.length))
+          pack.writer.omit(part, sh.extra.ooxmlDrawingEmpty ? 'The worksheet\'s drawing part held no objects.' : 'The objects on this worksheet were deleted.');
+        return null;
+      }
       const dPart = `xl/drawings/drawing${++nDrawing}.xml`;
       pack.bind(dPart, sh.extra.ooxmlDrawing);
       const drels = relsFor(dPart);
@@ -865,9 +900,10 @@
         if (a.type === 'two' && a.from && a.to) { open = `<xdr:twoCellAnchor${a.editAs && a.editAs !== 'twoCell' ? ` editAs="${a.editAs}"` : ''}>` + ptXml('from', a.from) + ptXml('to', a.to); close += '</xdr:twoCellAnchor>'; }
         else if (a.type === 'one' && a.from) { open = '<xdr:oneCellAnchor>' + ptXml('from', a.from) + `<xdr:ext cx="${emu(a.w)}" cy="${emu(a.h)}"/>`; close += '</xdr:oneCellAnchor>'; }
         else { open = `<xdr:absoluteAnchor><xdr:pos x="${coordinate(a.x)}" y="${coordinate(a.y)}"/><xdr:ext cx="${emu(a.w)}" cy="${emu(a.h)}"/>`; close += '</xdr:absoluteAnchor>'; }
-        let obj = L.sheetObjects.frame(d, objects, drels.owner, sz);
+        let obj = L.sheetObjects.frame(d, objects, drels.owner, sz) || keptXml(d, id, drels.owner, sh);
         const nameAttr = esc(d.name || (d.kind === 'chart' ? 'Chart ' : d.kind === 'image' ? 'Picture ' : 'Shape ') + (id - 1));
-        if (obj) { /* preserved picture representation of a control or embedded object */ }
+        if (obj) { /* preserved picture representation of a control or embedded object, or an object kept as it was */ }
+        else if (d.kind === 'frame') continue;
         else if (d.kind === 'image') {
           let blipRefs = '';
           if (d.media && wb.media && wb.media.get(d.media)) { const mp = mediaPart(d.media); blipRefs += ` r:embed="${drels.add('image', '../media/' + mp.split('/').pop())}"`; }
@@ -932,6 +968,13 @@
       add(dPart, x, CT.drawing);
       if (drels.list.length) add(relsPath(dPart), drels.xml());
       return rels.add('drawing', '../drawings/' + dPart.split('/').pop());
+    }
+
+    // A kept frame the user deleted takes its parts (a diagram's data, layout, styles and drawing) with it
+    for (const f of wb.extra.keptFrames || []) if (!keptEmitted.has(f.key)) {
+      const id = 'frame-deleted:' + f.key, source = K.package(f.source);
+      pack.writer.loss({ id, what: (f.label === 'IntelliArt' ? 'An IntelliArt' : 'An object') + ' was deleted.', where: f.sheet, action: 'drop', notify: false });
+      if (source) { const fragment = K.fragment(K.parse(f.xml), { pkg: source, part: f.part }); pack.writer.coverLoss(id, [...fragment.deps, ...K.diagramRelated(source, fragment)].filter(r => !r.external && r.part).map(r => r.part)); }
     }
 
     /* workbook-level parts */

@@ -381,6 +381,7 @@
       }
       case 'sym': return runWrap(r, `<w:sym w:font="${X(it.font || 'Symbol')}" w:char="${it.code || it.char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}"/>`, ctx);
       case 'fb': {
+        const fieldCode = (s) => (s || '').replace(/\s+/g, ' ').trim();   // the model spaces a field code its own way
         let ff = '';
         if (it.ff) {
           const f = it.ff;
@@ -393,6 +394,14 @@
           ff = `<w:ffData>${inner}</w:ffData>`;
         }
         const begin = runWrap(r, `<w:fldChar w:fldCharType="begin"${it.lock ? ' w:fldLock="1"' : ''}${it.dirty ? ' w:dirty="1"' : ''}>${ff}${ff ? '</w:fldChar>' : '</w:fldChar>'}`.replace('></w:fldChar>', ff ? '></w:fldChar>' : '/>'), ctx);
+        // instructions with nested fields or pictures go back as they were while the field code is unchanged
+        const kept = it.instrKeep;
+        if (kept && ctx.writer && !del && fieldCode(kept.instr) === fieldCode(it.instr)) {
+          try { return begin + kept.runs.map((f) => ctx.writer.emit(f, ctx.part)).join(''); } catch (e) { /* written as plain field code below */ }
+        }
+        if ((kept || it.instrFlattened) && ctx.writer) ctx.writer.loss({ id: 'field-code:' + ctx.part + ':' + it.fid, where: ctx.part, action: 'drop', notify: true,
+          place: (D.fieldType(it.instr) || 'Field') + ' field',
+          what: kept ? 'Nested fields or pictures in this field\'s code were removed, because the field code was edited.' : 'Nested fields or pictures in this field\'s code can\'t be kept and will be removed.' });
         return begin + runWrap(r, del ? `<w:delInstrText xml:space="preserve">${X(it.instr || '')}</w:delInstrText>` : `<w:instrText xml:space="preserve">${X(it.instr || '')}</w:instrText>`, ctx);
       }
       case 'fs': return runWrap(r, '<w:fldChar w:fldCharType="separate"/>', ctx);

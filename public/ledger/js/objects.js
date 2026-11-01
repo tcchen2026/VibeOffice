@@ -160,6 +160,10 @@
     return state.pack.writer.emit(X.drawing(d, d.keep.frame, state, size), owner);
   };
   const pictureValues = d => Object.fromEntries(['media', 'imgLink', 'crop', 'lineXml', 'rot', 'flipH', 'flipV', 'name', 'descr', 'hidden', 'link'].map(key => [key, d[key]]));
+  // What an object shown by its AlternateContent Fallback was when read: the AlternateContent is written back while
+  // these are unchanged (the anchor may change)
+  X.alternateValues = d => clone({ ...values(d), ...pictureValues(d), chart: !!d.chart?.dirty });
+  X.sameValues = same;
   X.keepPicture = (d, fragment) => { d.keep.picture = { fragment, id: d.id, anchor: clone(d.anchor), values: clone(pictureValues(d)) }; };
   X.picture = function (d, generated, state, owner) {
     const keep = d.keep?.picture; if (!keep) return generated;

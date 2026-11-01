@@ -316,8 +316,26 @@ identity attributes only: relationship IDs, text, URLs and extension URIs keep t
 The loss ledger distinguishes conversion from deletion and keeps stable entry identities. Specific
 object conversion/deletion notices can account for their opaque dependency trees with `coverLoss`;
 this suppresses redundant part notices without removing any parts or crossing rewritten-content
-boundaries. Unexplained missing parts still produce their own loss entries. Digital
-signatures are removed and reported because a changed package cannot retain their validity. Missing
+boundaries. Unexplained missing parts still produce their own loss entries: `unreferenced:` for a part
+the original used (reached through relationships from the package root, where a relationship its owner
+must name by id counts only if the owner's markup names it), a writer defect unless a notice where it
+happened accounts for it; `orphan:` for a part nothing in the original used. The check walks only the
+owners on a path to a missing part, so it costs nothing on an ordinary save. Digital
+signatures are removed and reported because a changed package cannot retain their validity; that notice
+accounts for the signature parts.
+
+Part names compare case-insensitively, as OPC defines them: a relationship to `docProps/thumbnail.jpeg`
+finds a stored `docProps/Thumbnail.jpeg`, and the save writes the stored name. A relationship to a part
+the original lacks no longer stops its owner from being carried: Office's own `Target="NULL"` (an image
+that isn't there, in Excel 2007 templates' themes and PowerPoint pictures) is written back as it was; one
+the owner's markup doesn't name (a glossary's web settings) is dropped; one only an optional element
+names (`c:externalData`, a chart's embedded workbook) goes with that element, and the chart keeps its
+values. Anything else still makes the object a conversion, as before.
+
+SmartArt keeps its drawing cache through `dsp:dataModelExt/@relId` in its data part, a relationship of
+the frame's own part outside the relationships namespace: `diagramRelated` finds those relationships,
+and `Writer.diagram` keeps them with the frame, giving a frame in another owner a private data part, and
+a copy (`copy: true`) private data, layout, style, colour and drawing parts, as Office writes a copy. Missing
 dependencies and unavoidable conversions are reported by the writer; draft recovery retains pending
 entries even when the original content has already been converted in the draft.
 `output` runs its app-owned audit after assembling content. `reportFeatures` compares specified

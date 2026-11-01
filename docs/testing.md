@@ -582,7 +582,7 @@ A full run should use a frozen writer revision, served on a separate port while 
 The browser harness disables persistence in its own tabs, captures loss metadata after snapshot, and
 checks the recovered document. Locked content-control edits are explicit exclusions, not undo failures.
 
-`python3 tools/ooxml/samples.py ~/corpora /tmp/lossless ~/Downloads/lossless-check/baseline`
+`python3 tools/ooxml/samples.py ~/corpora /tmp/lossless tmp/lossless/baseline`
 selects small independently authored files for each carried-feature test, copies original/saved/edited
 variants where available, and writes a manifest. It refuses to replace differing handoff files.
 Use a new destination for each implementation stage. Record actual Word/Excel/PowerPoint repair

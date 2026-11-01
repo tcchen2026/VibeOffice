@@ -768,8 +768,35 @@
       return D.item('br', { type: type === 'page' ? 'page' : type === 'column' ? 'column' : 'line',
         clear: at(el, 'clear') || undefined, ...(recovered ? { recoveredPlacement: true } : {}) }, props);
     }
+    /* A field whose instructions hold more than text (nested fields, a picture: { IF { PAGE } = 1 "<logo>" }) keeps
+       those runs as they were, written back while its instruction is unchanged. Only runs that are siblings of the
+       field's begin and separate runs; anything else between them (a bookmark) leaves the field as plain text. */
+    function complexInstructions(parent, ctx) {
+      if (!doc.pkg) return;
+      const list = kids(parent), chars = r => kids(r, 'fldChar').map((f) => at(f, 'fldCharType'));
+      const only = (r, names) => kids(r).every((k) => names.includes(k.localName));
+      for (let i = 0; i < list.length; i++) {
+        const r = list[i];
+        if (r.localName !== 'r' || !only(r, ['rPr', 'fldChar']) || chars(r).join() !== 'begin') continue;
+        let depth = 1, complex = false, j = i + 1;
+        const region = [];
+        for (; j < list.length; j++) {
+          const c = list[j];
+          if (c.localName === 'proofErr') { region.push(c); continue; }
+          if (c.localName !== 'r') { complex = false; break; }
+          const types = chars(c);
+          if (depth === 1 && types.length === 1 && types[0] !== 'begin' && only(c, ['rPr', 'fldChar'])) break;
+          for (const type of types) depth += type === 'begin' ? 1 : type === 'end' ? -1 : 0;
+          if (depth < 1) { complex = false; break; }
+          if (!only(c, ['rPr', 'instrText', 'delInstrText'])) complex = true;
+          region.push(c);
+        }
+        if (complex && j < list.length) (ctx.instructions || (ctx.instructions = new Map())).set(r, region.map((e) => L.opc.fragment(L.opc.parse(L.opc.raw(e)), { pkg: doc.pkg, part: ctx.part })));
+      }
+    }
     function parseInline(el, p, ctx, inh) {
       const ac = L.preserve.readAlternates(el, p.runs, ctx, doc, 'inline', inh);
+      complexInstructions(el, ctx);
       for (const c of el.children) {
         const from = p.runs.length;
         switch (c.localName) {
@@ -861,6 +888,8 @@
       const ac = L.preserve.readAlternates(r, p.runs, ctx, doc, 'run', base);
       for (const c of r.children) {
         const from = p.runs.length;
+        // inside field instructions only the field code counts (an object there is kept with its field: complexInstructions)
+        if (inInstr(ctx) && !['rPr', 'fldChar', 'instrText', 'delInstrText'].includes(c.localName)) { if (ctx.fstack[0]) ctx.fstack[0].complex = true; continue; }
         switch (c.localName) {
           case 'rPr': break;
           case 't': {
@@ -888,9 +917,10 @@
           case 'fldChar': {
             const ty = at(c, 'fldCharType');
             if (ty === 'begin') {
-              if (inInstr(ctx)) { ctx.fstack.push({ nested: true, phase: 'instr' }); break; }
+              if (inInstr(ctx)) { if (ctx.fstack[0]) ctx.fstack[0].complex = true; ctx.fstack.push({ nested: true, phase: 'instr' }); break; }
               const f = 'f' + ++fid;
               const item = D.item('fb', { fid: f, instr: '' }, L.clone(base));
+              if (ctx.instructions?.has(r)) item.instrKeep = { runs: ctx.instructions.get(r) };
               if (X.bool(at(c, 'fldLock'))) item.lock = true;
               const ffd = kid(c, 'ffData');
               if (ffd) {
@@ -911,12 +941,16 @@
               if (!t) break;
               if (t.nested) { t.phase = 'result'; break; }
               t.phase = 'result';
+              if (t.item.instrKeep) t.item.instrKeep.instr = t.item.instr;
+              else if (t.complex) t.item.instrFlattened = true;
               const fty = D.fieldType(t.item.instr);
               if (fty === 'HYPERLINK') { t.link = parseHyperInstr(t.item.instr); if (t.link) { ctx.dropFids.add(t.fid); } }
               p.runs.push(D.item('fs', { fid: t.fid }, L.clone(base)));
             } else if (ty === 'end') {
               const t = ctx.fstack.pop();
               if (!t || t.nested) break;
+              if (t.phase === 'instr' && t.item.instrKeep) t.item.instrKeep.instr = t.item.instr;
+              else if (t.phase === 'instr' && t.complex) t.item.instrFlattened = true;
               if (t.phase === 'instr' && D.fieldType(t.item.instr) === 'HYPERLINK') ctx.dropFids.add(t.fid);
               p.runs.push(D.item('fe', { fid: t.fid }, L.clone(base)));
             }
@@ -1053,6 +1087,7 @@
       }
       return o;
     }
+    const RANGE_MARK = /^(bookmarkStart|bookmarkEnd|permStart|permEnd|commentRangeStart|commentRangeEnd)$/;
     function parseTbl(el, ctx) {
       const tp = tblPr(kid(el, 'tblPr'));
       L.preserve.properties(tp, kid(el, 'tblPr'), 'tblPr', { pkg: doc.pkg, part: ctx.part });
@@ -1061,9 +1096,17 @@
       const rowAlternates = L.preserve.readAlternates(el, rows, ctx, doc, 'row');
       const rowEls = [];
       const rowControls = [], rowModels = new Map(), emptyRows = [];
-      const collectRows = (parent) => { for (const c of parent.children) { if (c.localName === 'tr') rowEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n = rowEls.length; collectRows(sc); rowControls.push({ control: L.preserve.control(c, ctx, doc), elements: rowEls.slice(n) }); } } else if (c.localName === 'customXml' || c.localName === 'ins' || c.localName === 'del') collectRows(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(el)) emptyRows.push({ el: c, index: rowEls.length }); } };
+      const collectRows = (parent) => { for (const c of parent.children) { if (c.localName === 'tr' || RANGE_MARK.test(c.localName)) rowEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n = rowEls.length; collectRows(sc); rowControls.push({ control: L.preserve.control(c, ctx, doc), elements: rowEls.slice(n) }); } } else if (c.localName === 'customXml' || c.localName === 'ins' || c.localName === 'del') collectRows(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(el)) emptyRows.push({ el: c, index: rowEls.length }); } };
       collectRows(el);
+      // A bookmark, permission or comment boundary between rows or cells: a start goes to the next cell's first
+      // paragraph, an end to the previous cell's last one (Word reads them at those places)
+      let lastPara = null;
+      const rangeMark = (c) => {
+        const item = /^comment/.test(c.localName) ? D.item(c.localName === 'commentRangeStart' ? 'cs' : 'ce', { id: at(c, 'id') }) : L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part });
+        if (/Start$/.test(c.localName) || !lastPara) ctx.pendingBm.push(item); else lastPara.runs.push(item);
+      };
       for (const tr of rowEls) {
+        if (RANGE_MARK.test(tr.localName)) { rangeMark(tr); continue; }
         const rp = trPr(kid(tr, 'trPr'));
         const ex = kid(tr, 'tblPrEx');
         const cells = [];
@@ -1071,11 +1114,13 @@
         const cellEls = [];
         const cellControls = [], cellModels = new Map(), emptyCells = [];
         const cellBound = new Map(); /* cell-level content controls bound to a data store */
-        const collectCells = (parent) => { for (const c of parent.children) { if (c.localName === 'tc') cellEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n0 = cellEls.length; collectCells(sc); const bv = boundText(kid(c, 'sdtPr')); if (bv != null && cellEls.length === n0 + 1) cellBound.set(cellEls[n0], bv); cellControls.push({ control: L.preserve.control(c, ctx, doc), elements: cellEls.slice(n0) }); } } else if (c.localName === 'customXml') collectCells(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(tr)) emptyCells.push({ el: c, index: cellEls.length }); } };
+        const collectCells = (parent) => { for (const c of parent.children) { if (c.localName === 'tc' || RANGE_MARK.test(c.localName)) cellEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n0 = cellEls.length; collectCells(sc); const bv = boundText(kid(c, 'sdtPr')); if (bv != null && cellEls.length === n0 + 1) cellBound.set(cellEls[n0], bv); cellControls.push({ control: L.preserve.control(c, ctx, doc), elements: cellEls.slice(n0) }); } } else if (c.localName === 'customXml') collectCells(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(tr)) emptyCells.push({ el: c, index: cellEls.length }); } };
         collectCells(tr);
         for (const tc of cellEls) {
+          if (RANGE_MARK.test(tc.localName)) { rangeMark(tc); continue; }
           const cp = tcPr(kid(tc, 'tcPr'));
           const blocks = parseBlocks(tc, ctx);
+          lastPara = blocks.filter((b) => b.t === 'p').at(-1) || lastPara;
           if (cellBound.has(tc)) { const ps = blocks.filter((b) => b.t === 'p'); if (ps.length === 1) ps[0].runs = boundRuns(cellBound.get(tc), ps[0].runs); }
           if (!blocks.length || blocks[blocks.length - 1].t !== 'p') { const sp = D.para(); if (blocks.length) sp.synth = true; blocks.push(sp); }
           cells.push({ id: D.nid(), tcPr: cp, blocks });
@@ -1835,10 +1880,14 @@
     }
     /* sections inside paragraphs need the header map too (parsed during parseBlocks) */
     if (!doc.main.blocks.length || doc.main.blocks[doc.main.blocks.length - 1].t !== 'p') doc.main.blocks.push(D.para());
-    if (mctx.pendingBm.length) doc.main.blocks[doc.main.blocks.length - 1].runs.push(...mctx.pendingBm);
     finishStory(doc.main, mctx);
 
     function finishStory(story, ctx) {
+      /* range boundaries after the last paragraph (a header's empty bookmarks) belong to it */
+      if (ctx.pendingBm?.length && story.blocks) {
+        if (story.blocks.at(-1)?.t !== 'p') story.blocks.push(D.para());
+        story.blocks.at(-1).runs.push(...ctx.pendingBm); ctx.pendingBm = [];
+      }
       /* drop hyperlink field markers (links live on the runs) and repair unmatched field markers */
       const seen = new Map();
       D.walk(story, (b) => { if (b.t === 'p') for (const it of b.runs) if (it.fid) { const s = seen.get(it.fid) || {}; s[it.t] = true; seen.set(it.fid, s); } });

@@ -80,7 +80,7 @@ The contracts are in [suite.md, Preservation](suite.md#preservation); the per-fe
 
 These are in addition to AGENTS.md.
 
-- **Office batches:** at most 15 files in `~/Downloads/lossless-check/<batch>/`, each batch with a
+- **Office batches:** at most 15 files in `tmp/lossless/<batch>/` (the repository's ignored `tmp/`), each batch with a
   `CHECKLIST.md`. A repair prompt blocks the step that produced the file.
 - **Docs:** they describe the current state. Run details go in `~/corpora/results/<run>/README.md` and
   in commit bodies.
@@ -90,16 +90,25 @@ These are in addition to AGENTS.md.
 
 ## To do
 
-1. **Silent real losses** that the unreferenced-part alarm found on unedited saves:
-   - **Ledger SmartArt:** Ledger drops SmartArt on a sheet entirely
-     (`libreoffice__12275492e8fc__tdf83671_SmartArt_import.xlsx`,
-     `libreoffice__6dda90d75ceb__tdf151818_SmartartThemeFontColor.xlsx`).
-   - **Other Ledger drawings:** 16 more Ledger files lose a sheet drawing. Separate the empty ones from
-     the real ones (`poi__3c51c202a1fc__npe.xlsx` loses a drawing and its picture).
-   - **Lectern:** `libreoffice__9d97505735d4__import-characters.pptx` loses `ppt/media/image1.png`,
-     and `poi__793baf3ae217__2411-Performance_Up.pptx` loses `ppt/media/image3.pdf`.
-   - **Required with each fix:** keep the object (or give it its own notice), and add a regression
-     test. In corpus runs, an `unreferenced:` entry for a part the original used is a defect.
+1. **Silent losses** (2026-11-01; the alarm plus a count of drawing objects per sheet, story and slide in every
+   original and its save). Fixed: SmartArt, Office add-ins and other objects Ledger can't show are kept (Ledger
+   kept frames); part names compare case-insensitively (17 Word template thumbnails); a relationship to a part the
+   original lacks no longer drops its owner (a glossary, nine charts; Office's `Target="NULL"` written back, nine
+   Excel templates' themes); fields whose code holds nested fields or pictures; bookmarks and permission ranges
+   between table rows or cells; a picture's PowerPoint-for-Mac PDF version. Unedited saves losing a part the
+   original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
+   `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
+   Still to do:
+   - **Lectern ActiveX controls** are saved as their pictures (now with a notice); keep them while their pictures
+     are unchanged, as Ledger does.
+   - **Quire field codes** Word wouldn't write that way (one run, across paragraphs, around a bookmark) and
+     **direction wrappers** (`w:dir`, `w:bdo`) are converted, now with a notice.
+   - **Deletions in edit runs:** deleting a sheet or an object leaves its parts as `unreferenced:`; a deletion
+     record (as kept frames have) would make the alarm exact there too.
+   - `tdf93284.docx`: the original gives two relationships the same id (a picture and the font table); the save
+     keeps the picture's reference pointing at the font table.
+   - `PPTWithAttachments.pptm`: a compatibility frame (an Organization Chart) becomes an "Embedded object" rectangle.
+   - Quire: duplicating a paragraph in `tdf150166`/`tdf150086` throws in `P.duplicateControls` (preserve.js).
 2. **Lectern checker numbers:** run the Lectern corpus driver, which needs Playwright, to measure how
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.

@@ -188,7 +188,7 @@ results are above. The **15 PowerPoint batch-4 samples rebuilt from `56de065`** 
 and LibreOffice with expected counts. Their previous-writer differences are reviewed, and the user
 accepted all 15 in PowerPoint. Fresh LibreOffice checks of those exact handed-off files also pass;
 hashes and results are in `~/corpora/results/office-accepted-2026-10-09/`. The accepted checklist is
-`~/Downloads/lossless-check/office-batch-4/CHECKLIST.md`.
+`tmp/lossless/office-batch-4/CHECKLIST.md`.
 
 The user accepted the PPTM video, VBA and authors/handout samples in Office batch 1. The slide-6
 repair is fixed and confirmed in PowerPoint: presets write complete adjustment lists and masters
@@ -337,6 +337,7 @@ Unrelated orphan parts and distinct animation conversions remain reported.
 | Edit | Save behavior |
 |---|---|
 | Change shadow, fill, line, crop or picture treatment | Replace that property only; retain sibling effects, 3-D and extensions |
+| Save a picture whose fill is an AlternateContent (PowerPoint for Mac: a PDF version, a PNG Fallback) | Keep the AlternateContent while the image, crop and adjustments are unchanged; after such an edit write the PNG fill and record that the Mac version went |
 | Change text or bold/size/alignment | Keep unknown run/paragraph/body properties, including empty formatted runs and line text bodies |
 | Move or resize a group | Keep its effects and update the group/child coordinate transforms together |
 | Copy shapes, slides or paste into another deck | Copy tags independently; remap actions, shape identities and dependencies; include preview bytes |
@@ -364,6 +365,6 @@ counts. Four pages load without console errors. All 15 batch-4 samples passed Po
 * Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
 * SmartArt in a layout Lectern does not have is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped; PowerPoint SmartArt edited here takes our layout of the same name, so its look in PowerPoint changes to ours (*IntelliArt (SmartArt)*). When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
-* Embedded OLE objects and ActiveX controls import as their preview pictures.
+* Embedded OLE objects and ActiveX controls import as their preview pictures. OLE objects are kept unchanged on save; ActiveX controls are saved as their pictures, and the save says so.
 * Fonts that aren't installed fall back to metric-compatible ones: Carlito, Caladea and Gelasio (for Calibri, Cambria and Georgia) are served with the site, and Save as Web Page embeds the ones its slides name; Arial, Times New Roman and Courier New use the computer's own copies or the Liberation/Arimo/Tinos/Cousine fonts of the same widths where installed.
 * Spelling uses the browser's spell checker.

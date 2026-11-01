@@ -58,7 +58,7 @@
       if (tag === 'fldSimple' || tag === 'fldChar' && attr(el, 'fldCharType') === 'begin') return 'fields';
       return ({ sdt: 'controls', bookmarkStart: 'bookmarks', permStart: 'permissions', comment: 'comments', footnote: 'footnotes', endnote: 'endnotes', ins: 'revisions', del: 'revisions' })[tag];
     },
-    labels: { bodies: { text: 'Some text in this file is outside the main document and won\'t be saved', notify: true }, finalSections: 'Conflicting final section definitions could not all be retained', xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: 'Inline direction wrappers were converted to ordinary text', moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
+    labels: { bodies: { text: 'Some text in this file is outside the main document and won\'t be saved', notify: true }, finalSections: 'Conflicting final section definitions could not all be retained', xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: { text: 'Explicit text direction was removed from some text, so mixed right-to-left and left-to-right text may show in a different order', notify: true }, moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
   });
   P.merge = function (doc, base, source, generated, writer) {
     const original = writer.pkg.xml(source), fragment = K.fragment(original, { pkg: writer.pkg, part: source });
@@ -388,15 +388,9 @@
   P.registerObject = function (fragment, doc, label, scope = 'run') {
     const key = fragment.record || D.nid();
     const record = { key, fragment, label, scope, count: 1, index: 0 };
-    // Word's diagram data may name a drawing relationship on the story part
-    // through dataModelExt@relId, outside the relationships namespace.
-    for (const dep of fragment.deps) if (/\/diagramData$/.test(dep.type || '')) {
-      const pkg = K.package(dep.source), tree = pkg?.xml(dep.part);
-      for (const el of tree?.getElementsByTagName('*') || []) if (el.localName === 'dataModelExt') {
-        const id = attr(el, 'relId'), rel = pkg.rels(fragment.part).find(r => r.id === id);
-        if (rel) (record.related || (record.related = [])).push({ source: dep.source, owner: fragment.part, dataPart: dep.part, ...rel });
-      }
-    }
+    // Word's diagram data may name a drawing relationship on the story part (K.diagramRelated).
+    const pkg = K.package(fragment.source), related = pkg ? K.diagramRelated(pkg, fragment) : [];
+    if (related.length) record.related = related;
     const objects = doc.keep.objects || (doc.keep.objects = []);
     if (!objects.some(o => o.key === key)) objects.push({ key, part: fragment.part, label, rels: [...fragment.deps, ...(record.related || [])].map(r => ({ source: r.source, owner: r.owner, id: r.id })) });
     return record;
@@ -581,36 +575,9 @@
           fragment.ids = fragment.ids.map(id => shared.has(typeKey(fragment, id)) ? { ...id, copy: undefined } : id);
         }
       }
-      const diagrams = new Map();
-      for (const rel of record.related || []) {
-        const id = ctx.writer.keepRel(ctx.part, rel);
-        if (id === rel.id) continue;
-        const key = rel.source + ':' + rel.dataPart;
-        if (!diagrams.has(key)) diagrams.set(key, { source: rel.source, part: rel.dataPart, ids: new Map() });
-        diagrams.get(key).ids.set(rel.id, id);
-      }
-      for (const { source, part, ids } of diagrams.values()) {
-        const pkg = K.package(source), tree = pkg?.xml(part);
-        if (!tree) throw new Error('The copied diagram has no data part.');
-        const cache = ctx.objects.diagrams || (ctx.objects.diagrams = new Map());
-        const key = JSON.stringify([ctx.part, source, part, [...ids]]);
-        let dest = cache.get(key);
-        if (!dest) {
-          let xml = K.raw(tree);
-          const patches = Array.from(K.parse(xml).getElementsByTagName('*')).filter(e => e.localName === 'dataModelExt' && ids.has(attr(e, 'relId'))).map(e => ({ ...location(e), value: K.attributes(K.raw(e), { relId: ids.get(attr(e, 'relId')) }) }));
-          xml = K.patch(xml, patches);
-          const slash = part.lastIndexOf('/');
-          dest = ctx.writer.name(part.slice(0, slash), 'data', 'xml');
-          ctx.writer.copyPart(pkg, part, dest);
-          ctx.writer.put(dest, xml, pkg.type(part)); cache.set(key, dest);
-        }
-        // The implicit dataModelExt link belongs to the destination story. A
-        // private data part keeps another pasted instance/story independent.
-        fragment = K.slice(fragment, fragment.xml.replace(/\u0001rel:(\d+)\u0001/g, (token, index) => {
-          const dep = fragment.deps[+index];
-          return dep.source === source && dep.part === part ? ctx.writer.rels(ctx.part).add(dep.type, K.relative(ctx.part, dest), false) : token;
-        }));
-      }
+      // The implicit dataModelExt link belongs to the destination story. A
+      // private data part keeps another pasted instance/story independent.
+      fragment = ctx.writer.diagram(fragment, record.related, ctx.part, ctx.objects.diagrams || (ctx.objects.diagrams = new Map()));
       let xml = ctx.writer.emit(fragment, ctx.part, group.moved ? { box: group.boxChange } : {});
       if (record.drawing) xml = P.mergeDrawing(xml, object, record.drawing, ctx);
       group.emitted = true; return xml;

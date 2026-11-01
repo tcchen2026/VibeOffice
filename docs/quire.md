@@ -309,9 +309,9 @@ scoped MC rules and Strict list-alignment entries retain their reviewed source p
 No new package/SDK diagnostic accompanies them. Office batches 1–2, including the
 comment repair and all namespace follow-ups, are accepted. Batch 5's section/numbering samples
 are also accepted.
-The Office checklist is `~/Downloads/lossless-check/office-batch-2/CHECKLIST.md`; file 12 records its
+The Office checklist is `tmp/lossless/office-batch-2/CHECKLIST.md`; file 12 records its
 original repair and links the accepted corrected save. Both samples in
-`~/Downloads/lossless-check/office-batch-2-comment-fix/` pass Word, package/SDK checks and LibreOffice,
+`tmp/lossless/office-batch-2-comment-fix/` pass Word, package/SDK checks and LibreOffice,
 with unchanged page counts.
 
 ### Content controls: edit behavior
@@ -342,6 +342,9 @@ a built-in document-property binding into another document also unbinds it and r
 | Clear all formatting | Remove direct formatting, including retained extensions |
 | Copy a bookmark/permission range | Remap both endpoints; incomplete copies omit the markers |
 | Delete one range endpoint | Omit the incomplete pair on save and report it |
+| Open a range whose boundary sits between table rows or cells, or after a story's last paragraph | Keep it: a start belongs to the next cell's first paragraph, an end to the previous cell's last one, a boundary after the last paragraph to that paragraph (as Word reads them) |
+| Save a field whose code holds nested fields or a picture (`{ IF { PAGE } = 1 "logo" }`) | Write its instruction runs back as they were while the field code is unchanged; an edited code is saved as plain text with a notice. A code Word wouldn't write that way (all in one run, across paragraphs, around a bookmark) is saved as plain text with a notice naming the field |
+| Save text in explicit direction wrappers (`w:dir`, `w:bdo`) | Save it as ordinary text and say so: mixed right-to-left and left-to-right text may change order |
 | Set a page colour | Replace the original background; other edits keep its fill/picture |
 | Change a page size, margin, numbering or grid setting | Change its owned attributes; keep other section settings, revision metadata and compatibility branches |
 | Change page-number format or starting number | Keep the existing chapter heading level and separator unless chapter numbering is explicitly disabled |

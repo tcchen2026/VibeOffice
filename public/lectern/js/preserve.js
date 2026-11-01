@@ -109,7 +109,7 @@
       accepts: el => ['sld', 'notes', 'sldMaster', 'sldLayout'].includes(el.localName) && [N.p, 'http://purl.oclc.org/ooxml/presentationml/main'].includes(el.namespaceURI),
       classify: el => ['http://purl.oclc.org/ooxml/presentationml/main', N.p].includes(el.namespaceURI) && el.localName === 'control' ? 'controls' :
         ['http://purl.oclc.org/ooxml/drawingml/main', N.a].includes(el.namespaceURI) && el.localName === 'fld' ? 'fields' : null,
-      labels: { controls: 'Some original form controls were converted to previews or removed', fields: 'Some original text fields were converted to ordinary text' },
+      labels: { controls: { text: 'ActiveX controls will be saved as their pictures and stop working', notify: true }, fields: 'Some original text fields were converted to ordinary text' },
     });
     if (writer.doc.repaired?.parts?.length) writer.loss({ id: 'read:damaged', what: L.N('Part of this file is damaged. Whatever couldn\'t be read from it won\'t be saved.'), notify: true, where: writer.doc.repaired.parts.join(', '), action: 'conversion' });
   };

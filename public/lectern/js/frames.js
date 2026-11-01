@@ -39,14 +39,7 @@
     const src = source(working, original, parent); if (!src) return;
     const fragment = K.fragment(src.alternate ? working : src.tree, { pkg, part });
     fragment.key = fragment.record || L.uid('frame');
-    const related = [];
-    for (const dep of fragment.deps) if (/\/diagramData$/.test(dep.type || '')) {
-      let tree; try { tree = pkg.xml(dep.part); } catch (_) { continue; }
-      for (const el of all(tree).filter(e => e.localName === 'dataModelExt')) {
-        const rel = pkg.rels(part).find(r => r.id === at(el, 'relId'));
-        if (rel) related.push({ source: pkg.id, owner: part, dataPart: dep.part, ...rel });
-      }
-    }
+    const related = K.diagramRelated(pkg, fragment);
     if (src.label === 'Embedded object' && all(src.tree).some(e => e.localName === 'oleObj' && e.hasAttribute('spid'))) {
       for (const rel of pkg.rels(part).filter(r => /\/vmlDrawing$/.test(r.type))) related.push({ source: pkg.id, owner: part, ...rel });
     }

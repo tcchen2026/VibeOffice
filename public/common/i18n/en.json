@@ -631,7 +631,7 @@
  },
  "&Chart Options...": {
   "where": [
-   "ledger/js/drawing.js:414"
+   "ledger/js/drawing.js:422"
   ]
  },
  "&Circle Invalid Data": {
@@ -1106,7 +1106,7 @@
  },
  "&Don't move or size with cells": {
   "where": [
-   "ledger/js/drawing.js:448"
+   "ledger/js/drawing.js:456"
   ]
  },
  "&Double Arrow": {
@@ -2081,7 +2081,7 @@
  "&Lines": {
   "where": [
    "lectern/js/app.js:107",
-   "ledger/js/drawing.js:540",
+   "ledger/js/drawing.js:548",
    "quire/js/app.js:262"
   ]
  },
@@ -2122,7 +2122,7 @@
  "&Locked": {
   "where": [
    "ledger/js/dialogs.js:301",
-   "ledger/js/drawing.js:449"
+   "ledger/js/drawing.js:457"
   ]
  },
  "&Look Up": {
@@ -2306,7 +2306,7 @@
  },
  "&Move and size with cells": {
   "where": [
-   "ledger/js/drawing.js:446"
+   "ledger/js/drawing.js:454"
   ]
  },
  "&Move object with text": {
@@ -2823,7 +2823,7 @@
  },
  "&Print object": {
   "where": [
-   "ledger/js/drawing.js:449"
+   "ledger/js/drawing.js:457"
   ]
  },
  "&Print...": {
@@ -3986,7 +3986,7 @@
  "&Weight:": {
   "where": [
    "lectern/js/dialogs.js:412",
-   "ledger/js/drawing.js:439",
+   "ledger/js/drawing.js:447",
    "quire/js/dialogs3.js:97"
   ]
  },
@@ -4714,7 +4714,7 @@
  },
  "A reference to an IntelliArt drawing cache missing from the original file was removed; its data and layout are retained.": {
   "where": [
-   "lectern/js/frames.js:278"
+   "lectern/js/frames.js:271"
   ]
  },
  "A sheet name cannot begin or end with an apostrophe.": {
@@ -5547,7 +5547,7 @@
  "Alternative text:": {
   "where": [
    "lectern/js/dialogs.js:464",
-   "ledger/js/drawing.js:453"
+   "ledger/js/drawing.js:461"
   ]
  },
  "Alt|key": {
@@ -5578,7 +5578,7 @@
  },
  "An object on this sheet couldn't be kept and will be removed.": {
   "where": [
-   "ledger/js/objects.js:300"
+   "ledger/js/objects.js:304"
   ]
  },
  "Analysis ToolPak functions (engineering, financial, date) are built in.": {
@@ -5887,7 +5887,7 @@
   "where": [
    "lectern/js/commands.js:156",
    "lectern/js/dialogs.js:54",
-   "ledger/js/drawing.js:540",
+   "ledger/js/drawing.js:548",
    "quire/js/commands.js:494"
   ]
  },
@@ -5971,7 +5971,7 @@
  },
  "Assign Macro...": {
   "where": [
-   "ledger/js/drawing.js:416"
+   "ledger/js/drawing.js:424"
   ]
  },
  "Assigns calculated values to names which allow storing intermediate calculation results.": {
@@ -6997,7 +6997,7 @@
  "Bring &Forward": {
   "where": [
    "lectern/js/commands.js:170",
-   "ledger/js/drawing.js:416",
+   "ledger/js/drawing.js:424",
    "quire/js/commands.js:503"
   ]
  },
@@ -7013,7 +7013,7 @@
  },
  "Bring to Fr&ont": {
   "where": [
-   "ledger/js/drawing.js:416"
+   "ledger/js/drawing.js:424"
   ]
  },
  "Bring to Fro&nt": {
@@ -7246,7 +7246,7 @@
   "where": [
    "lectern/js/dialogs.js:410",
    "lectern/js/dialogs.js:411",
-   "ledger/js/drawing.js:439",
+   "ledger/js/drawing.js:447",
    "quire/js/dialogs3.js:97"
   ]
  },
@@ -7960,13 +7960,13 @@
  },
  "Chart &Options...": {
   "where": [
-   "ledger/js/drawing.js:454"
+   "ledger/js/drawing.js:462"
   ]
  },
  "Chart &Type...": {
   "where": [
-   "ledger/js/drawing.js:414",
-   "ledger/js/drawing.js:454"
+   "ledger/js/drawing.js:422",
+   "ledger/js/drawing.js:462"
   ]
  },
  "Chart &title:": {
@@ -8825,7 +8825,7 @@
    "lectern/js/app.js:128",
    "lectern/js/app.js:138",
    "lectern/js/dialogs.js:465",
-   "ledger/js/drawing.js:439"
+   "ledger/js/drawing.js:447"
   ]
  },
  "Colors:": {
@@ -11727,12 +11727,12 @@
  },
  "Drag in the worksheet to insert the AutoShape. Press Esc to cancel.": {
   "where": [
-   "ledger/js/drawing.js:480"
+   "ledger/js/drawing.js:488"
   ]
  },
  "Drag in the worksheet to insert the text box. Press Esc to cancel.": {
   "where": [
-   "ledger/js/drawing.js:480"
+   "ledger/js/drawing.js:488"
   ]
  },
  "Drag the fill handle (the square at the bottom-right of the selection) to copy cells or extend a series: 1, 2 → 3, 4…; Mon → Tue; Jan → Feb; Q1 → Q2; dates by day, weekday, month or year. Double-click the handle to fill down beside your data. Edit ▸ Fill ▸ Series gives full control; Ctrl+D and Ctrl+R fill down and right.": {
@@ -11747,7 +11747,7 @@
  },
  "Drag to draw": {
   "where": [
-   "ledger/js/drawing.js:477"
+   "ledger/js/drawing.js:485"
   ]
  },
  "Drag to draw a text box. Press Esc to cancel.": {
@@ -12061,7 +12061,7 @@
  },
  "Edit Te&xt": {
   "where": [
-   "ledger/js/drawing.js:415"
+   "ledger/js/drawing.js:423"
   ]
  },
  "Edit Te&xt...": {
@@ -12918,22 +12918,22 @@
  },
  "F&ormat AutoShape...": {
   "where": [
-   "ledger/js/drawing.js:417"
+   "ledger/js/drawing.js:425"
   ]
  },
  "F&ormat Chart Area...": {
   "where": [
-   "ledger/js/drawing.js:417"
+   "ledger/js/drawing.js:425"
   ]
  },
  "F&ormat Picture...": {
   "where": [
-   "ledger/js/drawing.js:417"
+   "ledger/js/drawing.js:425"
   ]
  },
  "F&ormat Text Box...": {
   "where": [
-   "ledger/js/drawing.js:417"
+   "ledger/js/drawing.js:425"
   ]
  },
  "F&ormat ▾": {
@@ -14017,7 +14017,7 @@
  "Format AutoShape": {
   "where": [
    "lectern/js/dialogs.js:394",
-   "ledger/js/drawing.js:455",
+   "ledger/js/drawing.js:463",
    "quire/js/dialogs3.js:24"
   ]
  },
@@ -14041,7 +14041,7 @@
  },
  "Format Chart Area": {
   "where": [
-   "ledger/js/drawing.js:455"
+   "ledger/js/drawing.js:463"
   ]
  },
  "Format LettersArt": {
@@ -14078,7 +14078,7 @@
  "Format Picture": {
   "where": [
    "lectern/js/dialogs.js:394",
-   "ledger/js/drawing.js:455",
+   "ledger/js/drawing.js:463",
    "ledger/js/ribbon.js:92",
    "quire/js/dialogs3.js:24"
   ]
@@ -14107,7 +14107,7 @@
  "Format Text Box": {
   "where": [
    "lectern/js/dialogs.js:394",
-   "ledger/js/drawing.js:455",
+   "ledger/js/drawing.js:463",
    "quire/js/dialogs3.js:24"
   ]
  },
@@ -14942,7 +14942,7 @@
   "where": [
    "lectern/js/dialogs.js:424",
    "lectern/js/dialogs.js:568",
-   "ledger/js/drawing.js:444",
+   "ledger/js/drawing.js:452",
    "quire/js/dialogs.js:741"
   ]
  },
@@ -15780,7 +15780,7 @@
  },
  "Insert AutoShape": {
   "where": [
-   "ledger/js/drawing.js:531",
+   "ledger/js/drawing.js:539",
    "quire/js/drawtool.js:80"
   ]
  },
@@ -16090,7 +16090,7 @@
  "Insert Text Box": {
   "where": [
    "lectern/js/app.js:1262",
-   "ledger/js/drawing.js:531",
+   "ledger/js/drawing.js:539",
    "quire/js/drawtool.js:80"
   ]
  },
@@ -16316,7 +16316,7 @@
    "lectern/js/diagram.js:589",
    "lectern/js/render.js:570",
    "lectern/js/ribbon.js:40",
-   "quire/js/render.js:378"
+   "ledger/js/drawing.js:134"
   ]
  },
  "IntelliArt SmartArt organization chart org": {
@@ -17551,7 +17551,7 @@
  "Lock &aspect ratio": {
   "where": [
    "lectern/js/dialogs.js:419",
-   "ledger/js/drawing.js:443",
+   "ledger/js/drawing.js:451",
    "quire/js/dialogs3.js:44"
   ]
  },
@@ -18427,7 +18427,7 @@
  },
  "Move &but don't size with cells": {
   "where": [
-   "ledger/js/drawing.js:447"
+   "ledger/js/drawing.js:455"
   ]
  },
  "Move Column": {
@@ -18446,8 +18446,8 @@
  "Move Object": {
   "where": [
    "lectern/js/editor.js:579",
-   "ledger/js/drawing.js:218",
-   "ledger/js/drawing.js:295",
+   "ledger/js/drawing.js:226",
+   "ledger/js/drawing.js:303",
    "quire/js/drawing.js:577"
   ]
  },
@@ -19500,7 +19500,7 @@
  },
  "O&rder": {
   "where": [
-   "ledger/js/drawing.js:416"
+   "ledger/js/drawing.js:424"
   ]
  },
  "O&ther:": {
@@ -19544,12 +19544,13 @@
  "Object": {
   "where": [
    "ledger/js/app.js:723",
+   "ledger/js/drawing.js:134",
    "quire/js/dialogs2.js:500"
   ]
  },
  "Object positioning": {
   "where": [
-   "ledger/js/drawing.js:445"
+   "ledger/js/drawing.js:453"
   ]
  },
  "Object type:": {
@@ -19855,7 +19856,7 @@
  "Order": {
   "where": [
    "lectern/js/app.js:1073",
-   "ledger/js/drawing.js:409"
+   "ledger/js/drawing.js:417"
   ]
  },
  "Organization Chart": {
@@ -21521,7 +21522,7 @@
  "Properties": {
   "where": [
    "ledger/js/dialogs.js:713",
-   "ledger/js/drawing.js:450",
+   "ledger/js/drawing.js:458",
    "quire/js/dialogs.js:976",
    "quire/js/ribbon.js:88"
   ]
@@ -22472,7 +22473,7 @@
  },
  "Replacing this picture removes effects and extensions attached to its original image.": {
   "where": [
-   "ledger/js/objects.js:188"
+   "ledger/js/objects.js:192"
   ]
  },
  "Reply to Comment": {
@@ -22562,7 +22563,7 @@
  },
  "Resize Object": {
   "where": [
-   "ledger/js/drawing.js:295",
+   "ledger/js/drawing.js:303",
    "quire/js/drawing.js:618"
   ]
  },
@@ -25485,7 +25486,7 @@
  "Send &Backward": {
   "where": [
    "lectern/js/commands.js:171",
-   "ledger/js/drawing.js:416"
+   "ledger/js/drawing.js:424"
   ]
  },
  "Send Back&ward": {
@@ -25501,7 +25502,7 @@
  "Send to Bac&k": {
   "where": [
    "lectern/js/commands.js:169",
-   "ledger/js/drawing.js:416",
+   "ledger/js/drawing.js:424",
    "quire/js/commands.js:502"
   ]
  },
@@ -26198,7 +26199,7 @@
   "where": [
    "lectern/js/dialogs.js:465",
    "lectern/js/ribbon.js:106",
-   "ledger/js/drawing.js:444",
+   "ledger/js/drawing.js:452",
    "quire/js/dialogs2.js:726"
   ]
  },
@@ -26210,7 +26211,7 @@
  "Size and rotate": {
   "where": [
    "lectern/js/dialogs.js:424",
-   "ledger/js/drawing.js:444",
+   "ledger/js/drawing.js:452",
    "quire/js/dialogs3.js:98"
   ]
  },
@@ -26464,7 +26465,7 @@
   "where": [
    "lectern/js/dialogs.js:710",
    "lectern/js/dialogs.js:754",
-   "lectern/js/frames.js:160",
+   "lectern/js/frames.js:153",
    "lectern/js/panes.js:70"
   ]
  },
@@ -28472,7 +28473,7 @@
  },
  "The damaged VML drawing could not be merged; its readable notes were rebuilt.": {
   "where": [
-   "ledger/js/objects.js:451"
+   "ledger/js/objects.js:455"
   ]
  },
  "The data source contains no records.": {
@@ -28748,7 +28749,7 @@
  "The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.": {
   "where": [
    "ledger/js/dialogs.js:893",
-   "ledger/js/xlsx-read.js:1144"
+   "ledger/js/xlsx-read.js:1170"
   ]
  },
  "The pivot source changed. Excel will refresh its cached result when the file opens.": {
@@ -28901,7 +28902,7 @@
  },
  "The workbook part is damaged.": {
   "where": [
-   "ledger/js/xlsx-read.js:1162"
+   "ledger/js/xlsx-read.js:1188"
   ]
  },
  "The worksheet containing the pivot table was deleted.": {
@@ -29132,12 +29133,12 @@
  },
  "This 3-D model will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:156"
+   "lectern/js/frames.js:149"
   ]
  },
  "This 3-D model will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:156"
+   "lectern/js/frames.js:149"
   ]
  },
  "This IntelliArt now uses Lectern's {0} layout, so it can be edited here.": {
@@ -29147,12 +29148,12 @@
  },
  "This IntelliArt will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:153"
+   "lectern/js/frames.js:146"
   ]
  },
  "This IntelliArt will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:153"
+   "lectern/js/frames.js:146"
   ]
  },
  "This browser blocked the image export.": {
@@ -29167,12 +29168,12 @@
  },
  "This chart will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:157"
+   "lectern/js/frames.js:150"
   ]
  },
  "This chart will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:157"
+   "lectern/js/frames.js:150"
   ]
  },
  "This dialog is not available.": {
@@ -29237,12 +29238,12 @@
  },
  "This embedded object will be saved as a picture, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:154"
+   "lectern/js/frames.js:147"
   ]
  },
  "This embedded object will be saved as a picture, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:154"
+   "lectern/js/frames.js:147"
   ]
  },
  "This file does not contain a PowerPoint presentation.": {
@@ -29252,7 +29253,7 @@
  },
  "This file is not an Excel workbook.": {
   "where": [
-   "ledger/js/xlsx-read.js:1160"
+   "ledger/js/xlsx-read.js:1186"
   ]
  },
  "This file is not an XML Spreadsheet 2003 workbook.": {
@@ -29267,12 +29268,12 @@
  },
  "This ink drawing will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:155"
+   "lectern/js/frames.js:148"
   ]
  },
  "This ink drawing will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:155"
+   "lectern/js/frames.js:148"
   ]
  },
  "This is a TrueType font. The same font will be used on both your printer and your screen.": {
@@ -29390,7 +29391,7 @@
  },
  "This workbook is encrypted with a method Ledger does not support (only the AES encryption Excel 2007 and later use is supported).": {
   "where": [
-   "ledger/js/xlsx-read.js:1144"
+   "ledger/js/xlsx-read.js:1170"
   ]
  },
  "This worksheet contains more than 255 invalid cells. Only 255 cells will be marked.": {
@@ -30869,7 +30870,7 @@
  "Web": {
   "where": [
    "lectern/js/dialogs.js:468",
-   "ledger/js/drawing.js:453",
+   "ledger/js/drawing.js:461",
    "ledger/js/fninfo.js:536",
    "quire/js/dialogs3.js:103"
   ]
@@ -31092,7 +31093,7 @@
  "Wi&dth:": {
   "where": [
    "lectern/js/dialogs.js:424",
-   "ledger/js/drawing.js:444",
+   "ledger/js/drawing.js:452",
    "quire/js/dialogs3.js:98"
   ]
  },
@@ -31969,9 +31970,19 @@
    "ledger/js/editor.js:272"
   ]
  },
+ "{0}\n(IntelliArt is not displayed)": {
+  "where": [
+   "ledger/js/drawing.js:134"
+  ]
+ },
  "{0}\n(this chart type is not displayed)": {
   "where": [
    "ledger/js/drawing.js:126"
+  ]
+ },
+ "{0}\n(this object is not displayed)": {
+  "where": [
+   "ledger/js/drawing.js:134"
   ]
  },
  "{0} (Antonym)": {
