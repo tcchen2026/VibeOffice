@@ -353,6 +353,12 @@ class Package:
                         lo_type, unique = pr.get('loTypeId') if pr is not None else None, self.xml[lo].get('uniqueId')
                         if lo_type is not None and lo_type != unique:
                             self.issue('diagram-layout-id', dm, f'{lo_type} / {unique}', path)
+                        # PowerPoint 2016 draws nothing for a SmartArt whose presentation links (presOf, presParOf) name
+                        # another layout than that uniqueId; later versions draw it. All 233 corpus data parts with such
+                        # links name their own layout
+                        other = sorted({c.get('presId') for c in self.xml[dm].iter('{%s}cxn' % DGM) if c.get('type') in ('presOf', 'presParOf') and c.get('presId') != unique})
+                        if unique is not None and other:
+                            self.issue('diagram-pres-id', dm, f'{other[0]} / {unique}', path)
                 # PowerPoint rejects a whole SmartArt layout definition (and draws its default list) when the
                 # branches of a choice give one layout node different algorithm types; none of the corpus's
                 # 303 choices in 60 Office definitions do

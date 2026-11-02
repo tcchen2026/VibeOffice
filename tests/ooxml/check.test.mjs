@@ -118,6 +118,17 @@ test('a SmartArt data part names its layout part by uniqueId, or PowerPoint draw
   assert.equal(run('check', await pkg('dgm-same', parts('urn:example/layout/process#1f2e3d4c'))).status, 'ok');
   assert.ok(run('check', await pkg('dgm-differ', parts('urn:example/layout/process'))).issues.some(i => i.code === 'diagram-layout-id'));
 });
+test('a SmartArt data part\'s presentation links name its layout part, or PowerPoint 2016 draws nothing', async () => {
+  const DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram', id = 'urn:example/layout/process#1f2e3d4c';
+  const frame = `<p:cSld><p:spTree><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Diagram"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><a:graphic><a:graphicData uri="${DGM}"><dgm:relIds xmlns:dgm="${DGM}" r:dm="d" r:lo="l" r:qs="d" r:cs="d"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:cSld>`;
+  const parts = (presId) => ({
+    'slide.xml': slide(frame), '_rels/slide.xml.rels': rels(rel('d', 'data.xml', 'diagramData') + rel('l', 'layout.xml', 'diagramLayout')),
+    'data.xml': `<dgm:dataModel xmlns:dgm="${DGM}"><dgm:ptLst><dgm:pt modelId="1" type="doc"><dgm:prSet loTypeId="${id}"/></dgm:pt><dgm:pt modelId="2" type="pres"/></dgm:ptLst><dgm:cxnLst><dgm:cxn modelId="3" type="presOf" srcId="1" destId="2" presId="${presId}"/></dgm:cxnLst></dgm:dataModel>`,
+    'layout.xml': `<dgm:layoutDef xmlns:dgm="${DGM}" uniqueId="${id}"/>`,
+  });
+  assert.equal(run('check', await pkg('dgm-pres-same', parts(id))).status, 'ok');
+  assert.ok(run('check', await pkg('dgm-pres-differ', parts('urn:example/layout/process'))).issues.some(i => i.code === 'diagram-pres-id'));
+});
 test('every branch of a SmartArt choice keeps the same algorithm type, or PowerPoint draws its default list', async () => {
   const DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram';
   const def = (other) => `<dgm:layoutDef xmlns:dgm="${DGM}" uniqueId="urn:example/layout/x"><dgm:layoutNode name="diagram"><dgm:choose name="c"><dgm:if name="i" func="cnt" axis="ch" ptType="node" op="equ" val="3"><dgm:alg type="composite"/></dgm:if><dgm:else name="e"><dgm:alg type="${other}"/></dgm:else></dgm:choose></dgm:layoutNode></dgm:layoutDef>`;

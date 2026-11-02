@@ -133,7 +133,8 @@
       if (p.style) idx.set(p.style, i + 1);
       pts.push(`<dgm:pt modelId="${p.id}" type="pres"><dgm:prSet presAssocID="${p.assoc}" presName="${X(p.name)}"${p.style ? ` presStyleLbl="${X(p.style)}" presStyleIdx="${i}"` : ''} presStyleCnt="${cnt}">${p.vars ? `<dgm:presLayoutVars>${p.vars}</dgm:presLayoutVars>` : ''}</dgm:prSet><dgm:spPr/></dgm:pt>`);
     }
-    const presId = `${URN}layout/${lay.id}`;
+    /* the layout part's uniqueId, as loTypeId: PowerPoint 2016 draws nothing for a diagram whose pres points name another */
+    const presId = def.documentElement.getAttribute('uniqueId');
     links.forEach(([type, src, dst, so, dO], i) => cxns.push(`<dgm:cxn modelId="${IO.guid(key + ':pcx:' + i)}" type="${type}" srcId="${src}" destId="${dst}" srcOrd="${so}" destOrd="${dO}" presId="${presId}"/>`));
   }
 
@@ -263,11 +264,13 @@
       ? (i === 0 ? `<dgm:forEach name="@" axis="ch" ptType="node" st="1" cnt="1">${inner}</dgm:forEach>` : `<dgm:forEach name="@" axis="ch" ptType="node" st="1" cnt="1"><dgm:forEach name="@" axis="ch" ptType="node" st="${i}" cnt="1">${inner}</dgm:forEach></dgm:forEach>`)
       : `<dgm:forEach name="@" axis="ch" ptType="node" st="${i}" cnt="1">${inner}</dgm:forEach>`);
     const index = (id) => { const m = /^(t|s)(\d+)$/.exec(id || ''); return m ? (m[1] === 's' ? +m[2] : radial ? 0 : +m[2]) : null; };
-    let branches = '';
+    let branches = '', named = 0;
+    /* one numbering for the whole definition (n000, n001, …): with names numbered per branch (k4a6: 4 items, arrow,
+       sixth shape) PowerPoint ignored a few nodes' constraints and drew them across the whole diagram (round 7) */
+    const nm = () => 'n' + String(named++).padStart(3, '0');
     for (let k = 1; k <= MAXN; k++) {
       const { shapes } = SA.layout(lay.id, sample(k), { x: 0, y: 0, w: W, h: H }, { measure });
-      let cons = '', nodes = '', c = 0;
-      const nm = (r) => `k${k}${r}${++c}`;
+      let cons = '', nodes = '';
       for (const s of shapes) {
         const i = index(s.itemId);
         if (s.role === 'arrow' && !s.big) {

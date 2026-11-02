@@ -97,7 +97,8 @@ with every diagram's colours and style.
 ## Method
 
 1. Build a small batch in `./tmp`. Each file must pass the SDK and `package.py`.
-2. The user opens the batch in PowerPoint and exports it to PDF into the same folder.
+2. The user opens the batch in PowerPoint and exports it to PDF into the same folder, or `tmp/office/office.py run`
+   sends it to the Office 2016 test VM for PowerPoint 2016's PDFs (newer PowerPoint can still differ).
 3. Compare each page with Lectern's drawing (`tmp/smartart-hier/sheet.py`).
 4. Narrow failures by bisection: one change per copy, at most about 8 copies.
 
@@ -119,13 +120,24 @@ constraints were ignored. They are the same nodes at every frame shape, so the c
 tree fallback with its connectors. `powerpoint-own.pptx` (Basic Process, Name and Title Organization Chart, Labeled
 Hierarchy made in PowerPoint) is a reference; its Basic Process boxes are 123 × 74 pt to our 125 × 75.
 
-1. **Round 7** (`tmp/smartart-r7`, 17 one-slide decks, CHECKLIST.md there; `tmp/smartart-bisect7/variants.py`):
-   the 4-item process and the 2-satellite radial, each changing one thing (node names, values, removing the node,
-   only that count's branch, centre constraints, constraint order, one loop per shape or per item). The user saves
-   each in PowerPoint; read the sizes with `ppsaved.py`. Fix from that, then rerun final5's decks.
-   Add to the same round: one slide per new style family (filled with gradients and shadows, outlined, tinted) and
-   a palette range and a palette cycle, to see that PowerPoint draws the theme's gradients and shadows and steps
-   through a range item by item as Lectern does (Lectern mixes in RGB).
+**PowerPoint 2016 (the Office 2016 test VM, build 16.0.4266, 2026-11-02; PDF exports through
+`tmp/office/office.py`):** final5's decks showed nothing at all, and the hierarchies deck closed PowerPoint, while
+newer PowerPoint draws them. Our presentation links (`presOf`, `presParOf`) named `…/layout/<id>` without the
+layout's `#<hash>`; with `presId` equal to the uniqueId (as in all 233 corpus data parts with such links) every
+layout draws, the stored drawing or not. `package.py` reports `diagram-pres-id`. Round 7 then ran there too: the
+stretched shape went only when the definition had a single count branch or when every layout node was renamed
+(`n000`, `n001`, … through the whole definition); renaming one bad node fixed the radial but not the process, whose
+other arrow stretched instead, and moving its values changed nothing. The cause in PowerPoint is not known; names
+numbered once per definition fixed every stretched shape in all 63 slides of final5's decks (`tmp/office/final6`),
+so the writer now names them that way. `tests/lectern/smartart-definitions.test.mjs` covers both.
+
+1. **Newer PowerPoint:** confirm the two fixes there (final6's decks); round 7's re-saves are no longer needed.
+   Also: one slide per new style family (filled with gradients and shadows, outlined, tinted) and a palette range
+   and cycle, to see that PowerPoint steps through a range item by item as Lectern does (Lectern mixes in RGB).
+   In PowerPoint 2016, still to fix:
+   - more items than the count branches cover (11 in a process): the plain-row fallback draws full-height boxes;
+   - a square or tall frame: the process and chevron rows come out much smaller than the frame (the branches keep
+     the aspect ratio they were sampled at); compare with Lectern's drawing in the same frame.
    Already right in final5, to keep an eye on:
 2. **Processes:** box proportions; Chevron, Step Up, Continuous Arrow and Basic Timeline shapes; visible arrows.
 3. **Cycles:** spacing on the ring, and arrows between items.
