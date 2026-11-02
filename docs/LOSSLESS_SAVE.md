@@ -117,8 +117,6 @@ These are in addition to AGENTS.md.
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.
 3. **Office conventions** (low risk; fix when touching that code):
-   - `p:penClr` uses `a:srgbClr` where Office uses `a:prstClr`.
-   - Quire WordArt writes `a:normAutofit`.
    - A hyperlink containing `w:del`/`w:ins` has never been in an Office batch.
 4. **Related, separate plan:** SmartArt editing in Lectern. It replaces the `frames.js`
    "edited preview → plain group" path and is waiting on the PowerPoint spike results.
