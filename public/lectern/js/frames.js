@@ -16,6 +16,8 @@
     if (nodes.some(e => e.localName === 'contentPart')) return 'Ink';
     if (nodes.some(e => e.localName === 'model3d')) return '3-D model';
     if (nodes.some(e => e.localName === 'chart' && /\/chartex$/.test(e.namespaceURI))) return 'New chart';
+    // a PowerPoint 97-2003 diagram or organization chart, drawn in the slide's VML (com:legacyDrawing)
+    if (nodes.some(e => e.localName === 'legacyDrawing' && /\/compatibility$/.test(e.namespaceURI))) return 'Diagram';
     return null;
   }
   function source(working, original, parent) {
@@ -40,7 +42,7 @@
     const fragment = K.fragment(src.alternate ? working : src.tree, { pkg, part });
     fragment.key = fragment.record || L.uid('frame');
     const related = K.diagramRelated(pkg, fragment);
-    if (src.label === 'Embedded object' && all(src.tree).some(e => e.localName === 'oleObj' && e.hasAttribute('spid'))) {
+    if (all(src.tree).some(e => ['oleObj', 'legacyDrawing'].includes(e.localName) && e.hasAttribute('spid'))) {
       for (const rel of pkg.rels(part).filter(r => /\/vmlDrawing$/.test(r.type))) related.push({ source: pkg.id, owner: part, ...rel });
     }
     for (const s of models) {
@@ -148,6 +150,7 @@
     Ink: ['This ink drawing will be saved as ordinary shapes, because it was edited here.', 'This ink drawing will be saved as ordinary shapes, because the original couldn\'t be kept.'],
     '3-D model': ['This 3-D model will be saved as ordinary shapes, because it was edited here.', 'This 3-D model will be saved as ordinary shapes, because the original couldn\'t be kept.'],
     'New chart': ['This chart will be saved as ordinary shapes, because it was edited here.', 'This chart will be saved as ordinary shapes, because the original couldn\'t be kept.'],
+    Diagram: ['This diagram will be saved as an empty rectangle, because it was edited here.', 'This diagram will be saved as an empty rectangle, because the original couldn\'t be kept.'],
   };
   const savedAs = (label, notKept) => (SAVED_AS[label] || SAVED_AS.IntelliArt)[notKept ? 1 : 0];
   const slidePlace = (pres, part) => { const i = pres.slides.findIndex(s => s.keep?.part === part); return i < 0 ? undefined : L.t ? L.t('Slide {0}', i + 1) : 'Slide ' + (i + 1); };

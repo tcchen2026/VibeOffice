@@ -1280,6 +1280,8 @@
           const g = await smartArtFrom(gd, base, ctx);
           if (g) return g;
         }
+        /* a PowerPoint 97-2003 diagram in the slide's VML: kept as a frame (frames.js) */
+        if (/\/compatibility$/.test(uri)) return null;
         /* OLE object or unknown: try fallback picture */
         const pic = desc(el, 'pic');
         if (pic) {

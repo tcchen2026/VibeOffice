@@ -97,7 +97,8 @@ These are in addition to AGENTS.md.
    Excel templates' themes); fields whose code holds nested fields or pictures; bookmarks and permission ranges
    between table rows or cells; a picture's PowerPoint-for-Mac PDF version; Quire's built-in styles written beside
    a file's own styles of the same name (Word in other languages: `berschrift1` is heading 1), 565 of 2,768 saves,
-   where LibreOffice gave the file's paragraphs the second one's look. Unedited saves losing a part the
+   where LibreOffice gave the file's paragraphs the second one's look; a PowerPoint 97-2003 organization chart
+   (`com:legacyDrawing`) that became an "Embedded object" rectangle. Unedited saves losing a part the
    original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -109,7 +110,6 @@ These are in addition to AGENTS.md.
      record (as kept frames have) would make the alarm exact there too.
    - `tdf93284.docx`: the original gives two relationships the same id (a picture and the font table); the save
      keeps the picture's reference pointing at the font table.
-   - `PPTWithAttachments.pptm`: a compatibility frame (an Organization Chart) becomes an "Embedded object" rectangle.
    - Quire: duplicating a paragraph in `tdf150166`/`tdf150086` throws in `P.duplicateControls` (preserve.js).
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
      styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
