@@ -1943,6 +1943,7 @@
     for (const d of Object.values(pres.designs)) [d.deco, d.titleDeco].concat(d.layoutDecos ? Object.values(d.layoutDecos) : []).forEach((list) => list && L.model.walk(list, pick));
     for (const sh of clearPics) { const v = await L.media.withTransparent(sh.media, sh.img.clear, 3); if (v) sh.img.view = v; }
     pres.keep = { values: L.preserve.values(pres), media: Object.fromEntries(Array.from(mediaCache, ([part, id]) => [id, part])) };
+    if (pkg) pres.keep.inUse = L.preserve.inUse(pres, pkg);
     await L.frames.seal(pres, mediaCache);
     L.preserve.seal(pres);
     L.preserve.readSlideLists(pres);

@@ -107,8 +107,9 @@ These are in addition to AGENTS.md.
      keeping it needs new ids across the slide, its VML drawing and its ActiveX parts, as Ledger does.
    - **Quire field codes** Word wouldn't write that way (one run, across paragraphs, around a bookmark) and
      **direction wrappers** (`w:dir`, `w:bdo`) are converted, now with a notice.
-   - **Deletions in edit runs:** deleting a sheet or an object leaves its parts as `unreferenced:`; a deletion
-     record (as kept frames have) would make the alarm exact there too.
+   - **Deletions in edit runs:** Lectern records what the user deleted (`deleted:`: slides, pictures, media, shape
+     tags; I14's 44 cases now 0). In Ledger and Quire, deleting a sheet or an object still leaves its parts as
+     `unreferenced:`; the same record would make the alarm exact there too.
    - `tdf93284.docx`: the original gives two relationships the same id (a picture and the font table); the save
      keeps the picture's reference pointing at the font table.
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
