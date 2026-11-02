@@ -1,0 +1,52 @@
+{
+  "issue": "https://github.com/tcchen2026/VibeOffice/issues/5",
+  "source": "https://github.com/user-attachments/files/33294408/1.docx",
+  "checkedAt": "2026-11-02",
+  "quireCommit": "767a51e5e782f1ccefbd512daaed9987fb2e4d94",
+  "finding": "Reproduced: inline pictures overflow into the next column in Quire; Word 2016 clips them. No product fix is included.",
+  "columnWidthPt": 196.85,
+  "pictureWidthsPt": [
+    278.75,
+    318.5115748031496
+  ],
+  "pageCounts": {
+    "quire": 3,
+    "wordOriginal": 3,
+    "wordQuireSave": 3
+  },
+  "wordOriginal": {
+    "id": "5fbdbe17de8dfe1c21c600a4454ba193",
+    "inputSha256": "005cdcfa9ac54bec9ba9c103af787b37c5cf2ce1711edefeb255495bf0a4f81d",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "cae7318aa76c7c3eaa2cc9d735bd95d3084c7016a21c100759f825ce541c41ae",
+    "inputUnchanged": true,
+    "dialogs": []
+  },
+  "wordQuireSave": {
+    "id": "e268cbd6e27799e9f2e642e52712f1a6",
+    "inputSha256": "39f224bf38df81048ab30b947470e82c0559bc5caa50404d792960c539dd96bb",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "5cbe832df13283bcfe1c5efdf35fc6bfa166dd0ff3721f4e1be9bbec7e1065d4",
+    "inputUnchanged": true,
+    "dialogs": []
+  },
+  "affectedFirstPage": {
+    "wordRendersIdentical": true,
+    "rasterLongestSidePx": 1200,
+    "pngSha256": "6c7ce4af5273ac4f7a0e92118301ac0eef74e0ffec0fcb174845dfa7b651db1c"
+  },
+  "cause": {
+    "columns": "public/quire/js/layout.js:newRegion creates pg-col frames with position/width but no clipping. public/quire/index.html leaves their overflow visible.",
+    "pictures": "public/quire/js/render.js:R.image preserves the fixed document width; the img wrapper clips only to that oversized width."
+  },
+  "reproduce": "node tests/from-issues/5/inspect.mjs INPUT.docx OUTPUT_DIR; submit INPUT.docx and OUTPUT_DIR/quire-saved.docx to the Office 2016 API.",
+  "localEvidence": "tmp/from-issues/5/office2016-20261102"
+}

@@ -32,6 +32,7 @@ const SECONDS = { 'tests/ui/smoke.test.mjs': 20, 'tests/ui/quire.test.mjs': 175,
   'tests/ribbon.test.mjs': 5, 'tests/search.test.mjs': 4, 'tests/ooxml/check.test.mjs': 3, 'tests/i18n.test.mjs': 1, 'tests/fonts.test.mjs': 1, 'tests/locales.test.mjs': 15,
   'tests/hostile/export-html.test.mjs': 6, 'tests/hostile/helpers.test.mjs': 7, 'tests/csp.test.mjs': 1 };
 const RULES = [
+  [/^tools\/win_test_server\/|^tests\/win_test_server\//, ['tests/win-test-server.test.mjs']],
   [/^public\/(quire|ledger|lectern|common)\/|^public\/[^/]+\.(html|js|css)$/, ['tests/ui/smoke.test.mjs', 'tests/licenses.test.mjs', 'tests/from-issues/*/*.test.mjs', 'tests/i18n.test.mjs']],   // and the reported issues' tests, the English catalog
   [/^public\/ledger\/|^tools\/ledger\//, ['tests/ledger/*.test.js', 'tests/ui/ledger.test.mjs']],
   [/^public\/quire\//, ['tests/quire/*.test.js', 'tests/ui/quire.test.mjs']],

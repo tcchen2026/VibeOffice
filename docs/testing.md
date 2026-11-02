@@ -224,6 +224,44 @@ The compatibility numbers in each app's doc come from public test corpora (Libre
 
 ## Lossless same-format save: reproducible baseline
 
+### Office 2016 VM: HTTP open/repair and PDF checks
+
+`tools/win_test_server/` is a standalone Go test server for the `win10` VM, working in `C:\vo`.
+Build from the repository root with
+`GOOS=windows GOARCH=amd64 go -C tools/win_test_server build -o ../../tmp/win-test-server/win_test_server.exe .`
+(create `tmp/win-test-server/` first). Copy the executable and `install.ps1` there with `scp`, then run
+`ssh win10 powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:/vo/install.ps1`.
+The installer registers an interactive logon task; keep the VM signed in and unlocked. The server binds
+to VM loopback `127.0.0.1:8765`; reach it through `ssh -N -L 18765:127.0.0.1:8765 win10`.
+
+```sh
+curl -fsS --data-binary @saved.docx \
+  'http://127.0.0.1:18765/convert?filename=saved.docx&timeout=120' -o tmp/office-result.json
+```
+
+Raw DOCX/XLSX/PPTX uploads only, up to 100 MiB. `POST /convert` waits for the JSON result;
+`POST /jobs` queues it and returns an ID (`202`); `GET /jobs/<id>` reads its result. `GET /health`
+reports active/pending counts. The result's `pdf` and `dialogs[].screenshot` are downloadable relative URLs.
+Office jobs run serially, with a 120 s default deadline (5–600 s), fresh processes, alerts enabled,
+macros disabled, read-only normal opens and no repair retries. Existing Office processes cause `busy`.
+The Word/Excel/PPT native exporters produce the PDFs; Excel respects print areas, PPT includes hidden slides.
+
+`canOpenWithoutRepair` is `true` only after an observed successful normal open, `false` for an open rejection
+or repair request, and `null` when inconclusive (including unknown dialogs and timeouts). A COM rejection may
+have no visible prompt; keep its error. `pdfStatus` separately reports export success. Completed jobs return
+HTTP 200 even on failure: inspect the JSON. Results retain source/PDF hashes, unchanged-input verification,
+Office build, dialog text/images and timings in `C:\vo\jobs\<id>`. Opening/exporting is evidence for the
+lossless-save review, not proof that objects remain editable or content is unchanged: test original and saved
+files, compare their PDFs, and retain the feature checklist and package/SDK checks.
+
+`node --test tests/win-test-server.test.mjs` tests the HTTP protocol, serial queue, failure evidence and
+Windows cross-build. The opt-in `python3 tests/win_test_server/live.py --out tmp/win-test-server/live`
+uses local public-corpus files, historical confirmed repair cases, password and timeout controls on the VM.
+The VM was checked on 2026-11-02 with Office build `16.0.4266.1003`. Before replacing its executable, wait for
+an idle queue and stop the task `VibeOffice Office 2016 Test API`; run `install.ps1` again after copying.
+
+### Corpus drivers
+
 `sh tools/corpora.sh ~/corpora` fetches the pinned LibreOffice, Apache POI and Open XML SDK revisions
 listed in `tools/ooxml/corpora.py`. It resumes interrupted fetches, refuses dirty or unrelated checkouts,
 and never deletes an existing corpus. `manifest.json` records source, commit, original path, size and

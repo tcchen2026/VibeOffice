@@ -82,6 +82,10 @@ These are in addition to AGENTS.md.
 
 - **Office batches:** at most 15 files in `tmp/lossless/<batch>/` (the repository's ignored `tmp/`), each batch with a
   `CHECKLIST.md`. A repair prompt blocks the step that produced the file.
+- **Office 2016 automation:** `tools/win_test_server/` on `win10` (`C:\vo`) provides HTTP normal-open/repair
+  results and native DOCX/XLSX/PPTX PDFs; setup and endpoints are in [Testing](testing.md#office-2016-vm-http-openrepair-and-pdf-checks).
+  Compare original and saved files. An inconclusive result is not a pass; a clean open/PDF does not replace
+  the checklist's content and editability checks.
 - **Docs:** they describe the current state. Run details go in `~/corpora/results/<run>/README.md` and
   in commit bodies.
 - **Commit bodies:** what changed for the user, the measured numbers (and that the test fails on the
