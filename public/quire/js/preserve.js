@@ -759,7 +759,7 @@
   P.duplicateControls = function (blocks) {
     const copy = K.duplicate(blocks), scan = P.controls({ main: { blocks: copy }, hf: {}, fn: {}, en: {}, comments: {} }, false), ids = new Map(), stores = new Map();
     for (const [key, r] of scan.records) {
-      if (!r.complete) { P.removeControl(scan, key); continue; }
+      if (!r.complete) continue; // its markers go in the loop below, once
       ids.set(key, D.nid()); r.control.key = ids.get(key);
       const b = r.control.binding;
       if (b && b.source !== D.doc?.pkg?.id) {

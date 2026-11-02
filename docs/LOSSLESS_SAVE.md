@@ -110,7 +110,6 @@ These are in addition to AGENTS.md.
      record (as kept frames have) would make the alarm exact there too.
    - `tdf93284.docx`: the original gives two relationships the same id (a picture and the font table); the save
      keeps the picture's reference pointing at the font table.
-   - Quire: duplicating a paragraph in `tdf150166`/`tdf150086` throws in `P.duplicateControls` (preserve.js).
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
      styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
      the built-in's look until the file is reopened.
