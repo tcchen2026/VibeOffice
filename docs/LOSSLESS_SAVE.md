@@ -107,7 +107,9 @@ These are in addition to AGENTS.md.
    `deleted:`, so `unreferenced:` stays exact in edit runs too (Lectern 44 cases, Ledger 13, Quire 9 → 0); Quire's
    tracked moves, which became a deletion and an insertion (`w:moveFrom`/`w:moveTo` and their named ranges; 16 of 17
    files now keep every move, the 17th has no ranges; moved-away text stays `w:t`, which Word requires), a simple field's lock (a locked PRINTDATE showed today's date),
-   link ScreenTips with quotes (cut at the first `\"`) and a link's target frame (`w:tgtFrame`). Unedited
+   link ScreenTips with quotes (cut at the first `\"`) and a link's target frame (`w:tgtFrame`); a Word file
+   that names no default formatting (119 corpus files) is shown and saved with Word's, Calibri 11 pt, 8 pt after and
+   1.08 lines (Word 2016), where Times New Roman 10 pt was written. Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:

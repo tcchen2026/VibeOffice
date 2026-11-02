@@ -389,15 +389,15 @@
     /* ---- styles ---- */
     const stylesRel = relOfType('styles');
     const stX = stylesRel ? await xml(stylesRel.target) : null;
-    const defaults = { rPr: { font: 'Times New Roman', sz: 10 }, pPr: {} };
+    /* Where a file names no default run properties (no styles part, no docDefaults or no rPrDefault) Word uses
+       Calibri 11 pt, and with no default paragraph properties 8 pt after and 1.08 lines; a default that is there
+       but leaves a value out keeps the format's own (Times New Roman, 10 pt, single). Word 2016, in every
+       compatibility mode; the writer then names them */
+    const dd = stX && kid(stX, 'docDefaults'), rd = dd && kid(dd, 'rPrDefault'), pd = dd && kid(dd, 'pPrDefault');
+    const defaults = { rPr: rd ? Object.assign({ font: 'Times New Roman', sz: 10 }, rPr(kid(rd, 'rPr'))) : { font: 'Calibri', sz: 11 },
+      pPr: pd ? pPr(kid(pd, 'pPr')) : { sp: { a: 8, line: 259 / 240, rule: 'auto' } } };
     const imported = {};
     if (stX) {
-      const dd = kid(stX, 'docDefaults');
-      if (dd) {
-        const rd = X.path(dd, 'rPrDefault', 'rPr'), pd = X.path(dd, 'pPrDefault', 'pPr');
-        Object.assign(defaults.rPr, rPr(rd));
-        defaults.pPr = pPr(pd);
-      }
       for (const s of kids(stX, 'style')) {
         /* some generators omit styleId: Word then matches the style by name */
         const id = at(s, 'styleId') || (at(kid(s, 'name'), 'val') || '').replace(/\s+/g, '');
