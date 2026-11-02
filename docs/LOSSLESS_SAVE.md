@@ -100,7 +100,10 @@ These are in addition to AGENTS.md.
    where LibreOffice gave the file's paragraphs the second one's look; a PowerPoint 97-2003 organization chart
    (`com:legacyDrawing`) that became an "Embedded object" rectangle; Lectern's ActiveX controls, saved as dead
    pictures (84 in 14 decks), now kept unedited, moved or resized; what the user deletes is recorded as
-   `deleted:`, so `unreferenced:` stays exact in edit runs too (Lectern 44 cases, Ledger 13, Quire 9 → 0). Unedited
+   `deleted:`, so `unreferenced:` stays exact in edit runs too (Lectern 44 cases, Ledger 13, Quire 9 → 0); Quire's
+   tracked moves, which became a deletion and an insertion (`w:moveFrom`/`w:moveTo` and their named ranges; 16 of 17
+   files now keep every move, the 17th has no ranges), a simple field's lock (a locked PRINTDATE showed today's date),
+   link ScreenTips with quotes (cut at the first `\"`) and a link's target frame (`w:tgtFrame`). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -113,6 +116,16 @@ These are in addition to AGENTS.md.
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
      styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
      the built-in's look until the file is reopened.
+   - Quire revision history it doesn't model, dropped silently on an unedited save: a HYPERLINK field whose address
+     was changed with Track Changes (`tdf124472`: the old address and the instruction's revisions go); a revision on
+     a comment's reference mark (`tdf105485`, `Comment024`); a bound content control's cached text with revisions,
+     replaced by one deletion of the bound value (`SdtContent`'s header). Keeping them needs the reference mark and
+     the field instruction to carry revisions in the model, and Accept/Reject to handle them.
+   - Quire, damaged originals that LibreOffice recovers and the save doesn't: footnotes whose ids don't match their
+     references (`tdf153255`: LibreOffice shows six, the save three) and two final section definitions (`tdf108849`:
+     page 2 turns portrait). What Word does with them decides the fix (an Office check first).
+   - Tracked moves: a range end Word wrote between table rows or after a table is written at the end of the last
+     cell's paragraph; the Office batch shows whether Word still treats the row's end as moved.
 2. **Lectern checker numbers:** run the Lectern corpus driver, which needs Playwright, to measure how
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.

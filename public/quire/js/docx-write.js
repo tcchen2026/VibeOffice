@@ -66,13 +66,16 @@
     if (!s) return '';
     return `<w:shd w:val="${s.val || 'clear'}" w:color="${hex(s.color || 'auto')}" w:fill="${hex(s.fill || 'auto')}"/>`;
   }
-  /** run properties; mark: paragraph-mark revision info */
-  function rPrXML(r, mark, ctx) {
+  /** run properties; mark: paragraph-mark revision info, its paragraph's in moved (a tracked move's mark, preserve.js prepareMoves) */
+  function rPrXML(r, mark, ctx, moved) {
     r = r || {};
     let x = '';
     if (mark) {
-      if (mark.ins) x += `<w:ins w:id="${ctx.rev()}" w:author="${X(mark.ins.author)}" ${DT(mark.ins.date)}/>`;
-      if (mark.del) x += `<w:del w:id="${ctx.rev()}" w:author="${X(mark.del.author)}" ${DT(mark.del.date)}/>`;
+      const from = mark.del && ctx.moves?.from.has(moved), to = mark.ins && ctx.moves?.to.has(moved);
+      if (mark.ins && !to) x += `<w:ins w:id="${ctx.rev()}" w:author="${X(mark.ins.author)}" ${DT(mark.ins.date)}/>`;
+      if (mark.del && !from) x += `<w:del w:id="${ctx.rev()}" w:author="${X(mark.del.author)}" ${DT(mark.del.date)}/>`;
+      if (from) x += `<w:moveFrom w:id="${ctx.rev()}" w:author="${X(mark.del.author)}" ${DT(mark.del.date)}/>`;
+      if (to) x += `<w:moveTo w:id="${ctx.rev()}" w:author="${X(mark.ins.author)}" ${DT(mark.ins.date)}/>`;
     }
     if (r.style) { const id = ctx?.ownStyle?.(r.style) ?? r.style; ctx?.styleRefs?.add(id); x += `<w:rStyle w:val="${X(id)}"/>`; }
     if (r.font || r.fontEA || r.fontCS) {
@@ -272,8 +275,9 @@
   }
 
   /* ================= content ================= */
-  const sameLink = (a, b) => (a === b) || (!!a && !!b && a.url === b.url && a.anchor === b.anchor && a.tip === b.tip);
+  const sameLink = (a, b) => (a === b) || (!!a && !!b && a.url === b.url && a.anchor === b.anchor && a.tip === b.tip && a.target === b.target);
   const sameRev = (a, b) => (!a && !b) || (!!a && !!b && a.author === b.author && a.date === b.date);
+  const sameMove = (a, b, ctx) => !ctx.moves || ctx.moves.from.has(a) === ctx.moves.from.has(b) && ctx.moves.to.has(a) === ctx.moves.to.has(b);
   function textXML(s, del, afterCR = false) {
     /* split at characters that need their own elements */
     let out = '';
@@ -295,17 +299,22 @@
     return out;
   }
   /** XML for a paragraph's runs */
-  function wrapRunGroup(inner, r, ctx) {
+  function wrapRunGroup(inner, r, ctx, moved) {
     if (!inner) return '';
     const { link, ins, del } = r;
-    /* inserted, then deleted: Word nests the deletion inside the insertion */
-    if (del) inner = `<w:del w:id="${ctx.rev()}" w:author="${X(del.author)}" ${DT(del.date)}>${inner}</w:del>`;
-    if (ins) inner = `<w:ins w:id="${ctx.rev()}" w:author="${X(ins.author)}" ${DT(ins.date)}>${inner}</w:ins>`;
+    /* inserted, then deleted: Word nests the deletion inside the insertion, but inserted text moved away inside its moveFrom;
+       moved: the group's first item, written as a move if it is in one (preserve.js, prepareMoves) */
+    const from = del && moved && ctx.moves?.from.has(moved), to = ins && moved && ctx.moves?.to.has(moved);
+    const wrap = (tag, r) => { inner = `<w:${tag} w:id="${ctx.rev()}" w:author="${X(r.author)}" ${DT(r.date)}>${inner}</w:${tag}>`; };
+    if (del && !from) wrap('del', del);
+    if (ins) wrap(to ? 'moveTo' : 'ins', ins);
+    if (from) wrap('moveFrom', del);
     if (link) {
       const a = [];
       if (link.url) a.push(`r:id="${ctx.rels.add(RT('hyperlink'), link.url, true)}"`);
       if (link.anchor) a.push(`w:anchor="${X(link.anchor)}"`);
       if (link.tip) a.push(`w:tooltip="${X(link.tip)}"`);
+      if (link.target) a.push(`w:tgtFrame="${X(link.target)}"`);
       a.push('w:history="1"'); inner = `<w:hyperlink ${a.join(' ')}>${inner}</w:hyperlink>`;
     }
     return inner;
@@ -320,7 +329,7 @@
       const it = items[i];
       const original = L.preserve.objectXML(it, 'ac', ctx);
       if (original != null) {
-        if (original) out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx);
+        if (original) out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx, it) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx);
         trackText(it);
         i++; continue;
       }
@@ -339,14 +348,14 @@
           const n = items[j], nr = n.rPr || {};
           if (n.keep?.ac) break;
           if (D.isMarker(n) && n.t !== 'fb' && n.t !== 'fs' && n.t !== 'fe') break;
-          if (!sameLink(link, D.ilen(n) ? nr.link : null) || !sameRev(ins, nr.ins) || !sameRev(del, nr.del)) break;
+          if (!sameLink(link, D.ilen(n) ? nr.link : null) || !sameRev(ins, nr.ins) || !sameRev(del, nr.del) || !sameMove(it, n, ctx)) break;
           j++;
         }
       }
       let inner = '';
       for (let k = i; k < j; k++) { inner += itemXML(items[k], p, ctx, !!del, textState.afterCR); trackText(items[k]); }
       /* revision marks sit inside hyperlinks (w:hyperlink may contain w:ins/w:del, not the reverse) */
-      out += wrapRunGroup(inner, { link, ins, del }, ctx);
+      out += wrapRunGroup(inner, { link, ins, del }, ctx, it);
       i = j;
     }
     return out;
@@ -616,11 +625,14 @@
 
   /* ================= blocks ================= */
   function paraXML(p, ctx) {
-    const markR = rPrXML(p.rPr || {}, p.mark, ctx);
+    const markR = rPrXML(p.rPr || {}, p.mark, ctx, p);
     const pPr = pPrXML(p.pPr, ctx, { rPr: markR, sect: p.sect && ctx.main ? sectXML(p.sect, ctx) : '' });
-    /* display math paragraphs */
-    const runs = runsXML(p, ctx);
-    return `<w:p>${pPr}${runs}</w:p>`;
+    /* a move's end that was read after this paragraph is written there again (preserve.js, rangeMarker) */
+    let n = p.runs.length;
+    while (n && ['perm', 'bs', 'be', 'cs', 'ce'].includes(p.runs[n - 1].t)) n--;
+    const after = p.runs.slice(n).filter((it) => it.after);
+    const runs = runsXML(after.length ? { ...p, runs: p.runs.filter((it) => !after.includes(it)) } : p, ctx);
+    return `<w:p>${pPr}${runs}</w:p>${after.map((it) => L.preserve.markerXML(it, ctx) || '').join('')}`;
   }
   function tableXML(t, ctx) {
     if (t.keep?.gridRepair) ctx.writer.loss({ id: 'table-grid:' + ctx.part, what: 'Incomplete or unusable table column widths were reconstructed. Table layout may change.', where: ctx.part, action: 'conversion' });
@@ -915,7 +927,7 @@
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const docRels = pack.rels('word/document.xml');
     D.reindex(doc);
-    const ranges = L.preserve.prepareRanges(doc);
+    const ranges = L.preserve.prepareRanges(doc), moves = L.preserve.prepareMoves(doc);
     const objects = L.preserve.prepareObjects(doc, pack.writer);
     L.preserve.prepareNumbering(doc.numbering, pack.writer);
     /* --- context shared by every story --- */
@@ -935,7 +947,7 @@
     /** the id to write for style id: the file's own style of its name for a built-in marked sameAs (docx-read), otherwise id */
     const ownStyle = (id) => { const s = doc.styles[id]; return s?.sameAs && doc.styles[s.sameAs] ? s.sameAs : id; };
     const mkCtx = (rels, main) => ({
-      rels, main, doc, ranges, objects, writer: pack.writer, styleRefs, ownStyle, part: rels.owner, mainPart: pack.part('word/document.xml'),
+      rels, main, doc, ranges, moves, objects, writer: pack.writer, styleRefs, ownStyle, part: rels.owner, mainPart: pack.part('word/document.xml'),
       drawingXML,
       rev: () => pack.writer.ids.fresh('document', 'revision'),
       docPrId: () => {

@@ -386,6 +386,8 @@
     else if (isP && name === 'grpId' && ['cTn', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic'].includes(tag)) { kind = 'build'; definition = tag !== 'cTn'; }
     else if (isW && name === 'id' && /^(bookmark|perm)(Start|End)$/.test(tag)) { kind = tag.startsWith('bookmark') ? 'bookmark' : 'permission'; definition = tag.endsWith('Start'); }
     else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
+    // a move's range shares Word's revision numbers; its end names its start
+    else if (isW && name === 'id' && /^move(From|To)Range(Start|End)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = tag.endsWith('Start'); }
     else if (isP && name === 'id' && ['sldId', 'sldMasterId', 'sldLayoutId'].includes(tag)) { kind = tag; scope = 'presentation'; definition = true; }
     else if (isS && name === 'sheetId') { kind = 'sheet'; scope = 'workbook'; definition = tag === 'sheet'; }
     else if (isS && name === 'cacheId') { kind = 'cache'; scope = 'workbook'; definition = tag === 'pivotCache'; }
@@ -1002,7 +1004,7 @@
         for (const name of pkg.names) {
           this.mapping.set(this.key(pkg, name), name);
           const text = /\.(xml|vml)$/i.test(name) ? pkg.text(name) : null;
-          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|PicBulletId|sdtPr|dxf|_x0000_|PrChange|numberingChange|cellIns|cellDel|cellMerge|<(?:[\w.-]+:)?(?:nsid|ins|del|moveFrom|moveTo)(?=[\s/>])/.test(text)) continue;
+          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|PicBulletId|sdtPr|dxf|_x0000_|PrChange|numberingChange|cellIns|cellDel|cellMerge|<(?:[\w.-]+:)?(?:nsid|ins|del|moveFrom|moveTo)(?:Range(?:Start|End))?(?=[\s/>])/.test(text)) continue;
           let tree; try { tree = K.parse(text); } catch (e) { continue; } // carried opaque if the original XML is malformed
           walk(tree, el => {
             if (el.localName === 'dxfs' && el.namespaceURI === NS.s) elements(el).forEach((e, i) => this.ids.reserve('styles', 'dxf', i));

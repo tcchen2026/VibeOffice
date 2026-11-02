@@ -288,12 +288,15 @@
           case 'rPrChange': r.chg = Object.assign(rev(c), { old: rPr(kid(c, 'rPr')) }); break;
           case 'ins': r._ins = rev(c); break;
           case 'del': r._del = rev(c); break;
+          case 'moveTo': r._ins = rev(c, true); break;
+          case 'moveFrom': r._del = rev(c, true); break;
           default: break;
         }
       }
       return L.preserve.properties(r, el, 'rPr', propertyContext(el));
     }
-    const rev = (el) => ({ author: at(el, 'author') || 'Unknown', date: at(el, 'date') || '', id: num(el, 'id', 0) });
+    /* a tracked move is a deletion (moveFrom) and an insertion (moveTo) to edit; the writer keeps it a move inside its ranges (preserve.js, prepareMoves) */
+    const rev = (el, move) => Object.assign({ author: at(el, 'author') || 'Unknown', date: at(el, 'date') || '', id: num(el, 'id', 0) }, move ? { move: true } : {});
 
     /* ---- paragraph properties ---- */
     const JC = { start: 'left', end: 'right', left: 'left', right: 'right', center: 'center', both: 'both', distribute: 'distribute', justify: 'both', lowKashida: 'both', mediumKashida: 'both', highKashida: 'both', thaiDistribute: 'distribute' };
@@ -735,8 +738,8 @@
           }
           case 'customXml': case 'ins': case 'moveTo': case 'smartTag': parseBlocks(c, ctx, out); break;
           case 'del': case 'moveFrom': parseBlocks(c, ctx, out); break;
-          case 'bookmarkStart': case 'permStart': ctx.pendingBm.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
-          case 'bookmarkEnd': case 'permEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
+          case 'bookmarkStart': case 'permStart': case 'moveFromRangeStart': case 'moveToRangeStart': ctx.pendingBm.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
+          case 'bookmarkEnd': case 'permEnd': case 'moveFromRangeEnd': case 'moveToRangeEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, !!last); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
           case 'commentRangeStart': ctx.pendingBm.push(D.item('cs', { id: at(c, 'id') })); break;
           case 'commentRangeEnd': { const last = lastParaIn(out); const it = D.item('ce', { id: at(c, 'id') }); if (last) last.runs.push(it); else ctx.pendingBm.push(it); break; }
           case 'altChunk': out.push(L.preserve.opaqueBlock(c, ctx, doc, 'Embedded document')); break;
@@ -822,8 +825,8 @@
             parseInline(c, p, ctx, Object.assign({}, inh, { link: link.url || link.anchor ? link : undefined }));
             break;
           }
-          case 'ins': case 'moveTo': parseInline(c, p, ctx, Object.assign({}, inh, { ins: rev(c) })); break;
-          case 'del': case 'moveFrom': parseInline(c, p, ctx, Object.assign({}, inh, { del: rev(c) })); break;
+          case 'ins': case 'moveTo': parseInline(c, p, ctx, Object.assign({}, inh, { ins: rev(c, c.localName === 'moveTo') })); break;
+          case 'del': case 'moveFrom': parseInline(c, p, ctx, Object.assign({}, inh, { del: rev(c, c.localName === 'moveFrom') })); break;
           case 'fldSimple': {
             const instr = at(c, 'instr') || '';
             const f = 'f' + ++fid;
@@ -831,7 +834,7 @@
             if (ty === 'HYPERLINK') { parseInline(c, p, ctx, Object.assign({}, inh, { link: parseHyperInstr(instr) })); break; }
             const firstR = kid(c, 'r');
             const base = firstR ? rPr(kid(firstR, 'rPr')) : {};
-            p.runs.push(D.item('fb', { fid: f, instr }, L.clone(base)));
+            p.runs.push(D.item('fb', { fid: f, instr, ...X.bool(at(c, 'fldLock')) && { lock: true }, ...X.bool(at(c, 'dirty')) && { dirty: true } }, L.clone(base)));
             p.runs.push(D.item('fs', { fid: f }, L.clone(base)));
             parseInline(c, p, ctx, inh);
             p.runs.push(D.item('fe', { fid: f }, L.clone(base)));
@@ -850,7 +853,7 @@
             if (control) p.runs.push(D.item('sdte', { key: control.key }));
             break;
           }
-          case 'bookmarkStart': case 'bookmarkEnd': case 'permStart': case 'permEnd': p.runs.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
+          case 'bookmarkStart': case 'bookmarkEnd': case 'permStart': case 'permEnd': case 'moveFromRangeStart': case 'moveFromRangeEnd': case 'moveToRangeStart': case 'moveToRangeEnd': p.runs.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
           case 'commentRangeStart': p.runs.push(D.item('cs', { id: at(c, 'id') })); ctx.cmtOpen.add(at(c, 'id')); break;
           case 'commentRangeEnd': p.runs.push(D.item('ce', { id: at(c, 'id') })); ctx.cmtSeen = ctx.cmtSeen || new Set(); ctx.cmtSeen.add(at(c, 'id')); break;
           case 'oMath': case 'oMathPara': p.runs.push(mathItem(c)); break;
@@ -867,13 +870,14 @@
       return D.item('raw', { math: true, text, xml: new XMLSerializer().serializeToString(c), para: c.localName === 'oMathPara' }, sz ? { sz } : {});
     }
     function parseHyperInstr(instr) {
-      const link = {};
-      const m = /HYPERLINK\s+(?:"([^"]*)"|(\S+))?/i.exec(instr);
-      if (m && (m[1] || m[2]) && !/^\\/.test(m[2] || '')) link.url = m[1] || m[2];
-      const l = /\\l\s+"([^"]*)"/.exec(instr);
-      if (l) link.anchor = l[1];
-      const o = /\\o\s+"([^"]*)"/.exec(instr);
-      if (o) link.tip = o[1];
+      /* in a quoted argument \" is a quote and \\ a backslash; a path's doubled backslashes stay as they are in the address */
+      const link = {}, quoted = '"((?:[^"\\\\]|\\\\.)*)"', plain = (s) => s.replace(/\\(.)/g, '$1');
+      const m = new RegExp('HYPERLINK\\s+(?:' + quoted + '|(\\S+))?', 'i').exec(instr);
+      if (m && (m[1] || m[2]) && !/^\\/.test(m[2] || '')) link.url = m[1] ? m[1].replace(/\\"/g, '"') : m[2];
+      const l = new RegExp('\\\\l\\s+' + quoted).exec(instr);
+      if (l) link.anchor = plain(l[1]);
+      const o = new RegExp('\\\\o\\s+' + quoted).exec(instr);
+      if (o) link.tip = plain(o[1]);
       return link.url || link.anchor ? link : undefined;
     }
     function topField(ctx) { return ctx.fstack[ctx.fstack.length - 1]; }
@@ -1097,7 +1101,7 @@
       }
       return o;
     }
-    const RANGE_MARK = /^(bookmarkStart|bookmarkEnd|permStart|permEnd|commentRangeStart|commentRangeEnd)$/;
+    const RANGE_MARK = /^(bookmarkStart|bookmarkEnd|permStart|permEnd|move(?:From|To)Range(?:Start|End)|commentRangeStart|commentRangeEnd)$/;
     function parseTbl(el, ctx) {
       const tp = tblPr(kid(el, 'tblPr'));
       L.preserve.properties(tp, kid(el, 'tblPr'), 'tblPr', { pkg: doc.pkg, part: ctx.part });
@@ -1112,7 +1116,7 @@
       // paragraph, an end to the previous cell's last one (Word reads them at those places)
       let lastPara = null;
       const rangeMark = (c) => {
-        const item = /^comment/.test(c.localName) ? D.item(c.localName === 'commentRangeStart' ? 'cs' : 'ce', { id: at(c, 'id') }) : L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part });
+        const item = /^comment/.test(c.localName) ? D.item(c.localName === 'commentRangeStart' ? 'cs' : 'ce', { id: at(c, 'id') }) : L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, !!lastPara);
         if (/Start$/.test(c.localName) || !lastPara) ctx.pendingBm.push(item); else lastPara.runs.push(item);
       };
       for (const tr of rowEls) {

@@ -477,6 +477,7 @@
           link = { anchor: a || '_top' };
         } else { const m = mail.value.trim(); if (!m) return false; link = { url: 'mailto:' + m + (subj.value ? '?subject=' + encodeURIComponent(subj.value) : '') }; }
         if (screenTip) link.tip = screenTip;
+        if (cur?.target) link.target = cur.target; // the frame it opens in, which this dialog doesn't show
         const text = disp.value || (kind === 0 ? addr.value : kind === 2 ? mail.value : place.get() || 'Top of the Document');
         E.edit(cur ? 'Edit Hyperlink' : 'Insert Hyperlink', () => {
           const style = D.useStyle(d, 'Hyperlink');
