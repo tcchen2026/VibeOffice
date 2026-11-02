@@ -1303,6 +1303,7 @@
     if (wb.active >= wb.sheets.length || wb.active < 0) wb.active = 0;
     if (wb.sheets[wb.active].state !== 'visible') wb.active = Math.max(0, wb.sheets.findIndex((s) => s.state === 'visible'));
     wb.extra.keepValues = L.preserve.values(wb);
+    wb.extra.inUse = L.preserve.inUse(wb);
     L.pivots.read(wb);
     L.slicers.read(wb);
     L.tableKeep.readWorkbook(wb);

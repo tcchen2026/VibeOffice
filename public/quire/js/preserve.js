@@ -45,7 +45,38 @@
     }
     return output;
   };
-  P.reportLosses = writer => K.reportFeatures(writer, {
+  /** the original pictures and charts the document uses: media by id (doc.keep.media), a chart by its kept source */
+  P.inUse = function (doc) {
+    const pkg = doc.pkg, media = doc.keep?.media || {}, out = new Set(), seen = new Set();
+    if (!pkg) return [];
+    const walk = v => {
+      if (!v || typeof v !== 'object' || seen.has(v)) return; seen.add(v);
+      for (const [k, x] of Object.entries(v)) {
+        if (typeof x === 'string') {
+          if (media[x]) out.add(media[x]);
+          else if (k === 'src') { const s = L.chart?.src?.get(x); if (s?.source === pkg.id && s.path) out.add(s.path); }
+        } else if (!(v === doc && ['keep', 'pkg'].includes(k))) walk(x);
+      }
+    };
+    walk(doc);
+    return [...out];
+  };
+  // What the user deleted takes its parts along: a picture or chart the document used when it was opened
+  // (doc.keep.inUse) and no longer uses. Something the model never used, or still uses, is not explained this way,
+  // and a part that is written anyway records nothing.
+  P.reportLosses = writer => {
+    const doc = writer.doc, pkg = writer.pkg, then = doc.keep?.inUse;
+    if (pkg && then) {
+      const now = new Set(P.inUse(doc)), written = part => writer.parts.has(writer.mapping.get(writer.key(pkg, part)));
+      for (const part of then) if (!now.has(part) && !written(part)) {
+        const id = 'deleted:' + part;
+        writer.loss({ id, what: 'A deleted picture or chart takes its parts along.', where: part, action: 'drop', notify: false });
+        writer.coverLoss(id, [part]);
+      }
+    }
+    features(writer);
+  };
+  const features = writer => K.reportFeatures(writer, {
     accepts: el => wordNS(el.namespaceURI) && ['document', 'hdr', 'ftr', 'footnotes', 'endnotes', 'comments'].includes(el.localName),
     classify: el => {
       if (!wordNS(el.namespaceURI)) return null;

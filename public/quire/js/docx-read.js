@@ -1930,6 +1930,7 @@
     D.stylesChanged();
     doc._idxDirty = true;
     L.preserve.finishObjects(doc);
+    doc.keep.inUse = L.preserve.inUse(doc);
     return { doc, warnings };
   };
 })();

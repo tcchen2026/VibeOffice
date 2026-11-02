@@ -321,8 +321,9 @@ the original used (reached through relationships from the package root, where a 
 must name by id counts only if the owner's markup names it), a writer defect unless a notice where it
 happened accounts for it; `orphan:` for a part nothing in the original used. The check walks only the
 owners on a path to a missing part, so it costs nothing on an ordinary save. What the user deleted is
-recorded as `deleted:` and accounts for its parts (Lectern: a slide with its notes, pictures and charts; a picture,
-media clip or shape's tags the presentation used when it was opened and no longer uses), so in an edit run
+recorded as `deleted:` and accounts for its parts: a slide or sheet with what only it used, and a picture, chart,
+media clip, add-in or shape's tags the document used when it was opened (each app's `L.preserve.inUse`) and no
+longer uses. Something the model never used, or still uses, is not explained this way, so in an edit run
 `unreferenced:` keeps meaning a writer defect. Digital
 signatures are removed and reported because a changed package cannot retain their validity; that notice
 accounts for the signature parts.
