@@ -4714,7 +4714,7 @@
  },
  "A reference to an IntelliArt drawing cache missing from the original file was removed; its data and layout are retained.": {
   "where": [
-   "lectern/js/frames.js:274"
+   "lectern/js/frames.js:285"
   ]
  },
  "A sheet name cannot begin or end with an apostrophe.": {
@@ -5048,6 +5048,11 @@
  "Active s&heet(s)": {
   "where": [
    "ledger/js/dialogs3.js:460"
+  ]
+ },
+ "ActiveX control": {
+  "where": [
+   "lectern/js/frames.js:17"
   ]
  },
  "Actual Page": {
@@ -12211,7 +12216,7 @@
  },
  "Embedded object": {
   "where": [
-   "lectern/js/frames.js:15",
+   "lectern/js/frames.js:19",
    "lectern/js/render.js:570",
    "quire/js/render.js:378"
   ]
@@ -18809,7 +18814,7 @@
  },
  "New chart": {
   "where": [
-   "lectern/js/frames.js:18",
+   "lectern/js/frames.js:22",
    "lectern/js/render.js:570"
   ]
  },
@@ -20542,7 +20547,7 @@
  },
  "Part of this file is damaged. Whatever couldn't be read from it won't be saved.": {
   "where": [
-   "lectern/js/preserve.js:114"
+   "lectern/js/preserve.js:115"
   ]
  },
  "Password": {
@@ -26466,7 +26471,7 @@
   "where": [
    "lectern/js/dialogs.js:710",
    "lectern/js/dialogs.js:754",
-   "lectern/js/frames.js:156",
+   "lectern/js/frames.js:161",
    "lectern/js/panes.js:70"
   ]
  },
@@ -29134,12 +29139,37 @@
  },
  "This 3-D model will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:151"
+   "lectern/js/frames.js:155"
   ]
  },
  "This 3-D model will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:151"
+   "lectern/js/frames.js:155"
+  ]
+ },
+ "This ActiveX control has no picture, so it will be saved as an empty frame and stop working.": {
+  "where": [
+   "lectern/js/frames.js:317"
+  ]
+ },
+ "This ActiveX control will be saved as its picture and stop working, because it was grouped here.": {
+  "where": [
+   "lectern/js/frames.js:325"
+  ]
+ },
+ "This ActiveX control will be saved as its picture and stop working, because it was rotated or flipped here.": {
+  "where": [
+   "lectern/js/frames.js:324"
+  ]
+ },
+ "This ActiveX control will be saved as its picture and stop working, because its picture was edited here.": {
+  "where": [
+   "lectern/js/frames.js:158"
+  ]
+ },
+ "This ActiveX control will be saved as its picture and stop working, because the original couldn't be kept.": {
+  "where": [
+   "lectern/js/frames.js:158"
   ]
  },
  "This IntelliArt now uses Lectern's {0} layout, so it can be edited here.": {
@@ -29149,12 +29179,12 @@
  },
  "This IntelliArt will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:148"
+   "lectern/js/frames.js:152"
   ]
  },
  "This IntelliArt will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:148"
+   "lectern/js/frames.js:152"
   ]
  },
  "This browser blocked the image export.": {
@@ -29169,22 +29199,27 @@
  },
  "This chart will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:152"
+   "lectern/js/frames.js:156"
   ]
  },
  "This chart will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:152"
+   "lectern/js/frames.js:156"
+  ]
+ },
+ "This copy of an ActiveX control will be saved as its picture and won't work.": {
+  "where": [
+   "lectern/js/frames.js:323"
   ]
  },
  "This diagram will be saved as an empty rectangle, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:153"
+   "lectern/js/frames.js:157"
   ]
  },
  "This diagram will be saved as an empty rectangle, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:153"
+   "lectern/js/frames.js:157"
   ]
  },
  "This dialog is not available.": {
@@ -29249,12 +29284,12 @@
  },
  "This embedded object will be saved as a picture, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:149"
+   "lectern/js/frames.js:153"
   ]
  },
  "This embedded object will be saved as a picture, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:149"
+   "lectern/js/frames.js:153"
   ]
  },
  "This file does not contain a PowerPoint presentation.": {
@@ -29279,12 +29314,12 @@
  },
  "This ink drawing will be saved as ordinary shapes, because it was edited here.": {
   "where": [
-   "lectern/js/frames.js:150"
+   "lectern/js/frames.js:154"
   ]
  },
  "This ink drawing will be saved as ordinary shapes, because the original couldn't be kept.": {
   "where": [
-   "lectern/js/frames.js:150"
+   "lectern/js/frames.js:154"
   ]
  },
  "This is a TrueType font. The same font will be used on both your printer and your screen.": {
@@ -29392,7 +29427,7 @@
  },
  "This video or sound will be saved as a picture and will no longer play, because its picture was replaced.": {
   "where": [
-   "lectern/js/preserve.js:305"
+   "lectern/js/preserve.js:306"
   ]
  },
  "This workbook contains macros. Ledger keeps them when you save as .xlsm, but cannot run them.": {

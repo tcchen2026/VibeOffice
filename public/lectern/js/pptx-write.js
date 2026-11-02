@@ -1037,7 +1037,7 @@
       const attrs = [];
       if (s.hidden) attrs.push('show="0"');
       if (s.hideMaster) attrs.push('showMasterSp="0"');
-      const xml = L.properties.finishSlide(s, ctx, HEAD + `<p:sld ${NSDECL}${attrs.length ? ' ' + attrs.join(' ') : ''}><p:cSld>${s.bg ? bgXML(s.bg, ctx, d) : ''}<p:spTree>${GRP.replace('id="1"', 'id="' + rootId + '"')}${tree}</p:spTree>${comments.creation}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${transition}${timing}${comments.ext}</p:sld>`);
+      const xml = L.properties.finishSlide(s, ctx, HEAD + `<p:sld ${NSDECL}${attrs.length ? ' ' + attrs.join(' ') : ''}><p:cSld>${s.bg ? bgXML(s.bg, ctx, d) : ''}<p:spTree>${GRP.replace('id="1"', 'id="' + rootId + '"')}${tree}</p:spTree>${ctx.controls?.length ? '<p:controls>' + ctx.controls.join('') + '</p:controls>' : ''}${comments.creation}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${transition}${timing}${comments.ext}</p:sld>`);
       if (s.notes && s.notes.trim() || s.keep?.notes) {
         if (s.keep?.copy && s.keep.notes?.text === s.notes && pres.pkg?.has(s.keep.notes.part)) {
           const target = pack.part(`ppt/notesSlides/notesSlide${n}.xml`);

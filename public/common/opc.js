@@ -381,8 +381,8 @@
     else if (tag === 'cNvPr' && name === 'id') { kind = 'shape'; definition = true; }
     else if (isP && tag === 'cTn' && name === 'id') { kind = 'timing'; definition = true; }
     else if (isP && tag === 'tn' && name === 'val') kind = 'timing';
-    // An OLE preview names a shape in the related VML part, not this slide's cNvPr space.
-    else if ((isP && name === 'spid' && tag !== 'oleObj') || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
+    // An OLE preview or an ActiveX control names a shape in the related VML part, not this slide's cNvPr space.
+    else if ((isP && name === 'spid' && !['oleObj', 'control'].includes(tag)) || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
     else if (isP && name === 'grpId' && ['cTn', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic'].includes(tag)) { kind = 'build'; definition = tag !== 'cTn'; }
     else if (isW && name === 'id' && /^(bookmark|perm)(Start|End)$/.test(tag)) { kind = tag.startsWith('bookmark') ? 'bookmark' : 'permission'; definition = tag.endsWith('Start'); }
     else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
@@ -852,6 +852,8 @@
       if (!el || value == null) return;
       const previous = el.getAttribute(name);
       if (previous === String(value) || previous != null && typeof value === 'number' && +previous === value) return;
+      // an absent rotation or flip is already the default
+      if (previous == null && ['rot', 'flipH', 'flipV'].includes(name) && ['0', 0].includes(value)) return;
       const p = XML.source.get(el), a = p.attrs.find(a => a.name === name), v = esc(value).replace(/'/g, '&apos;');
       if (a) edits.push({ start: a.start, end: a.end, value: v });
       else { const pos = p.openEnd - (xml[p.openEnd - 2] === '/' ? 2 : 1); insertions.set(pos, (insertions.get(pos) || '') + ' ' + name + '="' + v + '"'); }

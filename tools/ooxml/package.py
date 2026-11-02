@@ -156,7 +156,8 @@ class Package:
         for n, data in self.data.items():
             if n.endswith(('.xml', '.rels', '.vml')):
                 try:
-                    self.xml[n] = parse_xml(data)
+                    # Office's VML wraps definitions in conditional markers (<![if gte mso 9]> ... <![endif]>)
+                    self.xml[n] = parse_xml(re.sub(rb'<!\[(?:if [^\]]*|endif)\]>', b'', data) if n.endswith('.vml') else data)
                 except ET.ParseError as e:
                     self.issue('invalid-xml', n, str(e))
         cts = self.xml.get('[Content_Types].xml')
@@ -327,6 +328,12 @@ class Package:
                     if not found:
                         self.issue('unresolved-vml-preview', part, at(el, 'spid'), path)
                     previews[(part, at(el, 'spid'))].append((path, branches))
+                elif ns in P and tag == 'control' and at(el, 'spid') is not None:
+                    # An ActiveX control's spid is the number in its VML shape's o:spid, not a cNvPr.
+                    targets = [r['target'] for r in self.rels.get(part, {}).values() if r['type'].endswith('/vmlDrawing') and not r['external']]
+                    found = any(e.get('{urn:schemas-microsoft-com:office:office}spid') == '_x0000_s' + at(el, 'spid') for target in targets if target in self.xml for e in self.xml[target].iter())
+                    if not found:
+                        self.issue('unresolved-vml-preview', part, at(el, 'spid'), path)
                 elif ns in P and at(el, 'spid') is not None:
                     references.append((part, 'shape', at(el, 'spid'), path, branches))
                 if tag == 'cNvPr' and parent is not None and split(parent.tag)[1] == 'nvGraphicFramePr' and ns in P:

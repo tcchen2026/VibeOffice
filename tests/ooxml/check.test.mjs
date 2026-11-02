@@ -48,6 +48,15 @@ test('OLE spid resolves in its related VML preview rather than slide shape IDs',
   assert.equal(run('check', await pkg('ole-vml', parts('_x0000_s1030'))).status, 'ok');
   assert.ok(run('check', await pkg('ole-missing-vml', parts('_x0000_s1031'))).issues.some(i => i.code === 'unresolved-vml-preview'));
 });
+test('an ActiveX control\'s spid names its VML shape by o:spid; Office\'s conditional VML markers parse', async () => {
+  const parts = id => ({ 'slide.xml': slide(`<p:cSld><p:spTree/><p:controls><p:control spid="${id}" name="CommandButton1" r:id="ax"/></p:controls></p:cSld>`),
+    '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/></Types>',
+    '_rels/slide.xml.rels': rels(rel('vml', 'vml.vml', 'vmlDrawing') + rel('ax', 'ax.xml', 'control')),
+    'ax.xml': '<ax:ocx xmlns:ax="http://schemas.microsoft.com/office/2006/activeX"/>',
+    'vml.vml': '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><![if gte mso 9]><v:shape id="CommandButton1" o:spid="_x0000_s1030"/><![endif]></xml>' });
+  assert.deepEqual(run('check', await pkg('control-vml', parts('1030'))).issues, []);
+  assert.ok(run('check', await pkg('control-missing-vml', parts('1031'))).issues.some(i => i.code === 'unresolved-vml-preview'));
+});
 test('PowerPoint graphic frames cannot carry DrawingML rotation or flips', async () => {
   const frame = attrs => slide(`<p:graphicFrame><p:xfrm${attrs}><a:off x="0" y="0"/><a:ext cx="1" cy="1"/></p:xfrm></p:graphicFrame>`);
   assert.equal(run('check', await pkg('plain-frame', { 'slide.xml': frame('') })).status, 'ok');

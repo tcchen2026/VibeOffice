@@ -98,12 +98,13 @@ These are in addition to AGENTS.md.
    between table rows or cells; a picture's PowerPoint-for-Mac PDF version; Quire's built-in styles written beside
    a file's own styles of the same name (Word in other languages: `berschrift1` is heading 1), 565 of 2,768 saves,
    where LibreOffice gave the file's paragraphs the second one's look; a PowerPoint 97-2003 organization chart
-   (`com:legacyDrawing`) that became an "Embedded object" rectangle. Unedited saves losing a part the
+   (`com:legacyDrawing`) that became an "Embedded object" rectangle; Lectern's ActiveX controls, saved as dead
+   pictures (84 in 14 decks), now kept unedited, moved or resized. Unedited saves losing a part the
    original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
-   - **Lectern ActiveX controls** are saved as their pictures (now with a notice); keep them while their pictures
-     are unchanged, as Ledger does.
+   - **Lectern ActiveX copies:** a copied control (the shape or its slide) is saved as its picture, with a notice;
+     keeping it needs new ids across the slide, its VML drawing and its ActiveX parts, as Ledger does.
    - **Quire field codes** Word wouldn't write that way (one run, across paragraphs, around a bookmark) and
      **direction wrappers** (`w:dir`, `w:bdo`) are converted, now with a notice.
    - **Deletions in edit runs:** deleting a sheet or an object leaves its parts as `unreferenced:`; a deletion
