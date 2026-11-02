@@ -359,6 +359,14 @@ class Package:
                         other = sorted({c.get('presId') for c in self.xml[dm].iter('{%s}cxn' % DGM) if c.get('type') in ('presOf', 'presParOf') and c.get('presId') != unique})
                         if unique is not None and other:
                             self.issue('diagram-pres-id', dm, f'{other[0]} / {unique}', path)
+                # Word refuses a file whose moved-away text is deletion text ("an incorrect text node"): inside
+                # w:moveFrom, text stays w:t / w:instrText, as in all 50 such runs in the corpus
+                if ns in W and tag in ('delText', 'delInstrText'):
+                    a = parent
+                    while a is not None and not (split(a.tag)[0] in W and split(a.tag)[1] in ('del', 'ins', 'moveFrom', 'moveTo')):
+                        a = parents.get(a)
+                    if a is not None and split(a.tag)[1] == 'moveFrom':
+                        self.issue('moved-deleted-text', part, tag, path)
                 # PowerPoint rejects a whole SmartArt layout definition (and draws its default list) when the
                 # branches of a choice give one layout node different algorithm types; none of the corpus's
                 # 303 choices in 60 Office definitions do

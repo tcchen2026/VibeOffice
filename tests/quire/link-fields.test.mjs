@@ -18,6 +18,7 @@ async function roundTrip() {
   const field = type => `<w:r><w:fldChar w:fldCharType="${type}"/></w:r>`;
   const body = '<w:p><w:fldSimple w:instr=" PRINTDATE \\* MERGEFORMAT " w:fldLock="1"><w:r><w:t>1/23/4567</w:t></w:r></w:fldSimple></w:p>' +
     `<w:p>${field('begin')}<w:r><w:instrText xml:space="preserve"> HYPERLINK "https://example.com/" \\o "First \\"link\\" here" </w:instrText></w:r>${field('separate')}<w:r><w:t>First</w:t></w:r>${field('end')}</w:p>` +
+    `<w:p>${field('begin')}<w:r><w:instrText xml:space="preserve">HYPERLINK "https://example.com/" \\o "Unclosed \\"tip\\" </w:instrText></w:r>${field('separate')}<w:r><w:t>Second</w:t></w:r>${field('end')}</w:p>` +
     '<w:p><w:hyperlink r:id="rIdLink" w:tgtFrame="_blank"><w:r><w:t>Elsewhere</w:t></w:r></w:hyperlink></w:p>';
   const relationships = content => `<Relationships xmlns="${N.pkg}">${content}</Relationships>`;
   const original = await L.zip.write([
@@ -47,5 +48,6 @@ test('a locked simple field stays locked', async () => {
 });
 
 test('links keep a ScreenTip with quotes and the frame they open in', async () => {
-  assert.deepEqual((await run()).links, [['First "link" here', null], [null, '_blank']]);
+  // a missing closing quote: the tip runs to the end of the code, as LibreOffice reads it
+  assert.deepEqual((await run()).links, [['First "link" here', null], ['Unclosed "tip"', null], [null, '_blank']]);
 });

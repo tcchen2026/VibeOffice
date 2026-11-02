@@ -118,6 +118,12 @@ test('a SmartArt data part names its layout part by uniqueId, or PowerPoint draw
   assert.equal(run('check', await pkg('dgm-same', parts('urn:example/layout/process#1f2e3d4c'))).status, 'ok');
   assert.ok(run('check', await pkg('dgm-differ', parts('urn:example/layout/process'))).issues.some(i => i.code === 'diagram-layout-id'));
 });
+test('text moved away with Track Changes stays w:t inside w:moveFrom, or Word refuses the file', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const doc = (text) => ({ 'word/document.xml': `<w:document xmlns:w="${W}"><w:body><w:p><w:moveFrom w:id="1" w:author="A"><w:r>${text}</w:r></w:moveFrom><w:del w:id="2" w:author="A"><w:r><w:delText>gone</w:delText></w:r></w:del></w:p></w:body></w:document>` });
+  assert.equal(run('check', await pkg('move-text', doc('<w:t>moved</w:t>'))).status, 'ok');
+  assert.ok(run('check', await pkg('move-deltext', doc('<w:delText>moved</w:delText>'))).issues.some(i => i.code === 'moved-deleted-text'));
+});
 test('a SmartArt data part\'s presentation links name its layout part, or PowerPoint 2016 draws nothing', async () => {
   const DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram', id = 'urn:example/layout/process#1f2e3d4c';
   const frame = `<p:cSld><p:spTree><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Diagram"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><a:graphic><a:graphicData uri="${DGM}"><dgm:relIds xmlns:dgm="${DGM}" r:dm="d" r:lo="l" r:qs="d" r:cs="d"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:cSld>`;

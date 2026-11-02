@@ -739,7 +739,7 @@
           case 'customXml': case 'ins': case 'moveTo': case 'smartTag': parseBlocks(c, ctx, out); break;
           case 'del': case 'moveFrom': parseBlocks(c, ctx, out); break;
           case 'bookmarkStart': case 'permStart': case 'moveFromRangeStart': case 'moveToRangeStart': ctx.pendingBm.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
-          case 'bookmarkEnd': case 'permEnd': case 'moveFromRangeEnd': case 'moveToRangeEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, !!last); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
+          case 'bookmarkEnd': case 'permEnd': case 'moveFromRangeEnd': case 'moveToRangeEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, last ? (out.at(-1)?.t === 'tbl' ? 'table' : true) : false); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
           case 'commentRangeStart': ctx.pendingBm.push(D.item('cs', { id: at(c, 'id') })); break;
           case 'commentRangeEnd': { const last = lastParaIn(out); const it = D.item('ce', { id: at(c, 'id') }); if (last) last.runs.push(it); else ctx.pendingBm.push(it); break; }
           case 'altChunk': out.push(L.preserve.opaqueBlock(c, ctx, doc, 'Embedded document')); break;
@@ -870,8 +870,9 @@
       return D.item('raw', { math: true, text, xml: new XMLSerializer().serializeToString(c), para: c.localName === 'oMathPara' }, sz ? { sz } : {});
     }
     function parseHyperInstr(instr) {
-      /* in a quoted argument \" is a quote and \\ a backslash; a path's doubled backslashes stay as they are in the address */
-      const link = {}, quoted = '"((?:[^"\\\\]|\\\\.)*)"', plain = (s) => s.replace(/\\(.)/g, '$1');
+      /* in a quoted argument \" is a quote and \\ a backslash; a path's doubled backslashes stay as they are in the address;
+         an argument whose closing quote is missing runs to the end of the code, as LibreOffice reads it */
+      const link = {}, quoted = '"((?:[^"\\\\]|\\\\.)*?)(?:"|\\s*$)', plain = (s) => s.replace(/\\(.)/g, '$1');
       const m = new RegExp('HYPERLINK\\s+(?:' + quoted + '|(\\S+))?', 'i').exec(instr);
       if (m && (m[1] || m[2]) && !/^\\/.test(m[2] || '')) link.url = m[1] ? m[1].replace(/\\"/g, '"') : m[2];
       const l = new RegExp('\\\\l\\s+' + quoted).exec(instr);
@@ -1115,12 +1116,12 @@
       // A bookmark, permission or comment boundary between rows or cells: a start goes to the next cell's first
       // paragraph, an end to the previous cell's last one (Word reads them at those places)
       let lastPara = null;
-      const rangeMark = (c) => {
-        const item = /^comment/.test(c.localName) ? D.item(c.localName === 'commentRangeStart' ? 'cs' : 'ce', { id: at(c, 'id') }) : L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, !!lastPara);
+      const rangeMark = (c, level) => {
+        const item = /^comment/.test(c.localName) ? D.item(c.localName === 'commentRangeStart' ? 'cs' : 'ce', { id: at(c, 'id') }) : L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, lastPara ? level : false);
         if (/Start$/.test(c.localName) || !lastPara) ctx.pendingBm.push(item); else lastPara.runs.push(item);
       };
       for (const tr of rowEls) {
-        if (RANGE_MARK.test(tr.localName)) { rangeMark(tr); continue; }
+        if (RANGE_MARK.test(tr.localName)) { rangeMark(tr, 'row'); continue; }
         const rp = trPr(kid(tr, 'trPr'));
         const ex = kid(tr, 'tblPrEx');
         const cells = [];
@@ -1131,7 +1132,7 @@
         const collectCells = (parent) => { for (const c of parent.children) { if (c.localName === 'tc' || RANGE_MARK.test(c.localName)) cellEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n0 = cellEls.length; collectCells(sc); const bv = boundText(kid(c, 'sdtPr')); if (bv != null && cellEls.length === n0 + 1) cellBound.set(cellEls[n0], bv); cellControls.push({ control: L.preserve.control(c, ctx, doc), elements: cellEls.slice(n0) }); } } else if (c.localName === 'customXml') collectCells(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(tr)) emptyCells.push({ el: c, index: cellEls.length }); } };
         collectCells(tr);
         for (const tc of cellEls) {
-          if (RANGE_MARK.test(tc.localName)) { rangeMark(tc); continue; }
+          if (RANGE_MARK.test(tc.localName)) { rangeMark(tc, 'cell'); continue; }
           const cp = tcPr(kid(tc, 'tcPr'));
           const blocks = parseBlocks(tc, ctx);
           lastPara = blocks.filter((b) => b.t === 'p').at(-1) || lastPara;

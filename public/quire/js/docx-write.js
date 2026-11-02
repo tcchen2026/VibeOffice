@@ -353,7 +353,9 @@
         }
       }
       let inner = '';
-      for (let k = i; k < j; k++) { inner += itemXML(items[k], p, ctx, !!del, textState.afterCR); trackText(items[k]); }
+      /* moved-away text stays w:t and w:instrText inside its moveFrom: Word refuses deletion text there */
+      const deleted = !!del && !ctx.moves?.from.has(it);
+      for (let k = i; k < j; k++) { inner += itemXML(items[k], p, ctx, deleted, textState.afterCR); trackText(items[k]); }
       /* revision marks sit inside hyperlinks (w:hyperlink may contain w:ins/w:del, not the reverse) */
       out += wrapRunGroup(inner, { link, ins, del }, ctx, it);
       i = j;
@@ -624,37 +626,40 @@
   }
 
   /* ================= blocks ================= */
+  /* a move's ends read after a paragraph, a table, a row or a cell (preserve.js, rangeMarker): the trailing ones of a paragraph */
+  const trailingEnds = (p) => { let n = p.runs.length; while (n && ['perm', 'bs', 'be', 'cs', 'ce'].includes(p.runs[n - 1].t)) n--; return p.runs.slice(n).filter((it) => it.after); };
+  /* the table writer takes those of its levels before its paragraphs are written, and writes them after the element */
+  const hoistEnds = (p, level, ctx) => { const ends = p ? trailingEnds(p).filter((it) => it.after === level) : []; for (const it of ends) ctx.hoisted.add(it); return () => ends.map((it) => L.preserve.markerXML(it, ctx) || '').join(''); };
   function paraXML(p, ctx) {
     const markR = rPrXML(p.rPr || {}, p.mark, ctx, p);
     const pPr = pPrXML(p.pPr, ctx, { rPr: markR, sect: p.sect && ctx.main ? sectXML(p.sect, ctx) : '' });
-    /* a move's end that was read after this paragraph is written there again (preserve.js, rangeMarker) */
-    let n = p.runs.length;
-    while (n && ['perm', 'bs', 'be', 'cs', 'ce'].includes(p.runs[n - 1].t)) n--;
-    const after = p.runs.slice(n).filter((it) => it.after);
+    const after = trailingEnds(p);
     const runs = runsXML(after.length ? { ...p, runs: p.runs.filter((it) => !after.includes(it)) } : p, ctx);
-    return `<w:p>${pPr}${runs}</w:p>${after.map((it) => L.preserve.markerXML(it, ctx) || '').join('')}`;
+    return `<w:p>${pPr}${runs}</w:p>${after.filter((it) => !ctx.hoisted?.has(it)).map((it) => L.preserve.markerXML(it, ctx) || '').join('')}`;
   }
   function tableXML(t, ctx) {
     if (t.keep?.gridRepair) ctx.writer.loss({ id: 'table-grid:' + ctx.part, what: 'Incomplete or unusable table column widths were reconstructed. Table layout may change.', where: ctx.part, action: 'conversion' });
     const map = L.R.tblMap(t);
     const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { ...ctx, full: true }), ctx);
     let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}</w:tblGrid>`;
+    const lastTop = (blocks) => blocks?.filter((b) => b.t === 'p').at(-1);
+    const tableEnds = hoistEnds(D.lastPara([t]), 'table', ctx);
     x += L.preserve.controlSequence(t.rows, row => row.trPr, row => L.preserve.tableMemberXML(row, ctx, () => {
-      const ri = t.rows.indexOf(row);
+      const ri = t.rows.indexOf(row), rowEnds = hoistEnds(lastTop(row.cells.at(-1)?.blocks), 'row', ctx);
       const trp = trPrXML(row.trPr, ctx);
       let rowXML = `<w:tr>${trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
       rowXML += L.preserve.controlSequence(row.cells, cell => cell.tcPr, cell => L.preserve.tableMemberXML(cell, ctx, () => {
         const ci = row.cells.indexOf(cell);
         const m = map[ri][ci];
         const w = cell.tcPr.w != null ? cell.tcPr.w : t.grid.slice(m.c0, m.c0 + m.span).reduce((a, b) => a + b, 0);
-        const blocks = cell.blocks.length ? cell.blocks : [D.para()];
+        const blocks = cell.blocks.length ? cell.blocks : [D.para()], cellEnds = hoistEnds(lastTop(cell.blocks), 'cell', ctx);
         let inner = blocksXML(blocks, ctx);
         if (!blocks.length || blocks[blocks.length - 1].t !== 'p') inner += '<w:p/>';
-        return `<w:tc><w:tcPr>${tcPrXML(cell.tcPr, w)}</w:tcPr>${inner}</w:tc>`;
+        return `<w:tc><w:tcPr>${tcPrXML(cell.tcPr, w)}</w:tcPr>${inner}</w:tc>${cellEnds()}`;
       }), ctx);
-      return rowXML + '</w:tr>';
+      return rowXML + '</w:tr>' + rowEnds();
     }), ctx);
-    return x + '</w:tbl>';
+    return x + '</w:tbl>' + tableEnds();
   }
   function blocksXML(blocks, ctx) {
     return L.preserve.controlSequence(blocks, b => b.t === 'p' ? b.pPr : b.tblPr, b => L.preserve.objectXML(b, 'ac', ctx) ?? L.preserve.objectXML(b, 'opaque', ctx) ?? (b.t === 'p' ? paraXML(b, ctx) : b.t === 'tbl' ? tableXML(b, ctx) : ''), ctx);
@@ -927,7 +932,7 @@
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const docRels = pack.rels('word/document.xml');
     D.reindex(doc);
-    const ranges = L.preserve.prepareRanges(doc), moves = L.preserve.prepareMoves(doc);
+    const ranges = L.preserve.prepareRanges(doc), moves = L.preserve.prepareMoves(doc), hoisted = new Set();
     const objects = L.preserve.prepareObjects(doc, pack.writer);
     L.preserve.prepareNumbering(doc.numbering, pack.writer);
     /* --- context shared by every story --- */
@@ -947,7 +952,7 @@
     /** the id to write for style id: the file's own style of its name for a built-in marked sameAs (docx-read), otherwise id */
     const ownStyle = (id) => { const s = doc.styles[id]; return s?.sameAs && doc.styles[s.sameAs] ? s.sameAs : id; };
     const mkCtx = (rels, main) => ({
-      rels, main, doc, ranges, moves, objects, writer: pack.writer, styleRefs, ownStyle, part: rels.owner, mainPart: pack.part('word/document.xml'),
+      rels, main, doc, ranges, moves, hoisted, objects, writer: pack.writer, styleRefs, ownStyle, part: rels.owner, mainPart: pack.part('word/document.xml'),
       drawingXML,
       rev: () => pack.writer.ids.fresh('document', 'revision'),
       docPrId: () => {

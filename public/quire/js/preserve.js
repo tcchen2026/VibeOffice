@@ -333,11 +333,12 @@
       writer.ids.bind(definition.source, 'numbering', kind, definition.id, id, 'numbering', f.copy);
     }
   };
-  /* after: an end read between blocks and given to the paragraph before it; a move's end is written after that paragraph again, so its mark stays in the move */
+  /* after: an end read between blocks and given to the paragraph before it (true; 'table' after a table, 'row' or 'cell'
+     between rows or cells); a move's end is written there again (docx-write), so its mark or row stays in the move */
   P.rangeMarker = function (el, context, after = false) {
     const name = el.localName, bookmark = name.startsWith('bookmark'), move = /^(moveFrom|moveTo)Range/.exec(name)?.[1], end = name.endsWith('End');
     return D.item(bookmark ? name.endsWith('Start') ? 'bs' : 'be' : 'perm', { id: attr(el, 'id'), name: bookmark || move ? attr(el, 'name') : undefined,
-      end, keep: K.fragment(K.parse(K.raw(el)), context), ...move && { move }, ...move && end && after && { after: true } });
+      end, keep: K.fragment(K.parse(K.raw(el)), context), ...move && { move }, ...move && end && after && { after } });
   };
   P.prepareRanges = function (doc) {
     const valid = new Map(), visited = new Set();

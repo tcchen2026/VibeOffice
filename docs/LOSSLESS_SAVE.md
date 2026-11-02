@@ -106,7 +106,7 @@ These are in addition to AGENTS.md.
    pictures (84 in 14 decks), now kept unedited, moved or resized; what the user deletes is recorded as
    `deleted:`, so `unreferenced:` stays exact in edit runs too (Lectern 44 cases, Ledger 13, Quire 9 → 0); Quire's
    tracked moves, which became a deletion and an insertion (`w:moveFrom`/`w:moveTo` and their named ranges; 16 of 17
-   files now keep every move, the 17th has no ranges), a simple field's lock (a locked PRINTDATE showed today's date),
+   files now keep every move, the 17th has no ranges; moved-away text stays `w:t`, which Word requires), a simple field's lock (a locked PRINTDATE showed today's date),
    link ScreenTips with quotes (cut at the first `\"`) and a link's target frame (`w:tgtFrame`). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
@@ -128,8 +128,6 @@ These are in addition to AGENTS.md.
    - Quire, damaged originals that LibreOffice recovers and the save doesn't: footnotes whose ids don't match their
      references (`tdf153255`: LibreOffice shows six, the save three) and two final section definitions (`tdf108849`:
      page 2 turns portrait). What Word does with them decides the fix (an Office check first).
-   - Tracked moves: a range end Word wrote between table rows or after a table is written at the end of the last
-     cell's paragraph; the Office batch shows whether Word still treats the row's end as moved.
 2. **Lectern checker numbers:** run the Lectern corpus driver, which needs Playwright, to measure how
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.
