@@ -1890,7 +1890,8 @@
     mctx.hfMap = hfMap;
     if (body) {
       doc.main.blocks = parseBlocks(body, mctx);
-      const fs = kid(body, 'sectPr');
+      /* a damaged body with several final sections: Word and LibreOffice use the last one (tdf108849) */
+      const fs = kids(body, 'sectPr').at(-1);
       doc.sect = fs ? parseSect(fs, mctx) : D.defaultSect();
     }
     /* sections inside paragraphs need the header map too (parsed during parseBlocks) */

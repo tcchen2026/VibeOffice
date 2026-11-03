@@ -127,13 +127,22 @@ These are in addition to AGENTS.md.
      a comment's reference mark (`tdf105485`, `Comment024`); a bound content control's cached text with revisions,
      replaced by one deletion of the bound value (`SdtContent`'s header). Keeping them needs the reference mark and
      the field instruction to carry revisions in the model, and Accept/Reject to handle them.
-   - Quire, damaged originals that LibreOffice recovers and the save doesn't: footnotes whose ids don't match their
-     references (`tdf153255`: LibreOffice shows six, the save three) and two final section definitions (`tdf108849`:
-     page 2 turns portrait). What Word does with them decides the fix (an Office check first).
+   - Quire, a damaged original that LibreOffice recovers and the save doesn't: footnotes whose ids don't match their
+     references (`tdf153255`: LibreOffice shows six, the save three). Word 2016 repairs the original and opens the save
+     cleanly, so it waits. (Two final section definitions, `tdf108849`: fixed, the last one wins, as in Word 2016.)
+   - Quire rewrites `styles.xml` from its model on every save: an unedited save drops `w:latentStyles` (2,088 of
+     2,132 Word-authored corpus files have them), each style's `w:unhideWhenUsed` (2,083; Heading 2–6 then stay
+     hidden in Word's style gallery even where they are used) and `w:rsid`, and adds about 25 built-in style
+     definitions the file didn't have (Title, Body Text, …). Found on the Fluent Ribbon walkthrough.
+   - Quire drops `w:rsid*` on paragraphs, runs and rows (2,029 of those files have them). Word 2016 places glyphs
+     per rsid run, so the save's text moves by a fraction of a pixel on most pages (the walkthrough: 18 of 19;
+     removing only the rsids from the original gives the same shift), and Word's Compare and Combine lose the
+     editing sessions. `w:cnfStyle` (dropped on rows) shifts five of its pages slightly as well.
 2. **Lectern checker numbers:** run the Lectern corpus driver, which needs Playwright, to measure how
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.
 3. **Office conventions** (low risk; fix when touching that code):
-   - A hyperlink containing `w:del`/`w:ins` has never been in an Office batch.
+   - A hyperlink containing `w:del`/`w:ins`: checked in Word 2016 on 2026-11-03 (`tdf115212`, `tdf150443`): the saves
+     open without repair and their PDFs match the originals' pixel for pixel.
 4. **Related, separate plan:** SmartArt editing in Lectern. It replaces the `frames.js`
    "edited preview → plain group" path and is waiting on the PowerPoint spike results.
