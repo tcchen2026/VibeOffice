@@ -51,6 +51,8 @@ async function roundTrip() {
   // a command that sets a built-in by id without asking (the paragraph's look in Quire is the built-in's until reopened)
   const paragraphs = []; D.walk(doc.main, b => { if (b.t === 'p') paragraphs.push(b); });
   paragraphs[2].pPr.style = 'BodyText2';
+  // built-ins the file doesn't define, put to use
+  for (const id of [used.toc, 'BodyTextFirstIndent', 'TOCHeading']) doc.main.blocks.push(D.para([D.text(id)], { style: id }));
   // a new table is given Table Grid by id, as Insert > Table does
   doc.main.blocks.push(D.simpleTable(2, 2, 200));
   const edited = await written(doc);
@@ -75,9 +77,8 @@ test('an unedited save writes each style name once, under the file\'s own ids', 
   const ids = unedited.map(s => s.id);
   for (const id of ['berschrift1', 'Textkrper', 'Textkrper2', 'Seitenzahl']) assert.ok(ids.includes(id), id);
   for (const id of ['Heading1', 'BodyText', 'BodyText2', 'PageNumber']) assert.ok(!ids.includes(id), id + ' is the file\'s ' + id.replace(/\d$/, ' $&'));
-  // a built-in kept from the catalogue now inherits from the file's style of the name it was based on
-  assert.equal(unedited.find(s => s.id === 'BodyTextFirstIndent')?.basedOn, 'Textkrper');
-  assert.equal(unedited.find(s => s.id === 'TOCHeading')?.basedOn, 'berschrift1');
+  // built-ins the file doesn't define and nothing uses are left to its latent styles, as Word does
+  for (const id of ['BodyTextFirstIndent', 'TOCHeading', 'TOC1']) assert.ok(!ids.includes(id), id + ' is not added');
 });
 
 test('applying a built-in style uses the file\'s style of that name, and adds one the file doesn\'t have', async () => {
@@ -86,7 +87,10 @@ test('applying a built-in style uses the file\'s style of that name, and adds on
   assert.deepEqual(duplicates(result.edited), []);
   assert.ok(result.edited.some(s => s.id === 'TOC1' && s.name === 'toc 1'));
   // a paragraph given the built-in by id is written with the file's style of that name, as Word applies its own
-  assert.deepEqual(result.paragraphs, ['berschrift1', 'Textkrper2', 'Textkrper2']);
+  assert.deepEqual(result.paragraphs, ['berschrift1', 'Textkrper2', 'Textkrper2', 'TOC1', 'BodyTextFirstIndent', 'TOCHeading']);
+  // a built-in put to use inherits from the file's style of the name it was based on
+  assert.equal(result.edited.find(s => s.id === 'BodyTextFirstIndent')?.basedOn, 'Textkrper');
+  assert.equal(result.edited.find(s => s.id === 'TOCHeading')?.basedOn, 'berschrift1');
   assert.deepEqual(result.tables, ['Tabellenraster']);
   assert.ok(result.edited.some(s => s.id === 'Tabellenraster') && !result.edited.some(s => s.id === 'TableGrid'));
 });

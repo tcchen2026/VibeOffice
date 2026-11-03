@@ -367,6 +367,12 @@ class Package:
                         a = parents.get(a)
                     if a is not None and split(a.tag)[1] == 'moveFrom':
                         self.issue('moved-deleted-text', part, tag, path)
+                # Word 2016 refuses a styles part with more than 4,092 styles ("Unspecified error" in /word/styles.xml;
+                # 4,092 opens, 4,093 doesn't, in two files); the corpus's largest, fdo76101, has 4,091
+                if tag == 'styles' and ns in W:
+                    count = sum(1 for c in el if split(c.tag) == (split(el.tag)[0], 'style'))
+                    if count > 4092:
+                        self.issue('too-many-styles', part, str(count), path)
                 # PowerPoint rejects a whole SmartArt layout definition (and draws its default list) when the
                 # branches of a choice give one layout node different algorithm types; none of the corpus's
                 # 303 choices in 60 Office definitions do

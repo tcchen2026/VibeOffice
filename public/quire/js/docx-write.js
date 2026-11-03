@@ -674,22 +674,47 @@
     for (const a of Object.values(doc.numbering.abs)) for (const lv of a.levels || []) if (lv?.pStyle) refs.add(ctx.ownStyle(lv.pStyle));
     const left = new Set(Object.values(doc.styles).filter((s) => s?.sameAs && doc.styles[s.sameAs] && !refs.has(s.id)).map((s) => s.id));
     const ref = (id) => (left.has(id) ? doc.styles[id].sameAs : id);
+    /* a file's styles part defines the styles it uses and leaves the other built-ins to its latent styles, as Word does:
+       a built-in Quire has but the file doesn't is written once something uses it or it was changed (a new document still gets them all) */
+    let used = null;
+    if (doc.keep?.styles) {
+      used = new Set(['Normal', 'DefaultParagraphFont', 'TableNormal', 'NoList', ...refs]);
+      for (const s of Object.values(doc.styles)) if (s?.x) used.add(s.id);
+      for (const a of Object.values(doc.numbering.abs)) for (const id of [a.styleLink, a.styleDef]) if (id) used.add(id);
+      for (const queue = [...used]; queue.length;) {
+        const s = doc.styles[queue.pop()];
+        for (const f of ['basedOn', 'next', 'link']) { const id = s?.[f] && doc.styles[s[f]] ? ref(s[f]) : null; if (id && !used.has(id)) { used.add(id); queue.push(id); } }
+      }
+    }
+    const latent = doc.keep?.latentStyles;
     let x = HEAD + `<w:styles xmlns:w="${NS.w}" xmlns:r="${NS.r}" xmlns:mc="${NS.mc}" xmlns:w14="${NS.w14}" mc:Ignorable="w14">`;
     x += `<w:docDefaults><w:rPrDefault>${rPrXML(Object.assign({ font: 'Times New Roman', sz: 12, lang: 'en-US' }, dd.rPr || {}), null, ctx)}</w:rPrDefault><w:pPrDefault>${pPrXML(dd.pPr, ctx)}</w:pPrDefault></w:docDefaults>`;
-    const order = Object.values(doc.styles).sort((a, b) => (a.id === 'Normal' ? -1 : b.id === 'Normal' ? 1 : 0));
+    if (latent) x += ctx.writer.emit(latent.fragment, ctx.part);
+    /* the file's styles in its order, then the others, Normal first */
+    const rank = (s) => s.x?.order ?? (s.id === 'Normal' ? -1 : 1e9);
+    const order = Object.values(doc.styles).filter(Boolean).sort((a, b) => rank(a) - rank(b));
+    /* Word 2016 refuses a styles part with more than 4,092 styles (tools/ooxml/package.py, too-many-styles): beyond that, the
+       styles the file didn't have are left out, and what uses them takes the Normal style in Word */
+    let room = 4092;
+    const over = [];
     for (const s of order) {
-      if (!s || !s.id || left.has(s.id)) continue;
+      if (!s.id || left.has(s.id) || used && !used.has(s.id) && doc.keep.catalogue?.[s.id] === JSON.stringify(s)) continue;
+      if (room-- <= 0) { over.push(s.name || s.id); continue; }
       if (s.keep?.defaultStyleRepair) ctx.writer.loss({ id: 'default-styles:' + ctx.part, what: 'Conflicting default styles were normalized. Text layout may change.', where: ctx.part, action: 'conversion' });
       const type = s.type || 'paragraph';
-      let st = `<w:style w:type="${type}"${s.isDefault ? ' w:default="1"' : ''}${s.custom ? ' w:customStyle="1"' : ''} w:styleId="${X(s.id)}"><w:name w:val="${X(s.name || s.id)}"/>`;
+      /* a built-in the file didn't have takes the file's latent settings for it, as Word writes it */
+      const own = latent && !s.x && latent.names[String(s.name).toLowerCase()];
+      const look = (k) => (latent && !s.x ? (own && own[k] !== undefined ? own[k] : latent.def[k]) : s[k]);
+      let st = `<w:name w:val="${X(s.name || s.id)}"/>`;
       if (s.basedOn && doc.styles[s.basedOn]) st += `<w:basedOn w:val="${X(ref(s.basedOn))}"/>`;
       if (s.next && doc.styles[s.next]) st += `<w:next w:val="${X(ref(s.next))}"/>`;
       if (s.link && doc.styles[s.link]) st += `<w:link w:val="${X(ref(s.link))}"/>`;
       if (s.autoRedefine) st += '<w:autoRedefine/>';
       if (s.hidden) st += '<w:hidden/>';
-      if (s.prio != null) st += `<w:uiPriority w:val="${s.prio}"/>`;
-      if (s.semiHidden) st += '<w:semiHidden/>';
-      if (s.q) st += '<w:qFormat/>';
+      if (look('prio') != null) st += `<w:uiPriority w:val="${look('prio')}"/>`;
+      if (look('semiHidden')) st += '<w:semiHidden/>';
+      if (look('unhide')) st += '<w:unhideWhenUsed/>';
+      if (look('q')) st += '<w:qFormat/>';
       if (type === 'paragraph' || type === 'table' || type === 'numbering') {
         const pp = Object.assign({}, s.pPr || {});
         delete pp.style;
@@ -712,8 +737,12 @@
           st += `<w:tblStylePr w:type="${ty}">${cx}</w:tblStylePr>`;
         }
       }
-      x += st + '</w:style>';
+      /* a style from a file keeps what Quire doesn't model (aliases, locked, rsid, a table style's trPr) and the children it didn't change */
+      x += s.x ? L.preserve.propertyXML('style', s, st, ctx, { type, default: s.isDefault ? '1' : null, customStyle: s.custom ? '1' : null, styleId: s.id })
+        : `<w:style w:type="${type}"${s.isDefault ? ' w:default="1"' : ''}${s.custom ? ' w:customStyle="1"' : ''} w:styleId="${X(s.id)}">${st}</w:style>`;
     }
+    if (over.length) ctx.writer.loss({ id: 'styles-limit:' + ctx.part, where: ctx.part, action: 'drop', notify: true, place: 'Styles',
+      what: `Word opens at most 4,092 styles, so ${over.length} style${over.length > 1 ? 's' : ''} (${over.slice(0, 3).join(', ')}${over.length > 3 ? ', …' : ''}) ${over.length > 1 ? 'were' : 'was'} left out; text using ${over.length > 1 ? 'them' : 'it'} shows in the Normal style in Word.` });
     return x + '</w:styles>';
   }
   function lvlXML(lv, i, ctx) {

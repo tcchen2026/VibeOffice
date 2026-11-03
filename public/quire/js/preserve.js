@@ -146,6 +146,8 @@
     num: { abstractNumId: ['abs'] },
     lvlOverride: { startOverride: ['start'] },
     numbering: {},
+    // a style's own settings; what Quire doesn't model (aliases, locked, personal*, rsid, a table style's trPr) stays as it was
+    style: { name: ['name'], basedOn: ['basedOn'], next: ['next'], link: ['link'], autoRedefine: ['autoRedefine'], hidden: ['hidden'], uiPriority: ['prio'], semiHidden: ['semiHidden'], unhideWhenUsed: ['unhide'], qFormat: ['q'], pPr: ['pPr'], rPr: ['rPr'], tblPr: ['tblPr'], tcPr: ['tcPr'], tblStylePr: ['cond'] },
   });
   const numberTypes = { numbering: 'w:CT_Numbering', abstractNum: 'w:CT_AbstractNum', num: 'w:CT_Num', lvlOverride: 'w:CT_NumLvl', lvl: 'w:CT_Lvl' };
   const ownedChildren = { pPr: ['rPr', 'sectPr'], numbering: ['numPicBullet', 'abstractNum', 'num'], abstractNum: ['lvl'], num: ['abstractNumId', 'lvlOverride'], lvlOverride: ['lvl'], lvl: ['pPr', 'rPr', 'lvlPicBulletId'] };
@@ -211,7 +213,7 @@
     const kept = model.x, root = propertyAttributes('<w:' + kind + ' xmlns:w="' + N.w + '">' + generated + '</w:' + kind + '>', attributes);
     if (!kept) return generated ? root : '';
     let repaired = false;
-    const type = numberTypes[kind] || { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr', sectPr: 'w:CT_SectPr' }[kind];
+    const type = numberTypes[kind] || { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr', sectPr: 'w:CT_SectPr', style: 'w:CT_Style' }[kind];
     if (!propertyRanks.has(type)) {
       const ranks = new Map();
       K.schema.types[type].forEach((slot, i) => slot.forEach(name => ranks.set('{' + K.schema.namespaces[name.split(':')[0]] + '}' + name.split(':')[1], i)));
@@ -305,7 +307,7 @@
       if (repaired) ctx.writer.loss({ id: 'property:repair:' + (kept.fragment.source || '') + ':' + kept.fragment.part, what: 'Invalid source formatting was normalized for compatibility.', where: kept.fragment.part, action: 'conversion' });
       return ctx.writer.emit(K.slice(kept.fragment, propertyAttributes(xml, attributes)), ctx.part);
     } catch (error) {
-      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (numberTypes[kind] ? 'list' : kind === 'rPr' ? 'text' : kind === 'sectPr' ? 'section' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
+      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (numberTypes[kind] ? 'list' : kind === 'rPr' ? 'text' : kind === 'sectPr' ? 'section' : kind === 'style' ? 'style' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
       return generated ? root : '';
     }
   };

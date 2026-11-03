@@ -109,7 +109,15 @@ These are in addition to AGENTS.md.
    files now keep every move, the 17th has no ranges; moved-away text stays `w:t`, which Word requires), a simple field's lock (a locked PRINTDATE showed today's date),
    link ScreenTips with quotes (cut at the first `\"`) and a link's target frame (`w:tgtFrame`); a Word file
    that names no default formatting (119 corpus files) is shown and saved with Word's, Calibri 11 pt, 8 pt after and
-   1.08 lines (Word 2016), where Times New Roman 10 pt was written. Unedited
+   1.08 lines (Word 2016), where Times New Roman 10 pt was written; the styles part, which Quire rebuilt on every save
+   (found on the Fluent Ribbon walkthrough): the latent styles (2,088 of 2,132 Word-authored files), each style's
+   `w:unhideWhenUsed` (2,083; without it Heading 2–6 stay hidden in Word's gallery where used), `w:locked`, `w:rsid` and
+   a table style's row properties are kept, the styles stay in the file's order, and a built-in style the file doesn't
+   define is added only once something uses it or it is changed, with its latent settings, as Word writes it (about 25
+   unused ones were added to every file). Over 2,310 Word files, the unedited saves' `styles.xml` went from 2,523,618
+   lines differing from the original to 41,908 (1,299 within 3 lines), with no new package findings or losses; Word
+   2016 also opens `fdo76101` again (4,091 styles: the 47 added built-ins passed its limit of 4,092, rule
+   `too-many-styles`), and `fdo78904` gets its table styles' repeated header rows back. Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -130,10 +138,6 @@ These are in addition to AGENTS.md.
    - Quire, a damaged original that LibreOffice recovers and the save doesn't: footnotes whose ids don't match their
      references (`tdf153255`: LibreOffice shows six, the save three). Word 2016 repairs the original and opens the save
      cleanly, so it waits. (Two final section definitions, `tdf108849`: fixed, the last one wins, as in Word 2016.)
-   - Quire rewrites `styles.xml` from its model on every save: an unedited save drops `w:latentStyles` (2,088 of
-     2,132 Word-authored corpus files have them), each style's `w:unhideWhenUsed` (2,083; Heading 2–6 then stay
-     hidden in Word's style gallery even where they are used) and `w:rsid`, and adds about 25 built-in style
-     definitions the file didn't have (Title, Body Text, …). Found on the Fluent Ribbon walkthrough.
    - Quire drops `w:rsid*` on paragraphs, runs and rows (2,029 of those files have them). Word 2016 places glyphs
      per rsid run, so the save's text moves by a fraction of a pixel on most pages (the walkthrough: 18 of 19;
      removing only the rsids from the original gives the same shift), and Word's Compare and Combine lose the

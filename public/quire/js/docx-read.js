@@ -398,6 +398,15 @@
       pPr: pd ? pPr(kid(pd, 'pPr')) : { sp: { a: 8, line: 259 / 240, rule: 'auto' } } };
     const imported = {};
     if (stX) {
+      /* Word's settings for the built-in styles the file doesn't define (gallery, visibility): written back as they
+         were, and given to a built-in style the writer adds because something uses it, as Word does */
+      const ls = kid(stX, 'latentStyles');
+      const flags = (e, prefix) => { const n = (name) => prefix ? 'def' + name[0].toUpperCase() + name.slice(1) : name; const prio = at(e, prefix ? 'defUIPriority' : 'uiPriority');
+        return { prio: prio != null ? +prio : undefined, semiHidden: X.bool(at(e, n('semiHidden'))), unhide: X.bool(at(e, n('unhideWhenUsed'))), q: X.bool(at(e, n('qFormat'))) }; };
+      if (ls) doc.keep.latentStyles = { fragment: L.opc.fragment(ls, propertyContext(ls)), def: flags(ls, true),
+        names: Object.fromEntries(kids(ls, 'lsdException').map((e) => [(at(e, 'name') || '').toLowerCase(), flags(e, false)])) };
+      doc.keep.styles = true;
+      let order = 0;
       for (const s of kids(stX, 'style')) {
         /* some generators omit styleId: Word then matches the style by name */
         const id = at(s, 'styleId') || (at(kid(s, 'name'), 'val') || '').replace(/\s+/g, '');
@@ -408,6 +417,7 @@
         if (X.bool(at(s, 'customStyle'))) st.custom = true; else st.builtin = true;
         if (kid(s, 'qFormat')) st.q = true;
         if (kid(s, 'semiHidden')) st.semiHidden = true;
+        if (kid(s, 'unhideWhenUsed')) st.unhide = true;
         if (kid(s, 'hidden')) st.hidden = true;
         if (kid(s, 'uiPriority')) st.prio = num(kid(s, 'uiPriority'), 'val', 99);
         if (kid(s, 'autoRedefine')) st.autoRedefine = true;
@@ -429,6 +439,9 @@
           }
         }
         if (type === 'numbering' && st.pPr.num) st.numStyle = true;
+        /* the style as the file has it: the writer keeps what Quire doesn't model, and the file's order */
+        L.preserve.properties(st, s, 'style', propertyContext(s));
+        st.x.order = order++;
         imported[id] = st;
       }
     }
@@ -490,6 +503,8 @@
     doc.defaults = defaults;
     if (!styles.Normal) styles.Normal = { id: 'Normal', name: 'Normal', type: 'paragraph', pPr: {}, rPr: {}, builtin: true, isDefault: true };
     styles.Normal.isDefault = true;
+    /* the built-ins Quire adds to a file's styles: the writer leaves out the ones nothing uses and nobody changed */
+    if (stX) doc.keep.catalogue = Object.fromEntries(Object.values(styles).filter((s) => !s.x).map((s) => [s.id, JSON.stringify(s)]));
 
     /* ---- media ---- */
     const mediaCache = new Map();

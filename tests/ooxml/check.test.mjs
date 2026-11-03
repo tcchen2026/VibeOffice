@@ -124,6 +124,12 @@ test('text moved away with Track Changes stays w:t inside w:moveFrom, or Word re
   assert.equal(run('check', await pkg('move-text', doc('<w:t>moved</w:t>'))).status, 'ok');
   assert.ok(run('check', await pkg('move-deltext', doc('<w:delText>moved</w:delText>'))).issues.some(i => i.code === 'moved-deleted-text'));
 });
+test('a styles part holds at most 4,092 styles, or Word 2016 refuses the file', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const styles = (n) => ({ 'word/styles.xml': `<w:styles xmlns:w="${W}">${Array.from({ length: n }, (_, i) => `<w:style w:type="paragraph" w:styleId="S${i}"><w:name w:val="S ${i}"/></w:style>`).join('')}</w:styles>` });
+  assert.equal(run('check', await pkg('styles-4092', styles(4092))).status, 'ok');
+  assert.ok(run('check', await pkg('styles-4093', styles(4093))).issues.some(i => i.code === 'too-many-styles'));
+});
 test('a SmartArt data part\'s presentation links name its layout part, or PowerPoint 2016 draws nothing', async () => {
   const DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram', id = 'urn:example/layout/process#1f2e3d4c';
   const frame = `<p:cSld><p:spTree><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Diagram"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><a:graphic><a:graphicData uri="${DGM}"><dgm:relIds xmlns:dgm="${DGM}" r:dm="d" r:lo="l" r:qs="d" r:cs="d"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:cSld>`;
