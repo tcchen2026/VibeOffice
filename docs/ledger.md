@@ -477,6 +477,19 @@ browser drivers exercise the shipping readers/writers, real undo operations and 
 Independent ZIP/XML checks, Open XML SDK diagnostics and openpyxl comparisons are separate from the
 app's own reopen check. Commands and comparison policies are in [testing.md](testing.md).
 
+Merged-cell borders are drawn from the individual perimeter cells, retaining partial edges and
+different styles along a side, including blank cells and merges whose anchor is hidden or scrolled
+out of view. The same renderer supplies Print Preview and PDF output. Issue #22's workbook (275
+cells, 37 merged ranges) and four small border controls were checked against Excel 2016 on Windows
+10, build `16.0.4266.1003`, on 2026-11-02. The original, Ledger save and controls opened without
+repair prompts; all three Excel PDF pages of the original and Ledger save matched pixel for pixel
+at 96 dpi. An XML Spreadsheet 2003 file can hold a merge's format only on its top-left cell, so on
+opening, the merge's edge cells take that format and keep the whole outline.
+`tests/from-issues/22/borders.test.mjs` checks the screen and print borders, colors, partial edges,
+zoom, scrolling, frozen panes, hidden anchors and an XML Spreadsheet 2003 merge; the four on Excel
+workbooks fail before the fix, and the fifth fails with the new drawing alone. The fixtures and API
+evidence are in `tests/from-issues/22/`.
+
 Formula recalculation, CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`.
 Their earlier broad-corpus measurements are archived with the run history, rather than mixed into
 the current OOXML preservation figures. Current preservation does not imply exact print layout or
@@ -493,6 +506,8 @@ support for every formula or external data source.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.
 - One window per workbook (Window ▸ New Window is not available); the binary `.xls` format is not read.
+- Saved as XML Spreadsheet 2003, a merged range whose top-left cell holds nothing (no value, no format)
+  is not written: that format records a merge on its top-left cell.
 - Spelling is English only (U.S. and U.K.).
 - Fonts are drawn with what the browser has. Calibri, Cambria, Arial, Times New Roman and Courier New
   are drawn with the real font when installed, otherwise its metric-compatible stand-in, so column
