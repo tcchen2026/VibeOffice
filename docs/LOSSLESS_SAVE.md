@@ -129,7 +129,9 @@ These are in addition to AGENTS.md.
    (`w:tblPrEx`, 1,146 in 39 files: Word moved a row's text 54 pt without them) and the columns' tracked change
    (`w:tblGridChange`), the last two found by Intern's part-by-part measurement (I19); a run's complex-script size
    (`w:szCs`), which was written equal to its size where the file had none, changing the size of Arabic, Hebrew and
-   other complex-script text (27,025 times in 683 files; 1,715 left, on runs the file gave no properties). Unedited
+   other complex-script text (27,025 times in 683 files; 1,715 left, on runs the file gave no properties). Intern's review
+   of these (I20) found five edit and copy cases, fixed with them: a changed style's base style, a new style's own
+   settings, Insert Rows copying cell history, a copy before its source taking its ids, a row exception's revision id. Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:

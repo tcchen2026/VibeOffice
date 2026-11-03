@@ -48,6 +48,11 @@ async function save(kind) {
   ]);
   const { doc } = await L.docx.read(new Uint8Array(await original.arrayBuffer()));
   if (kind === 'full') doc.main.blocks[2].pPr = { ...doc.main.blocks[2].pPr, style: 'Heading3' };
+  if (kind === 'dialogs') {
+    // Modify Style: the unused Title based on Heading 3, which the file doesn't define either; New Style: a style of its own
+    doc.styles.Title = { ...doc.styles.Title, basedOn: 'Heading3' };
+    doc.styles.Mine = { id: 'Mine', name: 'Mine', type: 'paragraph', basedOn: 'Normal', next: null, pPr: {}, rPr: { b: true }, custom: true, q: true };
+  }
   if (kind === 'edited') {
     // Heading 3, which the file doesn't define, applied to the plain paragraph; Heading 1 made italic
     doc.main.blocks[2].pPr = { ...doc.main.blocks[2].pPr, style: 'Heading3' };
@@ -64,7 +69,7 @@ async function save(kind) {
   return {
     ids: w(root, 'style').map(e => e.getAttributeNS(N.w, 'styleId')),
     latent: w(root, 'lsdException').length,
-    Heading1: children('Heading1'), Heading2: children('Heading2'), Heading3: children('Heading3'), Rows: children('Rows'),
+    Heading1: children('Heading1'), Heading2: children('Heading2'), Heading3: children('Heading3'), Rows: children('Rows'), Mine: children('Mine'),
     limit: (doc.losses || []).filter(e => e.id.startsWith('styles-limit:')).map(e => ({ notify: !!e.notify, what: e.what })),
   };
 }
@@ -94,4 +99,10 @@ test('a file at Word\'s limit of 4,092 styles stays there: a built-in put to use
   assert.equal(got.ids.length, 4092);
   assert.equal(got.Heading3, undefined);
   assert.deepEqual(got.limit, [{ notify: true, what: 'Word opens at most 4,092 styles, so 1 style (heading 3) was left out; text using it shows in the Normal style in Word.' }]);
+});
+
+test('a style written because it was changed brings the style it is based on; a new style keeps its own settings', async () => {
+  const got = await run('dialogs');
+  assert.ok(got.ids.includes('Title') && got.ids.includes('Heading3'), 'Title, based on Heading 3, and Heading 3');
+  assert.deepEqual(got.Mine, ['name=Mine', 'basedOn=Normal', 'qFormat', 'rPr(b)'], 'not the latent settings of a built-in');
 });

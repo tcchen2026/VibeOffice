@@ -385,7 +385,7 @@
     else if ((isP && name === 'spid' && !['oleObj', 'control'].includes(tag)) || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
     else if (isP && name === 'grpId' && ['cTn', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic'].includes(tag)) { kind = 'build'; definition = tag !== 'cTn'; }
     else if (isW && name === 'id' && /^(bookmark|perm)(Start|End)$/.test(tag)) { kind = tag.startsWith('bookmark') ? 'bookmark' : 'permission'; definition = tag.endsWith('Start'); }
-    else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge|tblGridChange)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
+    else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge|tblGridChange|tblPrExChange)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
     // a move's range shares Word's revision numbers; its end names its start
     else if (isW && name === 'id' && /^move(From|To)Range(Start|End)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = tag.endsWith('Start'); }
     else if (isP && name === 'id' && ['sldId', 'sldMasterId', 'sldLayoutId'].includes(tag)) { kind = tag; scope = 'presentation'; definition = true; }

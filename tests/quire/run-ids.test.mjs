@@ -35,6 +35,8 @@ async function save(kind) {
   ]);
   const { doc } = await L.docx.read(new Uint8Array(await original.arrayBuffer()));
   if (kind === 'copied') doc.main.blocks.push(L.clone(doc.main.blocks[0]));
+  // a copy pasted before its source, through the editor's copy (D.cloneBlocks)
+  if (kind === 'copied-before') doc.main.blocks.unshift(...L.D.cloneBlocks([doc.main.blocks[0], doc.main.blocks[1]]));
   const saved = await K.open(new Uint8Array(await (await L.docx.write(doc)).arrayBuffer()));
   const ids = el => Array.from(el.attributes).filter(a => /^(rsid|paraId|textId)/.test(a.localName)).map(a => a.localName + '=' + a.value).sort().join(' ');
   const roots = {}, all = (part, tag) => Array.from((roots[part] ||= saved.xml(part)).getElementsByTagNameNS(N.w, tag));
@@ -67,4 +69,12 @@ test('an unedited save keeps the ids of paragraphs, runs and rows', async () => 
 test('a copied paragraph keeps the editing-session ids but not the paragraph id', async () => {
   const got = await run('copied');
   assert.deepEqual(got.paragraphs, [first, 'paraId=4D5E6F70 textId=77777777', '', 'rsidP=00C3D4E5 rsidR=00A1B2C3 rsidRDefault=00B2C3D4']);
+});
+
+test('a copy pasted before its source leaves the paragraph and row ids with the source', async () => {
+  const got = await run('copied-before');
+  // the copy (Hello world, its table) first, then the source
+  assert.deepEqual(got.paragraphs.slice(0, 2), ['rsidP=00C3D4E5 rsidR=00A1B2C3 rsidRDefault=00B2C3D4', '']);
+  assert.deepEqual(got.paragraphs.slice(2, 4), [first, 'paraId=4D5E6F70 textId=77777777']);
+  assert.deepEqual(got.rows, ['rsidR=00A7B8C9 rsidTr=00B8C9D0', 'paraId=2B3C4D5E rsidR=00A7B8C9 rsidTr=00B8C9D0 textId=3C4D5E6F']);
 });

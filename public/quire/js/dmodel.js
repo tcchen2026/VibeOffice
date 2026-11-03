@@ -869,11 +869,14 @@
   /** deep clone of blocks with fresh ids */
   D.cloneBlocks = function (blocks) {
     const c = L.preserve ? L.preserve.duplicateControls(L.clone(blocks)) : L.clone(blocks);
+    /* a copy keeps the editing sessions (w:rsid*) but not the paragraph and row ids (w14:paraId, textId): the original keeps those */
+    const own = (o) => { if (!o.ids) return; const ids = Object.fromEntries(Object.entries(o.ids).filter(([k]) => !k.startsWith('w14:'))); if (Object.keys(ids).length) o.ids = ids; else delete o.ids; };
     const fresh = (bl) => {
       for (const b of bl) {
         b.id = D.nid();
         delete b._o;
-        if (b.t === 'tbl') for (const r of b.rows) { r.id = D.nid(); for (const ce of r.cells) { ce.id = D.nid(); fresh(ce.blocks); } }
+        own(b);
+        if (b.t === 'tbl') for (const r of b.rows) { r.id = D.nid(); own(r); for (const ce of r.cells) { ce.id = D.nid(); fresh(ce.blocks); } }
         if (b.t === 'p') for (const it of b.runs) if (it.tb) fresh(it.tb.blocks);
       }
     };

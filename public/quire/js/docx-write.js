@@ -700,9 +700,11 @@
     /* a file's styles part defines the styles it uses and leaves the other built-ins to its latent styles, as Word does:
        a built-in Quire has but the file doesn't is written once something uses it or it was changed (a new document still gets them all) */
     let used = null;
+    const catalogue = doc.keep?.catalogue, asAdded = (s) => catalogue?.[s.id] === JSON.stringify(s);
     if (doc.keep?.styles) {
       used = new Set(['Normal', 'DefaultParagraphFont', 'TableNormal', 'NoList', ...refs]);
-      for (const s of Object.values(doc.styles)) if (s?.x) used.add(s.id);
+      /* the file's styles, and the ones created or changed since: with the styles they're based on, below */
+      for (const s of Object.values(doc.styles)) if (s?.x || s && !asAdded(s)) used.add(s.id);
       for (const a of Object.values(doc.numbering.abs)) for (const id of [a.styleLink, a.styleDef]) if (id) used.add(id);
       for (const queue = [...used]; queue.length;) {
         const s = doc.styles[queue.pop()];
@@ -721,13 +723,15 @@
     let room = 4092;
     const over = [];
     for (const s of order) {
-      if (!s.id || left.has(s.id) || used && !used.has(s.id) && doc.keep.catalogue?.[s.id] === JSON.stringify(s)) continue;
+      if (!s.id || left.has(s.id) || used && !used.has(s.id)) continue;
       if (room-- <= 0) { over.push(s.name || s.id); continue; }
       if (s.keep?.defaultStyleRepair) ctx.writer.loss({ id: 'default-styles:' + ctx.part, what: 'Conflicting default styles were normalized. Text layout may change.', where: ctx.part, action: 'conversion' });
       const type = s.type || 'paragraph';
-      /* a built-in the file didn't have takes the file's latent settings for it, as Word writes it */
-      const own = latent && !s.x && latent.names[String(s.name).toLowerCase()];
-      const look = (k) => (latent && !s.x ? (own && own[k] !== undefined ? own[k] : latent.def[k]) : s[k]);
+      /* a built-in the file didn't have takes the file's latent settings for what it was given as added (a new style and
+         what an edit set keep theirs), as Word writes it */
+      const added = latent && !s.x && !s.custom && catalogue?.[s.id] ? JSON.parse(catalogue[s.id]) : null;
+      const own = added && latent.names[String(s.name).toLowerCase()];
+      const look = (k) => (added && JSON.stringify(s[k]) === JSON.stringify(added[k]) ? (own && own[k] !== undefined ? own[k] : latent.def[k]) : s[k]);
       let st = `<w:name w:val="${X(s.name || s.id)}"/>`;
       if (s.basedOn && doc.styles[s.basedOn]) st += `<w:basedOn w:val="${X(ref(s.basedOn))}"/>`;
       if (s.next && doc.styles[s.next]) st += `<w:next w:val="${X(ref(s.next))}"/>`;

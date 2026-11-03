@@ -75,7 +75,9 @@
   T.fixWidths = fixWidths;
   const firstPos = (cell) => { const p = D.firstPara(cell.blocks); return D.pos(p, 0); };
   const emptyLike = (cell) => { const p = D.firstPara(cell.blocks) || D.para(); return D.para([], L.clone(p.pPr), L.clone(p.rPr)); };
-  const newCellLike = (cell, span) => { const tc = L.clone(cell.tcPr); delete tc.vMerge; delete tc.span; if (span > 1) tc.span = span; return D.cell([emptyLike(cell)], tc); };
+  /* a new row's or cell's properties: the source's formatting, not the XML it was read with (its revisions and history) */
+  const fresh = (props) => { const o = L.clone(props); delete o.x; return o; };
+  const newCellLike = (cell, span) => { const tc = fresh(cell.tcPr); delete tc.vMerge; delete tc.span; if (span > 1) tc.span = span; return D.cell([emptyLike(cell)], tc); };
 
   /* ================= insert ================= */
   T.insert = function (nr, nc, opts) {
@@ -165,7 +167,7 @@
           if (inMerge) nc.tcPr.vMerge = 'continue';
           cells.push(nc);
         }
-        const trPr = L.clone(ref.trPr);
+        const trPr = fresh(ref.trPr);
         if (!above || refIdx > 0) { if (!(t.rows[at] && t.rows[at].trPr.header && trPr.header)) delete trPr.header; }
         news.push(D.row(cells, trPr));
       }
@@ -313,7 +315,7 @@
       } else {
         /* shift cells down: append a row at the end, then move contents down in the selected columns */
         const last = t.rows[t.rows.length - 1];
-        const nrow = D.row(last.cells.map((c) => newCellLike(c, c.tcPr.span || 1)), L.clone(last.trPr));
+        const nrow = D.row(last.cells.map((c) => newCellLike(c, c.tcPr.span || 1)), fresh(last.trPr));
         delete nrow.trPr.header;
         const nAdd = rg.r1 - rg.r0 + 1;
         for (let k = 0; k < nAdd; k++) t.rows.push(k ? D.row(last.cells.map((c) => newCellLike(c, c.tcPr.span || 1)), L.clone(nrow.trPr)) : nrow);
@@ -508,7 +510,7 @@
         c.tcPr.vMerge = 'continue';
         return c;
       });
-      const trPr = L.clone(row.trPr);
+      const trPr = fresh(row.trPr);
       delete trPr.header;
       if (h) trPr.h = L.round(h / n, 2);
       newRows.push(D.row(cells, trPr));
