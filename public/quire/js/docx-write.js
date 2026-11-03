@@ -284,7 +284,8 @@
     let buf = '';
     const tag = del ? 'w:delText' : 'w:t';
     // A literal CR would be normalized to LF when XML is read again.
-    const flush = () => { if (buf) { out += `<${tag} xml:space="preserve">${X(buf).replace(/\r/g, '&#13;')}</${tag}>`; buf = ''; } };
+    // xml:space="preserve" only where the text needs it, as Word writes it: Word 2016 places text with it a fraction differently
+    const flush = () => { if (buf) { out += `<${tag}${/^[ \r\n]|[ \r\n]$| {2}|[\r\n]/.test(buf) ? ' xml:space="preserve"' : ''}>${X(buf).replace(/\r/g, '&#13;')}</${tag}>`; buf = ''; } };
     for (const ch of s) {
       if (ch === '‑') { flush(); out += '<w:noBreakHyphen/>'; }
       else if (ch === '­') { flush(); out += '<w:softHyphen/>'; }
@@ -329,7 +330,7 @@
       const it = items[i];
       const original = L.preserve.objectXML(it, 'ac', ctx);
       if (original != null) {
-        if (original) out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx, it) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx);
+        if (original) { const outer = ctx.runIds; ctx.runIds = it.ids; try { out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx, it) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx); } finally { ctx.runIds = outer; } }
         trackText(it);
         i++; continue;
       }
@@ -370,9 +371,24 @@
   }
   function runWrap(r, content, ctx) {
     const rp = rPrXML(cleanRPr(r), null, ctx);
-    return `<w:r>${rp}${content}</w:r>`;
+    return `<w:r${idsXML(ctx?.runIds, ctx)}>${rp}${content}</w:r>`;
   }
+  /* the attributes a paragraph, run or row was read with (docx-read, elementIds); a paragraph id already written
+     in this save (a copied paragraph) is left out with its text id, so each stays unique */
+  function idsXML(ids, ctx) {
+    if (!ids) return '';
+    const used = ctx?.paraIds, pid = ids['w14:paraId'];
+    const again = pid && used && used.has(pid);
+    if (pid && used && !again) used.add(pid);
+    return Object.entries(ids).filter(([k]) => !again || !/^w14:/.test(k)).map(([k, v]) => ` ${k}="${X(v)}"`).join('');
+  }
+  /* a run's content is written with the ids of the run it was read from */
   function itemXML(it, p, ctx, del, afterCR) {
+    const outer = ctx.runIds;
+    ctx.runIds = it.ids;
+    try { return itemContentXML(it, p, ctx, del, afterCR); } finally { ctx.runIds = outer; }
+  }
+  function itemContentXML(it, p, ctx, del, afterCR) {
     const r = it.rPr || {};
     const original = L.preserve.objectXML(it, 'opaque', ctx);
     if (original != null) return original ? runWrap(r, original, ctx) : '';
@@ -635,7 +651,7 @@
     const pPr = pPrXML(p.pPr, ctx, { rPr: markR, sect: p.sect && ctx.main ? sectXML(p.sect, ctx) : '' });
     const after = trailingEnds(p);
     const runs = runsXML(after.length ? { ...p, runs: p.runs.filter((it) => !after.includes(it)) } : p, ctx);
-    return `<w:p>${pPr}${runs}</w:p>${after.filter((it) => !ctx.hoisted?.has(it)).map((it) => L.preserve.markerXML(it, ctx) || '').join('')}`;
+    return `<w:p${idsXML(p.ids, ctx)}>${pPr}${runs}</w:p>${after.filter((it) => !ctx.hoisted?.has(it)).map((it) => L.preserve.markerXML(it, ctx) || '').join('')}`;
   }
   function tableXML(t, ctx) {
     if (t.keep?.gridRepair) ctx.writer.loss({ id: 'table-grid:' + ctx.part, what: 'Incomplete or unusable table column widths were reconstructed. Table layout may change.', where: ctx.part, action: 'conversion' });
@@ -647,7 +663,7 @@
     x += L.preserve.controlSequence(t.rows, row => row.trPr, row => L.preserve.tableMemberXML(row, ctx, () => {
       const ri = t.rows.indexOf(row), rowEnds = hoistEnds(lastTop(row.cells.at(-1)?.blocks), 'row', ctx);
       const trp = trPrXML(row.trPr, ctx);
-      let rowXML = `<w:tr>${trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
+      let rowXML = `<w:tr${idsXML(row.ids, ctx)}>${trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
       rowXML += L.preserve.controlSequence(row.cells, cell => cell.tcPr, cell => L.preserve.tableMemberXML(cell, ctx, () => {
         const ci = row.cells.indexOf(cell);
         const m = map[ri][ci];
@@ -977,11 +993,11 @@
     const highNote = kind => Math.max(0, ...Object.keys(kind === 'fn' ? doc.fn : doc.en).map(x => +x || 0), ...(doc.keep?.notes?.[kind] || []).map(n => +n.id || 0)) + 1;
     let fnN = highNote('fn'), enN = highNote('en');
     const charts = [];
-    const usedPaths = new Set(), styleRefs = new Set();
+    const usedPaths = new Set(), styleRefs = new Set(), paraIds = new Set();
     /** the id to write for style id: the file's own style of its name for a built-in marked sameAs (docx-read), otherwise id */
     const ownStyle = (id) => { const s = doc.styles[id]; return s?.sameAs && doc.styles[s.sameAs] ? s.sameAs : id; };
     const mkCtx = (rels, main) => ({
-      rels, main, doc, ranges, moves, hoisted, objects, writer: pack.writer, styleRefs, ownStyle, part: rels.owner, mainPart: pack.part('word/document.xml'),
+      rels, main, doc, ranges, moves, hoisted, objects, writer: pack.writer, styleRefs, ownStyle, paraIds, part: rels.owner, mainPart: pack.part('word/document.xml'),
       drawingXML,
       rev: () => pack.writer.ids.fresh('document', 'revision'),
       docPrId: () => {
@@ -1114,24 +1130,25 @@
       let x = '', ex = '';
       const reservedParaIds = new Set(Object.values(doc.comments).map(c => c.keep?.paraId).filter(Boolean));
       let paraN = Math.max(0x10000000, ...Array.from(reservedParaIds, p => parseInt(p, 16) || 0));
-      const paraIds = new Map();
+      const commentParas = new Map();
       for (const [orig, nid] of cmtIds) {
         const c = doc.comments[orig];
         if (!c) continue;
         let inner = blocksXML(c.blocks, ctx);
         if (!/annotationRef/.test(inner)) { const ref = ownStyle('CommentReference'); styleRefs.add(ref); inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${X(ref)}"/></w:rPr><w:annotationRef/></w:r>`); }
-        const pid = c.keep?.paraId || (++paraN).toString(16).toUpperCase().padStart(8, '0');
-        paraIds.set(String(orig), pid);
-        /* tag the last paragraph with a paraId for threading / done state */
-        const lastIdx = inner.lastIndexOf('<w:p>');
-        if (lastIdx >= 0) inner = inner.slice(0, lastIdx) + `<w:p w14:paraId="${pid}" w14:textId="77777777">` + inner.slice(lastIdx + 5);
+        let pid = c.keep?.paraId;
+        if (!pid) { do pid = (++paraN).toString(16).toUpperCase().padStart(8, '0'); while (paraIds.has(pid)); paraIds.add(pid); }
+        commentParas.set(String(orig), pid);
+        /* tag the last paragraph with a paraId for threading / done state (in place of the one it was read with) */
+        const last = [...inner.matchAll(/<w:p(?=[ >])[^>]*>/g)].at(-1);
+        if (last) inner = inner.slice(0, last.index) + last[0].replace(/ w14:(?:paraId|textId)="[^"]*"/g, '').replace('<w:p', `<w:p w14:paraId="${pid}" w14:textId="77777777"`) + inner.slice(last.index + last[0].length);
         x += `<w:comment w:id="${nid}" w:author="${X(c.author || 'Unknown')}" w:date="${X(c.date || iso())}" w:initials="${X(c.initials || '')}">${inner}</w:comment>`;
       }
       for (const [orig] of cmtIds) {
         const c = doc.comments[orig];
         if (!c) continue;
-        const pid = paraIds.get(String(orig));
-        const parent = c.parent != null ? paraIds.get(String(c.parent)) : null;
+        const pid = commentParas.get(String(orig));
+        const parent = c.parent != null ? commentParas.get(String(c.parent)) : null;
         ex += `<w15:commentEx w15:paraId="${pid}"${parent ? ` w15:paraIdParent="${parent}"` : ''} w15:done="${c.done ? 1 : 0}"/>`;
       }
       cmPart = { xml: HEAD + `<w:comments ${NSDECL}>${x}</w:comments>`, rels };

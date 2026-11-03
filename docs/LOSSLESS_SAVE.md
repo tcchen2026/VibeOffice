@@ -117,7 +117,13 @@ These are in addition to AGENTS.md.
    unused ones were added to every file). Over 2,310 Word files, the unedited saves' `styles.xml` went from 2,523,618
    lines differing from the original to 41,908 (1,299 within 3 lines), with no new package findings or losses; Word
    2016 also opens `fdo76101` again (4,091 styles: the 47 added built-ins passed its limit of 4,092, rule
-   `too-many-styles`), and `fdo78904` gets its table styles' repeated header rows back. Unedited
+   `too-many-styles`), and `fdo78904` gets its table styles' repeated header rows back; the ids of paragraphs, runs and
+   table rows (`w:rsid*` in 2,029 of those files; `w14:paraId`/`w14:textId`, 572), which Quire dropped and merged runs
+   across: Word 2016 places text per rsid run, so the save's text moved by fractions of a pixel (the walkthrough: 18 of
+   19 pages, 18 → 3 after the fix; removing only the rsids from the original gave the same shift), and Compare, Combine
+   and comments use them; a copied paragraph doesn't repeat its paragraph id. Text is written with `xml:space="preserve"`
+   only where it needs it, as Word does: on every `w:t`, it moved Word's text a fraction too (7 of the walkthrough's
+   pages). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -138,10 +144,8 @@ These are in addition to AGENTS.md.
    - Quire, a damaged original that LibreOffice recovers and the save doesn't: footnotes whose ids don't match their
      references (`tdf153255`: LibreOffice shows six, the save three). Word 2016 repairs the original and opens the save
      cleanly, so it waits. (Two final section definitions, `tdf108849`: fixed, the last one wins, as in Word 2016.)
-   - Quire drops `w:rsid*` on paragraphs, runs and rows (2,029 of those files have them). Word 2016 places glyphs
-     per rsid run, so the save's text moves by a fraction of a pixel on most pages (the walkthrough: 18 of 19;
-     removing only the rsids from the original gives the same shift), and Word's Compare and Combine lose the
-     editing sessions. `w:cnfStyle` (dropped on rows) shifts five of its pages slightly as well.
+   - Quire drops `w:cnfStyle` on rows and cells (about 60 files), which shifts five of the walkthrough's pages slightly
+     in Word, and the rows' and cells' other unmodelled properties.
 2. **Lectern checker numbers:** run the Lectern corpus driver, which needs Playwright, to measure how
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.

@@ -767,9 +767,23 @@
     }
     const lastParaIn = (bl) => { for (let i = bl.length - 1; i >= 0; i--) { if (bl[i].t === 'p') return bl[i]; if (bl[i].t === 'tbl') return D.lastPara([bl[i]]); } return null; };
 
+    /* a paragraph's, run's or row's editing-session ids (w:rsid*) and paragraph ids (w14:paraId, w14:textId): kept as
+       they were, as Word 2016 places text per rsid run and Compare, Combine and comments use them */
+    const W14 = 'http://schemas.microsoft.com/office/word/2010/wordml';
+    const elementIds = (el) => {
+      let o = null;
+      for (const a of el.attributes) {
+        const name = (a.namespaceURI === L.opc.NS.w || a.namespaceURI === 'http://purl.oclc.org/ooxml/wordprocessingml/main') && /^rsid/.test(a.localName) ? 'w:' + a.localName
+          : a.namespaceURI === W14 && (a.localName === 'paraId' || a.localName === 'textId') ? 'w14:' + a.localName : null;
+        if (name) (o || (o = {}))[name] = a.value;
+      }
+      return o;
+    };
     function parseP(el, ctx) {
       const pp = kid(el, 'pPr');
       const p = D.para([], pPr(pp), {});
+      const pids = elementIds(el);
+      if (pids) p.ids = pids;
       if (p.pPr.style) p.pPr.style = rn(p.pPr.style);
       if (p.pPr.style === 'Normal') delete p.pPr.style;
       if (pp) {
@@ -901,6 +915,7 @@
     function fieldLink(ctx) { for (let i = ctx.fstack.length - 1; i >= 0; i--) if (ctx.fstack[i].link && ctx.fstack[i].phase === 'result') return ctx.fstack[i].link; return undefined; }
 
     function parseRun(r, p, ctx, inh) {
+      const rids = elementIds(r), first = p.runs.length;
       const base = rPr(kid(r, 'rPr'));
       delete base._ins; delete base._del;
       if (base.style) base.style = rn(base.style);
@@ -1039,6 +1054,7 @@
         const txt = descAll(r, 't').map((x) => x.textContent).join('');
         if (txt) { customMark.custom = txt; const last = p.runs[p.runs.length - 1]; if (last && last.t === 'text' && last.text === txt) p.runs.pop(); }
       }
+      if (rids) for (let k = first; k < p.runs.length; k++) p.runs[k].ids = rids;
     }
 
     /* ---- tables ---- */
@@ -1173,6 +1189,8 @@
         if (!cells.length) continue;
         L.preserve.emptyAlternates(emptyCells, cellEls.map(e => cellModels.get(e)).map(c => cells.includes(c) ? c : null), ctx, doc);
         const row = { id: D.nid(), trPr: rp, cells };
+        const tids = elementIds(tr);
+        if (tids) row.ids = tids;
         if (ex) { const xp = tblPr(ex); if (xp.borders) row.exBorders = xp.borders; }
         rows.push(row);
         rowModels.set(tr, row);

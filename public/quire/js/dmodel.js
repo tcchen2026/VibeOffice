@@ -836,13 +836,14 @@
     return true;
   };
   D.sameRPr = sameR;
-  /** merge adjacent text runs with equal formatting, drop empty text runs */
+  /** merge adjacent text runs with equal formatting, drop empty text runs; runs read with different ids (editing sessions,
+   *  docx-read's elementIds) stay apart, as Word places text per rsid run */
   D.normalize = function (p) {
     const out = [];
     for (const it of p.runs) {
       if (it.t === 'text' && !it.text) continue;
       const last = out[out.length - 1];
-      if (last && it.t === 'text' && last.t === 'text' && !it.keep?.ac && !last.keep?.ac && sameR(last.rPr, it.rPr)) { out[out.length - 1] = Object.assign({}, last, { text: last.text + it.text }); continue; }
+      if (last && it.t === 'text' && last.t === 'text' && !it.keep?.ac && !last.keep?.ac && sameR(last.rPr, it.rPr) && sameR({ ids: last.ids }, { ids: it.ids })) { out[out.length - 1] = Object.assign({}, last, { text: last.text + it.text }); continue; }
       out.push(it);
     }
     p.runs = out;
