@@ -138,7 +138,12 @@ These are in addition to AGENTS.md.
    keeps its properties and ids (all 1,340 in the 110 Word files with comments, from 846 ids and 990 properties) and its
    place after the other comments' marks (1,058, from 634; Word puts a few after a picture or a proofing mark, and
    those still follow their range's end): Word 2016 placed the text after them a fraction of a point differently
-   (`Comment035`, `Comment050`, now pixel-identical in Word 2016; 7 of 8 files of the batch are). Unedited
+   (`Comment035`, `Comment050`, now pixel-identical in Word 2016; 7 of 8 files of the batch are); a field code's runs,
+   their properties, ids and split, while the code is unchanged (2,748 of the 3,476 instruction runs in 364 Word files
+   as the original, from 1,048; most of the rest in one file and in HYPERLINK fields, which become hyperlinks): they
+   were one run with the field's first run's properties, and Word formats the result from the code (`wDateValueFormat`'s
+   page numbers printed at 12 pt, every page) and places text by their ids (`form_footnotes`, found by Intern, I21); a
+   comment read without a date gets none (57 in the corpus got the save's time). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -151,9 +156,12 @@ These are in addition to AGENTS.md.
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
      styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
      the built-in's look until the file is reopened.
-   - Quire writes a field's instruction run with the field's first run's properties, not its own: Word formats the
-     result from the instruction, so `wDateValueFormat`'s page numbers print at 12 pt in Word 2016 where the original
-     has the footer's size (every page). A comment the file gives no date gets the save's time.
+   - Quire text Word places differently, from Intern's bisections (I21, `tmp/losses/i21/REPORT.md`): adjacent runs
+     with the same formatting and ids are merged (`D.normalize`; `tdf81345`, `Strict01`); a field's code runs go
+     outside the hyperlink that holds the field (`docx-write.js` hyperlink groups leave field markers out; `Strict01`'s
+     table of contents, and `stress004`'s: there, keeping the code's own runs crosses some limit in Word that moves
+     Persian text on 12 later pages by a fraction, which any four fields written as one run undo); text with an
+     interior double space gets `xml:space="preserve"` (`form_footnotes`).
    - Quire revision history it doesn't model, dropped silently on an unedited save: a HYPERLINK field whose address
      was changed with Track Changes (`tdf124472`: the old address and the instruction's revisions go); a revision on
      a comment's reference mark (`tdf105485`, `Comment024`); a bound content control's cached text with revisions,

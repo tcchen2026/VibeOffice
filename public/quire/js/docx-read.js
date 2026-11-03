@@ -933,7 +933,7 @@
         p.runs.push(it);
       };
       const text = s => { if (s) push(D.text(s, base)); };
-      let customMark = false;
+      let customMark = false, instrRun = null;
       const ac = L.preserve.readAlternates(r, p.runs, ctx, doc, 'run', base);
       for (const c of r.children) {
         const from = p.runs.length;
@@ -1005,7 +1005,19 @@
             }
             break;
           }
-          case 'instrText': { const t = topField(ctx); if (t && t.phase === 'instr' && !t.nested && ctx.fstack.filter((f) => f.phase === 'instr').length === 1) t.item.instr += c.textContent; break; }
+          case 'instrText': {
+            const t = topField(ctx);
+            if (!(t && t.phase === 'instr' && !t.nested && ctx.fstack.filter((f) => f.phase === 'instr').length === 1)) break;
+            t.item.instr += c.textContent;
+            // the instruction's runs as they were (Word formats the result from them), written back while it is unchanged
+            if (instrRun?.field === t.item) { instrRun.run.text += c.textContent; break; }
+            const rp = L.clone(base);
+            delete rp.link; delete rp.ins; delete rp.del;
+            instrRun = { field: t.item, run: { rPr: rp, text: c.textContent } };
+            if (rids) instrRun.run.ids = rids;
+            (t.item.instrRuns || (t.item.instrRuns = [])).push(instrRun.run);
+            break;
+          }
           case 'delInstrText': { const t = topField(ctx); if (t && t.phase === 'instr' && !t.nested) t.item.instr += c.textContent; break; }
           case 'footnoteReference': case 'endnoteReference': {
             const kind = c.localName === 'footnoteReference' ? 'fn' : 'en';

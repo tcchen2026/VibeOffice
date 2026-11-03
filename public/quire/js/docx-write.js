@@ -441,7 +441,14 @@
         if ((kept || it.instrFlattened) && ctx.writer) ctx.writer.loss({ id: 'field-code:' + ctx.part + ':' + it.fid, where: ctx.part, action: 'drop', notify: true,
           place: (D.fieldType(it.instr) || 'Field') + ' field',
           what: kept ? 'Nested fields or pictures in this field\'s code were removed, because the field code was edited.' : 'Nested fields or pictures in this field\'s code can\'t be kept and will be removed.' });
-        return begin + runWrap(r, del ? `<w:delInstrText xml:space="preserve">${X(it.instr || '')}</w:delInstrText>` : `<w:instrText xml:space="preserve">${X(it.instr || '')}</w:instrText>`, ctx);
+        const tag = del ? 'w:delInstrText' : 'w:instrText';
+        // the instruction's runs as they were read (docx-read, instrText) while the field code is unchanged
+        const runs = it.instrRuns;
+        if (runs && fieldCode(runs.map(x => x.text).join('')) === fieldCode(it.instr)) {
+          const outer = ctx.runIds;
+          try { return begin + runs.map(x => { ctx.runIds = x.ids; return runWrap(x.rPr, `<${tag}${/^ |  | $/.test(x.text) ? ' xml:space="preserve"' : ''}>${X(x.text)}</${tag}>`, ctx); }).join(''); } finally { ctx.runIds = outer; }
+        }
+        return begin + runWrap(r, `<${tag} xml:space="preserve">${X(it.instr || '')}</${tag}>`, ctx);
       }
       case 'fs': return runWrap(r, '<w:fldChar w:fldCharType="separate"/>', ctx);
       case 'fe': return runWrap(r, '<w:fldChar w:fldCharType="end"/>', ctx);
@@ -1173,7 +1180,8 @@
         /* tag the last paragraph with a paraId for threading / done state (in place of the one it was read with) */
         const last = [...inner.matchAll(/<w:p(?=[ >])[^>]*>/g)].at(-1);
         if (last) inner = inner.slice(0, last.index) + last[0].replace(/ w14:(?:paraId|textId)="[^"]*"/g, '').replace('<w:p', `<w:p w14:paraId="${pid}" w14:textId="77777777"`) + inner.slice(last.index + last[0].length);
-        x += `<w:comment w:id="${nid}" w:author="${X(c.author || 'Unknown')}" w:date="${X(c.date || iso())}" w:initials="${X(c.initials || '')}">${inner}</w:comment>`;
+        // a comment read without a date is saved without one (57 in the corpus); new ones get one (review.js)
+        x += `<w:comment w:id="${nid}" w:author="${X(c.author || 'Unknown')}"${c.date ? ` w:date="${X(c.date)}"` : ''} w:initials="${X(c.initials || '')}">${inner}</w:comment>`;
       }
       for (const [orig] of cmtIds) {
         const c = doc.comments[orig];

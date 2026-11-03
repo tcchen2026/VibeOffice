@@ -130,3 +130,36 @@ test('nested fields in one run report that their instructions cannot be kept', a
   assert.deepEqual(result.after.instructions, [result.code]);
   assert.match(fieldLoss(result).what, /can't be kept/);
 });
+
+// A field's instruction runs keep their properties and ids while the field code is unchanged: they were written as one
+// run with the begin run's properties, and Word formats the result from the instruction (wDateValueFormat's page
+// numbers printed larger in Word 2016).
+async function instructionRuns(edit) {
+  const K = L.opc, N = K.NS;
+  const r = (pr, content, attrs = '') => `<w:r${attrs}>${pr ? `<w:rPr>${pr}</w:rPr>` : ''}${content}</w:r>`;
+  const body = `<w:p>${r('<w:sz w:val="24"/>', '<w:fldChar w:fldCharType="begin"/>')}${r('<w:b/>', '<w:instrText>PA</w:instrText>', ' w:rsidR="00A1B2C3"')}` +
+    `${r('<w:i/>', '<w:instrText xml:space="preserve">GE  \\* Arabic</w:instrText>')}${r('<w:sz w:val="24"/>', '<w:fldChar w:fldCharType="separate"/>')}` +
+    `${r('', '<w:t>1</w:t>')}${r('<w:sz w:val="24"/>', '<w:fldChar w:fldCharType="end"/>')}</w:p>`;
+  const original = await L.zip.write([
+    { name: '[Content_Types].xml', data: `<Types xmlns="${N.ct}"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>` },
+    { name: '_rels/.rels', data: `<Relationships xmlns="${N.pkg}"><Relationship Id="rId1" Type="${N.rel}/officeDocument" Target="word/document.xml"/></Relationships>` },
+    { name: 'word/document.xml', data: `<w:document xmlns:w="${N.w}"><w:body>${body}<w:sectPr/></w:body></w:document>` },
+  ]);
+  const { doc } = await L.docx.read(new Uint8Array(await original.arrayBuffer()));
+  if (edit) doc.main.blocks[0].runs.find(it => it.t === 'fb').instr = ' NUMPAGES ';
+  const saved = await K.open(new Uint8Array(await (await L.docx.write(doc)).arrayBuffer()));
+  return Array.from(saved.xml('word/document.xml').getElementsByTagNameNS(N.w, 'instrText')).map(t => {
+    const run = t.parentNode, pr = run.getElementsByTagNameNS(N.w, 'rPr')[0];
+    return [t.textContent, pr ? Array.from(pr.children).map(c => c.localName).join(' ') : '', run.getAttributeNS(N.w, 'rsidR') || ''];
+  });
+}
+const instructionRun = async edit => {
+  const got = await page.evaluate(`(${instructionRuns.toString()})(${JSON.stringify(edit)})`);
+  assert.deepEqual(page.errors, [], 'no browser exceptions, console errors or CSP refusals');
+  return got;
+};
+
+test('an unchanged field code keeps its runs; an edited one takes the field\'s first run\'s properties', async () => {
+  assert.deepEqual(await instructionRun(false), [['PA', 'b', '00A1B2C3'], ['GE  \\* Arabic', 'i', '']]);
+  assert.deepEqual(await instructionRun(true), [[' NUMPAGES ', 'sz', '']]);
+});
