@@ -131,7 +131,10 @@ These are in addition to AGENTS.md.
    (`w:szCs`), which was written equal to its size where the file had none, changing the size of Arabic, Hebrew and
    other complex-script text (27,025 times in 683 files; 1,715 left, on runs the file gave no properties). Intern's review
    of these (I20) found five edit and copy cases, fixed with them: a changed style's base style, a new style's own
-   settings, Insert Rows copying cell history, a copy before its source taking its ids, a row exception's revision id. Unedited
+   settings, Insert Rows copying cell history, a copy before its source taking its ids, a row exception's revision id. The
+   comment extensions Quire adds (`commentsExtended.xml`) use the draft w15 namespace in a file from Word 2013's
+   preview that binds it (64 Word files, 3 with comments and no extensions of their own): Word 2016 refused the three
+   saves (`Comment012`, `Comment035`, `Comment050`), which now open, rule `w15-namespaces`. Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -144,6 +147,9 @@ These are in addition to AGENTS.md.
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
      styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
      the built-in's look until the file is reopened.
+   - Quire rewrites a comment's reference run: its `w:rsidRPr` goes, and it is placed right after its range's end,
+     where Word had several references after several ends (`Comment035`, `Comment050`: Word 2016 places the text after
+     it a fraction of a point differently, 108 pixels a page at 50 dpi).
    - Quire revision history it doesn't model, dropped silently on an unedited save: a HYPERLINK field whose address
      was changed with Track Changes (`tdf124472`: the old address and the instruction's revisions go); a revision on
      a comment's reference mark (`tdf105485`, `Comment024`); a bound content control's cached text with revisions,

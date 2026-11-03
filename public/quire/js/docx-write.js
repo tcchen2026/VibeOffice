@@ -1163,7 +1163,7 @@
         ex += `<w15:commentEx w15:paraId="${pid}"${parent ? ` w15:paraIdParent="${parent}"` : ''} w15:done="${c.done ? 1 : 0}"/>`;
       }
       cmPart = { xml: HEAD + `<w:comments ${NSDECL}>${x}</w:comments>`, rels };
-      const extendedNS = doc.keep?.commentExtension?.namespace || NS.w15;
+      const extendedNS = doc.keep?.commentExtension?.namespace || doc.keep?.w15 || NS.w15;
       cmExPart = HEAD + `<w15:commentsEx xmlns:mc="${NS.mc}" xmlns:w15="${X(extendedNS)}" mc:Ignorable="w15">${ex}</w15:commentsEx>`;
     }
     /* --- media names --- */

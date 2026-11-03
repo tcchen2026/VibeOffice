@@ -130,6 +130,12 @@ test('a styles part holds at most 4,092 styles, or Word 2016 refuses the file', 
   assert.equal(run('check', await pkg('styles-4092', styles(4092))).status, 'ok');
   assert.ok(run('check', await pkg('styles-4093', styles(4093))).issues.some(i => i.code === 'too-many-styles'));
 });
+test('comment extensions use the w15 namespace the other parts bind, or Word 2016 refuses the file', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', DRAFT = 'http://schemas.microsoft.com/office/word/2010/11/wordml';
+  const parts = (ex) => ({ 'word/document.xml': `<w:document xmlns:w="${W}" xmlns:w15="${DRAFT}"><w:body/></w:document>`, 'word/commentsExtended.xml': `<w15:commentsEx xmlns:w15="${ex}"/>` });
+  assert.equal(run('check', await pkg('w15-draft', parts(DRAFT))).status, 'ok');
+  assert.ok(run('check', await pkg('w15-mixed', parts('http://schemas.microsoft.com/office/word/2012/wordml'))).issues.some(i => i.code === 'w15-namespaces'));
+});
 test('a SmartArt data part\'s presentation links name its layout part, or PowerPoint 2016 draws nothing', async () => {
   const DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram', id = 'urn:example/layout/process#1f2e3d4c';
   const frame = `<p:cSld><p:spTree><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Diagram"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><a:graphic><a:graphicData uri="${DGM}"><dgm:relIds xmlns:dgm="${DGM}" r:dm="d" r:lo="l" r:qs="d" r:cs="d"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:cSld>`;

@@ -1920,6 +1920,12 @@
         doc.keep.commentExtension = { part: exRel.target, namespace: exRoot.namespaceURI, values: L.preserve.commentMetadata(doc) };
       }
     }
+    // A file from Word 2013's preview binds its w15 prefix to the draft namespace; Word refuses it when comment extensions
+    // added on save use the released one, so they use the draft too (tools/ooxml/package.py, w15-namespaces)
+    {
+      const root = docX.documentElement || docX;
+      if (Array.from(root.attributes || []).some(a => a.value === 'http://schemas.microsoft.com/office/word/2010/11/wordml')) doc.keep.w15 = 'http://schemas.microsoft.com/office/word/2010/11/wordml';
+    }
 
     /* ---- body ---- */
     await preload(docRels);
