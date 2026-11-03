@@ -1137,7 +1137,7 @@
     function parseTbl(el, ctx) {
       const tp = tblPr(kid(el, 'tblPr'));
       L.preserve.properties(tp, kid(el, 'tblPr'), 'tblPr', { pkg: doc.pkg, part: ctx.part });
-      const grid = kids(kid(el, 'tblGrid'), 'gridCol').map((g) => tw(at(g, 'w')));
+      const grid = kids(kid(el, 'tblGrid'), 'gridCol').map((g) => tw(at(g, 'w'))), gridSignature = JSON.stringify(grid);
       const rows = [];
       const rowAlternates = L.preserve.readAlternates(el, rows, ctx, doc, 'row');
       const rowEls = [];
@@ -1153,7 +1153,7 @@
       };
       for (const tr of rowEls) {
         if (RANGE_MARK.test(tr.localName)) { rangeMark(tr, 'row'); continue; }
-        const rp = trPr(kid(tr, 'trPr'));
+        const rp = L.preserve.properties(trPr(kid(tr, 'trPr')), kid(tr, 'trPr'), 'trPr', { pkg: doc.pkg, part: ctx.part });
         const ex = kid(tr, 'tblPrEx');
         const cells = [];
         const cellAlternates = L.preserve.readAlternates(tr, cells, ctx, doc, 'cell');
@@ -1165,6 +1165,8 @@
         for (const tc of cellEls) {
           if (RANGE_MARK.test(tc.localName)) { rangeMark(tc, 'cell'); continue; }
           const cp = tcPr(kid(tc, 'tcPr'));
+          /* the cell's width is kept as the file has it (a percentage, auto) while the table's grid is unchanged */
+          if (kid(tc, 'tcPr')) { cp._grid = gridSignature; L.preserve.properties(cp, kid(tc, 'tcPr'), 'tcPr', { pkg: doc.pkg, part: ctx.part }); delete cp._grid; }
           const blocks = parseBlocks(tc, ctx);
           lastPara = blocks.filter((b) => b.t === 'p').at(-1) || lastPara;
           if (cellBound.has(tc)) { const ps = blocks.filter((b) => b.t === 'p'); if (ps.length === 1) ps[0].runs = boundRuns(cellBound.get(tc), ps[0].runs); }
@@ -1192,6 +1194,8 @@
         const tids = elementIds(tr);
         if (tids) row.ids = tids;
         if (ex) { const xp = tblPr(ex); if (xp.borders) row.exBorders = xp.borders; }
+        /* the row's exceptions to the table's properties as the file has them (margins, shading, width, …); Quire models the borders */
+        if (ex) row.ex = L.preserve.properties({ borders: row.exBorders }, ex, 'tblPrEx', { pkg: doc.pkg, part: ctx.part });
         rows.push(row);
         rowModels.set(tr, row);
         rowAlternates.add(tr, rows.length - 1);
@@ -1214,6 +1218,9 @@
       g = g.map((x) => (x > 0 ? L.round(x, 2) : 4));
       const t = D.table(rows, g, tp);
       if (grid.length !== g.length || grid.some((w, i) => Math.abs(w - g[i]) > 0.0001)) t.keep = { gridRepair: true };
+      /* a tracked change to the columns is written back while the columns are as read */
+      const gridChange = kid(kid(el, 'tblGrid'), 'tblGridChange');
+      if (gridChange) t.keep = Object.assign(t.keep || {}, { gridChange: { fragment: L.opc.fragment(gridChange, { pkg: doc.pkg, part: ctx.part }), grid: gridSignature } });
       return t;
     }
 

@@ -123,7 +123,11 @@ These are in addition to AGENTS.md.
    19 pages, 18 → 3 after the fix; removing only the rsids from the original gave the same shift), and Compare, Combine
    and comments use them; a copied paragraph doesn't repeat its paragraph id. Text is written with `xml:space="preserve"`
    only where it needs it, as Word does: on every `w:t`, it moved Word's text a fraction too (7 of the walkthrough's
-   pages). Unedited
+   pages); what rows and cells have that Quire doesn't model (`w:cnfStyle`, `w:wBefore`/`w:wAfter`, a row's
+   `w:tblCellSpacing`, cell revisions and property changes), a cell's width as the file gives it (a percentage, auto:
+   written in twips before; kept while the table's grid is unchanged), a row's exceptions to the table's properties
+   (`w:tblPrEx`, 1,146 in 39 files: Word moved a row's text 54 pt without them) and the columns' tracked change
+   (`w:tblGridChange`), the last two found by Intern's part-by-part measurement (I19). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -144,8 +148,6 @@ These are in addition to AGENTS.md.
    - Quire, a damaged original that LibreOffice recovers and the save doesn't: footnotes whose ids don't match their
      references (`tdf153255`: LibreOffice shows six, the save three). Word 2016 repairs the original and opens the save
      cleanly, so it waits. (Two final section definitions, `tdf108849`: fixed, the last one wins, as in Word 2016.)
-   - Quire drops `w:cnfStyle` on rows and cells (about 60 files), which shifts five of the walkthrough's pages slightly
-     in Word, and the rows' and cells' other unmodelled properties.
 2. **Lectern checker numbers:** run the Lectern corpus driver, which needs Playwright, to measure how
    often unedited saves show the checker. Ledger shows it for 5 of 888 files, and the Quire sample
    for 3 of 106.

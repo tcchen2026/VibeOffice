@@ -146,11 +146,16 @@
     num: { abstractNumId: ['abs'] },
     lvlOverride: { startOverride: ['start'] },
     numbering: {},
+    // a row's and a cell's; what Quire doesn't model (w:cnfStyle, w:wBefore/wAfter, w:divId, a row's w:tblCellSpacing, cell
+    // revisions) stays. A cell's width also changes with the table grid (the writer passes its signature as _grid)
+    trPr: { trHeight: ['h', 'hRule'], cantSplit: ['cantSplit'], tblHeader: ['header'], gridBefore: ['gridBefore'], gridAfter: ['gridAfter'], jc: ['jc'], hidden: ['hidden'] },
+    tblPrEx: { tblBorders: ['borders'] },
+    tcPr: { tcW: ['w', '_grid'], gridSpan: ['span'], hMerge: ['hMerge'], vMerge: ['vMerge'], tcBorders: ['borders'], shd: ['shd'], noWrap: ['noWrap'], tcMar: ['mar'], textDirection: ['textDir'], tcFitText: ['fit'], vAlign: ['vAlign'], hideMark: ['hideMark'] },
     // a style's own settings; what Quire doesn't model (aliases, locked, personal*, rsid, a table style's trPr) stays as it was
     style: { name: ['name'], basedOn: ['basedOn'], next: ['next'], link: ['link'], autoRedefine: ['autoRedefine'], hidden: ['hidden'], uiPriority: ['prio'], semiHidden: ['semiHidden'], unhideWhenUsed: ['unhide'], qFormat: ['q'], pPr: ['pPr'], rPr: ['rPr'], tblPr: ['tblPr'], tcPr: ['tcPr'], tblStylePr: ['cond'] },
   });
   const numberTypes = { numbering: 'w:CT_Numbering', abstractNum: 'w:CT_AbstractNum', num: 'w:CT_Num', lvlOverride: 'w:CT_NumLvl', lvl: 'w:CT_Lvl' };
-  const ownedChildren = { pPr: ['rPr', 'sectPr'], numbering: ['numPicBullet', 'abstractNum', 'num'], abstractNum: ['lvl'], num: ['abstractNumId', 'lvlOverride'], lvlOverride: ['lvl'], lvl: ['pPr', 'rPr', 'lvlPicBulletId'] };
+  const ownedChildren = { pPr: ['rPr', 'sectPr'], trPr: ['ins', 'del'], numbering: ['numPicBullet', 'abstractNum', 'num'], abstractNum: ['lvl'], num: ['abstractNumId', 'lvlOverride'], lvlOverride: ['lvl'], lvl: ['pPr', 'rPr', 'lvlPicBulletId'] };
   const propertyKeys = (kind, el) => wordNS(el.namespaceURI) ? P.propertyFields[kind][el.localName] : kind === 'rPr' && /word\/2010\/wordml$/.test(el.namespaceURI || '') ? ({ shadow: ['shadow'], textFill: ['color'], textOutline: ['outline'] }[el.localName]) : undefined;
   const field = (model, path) => path.split('.').reduce((v, k) => v?.[k], model);
   const propertyValues = (model, keys) => JSON.stringify(keys.map(k => field(model, k) ?? null), (k, v) => k === 'x' && v?.fragment ? undefined : v);
@@ -213,7 +218,7 @@
     const kept = model.x, root = propertyAttributes('<w:' + kind + ' xmlns:w="' + N.w + '">' + generated + '</w:' + kind + '>', attributes);
     if (!kept) return generated ? root : '';
     let repaired = false;
-    const type = numberTypes[kind] || { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr', sectPr: 'w:CT_SectPr', style: 'w:CT_Style' }[kind];
+    const type = numberTypes[kind] || { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr', trPr: 'w:CT_TrPr', tblPrEx: 'w:CT_TblPrEx', tcPr: 'w:CT_TcPr', sectPr: 'w:CT_SectPr', style: 'w:CT_Style' }[kind];
     if (!propertyRanks.has(type)) {
       const ranks = new Map();
       K.schema.types[type].forEach((slot, i) => slot.forEach(name => ranks.set('{' + K.schema.namespaces[name.split(':')[0]] + '}' + name.split(':')[1], i)));
@@ -307,7 +312,7 @@
       if (repaired) ctx.writer.loss({ id: 'property:repair:' + (kept.fragment.source || '') + ':' + kept.fragment.part, what: 'Invalid source formatting was normalized for compatibility.', where: kept.fragment.part, action: 'conversion' });
       return ctx.writer.emit(K.slice(kept.fragment, propertyAttributes(xml, attributes)), ctx.part);
     } catch (error) {
-      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (numberTypes[kind] ? 'list' : kind === 'rPr' ? 'text' : kind === 'sectPr' ? 'section' : kind === 'style' ? 'style' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
+      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (numberTypes[kind] ? 'list' : kind === 'rPr' ? 'text' : kind === 'sectPr' ? 'section' : kind === 'style' ? 'style' : kind === 'trPr' || kind === 'tcPr' || kind === 'tblPrEx' ? 'table' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
       return generated ? root : '';
     }
   };

@@ -657,13 +657,18 @@
     if (t.keep?.gridRepair) ctx.writer.loss({ id: 'table-grid:' + ctx.part, what: 'Incomplete or unusable table column widths were reconstructed. Table layout may change.', where: ctx.part, action: 'conversion' });
     const map = L.R.tblMap(t);
     const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { ...ctx, full: true }), ctx);
-    let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}</w:tblGrid>`;
+    const gridChange = t.keep?.gridChange, sameGrid = gridChange && JSON.stringify(t.grid) === gridChange.grid;
+    if (gridChange && !sameGrid) ctx.writer.loss({ id: 'grid-change:' + ctx.part, what: 'A tracked change to a table\'s columns was left out, because the columns were changed.', where: ctx.part, action: 'drop' });
+    let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}${sameGrid ? ctx.writer.emit(gridChange.fragment, ctx.part) : ''}</w:tblGrid>`;
     const lastTop = (blocks) => blocks?.filter((b) => b.t === 'p').at(-1);
     const tableEnds = hoistEnds(D.lastPara([t]), 'table', ctx);
     x += L.preserve.controlSequence(t.rows, row => row.trPr, row => L.preserve.tableMemberXML(row, ctx, () => {
       const ri = t.rows.indexOf(row), rowEnds = hoistEnds(lastTop(row.cells.at(-1)?.blocks), 'row', ctx);
       const trp = trPrXML(row.trPr, ctx);
-      let rowXML = `<w:tr${idsXML(row.ids, ctx)}>${trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
+      /* a row and a cell read from a file keep what Quire doesn't model (preserve.js, propertyFields) */
+      const exb = row.exBorders ? bordersEl('tblBorders', row.exBorders, ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']) : '';
+      const ex = row.ex ? L.preserve.propertyXML('tblPrEx', { ...row.ex, borders: row.exBorders }, exb, ctx) : exb ? `<w:tblPrEx>${exb}</w:tblPrEx>` : '';
+      let rowXML = `<w:tr${idsXML(row.ids, ctx)}>${ex}${row.trPr?.x ? L.preserve.propertyXML('trPr', row.trPr, trp, ctx) : trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
       rowXML += L.preserve.controlSequence(row.cells, cell => cell.tcPr, cell => L.preserve.tableMemberXML(cell, ctx, () => {
         const ci = row.cells.indexOf(cell);
         const m = map[ri][ci];
@@ -671,7 +676,8 @@
         const blocks = cell.blocks.length ? cell.blocks : [D.para()], cellEnds = hoistEnds(lastTop(cell.blocks), 'cell', ctx);
         let inner = blocksXML(blocks, ctx);
         if (!blocks.length || blocks[blocks.length - 1].t !== 'p') inner += '<w:p/>';
-        return `<w:tc><w:tcPr>${tcPrXML(cell.tcPr, w)}</w:tcPr>${inner}</w:tc>${cellEnds()}`;
+        const tcp = tcPrXML(cell.tcPr, w);
+        return `<w:tc>${cell.tcPr.x ? L.preserve.propertyXML('tcPr', { ...cell.tcPr, _grid: JSON.stringify(t.grid) }, tcp, ctx) : `<w:tcPr>${tcp}</w:tcPr>`}${inner}</w:tc>${cellEnds()}`;
       }), ctx);
       return rowXML + '</w:tr>' + rowEnds();
     }), ctx);
