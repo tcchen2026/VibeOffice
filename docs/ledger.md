@@ -477,6 +477,11 @@ browser drivers exercise the shipping readers/writers, real undo operations and 
 Independent ZIP/XML checks, Open XML SDK diagnostics and openpyxl comparisons are separate from the
 app's own reopen check. Commands and comparison policies are in [testing.md](testing.md).
 
+In Excel 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 729 workbooks **open without repair
+in 716** (with b9f4c69, which fixed `universal-content-strict`; 45 of them stopped later, at a prompt during PDF export:
+nothing to print, 44, and a large operation); the other 13 are originals Excel also refuses or repairs. One of those,
+`54764-2`, Excel repairs as an original and refuses as a save.
+
 Merged-cell borders are drawn from the individual perimeter cells, retaining partial edges and
 different styles along a side, including blank cells and merges whose anchor is hidden or scrolled
 out of view. The same renderer supplies Print Preview and PDF output. Issue #22's workbook (275

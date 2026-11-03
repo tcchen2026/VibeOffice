@@ -160,6 +160,8 @@ These are in addition to AGENTS.md.
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
      styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
      the built-in's look until the file is reopened.
+   - Damaged originals Office repairs and refuses as saves (Office 2016 sweep, 2026-11-03): `tdf92157-1-minimized`
+     (Word), `54764-2` (Excel). Every other save Office refuses, its original is refused too.
    - Quire text Word places differently, from Intern's bisections (I21, `tmp/losses/i21/REPORT.md`): adjacent runs
      with the same formatting and ids are merged (`D.normalize`; `tdf81345`, `Strict01`); a field's code runs go
      outside the hyperlink that holds the field (`docx-write.js` hyperlink groups leave field markers out; `Strict01`'s

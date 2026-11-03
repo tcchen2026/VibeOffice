@@ -413,6 +413,12 @@ and reference PDFs help diagnose layout. Missing fonts, tight wrapping around ir
 vertical text and complex data bindings remain known differences. RC4-encrypted legacy binary files
 are outside the supported OOXML encryption path.
 
+In Word 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 2,310 distinct Word files (made at
+6e697db) **open without repair in 2,287**; 3 stop at a prompt Word shows for the original too (a mail merge's
+database query); the other 20 are damaged originals that Word also repairs (8) or refuses (12, two of them broken
+ZIP files). One of those, `tdf92157-1-minimized`, Word repairs as an original and refuses as a save. The later save
+changes (8753823, f8f2a1a) passed batches of their own.
+
 Markdown checks remain separate: **24/24 unchanged documents save byte for byte**, edits stay inside
 the edited block in **24/24**, and CommonMark/GFM specifications pass **652/652 and 22/22** cases.
 Commands and comparison policies are in [testing.md](testing.md); earlier broad-corpus layout and

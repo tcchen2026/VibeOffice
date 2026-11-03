@@ -105,6 +105,11 @@ New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.
 * **PDF** — one slide per page, or exactly what Print Preview shows (handouts, notes pages, outline).
 * **Single-file web page** (its one script allowed by its hash in the page's own security policy), **PNG** of the current slide, **plain-text outline**.
 
+In PowerPoint 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 726 decks **open without repair
+in 719** (3 of them then showing their comments pane); 5 stop at a prompt PowerPoint shows for the original too (a
+security notice, 4, and a password to modify); the other 2 are originals PowerPoint also refuses (a crash test and
+`mcppt`).
+
 Pictures survive a round trip in every form they come in: SVG pictures keep the vector original next to a PNG copy, linked pictures keep their link, pictures whose image is missing keep their frame, and a transparent colour (Picture toolbar ▸ Set Transparent Color, or `a:clrChange` in a file) is stored as a setting, not baked into the image.
 
 Imported video and audio retain their original media bytes, links, pictures and playback timing on
