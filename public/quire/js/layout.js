@@ -1220,11 +1220,61 @@
     }
     for (const p of LY.pages) p.el.classList.toggle('vcenter', false);
     applyVAlign();
+    clipColumnPictures();
     LY.layoutMs = performance.now() - t0;
     LY.fitSizer();
     R.layoutMarks(LY.root, LY.opts.showMarks);
     L.bus.emit('layout-done', { pages: LY.pages.length });
   };
+  /** Word clips inline pictures halfway across each column gap, without resizing them.
+      AutoShapes and floats may cross columns, including wrapped floats inside a paragraph.
+      This sets (or clears) the clip-path of every inline picture in a section with columns, so it owns that
+      property: today nothing else clips an inline picture (R.image draws no picture shape; drawing.js clips
+      only floating and grouped pictures, skipped here). A shape given to inline pictures later (an oval, a
+      rounded rectangle) has to be combined with this cut, or be drawn on an inner element. */
+  function clipColumnPictures() {
+    const scale = LY.scale(), updates = [];
+    for (const page of LY.pages) {
+      const pr = page.el.getBoundingClientRect();
+      for (const { frames } of page.regions) {
+        if (frames.length < 2) continue;
+        const matrices = new Map();
+        const matrixFor = (e, col) => {
+          if (e === col) return new DOMMatrix();
+          if (!matrices.has(e)) {
+            const transform = getComputedStyle(e).transform;
+            matrices.set(e, matrixFor(e.parentElement, col).multiply(transform === 'none' ? new DOMMatrix() : new DOMMatrix(transform)));
+          }
+          return matrices.get(e);
+        };
+        for (let i = 0; i < frames.length; i++) {
+          const f = frames[i], prev = frames[i - 1], next = frames[i + 1];
+          const left = pr.left + (prev ? page.bodyLeft + (prev.x + prev.w + f.x) / 2 : 0) * scale;
+          const right = pr.left + (next ? page.bodyLeft + (f.x + f.w + next.x) / 2 : page.W) * scale;
+          for (const object of f.el.querySelectorAll('.img[data-o]')) {
+            // A text box/group's contents follow its outer drawing; floating pictures have page bounds.
+            if (object.closest('.flt') || object.parentElement.closest('.shp')) continue;
+            const rect = object.getBoundingClientRect();
+            // inside its column: clear a cut from an earlier layout (and any other clip-path; see above)
+            if (rect.left >= left && rect.right <= right) { updates.push([object, '']); continue; }
+            const cs = getComputedStyle(object), w = parseFloat(cs.width), h = parseFloat(cs.height);
+            const matrix = matrixFor(object, f.el);
+            // Invert only the linear transform: the transformed border-box centre supplies translation.
+            // This keeps the cut vertical on the page for rotated/flipped pictures and vertical cells.
+            matrix.e = matrix.f = 0;
+            const inverse = matrix.inverse(), cx = (rect.left + rect.right) / 2, cy = (rect.top + rect.bottom) / 2;
+            const points = [[left, pr.top], [right, pr.top], [right, pr.bottom], [left, pr.bottom]].map(([x, y]) => {
+              const p = inverse.transformPoint({ x: (x - cx) / scale, y: (y - cy) / scale });
+              return `${p.x + w / 2}px ${p.y + h / 2}px`;
+            });
+            updates.push([object, `polygon(${points.join(',')})`]);
+          }
+        }
+      }
+    }
+    // Finish all geometry reads before changing paint; clipping never changes the model or line widths.
+    for (const [object, clip] of updates) object.style.clipPath = clip;
+  }
   function regionStartState(region, page, blocks) {
     /* first fragment in the region */
     const first = region.frames[0].el.querySelector('.p, .tbl');

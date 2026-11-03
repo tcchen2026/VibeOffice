@@ -51,6 +51,12 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   break and a section break or a break at their end, 4 more show it (42 in all), one more comes closer,
   and none moves away. A centred table wider than its column overhangs both margins evenly, a
   right-aligned one the left margin.
+- Inline pictures wider than a column are clipped halfway across the gap to the next column,
+  preserving their size and crop in the document. The outside page margins stay available to
+  negative indents; floating pictures and inline AutoShapes can cross columns. Checked against
+  Word 2016 PDFs of six controls (equal/unequal columns, single column, floats, rotation/flips,
+  AutoShapes) and issue #5's three-page document (`tests/from-issues/5/`). Both its original and
+  Quire's save open without repair prompts; this display fix changes no saved DOCX part.
 - East Asian text is drawn with the run's East Asian font (`w:eastAsia`, or the theme's for the
   document's East Asian language) and marked with its East Asian language, and takes that font's line
   height where it is the taller ([i18n.md](i18n.md), Fonts). A new document follows the UI's language:
@@ -69,7 +75,8 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   within 0.51pt (`tests/quire/lines.test.mjs`); 15 synthetic cases match LibreOffice within 0.2pt. Of
   2,289 Word-saved corpus files, 2,136 show Word's stored page count (2,127 before); the 10 whose count
   changed all moved toward Word's, none away (`tools/quire-pages.mjs`).
-  Not covered yet: a picture in a line with exact spacing (Word clips it to the line), a picture alone
+  Not covered yet: a picture in a line with exact spacing or a rotated inline picture (Word clips
+  these vertically to the line), a picture alone
   with multiple spacing or on a grid, a line of only a small picture (Quire follows LibreOffice: the
   mark's line, the picture at its foot), and a large paragraph mark after small text (matched to
   LibreOffice only).
