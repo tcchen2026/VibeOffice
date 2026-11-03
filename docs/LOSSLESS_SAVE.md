@@ -127,7 +127,9 @@ These are in addition to AGENTS.md.
    `w:tblCellSpacing`, cell revisions and property changes), a cell's width as the file gives it (a percentage, auto:
    written in twips before; kept while the table's grid is unchanged), a row's exceptions to the table's properties
    (`w:tblPrEx`, 1,146 in 39 files: Word moved a row's text 54 pt without them) and the columns' tracked change
-   (`w:tblGridChange`), the last two found by Intern's part-by-part measurement (I19). Unedited
+   (`w:tblGridChange`), the last two found by Intern's part-by-part measurement (I19); a run's complex-script size
+   (`w:szCs`), which was written equal to its size where the file had none, changing the size of Arabic, Hebrew and
+   other complex-script text (27,025 times in 683 files; 1,715 left, on runs the file gave no properties). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:

@@ -95,7 +95,8 @@
     if (r.kern) x += `<w:kern w:val="${hp(r.kern)}"/>`;
     if (r.pos) x += `<w:position w:val="${hp(r.pos)}"/>`;
     if (r.sz) x += `<w:sz w:val="${hp(r.sz)}"/>`;
-    if (r.szCs || r.sz) x += `<w:szCs w:val="${hp(r.szCs || r.sz)}"/>`;
+    /* complex-script size: Word writes it with the size; a run read without one (r.x, its w:rPr) is kept without */
+    if (r.szCs || r.sz && !r.x) x += `<w:szCs w:val="${hp(r.szCs || r.sz)}"/>`;
     if (r.hl) x += `<w:highlight w:val="${r.hl}"/>`;
     if (r.u) x += `<w:u w:val="${r.u}"${r.uColor ? ` w:color="${hex(r.uColor)}"` : ''}/>`;
     if (r.effect) x += `<w:effect w:val="${r.effect}"/>`;
