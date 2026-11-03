@@ -756,7 +756,7 @@
           case 'bookmarkStart': case 'permStart': case 'moveFromRangeStart': case 'moveToRangeStart': ctx.pendingBm.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
           case 'bookmarkEnd': case 'permEnd': case 'moveFromRangeEnd': case 'moveToRangeEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, last ? (out.at(-1)?.t === 'tbl' ? 'table' : true) : false); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
           case 'commentRangeStart': ctx.pendingBm.push(D.item('cs', { id: at(c, 'id') })); break;
-          case 'commentRangeEnd': { const last = lastParaIn(out); const it = D.item('ce', { id: at(c, 'id') }); if (last) last.runs.push(it); else ctx.pendingBm.push(it); break; }
+          case 'commentRangeEnd': { const last = lastParaIn(out); const it = D.item('ce', { id: at(c, 'id') }); if (last) last.runs.push(it); else ctx.pendingBm.push(it); (ctx.cmtEnds || (ctx.cmtEnds = new Map())).set(it.id, it); break; }
           case 'altChunk': out.push(L.preserve.opaqueBlock(c, ctx, doc, 'Embedded document')); break;
           default: break;
         }
@@ -884,7 +884,11 @@
           }
           case 'bookmarkStart': case 'bookmarkEnd': case 'permStart': case 'permEnd': case 'moveFromRangeStart': case 'moveFromRangeEnd': case 'moveToRangeStart': case 'moveToRangeEnd': p.runs.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
           case 'commentRangeStart': p.runs.push(D.item('cs', { id: at(c, 'id') })); ctx.cmtOpen.add(at(c, 'id')); break;
-          case 'commentRangeEnd': p.runs.push(D.item('ce', { id: at(c, 'id') })); ctx.cmtSeen = ctx.cmtSeen || new Set(); ctx.cmtSeen.add(at(c, 'id')); break;
+          case 'commentRangeEnd': {
+            const ce = D.item('ce', { id: at(c, 'id') }), first = ctx.cmtRefFirst?.get(ce.id);
+            if (first && first.p === p && first.at === p.runs.length) { ce.ref = { ...first.ref, first: true }; ctx.cmtRefFirst.delete(ce.id); }
+            p.runs.push(ce); ctx.cmtSeen = ctx.cmtSeen || new Set(); ctx.cmtSeen.add(ce.id); (ctx.cmtEnds || (ctx.cmtEnds = new Map())).set(ce.id, ce); break;
+          }
           case 'oMath': case 'oMathPara': p.runs.push(mathItem(c)); break;
           case 'r_': break;
           default: break;
@@ -1020,6 +1024,19 @@
             // A reference may precede its real range. Point comments have virtual
             // editor boundaries, but must not add duplicate OOXML range IDs.
             if (!ctx.cmtRanges.has(id)) { p.runs.push(D.item('cs', { id, point: true })); p.runs.push(D.item('ce', { id, point: true })); }
+            // the reference run's properties and ids, and the comment marks Word wrote between the range's end and it
+            // (overlapping comments ending together: their ends, then their references), written back the same way;
+            // a reference right before its range's end stays there
+            const end = p.runs.findLastIndex(it => it.t === 'ce' && it.id === id), ce = p.runs[end] || ctx.cmtEnds?.get(id);
+            const rp = L.clone(base);
+            delete rp.link; delete rp.ins; delete rp.del;
+            const ref = { rPr: rp, seq: ctx.cmtRefs = (ctx.cmtRefs || 0) + 1 };
+            if (rids) ref.ids = rids;
+            if (ce && !ce.ref) {
+              const between = end < 0 ? [] : p.runs.slice(end + 1);
+              if (between.length && between.every(it => it.t === 'cs' || it.t === 'ce')) ref.skip = between.length;
+              ce.ref = ref;
+            } else if (!ce) (ctx.cmtRefFirst || (ctx.cmtRefFirst = new Map())).set(id, { p, at: p.runs.length, ref });
             break;
           }
           case 'drawing': { const it = parseDrawing(c, ctx, base); push(L.preserve.keepObject(it, c, ctx, doc, it?.diagram ? 'SmartArt' : it?.alt || 'Drawing')); break; }

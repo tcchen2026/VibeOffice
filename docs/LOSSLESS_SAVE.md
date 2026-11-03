@@ -134,7 +134,11 @@ These are in addition to AGENTS.md.
    settings, Insert Rows copying cell history, a copy before its source taking its ids, a row exception's revision id. The
    comment extensions Quire adds (`commentsExtended.xml`) use the draft w15 namespace in a file from Word 2013's
    preview that binds it (64 Word files, 3 with comments and no extensions of their own): Word 2016 refused the three
-   saves (`Comment012`, `Comment035`, `Comment050`), which now open, rule `w15-namespaces`. Unedited
+   saves (`Comment012`, `Comment035`, `Comment050`), which now open, rule `w15-namespaces`. A comment's reference run
+   keeps its properties and ids (all 1,340 in the 110 Word files with comments, from 846 ids and 990 properties) and its
+   place after the other comments' marks (1,058, from 634; Word puts a few after a picture or a proofing mark, and
+   those still follow their range's end): Word 2016 placed the text after them a fraction of a point differently
+   (`Comment035`, `Comment050`, now pixel-identical in Word 2016; 7 of 8 files of the batch are). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:
@@ -147,9 +151,9 @@ These are in addition to AGENTS.md.
    - Quire: text pasted as HTML, RTF or Markdown into a file from Word in another language keeps the built-in
      styles' ids (Heading 1, Table Grid, Quote); it is saved with the file's own style of that name, but Quire shows
      the built-in's look until the file is reopened.
-   - Quire rewrites a comment's reference run: its `w:rsidRPr` goes, and it is placed right after its range's end,
-     where Word had several references after several ends (`Comment035`, `Comment050`: Word 2016 places the text after
-     it a fraction of a point differently, 108 pixels a page at 50 dpi).
+   - Quire writes a field's instruction run with the field's first run's properties, not its own: Word formats the
+     result from the instruction, so `wDateValueFormat`'s page numbers print at 12 pt in Word 2016 where the original
+     has the footer's size (every page). A comment the file gives no date gets the save's time.
    - Quire revision history it doesn't model, dropped silently on an unedited save: a HYPERLINK field whose address
      was changed with Track Changes (`tdf124472`: the old address and the instruction's revisions go); a revision on
      a comment's reference mark (`tdf105485`, `Comment024`); a bound content control's cached text with revisions,

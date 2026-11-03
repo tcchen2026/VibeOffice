@@ -329,6 +329,7 @@
     let i = 0;
     while (i < items.length) {
       const it = items[i];
+      if (ctx.cmtQueue?.length && it.t !== 'cs' && it.t !== 'ce') out += commentRefs(ctx, null, true);
       const original = L.preserve.objectXML(it, 'ac', ctx);
       if (original != null) {
         if (original) { const outer = ctx.runIds; ctx.runIds = it.ids; try { out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx, it) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx); } finally { ctx.runIds = outer; } }
@@ -362,7 +363,17 @@
       out += wrapRunGroup(inner, { link, ins, del }, ctx, it);
       i = j;
     }
-    return out;
+    return ctx.cmtQueue?.length ? out + commentRefs(ctx, null, true) : out;
+  }
+  /* comment references waiting for the comment marks Word wrote before them (docx-read, commentReference): each
+     comment mark counts one off; the due ones are written in the order they were read, the rest before other content */
+  function commentRefs(ctx, ref, all) {
+    const queue = ctx.cmtQueue || (ctx.cmtQueue = []);
+    if (!all) for (const q of queue) q.left--;
+    if (ref) queue.push(ref);
+    const due = all ? queue.splice(0) : queue.filter(q => q.left <= 0);
+    if (!all) ctx.cmtQueue = queue.filter(q => q.left > 0);
+    return due.sort((a, b) => a.seq - b.seq).map(q => q.xml).join('');
   }
   function cleanRPr(r) {
     if (!r) return {};
@@ -437,9 +448,18 @@
       case 'bs': { const k = 's' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return L.preserve.markerXML(it, ctx) ?? `<w:bookmarkStart w:id="${ctx.bmId(it.id)}" w:name="${X(it.name || '_bm' + it.id)}"/>`; }
       case 'be': { const k = 'e' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return L.preserve.markerXML(it, ctx) ?? `<w:bookmarkEnd w:id="${ctx.bmId(it.id)}"/>`; }
       case 'perm': return L.preserve.markerXML(it, ctx) || '';
-      case 'cs': return ctx.cmtOk(it.id) && !it.point ? `<w:commentRangeStart w:id="${ctx.cmtId(it.id)}"/>` : '';
-      case 'ce': return ctx.cmtOk(it.id) ? (it.point ? '' : `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>`) +
-        (ctx.cmtReference(it.id) ? runWrap({ style: 'CommentReference' }, `<w:commentReference w:id="${ctx.cmtId(it.id)}"/>`, ctx) : '') : '';
+      case 'cs': return (ctx.cmtOk(it.id) && !it.point ? `<w:commentRangeStart w:id="${ctx.cmtId(it.id)}"/>` : '') + commentRefs(ctx);
+      case 'ce': {
+        if (!ctx.cmtOk(it.id)) return commentRefs(ctx);
+        let ref = null;
+        if (ctx.cmtReference(it.id)) {
+          const outer = ctx.runIds;
+          ctx.runIds = it.ref?.ids;
+          try { ref = { seq: it.ref?.seq ?? Infinity, left: it.ref?.skip || 0, xml: runWrap(it.ref?.rPr || { style: 'CommentReference' }, `<w:commentReference w:id="${ctx.cmtId(it.id)}"/>`, ctx) }; } finally { ctx.runIds = outer; }
+        }
+        if (ref && it.ref?.first) return ref.xml + `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>` + commentRefs(ctx);
+        return (it.point ? '' : `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>`) + commentRefs(ctx, ref);
+      }
       case 'fn': case 'en': {
         const kind = it.t === 'fn' ? 'footnote' : 'endnote';
         if (it.self) return runWrap(Object.assign({ style: it.t === 'fn' ? 'FootnoteReference' : 'EndnoteReference' }, cleanRPr(r)), `<w:${kind}Ref/>`, ctx);
