@@ -8,7 +8,8 @@ require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops;
 const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
 const fixtures = { smartart: 'libreoffice__12275492e8fc__tdf83671_SmartArt_import.xlsx', addin: 'openxml-sdk__03f833d57306__Youtube.xlsx',
-  strict: 'openxml-sdk__97ec4a7d7ff8__Photo Formats - CGM-O12-XL-Pictures.xlsx', empty: 'libreoffice__541359181211__tdf140968.xlsx' };
+  strict: 'openxml-sdk__97ec4a7d7ff8__Photo Formats - CGM-O12-XL-Pictures.xlsx', empty: 'libreoffice__541359181211__tdf140968.xlsx',
+  commentShape: 'libreoffice__761105c9e678__universal-content-strict.xlsx' };
 async function open(t, kind) {
   const file = path.join(corpus, 'excel', fixtures[kind]);
   if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus: ' + file); return {}; }
@@ -93,4 +94,21 @@ test('Strict SmartArt comes back as Transitional with its picture; an empty draw
   const empty = await open(t, 'empty'); if (!empty.wb) return;
   const saved = await save(empty.wb);
   assert.ok(!ids(saved.losses).includes('unreferenced')); assert.ok(saved.losses.some(e => e.id.startsWith('part:') && /drawing/.test(e.where) && e.notify === false));
+});
+
+// LibreOffice draws a comment in VML and, as the Fallback of an AlternateContent with an empty VML Choice, in DrawingML;
+// the comment's commentPr names that shape, and Excel 2016 refuses the file without it (tools/ooxml/package.py,
+// comment-shape). The reader took the empty Choice, so the shape went.
+test('a comment\'s DrawingML shape in an AlternateContent stays, also when the drawing\'s other objects go', async t => {
+  const { wb } = await open(t, 'commentShape'); if (!wb) return;
+  const fallbackShapes = pkg => {
+    const ac = [...pkg.xml(drawingOf(pkg)).children].filter(e => e.localName === 'AlternateContent');
+    return ac.flatMap(e => [...e.getElementsByTagName('*')].filter(c => c.localName === 'cNvPr').map(c => c.getAttribute('id')));
+  };
+  let { pkg } = await save(wb);
+  assert.deepEqual(fallbackShapes(pkg), ['1025']);
+  assert.match(text(pkg, 'xl/comments1.xml'), /shapeId="1025"/);
+  O.tx(wb, 'Delete', () => O.setDrawings(wb.sheets[0], []));
+  ({ pkg } = await save(wb));
+  assert.deepEqual(fallbackShapes(pkg), ['1025'], 'the comment\'s shape outlives the drawing\'s other objects');
 });

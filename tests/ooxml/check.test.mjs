@@ -130,6 +130,17 @@ test('a styles part holds at most 4,092 styles, or Word 2016 refuses the file', 
   assert.equal(run('check', await pkg('styles-4092', styles(4092))).status, 'ok');
   assert.ok(run('check', await pkg('styles-4093', styles(4093))).issues.some(i => i.code === 'too-many-styles'));
 });
+test('a sheet comment drawn by DrawingML names a shape of the sheet\'s drawing, or Excel 2016 refuses the file', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', XDR = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing';
+  const parts = (id) => ({
+    'xl/worksheets/sheet1.xml': `<worksheet xmlns="${S}"/>`,
+    'xl/worksheets/_rels/sheet1.xml.rels': rels(rel('c', '../comments1.xml', 'comments') + rel('d', '../drawings/drawing1.xml', 'drawing')),
+    'xl/comments1.xml': `<comments xmlns="${S}" xmlns:mc="${MC}" xmlns:v="urn:schemas-microsoft-com:vml"><commentList><comment ref="A1" shapeId="1025"><text><t>Note</t></text><mc:AlternateContent><mc:Choice Requires="v"/><mc:Fallback><commentPr/></mc:Fallback></mc:AlternateContent></comment></commentList></comments>`,
+    'xl/drawings/drawing1.xml': `<xdr:wsDr xmlns:xdr="${XDR}" xmlns:mc="${MC}" xmlns:v="urn:schemas-microsoft-com:vml"><mc:AlternateContent><mc:Choice Requires="v"/><mc:Fallback><xdr:twoCellAnchor><xdr:sp><xdr:nvSpPr><xdr:cNvPr id="${id}" name="Comment"/></xdr:nvSpPr></xdr:sp></xdr:twoCellAnchor></mc:Fallback></mc:AlternateContent></xdr:wsDr>`,
+  });
+  assert.deepEqual(run('check', await pkg('comment-shape-kept', parts(1025))).issues.map(i => i.code + ' ' + i.detail), []);
+  assert.ok(run('check', await pkg('comment-shape-gone', parts(1026))).issues.some(i => i.code === 'comment-shape'));
+});
 test('comment extensions use the w15 namespace the other parts bind, or Word 2016 refuses the file', async () => {
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', DRAFT = 'http://schemas.microsoft.com/office/word/2010/11/wordml';
   const parts = (ex) => ({ 'word/document.xml': `<w:document xmlns:w="${W}" xmlns:w15="${DRAFT}"><w:body/></w:document>`, 'word/commentsExtended.xml': `<w15:commentsEx xmlns:w15="${ex}"/>` });

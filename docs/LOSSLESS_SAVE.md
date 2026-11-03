@@ -143,7 +143,11 @@ These are in addition to AGENTS.md.
    as the original, from 1,048; most of the rest in one file and in HYPERLINK fields, which become hyperlinks): they
    were one run with the field's first run's properties, and Word formats the result from the code (`wDateValueFormat`'s
    page numbers printed at 12 pt, every page) and places text by their ids (`form_footnotes`, found by Intern, I21); a
-   comment read without a date gets none (57 in the corpus got the save's time). Unedited
+   comment read without a date gets none (57 in the corpus got the save's time). Ledger keeps a drawing's whole
+   anchors in an AlternateContent whose Choice is empty: LibreOffice draws a comment in VML and, as that Fallback, in
+   DrawingML, and the comment's `commentPr` names the shape; without it Excel 2016 refused the save
+   (`universal-content-strict`, found by the Office 2016 sweep, the only one of 729 saves that failed where its
+   original opens; rule `comment-shape`, which no original trips). Unedited
    saves losing a part the original used: Ledger 22 files → 1, Quire 31 → 2, Lectern 4 → 1, all damaged originals. The alarm now reports
    `unreferenced:` only for parts the original used (`orphan:` for the rest), so that count is direct.
    Still to do:

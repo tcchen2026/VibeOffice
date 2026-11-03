@@ -874,7 +874,8 @@
       if (sh.extra.unshownObjects) pack.writer.loss({ id: 'preview-objects:' + sh.id, where: sh.name, place: sh.name, action: 'drop', notify: true,
         what: 'Charts and drawings in a pre-release Excel 2007 format can\'t be kept and will be removed (' + sh.extra.unshownObjects + ').' });
       const list = sh.drawings.filter((d) => d && d.anchor && (d.kind === 'image' ? (wb.media && wb.media.get(d.media)) || d.imgLink : d.kind === 'chart' ? d.xml || d.chart : d.kind === 'shape' || d.kind === 'frame'));
-      if (!list.length) {
+      const alternates = (sh.extra.drawingAlternates || []).filter(k => K.package(k.source));
+      if (!list.length && !alternates.length) {
         // an empty drawing, or one whose objects were all deleted, has nothing to keep (unless a copied sheet still uses it)
         const part = sh.extra.ooxmlDrawing;
         if (wb.pkg?.has(part) && !wb.sheets.some(s => s !== sh && s.extra.ooxmlDrawing === part && s.drawings.length))
@@ -888,8 +889,12 @@
       let nextId = 2;
       for (const d of list) if (d.id >= nextId) nextId = d.id + 1;
       const usedIds = new Set();
+      // the anchors kept in an AlternateContent (xlsx-read, drawingAlternates), with their shapes' ids
+      const alternate = k => pack.writer.emit(K.fragment(K.parse(k.xml), { pkg: K.package(k.source), part: k.part }), drels.owner);
+      for (const k of alternates) for (const m of k.xml.matchAll(/<(?:\w+:)?cNvPr\b[^>]*?\bid="(\d+)"/g)) { usedIds.add(+m[1]); pack.writer.ids.reserve(drels.owner, 'shape', +m[1]); if (+m[1] >= nextId) nextId = +m[1] + 1; }
       let x = HDR + `<xdr:wsDr xmlns:xdr="${XDR}" xmlns:a="${NS_A}">`;
-      for (const d of list) {
+      for (const [i, d] of list.entries()) {
+        for (const k of alternates) if (k.at === i) x += alternate(k);
         let id = objects.ids.get(d) || (d.id > 0 && !usedIds.has(d.id) ? d.id : nextId++);
         usedIds.add(id);
         const keptSlicer = L.slicers.frame(d, slicers, drels.owner, id);
@@ -964,6 +969,7 @@
         }
         x += open + obj + close;
       }
+      for (const k of alternates) if (k.at >= list.length) x += alternate(k);
       x += '</xdr:wsDr>';
       add(dPart, x, CT.drawing);
       if (drels.list.length) add(relsPath(dPart), drels.xml());

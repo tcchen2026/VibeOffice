@@ -412,6 +412,18 @@ class Package:
         for part, id_, path in pivot_refs:
             if id_ not in caches:
                 self.issue('unresolved-cache-id', part, id_, path)
+        # Excel 2016 refuses a sheet comment drawn by DrawingML (a commentPr, even in an AlternateContent branch) whose
+        # shapeId names no shape in the sheet's drawing: universal-content-strict without its drawing's Fallback anchor
+        for sheet, rels in self.rels.items():
+            targets = {r['type'].rsplit('/', 1)[-1]: r['target'] for r in rels.values() if not r['external']}
+            comments = self.xml.get(targets.get('comments'))
+            if comments is None:
+                continue
+            drawing = self.xml.get(targets.get('drawing'))
+            shapes = {el.get('id') for el in drawing.iter() if split(el.tag)[1] == 'cNvPr'} if drawing is not None else set()
+            for c in comments.iter():
+                if split(c.tag) in ((ns, 'comment') for ns in S) and any(split(e.tag)[1] == 'commentPr' for e in c.iter()) and c.get('shapeId') not in shapes:
+                    self.issue('comment-shape', targets['comments'], (c.get('ref') or '') + ' / ' + str(c.get('shapeId')))
         # Word 2016 refuses a package ("Xml parsing error") whose comment extensions use the released w15 namespace
         # while another part binds the draft one of Word 2013's preview; each of the corpus's 2,396 Word files uses one
         for part, root in self.xml.items():

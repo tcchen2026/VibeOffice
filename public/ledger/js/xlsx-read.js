@@ -1013,6 +1013,17 @@
       const c = a.children.find(c => /^(AlternateContent|pic|graphicFrame|sp|grpSp|cxnSp|contentPart)$/.test(c.localName));
       if (c) held.set(a, { xml: XML.serialize(c), fallback: c.localName === 'AlternateContent' && !kids(c, 'Choice').slice(0, 1).some(usableChoice) });
     }
+    // Whole anchors in an AlternateContent whose Choice holds nothing (LibreOffice's comment shapes: VML for readers of
+    // VML, the same shape in DrawingML as the Fallback) are kept as they were, in their place among the anchors: a
+    // comment whose commentPr names that shape doesn't open in Excel 2016 without it (universal-content-strict)
+    if (standard && ctx.wb.pkg) {
+      let at = 0;
+      for (const c of el.children) {
+        if (/Anchor$/.test(c.localName)) at++;
+        else if (c.localName === 'AlternateContent' && kids(c, 'Choice').find(usableChoice)?.children.length === 0 && kid(c, 'Fallback')?.children.length)
+          (sh.extra.drawingAlternates ||= []).push({ at, xml: XML.serialize(c), source: ctx.wb.pkg.id, part });
+      }
+    }
     const owned = new Set((sh.extra.objectGroups || []).flatMap(g => g.ids));
     const slicers = L.slicers.captureDrawing(el, sh, part);
     resolveAC(el, true);
@@ -1053,7 +1064,7 @@
       }
       sh.drawings.push(d);
     }
-    if (!anchors) sh.extra.ooxmlDrawingEmpty = true;
+    if (!anchors && !sh.extra.drawingAlternates) sh.extra.ooxmlDrawingEmpty = true;
     if (!standard && unshown) sh.extra.unshownObjects = unshown;
   }
   /** an anchored object the model can't show (SmartArt, ink, a picture with no picture), kept as its original XML */
