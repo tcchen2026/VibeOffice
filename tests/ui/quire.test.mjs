@@ -614,6 +614,28 @@ test('a table\'s move handle: over the table; a click selects it, a drag floats 
   assert.ok(Math.abs(t0.l - (t1.l - 150)) <= 2, 'where it was');
 }));
 
+test('a table\'s resize square: a drag scales its columns and rows, one undo step; a click or Esc changes nothing', () => inQuire(PARAS(['First paragraph of text.', 'Second paragraph.']) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];', async (u) => {
+  const state = () => u.evaluate(`(() => { const t = L.D.doc.main.blocks[1]; return JSON.stringify({ grid: t.grid, h: t.rows.map((r) => r.trPr.h || null) }); })()`).then(JSON.parse);
+  const s0 = await state(), t0 = await u.el('#pages table.tbl');
+  await u.move({ x: t0.l + 20, y: t0.t + 8 });
+  let q = await u.el('.tbl-size');
+  assert.ok(q && q.l >= t0.r - 1 && q.t >= t0.b - 1, 'the square shows at its bottom right corner');
+  await u.click({ x: q.x, y: q.y });
+  assert.deepEqual(await state(), s0, 'a click changes nothing');
+  await u.move({ x: t0.l + 20, y: t0.t + 8 }); q = await u.el('.tbl-size');
+  await u.press({ x: q.x, y: q.y }); await u.glide({ x: q.x, y: q.y }, { x: q.x + 60, y: q.y + 40 }); await u.esc(); await u.release({ x: q.x + 60, y: q.y + 40 });
+  assert.deepEqual(await state(), s0, 'Esc: no change');
+  assert.equal(await u.evaluate(`document.querySelectorAll('.tbl-ghost').length`), 0, 'no outline left');
+  await u.move({ x: t0.l + 20, y: t0.t + 8 }); q = await u.el('.tbl-size');
+  await u.drag({ x: q.x, y: q.y }, { x: q.x + 60, y: q.y + 40 });
+  const s1 = await state(), t1 = await u.el('#pages table.tbl');
+  const pt = 60 / (await u.evaluate('L.layout.zoom') * 96 / 72);
+  assert.ok(Math.abs(s1.grid[0] - s1.grid[1]) < 0.1 && Math.abs(s1.grid[0] + s1.grid[1] - 180 - pt) < 1, `the columns ${pt.toFixed(1)} pt wider together, alike (${s1.grid})`);
+  assert.ok(s1.h.every((h) => h > 0), `the rows given heights (${s1.h})`);
+  assert.ok(Math.abs(t1.r - t0.r - 60) <= 2 && Math.abs(t1.b - t0.b - 40) <= 3, `as large as dragged (${t1.r - t0.r}, ${t1.b - t0.b})`);
+  assert.deepEqual(await undoLabels(u), ['Resize Table']);
+}));
+
 
 test('the toolbar\'s Insert Table grid: a move over 2 × 3 and a click insert that table', () => inQuire(PARAS(['First paragraph.', 'Second paragraph.']), async (u) => {
   await u.click(await u.el('.tb-drop[data-tip="Insert Table"]'));

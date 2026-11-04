@@ -1273,8 +1273,8 @@
   /* A box with a four-headed arrow at the top left of the table under the pointer (Print and Web Layout, the
      document's own tables). A click selects the table, a right-click opens its menu, a drag moves it: the table
      becomes floating (w:tblpPr) where it is dropped, anchored to the paragraph there, as Word does it. */
-  const MH = 13;
-  let mh = null, mhFor = null, mhDrag = false;
+  const MH = 13, RS = 7;
+  let mh = null, rs = null, mhFor = null, mhDrag = false;
   const ARROWS = '<svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true"><path d="M4.5 1v7M1 4.5h7" stroke="currentColor" stroke-width="1"/><path d="M4.5 0L2.8 2h3.4zM4.5 9L2.8 7h3.4zM0 4.5L2 2.8v3.4zM9 4.5L7 2.8v3.4z" fill="currentColor"/></svg>';
   const handleOK = () => !!(LY.root && !E.readOnly && !T.tool && !(L.drawtool && L.drawtool.active) && !LY.hfEdit && !LY.root.classList.contains('readonly') && A() && (A().view === 'print' || A().view === 'web'));
   /** the document's own table an element is in: the outermost one, in the main text (not a header, a note or a text box) */
@@ -1286,33 +1286,42 @@
     const t = findTable(+el.dataset.tid), ti = t && D.tblInfo(doc(), t);
     return ti && ti.story === doc().main && !ti.parents.length ? el : null;
   }
+  /* the table's last part on the pages (where its resize square goes) */
+  const lastPiece = (el) => { const all = LY.root.querySelectorAll(`table.tbl[data-tid="${el.dataset.tid}"]`); return all[all.length - 1] || el; };
   function placeHandle() {
     if (!mh || !mhFor) return;
-    const sc = LY.scroller, sr = sc.getBoundingClientRect(), r = mhFor.getBoundingClientRect();
+    const sc = LY.scroller, sr = sc.getBoundingClientRect(), r = mhFor.getBoundingClientRect(), e = lastPiece(mhFor).getBoundingClientRect();
     mh.style.left = L.round(r.left - sr.left + sc.scrollLeft - MH - 1, 1) + 'px';
     mh.style.top = L.round(r.top - sr.top + sc.scrollTop - MH - 1, 1) + 'px';
+    rs.style.left = L.round(e.right - sr.left + sc.scrollLeft + 1, 1) + 'px';
+    rs.style.top = L.round(e.bottom - sr.top + sc.scrollTop + 1, 1) + 'px';
   }
   function showHandle(tblEl) {
     if (!mh) {
       mh = L.h('div', { class: 'tbl-move', html: ARROWS });
       mh.addEventListener('pointerdown', onHandleDown);
       mh.addEventListener('contextmenu', onHandleMenu);
+      rs = L.h('div', { class: 'tbl-size' });
+      rs.addEventListener('pointerdown', onSizeDown);
+      rs.addEventListener('contextmenu', (e) => e.preventDefault());
     }
     if (!mh.isConnected) LY.scroller.appendChild(mh);
+    if (!rs.isConnected) LY.scroller.appendChild(rs);
     mhFor = tblEl;
     placeHandle();
   }
-  function hideHandle() { if (mh) mh.remove(); mhFor = null; }
+  function hideHandle() { if (mh) { mh.remove(); rs.remove(); } mhFor = null; }
   /* shown while the pointer is over the table, or between it and the handle */
   function hoverHandle(e) {
     if (mhDrag) return;
     if (!handleOK()) { hideHandle(); return; }
-    if (mh && mh.contains(e.target)) return;
+    if (mh && (mh.contains(e.target) || rs.contains(e.target))) return;
     const tblEl = topTable(e.target);
     if (tblEl) { if (tblEl !== mhFor || !mh.isConnected) showHandle(tblEl); return; }
     if (mhFor && mhFor.isConnected) {
-      const r = mhFor.getBoundingClientRect();
+      const r = mhFor.getBoundingClientRect(), b = lastPiece(mhFor).getBoundingClientRect();
       if (e.clientX >= r.left - MH - 4 && e.clientX <= r.right && e.clientY >= r.top - MH - 4 && e.clientY <= r.top + 4) return;
+      if (e.clientX >= b.right - 4 && e.clientX <= b.right + RS + 4 && e.clientY >= b.bottom - 4 && e.clientY <= b.bottom + RS + 4) return;
     }
     hideHandle();
   }
@@ -1356,6 +1365,60 @@
         moveTable(t, r.left + ev.clientX - d.x0, r.top + ev.clientY - d.y0);
       },
       cancel: () => { if (ghost) ghost.remove(); mhDrag = false; },
+    });
+  }
+  /* The resize square (Word's): a drag scales the table, its columns by the width it is given and its rows by the
+     height (each row then at least its share, as Word sets them); a click or Esc changes nothing */
+  function onSizeDown(e) {
+    if (e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    const tblEl = mhFor && lastPiece(mhFor), t = tblEl && findTable(+tblEl.dataset.tid);
+    if (!t) return;
+    const sc = LY.scroller, sr = sc.getBoundingClientRect(), r = tblEl.getBoundingClientRect();
+    let ghost = null;
+    mhDrag = true;
+    L.ui.drag(e, {
+      capture: sc,
+      move: (ev, d) => {
+        if (!d.moved) return;
+        if (!ghost) { ghost = L.h('div', { class: 'tbl-ghost' }); sc.appendChild(ghost); }
+        ghost.style.cssText = `left:${r.left - sr.left + sc.scrollLeft}px;top:${r.top - sr.top + sc.scrollTop}px;width:${Math.max(8, r.width + ev.clientX - d.x0)}px;height:${Math.max(8, r.height + ev.clientY - d.y0)}px`;
+      },
+      up: (ev, d) => {
+        if (ghost) ghost.remove();
+        mhDrag = false;
+        if (d.moved) resizeTable(t, ev.clientX - d.x0, ev.clientY - d.y0);
+      },
+      cancel: () => { if (ghost) ghost.remove(); mhDrag = false; },
+    });
+  }
+  /** the table made dx wider and dy taller (client px): one undo step */
+  function resizeTable(t, dx, dy) {
+    const k = ptPerPx();
+    const w0 = t.grid.reduce((a, b) => a + b, 0);
+    /* the rows' heights as drawn (a row split across pages: its parts), in points */
+    const heights = t.rows.map((row, ri) => {
+      let h = 0;
+      for (const el of LY.root.querySelectorAll(`table.tbl[data-tid="${t.id}"] > tbody > tr[data-ri="${ri}"]:not(.rep)`)) h += el.getBoundingClientRect().height * k;
+      return h;
+    });
+    const h0 = heights.reduce((a, b) => a + b, 0);
+    const kx = w0 > 0 ? Math.max(0.05, (w0 + dx * k) / w0) : 1, ky = h0 > 0 ? Math.max(0.05, (h0 + dy * k) / h0) : 1;
+    if (Math.abs(kx - 1) < 0.002 && Math.abs(ky - 1) < 0.002) return;
+    E.edit('Resize Table', () => {
+      D.touchTbl(t);
+      if (Math.abs(kx - 1) >= 0.002) {
+        t.grid = t.grid.map((g) => L.round(Math.max(1, g * kx), 2));
+        if (t.tblPr.w && t.tblPr.w.type === 'pct') t.tblPr.w = { type: 'auto', v: 0 };
+        fixWidths(t);
+      }
+      if (Math.abs(ky - 1) >= 0.002) t.rows.forEach((row, ri) => {
+        if (!heights[ri]) return;
+        const tr = row.trPr;
+        tr.h = L.round(Math.max(1, (tr.hRule === 'exact' ? tr.h || heights[ri] : heights[ri]) * ky), 2);
+        if (tr.hRule !== 'exact') tr.hRule = 'atLeast';
+      });
+      return E.sel;
     });
   }
   /** where a table dropped with its top left at (x, y) (client px) goes: the page (or Web Layout's text) there or the

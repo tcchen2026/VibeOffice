@@ -18410,7 +18410,7 @@
  },
  "Move Table": {
   "where": [
-   "quire/js/tables.js:1404"
+   "quire/js/tables.js:1467"
   ]
  },
  "Move Table Column": {
@@ -21680,7 +21680,7 @@
  },
  "Quire word processor": {
   "where": [
-   "quire/index.html:331"
+   "quire/index.html:332"
   ]
  },
  "R&eading Layout": {
@@ -22490,6 +22490,11 @@
  "Resize Picture": {
   "where": [
    "quire/js/editor.js:1176"
+  ]
+ },
+ "Resize Table": {
+  "where": [
+   "quire/js/tables.js:1408"
   ]
  },
  "Respectfully yours,": {

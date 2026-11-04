@@ -177,6 +177,7 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 /* a table's move handle and the outline that follows a drag of it (tables.js) */
 .tbl-move { position: absolute; width: 13px; height: 13px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--field-border); color: var(--ink); cursor: move; z-index: 31; }
 .tbl-move svg { display: block; }
+.tbl-size { position: absolute; width: 7px; height: 7px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--field-border); cursor: nwse-resize; z-index: 31; }
 .tbl-ghost { position: absolute; border: 1px dashed var(--ink); pointer-events: none; z-index: 31; }
 .drop-caret { position: absolute; width: 0; border-left: 2px dotted #000; pointer-events: none; z-index: 31; }
 .flt { position: absolute; }
@@ -270,7 +271,7 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
   .sizer { width: auto !important; height: auto !important; }
   .pages { position: static; transform: none !important; }
   .pg { box-shadow: none !important; margin: 0 !important; break-after: page; }
-  .crop, .obj-handles, .tbl-move, .tbl-ghost, .balloons, .format-marks, .sectmark, .hbrk { display: none !important; }
+  .crop, .obj-handles, .tbl-move, .tbl-size, .tbl-ghost, .balloons, .format-marks, .sectmark, .hbrk { display: none !important; }
   .tb::before { content: none !important; }
   .pg-hdr, .pg-ftr { opacity: 1 !important; }
   td.csel { background-image: none !important; }

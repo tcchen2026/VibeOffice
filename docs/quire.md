@@ -20,8 +20,9 @@ Zoom with the slider at the right of the status bar (with the view buttons), Vie
 A table shows Word's move handle at its top left while the pointer is over it (Print and Web Layout):
 a click selects the table, a right-click opens its menu, a drag moves it, making it a floating table
 where it is dropped (`w:tblpPr` as Word writes one after a drag: 0.125" from the text, from the margin
-and the paragraph there; one undo step; Esc cancels). Table Properties ▸ Text wrapping does the same
-(Around) or puts it back in the text (None).
+and the paragraph there; one undo step; Esc cancels). The square at its bottom right resizes it: the
+columns by the width it is given, the rows by the height (each then at least its share, as Word sets
+them). Table Properties ▸ Text wrapping does the same (Around) or puts it back in the text (None).
 
 ## Proofing tools (offline)
 
@@ -71,7 +72,8 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   only one, which also has a floating table, changes page count (`tests/quire/float-tables.test.mjs`).
   Tables moved by the handle (an inline one, a floating one, a Word 2016 file's) and one floated by
   Table Properties open in Word 2016 without repair, each saved with only `w:tblpPr` added or changed
-  against its unedited save, and Word draws them where Quire does (2026-11-05, 7 files).
+  against its unedited save, and Word draws them where Quire does (2026-11-05, 7 files); two tables
+  resized by the square open without repair and as large as in Quire (4 files with their unedited saves).
 - Inline pictures wider than a column are clipped halfway across the gap to the next column,
   preserving their size and crop in the document. The outside page margins stay available to
   negative indents; floating pictures and inline AutoShapes can cross columns. Checked against
