@@ -1061,9 +1061,9 @@
     'Table Professional': { tblPr: { borders: all(BD('single', 0.5)) }, cond: { firstRow: { rPr: { b: true, color: 'FFFFFF' }, tcPr: { shd: SH('000000', 'solid', '000000') } } } },
     'Table Subtle 1': { tblPr: { borders: { top: BD('single', 1.5, '008000'), bottom: BD('single', 1.5, '008000') } }, cond: { firstRow: { tcPr: { borders: { bottom: BD('single', 0.75, '008000') } } }, band1Horz: { tcPr: { shd: SH('E0FFE0', 'clear') } }, firstCol: { tcPr: { shd: SH('C0FFC0', 'clear') } } } },
     'Table Subtle 2': { tblPr: { borders: { left: BD('single', 1.5), right: BD('single', 1.5) } }, cond: { firstRow: { tcPr: { borders: { bottom: BD('single', 0.75) } } }, lastCol: { tcPr: { shd: SH('C0FFC0', 'clear') } }, band1Horz: { tcPr: { shd: SH('E6E6E6', 'clear') } } } },
-    'Table Web 1': { tblPr: { cellSpacing: 1.5, borders: { top: BD('outset', 0.75), left: BD('outset', 0.75), bottom: BD('outset', 0.75), right: BD('outset', 0.75), insideH: BD('inset', 0.75), insideV: BD('inset', 0.75) } }, cond: {} },
-    'Table Web 2': { tblPr: { cellSpacing: 1.5, borders: all(BD('inset', 0.75)) }, cond: {} },
-    'Table Web 3': { tblPr: { cellSpacing: 1.5, borders: all(BD('outset', 2.25)) }, cond: {} },
+    'Table Web 1': { tblPr: { spacing: 1.5, borders: { top: BD('outset', 0.75), left: BD('outset', 0.75), bottom: BD('outset', 0.75), right: BD('outset', 0.75), insideH: BD('inset', 0.75), insideV: BD('inset', 0.75) } }, cond: {} },
+    'Table Web 2': { tblPr: { spacing: 1.5, borders: all(BD('inset', 0.75)) }, cond: {} },
+    'Table Web 3': { tblPr: { spacing: 1.5, borders: all(BD('outset', 2.25)) }, cond: {} },
     'Table Grid': null,
   };
   T.styleId = (name) => (name === 'Table Grid' ? 'TableGrid' : name.replace(/[^A-Za-z0-9]/g, ''));

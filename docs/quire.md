@@ -52,6 +52,18 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   break and a section break or a break at their end, 4 more show it (42 in all), one more comes closer,
   and none moves away. A centred table wider than its column overhangs both margins evenly, a
   right-aligned one the left margin.
+- Floating tables (`w:tblpPr`, Table Properties ▸ Text wrapping ▸ Around) stand where their anchors put
+  them, with the text wrapping beside them: horizontally from the column, the margin or the page, by an
+  offset or an alignment; vertically from their paragraph (`vertAnchor="text"`), the margin (the default
+  Word leaves out) or the page. One longer than the page goes on at the top of the next page's body, the
+  text after it beside its last part, as in Word. In files of Word 2010 and before, the cells' text, not
+  the border, stands at the offset, as for tables in the text. Limits: text goes on the wider side only
+  (Word fills both sides of a narrow table where there is room; Quire's pictures also take one side), and
+  Word sometimes starts a table on the next page where Quire still fits a row. Measured on the 170
+  Word-saved corpus files with floating tables (all LibreOffice test files): 136 show Word's stored page
+  count, as before, 9 come closer to it and 8 move away (`tools/quire-pages.mjs`); Word 2016 PDFs of five
+  of them and three of our own (2026-11-05) agree on the tables' positions. Of the 74 files with frames,
+  only one, which also has a floating table, changes page count (`tests/quire/float-tables.test.mjs`).
 - Inline pictures wider than a column are clipped halfway across the gap to the next column,
   preserving their size and crop in the document. The outside page margins stay available to
   negative indents; floating pictures and inline AutoShapes can cross columns. Checked against

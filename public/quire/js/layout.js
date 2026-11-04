@@ -231,6 +231,15 @@
             if (D.pProps(d, p0, { tblRPr: D.mergeRPr(sp.rPr, cs.rPr), tblPPr: D.mergePPr(sp.pPr, cs.pPr) }).pageBreakBefore) return { st, stop: 'page', pbb: true };
           }
         }
+        /* a floating table (w:tblpPr) stands beside the text, which wraps around it */
+        const fl = b.tblPr && b.tblPr.float;
+        if (fl && !ctx.inTextBox && (frame.kind === 'col' || frame.kind === 'flow' || frame.kind === 'hf')) {
+          const fr = placeFloatTable(frame, b, ctx, fl, st.sub);
+          if (fr.placed) { frame.empty = false; frame.chain = []; }
+          if (fr.done) { st = { bi: st.bi + 1, sub: null }; continue; }
+          if (!fr.placed && !frame.empty) return keepChainBreak(frame, st, ctx);
+          return { st: { bi: st.bi, sub: fr.placed ? fr.sub : st.sub }, stop: 'full' };
+        }
         const res = placeTable(frame, b, st.sub, ctx);
         if (res.placed) { frame.empty = false; frame.chain = []; }
         if (res.done) { st = { bi: st.bi + 1, sub: null }; continue; }
@@ -430,45 +439,116 @@
     return { placed: true, next: j };
   }
   function placeFrameAbs(frame, blocks, st, j, ctx, fp, exclude) {
-    const wrap = el('div', 'frm-anchor');
-    wrap.style.cssText = 'position:relative;height:0;margin:0;padding:0;overflow:visible';
-    const box = el('div', 'frm frm-abs');
-    const css = ['position:absolute', 'z-index:2', fp.w ? `width:${px(fp.w)}px` : 'width:max-content'];
+    const css = [fp.w ? `width:${px(fp.w)}px` : 'width:max-content'];
     if (fp.h && fp.hRule === 'exact') css.push(`height:${px(fp.h)}px`, 'overflow:hidden');
     else if (fp.h) css.push(`min-height:${px(fp.h)}px`);
-    box.style.cssText = css.join(';');
+    const hs = px(fp.hSpace || 0), vs = px(fp.vSpace || 0);
+    absBox(frame, ctx, fp, exclude, { l: hs, r: hs, t: vs, b: vs }, 'frm frm-abs', css, (box) => {
+      for (let k = st.bi; k < j; k++) {
+        const p = blocks[k];
+        if (p.t !== 'p') continue;
+        const fctx = Object.assign({}, ctx, { prev: k > st.bi ? blocks[k - 1] : null, next: k + 1 < j ? blocks[k + 1] : null, openCmts: LY.openFor(p), inFrame: true });
+        const fr = R.para(p, 0, null, fctx);
+        box.appendChild(fr);
+        postPara(fr, p, fctx, frame);
+      }
+    });
+    return { placed: true, next: j };
+  }
+  /** an out-of-flow box (a page- or margin-anchored frame or floating table): absolute in a zero-height anchor where
+   *  it stands in the text, positioned by LY.posAbsFrame; with exclude, an empty float of its size (and its distances
+   *  from the text, sp: px) keeps the text clear. fill(box) puts its content in */
+  function absBox(frame, ctx, fp, exclude, sp, cls, css, fill) {
+    const wrap = el('div', 'frm-anchor');
+    wrap.style.cssText = 'position:relative;height:0;margin:0;padding:0;overflow:visible';
+    const box = el('div', cls);
+    box.style.cssText = ['position:absolute', 'z-index:2'].concat(css).join(';');
     wrap.appendChild(box);
     frame.el.appendChild(wrap);
-    for (let k = st.bi; k < j; k++) {
-      const p = blocks[k];
-      if (p.t !== 'p') continue;
-      const fctx = Object.assign({}, ctx, { prev: k > st.bi ? blocks[k - 1] : null, next: k + 1 < j ? blocks[k + 1] : null, openCmts: LY.openFor(p), inFrame: true });
-      const fr = R.para(p, 0, null, fctx);
-      box.appendChild(fr);
-      postPara(fr, p, fctx, frame);
-    }
     wrap._fp = fp;
     wrap._page = ctx.page || frame.page || null;
+    /* (fill may place the empty box first, to know how much room it has) */
+    fill(box, wrap);
     LY.posAbsFrame(wrap);
     if (exclude) {
-      /* keep the text clear of the frame: an empty float of its size, pushed down to its top */
+      /* keep the text clear of the box: an empty float of its size, pushed down to its top */
       const y = parseFloat(box.style.top) || 0, x = parseFloat(box.style.left) || 0;
       const bw = box.offsetWidth, bh = box.offsetHeight, colW = frame.el.clientWidth || frame.width || 0;
-      const vs = px(fp.vSpace || 0), hs = px(fp.hSpace || 0);
-      const top = y - vs, h = bh + vs * 2;
+      const top = y - sp.t, h = bh + sp.t + sp.b;
       const band = Math.max(0, top >= 0 ? h : h + top);
       if (band > 0) {
         const full = fp.wrap === 'notBeside' || bw >= colW * 0.66;
         const left = x + bw / 2 < colW / 2;
         const side = full || left ? 'left' : 'right';
-        const sp = el('div', 'fl-sp', `float:${side};clear:both;width:0;height:${Math.max(0, top)}px`);
+        const sp0 = el('div', 'fl-sp', `float:${side};clear:both;width:0;height:${Math.max(0, top)}px`);
         const ph = el('div', 'frm-excl', full ? `float:left;clear:both;width:100%;height:${band}px` : left
-          ? `float:left;clear:left;width:${Math.max(0, x) + bw + hs}px;height:${band}px`
-          : `float:right;clear:right;width:${Math.max(0, colW - x) + hs}px;height:${band}px`);
-        wrap.append(sp, ph);
+          ? `float:left;clear:left;width:${Math.max(0, x) + bw + sp.r}px;height:${band}px`
+          : `float:right;clear:right;width:${Math.max(0, colW - x) + sp.l}px;height:${band}px`);
+        wrap.append(sp0, ph);
       }
     }
-    return { placed: true, next: j };
+    return wrap;
+  }
+  /** a floating table's rows into box, from sub, as far as limit (px below the box's top): {placed, done, sub} as
+   *  placeTable; on an empty page at least one row */
+  function floatRows(box, frame, t, ctx, sub, limit, empty) {
+    const top = box.getBoundingClientRect().top;
+    const res = placeTable({ el: box, kind: 'col', limit, top, empty, page: frame.page, width: frame.width || frame.el.clientWidth, chain: [] }, t, sub, ctx);
+    const tbl = box.querySelector(':scope > table.tbl');
+    /* its place comes from its anchors, not from its alignment or indent */
+    if (tbl) tbl.style.marginLeft = tbl.style.marginRight = '0';
+    return res;
+  }
+  const gridWidth = (t, ctx) => px(t.grid && t.grid.length ? t.grid.reduce((a, b) => a + b, 0) : ctx.width ? ctx.width / PX : 432);
+  /**
+   * A floating table (w:tblpPr) placed from its anchors as Word does: horizontally from the text column unless
+   * horzAnchor says margin or page, vertically from the margin unless vertAnchor says text or page (Word leaves
+   * those defaults out); an alignment (tblpXSpec, tblpYSpec) wins over the offset, which may be negative.
+   * Text-anchored, it floats where it stands in the text, which wraps around it, as far as its distances from the
+   * text (leftFromText…); page- or margin-anchored, it stands where its anchors put it and the text keeps clear.
+   * One that runs past the bottom of the page goes on at the top of the next one, the text beside each part; the
+   * rows that don't fit on a page with text above them take the table to the next page.
+   */
+  function placeFloatTable(frame, t, ctx, f, sub) {
+    const pg = ctx.page || frame.page || null;
+    const sp = { l: px(f.l || 0), r: px(f.r || 0), t: px(f.t || 0), b: px(f.b || 0) };
+    const scale = LY.scale();
+    const room = (box) => (frame.limit === Infinity ? Infinity : frame.limit - (box.getBoundingClientRect().top - frame.top) / scale);
+    const w = gridWidth(t, ctx);
+    /* in files of Word 2010 and before, the cells' text (not the border) stands at the offset, as for tables in the text */
+    const shift = !f.xAlign && (ctx.doc.settings.compat || 11) < 15 ? R.tblProps(ctx.doc, t).tp.cellMar.l || 0 : 0;
+    if (!sub && f.vAnchor !== 'text' && pg && pg.el && frame.kind !== 'flow') {
+      const fp = { x: (f.x || 0) - shift, y: f.y, xAlign: f.xAlign, yAlign: f.yAlign, hAnchor: f.hAnchor || 'text', vAnchor: f.vAnchor || 'margin' };
+      /* where its anchors put it, on this page whatever room there is; aligned to the middle or bottom, it isn't split */
+      const sized = f.yAlign && f.yAlign !== 'top' && f.yAlign !== 'inside' && f.yAlign !== 'inline';
+      let res = null;
+      /* (its width set first, so its place is known before its rows, and the pictures in them, are laid out) */
+      absBox(frame, ctx, fp, frame.kind === 'col', sp, 'frm-abs tbl-abs', [`width:${w}px`], (box, wrap) => {
+        if (!sized) LY.posAbsFrame(wrap);
+        res = floatRows(box, frame, t, ctx, null, sized ? Infinity : room(box), true);
+      });
+      return { placed: true, done: res.done, sub: res.sub };
+    }
+    const colW = frame.width || frame.el.clientWidth;
+    /* the horizontal anchor's left edge (px from the column's) and width */
+    let x0 = 0, aw = colW;
+    if (pg && pg.el && pg.el.isConnected && (f.hAnchor === 'margin' || f.hAnchor === 'page')) {
+      const s = LY.scale(), colLeft = (frame.el.getBoundingClientRect().left - pg.el.getBoundingClientRect().left) / s;
+      if (f.hAnchor === 'page') { x0 = -colLeft; aw = pg.W; } else { x0 = pg.bodyLeft - colLeft; aw = pg.bodyW; }
+    }
+    const xa = { left: 0, inside: 0, center: (aw - w) / 2, right: aw - w, outside: aw - w };
+    const left = x0 + (f.xAlign && xa[f.xAlign] != null ? xa[f.xAlign] : px((f.x || 0) - shift));
+    /* the text goes beside it on the side with more room */
+    const onRight = left + w / 2 > colW / 2;
+    /* (a part continued from the page before starts at the top) */
+    const css = [`float:${onRight ? 'right' : 'left'}`, `clear:${onRight ? 'right' : 'left'}`, `width:${w}px`,
+      onRight ? `margin-right:${L.round(colW - left - w, 2)}px;margin-left:${sp.l}px` : `margin-left:${L.round(left, 2)}px;margin-right:${sp.r}px`,
+      `margin-top:${sub ? 0 : L.round(px(f.y || 0), 2)}px`, `margin-bottom:${sp.b}px`];
+    const box = el('div', 'tbl-float', css.join(';'));
+    frame.el.appendChild(box);
+    const res = floatRows(box, frame, t, ctx, sub, room(box), frame.empty);
+    if (!res.placed) { box.remove(); return { placed: false }; }
+    return res;
   }
   /** position an out-of-flow frame from its anchors (re-run when its container shifts) */
   LY.posAbsFrame = function (wrap) {
