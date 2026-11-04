@@ -812,16 +812,13 @@
   };
   D.autoCorrect = function () {
     const AC = L.autocorrect, o = A().opts;
-    const ck = (label, key, def) => ui.check(label, o[key] !== undefined ? o[key] !== false : def, (x) => { o[key] = x; });
-    const from = h('input', { type: 'text', style: 'width:120px' }), to = h('input', { type: 'text', style: 'width:220px' });
-    const box = h('div');
-    const draw = () => { box.textContent = ''; const all = Array.from(AC.list().entries()).sort((a, b) => a[0].localeCompare(b[0])); box.appendChild(list(all.map(([a, b]) => [a, a + '  →  ' + b]), null, (k) => { from.value = k; to.value = AC.list().get(k); }, { class: 'lbox ac-list', translate: 'no' })); };
-    draw();
+    /* the options apply on OK, as Excel's; the entries (common ui.autocorrectEntries) at once */
+    const pend = {};
+    const ck = (label, key, def) => ui.check(label, o[key] !== undefined ? o[key] !== false : def, (x) => { pend[key] = x; });
     ui.dialog({ title: 'AutoCorrect: English (U.S.)', width: 460, body: ui.tabs([{ label: 'AutoCorrect', body: h('div', { class: 'col' },
       ck('Correct TWo INitial CApitals', 'acTwoCaps', true), ck('Capitalize first letter of &sentences', 'acSentence', false), ck('Capitalize &names of days', 'acDays', true), ck('Correct accidental use of cAPS &LOCK key', 'acCapsLock', true), ck('Replace &text as you type', 'acReplace', true),
-      h('div', { class: 'row', style: 'gap:8px' }, ui.field('&Replace:', from), ui.field('&With:', to)), box,
-      h('div', { class: 'row', style: 'gap:8px;justify-content:flex-end' }, ui.button('&Add', () => { if (from.value) { AC.setEntry(from.value, to.value); draw(); } }), ui.button('&Delete', () => { if (from.value) { AC.setEntry(from.value, null); from.value = to.value = ''; draw(); } }))) }]),
-    buttons: [{ label: 'OK', primary: true, onClick: () => A().saveOpts() }, { label: 'Cancel' }] });
+      ui.autocorrectEntries(AC)) }]),
+    buttons: [{ label: 'OK', primary: true, onClick: () => { Object.assign(o, pend); A().saveOpts(); } }, { label: 'Cancel' }] });
   };
   D.autocorrect = D.autoCorrect;
 

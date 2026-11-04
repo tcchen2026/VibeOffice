@@ -306,6 +306,14 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .listbox .li-note { margin-left: auto; padding-left: 16px; color: var(--muted); }
 .listbox .li.on .li-note { color: inherit; }
 .listbox .li-dim { padding: 1px 4px; color: var(--muted); }
+.listbox .li-c1 { flex: none; width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.listbox .li-c2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* AutoCorrect's entries (common/dialogs.js): the list's two columns under the Replace and With boxes */
+.ac-boxes { display: grid; grid-template-columns: 120px 1fr; gap: 2px 6px; }
+.ac-boxes input { width: 100%; box-sizing: border-box; }
+.ac-list .li-c1 { width: 117px; }
+.ac-btns { justify-content: flex-end; margin-top: 0; }
+.ac-btns .btn { min-width: 76px; }
 .sg-side { width: 140px; flex: none; }
 .sg-gap { height: 16px; }
 .listbox .li-group { padding: 2px 4px; background: var(--group-bg); color: var(--ink-3); font-weight: bold; }

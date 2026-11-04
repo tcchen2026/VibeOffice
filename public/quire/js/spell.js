@@ -375,7 +375,8 @@
         if (!advance()) return null;
         const t = D.ptext(cur.p);
         const s0 = Math.max(0, t.lastIndexOf('.', cur.a - 2) + 1), e0 = Math.min(t.length, (t.indexOf('.', cur.b) + 1) || t.length);
-        L.app.gotoPos(D.pos(cur.p, cur.a), D.pos(cur.p, cur.b));
+        /* the finding highlighted while the dialog keeps the keyboard, as Find does */
+        L.app.gotoPos(D.pos(cur.p, cur.a), D.pos(cur.p, cur.b), { focus: false });
         return { kind: cur.kind, caption: RULE_CAP[cur.rule] || (cur.rule ? cur.rule + ':' : ''), before: t.slice(s0, cur.a).replace(/^\s+/, ''), word: t.slice(cur.a, cur.b), after: t.slice(cur.b, e0), suggestions: items(cur) };
       },
       ignoreOnce: () => { SP.ignoredOnce.add(cur.p.id + ':' + (cur.kind === 'spelling' ? '' : 'g:') + cur.word); },
@@ -388,6 +389,13 @@
       explain: () => L.t(cur.rule) + '\n\n' + L.t(cur.explain || ''),
       undo: () => { if (!D.canUndo()) return false; D.undo(); idx = Math.max(-1, idx - 2); },
       options: () => L.dlg.options('spelling'),
+      /* the finding on the page (Quire draws its selection as a highlight, not the page's own) */
+      rect: () => {
+        const a = LY.posToDom(D.pos(cur.p, cur.a)), b = LY.posToDom(D.pos(cur.p, cur.b)), r = document.createRange();
+        if (!a || !b) return null;
+        try { r.setStart(a.node, a.offset); r.setEnd(b.node, b.offset); } catch (e) { return null; }
+        return r.getBoundingClientRect();
+      },
       onClose: () => SP.refreshSoon(0),
     });
   }

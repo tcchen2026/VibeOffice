@@ -684,6 +684,7 @@
       if (L.app.view !== 'normal') L.app.setView('normal');
       if (E().idx !== x.si) E().goto(x.si);
       L.te.begin(x.sid, { cell: x.cell || undefined, sel: { p0: x.pi, o0: x.a, p1: x.pi, o1: x.b } });
+      L.te.mark({ p0: x.pi, o0: x.a, p1: x.pi, o1: x.b });
     };
     /* the word replaced in its own run's formatting, one undo step; the later findings in the paragraph move with it */
     const apply = (to) => {
@@ -724,6 +725,8 @@
       change: (to) => { if (!to) return false; apply(to); },
       changeAll: (to) => { if (!to) return false; changes.set(cur.word, to); apply(to); },
       options: () => D.options(),
+      rect: () => L.te.rangeRect({ p0: cur.pi, o0: cur.a, p1: cur.pi, o1: cur.b }),
+      onClose: () => L.te.mark(null),
     });
   };
   D.find = function (replace) {
@@ -915,22 +918,20 @@
   };
 
   /* ---------- AutoCorrect ---------- */
+  /** Tools ▸ AutoCorrect Options: the options apply on OK, as PowerPoint's; the entries (common ui.autocorrectEntries)
+   *  at once, kept as a setting */
   D.autocorrect = function () {
-    const o = L.app.opts;
-    const AC = L.te.AUTOCORRECT;
-    const list = h('div', { class: 'list-box', style: 'height:150px' });
-    const rep = h('input', { type: 'text', id: 'ac-rep', style: 'width:120px' }), wit = h('input', { type: 'text', id: 'ac-with', style: 'width:200px' });
-    const draw = () => { L.clear(list); Object.keys(AC).sort().forEach((k) => { const li = h('div', { class: 'li', translate: 'no' }, h('span', { text: k, style: 'width:110px;display:inline-block', translate: 'no' }), h('span', { text: AC[k], translate: 'no' })); li.addEventListener('click', () => { L.$$('.li', list).forEach((x) => x.classList.remove('on')); li.classList.add('on'); rep.value = k; wit.value = AC[k]; }); list.appendChild(li); }); };
-    draw();
+    const o = L.app.opts, pend = {};
+    const ck = (label, key) => ui.check(label, o[key] !== false, (v) => { pend[key] = v; });
     const body = ui.tabs([{
       label: 'AutoCorrect', body: h('div', { class: 'col' },
-        ui.check('Correct TWo INitial CApitals', !!o.autocorrect, (v) => { o.autocorrect = v; }),
-        ui.check('Capitalize first letter of &sentences', !!o.capSentence, (v) => { o.capSentence = v; }),
-        ui.check('Replace straight quotes with smart quotes', !!o.smartQuotes, (v) => { o.smartQuotes = v; }),
-        h('div', { class: 'row' }, ui.field('&Replace:', rep), ui.field('&With:', wit)), list,
-        h('div', { class: 'row' }, ui.button('&Add', () => { if (rep.value) { AC[rep.value] = wit.value; draw(); } }), ui.button('&Delete', () => { delete AC[rep.value]; draw(); }))),
+        ck('Correct TWo INitial CApitals', 'twoCaps'),
+        ck('Capitalize first letter of &sentences', 'capSentence'),
+        ck('Replace straight quotes with smart quotes', 'smartQuotes'),
+        ck('Replace &text as you type', 'acReplace'),
+        ui.autocorrectEntries(L.autocorrect)),
     }]);
-    ui.dialog({ title: 'AutoCorrect: English (U.S.)', body, width: 420, buttons: [{ label: 'OK', primary: true, onClick: () => L.app.saveOpts() }, { label: 'Cancel' }] });
+    ui.dialog({ title: 'AutoCorrect: English (U.S.)', body, width: 460, buttons: [{ label: 'OK', primary: true, onClick: () => { Object.assign(o, pend); L.app.saveOpts(); } }, { label: 'Cancel' }] });
   };
 
   /* ---------- Properties ---------- */

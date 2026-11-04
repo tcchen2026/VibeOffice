@@ -1,7 +1,7 @@
 {
  "\"&Straight quotes\" with “smart quotes”": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "\"Irregardless\" is nonstandard.": {
@@ -97,10 +97,10 @@
  },
  "&Add": {
   "where": [
-   "common/dialogs.js:310",
-   "lectern/js/dialogs.js:931",
-   "ledger/js/dialogs.js:789",
-   "ledger/js/dialogs.js:823"
+   "common/dialogs.js:296",
+   "common/dialogs.js:301",
+   "common/dialogs.js:365",
+   "ledger/js/dialogs.js:789"
   ]
  },
  "&Add >>": {
@@ -115,8 +115,8 @@
  },
  "&Add to Dictionary": {
   "where": [
-   "common/dialogs.js:231",
-   "common/dialogs.js:240",
+   "common/dialogs.js:241",
+   "common/dialogs.js:252",
    "quire/js/spell.js:285"
   ]
  },
@@ -173,8 +173,8 @@
  },
  "&All": {
   "where": [
-   "lectern/js/dialogs.js:880",
-   "lectern/js/dialogs.js:1107",
+   "lectern/js/dialogs.js:883",
+   "lectern/js/dialogs.js:1108",
    "ledger/js/commands.js:64",
    "ledger/js/dialogs.js:590"
   ]
@@ -201,7 +201,7 @@
  },
  "&Amount:": {
   "where": [
-   "lectern/js/dialogs.js:1092"
+   "lectern/js/dialogs.js:1093"
   ]
  },
  "&And": {
@@ -271,12 +271,12 @@
  },
  "&Attention Line": {
   "where": [
-   "quire/js/autocorrect.js:314"
+   "quire/js/autocorrect.js:310"
   ]
  },
  "&Author:": {
   "where": [
-   "common/dialogs.js:269"
+   "common/dialogs.js:324"
   ]
  },
  "&Auto Outline": {
@@ -286,7 +286,7 @@
  },
  "&AutoCorrect": {
   "where": [
-   "quire/js/dialogs3.js:547"
+   "quire/js/dialogs3.js:544"
   ]
  },
  "&AutoCorrect Options...": {
@@ -299,7 +299,7 @@
  },
  "&AutoCorrect as you type": {
   "where": [
-   "lectern/js/dialogs.js:900"
+   "lectern/js/dialogs.js:903"
   ]
  },
  "&AutoFit": {
@@ -357,7 +357,7 @@
  },
  "&Available formats:": {
   "where": [
-   "lectern/js/dialogs.js:861"
+   "lectern/js/dialogs.js:864"
   ]
  },
  "&Average": {
@@ -373,7 +373,7 @@
  },
  "&Background colors and images": {
   "where": [
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:579"
   ]
  },
  "&Background...": {
@@ -464,12 +464,12 @@
  },
  "&Blue background, white text": {
   "where": [
-   "quire/js/dialogs3.js:580"
+   "quire/js/dialogs3.js:577"
   ]
  },
  "&Blue:": {
   "where": [
-   "common/ui.js:1147"
+   "common/ui.js:1162"
   ]
  },
  "&Bold": {
@@ -532,7 +532,7 @@
  },
  "&Break Link": {
   "where": [
-   "ledger/js/dialogs.js:961"
+   "ledger/js/dialogs.js:958"
   ]
  },
  "&Break...": {
@@ -611,7 +611,7 @@
  },
  "&Change": {
   "where": [
-   "common/dialogs.js:242"
+   "common/dialogs.js:254"
   ]
  },
  "&Character code:": {
@@ -681,7 +681,7 @@
  },
  "&Closing": {
   "where": [
-   "quire/js/autocorrect.js:314"
+   "quire/js/autocorrect.js:310"
   ]
  },
  "&Color": {
@@ -749,7 +749,7 @@
  },
  "&Commands": {
   "where": [
-   "common/ui.js:1057"
+   "common/ui.js:1072"
   ]
  },
  "&Commas": {
@@ -774,7 +774,7 @@
  },
  "&Continue": {
   "where": [
-   "common/ui.js:749"
+   "common/ui.js:763"
   ]
  },
  "&Continue Numbering": {
@@ -802,7 +802,7 @@
  },
  "&Copy Address": {
   "where": [
-   "common/ui.js:682"
+   "common/ui.js:696"
   ]
  },
  "&Count": {
@@ -813,7 +813,7 @@
  },
  "&Create": {
   "where": [
-   "lectern/js/dialogs.js:1048",
+   "lectern/js/dialogs.js:1049",
    "ledger/js/dialogs2.js:398"
   ]
  },
@@ -864,7 +864,7 @@
  },
  "&Custom Dictionaries...": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "&Custom Header...": {
@@ -975,13 +975,13 @@
  },
  "&Delay:": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1094"
   ]
  },
  "&Delete": {
   "where": [
-   "common/dialogs.js:322",
-   "lectern/js/dialogs.js:931",
+   "common/dialogs.js:297",
+   "common/dialogs.js:377",
    "ledger/js/app.js:449",
    "ledger/js/app.js:511"
   ]
@@ -1062,7 +1062,7 @@
  },
  "&Direction:": {
   "where": [
-   "lectern/js/dialogs.js:1092"
+   "lectern/js/dialogs.js:1093"
   ]
  },
  "&Directory": {
@@ -1077,7 +1077,7 @@
  },
  "&Display grid on screen": {
   "where": [
-   "lectern/js/dialogs.js:980"
+   "lectern/js/dialogs.js:981"
   ]
  },
  "&Do not check spelling or grammar": {
@@ -1130,7 +1130,7 @@
  },
  "&Drawing objects": {
   "where": [
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:579"
   ]
  },
  "&Drop Cap...": {
@@ -1226,7 +1226,7 @@
  },
  "&End with black slide": {
   "where": [
-   "lectern/js/dialogs.js:898"
+   "lectern/js/dialogs.js:901"
   ]
  },
  "&Endnotes:": {
@@ -1287,7 +1287,7 @@
  },
  "&Exceptions...": {
   "where": [
-   "quire/js/dialogs3.js:547"
+   "quire/js/dialogs3.js:544"
   ]
  },
  "&Exclude label from caption": {
@@ -1312,7 +1312,7 @@
  },
  "&Field shading:": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "&Field...": {
@@ -1330,7 +1330,7 @@
  },
  "&File/Disk...": {
   "where": [
-   "lectern/js/dialogs.js:1041"
+   "lectern/js/dialogs.js:1042"
   ]
  },
  "&Filter": {
@@ -1345,7 +1345,7 @@
  },
  "&Find Next": {
   "where": [
-   "lectern/js/dialogs.js:736",
+   "lectern/js/dialogs.js:739",
    "ledger/js/dialogs.js:519",
    "quire/js/find.js:331"
   ]
@@ -1372,7 +1372,7 @@
  },
  "&Fit": {
   "where": [
-   "lectern/js/dialogs.js:968"
+   "lectern/js/dialogs.js:969"
   ]
  },
  "&Fit selection": {
@@ -1418,7 +1418,7 @@
   "where": [
    "common/dialogs.js:99",
    "lectern/js/dialogs.js:86",
-   "lectern/js/dialogs.js:1025",
+   "lectern/js/dialogs.js:1026",
    "ledger/js/dialogs.js:197"
   ]
  },
@@ -1504,7 +1504,7 @@
  },
  "&Fractions (1/2) with fraction character (½)": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "&Freeze Panes": {
@@ -1527,7 +1527,7 @@
  },
  "&From:": {
   "where": [
-   "lectern/js/dialogs.js:880"
+   "lectern/js/dialogs.js:883"
   ]
  },
  "&Full page of the same label": {
@@ -1621,7 +1621,7 @@
  },
  "&Green:": {
   "where": [
-   "common/ui.js:1147"
+   "common/ui.js:1162"
   ]
  },
  "&Grid...": {
@@ -1650,7 +1650,7 @@
  },
  "&Group text:": {
   "where": [
-   "lectern/js/dialogs.js:1094"
+   "lectern/js/dialogs.js:1095"
   ]
  },
  "&Group...": {
@@ -1686,7 +1686,7 @@
  },
  "&Header/Footer": {
   "where": [
-   "quire/js/autocorrect.js:314"
+   "quire/js/autocorrect.js:310"
   ]
  },
  "&Heading Rows Repeat": {
@@ -1729,7 +1729,7 @@
  },
  "&Hidden text": {
   "where": [
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:579"
   ]
  },
  "&Hide": {
@@ -1752,12 +1752,12 @@
  },
  "&Hide spelling and grammar errors in this document": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "&Highlight": {
   "where": [
-   "quire/js/dialogs3.js:579",
+   "quire/js/dialogs3.js:576",
    "quire/js/find.js:384"
   ]
  },
@@ -1806,12 +1806,12 @@
  },
  "&Hyperlink base:": {
   "where": [
-   "common/dialogs.js:270"
+   "common/dialogs.js:325"
   ]
  },
  "&Hyperlink to:": {
   "where": [
-   "lectern/js/dialogs.js:834"
+   "lectern/js/dialogs.js:837"
   ]
  },
  "&Hyperlinks": {
@@ -1827,12 +1827,12 @@
  "&Hyphens (--) with dash (—)": {
   "where": [
    "quire/js/dialogs3.js:188",
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "&Ignore Once": {
   "where": [
-   "common/dialogs.js:238",
+   "common/dialogs.js:250",
    "quire/js/spell.js:293"
   ]
  },
@@ -1873,7 +1873,7 @@
  },
  "&Initials:": {
   "where": [
-   "quire/js/dialogs3.js:587"
+   "quire/js/dialogs3.js:584"
   ]
  },
  "&Input message:": {
@@ -1885,7 +1885,7 @@
   "where": [
    "common/dialogs.js:107",
    "lectern/js/app.js:74",
-   "lectern/js/dialogs.js:1076",
+   "lectern/js/dialogs.js:1077",
    "lectern/js/ribbon.js:36"
   ]
  },
@@ -1907,12 +1907,12 @@
  },
  "&Insertions color:": {
   "where": [
-   "quire/js/dialogs3.js:586"
+   "quire/js/dialogs3.js:583"
   ]
  },
  "&Internet and network paths with hyperlinks": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "&Internet paths with hyperlinks": {
@@ -1955,7 +1955,7 @@
  },
  "&Keep source formatting": {
   "where": [
-   "lectern/js/dialogs.js:1070"
+   "lectern/js/dialogs.js:1071"
   ]
  },
  "&Kerning for fonts:": {
@@ -1972,7 +1972,7 @@
  },
  "&Keywords:": {
   "where": [
-   "common/dialogs.js:270"
+   "common/dialogs.js:325"
   ]
  },
  "&Label:": {
@@ -2014,7 +2014,7 @@
  },
  "&Lay out this document as if created in:": {
   "where": [
-   "quire/js/dialogs3.js:588"
+   "quire/js/dialogs3.js:585"
   ]
  },
  "&Layout": {
@@ -2165,7 +2165,7 @@
  },
  "&Loop continuously until 'Esc'": {
   "where": [
-   "lectern/js/dialogs.js:878"
+   "lectern/js/dialogs.js:881"
   ]
  },
  "&Loose": {
@@ -2197,7 +2197,7 @@
  },
  "&Mailing Instructions": {
   "where": [
-   "quire/js/autocorrect.js:314"
+   "quire/js/autocorrect.js:310"
   ]
  },
  "&Major gridlines (Value axis)": {
@@ -2207,7 +2207,7 @@
  },
  "&Manager:": {
   "where": [
-   "common/dialogs.js:269"
+   "common/dialogs.js:324"
   ]
  },
  "&Manual": {
@@ -2222,12 +2222,12 @@
  },
  "&Manually": {
   "where": [
-   "lectern/js/dialogs.js:882"
+   "lectern/js/dialogs.js:885"
   ]
  },
  "&Many pages": {
   "where": [
-   "quire/js/dialogs3.js:661"
+   "quire/js/dialogs3.js:658"
   ]
  },
  "&Margins": {
@@ -2259,12 +2259,12 @@
  },
  "&Maximum number of undos:": {
   "where": [
-   "lectern/js/dialogs.js:900"
+   "lectern/js/dialogs.js:903"
   ]
  },
  "&Measurement units:": {
   "where": [
-   "quire/js/dialogs3.js:580"
+   "quire/js/dialogs3.js:577"
   ]
  },
  "&Merge Cells": {
@@ -2379,8 +2379,8 @@
  },
  "&Name:": {
   "where": [
-   "common/dialogs.js:324",
-   "lectern/js/dialogs.js:899",
+   "common/dialogs.js:379",
+   "lectern/js/dialogs.js:902",
    "ledger/js/dialogs3.js:457",
    "quire/js/dialogs.js:924"
   ]
@@ -2443,7 +2443,7 @@
  },
  "&Next Sentence": {
   "where": [
-   "common/dialogs.js:231"
+   "common/dialogs.js:241"
   ]
  },
  "&Next page": {
@@ -2466,7 +2466,7 @@
  },
  "&None": {
   "where": [
-   "lectern/js/dialogs.js:834",
+   "lectern/js/dialogs.js:837",
    "ledger/js/app.js:658",
    "ledger/js/dialogs.js:761",
    "quire/js/dialogs.js:753"
@@ -2477,7 +2477,7 @@
    "lectern/js/app.js:213",
    "lectern/js/commands.js:52",
    "ledger/js/commands.js:80",
-   "quire/js/autocorrect.js:340"
+   "quire/js/autocorrect.js:336"
   ]
  },
  "&Normal font": {
@@ -2571,12 +2571,12 @@
  },
  "&Options": {
   "where": [
-   "common/ui.js:1058"
+   "common/ui.js:1073"
   ]
  },
  "&Options...": {
   "where": [
-   "common/dialogs.js:258",
+   "common/dialogs.js:270",
    "lectern/js/commands.js:139",
    "ledger/js/commands.js:207",
    "ledger/js/dialogs2.js:76"
@@ -2597,7 +2597,7 @@
  "&Ordinals (1st) with superscript": {
   "where": [
    "quire/js/dialogs3.js:188",
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "&Organizer...": {
@@ -2659,7 +2659,7 @@
  },
  "&Overtype mode": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "&Page Border": {
@@ -2689,7 +2689,7 @@
  },
  "&Page width": {
   "where": [
-   "quire/js/dialogs3.js:661"
+   "quire/js/dialogs3.js:658"
   ]
  },
  "&Paper": {
@@ -2715,12 +2715,12 @@
  },
  "&Password (optional):": {
   "where": [
-   "ledger/js/dialogs.js:909"
+   "ledger/js/dialogs.js:906"
   ]
  },
  "&Password:": {
   "where": [
-   "ledger/js/dialogs.js:860"
+   "ledger/js/dialogs.js:857"
   ]
  },
  "&Paste": {
@@ -2747,7 +2747,7 @@
  },
  "&Paste:": {
   "where": [
-   "quire/js/dialogs3.js:729"
+   "quire/js/dialogs3.js:726"
   ]
  },
  "&Pattern": {
@@ -2778,7 +2778,7 @@
  },
  "&Percent:": {
   "where": [
-   "lectern/js/dialogs.js:971"
+   "lectern/js/dialogs.js:972"
   ]
  },
  "&Permission": {
@@ -2796,7 +2796,7 @@
  },
  "&Picture layout:": {
   "where": [
-   "lectern/js/dialogs.js:1047"
+   "lectern/js/dialogs.js:1048"
   ]
  },
  "&PivotTable and PivotChart Report...": {
@@ -2806,7 +2806,7 @@
  },
  "&Popup menu on right mouse click": {
   "where": [
-   "lectern/js/dialogs.js:898"
+   "lectern/js/dialogs.js:901"
   ]
  },
  "&Portrait": {
@@ -2838,7 +2838,7 @@
  },
  "&Presented by a speaker (full screen)": {
   "where": [
-   "lectern/js/dialogs.js:877"
+   "lectern/js/dialogs.js:880"
   ]
  },
  "&Previous": {
@@ -2883,7 +2883,7 @@
  },
  "&Protect worksheet and contents of locked cells": {
   "where": [
-   "ledger/js/dialogs.js:878"
+   "ledger/js/dialogs.js:875"
   ]
  },
  "&Protection": {
@@ -2913,7 +2913,7 @@
  },
  "&Recently used file list:": {
   "where": [
-   "quire/js/dialogs3.js:580"
+   "quire/js/dialogs3.js:577"
   ]
  },
  "&Rectangle": {
@@ -2923,7 +2923,7 @@
  },
  "&Red:": {
   "where": [
-   "common/ui.js:1147"
+   "common/ui.js:1162"
   ]
  },
  "&Redo": {
@@ -2941,17 +2941,17 @@
  },
  "&Reenter password to proceed.": {
   "where": [
-   "ledger/js/dialogs.js:891"
+   "ledger/js/dialogs.js:888"
   ]
  },
  "&Reference Initials": {
   "where": [
-   "quire/js/autocorrect.js:314"
+   "quire/js/autocorrect.js:310"
   ]
  },
  "&Reference Line": {
   "where": [
-   "quire/js/autocorrect.js:315"
+   "quire/js/autocorrect.js:311"
   ]
  },
  "&Reference:": {
@@ -3031,12 +3031,12 @@
  },
  "&Repeat:": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1094"
   ]
  },
  "&Replace": {
   "where": [
-   "lectern/js/dialogs.js:738",
+   "lectern/js/dialogs.js:741",
    "ledger/js/dialogs.js:517",
    "quire/js/find.js:332"
   ]
@@ -3048,10 +3048,8 @@
  },
  "&Replace:": {
   "where": [
-   "lectern/js/dialogs.js:202",
-   "lectern/js/dialogs.js:930",
-   "ledger/js/dialogs.js:822",
-   "quire/js/dialogs3.js:547"
+   "common/dialogs.js:318",
+   "lectern/js/dialogs.js:202"
   ]
  },
  "&Research...": {
@@ -3176,13 +3174,13 @@
  },
  "&Salutation": {
   "where": [
-   "quire/js/autocorrect.js:315"
+   "quire/js/autocorrect.js:311"
   ]
  },
  "&Save": {
   "where": [
    "lectern/js/commands.js:26",
-   "lectern/js/dialogs.js:963",
+   "lectern/js/dialogs.js:964",
    "ledger/js/commands.js:30",
    "ledger/js/dialogs.js:668"
   ]
@@ -3222,7 +3220,7 @@
  },
  "&Selection": {
   "where": [
-   "quire/js/dialogs3.js:670"
+   "quire/js/dialogs3.js:667"
   ]
  },
  "&Semitransparent": {
@@ -3330,7 +3328,7 @@
  },
  "&Signature": {
   "where": [
-   "quire/js/autocorrect.js:315"
+   "quire/js/autocorrect.js:311"
   ]
  },
  "&Size:": {
@@ -3338,12 +3336,12 @@
    "lectern/js/dialogs.js:88",
    "lectern/js/dialogs.js:140",
    "lectern/js/dialogs.js:141",
-   "lectern/js/dialogs.js:1025"
+   "lectern/js/dialogs.js:1026"
   ]
  },
  "&Slide Layout task pane when inserting new slides": {
   "where": [
-   "lectern/js/dialogs.js:898"
+   "lectern/js/dialogs.js:901"
   ]
  },
  "&Slide Master": {
@@ -3363,17 +3361,17 @@
  },
  "&Slides:": {
   "where": [
-   "lectern/js/dialogs.js:1107"
+   "lectern/js/dialogs.js:1108"
   ]
  },
  "&Smart cut and paste": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "&Snap objects to grid": {
   "where": [
-   "lectern/js/dialogs.js:978",
+   "lectern/js/dialogs.js:979",
    "quire/js/dialogs3.js:177"
   ]
  },
@@ -3483,13 +3481,13 @@
  },
  "&Start:": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1094"
   ]
  },
  "&Startup Task Pane": {
   "where": [
    "ledger/js/dialogs.js:760",
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "&Status Bar": {
@@ -3504,7 +3502,7 @@
  },
  "&Structure": {
   "where": [
-   "ledger/js/dialogs.js:909"
+   "ledger/js/dialogs.js:906"
   ]
  },
  "&Style for following paragraph:": {
@@ -3541,12 +3539,12 @@
  },
  "&Subject Line": {
   "where": [
-   "quire/js/autocorrect.js:315"
+   "quire/js/autocorrect.js:311"
   ]
  },
  "&Subject:": {
   "where": [
-   "common/dialogs.js:269"
+   "common/dialogs.js:324"
   ]
  },
  "&Subtract": {
@@ -3625,7 +3623,7 @@
  },
  "&Tables": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "&Tables and Borders": {
@@ -3670,12 +3668,12 @@
  },
  "&Text width": {
   "where": [
-   "quire/js/dialogs3.js:661"
+   "quire/js/dialogs3.js:658"
   ]
  },
  "&Text:": {
   "where": [
-   "lectern/js/dialogs.js:1025",
+   "lectern/js/dialogs.js:1026",
    "quire/js/dialogs.js:820",
    "quire/js/dialogs2.js:562"
   ]
@@ -3723,7 +3721,7 @@
  },
  "&Title:": {
   "where": [
-   "common/dialogs.js:269",
+   "common/dialogs.js:324",
    "lectern/js/app.js:1602",
    "ledger/js/dialogs2.js:120",
    "ledger/js/dialogs2.js:124"
@@ -3796,13 +3794,13 @@
  },
  "&Type:": {
   "where": [
-   "common/dialogs.js:324",
+   "common/dialogs.js:379",
    "ledger/js/dialogs.js:143"
   ]
  },
  "&Typing replaces selection": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "&UPPERCASE": {
@@ -3830,7 +3828,7 @@
  },
  "&Undo": {
   "where": [
-   "common/dialogs.js:246",
+   "common/dialogs.js:258",
    "lectern/js/commands.js:37",
    "ledger/js/commands.js:48"
   ]
@@ -3888,7 +3886,7 @@
  },
  "&Update automatically": {
   "where": [
-   "lectern/js/dialogs.js:859",
+   "lectern/js/dialogs.js:862",
    "quire/js/dialogs2.js:118"
   ]
  },
@@ -3924,7 +3922,7 @@
  },
  "&Using timings, if present": {
   "where": [
-   "lectern/js/dialogs.js:882"
+   "lectern/js/dialogs.js:885"
   ]
  },
  "&Value": {
@@ -3939,7 +3937,7 @@
  },
  "&Value:": {
   "where": [
-   "common/dialogs.js:324",
+   "common/dialogs.js:379",
    "ledger/js/dialogs2.js:109"
   ]
  },
@@ -3967,7 +3965,7 @@
  },
  "&Vertical ruler": {
   "where": [
-   "lectern/js/dialogs.js:898"
+   "lectern/js/dialogs.js:901"
   ]
  },
  "&Vertical scroll bar": {
@@ -4045,7 +4043,7 @@
  },
  "&Whole page": {
   "where": [
-   "quire/js/dialogs3.js:661"
+   "quire/js/dialogs3.js:658"
   ]
  },
  "&Widow/Orphan control": {
@@ -4075,15 +4073,13 @@
  },
  "&Windows": {
   "where": [
-   "ledger/js/dialogs.js:909"
+   "ledger/js/dialogs.js:906"
   ]
  },
  "&With:": {
   "where": [
-   "lectern/js/dialogs.js:202",
-   "lectern/js/dialogs.js:930",
-   "ledger/js/dialogs.js:822",
-   "quire/js/dialogs3.js:547"
+   "common/dialogs.js:318",
+   "lectern/js/dialogs.js:202"
   ]
  },
  "&Word Count...": {
@@ -4160,7 +4156,7 @@
  },
  "'{0}' is protected.": {
   "where": [
-   "common/ui.js:757"
+   "common/ui.js:771"
   ]
  },
  "'{0}' is protected.\n\nPassword:": {
@@ -4269,8 +4265,8 @@
  },
  "(none)": {
   "where": [
-   "common/dialogs.js:298",
-   "lectern/js/dialogs.js:1087",
+   "common/dialogs.js:353",
+   "lectern/js/dialogs.js:1088",
    "lectern/js/slideshow.js:903",
    "ledger/js/dialogs2.js:64"
   ]
@@ -4303,7 +4299,7 @@
  },
  "*&Bold* and _italic_ with real formatting": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "- (hyphen)": {
@@ -4323,7 +4319,7 @@
  },
  "- PAGE -": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  ". (period)": {
@@ -4353,12 +4349,12 @@
  },
  "1 picture": {
   "where": [
-   "lectern/js/dialogs.js:1038"
+   "lectern/js/dialogs.js:1039"
   ]
  },
  "1 picture with title": {
   "where": [
-   "lectern/js/dialogs.js:1038"
+   "lectern/js/dialogs.js:1039"
   ]
  },
  "1 slide could not be recovered.": {
@@ -4459,12 +4455,12 @@
  },
  "2 pictures": {
   "where": [
-   "lectern/js/dialogs.js:1038"
+   "lectern/js/dialogs.js:1039"
   ]
  },
  "2 pictures with title": {
   "where": [
-   "lectern/js/dialogs.js:1038"
+   "lectern/js/dialogs.js:1039"
   ]
  },
  "2. Editing restrictions": {
@@ -4539,12 +4535,12 @@
  },
  "4 pictures": {
   "where": [
-   "lectern/js/dialogs.js:1038"
+   "lectern/js/dialogs.js:1039"
   ]
  },
  "4 pictures with title": {
   "where": [
-   "lectern/js/dialogs.js:1038"
+   "lectern/js/dialogs.js:1039"
   ]
  },
  "4-Point Star": {
@@ -4710,7 +4706,7 @@
  },
  "A presentation editor that runs entirely in your browser. Presentations are read and written as Office Open XML (.pptx, .pptm); nothing is uploaded.": {
   "where": [
-   "lectern/js/dialogs.js:1133"
+   "lectern/js/dialogs.js:1134"
   ]
  },
  "A reference to an IntelliArt drawing cache missing from the original file was removed; its data and layout are retained.": {
@@ -4750,7 +4746,7 @@
  },
  "A spreadsheet that runs entirely in your browser. Workbooks are read and written as Office Open XML (.xlsx, .xlsm), CSV and text; nothing is uploaded.": {
   "where": [
-   "ledger/js/dialogs.js:965"
+   "ledger/js/dialogs.js:962"
   ]
  },
  "A style named {0} already exists.": {
@@ -4775,7 +4771,7 @@
  },
  "A word processor that runs entirely in your browser. Documents are read and written as Office Open XML (.docx, .docm), RTF, HTML, text and Markdown; nothing is uploaded.": {
   "where": [
-   "quire/js/dialogs3.js:737"
+   "quire/js/dialogs3.js:734"
   ]
  },
  "A workbook must contain at least one visible worksheet.": {
@@ -4796,12 +4792,12 @@
  "A&ll": {
   "where": [
    "quire/js/dialogs.js:329",
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "A&nimated text": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "A&utoShapes": {
@@ -4843,7 +4839,7 @@
  },
  "About {0}": {
   "where": [
-   "common/ui.js:720"
+   "common/ui.js:734"
   ]
  },
  "About {0} MB, kept by VibeOffice on this computer.": {
@@ -5038,13 +5034,13 @@
  },
  "Action Settings": {
   "where": [
-   "lectern/js/dialogs.js:839",
-   "lectern/js/dialogs.js:843"
+   "lectern/js/dialogs.js:842",
+   "lectern/js/dialogs.js:846"
   ]
  },
  "Action on click": {
   "where": [
-   "lectern/js/dialogs.js:837"
+   "lectern/js/dialogs.js:840"
   ]
  },
  "Action|filter": {
@@ -5143,12 +5139,12 @@
  },
  "Add Text": {
   "where": [
-   "lectern/js/textedit.js:322"
+   "lectern/js/textedit.js:339"
   ]
  },
  "Add at least one picture.": {
   "where": [
-   "lectern/js/dialogs.js:1048"
+   "lectern/js/dialogs.js:1049"
   ]
  },
  "Add subtotal to:": {
@@ -5178,7 +5174,7 @@
  },
  "Address": {
   "where": [
-   "common/ui.js:670"
+   "common/ui.js:684"
   ]
  },
  "Address Line 1": {
@@ -5237,7 +5233,7 @@
  },
  "Advance slides": {
   "where": [
-   "lectern/js/dialogs.js:885"
+   "lectern/js/dialogs.js:888"
   ]
  },
  "Advanced Animation": {
@@ -5264,7 +5260,7 @@
  },
  "After Previous": {
   "where": [
-   "lectern/js/dialogs.js:1084",
+   "lectern/js/dialogs.js:1085",
    "lectern/js/panes.js:788"
   ]
  },
@@ -5285,12 +5281,12 @@
  },
  "Album Content": {
   "where": [
-   "lectern/js/dialogs.js:1046"
+   "lectern/js/dialogs.js:1047"
   ]
  },
  "Album Layout": {
   "where": [
-   "lectern/js/dialogs.js:1047"
+   "lectern/js/dialogs.js:1048"
   ]
  },
  "Ali&gnment": {
@@ -5450,7 +5446,7 @@
  },
  "All pages in range": {
   "where": [
-   "quire/js/dialogs3.js:674"
+   "quire/js/dialogs3.js:671"
   ]
  },
  "All r&eferences:": {
@@ -5485,7 +5481,7 @@
  },
  "Allow all users of this worksheet to:": {
   "where": [
-   "ledger/js/dialogs.js:878"
+   "ledger/js/dialogs.js:875"
   ]
  },
  "Allow cell &drag and drop": {
@@ -5561,8 +5557,8 @@
  },
  "Always": {
   "where": [
-   "quire/js/dialogs3.js:566",
-   "quire/js/dialogs3.js:574"
+   "quire/js/dialogs3.js:563",
+   "quire/js/dialogs3.js:571"
   ]
  },
  "Amber": {
@@ -5736,7 +5732,7 @@
  },
  "Apply as you type": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "Apply numbering to text, then use Update to Match Selection to add it to the style.": {
@@ -5825,7 +5821,7 @@
  },
  "Aqua": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Arc": {
@@ -5859,8 +5855,8 @@
  "Arial Black": {
   "where": [
    "common/core.js:697",
-   "lectern/js/dialogs.js:998",
-   "lectern/js/dialogs.js:1017",
+   "lectern/js/dialogs.js:999",
+   "lectern/js/dialogs.js:1018",
    "lectern/js/render.js:567"
   ]
  },
@@ -5913,7 +5909,7 @@
  },
  "As One Object": {
   "where": [
-   "lectern/js/dialogs.js:1089"
+   "lectern/js/dialogs.js:1090"
   ]
  },
  "As displayed on sheet": {
@@ -6000,7 +5996,7 @@
  },
  "Attention:": {
   "where": [
-   "quire/js/autocorrect.js:303"
+   "quire/js/autocorrect.js:299"
   ]
  },
  "Aurora": {
@@ -6010,7 +6006,7 @@
  },
  "Author, Page #, Date": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Auto": {
@@ -6023,7 +6019,7 @@
  },
  "Auto (as the browser)": {
   "where": [
-   "common/ui.js:982",
+   "common/ui.js:997",
    "start.js:285"
   ]
  },
@@ -6050,22 +6046,22 @@
  },
  "Auto&Text": {
   "where": [
-   "quire/js/dialogs3.js:549"
+   "quire/js/dialogs3.js:546"
   ]
  },
  "Auto&Text...": {
   "where": [
-   "quire/js/autocorrect.js:337"
+   "quire/js/autocorrect.js:333"
   ]
  },
  "AutoCo&rrect": {
   "where": [
-   "common/dialogs.js:244"
+   "common/dialogs.js:256"
   ]
  },
  "AutoComplete": {
   "where": [
-   "quire/js/autocorrect.js:289"
+   "quire/js/autocorrect.js:285"
   ]
  },
  "AutoContent Wizard": {
@@ -6080,20 +6076,20 @@
  },
  "AutoCorrect": {
   "where": [
-   "lectern/js/dialogs.js:926",
-   "ledger/js/dialogs.js:820"
+   "lectern/js/dialogs.js:927",
+   "ledger/js/dialogs.js:818"
   ]
  },
  "AutoCorrect Exceptions": {
   "where": [
-   "quire/js/dialogs3.js:542"
+   "quire/js/dialogs3.js:539"
   ]
  },
  "AutoCorrect: English (U.S.)": {
   "where": [
-   "lectern/js/dialogs.js:933",
-   "ledger/js/dialogs.js:820",
-   "quire/js/dialogs3.js:551"
+   "lectern/js/dialogs.js:934",
+   "ledger/js/dialogs.js:818",
+   "quire/js/dialogs3.js:548"
   ]
  },
  "AutoFill": {
@@ -6154,7 +6150,7 @@
  },
  "AutoFormat As You T&ype": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "AutoFormat and &review each change": {
@@ -6181,7 +6177,7 @@
  },
  "AutoRecover keeps a copy in this browser only; it is offered when Quire opens after an unexpected close.": {
   "where": [
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "AutoSha&pe...": {
@@ -6216,33 +6212,33 @@
  },
  "AutoText": {
   "where": [
-   "quire/js/autocorrect.js:323",
-   "quire/js/autocorrect.js:324",
-   "quire/js/autocorrect.js:325",
-   "quire/js/autocorrect.js:354"
+   "quire/js/autocorrect.js:319",
+   "quire/js/autocorrect.js:320",
+   "quire/js/autocorrect.js:321",
+   "quire/js/autocorrect.js:350"
   ]
  },
  "AutoText entries": {
   "where": [
-   "quire/js/dialogs3.js:673"
+   "quire/js/dialogs3.js:670"
   ]
  },
  "Automatic": {
   "where": [
-   "common/ui.js:929",
-   "common/ui.js:1079",
+   "common/ui.js:944",
+   "common/ui.js:1094",
    "lectern/js/dialogs.js:430",
    "quire/js/dialogs3.js:85"
   ]
  },
  "Automatic &numbered lists": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "Automatic b&ulleted lists": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "Automatic except &tables": {
@@ -6388,7 +6384,7 @@
  },
  "Back&ground repagination": {
   "where": [
-   "quire/js/dialogs3.js:580"
+   "quire/js/dialogs3.js:577"
   ]
  },
  "Background": {
@@ -6411,7 +6407,7 @@
  },
  "Balloons": {
   "where": [
-   "quire/js/dialogs3.js:586"
+   "quire/js/dialogs3.js:583"
   ]
  },
  "Banner": {
@@ -6555,12 +6551,12 @@
  },
  "Best regards,": {
   "where": [
-   "quire/js/autocorrect.js:304"
+   "quire/js/autocorrect.js:300"
   ]
  },
  "Best wishes,": {
   "where": [
-   "quire/js/autocorrect.js:304"
+   "quire/js/autocorrect.js:300"
   ]
  },
  "Bevel": {
@@ -6575,7 +6571,7 @@
  },
  "Black": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:187"
   ]
@@ -6594,7 +6590,7 @@
  "Blank Document": {
   "where": [
    "common/suite.js:322",
-   "quire/js/dialogs3.js:746"
+   "quire/js/dialogs3.js:743"
   ]
  },
  "Blank Presentation": {
@@ -6679,10 +6675,10 @@
  },
  "Blue": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:186",
-   "quire/js/dialogs3.js:573"
+   "quire/js/dialogs3.js:570"
   ]
  },
  "Blue tissue paper": {
@@ -6692,7 +6688,7 @@
  },
  "Blue-Gray": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Blueprint": {
@@ -6746,7 +6742,7 @@
  },
  "Boo&kmarks": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Book": {
@@ -6809,7 +6805,7 @@
  },
  "Border &lines": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "Border Color": {
@@ -6942,7 +6938,7 @@
  },
  "Break Links": {
   "where": [
-   "ledger/js/dialogs.js:961"
+   "ledger/js/dialogs.js:958"
   ]
  },
  "Break types": {
@@ -6963,7 +6959,7 @@
  },
  "Bright Green": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:186"
   ]
  },
@@ -7003,7 +6999,7 @@
  },
  "Brown": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Browse by Comment": {
@@ -7068,7 +7064,7 @@
  },
  "Browsed at a &kiosk (full screen)": {
   "where": [
-   "lectern/js/dialogs.js:877"
+   "lectern/js/dialogs.js:880"
   ]
  },
  "Bubble": {
@@ -7098,7 +7094,7 @@
  },
  "Built-in Heading st&yles": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "Bulle&ted": {
@@ -7164,7 +7160,7 @@
  },
  "By 1st Level Paragraphs": {
   "where": [
-   "lectern/js/dialogs.js:1089"
+   "lectern/js/dialogs.js:1090"
   ]
  },
  "By Columns": {
@@ -7179,7 +7175,7 @@
  },
  "By author": {
   "where": [
-   "quire/js/dialogs3.js:573"
+   "quire/js/dialogs3.js:570"
   ]
  },
  "C&ell": {
@@ -7236,7 +7232,7 @@
  },
  "C&ompany:": {
   "where": [
-   "common/dialogs.js:269"
+   "common/dialogs.js:324"
   ]
  },
  "C&onstants": {
@@ -7301,7 +7297,7 @@
  },
  "CUSTOM.DIC": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Caching resources for offline use": {
@@ -7465,7 +7461,7 @@
    "common/charts.js:438",
    "common/dialogs.js:116",
    "common/dialogs.js:192",
-   "common/dialogs.js:259"
+   "common/dialogs.js:271"
   ]
  },
  "Cancel an entry": {
@@ -7511,21 +7507,21 @@
  },
  "Capitalize &names of days": {
   "where": [
-   "ledger/js/dialogs.js:821",
-   "quire/js/dialogs3.js:547"
+   "ledger/js/dialogs.js:819",
+   "quire/js/dialogs3.js:544"
   ]
  },
  "Capitalize first letter of &sentences": {
   "where": [
-   "lectern/js/dialogs.js:900",
-   "lectern/js/dialogs.js:928",
-   "ledger/js/dialogs.js:821",
-   "quire/js/dialogs3.js:547"
+   "lectern/js/dialogs.js:903",
+   "lectern/js/dialogs.js:929",
+   "ledger/js/dialogs.js:819",
+   "quire/js/dialogs3.js:544"
   ]
  },
  "Capitalize first letter of table &cells": {
   "where": [
-   "quire/js/dialogs3.js:547"
+   "quire/js/dialogs3.js:544"
   ]
  },
  "Capsule": {
@@ -7560,7 +7556,7 @@
  },
  "Captions &below ALL pictures": {
   "where": [
-   "lectern/js/dialogs.js:1040"
+   "lectern/js/dialogs.js:1041"
   ]
  },
  "Captions inserted with Insert ▸ Reference ▸ Caption are collected here.": {
@@ -7581,7 +7577,7 @@
  },
  "Cat&egory:": {
   "where": [
-   "common/dialogs.js:270"
+   "common/dialogs.js:325"
   ]
  },
  "Categories": {
@@ -7601,10 +7597,10 @@
  },
  "Caution: If you lose or forget the password, it cannot be recovered.": {
   "where": [
-   "lectern/js/dialogs.js:910",
+   "lectern/js/dialogs.js:913",
    "ledger/js/dialogs.js:663",
-   "ledger/js/dialogs.js:891",
-   "quire/js/dialogs3.js:599"
+   "ledger/js/dialogs.js:888",
+   "quire/js/dialogs3.js:596"
   ]
  },
  "Ce&lls...": {
@@ -7638,7 +7634,7 @@
  },
  "Cell Reference": {
   "where": [
-   "ledger/js/dialogs.js:924"
+   "ledger/js/dialogs.js:921"
   ]
  },
  "Cell Size": {
@@ -7742,7 +7738,7 @@
  },
  "Centimeters": {
   "where": [
-   "quire/js/dialogs3.js:567"
+   "quire/js/dialogs3.js:564"
   ]
  },
  "Century Gothic": {
@@ -7768,7 +7764,7 @@
  },
  "Change A&ll": {
   "where": [
-   "common/dialogs.js:243"
+   "common/dialogs.js:255"
   ]
  },
  "Change AutoShape": {
@@ -7881,7 +7877,7 @@
   "where": [
    "quire/js/dialogs.js:883",
    "quire/js/dialogs3.js:61",
-   "quire/js/dialogs3.js:701"
+   "quire/js/dialogs3.js:698"
   ]
  },
  "Character in Range": {
@@ -7901,12 +7897,12 @@
  },
  "Characters (with spaces):": {
   "where": [
-   "quire/js/dialogs3.js:636"
+   "quire/js/dialogs3.js:633"
   ]
  },
  "Characters:": {
   "where": [
-   "quire/js/dialogs3.js:636"
+   "quire/js/dialogs3.js:633"
   ]
  },
  "Chart": {
@@ -8021,7 +8017,7 @@
  },
  "Check &grammar": {
   "where": [
-   "common/dialogs.js:252"
+   "common/dialogs.js:264"
   ]
  },
  "Check Box": {
@@ -8036,12 +8032,12 @@
  },
  "Check grammar as you type": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Check grammar with spelling": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Check mark": {
@@ -8051,12 +8047,12 @@
  },
  "Check spelling as you &type": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:904"
   ]
  },
  "Check spelling as you t&ype": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Check the slides before you save over the original.": {
@@ -8066,7 +8062,7 @@
  },
  "Checked by": {
   "where": [
-   "common/dialogs.js:272"
+   "common/dialogs.js:327"
   ]
  },
  "Checkerboard": {
@@ -8326,7 +8322,7 @@
  "Clear": {
   "where": [
    "lectern/js/app.js:1000",
-   "lectern/js/textedit.js:786",
+   "lectern/js/textedit.js:805",
    "ledger/js/ops.js:232",
    "ledger/js/ribbon.js:39"
   ]
@@ -8399,7 +8395,7 @@
  },
  "Click Continue to save anyway, or Cancel to go back to your document without saving.": {
   "where": [
-   "common/ui.js:747"
+   "common/ui.js:761"
   ]
  },
  "Click a button to apply borders:": {
@@ -8543,8 +8539,8 @@
   "where": [
    "common/core.js:325",
    "common/ui.js:570",
-   "common/ui.js:682",
-   "common/ui.js:1059"
+   "common/ui.js:696",
+   "common/ui.js:1074"
   ]
  },
  "Close Full Screen": {
@@ -8703,7 +8699,7 @@
  "Color": {
   "where": [
    "lectern/js/app.js:201",
-   "lectern/js/dialogs.js:1104",
+   "lectern/js/dialogs.js:1105",
    "lectern/js/panes.js:424",
    "lectern/js/ribbon.js:103"
   ]
@@ -8746,7 +8742,7 @@
  },
  "Color/gra&yscale:": {
   "where": [
-   "lectern/js/dialogs.js:1109"
+   "lectern/js/dialogs.js:1110"
   ]
  },
  "Color:": {
@@ -8786,7 +8782,7 @@
  },
  "Colors": {
   "where": [
-   "common/ui.js:1152",
+   "common/ui.js:1167",
    "lectern/js/diagram.js:552",
    "lectern/js/dialogs.js:336",
    "quire/js/dialogs3.js:158"
@@ -8802,7 +8798,7 @@
  },
  "Colors:": {
   "where": [
-   "common/ui.js:1148"
+   "common/ui.js:1163"
   ]
  },
  "Colu&mn:": {
@@ -8943,13 +8939,13 @@
  },
  "Command": {
   "where": [
-   "common/ui.js:1030"
+   "common/ui.js:1045"
   ]
  },
  "Commands": {
   "where": [
    "common/search.js:238",
-   "common/ui.js:1040"
+   "common/ui.js:1055"
   ]
  },
  "Commas": {
@@ -8959,7 +8955,7 @@
  },
  "Comme&nts:": {
   "where": [
-   "common/dialogs.js:270"
+   "common/dialogs.js:325"
   ]
  },
  "Comment": {
@@ -9002,7 +8998,7 @@
  },
  "Comment {0}: {1}": {
   "where": [
-   "quire/js/dialogs3.js:709"
+   "quire/js/dialogs3.js:706"
   ]
  },
  "Comments": {
@@ -9064,12 +9060,12 @@
  },
  "Compatibility": {
   "where": [
-   "quire/js/dialogs3.js:588"
+   "quire/js/dialogs3.js:585"
   ]
  },
  "Compatibility Checker": {
   "where": [
-   "common/ui.js:748"
+   "common/ui.js:762"
   ]
  },
  "Complete the merge": {
@@ -9154,22 +9150,22 @@
  },
  "Confidential, Page #, Date": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Confirm Password": {
   "where": [
-   "lectern/js/dialogs.js:910",
+   "lectern/js/dialogs.js:913",
    "ledger/js/dialogs.js:663",
-   "ledger/js/dialogs.js:891",
-   "quire/js/dialogs3.js:599"
+   "ledger/js/dialogs.js:888",
+   "quire/js/dialogs3.js:596"
   ]
  },
  "Confirmation password is not identical.": {
   "where": [
-   "lectern/js/dialogs.js:910",
+   "lectern/js/dialogs.js:913",
    "ledger/js/dialogs.js:663",
-   "ledger/js/dialogs.js:891"
+   "ledger/js/dialogs.js:888"
   ]
  },
  "Consolidate": {
@@ -9218,12 +9214,12 @@
  },
  "Contents": {
   "where": [
-   "common/dialogs.js:298"
+   "common/dialogs.js:353"
   ]
  },
  "Contents:": {
   "where": [
-   "common/dialogs.js:298"
+   "common/dialogs.js:353"
   ]
  },
  "Context": {
@@ -9483,7 +9479,7 @@
  },
  "Copied.": {
   "where": [
-   "common/ui.js:679"
+   "common/ui.js:693"
   ]
  },
  "Copy &to:": {
@@ -9538,23 +9534,23 @@
  },
  "Correct TWo INitial &CApitals": {
   "where": [
-   "quire/js/dialogs3.js:547"
+   "quire/js/dialogs3.js:544"
   ]
  },
  "Correct TWo INitial CApitals": {
   "where": [
-   "lectern/js/dialogs.js:927",
-   "ledger/js/dialogs.js:821"
+   "lectern/js/dialogs.js:928",
+   "ledger/js/dialogs.js:819"
   ]
  },
  "Correct accidental usage of cAPS &LOCK key": {
   "where": [
-   "quire/js/dialogs3.js:547"
+   "quire/js/dialogs3.js:544"
   ]
  },
  "Correct accidental use of cAPS &LOCK key": {
   "where": [
-   "ledger/js/dialogs.js:821"
+   "ledger/js/dialogs.js:819"
   ]
  },
  "Count": {
@@ -9625,7 +9621,7 @@
   "where": [
    "common/core.js:698",
    "lectern/js/model.js:152",
-   "quire/js/autocorrect.js:234",
+   "quire/js/autocorrect.js:230",
    "quire/js/dialogs.js:424"
   ]
  },
@@ -9730,7 +9726,7 @@
  },
  "Created by": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Created by {0} on {1}": {
@@ -9740,15 +9736,15 @@
  },
  "Created on": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Created:": {
   "where": [
-   "lectern/js/dialogs.js:944",
+   "lectern/js/dialogs.js:945",
    "ledger/js/dialogs.js:689",
-   "quire/js/dialogs3.js:632",
-   "quire/js/dialogs3.js:635"
+   "quire/js/dialogs3.js:629",
+   "quire/js/dialogs3.js:632"
   ]
  },
  "Creates a cell reference as text, given specified row and column numbers.": {
@@ -10124,12 +10120,12 @@
  },
  "Curr&ent page": {
   "where": [
-   "quire/js/dialogs3.js:670"
+   "quire/js/dialogs3.js:667"
   ]
  },
  "Curr&ent slide": {
   "where": [
-   "lectern/js/dialogs.js:1107"
+   "lectern/js/dialogs.js:1108"
   ]
  },
  "Currency": {
@@ -10160,7 +10156,7 @@
  },
  "Current": {
   "where": [
-   "common/ui.js:1149"
+   "common/ui.js:1164"
   ]
  },
  "Current &array": {
@@ -10217,8 +10213,8 @@
  },
  "Custom": {
   "where": [
-   "common/dialogs.js:323",
-   "common/ui.js:1148",
+   "common/dialogs.js:378",
+   "common/ui.js:1163",
    "lectern/js/model.js:515",
    "ledger/js/dialogs2.js:94"
   ]
@@ -10265,7 +10261,7 @@
  },
  "Customize": {
   "where": [
-   "common/ui.js:1055",
+   "common/ui.js:1070",
    "lectern/js/ribbon.js:48"
   ]
  },
@@ -10302,7 +10298,7 @@
  },
  "Cut and paste options": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "Cut, Copy, Paste": {
@@ -10401,29 +10397,29 @@
  },
  "Dark Blue": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:186"
   ]
  },
  "Dark Green": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Dark Red": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:187"
   ]
  },
  "Dark Teal": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Dark Yellow": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:187"
   ]
  },
@@ -10578,7 +10574,7 @@
  },
  "Date": {
   "where": [
-   "common/dialogs.js:274",
+   "common/dialogs.js:329",
    "ledger/js/commands.js:181",
    "ledger/js/dialogs.js:30",
    "ledger/js/dialogs2.js:94"
@@ -10621,14 +10617,14 @@
  },
  "Date and Time": {
   "where": [
-   "lectern/js/dialogs.js:861",
+   "lectern/js/dialogs.js:864",
    "quire/js/dialogs2.js:119",
    "quire/js/dialogs2.js:128"
   ]
  },
  "Date completed": {
   "where": [
-   "common/dialogs.js:272"
+   "common/dialogs.js:327"
   ]
  },
  "Date formats display date and time serial numbers as date values. Formats that begin with an asterisk (*) respond to changes in regional date and time settings.": {
@@ -10663,12 +10659,12 @@
  },
  "Dear Mother and Father,": {
   "where": [
-   "quire/js/autocorrect.js:309"
+   "quire/js/autocorrect.js:305"
   ]
  },
  "Dear Sir or Madam:": {
   "where": [
-   "quire/js/autocorrect.js:309",
+   "quire/js/autocorrect.js:305",
    "quire/js/dialogs3.js:470"
   ]
  },
@@ -10690,7 +10686,7 @@
  },
  "Decrease": {
   "where": [
-   "common/ui.js:804",
+   "common/ui.js:818",
    "quire/js/dialogs.js:30"
   ]
  },
@@ -10783,7 +10779,7 @@
  },
  "Defined Names": {
   "where": [
-   "ledger/js/dialogs.js:926",
+   "ledger/js/dialogs.js:923",
    "ledger/js/ribbon.js:59"
   ]
  },
@@ -10944,7 +10940,7 @@
  },
  "Delete columns": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Delete entire &column": {
@@ -10959,12 +10955,12 @@
  },
  "Delete rows": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Deleted": {
   "where": [
-   "quire/js/dialogs3.js:701",
+   "quire/js/dialogs3.js:698",
    "quire/js/review.js:389"
   ]
  },
@@ -11158,12 +11154,12 @@
  },
  "Dictionary &language:": {
   "where": [
-   "common/dialogs.js:255"
+   "common/dialogs.js:267"
   ]
  },
  "Dictionary language:": {
   "where": [
-   "common/dialogs.js:255"
+   "common/dialogs.js:267"
   ]
  },
  "Different &odd and even": {
@@ -11234,7 +11230,7 @@
  },
  "Display drawing &guides on screen": {
   "where": [
-   "lectern/js/dialogs.js:980"
+   "lectern/js/dialogs.js:981"
   ]
  },
  "Display for Review": {
@@ -11444,13 +11440,13 @@
  },
  "Document": {
   "where": [
-   "quire/js/dialogs3.js:673",
+   "quire/js/dialogs3.js:670",
    "quire/js/layout.js:34"
   ]
  },
  "Document &properties": {
   "where": [
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:579"
   ]
  },
  "Document (inserted as text)": {
@@ -11482,17 +11478,17 @@
  },
  "Document number": {
   "where": [
-   "common/dialogs.js:272"
+   "common/dialogs.js:327"
   ]
  },
  "Document properties": {
   "where": [
-   "quire/js/dialogs3.js:673"
+   "quire/js/dialogs3.js:670"
   ]
  },
  "Document showing markup": {
   "where": [
-   "quire/js/dialogs3.js:673"
+   "quire/js/dialogs3.js:670"
   ]
  },
  "Document template": {
@@ -11518,7 +11514,7 @@
  },
  "Don't capitalize after:": {
   "where": [
-   "quire/js/dialogs3.js:542"
+   "quire/js/dialogs3.js:539"
   ]
  },
  "Don't show on title &slide": {
@@ -11641,7 +11637,7 @@
  },
  "Double-click a command to run it.": {
   "where": [
-   "common/ui.js:1057"
+   "common/ui.js:1072"
   ]
  },
  "Double|line spacing": {
@@ -11745,7 +11741,7 @@
  },
  "Drag-and-&drop text editing": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "Draw": {
@@ -11881,7 +11877,7 @@
  },
  "E&xplain...": {
   "where": [
-   "common/dialogs.js:245"
+   "common/dialogs.js:257"
   ]
  },
  "E-&mail Address": {
@@ -11902,7 +11898,7 @@
  },
  "E-mail Message": {
   "where": [
-   "quire/js/dialogs3.js:746"
+   "quire/js/dialogs3.js:743"
   ]
  },
  "E-mail addre&ss:": {
@@ -11953,10 +11949,10 @@
  },
  "Edit": {
   "where": [
-   "lectern/js/dialogs.js:900",
+   "lectern/js/dialogs.js:903",
    "lectern/js/model.js:761",
    "ledger/js/dialogs.js:800",
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "Edit Chart Data...": {
@@ -12004,13 +12000,13 @@
  "Edit LettersArt Text": {
   "where": [
    "lectern/js/app.js:1536",
-   "lectern/js/dialogs.js:1025",
+   "lectern/js/dialogs.js:1026",
    "quire/js/dialogs2.js:562"
   ]
  },
  "Edit Links": {
   "where": [
-   "ledger/js/dialogs.js:960"
+   "ledger/js/dialogs.js:957"
   ]
  },
  "Edit Master": {
@@ -12068,7 +12064,7 @@
  },
  "Edit objects": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Edit recipient list...": {
@@ -12079,7 +12075,7 @@
  },
  "Edit scenarios": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Edit the active cell": {
@@ -12101,7 +12097,7 @@
  },
  "Editing options": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "Edit|mode": {
@@ -12111,7 +12107,7 @@
  },
  "Effect": {
   "where": [
-   "lectern/js/dialogs.js:1092"
+   "lectern/js/dialogs.js:1093"
   ]
  },
  "Effect Options": {
@@ -12224,8 +12220,8 @@
  },
  "End Show": {
   "where": [
-   "lectern/js/dialogs.js:797",
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:800",
+   "lectern/js/dialogs.js:833"
   ]
  },
  "End mode jump": {
@@ -12291,18 +12287,18 @@
  },
  "English (U.K.)": {
   "where": [
-   "lectern/js/dialogs.js:702",
+   "lectern/js/dialogs.js:703",
    "ledger/js/dialogs.js:790",
-   "ledger/js/spell.js:111",
+   "ledger/js/spell.js:106",
    "quire/js/app.js:513"
   ]
  },
  "English (U.S.)": {
   "where": [
    "lectern/js/app.js:279",
-   "lectern/js/dialogs.js:702",
+   "lectern/js/dialogs.js:703",
    "ledger/js/dialogs.js:790",
-   "ledger/js/spell.js:111"
+   "ledger/js/spell.js:106"
   ]
  },
  "English (United States)": {
@@ -12323,7 +12319,7 @@
  },
  "Enter AutoText entries here:": {
   "where": [
-   "quire/js/dialogs3.js:549"
+   "quire/js/dialogs3.js:546"
   ]
  },
  "Enter a number between 10 and 400.": {
@@ -12404,12 +12400,12 @@
  },
  "Enter page numbers and/or page ranges separated by commas. For example, 1,3,5–12": {
   "where": [
-   "quire/js/dialogs3.js:677"
+   "quire/js/dialogs3.js:674"
   ]
  },
  "Enter password to open file": {
   "where": [
-   "common/ui.js:757"
+   "common/ui.js:771"
   ]
  },
  "Enter section number:": {
@@ -12689,7 +12685,7 @@
  },
  "Even pages": {
   "where": [
-   "quire/js/dialogs3.js:674"
+   "quire/js/dialogs3.js:671"
   ]
  },
  "Event Announcement": {
@@ -13033,7 +13029,7 @@
  },
  "Fi&nd what:": {
   "where": [
-   "lectern/js/dialogs.js:734",
+   "lectern/js/dialogs.js:737",
    "ledger/js/dialogs.js:511",
    "quire/js/find.js:323"
   ]
@@ -13066,8 +13062,8 @@
  },
  "Field &codes": {
   "where": [
-   "quire/js/dialogs3.js:579",
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:576",
+   "quire/js/dialogs3.js:579"
   ]
  },
  "Field codes:": {
@@ -13112,9 +13108,9 @@
  },
  "File &name:": {
   "where": [
-   "lectern/js/dialogs.js:963",
+   "lectern/js/dialogs.js:964",
    "ledger/js/dialogs.js:667",
-   "quire/js/dialogs3.js:724"
+   "quire/js/dialogs3.js:721"
   ]
  },
  "File &origin:": {
@@ -13129,12 +13125,12 @@
  },
  "File encryption options for this document": {
   "where": [
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "File encryption settings for this document": {
   "where": [
-   "lectern/js/dialogs.js:902"
+   "lectern/js/dialogs.js:905"
   ]
  },
  "File encryption settings for this workbook": {
@@ -13164,12 +13160,12 @@
  },
  "Filename": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Filename and path": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Files": {
@@ -13229,7 +13225,7 @@
  },
  "Fill Effects...": {
   "where": [
-   "common/ui.js:1105"
+   "common/ui.js:1120"
   ]
  },
  "Fill Left": {
@@ -13312,7 +13308,7 @@
  },
  "Find": {
   "where": [
-   "lectern/js/dialogs.js:742",
+   "lectern/js/dialogs.js:745",
    "quire/js/panes.js:691"
   ]
  },
@@ -13333,7 +13329,7 @@
  },
  "Find &whole words only": {
   "where": [
-   "lectern/js/dialogs.js:732"
+   "lectern/js/dialogs.js:735"
   ]
  },
  "Find / Replace": {
@@ -13491,8 +13487,8 @@
  },
  "First Slide": {
   "where": [
-   "lectern/js/dialogs.js:795",
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:798",
+   "lectern/js/dialogs.js:833"
   ]
  },
  "First capital": {
@@ -13537,7 +13533,7 @@
  },
  "Fit to slide": {
   "where": [
-   "lectern/js/dialogs.js:1038"
+   "lectern/js/dialogs.js:1039"
   ]
  },
  "Fixed &width": {
@@ -13829,7 +13825,7 @@
  },
  "Font names are used solely to identify the fonts specified in documents and to maintain interoperability with Office Open XML files and the applications that create them; such names may be trademarks of their respective owners. VibeOffice renders text with the fonts installed on your computer. Where a specified font is not installed, VibeOffice substitutes an open-source font supplied with it or another font available on your computer, and the document may therefore appear differently than in other applications. VibeOffice does not include or distribute any commercial font software.": {
   "where": [
-   "common/ui.js:719",
+   "common/ui.js:733",
    "index.html:352"
   ]
  },
@@ -14040,8 +14036,8 @@
  },
  "Format Paragraph": {
   "where": [
-   "lectern/js/textedit.js:709",
-   "lectern/js/textedit.js:866"
+   "lectern/js/textedit.js:728",
+   "lectern/js/textedit.js:885"
   ]
  },
  "Format Picture": {
@@ -14087,17 +14083,17 @@
  },
  "Format cells": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Format columns": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Format rows": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Format text": {
@@ -14132,18 +14128,18 @@
  },
  "Formatted": {
   "where": [
-   "quire/js/dialogs3.js:701",
+   "quire/js/dialogs3.js:698",
    "quire/js/review.js:389"
   ]
  },
  "Formatted Text (RTF)": {
   "where": [
-   "quire/js/dialogs3.js:727"
+   "quire/js/dialogs3.js:724"
   ]
  },
  "Formatted text keeps fonts and formatting; unformatted text takes the formatting of the destination.": {
   "where": [
-   "quire/js/dialogs3.js:729"
+   "quire/js/dialogs3.js:726"
   ]
  },
  "Formatted: {0}": {
@@ -14186,7 +14182,7 @@
  },
  "Formatting marks": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Formatting of selected text": {
@@ -14263,7 +14259,7 @@
  },
  "Formulas that refer to other workbooks use the values Excel saved with this file. Break Link replaces those formulas with their values.": {
   "where": [
-   "ledger/js/dialogs.js:960"
+   "ledger/js/dialogs.js:957"
   ]
  },
  "Formulas:": {
@@ -14280,7 +14276,7 @@
  },
  "Forward to": {
   "where": [
-   "common/dialogs.js:272"
+   "common/dialogs.js:327"
   ]
  },
  "Fourth level": {
@@ -14290,7 +14286,7 @@
  },
  "Fra&me slides": {
   "where": [
-   "lectern/js/dialogs.js:1105"
+   "lectern/js/dialogs.js:1106"
   ]
  },
  "Fraction": {
@@ -14305,7 +14301,7 @@
  },
  "Frame s&hape:": {
   "where": [
-   "lectern/js/dialogs.js:1047"
+   "lectern/js/dialogs.js:1048"
   ]
  },
  "Frame slides": {
@@ -14519,8 +14515,8 @@
  },
  "General": {
   "where": [
-   "common/dialogs.js:295",
-   "lectern/js/dialogs.js:899",
+   "common/dialogs.js:350",
+   "lectern/js/dialogs.js:902",
    "ledger/js/dialogs.js:153",
    "ledger/js/dialogs.js:387"
   ]
@@ -14692,7 +14688,7 @@
  },
  "Gold": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "lectern/js/dialogs.js:235",
    "lectern/js/slideshow.js:891",
    "quire/js/dialogs3.js:147"
@@ -14731,8 +14727,8 @@
  },
  "Grammar": {
   "where": [
-   "common/dialogs.js:245",
-   "quire/js/dialogs3.js:585",
+   "common/dialogs.js:257",
+   "quire/js/dialogs3.js:582",
    "quire/js/spell.js:293",
    "quire/js/spell.js:360"
   ]
@@ -14744,7 +14740,7 @@
  },
  "Grammar:": {
   "where": [
-   "common/dialogs.js:224"
+   "common/dialogs.js:234"
   ]
  },
  "Granite": {
@@ -14765,30 +14761,30 @@
  },
  "Gray-25%": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:187"
   ]
  },
  "Gray-40%": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Gray-50%": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:187"
   ]
  },
  "Gray-80%": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Grayscale": {
   "where": [
    "lectern/js/dialogs.js:430",
-   "lectern/js/dialogs.js:1104",
+   "lectern/js/dialogs.js:1105",
    "lectern/js/panes.js:424",
    "quire/js/dialogs3.js:85"
   ]
@@ -14800,10 +14796,10 @@
  },
  "Green": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:187",
-   "quire/js/dialogs3.js:573"
+   "quire/js/dialogs3.js:570"
   ]
  },
  "Green marble": {
@@ -14823,12 +14819,12 @@
  },
  "Grid and Guides": {
   "where": [
-   "lectern/js/dialogs.js:981"
+   "lectern/js/dialogs.js:982"
   ]
  },
  "Grid settings": {
   "where": [
-   "lectern/js/dialogs.js:981",
+   "lectern/js/dialogs.js:982",
    "quire/js/dialogs3.js:179"
   ]
  },
@@ -14884,7 +14880,7 @@
  },
  "Guide settings": {
   "where": [
-   "lectern/js/dialogs.js:981"
+   "lectern/js/dialogs.js:982"
   ]
  },
  "Gutter pos&ition:": {
@@ -14917,7 +14913,7 @@
  },
  "H&idden text": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "H&orizontal": {
@@ -14937,7 +14933,7 @@
  },
  "HTML Format": {
   "where": [
-   "quire/js/dialogs3.js:727"
+   "quire/js/dialogs3.js:724"
   ]
  },
  "Hairline": {
@@ -14952,7 +14948,7 @@
  },
  "Handouts": {
   "where": [
-   "lectern/js/dialogs.js:1102",
+   "lectern/js/dialogs.js:1103",
    "lectern/js/panes.js:421"
   ]
  },
@@ -14987,7 +14983,7 @@
  },
  "He&x:": {
   "where": [
-   "common/ui.js:1147"
+   "common/ui.js:1162"
   ]
  },
  "Header": {
@@ -15103,7 +15099,7 @@
    "ledger/js/ribbon.js:54",
    "ledger/js/ribbon.js:77",
    "quire/js/dialogs2.js:418",
-   "quire/js/dialogs3.js:637"
+   "quire/js/dialogs3.js:634"
   ]
  },
  "Heart": {
@@ -15151,7 +15147,7 @@
  },
  "Hidden slides:": {
   "where": [
-   "lectern/js/dialogs.js:945"
+   "lectern/js/dialogs.js:946"
   ]
  },
  "Hide": {
@@ -15344,10 +15340,10 @@
  },
  "Hyperlink": {
   "where": [
-   "common/ui.js:682",
-   "lectern/js/dialogs.js:805",
-   "lectern/js/dialogs.js:806",
-   "lectern/js/dialogs.js:807"
+   "common/ui.js:696",
+   "lectern/js/dialogs.js:808",
+   "lectern/js/dialogs.js:809",
+   "lectern/js/dialogs.js:810"
   ]
  },
  "Hyphenate words in &CAPS": {
@@ -15367,8 +15363,8 @@
  },
  "I&gnore All": {
   "where": [
-   "common/dialogs.js:230",
-   "common/dialogs.js:239",
+   "common/dialogs.js:240",
+   "common/dialogs.js:251",
    "quire/js/spell.js:284"
   ]
  },
@@ -15417,18 +15413,18 @@
  },
  "Ignore Internet and &file addresses": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Ignore R&ule": {
   "where": [
-   "common/dialogs.js:230"
+   "common/dialogs.js:240"
   ]
  },
  "Ignore words in &UPPERCASE": {
   "where": [
    "ledger/js/dialogs.js:791",
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Ignore words with &numbers": {
@@ -15438,7 +15434,7 @@
  },
  "Ignore words with num&bers": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Illustrations": {
@@ -15501,7 +15497,7 @@
  },
  "In reply to:": {
   "where": [
-   "quire/js/autocorrect.js:308",
+   "quire/js/autocorrect.js:304",
    "quire/js/dialogs3.js:471"
   ]
  },
@@ -15527,7 +15523,7 @@
  },
  "Inches": {
   "where": [
-   "quire/js/dialogs3.js:567"
+   "quire/js/dialogs3.js:564"
   ]
  },
  "Inches/cm": {
@@ -15577,12 +15573,12 @@
  },
  "Include with document": {
   "where": [
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:579"
   ]
  },
  "Increase": {
   "where": [
-   "common/ui.js:803",
+   "common/ui.js:817",
    "quire/js/dialogs.js:29"
   ]
  },
@@ -15661,7 +15657,7 @@
  },
  "Indigo": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Industrial": {
@@ -15710,7 +15706,7 @@
  },
  "Insert &All": {
   "where": [
-   "lectern/js/dialogs.js:1076"
+   "lectern/js/dialogs.js:1077"
   ]
  },
  "Insert &New Slide": {
@@ -15821,7 +15817,7 @@
  },
  "Insert Date and Time": {
   "where": [
-   "lectern/js/dialogs.js:866",
+   "lectern/js/dialogs.js:869",
    "quire/js/dialogs2.js:121"
   ]
  },
@@ -15967,7 +15963,7 @@
  },
  "Insert Row": {
   "where": [
-   "lectern/js/textedit.js:805",
+   "lectern/js/textedit.js:824",
    "ledger/js/ops.js:784"
   ]
  },
@@ -16020,7 +16016,7 @@
  },
  "Insert Symbol": {
   "where": [
-   "lectern/js/dialogs.js:853",
+   "lectern/js/dialogs.js:856",
    "quire/js/dialogs2.js:179",
    "quire/js/dialogs2.js:180"
   ]
@@ -16029,7 +16025,7 @@
   "where": [
    "lectern/js/app.js:1364",
    "lectern/js/commands.js:92",
-   "lectern/js/dialogs.js:769",
+   "lectern/js/dialogs.js:772",
    "lectern/js/render.js:604"
   ]
  },
@@ -16070,7 +16066,7 @@
  },
  "Insert columns": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Insert entire &column": {
@@ -16090,7 +16086,7 @@
  },
  "Insert hyperlinks": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Insert or edit comment": {
@@ -16100,12 +16096,12 @@
  },
  "Insert picture from:": {
   "where": [
-   "lectern/js/dialogs.js:1046"
+   "lectern/js/dialogs.js:1047"
   ]
  },
  "Insert rows": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Insert the contents of a .docx, .txt or .htm file, or a picture.": {
@@ -16150,7 +16146,7 @@
  },
  "Inserted": {
   "where": [
-   "quire/js/dialogs3.js:701",
+   "quire/js/dialogs3.js:698",
    "quire/js/review.js:389"
   ]
  },
@@ -16465,7 +16461,7 @@
  },
  "Key assignments": {
   "where": [
-   "quire/js/dialogs3.js:673"
+   "quire/js/dialogs3.js:670"
   ]
  },
  "Keyboard Shortcuts": {
@@ -16500,7 +16496,7 @@
  },
  "L&anguage:": {
   "where": [
-   "common/ui.js:982"
+   "common/ui.js:997"
   ]
  },
  "L&etters and Mailings": {
@@ -16540,7 +16536,7 @@
  },
  "Ladies and Gentlemen:": {
   "where": [
-   "quire/js/autocorrect.js:309",
+   "quire/js/autocorrect.js:305",
    "quire/js/dialogs3.js:470"
   ]
  },
@@ -16621,14 +16617,14 @@
  },
  "Last Slide": {
   "where": [
-   "lectern/js/dialogs.js:795",
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:798",
+   "lectern/js/dialogs.js:833"
   ]
  },
  "Last Slide Viewed": {
   "where": [
-   "lectern/js/dialogs.js:796",
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:799",
+   "lectern/js/dialogs.js:833"
   ]
  },
  "Last co&lumn": {
@@ -16638,23 +16634,23 @@
  },
  "Last printed": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Last printed:": {
   "where": [
-   "quire/js/dialogs3.js:632"
+   "quire/js/dialogs3.js:629"
   ]
  },
  "Last saved by": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Last saved by:": {
   "where": [
    "ledger/js/dialogs.js:689",
-   "quire/js/dialogs3.js:635"
+   "quire/js/dialogs3.js:632"
   ]
  },
  "Last sheet": {
@@ -16689,7 +16685,7 @@
  },
  "Lavender": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Layered Glass": {
@@ -16765,7 +16761,7 @@
  },
  "Lectern presentation editor": {
   "where": [
-   "lectern/index.html:274"
+   "lectern/index.html:276"
   ]
  },
  "Ledger": {
@@ -17047,7 +17043,7 @@
  "LettersArt": {
   "where": [
    "lectern/js/app.js:209",
-   "lectern/js/dialogs.js:1007",
+   "lectern/js/dialogs.js:1008",
    "lectern/js/render.js:559",
    "lectern/js/ribbon.js:42"
   ]
@@ -17070,7 +17066,7 @@
  "LettersArt Gallery": {
   "where": [
    "lectern/js/commands.js:222",
-   "lectern/js/dialogs.js:1013",
+   "lectern/js/dialogs.js:1014",
    "quire/js/commands.js:521",
    "quire/js/dialogs2.js:539"
   ]
@@ -17110,7 +17106,7 @@
  },
  "LettersArt style {0}": {
   "where": [
-   "lectern/js/dialogs.js:1006",
+   "lectern/js/dialogs.js:1007",
    "quire/js/dialogs2.js:532"
   ]
  },
@@ -17153,27 +17149,27 @@
  },
  "Light Blue": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Light Green": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Light Orange": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Light Turquoise": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Light Yellow": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Light and calm: warm paper tones, one teal accent, rounded shapes.": {
@@ -17213,7 +17209,7 @@
  },
  "Lime": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Limit formatting to a selection of styles": {
@@ -17342,7 +17338,7 @@
  },
  "Lines:": {
   "where": [
-   "quire/js/dialogs3.js:636"
+   "quire/js/dialogs3.js:633"
   ]
  },
  "Line|chart": {
@@ -17391,7 +17387,7 @@
  },
  "Links in documents can lead to harmful sites. If you trust this one, copy its address and paste it into your browser's address bar.": {
   "where": [
-   "common/ui.js:675"
+   "common/ui.js:689"
   ]
  },
  "List": {
@@ -17439,7 +17435,7 @@
  },
  "List of markup": {
   "where": [
-   "quire/js/dialogs3.js:673"
+   "quire/js/dialogs3.js:670"
   ]
  },
  "Lists (tables)": {
@@ -17471,8 +17467,8 @@
  "Loading the dictionary...": {
   "where": [
    "lectern/js/dialogs.js:652",
-   "ledger/js/spell.js:76",
-   "ledger/js/spell.js:132",
+   "ledger/js/spell.js:71",
+   "ledger/js/spell.js:127",
    "quire/js/spell.js:312"
   ]
  },
@@ -17718,7 +17714,7 @@
  },
  "Made possible by open source software: {0}.": {
   "where": [
-   "common/ui.js:716",
+   "common/ui.js:730",
    "start.js:189"
   ]
  },
@@ -17774,7 +17770,7 @@
  },
  "Mailing address:": {
   "where": [
-   "quire/js/dialogs3.js:587"
+   "quire/js/dialogs3.js:584"
   ]
  },
  "Main &entry:": {
@@ -17928,7 +17924,7 @@
  },
  "Markup": {
   "where": [
-   "quire/js/dialogs3.js:586"
+   "quire/js/dialogs3.js:583"
   ]
  },
  "Master Views": {
@@ -17938,7 +17934,7 @@
  },
  "Matc&h case": {
   "where": [
-   "lectern/js/dialogs.js:732",
+   "lectern/js/dialogs.js:735",
    "quire/js/find.js:310"
   ]
  },
@@ -18108,27 +18104,27 @@
  },
  "Microsoft Word 2003": {
   "where": [
-   "quire/js/dialogs3.js:575"
+   "quire/js/dialogs3.js:572"
   ]
  },
  "Microsoft Word 2007": {
   "where": [
-   "quire/js/dialogs3.js:575"
+   "quire/js/dialogs3.js:572"
   ]
  },
  "Microsoft Word 2010": {
   "where": [
-   "quire/js/dialogs3.js:575"
+   "quire/js/dialogs3.js:572"
   ]
  },
  "Microsoft Word 2013 and later": {
   "where": [
-   "quire/js/dialogs3.js:575"
+   "quire/js/dialogs3.js:572"
   ]
  },
  "Microsoft Word Document": {
   "where": [
-   "quire/js/dialogs3.js:632"
+   "quire/js/dialogs3.js:629"
   ]
  },
  "Microsoft YaHei": {
@@ -18154,7 +18150,7 @@
  },
  "Millimeters": {
   "where": [
-   "quire/js/dialogs3.js:567"
+   "quire/js/dialogs3.js:564"
   ]
  },
  "Min": {
@@ -18212,8 +18208,8 @@
  "Modified:": {
   "where": [
    "ledger/js/dialogs.js:689",
-   "quire/js/dialogs3.js:632",
-   "quire/js/dialogs3.js:635"
+   "quire/js/dialogs3.js:629",
+   "quire/js/dialogs3.js:632"
   ]
  },
  "Modify Effect": {
@@ -18276,7 +18272,7 @@
  },
  "More Colors...": {
   "where": [
-   "common/ui.js:1104"
+   "common/ui.js:1119"
   ]
  },
  "More Contrast": {
@@ -18287,7 +18283,7 @@
  },
  "More Fill Colors...": {
   "where": [
-   "common/ui.js:1104"
+   "common/ui.js:1119"
   ]
  },
  "More Layouts...": {
@@ -18297,7 +18293,7 @@
  },
  "More Line Colors...": {
   "where": [
-   "common/ui.js:1104"
+   "common/ui.js:1119"
   ]
  },
  "More Lines...": {
@@ -18341,7 +18337,7 @@
  },
  "Mouse Click": {
   "where": [
-   "lectern/js/dialogs.js:837"
+   "lectern/js/dialogs.js:840"
   ]
  },
  "Move": {
@@ -18599,8 +18595,8 @@
  },
  "Never": {
   "where": [
-   "quire/js/dialogs3.js:566",
-   "quire/js/dialogs3.js:574"
+   "quire/js/dialogs3.js:563",
+   "quire/js/dialogs3.js:571"
   ]
  },
  "Never saved": {
@@ -18796,7 +18792,7 @@
  },
  "New|color": {
   "where": [
-   "common/ui.js:1149"
+   "common/ui.js:1164"
   ]
  },
  "Nex&t": {
@@ -18836,8 +18832,8 @@
  },
  "Next Slide": {
   "where": [
-   "lectern/js/dialogs.js:795",
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:798",
+   "lectern/js/dialogs.js:833"
   ]
  },
  "Next sheet": {
@@ -18862,8 +18858,8 @@
  },
  "No": {
   "where": [
-   "common/dialogs.js:307",
-   "common/dialogs.js:308"
+   "common/dialogs.js:362",
+   "common/dialogs.js:363"
   ]
  },
  "No Animation": {
@@ -18886,8 +18882,8 @@
  },
  "No Color": {
   "where": [
-   "common/ui.js:929",
-   "common/ui.js:934",
+   "common/ui.js:944",
+   "common/ui.js:949",
    "ledger/js/dialogs.js:257",
    "ledger/js/dialogs.js:455"
   ]
@@ -18899,8 +18895,8 @@
  },
  "No Fill": {
   "where": [
-   "common/ui.js:929",
-   "common/ui.js:1078",
+   "common/ui.js:944",
+   "common/ui.js:1093",
    "lectern/js/dialogs.js:29",
    "quire/js/dialogs.js:366"
   ]
@@ -18912,8 +18908,8 @@
  },
  "No Line": {
   "where": [
-   "common/ui.js:929",
-   "common/ui.js:1078",
+   "common/ui.js:944",
+   "common/ui.js:1093",
    "lectern/js/dialogs.js:29",
    "quire/js/dialogs3.js:31"
   ]
@@ -18936,12 +18932,12 @@
  },
  "No Spelling Suggestions": {
   "where": [
-   "common/dialogs.js:226"
+   "common/dialogs.js:236"
   ]
  },
  "No Suggestions": {
   "where": [
-   "common/dialogs.js:226"
+   "common/dialogs.js:236"
   ]
  },
  "No Transition": {
@@ -19162,7 +19158,7 @@
  },
  "Not in Dictionary:": {
   "where": [
-   "common/dialogs.js:224"
+   "common/dialogs.js:234"
   ]
  },
  "Not installed": {
@@ -19211,7 +19207,7 @@
  },
  "Notes Pages": {
   "where": [
-   "lectern/js/dialogs.js:1102",
+   "lectern/js/dialogs.js:1103",
    "lectern/js/panes.js:421"
   ]
  },
@@ -19222,7 +19218,7 @@
  },
  "Notes:": {
   "where": [
-   "lectern/js/dialogs.js:945"
+   "lectern/js/dialogs.js:946"
   ]
  },
  "Nothing": {
@@ -19298,7 +19294,7 @@
  },
  "Number": {
   "where": [
-   "common/dialogs.js:274",
+   "common/dialogs.js:329",
    "ledger/js/commands.js:183",
    "ledger/js/dialogs.js:30",
    "ledger/js/dialogs2.js:577"
@@ -19342,7 +19338,7 @@
  },
  "Number of &columns:": {
   "where": [
-   "lectern/js/dialogs.js:769",
+   "lectern/js/dialogs.js:772",
    "quire/js/dialogs2.js:577",
    "quire/js/dialogs2.js:600",
    "quire/js/dialogs2.js:781"
@@ -19350,7 +19346,7 @@
  },
  "Number of &rows:": {
   "where": [
-   "lectern/js/dialogs.js:769",
+   "lectern/js/dialogs.js:772",
    "quire/js/dialogs2.js:577",
    "quire/js/dialogs2.js:600"
   ]
@@ -19444,7 +19440,7 @@
    "common/charts.js:438",
    "common/dialogs.js:107",
    "common/dialogs.js:186",
-   "common/dialogs.js:330"
+   "common/dialogs.js:385"
   ]
  },
  "OVR": {
@@ -19514,7 +19510,7 @@
  },
  "Odd pages": {
   "where": [
-   "quire/js/dialogs3.js:674"
+   "quire/js/dialogs3.js:671"
   ]
  },
  "Off (English mode)": {
@@ -19541,7 +19537,7 @@
  },
  "Olive Green": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Omit background &graphics from master": {
@@ -19556,7 +19552,7 @@
  },
  "On Click": {
   "where": [
-   "lectern/js/dialogs.js:1084",
+   "lectern/js/dialogs.js:1085",
    "lectern/js/panes.js:788"
   ]
  },
@@ -19612,7 +19608,7 @@
  },
  "Only for comments/formatting": {
   "where": [
-   "quire/js/dialogs3.js:574"
+   "quire/js/dialogs3.js:571"
   ]
  },
  "Only label and number": {
@@ -19660,13 +19656,13 @@
  },
  "Open source licenses": {
   "where": [
-   "common/ui.js:717",
+   "common/ui.js:731",
    "start.js:189"
   ]
  },
  "Open source under the Apache License 2.0, provided as is, without warranty. VibeOffice.work is an independent project. Product names in its documentation are trademarks of their owners; VibeOffice.work is not affiliated with them.": {
   "where": [
-   "common/ui.js:718",
+   "common/ui.js:732",
    "index.html:351"
   ]
  },
@@ -19699,7 +19695,7 @@
   "where": [
    "lectern/js/app.js:408",
    "lectern/js/app.js:421",
-   "lectern/js/dialogs.js:1055",
+   "lectern/js/dialogs.js:1056",
    "ledger/js/app.js:154"
   ]
  },
@@ -19743,7 +19739,7 @@
  },
  "Options": {
   "where": [
-   "lectern/js/dialogs.js:914",
+   "lectern/js/dialogs.js:917",
    "ledger/js/dialogs.js:802",
    "quire/js/dialogs.js:758",
    "quire/js/dialogs2.js:223"
@@ -19766,7 +19762,7 @@
  },
  "Orange": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Order": {
@@ -19911,7 +19907,7 @@
  },
  "Outline View": {
   "where": [
-   "lectern/js/dialogs.js:1102",
+   "lectern/js/dialogs.js:1103",
    "lectern/js/panes.js:421"
   ]
  },
@@ -20026,7 +20022,7 @@
  },
  "P&en color:": {
   "where": [
-   "lectern/js/dialogs.js:884"
+   "lectern/js/dialogs.js:887"
   ]
  },
  "P&icture": {
@@ -20058,7 +20054,7 @@
  },
  "P&rint:": {
   "where": [
-   "quire/js/dialogs3.js:677"
+   "quire/js/dialogs3.js:674"
   ]
  },
  "PDF (*.pdf)": {
@@ -20084,7 +20080,7 @@
  },
  "Pa&ges:": {
   "where": [
-   "quire/js/dialogs3.js:670"
+   "quire/js/dialogs3.js:667"
   ]
  },
  "Page": {
@@ -20227,13 +20223,13 @@
   "where": [
    "quire/js/app.js:278",
    "quire/js/commands.js:280",
-   "quire/js/dialogs3.js:664",
+   "quire/js/dialogs3.js:661",
    "quire/js/panes.js:617"
   ]
  },
  "Page X of Y": {
   "where": [
-   "quire/js/autocorrect.js:305"
+   "quire/js/autocorrect.js:301"
   ]
  },
  "Page brea&ks": {
@@ -20289,7 +20285,7 @@
  },
  "Page range": {
   "where": [
-   "quire/js/dialogs3.js:677"
+   "quire/js/dialogs3.js:674"
   ]
  },
  "Page {0}": {
@@ -20309,7 +20305,7 @@
  },
  "Pages:": {
   "where": [
-   "quire/js/dialogs3.js:636"
+   "quire/js/dialogs3.js:633"
   ]
  },
  "Pagination": {
@@ -20325,7 +20321,7 @@
  },
  "Pale Blue": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Pape&r size:": {
@@ -20431,7 +20427,7 @@
  },
  "Paragraphs:": {
   "where": [
-   "quire/js/dialogs3.js:636"
+   "quire/js/dialogs3.js:633"
   ]
  },
  "Parallelogram": {
@@ -20458,25 +20454,25 @@
  },
  "Password": {
   "where": [
-   "common/ui.js:757",
+   "common/ui.js:771",
    "ledger/js/app.js:179"
   ]
  },
  "Password to &open:": {
   "where": [
-   "lectern/js/dialogs.js:902",
+   "lectern/js/dialogs.js:905",
    "ledger/js/dialogs.js:660",
    "ledger/js/dialogs.js:797"
   ]
  },
  "Password to open:": {
   "where": [
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "Password to unprotect sheet:": {
   "where": [
-   "ledger/js/dialogs.js:878"
+   "ledger/js/dialogs.js:875"
   ]
  },
  "Password:": {
@@ -20516,7 +20512,7 @@
  },
  "Paste &link:": {
   "where": [
-   "quire/js/dialogs3.js:729"
+   "quire/js/dialogs3.js:726"
   ]
  },
  "Paste &name": {
@@ -20616,7 +20612,7 @@
  },
  "Patterned Lines...": {
   "where": [
-   "common/ui.js:1105"
+   "common/ui.js:1120"
   ]
  },
  "Patterns": {
@@ -20674,7 +20670,7 @@
  },
  "Percen&t:": {
   "where": [
-   "quire/js/dialogs3.js:664"
+   "quire/js/dialogs3.js:661"
   ]
  },
  "Percent": {
@@ -20727,7 +20723,7 @@
   "where": [
    "lectern/js/app.js:1547",
    "lectern/js/app.js:1549",
-   "lectern/js/dialogs.js:1048"
+   "lectern/js/dialogs.js:1049"
   ]
  },
  "Photo album...": {
@@ -20737,7 +20733,7 @@
  },
  "Picas": {
   "where": [
-   "quire/js/dialogs3.js:567"
+   "quire/js/dialogs3.js:564"
   ]
  },
  "Pick From Drop-down &List...": {
@@ -20763,7 +20759,7 @@
  },
  "Pick:": {
   "where": [
-   "common/ui.js:1146"
+   "common/ui.js:1161"
   ]
  },
  "Picture": {
@@ -20827,7 +20823,7 @@
  },
  "Pictures in album:": {
   "where": [
-   "lectern/js/dialogs.js:1046"
+   "lectern/js/dialogs.js:1047"
   ]
  },
  "Pictures, tables and charts": {
@@ -20837,7 +20833,7 @@
  },
  "Pictures:": {
   "where": [
-   "lectern/js/dialogs.js:945"
+   "lectern/js/dialogs.js:946"
   ]
  },
  "Pie": {
@@ -20858,7 +20854,7 @@
  },
  "Pink": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:186"
   ]
  },
@@ -20936,7 +20932,7 @@
  },
  "Plum": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Plus": {
@@ -20960,7 +20956,7 @@
  "Points": {
   "where": [
    "lectern/js/dialogs.js:172",
-   "quire/js/dialogs3.js:567"
+   "quire/js/dialogs3.js:564"
   ]
  },
  "Point|mode": {
@@ -21075,7 +21071,7 @@
  },
  "Presentation": {
   "where": [
-   "lectern/js/dialogs.js:942"
+   "lectern/js/dialogs.js:943"
   ]
  },
  "Presentation Views": {
@@ -21095,7 +21091,7 @@
  },
  "Presentation: {0}": {
   "where": [
-   "lectern/js/dialogs.js:1076"
+   "lectern/js/dialogs.js:1077"
   ]
  },
  "Presentations": {
@@ -21135,7 +21131,7 @@
  "Preview": {
   "where": [
    "common/charts.js:436",
-   "lectern/js/dialogs.js:1112",
+   "lectern/js/dialogs.js:1113",
    "ledger/js/dialogs.js:201",
    "quire/js/dialogs.js:155"
   ]
@@ -21164,7 +21160,7 @@
  },
  "Preview:": {
   "where": [
-   "lectern/js/dialogs.js:1046"
+   "lectern/js/dialogs.js:1047"
   ]
  },
  "Preview: Page {0} of {1}": {
@@ -21211,8 +21207,8 @@
  },
  "Previous Slide": {
   "where": [
-   "lectern/js/dialogs.js:795",
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:798",
+   "lectern/js/dialogs.js:833"
   ]
  },
  "Previous sheet": {
@@ -21233,7 +21229,7 @@
  "Print": {
   "where": [
    "lectern/js/commands.js:31",
-   "lectern/js/dialogs.js:1111",
+   "lectern/js/dialogs.js:1112",
    "ledger/js/commands.js:40",
    "ledger/js/dialogs3.js:406"
   ]
@@ -21245,7 +21241,7 @@
  },
  "Print &hidden slides": {
   "where": [
-   "lectern/js/dialogs.js:1106"
+   "lectern/js/dialogs.js:1107"
   ]
  },
  "Print &quality:": {
@@ -21255,8 +21251,8 @@
  },
  "Print &what:": {
   "where": [
-   "lectern/js/dialogs.js:1109",
-   "quire/js/dialogs3.js:677"
+   "lectern/js/dialogs.js:1110",
+   "quire/js/dialogs3.js:674"
   ]
  },
  "Print Area": {
@@ -21301,12 +21297,12 @@
  },
  "Print and Web Layout options": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Print range": {
   "where": [
-   "lectern/js/dialogs.js:1109",
+   "lectern/js/dialogs.js:1110",
    "ledger/js/dialogs3.js:459"
   ]
  },
@@ -21339,7 +21335,7 @@
  "Printer": {
   "where": [
    "ledger/js/dialogs3.js:457",
-   "quire/js/dialogs3.js:677"
+   "quire/js/dialogs3.js:674"
   ]
  },
  "Printing and PDF": {
@@ -21349,13 +21345,13 @@
  },
  "Printing options": {
   "where": [
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:579"
   ]
  },
  "Privacy options": {
   "where": [
    "ledger/js/dialogs.js:799",
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "Private by design.": {
@@ -21396,7 +21392,7 @@
  },
  "Prom&pt for document properties": {
   "where": [
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "Promote": {
@@ -21433,7 +21429,7 @@
  },
  "Properties": {
   "where": [
-   "lectern/js/dialogs.js:948",
+   "lectern/js/dialogs.js:949",
    "ledger/js/dialogs.js:699",
    "ledger/js/drawing.js:456",
    "quire/js/dialogs.js:924"
@@ -21441,7 +21437,7 @@
  },
  "Properties:": {
   "where": [
-   "common/dialogs.js:325"
+   "common/dialogs.js:380"
   ]
  },
  "Protect": {
@@ -21462,20 +21458,20 @@
  },
  "Protect Sheet": {
   "where": [
-   "ledger/js/dialogs.js:878",
+   "ledger/js/dialogs.js:875",
    "ledger/js/ribbon.js:73"
   ]
  },
  "Protect Workbook": {
   "where": [
-   "ledger/js/dialogs.js:909",
-   "ledger/js/dialogs.js:910",
+   "ledger/js/dialogs.js:906",
+   "ledger/js/dialogs.js:907",
    "ledger/js/ribbon.js:73"
   ]
  },
  "Protect workbook for": {
   "where": [
-   "ledger/js/dialogs.js:909"
+   "ledger/js/dialogs.js:906"
   ]
  },
  "Protection": {
@@ -21487,7 +21483,7 @@
  },
  "Provide feedback with so&und": {
   "where": [
-   "quire/js/dialogs3.js:580"
+   "quire/js/dialogs3.js:577"
   ]
  },
  "Punctuation": {
@@ -21509,7 +21505,7 @@
  },
  "Pure Black and White": {
   "where": [
-   "lectern/js/dialogs.js:1104",
+   "lectern/js/dialogs.js:1105",
    "lectern/js/panes.js:424"
   ]
  },
@@ -21597,7 +21593,7 @@
    "quire/js/app.js:27",
    "quire/js/app.js:43",
    "quire/js/app.js:887",
-   "quire/js/autocorrect.js:300"
+   "quire/js/autocorrect.js:296"
   ]
  },
  "Quire could not shrink this document by one page.": {
@@ -21769,11 +21765,12 @@
  },
  "Re&move": {
   "where": [
-   "lectern/js/dialogs.js:1042"
+   "lectern/js/dialogs.js:1043"
   ]
  },
  "Re&place": {
   "where": [
+   "common/dialogs.js:301",
    "ledger/js/dialogs.js:512",
    "quire/js/find.js:343"
   ]
@@ -21785,13 +21782,13 @@
  },
  "Re&place with:": {
   "where": [
-   "lectern/js/dialogs.js:734",
+   "lectern/js/dialogs.js:737",
    "quire/js/find.js:327"
   ]
  },
  "Re&place...": {
   "where": [
-   "lectern/js/dialogs.js:740"
+   "lectern/js/dialogs.js:743"
   ]
  },
  "Re&set": {
@@ -21829,12 +21826,12 @@
  },
  "Readability Statistics": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Readability Statistics...": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Reading Layout": {
@@ -21855,7 +21852,7 @@
  },
  "Received from": {
   "where": [
-   "common/dialogs.js:273"
+   "common/dialogs.js:328"
   ]
  },
  "Recent &Files...": {
@@ -21899,7 +21896,7 @@
  },
  "Recently used file &list": {
   "where": [
-   "lectern/js/dialogs.js:899"
+   "lectern/js/dialogs.js:902"
   ]
  },
  "Recently used symbols:": {
@@ -21909,7 +21906,7 @@
  },
  "Recheck Document": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Recipe": {
@@ -21944,12 +21941,12 @@
  },
  "Recorded by": {
   "where": [
-   "common/dialogs.js:273"
+   "common/dialogs.js:328"
   ]
  },
  "Recorded date": {
   "where": [
-   "common/dialogs.js:273"
+   "common/dialogs.js:328"
   ]
  },
  "Recovered the unsaved changes. Save the document to keep them.": {
@@ -21971,7 +21968,7 @@
   "where": [
    "common/geometry.js:125",
    "lectern/js/commands.js:164",
-   "lectern/js/dialogs.js:1039",
+   "lectern/js/dialogs.js:1040",
    "quire/js/commands.js:501"
   ]
  },
@@ -21987,10 +21984,10 @@
  },
  "Red": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:186",
-   "quire/js/dialogs3.js:573"
+   "quire/js/dialogs3.js:570"
   ]
  },
  "Redo": {
@@ -22020,8 +22017,8 @@
  },
  "Reenter password to open:": {
   "where": [
-   "lectern/js/dialogs.js:910",
-   "quire/js/dialogs3.js:599"
+   "lectern/js/dialogs.js:913",
+   "quire/js/dialogs3.js:596"
   ]
  },
  "Reenter password to proceed.": {
@@ -22060,7 +22057,7 @@
  "Reference:": {
   "where": [
    "ledger/js/dialogs3.js:295",
-   "quire/js/autocorrect.js:308"
+   "quire/js/autocorrect.js:304"
   ]
  },
  "References": {
@@ -22191,8 +22188,8 @@
  },
  "Remove Hyperlink": {
   "where": [
-   "lectern/js/dialogs.js:785",
-   "lectern/js/dialogs.js:786",
+   "lectern/js/dialogs.js:788",
+   "lectern/js/dialogs.js:789",
    "quire/js/commands.js:607"
   ]
  },
@@ -22238,7 +22235,7 @@
  },
  "Remove personal &information from file properties on save": {
   "where": [
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "Removes all nonprintable characters from text.": {
@@ -22294,7 +22291,7 @@
  },
  "Repeated Word:": {
   "where": [
-   "common/dialogs.js:224"
+   "common/dialogs.js:234"
   ]
  },
  "Repeats text a given number of times. Use REPT to fill a cell with a number of instances of a text string.": {
@@ -22305,14 +22302,14 @@
  "Replace": {
   "where": [
    "lectern/js/dialogs.js:205",
-   "lectern/js/dialogs.js:742",
-   "lectern/js/dialogs.js:747",
+   "lectern/js/dialogs.js:745",
+   "lectern/js/dialogs.js:750",
    "ledger/js/ops.js:1422"
   ]
  },
  "Replace &All": {
   "where": [
-   "lectern/js/dialogs.js:739",
+   "lectern/js/dialogs.js:742",
    "ledger/js/dialogs.js:516",
    "quire/js/find.js:333"
   ]
@@ -22324,13 +22321,14 @@
  },
  "Replace &text as you type": {
   "where": [
-   "ledger/js/dialogs.js:821",
-   "quire/js/dialogs3.js:547"
+   "lectern/js/dialogs.js:931",
+   "ledger/js/dialogs.js:819",
+   "quire/js/dialogs3.js:544"
   ]
  },
  "Replace All": {
   "where": [
-   "lectern/js/dialogs.js:757",
+   "lectern/js/dialogs.js:760",
    "quire/js/find.js:204"
   ]
  },
@@ -22351,17 +22349,17 @@
  },
  "Replace as you type": {
   "where": [
-   "quire/js/dialogs3.js:548"
+   "quire/js/dialogs3.js:545"
   ]
  },
  "Replace straight &quotes with smart quotes": {
   "where": [
-   "lectern/js/dialogs.js:900"
+   "lectern/js/dialogs.js:903"
   ]
  },
  "Replace straight quotes with smart quotes": {
   "where": [
-   "lectern/js/dialogs.js:929"
+   "lectern/js/dialogs.js:930"
   ]
  },
  "Replaces existing text with new text in a text string.": {
@@ -22482,7 +22480,7 @@
  },
  "Respectfully yours,": {
   "where": [
-   "quire/js/autocorrect.js:304"
+   "quire/js/autocorrect.js:300"
   ]
  },
  "Restart": {
@@ -24206,7 +24204,7 @@
  },
  "Revision number:": {
   "where": [
-   "quire/js/dialogs3.js:635"
+   "quire/js/dialogs3.js:632"
   ]
  },
  "Ri&ght:": {
@@ -24340,7 +24338,7 @@
  },
  "Rose": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Rota&tion:": {
@@ -24409,7 +24407,7 @@
  "Rounded Rectangle": {
   "where": [
    "common/geometry.js:126",
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1040"
   ]
  },
  "Rounded Rectangular Callout": {
@@ -24587,7 +24585,7 @@
  },
  "S&mart tags": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "S&pecial Characters": {
@@ -24686,7 +24684,7 @@
  "Save": {
   "where": [
    "lectern/js/commands.js:26",
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "Save &As...": {
@@ -24698,12 +24696,12 @@
  },
  "Save &AutoRecover info every:": {
   "where": [
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "Save &Word files as:": {
   "where": [
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "Save .md &without them": {
@@ -24714,7 +24712,7 @@
  "Save As": {
   "where": [
    "common/core.js:301",
-   "lectern/js/dialogs.js:963",
+   "lectern/js/dialogs.js:964",
    "ledger/js/dialogs.js:667",
    "ledger/js/panes.js:129"
   ]
@@ -24736,9 +24734,9 @@
  },
  "Save as &type:": {
   "where": [
-   "lectern/js/dialogs.js:963",
+   "lectern/js/dialogs.js:964",
    "ledger/js/dialogs.js:667",
-   "quire/js/dialogs3.js:724"
+   "quire/js/dialogs3.js:721"
   ]
  },
  "Save as .&zip": {
@@ -24754,7 +24752,7 @@
  "Save as PDF": {
   "where": [
    "ledger/js/dialogs3.js:457",
-   "quire/js/dialogs3.js:677"
+   "quire/js/dialogs3.js:674"
   ]
  },
  "Save as Web Pa&ge...": {
@@ -24766,7 +24764,7 @@
  },
  "Saved .docx files are encrypted with AES-256, as Word 2010 and later do. Passwords are case-sensitive; if you forget it, the document cannot be recovered.": {
   "where": [
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "Saved a copy to attach to your e-mail message.": {
@@ -24884,7 +24882,7 @@
  },
  "Scr&eenTips": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Screen readers and web pages use alternative text to describe the object.": {
@@ -24915,7 +24913,7 @@
  },
  "Sea Green": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Search": {
@@ -25083,9 +25081,9 @@
  },
  "Security": {
   "where": [
-   "lectern/js/dialogs.js:902",
+   "lectern/js/dialogs.js:905",
    "ledger/js/dialogs.js:800",
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "See the keyboard shortcuts": {
@@ -25161,7 +25159,7 @@
  },
  "Select a LettersArt style:": {
   "where": [
-   "lectern/js/dialogs.js:1013",
+   "lectern/js/dialogs.js:1014",
    "quire/js/dialogs2.js:539"
   ]
  },
@@ -25213,7 +25211,7 @@
  },
  "Select an object first.": {
   "where": [
-   "lectern/js/dialogs.js:827"
+   "lectern/js/dialogs.js:830"
   ]
  },
  "Select an object on the slide first, then choose an effect.": {
@@ -25223,7 +25221,7 @@
  },
  "Select at least one slide.": {
   "where": [
-   "lectern/js/dialogs.js:1073"
+   "lectern/js/dialogs.js:1074"
   ]
  },
  "Select column / row": {
@@ -25249,7 +25247,7 @@
  },
  "Select locked cells": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Select range": {
@@ -25281,7 +25279,7 @@
  },
  "Select text or an object to link.": {
   "where": [
-   "lectern/js/dialogs.js:793"
+   "lectern/js/dialogs.js:796"
   ]
  },
  "Select text to highlight. Press Esc to stop.": {
@@ -25326,12 +25324,12 @@
  },
  "Select the text you want to store as AutoText first.": {
   "where": [
-   "quire/js/dialogs3.js:549"
+   "quire/js/dialogs3.js:546"
   ]
  },
  "Select unlocked cells": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Selected &Object...": {
@@ -25467,7 +25465,7 @@
  },
  "Set Up Show": {
   "where": [
-   "lectern/js/dialogs.js:886"
+   "lectern/js/dialogs.js:889"
   ]
  },
  "Set Up Slide Show": {
@@ -25482,7 +25480,7 @@
  },
  "Settings": {
   "where": [
-   "lectern/js/dialogs.js:1092",
+   "lectern/js/dialogs.js:1093",
    "ledger/js/dialogs2.js:135",
    "ledger/js/dialogs2.js:397",
    "index.html:264"
@@ -25717,7 +25715,7 @@
  },
  "Shortcut keys": {
   "where": [
-   "common/ui.js:1030"
+   "common/ui.js:1045"
   ]
  },
  "Shortcut menu": {
@@ -25727,7 +25725,7 @@
  },
  "Show": {
   "where": [
-   "lectern/js/dialogs.js:898",
+   "lectern/js/dialogs.js:901",
    "lectern/js/ribbon.js:68",
    "ledger/js/dialogs.js:760",
    "ledger/js/filter.js:366"
@@ -25735,7 +25733,7 @@
  },
  "Show &AutoComplete suggestions": {
   "where": [
-   "quire/js/dialogs3.js:549"
+   "quire/js/dialogs3.js:546"
   ]
  },
  "Show &Gridlines": {
@@ -25745,7 +25743,7 @@
  },
  "Show &Paste Options buttons": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "Show &Watch Window": {
@@ -25770,7 +25768,7 @@
  },
  "Show Auto&Correct Options buttons": {
   "where": [
-   "quire/js/dialogs3.js:547"
+   "quire/js/dialogs3.js:544"
   ]
  },
  "Show Calculation Steps...": {
@@ -25831,12 +25829,12 @@
  },
  "Show Screen&Tips on toolbars": {
   "where": [
-   "common/ui.js:1053"
+   "common/ui.js:1068"
   ]
  },
  "Show Standard and Formatting toolbars on t&wo rows": {
   "where": [
-   "common/ui.js:1052"
+   "common/ui.js:1067"
   ]
  },
  "Show Text Formatting": {
@@ -25871,12 +25869,12 @@
  },
  "Show options": {
   "where": [
-   "lectern/js/dialogs.js:884"
+   "lectern/js/dialogs.js:887"
   ]
  },
  "Show popup menu &button": {
   "where": [
-   "lectern/js/dialogs.js:898"
+   "lectern/js/dialogs.js:901"
   ]
  },
  "Show rows where:": {
@@ -25886,12 +25884,12 @@
  },
  "Show shortcut &keys in ScreenTips": {
   "where": [
-   "common/ui.js:1049"
+   "common/ui.js:1064"
   ]
  },
  "Show slides": {
   "where": [
-   "lectern/js/dialogs.js:885"
+   "lectern/js/dialogs.js:888"
   ]
  },
  "Show the &Assistant": {
@@ -25901,7 +25899,7 @@
  },
  "Show type": {
   "where": [
-   "lectern/js/dialogs.js:884"
+   "lectern/js/dialogs.js:887"
   ]
  },
  "Show values": {
@@ -25916,7 +25914,7 @@
  },
  "Show without &animation": {
   "where": [
-   "lectern/js/dialogs.js:878"
+   "lectern/js/dialogs.js:881"
   ]
  },
  "Show/Hide Co&mment": {
@@ -26009,17 +26007,17 @@
  },
  "Simple Frame, Black": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1040"
   ]
  },
  "Simple Frame, White": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1040"
   ]
  },
  "Sincerely yours,": {
   "where": [
-   "quire/js/autocorrect.js:304"
+   "quire/js/autocorrect.js:300"
   ]
  },
  "Single": {
@@ -26132,7 +26130,7 @@
  },
  "Sky Blue": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Slant Down": {
@@ -26170,7 +26168,7 @@
  "Slide": {
   "where": [
    "lectern/js/dialogs.js:593",
-   "lectern/js/dialogs.js:1067"
+   "lectern/js/dialogs.js:1068"
   ]
  },
  "Slide &Layout...": {
@@ -26212,7 +26210,7 @@
  },
  "Slide Finder": {
   "where": [
-   "lectern/js/dialogs.js:1076"
+   "lectern/js/dialogs.js:1077"
   ]
  },
  "Slide Layout": {
@@ -26307,8 +26305,8 @@
  },
  "Slide Titles": {
   "where": [
-   "lectern/js/dialogs.js:798",
-   "lectern/js/dialogs.js:946"
+   "lectern/js/dialogs.js:801",
+   "lectern/js/dialogs.js:947"
   ]
  },
  "Slide Transition": {
@@ -26330,7 +26328,7 @@
  },
  "Slide show": {
   "where": [
-   "lectern/js/dialogs.js:898",
+   "lectern/js/dialogs.js:901",
    "lectern/js/panes.js:561"
   ]
  },
@@ -26346,14 +26344,14 @@
  },
  "Slide shows play in the browser, and presentations export to PDF, PNG pictures and web pages.": {
   "where": [
-   "lectern/js/dialogs.js:1134"
+   "lectern/js/dialogs.js:1135"
   ]
  },
  "Slide {0}": {
   "where": [
-   "lectern/js/dialogs.js:798",
-   "lectern/js/dialogs.js:832",
-   "lectern/js/dialogs.js:946",
+   "lectern/js/dialogs.js:801",
+   "lectern/js/dialogs.js:835",
+   "lectern/js/dialogs.js:947",
    "lectern/js/frames.js:161"
   ]
  },
@@ -26369,13 +26367,13 @@
  },
  "Slide...": {
   "where": [
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:833"
   ]
  },
  "Slides": {
   "where": [
    "lectern/js/dialogs.js:561",
-   "lectern/js/dialogs.js:1102",
+   "lectern/js/dialogs.js:1103",
    "lectern/js/panes.js:17",
    "lectern/js/panes.js:47"
   ]
@@ -26397,12 +26395,12 @@
  },
  "Slides per page:": {
   "where": [
-   "lectern/js/dialogs.js:1109"
+   "lectern/js/dialogs.js:1110"
   ]
  },
  "Slides:": {
   "where": [
-   "lectern/js/dialogs.js:945"
+   "lectern/js/dialogs.js:946"
   ]
  },
  "Slow": {
@@ -26454,7 +26452,7 @@
  },
  "Snap to": {
   "where": [
-   "lectern/js/dialogs.js:981"
+   "lectern/js/dialogs.js:982"
   ]
  },
  "Snip Diagonal Corner Rectangle": {
@@ -26489,7 +26487,7 @@
  },
  "Soft Shadow": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1040"
   ]
  },
  "Solid": {
@@ -26520,12 +26518,12 @@
  },
  "Some of this file can't be saved exactly as it was:": {
   "where": [
-   "common/ui.js:746"
+   "common/ui.js:760"
   ]
  },
  "Sort": {
   "where": [
-   "ledger/js/dialogs.js:875",
+   "ledger/js/dialogs.js:872",
    "ledger/js/dialogs2.js:76",
    "ledger/js/ops.js:1118",
    "ledger/js/ribbon.js:65"
@@ -26607,7 +26605,7 @@
  },
  "Source": {
   "where": [
-   "ledger/js/dialogs.js:960"
+   "ledger/js/dialogs.js:957"
   ]
  },
  "Source Han Sans SC": {
@@ -26622,12 +26620,12 @@
  },
  "Source: (the Quire clipboard is empty — copy something first, or press Ctrl+V)": {
   "where": [
-   "quire/js/dialogs3.js:729"
+   "quire/js/dialogs3.js:726"
   ]
  },
  "Source: Quire document": {
   "where": [
-   "quire/js/dialogs3.js:729"
+   "quire/js/dialogs3.js:726"
   ]
  },
  "Source: {0}": {
@@ -26647,12 +26645,12 @@
  },
  "Sp&eed:": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1094"
   ]
  },
  "Spac&ing:": {
   "where": [
-   "lectern/js/dialogs.js:981"
+   "lectern/js/dialogs.js:982"
   ]
  },
  "Space": {
@@ -26735,7 +26733,7 @@
  },
  "Spelling & Grammar": {
   "where": [
-   "quire/js/dialogs3.js:585",
+   "quire/js/dialogs3.js:582",
    "quire/js/ribbon.js:62"
   ]
  },
@@ -26759,7 +26757,7 @@
  },
  "Spelling and Style": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:904"
   ]
  },
  "Spelling and grammar are checked as you type. Click to stop.": {
@@ -26784,18 +26782,18 @@
  },
  "Spelling suggestions come from your browser. Hold Shift while right-clicking a word to see them.": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:904"
   ]
  },
  "Spelling, AutoCorrect and the thesaurus work offline, in English (U.S.) and English (U.K.).": {
   "where": [
-   "quire/js/dialogs3.js:738"
+   "quire/js/dialogs3.js:735"
   ]
  },
  "Spelling: {0}": {
   "where": [
-   "lectern/js/dialogs.js:704",
-   "ledger/js/spell.js:116"
+   "lectern/js/dialogs.js:705",
+   "ledger/js/spell.js:111"
   ]
  },
  "Sphere": {
@@ -26912,7 +26910,7 @@
  "St&atus bar": {
   "where": [
    "ledger/js/dialogs.js:760",
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "St&op value:": {
@@ -26962,7 +26960,7 @@
  },
  "Standard": {
   "where": [
-   "common/ui.js:1148",
+   "common/ui.js:1163",
    "lectern/js/app.js:198",
    "ledger/js/app.js:596",
    "quire/js/app.js:284"
@@ -27080,12 +27078,12 @@
  },
  "Startup &Task Pane": {
   "where": [
-   "lectern/js/dialogs.js:898"
+   "lectern/js/dialogs.js:901"
   ]
  },
  "Stat&us bar": {
   "where": [
-   "lectern/js/dialogs.js:898"
+   "lectern/js/dialogs.js:901"
   ]
  },
  "Statement": {
@@ -27105,12 +27103,12 @@
  },
  "Statistics": {
   "where": [
-   "common/dialogs.js:297"
+   "common/dialogs.js:352"
   ]
  },
  "Statistics:": {
   "where": [
-   "common/dialogs.js:297",
+   "common/dialogs.js:352",
    "quire/js/dialogs3.js:325"
   ]
  },
@@ -27121,7 +27119,7 @@
  },
  "Status": {
   "where": [
-   "ledger/js/dialogs.js:960"
+   "ledger/js/dialogs.js:957"
   ]
  },
  "Status Report": {
@@ -27132,7 +27130,7 @@
  "Status: Ready — the pages are saved as a PDF that you can print from any viewer.": {
   "where": [
    "ledger/js/dialogs3.js:457",
-   "quire/js/dialogs3.js:677"
+   "quire/js/dialogs3.js:674"
   ]
  },
  "StdDev": {
@@ -27298,7 +27296,7 @@
   "where": [
    "lectern/js/ribbon.js:85",
    "ledger/js/ribbon.js:31",
-   "quire/js/dialogs3.js:673",
+   "quire/js/dialogs3.js:670",
    "quire/js/panes.js:93"
   ]
  },
@@ -27349,7 +27347,7 @@
  },
  "Subject:": {
   "where": [
-   "quire/js/autocorrect.js:311",
+   "quire/js/autocorrect.js:307",
    "quire/js/dialogs3.js:484"
   ]
  },
@@ -27389,7 +27387,7 @@
  },
  "Suggestio&ns:": {
   "where": [
-   "common/dialogs.js:254"
+   "common/dialogs.js:266"
   ]
  },
  "Sum": {
@@ -27416,7 +27414,7 @@
  },
  "Summary": {
   "where": [
-   "common/dialogs.js:296"
+   "common/dialogs.js:351"
   ]
  },
  "Summary Slide": {
@@ -27519,7 +27517,7 @@
  },
  "T&heme:": {
   "where": [
-   "common/ui.js:979"
+   "common/ui.js:994"
   ]
  },
  "T&o:": {
@@ -27794,12 +27792,12 @@
  },
  "Take care,": {
   "where": [
-   "quire/js/autocorrect.js:304"
+   "quire/js/autocorrect.js:300"
   ]
  },
  "Tan": {
   "where": [
-   "common/ui.js:1112"
+   "common/ui.js:1127"
   ]
  },
  "Target": {
@@ -27842,9 +27840,9 @@
  },
  "Task pane f&ollows the selected object": {
   "where": [
-   "lectern/js/dialogs.js:898",
+   "lectern/js/dialogs.js:901",
    "ledger/js/dialogs.js:760",
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Te&xt Box": {
@@ -27866,7 +27864,7 @@
  },
  "Te&xt boundaries": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Te&xt to Table...": {
@@ -27887,7 +27885,7 @@
  },
  "Teal": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:186"
   ]
  },
@@ -27918,7 +27916,7 @@
  },
  "Telephone number": {
   "where": [
-   "common/dialogs.js:273"
+   "common/dialogs.js:328"
   ]
  },
  "Template (*.xltx)": {
@@ -27933,14 +27931,14 @@
  },
  "Template: {0}": {
   "where": [
-   "common/dialogs.js:292"
+   "common/dialogs.js:347"
   ]
  },
  "Templates": {
   "where": [
    "lectern/js/panes.js:548",
    "ledger/js/panes.js:81",
-   "quire/js/dialogs3.js:751",
+   "quire/js/dialogs3.js:748",
    "quire/js/panes.js:86"
   ]
  },
@@ -27976,8 +27974,8 @@
  },
  "Text": {
   "where": [
-   "common/dialogs.js:274",
-   "lectern/js/dialogs.js:900",
+   "common/dialogs.js:329",
+   "lectern/js/dialogs.js:903",
    "lectern/js/ribbon.js:42",
    "lectern/js/ribbon.js:123"
   ]
@@ -28010,7 +28008,7 @@
  },
  "Text Animation": {
   "where": [
-   "lectern/js/dialogs.js:1094"
+   "lectern/js/dialogs.js:1095"
   ]
  },
  "Text B&ox...": {
@@ -28077,7 +28075,7 @@
  "Text Width": {
   "where": [
    "quire/js/app.js:278",
-   "quire/js/dialogs3.js:664",
+   "quire/js/dialogs3.js:661",
    "quire/js/panes.js:617"
   ]
  },
@@ -28170,7 +28168,7 @@
  },
  "Thank you,": {
   "where": [
-   "quire/js/autocorrect.js:304"
+   "quire/js/autocorrect.js:300"
   ]
  },
  "That action could not be completed: {0}": {
@@ -28224,7 +28222,7 @@
   "where": [
    "lectern/js/app.js:579",
    "quire/js/app.js:996",
-   "quire/js/dialogs3.js:697"
+   "quire/js/dialogs3.js:694"
   ]
  },
  "The PivotTable field name is not valid. To create a PivotTable report, you must use data that is organized as a list with labeled columns.": {
@@ -28264,7 +28262,7 @@
  },
  "The calculation engine implements more than 450 worksheet functions, array and dynamic-array formulas, structured references and iterative calculation.": {
   "where": [
-   "ledger/js/dialogs.js:966"
+   "ledger/js/dialogs.js:963"
   ]
  },
  "The cell or chart you are trying to change is protected and therefore read-only.\n\nTo modify a protected cell or chart, first remove protection using the Unprotect Sheet command (Tools menu, Protection submenu). You may be prompted for a password.": {
@@ -28354,7 +28352,7 @@
  },
  "The document will be encrypted with this password when you save it.": {
   "where": [
-   "quire/js/dialogs3.js:604"
+   "quire/js/dialogs3.js:601"
   ]
  },
  "The document's keywords": {
@@ -28509,7 +28507,7 @@
  },
  "The new language is used in the windows you open from now on.": {
   "where": [
-   "common/ui.js:987"
+   "common/ui.js:1002"
   ]
  },
  "The number in this cell is formatted as text or preceded by an apostrophe.": {
@@ -28554,7 +28552,7 @@
  },
  "The password confirmation does not match.": {
   "where": [
-   "quire/js/dialogs3.js:601"
+   "quire/js/dialogs3.js:598"
   ]
  },
  "The password is incorrect.": {
@@ -28564,7 +28562,7 @@
  },
  "The password is incorrect. Try again.": {
   "where": [
-   "common/ui.js:757"
+   "common/ui.js:771"
   ]
  },
  "The password is incorrect. {0} cannot open the document.": {
@@ -28574,17 +28572,17 @@
  },
  "The password to open was removed; the next save is not encrypted.": {
   "where": [
-   "quire/js/dialogs3.js:594"
+   "quire/js/dialogs3.js:591"
   ]
  },
  "The password you supplied is not correct.": {
   "where": [
-   "ledger/js/dialogs.js:901"
+   "ledger/js/dialogs.js:898"
   ]
  },
  "The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.": {
   "where": [
-   "ledger/js/dialogs.js:869",
+   "ledger/js/dialogs.js:866",
    "ledger/js/xlsx-read.js:1181"
   ]
  },
@@ -28600,7 +28598,7 @@
  },
  "The presentation is encrypted (AES-256) the next time you save it as a PowerPoint file, the way PowerPoint 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
   "where": [
-   "lectern/js/dialogs.js:902"
+   "lectern/js/dialogs.js:905"
   ]
  },
  "The presentation is not in English, so it was not checked.": {
@@ -28615,7 +28613,7 @@
  },
  "The search item wasn't found.": {
   "where": [
-   "lectern/js/dialogs.js:739"
+   "lectern/js/dialogs.js:742"
   ]
  },
  "The selected border style can be applied by clicking the presets, preview diagram or the buttons above.": {
@@ -28666,22 +28664,22 @@
  },
  "The spelling check is complete for the entire sheet.": {
   "where": [
-   "ledger/js/spell.js:113",
-   "ledger/js/spell.js:117"
+   "ledger/js/spell.js:108",
+   "ledger/js/spell.js:112"
   ]
  },
  "The spelling check is complete.": {
   "where": [
-   "common/dialogs.js:222",
+   "common/dialogs.js:232",
    "lectern/js/dialogs.js:680",
-   "lectern/js/dialogs.js:705"
+   "lectern/js/dialogs.js:706"
   ]
  },
  "The spelling dictionary could not be loaded ({0}).": {
   "where": [
    "lectern/js/dialogs.js:653",
-   "ledger/js/spell.js:77",
-   "ledger/js/spell.js:133"
+   "ledger/js/spell.js:72",
+   "ledger/js/spell.js:128"
   ]
  },
  "The table or worksheet that owned this query was deleted.": {
@@ -28721,12 +28719,12 @@
  },
  "The value doesn't match the type you chose. Type a date.": {
   "where": [
-   "common/dialogs.js:316"
+   "common/dialogs.js:371"
   ]
  },
  "The value doesn't match the type you chose. Type a number.": {
   "where": [
-   "common/dialogs.js:315"
+   "common/dialogs.js:370"
   ]
  },
  "The value of a document property": {
@@ -29127,7 +29125,7 @@
  },
  "This effect has no direction settings.": {
   "where": [
-   "lectern/js/dialogs.js:1092"
+   "lectern/js/dialogs.js:1093"
   ]
  },
  "This embedded object will be saved as a picture, because it was edited here.": {
@@ -29187,7 +29185,7 @@
  },
  "This link goes to:": {
   "where": [
-   "common/ui.js:673"
+   "common/ui.js:687"
   ]
  },
  "This modification is not allowed because the selection is locked.": {
@@ -29344,14 +29342,14 @@
  "Times New Roman": {
   "where": [
    "common/core.js:698",
-   "lectern/js/dialogs.js:998",
+   "lectern/js/dialogs.js:999",
    "quire/js/dialogs.js:126",
    "quire/js/dialogs.js:173"
   ]
  },
  "Timing": {
   "where": [
-   "lectern/js/dialogs.js:1093",
+   "lectern/js/dialogs.js:1094",
    "lectern/js/ribbon.js:52"
   ]
  },
@@ -29490,7 +29488,7 @@
  },
  "To Whom It May Concern:": {
   "where": [
-   "quire/js/autocorrect.js:309",
+   "quire/js/autocorrect.js:305",
    "quire/js/dialogs3.js:470"
   ]
  },
@@ -29511,7 +29509,7 @@
  },
  "To restrict editing instead, use Tools ▸ Protect Document.": {
   "where": [
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "To show the result of the underlined expression, click Evaluate. The most recent result appears italicized.": {
@@ -29521,7 +29519,7 @@
  },
  "To write to this address, copy it and paste it into your e-mail program.": {
   "where": [
-   "common/ui.js:674"
+   "common/ui.js:688"
   ]
  },
  "To&p": {
@@ -29542,7 +29540,7 @@
  },
  "To:": {
   "where": [
-   "lectern/js/dialogs.js:885",
+   "lectern/js/dialogs.js:888",
    "ledger/js/dialogs3.js:459"
   ]
  },
@@ -29568,7 +29566,7 @@
  },
  "Tool&bars": {
   "where": [
-   "common/ui.js:1056"
+   "common/ui.js:1071"
   ]
  },
  "Toolbar Options": {
@@ -29578,7 +29576,7 @@
  },
  "Toolbars:": {
   "where": [
-   "common/ui.js:1056"
+   "common/ui.js:1071"
   ]
  },
  "Tools": {
@@ -29705,7 +29703,7 @@
  "Track Changes": {
   "where": [
    "quire/js/commands.js:409",
-   "quire/js/dialogs3.js:586",
+   "quire/js/dialogs3.js:583",
    "quire/js/ribbon.js:66"
   ]
  },
@@ -29807,7 +29805,7 @@
  "Trebuchet MS": {
   "where": [
    "common/core.js:698",
-   "lectern/js/dialogs.js:998",
+   "lectern/js/dialogs.js:999",
    "lectern/js/model.js:86",
    "lectern/js/model.js:163"
   ]
@@ -29841,7 +29839,7 @@
  },
  "Turquoise": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:186"
   ]
  },
@@ -29849,14 +29847,14 @@
   "where": [
    "quire/js/app.js:278",
    "quire/js/commands.js:279",
-   "quire/js/dialogs3.js:664",
+   "quire/js/dialogs3.js:661",
    "quire/js/panes.js:617"
   ]
  },
  "Type": {
   "where": [
    "ledger/js/dialogs.js:608",
-   "ledger/js/dialogs.js:960",
+   "ledger/js/dialogs.js:957",
    "ledger/js/ribbon.js:86",
    "quire/js/dialogs2.js:306"
   ]
@@ -29888,7 +29886,7 @@
  },
  "Type the cell refere&nce:": {
   "where": [
-   "ledger/js/dialogs.js:931"
+   "ledger/js/dialogs.js:928"
   ]
  },
  "Type the equation; it is inserted in Cambria Math italics.": {
@@ -29949,7 +29947,7 @@
  },
  "URL...": {
   "where": [
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:833"
   ]
  },
  "Un&freeze Panes": {
@@ -30028,7 +30026,7 @@
  },
  "Undo": {
   "where": [
-   "lectern/js/dialogs.js:900",
+   "lectern/js/dialogs.js:903",
    "quire/js/commands.js:243"
   ]
  },
@@ -30055,12 +30053,12 @@
  },
  "Unformatted Text": {
   "where": [
-   "quire/js/dialogs3.js:727"
+   "quire/js/dialogs3.js:724"
   ]
  },
  "Unformatted Unicode Text": {
   "where": [
-   "quire/js/dialogs3.js:727"
+   "quire/js/dialogs3.js:724"
   ]
  },
  "Unfreeze Panes": {
@@ -30151,13 +30149,13 @@
  },
  "Unprotect Sheet": {
   "where": [
-   "ledger/js/dialogs.js:867"
+   "ledger/js/dialogs.js:864"
   ]
  },
  "Unprotect Workbook": {
   "where": [
-   "ledger/js/dialogs.js:901",
-   "ledger/js/dialogs.js:903"
+   "ledger/js/dialogs.js:898",
+   "ledger/js/dialogs.js:900"
   ]
  },
  "Unsaved changes": {
@@ -30225,7 +30223,7 @@
  },
  "Update": {
   "where": [
-   "ledger/js/dialogs.js:960"
+   "ledger/js/dialogs.js:957"
   ]
  },
  "Update &automatically": {
@@ -30235,7 +30233,7 @@
  },
  "Update &fields": {
   "where": [
-   "quire/js/dialogs3.js:582"
+   "quire/js/dialogs3.js:579"
   ]
  },
  "Update Captions": {
@@ -30317,7 +30315,7 @@
  },
  "Use &Balloons (Print and Web Layout):": {
   "where": [
-   "quire/js/dialogs3.js:586"
+   "quire/js/dialogs3.js:583"
   ]
  },
  "Use ? to represent any single character\nUse * to represent any series of characters": {
@@ -30327,12 +30325,12 @@
  },
  "Use AutoFilter": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Use CTRL + Click to &follow hyperlink": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "Use Ctrl+V to paste from other programs.": {
@@ -30342,7 +30340,7 @@
  },
  "Use PivotTable reports": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:872"
   ]
  },
  "Use an existing &list": {
@@ -30378,7 +30376,7 @@
  },
  "Use smart paragraph se&lection": {
   "where": [
-   "quire/js/dialogs3.js:581"
+   "quire/js/dialogs3.js:578"
   ]
  },
  "Use the Formatting toolbar or Format ▸ Font (Ctrl+D). Ctrl+B, Ctrl+I, Ctrl+U toggle bold, italic and underline; Ctrl+Space removes character formatting and Ctrl+Q paragraph formatting. Shift+F3 cycles UPPER, lower and Title case. The Format Painter copies formatting: click it once for one use, double-click to keep it on, then drag over text or click a word.": {
@@ -30434,12 +30432,12 @@
  "User Information": {
   "where": [
    "quire/js/dialogs2.js:135",
-   "quire/js/dialogs3.js:587"
+   "quire/js/dialogs3.js:584"
   ]
  },
  "User information": {
   "where": [
-   "lectern/js/dialogs.js:899"
+   "lectern/js/dialogs.js:902"
   ]
  },
  "V&ery Loose": {
@@ -30491,7 +30489,7 @@
  },
  "Values cached in this workbook": {
   "where": [
-   "ledger/js/dialogs.js:959"
+   "ledger/js/dialogs.js:956"
   ]
  },
  "Var": {
@@ -30525,7 +30523,7 @@
  },
  "Version {0}": {
   "where": [
-   "common/ui.js:714",
+   "common/ui.js:728",
    "start.js:187"
   ]
  },
@@ -30603,7 +30601,7 @@
  },
  "Vertical r&uler (Print view only)": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Very Fast": {
@@ -30644,10 +30642,10 @@
  },
  "View": {
   "where": [
-   "lectern/js/dialogs.js:898",
+   "lectern/js/dialogs.js:901",
    "lectern/js/ribbon.js:65",
    "ledger/js/dialogs.js:800",
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "View Merged Data": {
@@ -30678,7 +30676,7 @@
  },
  "Violet": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:187"
   ]
  },
@@ -30709,7 +30707,7 @@
  },
  "Warn before printing, saving or sending a file that contains &tracked changes or comments": {
   "where": [
-   "quire/js/dialogs3.js:584"
+   "quire/js/dialogs3.js:581"
   ]
  },
  "Warning": {
@@ -30773,7 +30771,7 @@
  },
  "Web Page": {
   "where": [
-   "quire/js/dialogs3.js:746"
+   "quire/js/dialogs3.js:743"
   ]
  },
  "Web Page (*.htm)": {
@@ -30913,7 +30911,7 @@
  },
  "When selected": {
   "where": [
-   "quire/js/dialogs3.js:566"
+   "quire/js/dialogs3.js:563"
   ]
  },
  "When user enters invalid data, show this error alert:": {
@@ -30933,7 +30931,7 @@
  },
  "White": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "lectern/js/slideshow.js:891"
   ]
  },
@@ -30954,14 +30952,14 @@
  },
  "White space bet&ween pages (Print view only)": {
   "where": [
-   "quire/js/dialogs3.js:579"
+   "quire/js/dialogs3.js:576"
   ]
  },
  "Whole Page": {
   "where": [
    "quire/js/app.js:278",
    "quire/js/commands.js:278",
-   "quire/js/dialogs3.js:664",
+   "quire/js/dialogs3.js:661",
    "quire/js/panes.js:617"
   ]
  },
@@ -31069,13 +31067,13 @@
  },
  "With Previous": {
   "where": [
-   "lectern/js/dialogs.js:1084",
+   "lectern/js/dialogs.js:1085",
    "lectern/js/panes.js:788"
   ]
  },
  "Word 2003 layout positions tables by their cell margins and keeps legacy spacing rules; later versions align tables with the text.": {
   "where": [
-   "quire/js/dialogs3.js:588"
+   "quire/js/dialogs3.js:585"
   ]
  },
  "Word Count": {
@@ -31086,7 +31084,7 @@
  "Word Document (*.docx)": {
   "where": [
    "quire/js/app.js:846",
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "Word Macro-Enabled Document (*.docm)": {
@@ -31102,7 +31100,7 @@
  "Word Template (*.dotx)": {
   "where": [
    "quire/js/app.js:847",
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "Word Underline": {
@@ -31127,13 +31125,13 @@
  },
  "Words:": {
   "where": [
-   "lectern/js/dialogs.js:945",
-   "quire/js/dialogs3.js:636"
+   "lectern/js/dialogs.js:946",
+   "quire/js/dialogs3.js:633"
   ]
  },
  "Words: {0}\nCharacters: {1}\nParagraphs: {2}\nSentences: {3}\n\nSentences per Paragraph: {4}\nWords per Sentence: {5}\nCharacters per Word: {6}\n\nPassive Sentences: {7}%\nFlesch Reading Ease: {8}\nFlesch-Kincaid Grade Level: {9}": {
   "where": [
-   "quire/js/dialogs3.js:585"
+   "quire/js/dialogs3.js:582"
   ]
  },
  "Work Phone": {
@@ -31163,8 +31161,8 @@
  },
  "Working...": {
   "where": [
-   "common/ui.js:1324",
-   "common/ui.js:1325"
+   "common/ui.js:1339",
+   "common/ui.js:1340"
   ]
  },
  "Works offline.": {
@@ -31175,7 +31173,7 @@
  "Worksheet": {
   "where": [
    "ledger/js/dialogs.js:384",
-   "ledger/js/dialogs.js:959"
+   "ledger/js/dialogs.js:956"
   ]
  },
  "Worksheet grid": {
@@ -31245,20 +31243,20 @@
  },
  "Yellow": {
   "where": [
-   "common/ui.js:1112",
+   "common/ui.js:1127",
    "quire/js/app.js:186"
   ]
  },
  "Yes": {
   "where": [
-   "common/dialogs.js:307",
-   "common/dialogs.js:308",
-   "common/dialogs.js:317"
+   "common/dialogs.js:362",
+   "common/dialogs.js:363",
+   "common/dialogs.js:372"
   ]
  },
  "Yes or no": {
   "where": [
-   "common/dialogs.js:274"
+   "common/dialogs.js:329"
   ]
  },
  "Yes, Start Enforcing Protection": {
@@ -31302,16 +31300,16 @@
  "Your Text Here": {
   "where": [
    "lectern/js/app.js:1518",
-   "lectern/js/dialogs.js:1021",
+   "lectern/js/dialogs.js:1022",
    "quire/js/dialogs2.js:542",
    "quire/js/dialogs2.js:554"
   ]
  },
  "Your browser asks where to save the file, or saves it to the Downloads folder.": {
   "where": [
-   "lectern/js/dialogs.js:963",
+   "lectern/js/dialogs.js:964",
    "ledger/js/dialogs.js:667",
-   "quire/js/dialogs3.js:723"
+   "quire/js/dialogs3.js:720"
   ]
  },
  "Your browser does not let pages read the clipboard from a menu.\nPress Ctrl+V to paste.": {
@@ -31356,7 +31354,7 @@
  },
  "Yours truly,": {
   "where": [
-   "quire/js/autocorrect.js:304"
+   "quire/js/autocorrect.js:300"
   ]
  },
  "Yu Gothic": {
@@ -31404,7 +31402,7 @@
   "where": [
    "common/ui.js:480",
    "lectern/js/app.js:185",
-   "lectern/js/dialogs.js:972",
+   "lectern/js/dialogs.js:973",
    "lectern/js/panes.js:730"
   ]
  },
@@ -31457,8 +31455,8 @@
  },
  "Zoom to": {
   "where": [
-   "lectern/js/dialogs.js:971",
-   "quire/js/dialogs3.js:664"
+   "lectern/js/dialogs.js:972",
+   "quire/js/dialogs3.js:661"
   ]
  },
  "Zoom to &Selection": {
@@ -31572,7 +31570,7 @@
  },
  "entries": {
   "where": [
-   "quire/js/dialogs3.js:580"
+   "quire/js/dialogs3.js:577"
   ]
  },
  "equal to": {
@@ -31795,7 +31793,7 @@
  },
  "minutes": {
   "where": [
-   "quire/js/dialogs3.js:583"
+   "quire/js/dialogs3.js:580"
   ]
  },
  "normal size": {
@@ -31873,7 +31871,7 @@
  },
  "text": {
   "where": [
-   "quire/js/dialogs3.js:629"
+   "quire/js/dialogs3.js:626"
   ]
  },
  "title": {
@@ -31930,7 +31928,7 @@
  },
  "{0} (Press ENTER to Insert)": {
   "where": [
-   "quire/js/autocorrect.js:275"
+   "quire/js/autocorrect.js:271"
   ]
  },
  "{0} (Read-Only)": {
@@ -31955,7 +31953,7 @@
  },
  "{0} ({1} seconds)": {
   "where": [
-   "lectern/js/dialogs.js:1086"
+   "lectern/js/dialogs.js:1087"
   ]
  },
  "{0} ({1} x {2} in)": {
@@ -31965,7 +31963,7 @@
  },
  "{0} ({1}) — based on {2}": {
   "where": [
-   "quire/js/dialogs3.js:706"
+   "quire/js/dialogs3.js:703"
   ]
  },
  "{0} -Section {1}-": {
@@ -31996,7 +31994,7 @@
  },
  "{0} Properties": {
   "where": [
-   "common/dialogs.js:329"
+   "common/dialogs.js:384"
   ]
  },
  "{0} Slide Master": {
@@ -32016,7 +32014,7 @@
  },
  "{0} and {1} more": {
   "where": [
-   "common/ui.js:744"
+   "common/ui.js:758"
   ]
  },
  "{0} can't open {1}. {2}": {
@@ -32036,7 +32034,7 @@
  },
  "{0} could not be opened: {1}": {
   "where": [
-   "lectern/js/dialogs.js:1057"
+   "lectern/js/dialogs.js:1058"
   ]
  },
  "{0} doesn't save “{1}”.": {
@@ -32071,17 +32069,17 @@
  },
  "{0} has finished searching the presentation and made 1 replacement.": {
   "where": [
-   "lectern/js/dialogs.js:739"
+   "lectern/js/dialogs.js:742"
   ]
  },
  "{0} has finished searching the presentation and made {1} replacements.": {
   "where": [
-   "lectern/js/dialogs.js:739"
+   "lectern/js/dialogs.js:742"
   ]
  },
  "{0} has finished searching the presentation. The search item wasn't found.": {
   "where": [
-   "lectern/js/dialogs.js:735"
+   "lectern/js/dialogs.js:738"
   ]
  },
  "{0} hasn't kept any earlier versions of “{1}”. It keeps the version a save replaces, for 30 days.": {
@@ -32211,7 +32209,7 @@
  },
  "{0} seconds": {
   "where": [
-   "lectern/js/dialogs.js:1085"
+   "lectern/js/dialogs.js:1086"
   ]
  },
  "{0} slides could not be recovered.": {

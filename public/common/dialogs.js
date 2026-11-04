@@ -206,9 +206,19 @@
    *   ignoreOnce(), ignoreAll(), add(), change(text), changeAll(text), autocorrect(text) (optional; these three
    *   return false to stay on the finding), nextSentence(), setLanguage(id) re-checks from the current finding,
    *   explain() → a grammar rule's explanation, undo() (optional: false when there is nothing to undo), options()
-   *   (optional), end: the message when the check is complete }
-   * Each button acts on the current finding and moves to the next one.
+   *   (optional), rect() (optional) → where the finding is on the screen, a client rect (the page's text selection
+   *   otherwise), end: the message when the check is complete }
+   * Each button acts on the current finding and moves to the next one; the dialog moves off the finding.
    */
+  /* the page's text selection on the screen, when there is one outside el */
+  const selectionRect = (el) => {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return null;
+    const rg = sel.getRangeAt(0);
+    if (el.contains(rg.commonAncestorContainer)) return null;
+    const r = rg.getBoundingClientRect();
+    return r.width || r.height ? r : null;
+  };
   ui.spellingDialog = function (s) {
     let cur = null;
     const caption = h('div', { class: 'cd-cap' });
@@ -234,6 +244,8 @@
       btnAuto.disabled = !sp || !s.autocorrect;
       btnExplain.hidden = cur.kind !== 'grammar';
       btnUndo.disabled = false;
+      /* filled in, the dialog moves off the finding */
+      ui.keepClear(dlg.el, s.rect ? s.rect() : selectionRect(dlg.el));
     };
     const btnIgnore = btn('&Ignore Once', () => { s.ignoreOnce(); go(); });
     const btnIgnoreAll = btn('I&gnore All', () => { s.ignoreAll(); go(); });
@@ -262,6 +274,49 @@
     btnUndo.style.width = '';
     go();
     return dlg;
+  };
+
+  /* ================= AutoCorrect ================= */
+  /**
+   * AutoCorrect's replacement list, one for the three apps, as Office's: the Replace and With boxes, the entries in
+   * two columns under them, Add (Replace for an entry that is there) and Delete, which take effect at once, as Office's
+   * do. ac: { list() → Map from → to, setEntry(from, to | null) }. Returns the element, for the app's AutoCorrect tab
+   * under its own options.
+   */
+  ui.autocorrectEntries = function (ac) {
+    const from = h('input', { type: 'text', id: 'ac-from', autocomplete: 'off', spellcheck: 'false', translate: 'no' });
+    const to = h('input', { type: 'text', id: 'ac-to', autocomplete: 'off', spellcheck: 'false', translate: 'no' });
+    let map = null, keys = [];
+    const list = ui.listBox([], null, { height: 150, cls: 'ac-list', translate: 'no', onChange: (k) => { from.value = k; to.value = map.get(k) || ''; sync(); } });
+    const fill = () => {
+      map = ac.list();
+      keys = [...map.keys()].sort((a, b) => a.localeCompare(b));
+      list.setItems(keys.map((k) => ({ value: k, label: k, col: map.get(k) })));
+    };
+    const add = ui.button('&Add', () => { const k = from.value; if (add.disabled) return; ac.setEntry(k, to.value); fill(); list.set(k); sync(); }, { class: 'btn small' });
+    const del = ui.button('&Delete', () => { const k = from.value; if (!map.has(k)) return; ac.setEntry(k, null); fill(); from.value = to.value = ''; sync(); from.focus(); }, { class: 'btn small' });
+    /* Add reads Replace for an entry that is there already; with nothing to add or delete, the button is off */
+    const sync = () => {
+      const has = map.has(from.value);
+      add.innerHTML = ui.ampHTML(has ? 'Re&place' : '&Add');
+      add.disabled = !from.value || !to.value || (has && map.get(from.value) === to.value);
+      del.disabled = !has;
+    };
+    /* typing in Replace goes to the entry, or the nearest one, in the list, as Office's */
+    from.addEventListener('input', () => {
+      const k = from.value, lk = k.toLowerCase();
+      if (map.has(k)) { to.value = map.get(k); list.set(k); }
+      else if (k) { const near = keys.find((x) => x.toLowerCase().startsWith(lk)); if (near != null) list.set(near); }
+      sync();
+    });
+    to.addEventListener('input', sync);
+    /* Enter in either box adds the entry, as Office's Add is the default button while you type one */
+    for (const box of [from, to]) box.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !add.disabled) { e.preventDefault(); e.stopPropagation(); add.click(); } });
+    fill();
+    sync();
+    return h('div', { class: 'col ac-entries' },
+      h('div', { class: 'ac-boxes' }, h('label', { for: 'ac-from', html: ui.ampHTML('&Replace:') }), h('label', { for: 'ac-to', html: ui.ampHTML('&With:') }), from, to),
+      list, h('div', { class: 'tp-btns ac-btns' }, add, del));
   };
 
   /* ================= Properties ================= */

@@ -96,7 +96,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `charts.js` | chart model, SVG renderer, chart data dialog (Lectern's `chart-draw.js` adds the v2 renderer) | all |
 | `numfmt.js` | Excel number formats | Ledger, Lectern |
 | `dml.js` | DrawingML helpers | Quire, Ledger |
-| `spell.js` | spelling engine: word lists (`dict/`), checking, suggestions, custom dictionary, Ignore All | all |
+| `spell.js` | spelling engine: word lists (`dict/`), checking, suggestions, custom dictionary, Ignore All; AutoCorrect's replacement list | all |
 | `dialogs.js` | the dialogs the apps share, each with an app adapter: Symbol (`ui.symbolDialog`), Insert Hyperlink (`ui.hyperlinkDialog`, `ui.completeAddress`), Spelling (`ui.spellingDialog`, the app walks its text), Properties (`ui.propertiesDialog`) | all |
 | `clipart.js` | built-in clip art and the Clip Art task pane's body (`L.clipart.pane`; each app registers the pane) | all |
 | `smartart.js` | the SmartArt layout engine: items → shapes for each layout, one text size per role (`tests/smartart.test.mjs`) | Lectern |
@@ -246,12 +246,15 @@ Zoom, Fit to Window); the classic toolbars keep their Zoom box. Ctrl+wheel (a tr
   Spelling and Properties dialogs. A tabbed dialog keeps its tallest tab's height, so OK and Cancel don't move.
   Properties applies on OK what changed, as one undo step (Lectern's applied each keystroke and had no Cancel); its
   Custom tab has Office's types (Text, Date, Number, Yes or no), written as Word and Excel do (`vt:lpwstr`, `vt:i4`
-  or `vt:r8`, `vt:bool`, `vt:filetime`).
+  or `vt:r8`, `vt:bool`, `vt:filetime`). Spelling moves off the word it shows (`ui.keepClear`), which stays
+  highlighted while the dialog has the keyboard. AutoCorrect's replacement list is one list (`spell.js`,
+  `autocorrectList`: the defaults less what an app leaves out, with the user's entries, a setting per app) and one
+  part of each app's AutoCorrect tab (`ui.autocorrectEntries`): Replace and With over the entries in two columns,
+  Add (Replace for an entry that is there) and Delete, which take effect at once; the tab's options apply on OK.
 - To do (the cross-app audit of 2026-11-04, still different between the apps): one Print dialog (Lectern prints
   through Print Preview); Hyperlink base in Properties (no app reads or writes it yet); custom properties in
-  Lectern (custom.xml is not read); AutoCorrect's replacement list as two columns (Quire, Ledger);
-  Options › View laid out alike; Ledger's Drawing toolbar and Drawing Tools with the others' controls; Lectern's
-  Clear All Formatting; the Window menu's New Window and Arrange All.
+  Lectern (custom.xml is not read); Options › View laid out alike; Ledger's Drawing toolbar and Drawing Tools with
+  the others' controls; Lectern's Clear All Formatting; the Window menu's New Window and Arrange All.
 
 ### Search commands
 

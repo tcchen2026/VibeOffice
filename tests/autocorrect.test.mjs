@@ -1,4 +1,4 @@
-// AutoCorrect's default list (public/common/spell.js, shared by Quire and Ledger): Apache OpenOffice's English entries
+// AutoCorrect's default list (public/common/spell.js, shared by the three apps): Apache OpenOffice's English entries
 // and our own rules, nothing that clashes with an AutoFormat option:  node --test tests/autocorrect.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,4 +26,23 @@ test('nothing that is a word of its own, and nothing an AutoFormat option does',
   for (const k of ['cant', 'wont', 'well', 'were', 'hell', 'shell', 'shed', 'wed', 'its', 'lets', 'ill', 'id', 'resume', '--', '1/2', '1/4', '3/4'])
     assert.equal(list.has(k), false, k);
   for (const [k, v] of list) assert.ok(k && v && !k.includes('|') && !v.includes('|'), `${k}=${v}`);
+});
+
+test('the user\'s entries over the defaults less an app\'s: added, changed, deleted; a deleted own entry leaves no trace', () => {
+  const kept = new Map();
+  globalThis.VO = { settings: { get: (k) => kept.get(k) ?? null, set: (k, v) => { if (v == null) kept.delete(k); else kept.set(k, v); return true; }, remove: (k) => kept.delete(k) } };
+  try {
+    const SP = globalThis.L.spell;
+    SP.setAutocorrectEntry('zzqx', 'zed queue');
+    SP.setAutocorrectEntry('teh', 'tea');
+    SP.setAutocorrectEntry('recieve', null);
+    assert.equal(SP.autocorrectList().get('zzqx'), 'zed queue');
+    SP.setAutocorrectEntry('zzqx', null);
+    const l = SP.autocorrectList(['i']);
+    assert.equal(l.get('teh'), 'tea');
+    assert.equal(l.has('recieve'), false);
+    assert.equal(l.has('zzqx'), false);
+    assert.equal(l.has('i'), false);
+    assert.deepEqual(JSON.parse([...kept.values()][0]), { add: [['teh', 'tea']], del: ['recieve'] });
+  } finally { delete globalThis.VO; }
 });

@@ -660,6 +660,20 @@
     else { c.focus(); if (c.select && c.type !== 'file') c.select(); }
     return true;
   }
+  /** A dialog moved off what it is about (the word Spelling found), as Office does: above or below that place,
+   *  whichever is the shorter move and fits in the window, else beside it; left alone when it covers nothing.
+   *  r: a client rect */
+  ui.keepClear = function (dlg, r) {
+    if (!dlg || !r || !dlg.isConnected) return;
+    const d = dlg.getBoundingClientRect(), m = 12, W = window.innerWidth, H = window.innerHeight;
+    if (d.right <= r.left - m || d.left >= r.right + m || d.bottom <= r.top - m || d.top >= r.bottom + m) return;
+    const at = [[d.left, r.top - m - d.height], [d.left, r.bottom + m], [r.right + m, d.top], [r.left - m - d.width, d.top]]
+      .filter(([x, y]) => x >= 4 && y >= 4 && x + d.width <= W - 4 && y + d.height <= H - 4);
+    if (!at.length) return;
+    const [x, y] = at.sort((a, b) => Math.hypot(a[0] - d.left, a[1] - d.top) - Math.hypot(b[0] - d.left, b[1] - d.top))[0];
+    dlg.style.left = x + 'px';
+    dlg.style.top = y + 'px';
+  };
   ui.dialogKey = (e) => { const top = dlgStack[dlgStack.length - 1]; return top ? top.keys(e) || true : false; };
 
   /** A document's hyperlink, which the suite never opens itself: a link in a file can lead anywhere, so it shows
@@ -814,8 +828,8 @@
     return wrap;
   };
   /** A list box, as Office's dialogs have (Font, Size, Go To, Date and Time…). items: values, [value, label] or
-   *  { value, label, note (shown at the right: a shortcut key), style, group (a heading), dim (a line that can't be
-   *  chosen) }; labels are UI text shown in the UI's language unless o.translate === 'no' (data:
+   *  { value, label, note (shown at the right: a shortcut key), col (a second column: AutoCorrect's With), style,
+   *  group (a heading), dim (a line that can't be chosen) }; labels are UI text shown in the UI's language unless o.translate === 'no' (data:
    *  fonts, sizes, names). o: { input (a box above that picks as you type, as Word's Font box), height, id (the
    *  input's, else the list's), cls, translate, onChange(v, i), onDbl(v, i) }. Arrow keys, Home, End, Page Up/Down
    *  and typed letters move the selection; the input's Up and Down move it too. Items are matched by value, never by
@@ -842,6 +856,7 @@
       for (const it of list) {
         const el = h('div', { class: isGroup(it) ? (it.dim ? 'li-dim' : 'li-group') : 'li', role: isGroup(it) ? 'presentation' : 'option' });
         el.textContent = shown(it);
+        if (it && typeof it === 'object' && it.col != null) { el.textContent = ''; el.append(h('span', { class: 'li-c1', text: shown(it) }), h('span', { class: 'li-c2', translate: 'no', text: it.col })); }
         /* a second column on the right: a shortcut key, a count */
         if (it && typeof it === 'object' && it.note) el.appendChild(h('span', { class: 'li-note', translate: 'no', text: it.note }));
         if (it && typeof it === 'object' && it.style) el.style.cssText += it.style;
@@ -853,8 +868,8 @@
         el.addEventListener('dblclick', () => { pick(v); if (o.onDbl) o.onDbl(v, indexOf(v)); });
       }
       mark(cur);
-      const on = box.querySelector('.li.on');
-      if (on) setTimeout(() => on.scrollIntoView({ block: 'nearest' }), 0);
+      /* once the list is laid out, its selection in view (the one it has by then: set() may follow) */
+      setTimeout(() => { const on = box.querySelector('.li.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }, 0);
     };
     /* the keys that move the selection: in the list all of them, from the input only Up, Down, Page Up and Page Down */
     const move = (e, all) => {
