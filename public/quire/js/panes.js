@@ -353,10 +353,10 @@
         L.clear(list);
         const used = D.usedStyles(d);
         const mode = P.styleShow || 'avail';
-        let ids = Object.keys(d.styles).filter((k) => ['paragraph', 'character', 'table', 'numbering'].includes(d.styles[k].type) && !d.styles[k].hidden);
+        let ids = Object.keys(d.styles).filter((k) => ['paragraph', 'character', 'table', 'numbering'].includes(d.styles[k].type) && !d.styles[k].hidden && !d.styles[k].sameAs);
         if (mode === 'inuse') ids = ids.filter((k) => used.has(k));
-        else if (mode === 'avail' || mode === 'styles') ids = ids.filter((k) => used.has(k) || d.styles[k].q || d.styles[k].custom || /^Heading[1-3]$|^Normal$/.test(k));
-        if (mode === 'all') { const b0 = D.builtinStyles(); for (const k in b0) if (!ids.includes(k)) ids.push(k); }
+        else if (mode === 'avail' || mode === 'styles') ids = ids.filter((k) => used.has(k) || d.styles[k].q || d.styles[k].custom || /^Heading[1-3]$|^Normal$/.test(k) || /^heading [1-3]$/i.test(d.styles[k].name || ''));
+        if (mode === 'all') { const b0 = D.builtinStyles(); for (const k in b0) if (!ids.includes(k) && !d.styles[k]?.sameAs) ids.push(k); }
         ids.sort((a, b2) => D.styleDisplayName(d.styles[a] || D.builtinStyles()[a]).localeCompare(D.styleDisplayName(d.styles[b2] || D.builtinStyles()[b2])));
         list.appendChild(h('div', { class: 'sf-item', role: 'button', tabindex: '0', onclick: () => ui.exec('clearFormats') }, h('span', { class: 'sf-n', text: 'Clear Formatting' })));
         const curId = E.sel ? E.sel.f.p.pPr.style || 'Normal' : '';
@@ -540,7 +540,7 @@
       b.append(sec(L.N('1. Formatting restrictions'), fmt), sec(L.N('2. Editing restrictions'), ed, kind), sec(L.N('3. Start enforcement'), h('div', { class: 'tp-note', text: on ? 'This document is protected from unintentional editing.' : 'Are you ready to apply these settings? (You can turn them off later)' }), start));
     },
   });
-  async function hash(s) { try { const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(buf)).map((x) => x.toString(16).padStart(2, '0')).join(''); } catch (e) { return String(s.length); } }
+  async function hash(s) { const buf = await L.sha.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(buf).map((x) => x.toString(16).padStart(2, '0')).join(''); }   /* common/sha.js: also over plain http */
   /* ---------- Mail Merge wizard ---------- */
   TP.register({ id: 'mailmerge', title: 'Mail Merge', render(b) { if (L.mailmerge) L.mailmerge.renderWizard(b); else b.appendChild(h('div', { class: 'tp-note', text: 'Mail merge is not available.' })); }, refresh(b, reason) { if (reason === 'load') { L.clear(b); this.render(b); } } });
 

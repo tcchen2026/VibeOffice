@@ -45,7 +45,38 @@
     }
     return output;
   };
-  P.reportLosses = writer => K.reportFeatures(writer, {
+  /** the original pictures and charts the document uses: media by id (doc.keep.media), a chart by its kept source */
+  P.inUse = function (doc) {
+    const pkg = doc.pkg, media = doc.keep?.media || {}, out = new Set(), seen = new Set();
+    if (!pkg) return [];
+    const walk = v => {
+      if (!v || typeof v !== 'object' || seen.has(v)) return; seen.add(v);
+      for (const [k, x] of Object.entries(v)) {
+        if (typeof x === 'string') {
+          if (media[x]) out.add(media[x]);
+          else if (k === 'src') { const s = L.chart?.src?.get(x); if (s?.source === pkg.id && s.path) out.add(s.path); }
+        } else if (!(v === doc && ['keep', 'pkg'].includes(k))) walk(x);
+      }
+    };
+    walk(doc);
+    return [...out];
+  };
+  // What the user deleted takes its parts along: a picture or chart the document used when it was opened
+  // (doc.keep.inUse) and no longer uses. Something the model never used, or still uses, is not explained this way,
+  // and a part that is written anyway records nothing.
+  P.reportLosses = writer => {
+    const doc = writer.doc, pkg = writer.pkg, then = doc.keep?.inUse;
+    if (pkg && then) {
+      const now = new Set(P.inUse(doc)), written = part => writer.parts.has(writer.mapping.get(writer.key(pkg, part)));
+      for (const part of then) if (!now.has(part) && !written(part)) {
+        const id = 'deleted:' + part;
+        writer.loss({ id, what: 'A deleted picture or chart takes its parts along.', where: part, action: 'drop', notify: false });
+        writer.coverLoss(id, [part]);
+      }
+    }
+    features(writer);
+  };
+  const features = writer => K.reportFeatures(writer, {
     accepts: el => wordNS(el.namespaceURI) && ['document', 'hdr', 'ftr', 'footnotes', 'endnotes', 'comments'].includes(el.localName),
     classify: el => {
       if (!wordNS(el.namespaceURI)) return null;
@@ -54,11 +85,11 @@
       if (tag === 'sectPr' && wordNS(el.parentNode?.namespaceURI) && el.parentNode.localName === 'body') return 'finalSections';
       if (['smartTag', 'customXml'].includes(tag)) return 'xml';
       if (['dir', 'bdo'].includes(tag)) return 'direction';
-      if (['moveFrom', 'moveTo'].includes(tag)) return 'moves';
+      if (['moveFrom', 'moveTo', 'moveFromRangeStart', 'moveToRangeStart'].includes(tag)) return 'moves';
       if (tag === 'fldSimple' || tag === 'fldChar' && attr(el, 'fldCharType') === 'begin') return 'fields';
       return ({ sdt: 'controls', bookmarkStart: 'bookmarks', permStart: 'permissions', comment: 'comments', footnote: 'footnotes', endnote: 'endnotes', ins: 'revisions', del: 'revisions' })[tag];
     },
-    labels: { bodies: { text: 'Some text in this file is outside the main document and won\'t be saved', notify: true }, finalSections: 'Conflicting final section definitions could not all be retained', xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: 'Inline direction wrappers were converted to ordinary text', moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
+    labels: { bodies: { text: 'Some text in this file is outside the main document and won\'t be saved', notify: true }, finalSections: 'Conflicting final section definitions could not all be retained', xml: 'Smart tags or inline XML wrappers were converted to ordinary content', direction: { text: 'Explicit text direction was removed from some text, so mixed right-to-left and left-to-right text may show in a different order', notify: true }, moves: 'Move revisions were converted to ordinary revisions or text', fields: 'Some original fields were converted or removed', controls: 'Some original content-control wrappers were converted or removed', bookmarks: 'Some original bookmarks were removed', permissions: 'Some original permission ranges were removed', comments: 'Some original comments were removed', footnotes: 'Some original footnotes were removed', endnotes: 'Some original endnotes were removed', revisions: 'Some original revision markup was converted or removed' },
   });
   P.merge = function (doc, base, source, generated, writer) {
     const original = writer.pkg.xml(source), fragment = K.fragment(original, { pkg: writer.pkg, part: source });
@@ -115,9 +146,16 @@
     num: { abstractNumId: ['abs'] },
     lvlOverride: { startOverride: ['start'] },
     numbering: {},
+    // a row's and a cell's; what Quire doesn't model (w:cnfStyle, w:wBefore/wAfter, w:divId, a row's w:tblCellSpacing, cell
+    // revisions) stays. A cell's width also changes with the table grid (the writer passes its signature as _grid)
+    trPr: { trHeight: ['h', 'hRule'], cantSplit: ['cantSplit'], tblHeader: ['header'], gridBefore: ['gridBefore'], gridAfter: ['gridAfter'], jc: ['jc'], hidden: ['hidden'] },
+    tblPrEx: { tblBorders: ['borders'] },
+    tcPr: { tcW: ['w', '_grid'], gridSpan: ['span'], hMerge: ['hMerge'], vMerge: ['vMerge'], tcBorders: ['borders'], shd: ['shd'], noWrap: ['noWrap'], tcMar: ['mar'], textDirection: ['textDir'], tcFitText: ['fit'], vAlign: ['vAlign'], hideMark: ['hideMark'] },
+    // a style's own settings; what Quire doesn't model (aliases, locked, personal*, rsid, a table style's trPr) stays as it was
+    style: { name: ['name'], basedOn: ['basedOn'], next: ['next'], link: ['link'], autoRedefine: ['autoRedefine'], hidden: ['hidden'], uiPriority: ['prio'], semiHidden: ['semiHidden'], unhideWhenUsed: ['unhide'], qFormat: ['q'], pPr: ['pPr'], rPr: ['rPr'], tblPr: ['tblPr'], tcPr: ['tcPr'], tblStylePr: ['cond'] },
   });
   const numberTypes = { numbering: 'w:CT_Numbering', abstractNum: 'w:CT_AbstractNum', num: 'w:CT_Num', lvlOverride: 'w:CT_NumLvl', lvl: 'w:CT_Lvl' };
-  const ownedChildren = { pPr: ['rPr', 'sectPr'], numbering: ['numPicBullet', 'abstractNum', 'num'], abstractNum: ['lvl'], num: ['abstractNumId', 'lvlOverride'], lvlOverride: ['lvl'], lvl: ['pPr', 'rPr', 'lvlPicBulletId'] };
+  const ownedChildren = { pPr: ['rPr', 'sectPr'], trPr: ['ins', 'del'], numbering: ['numPicBullet', 'abstractNum', 'num'], abstractNum: ['lvl'], num: ['abstractNumId', 'lvlOverride'], lvlOverride: ['lvl'], lvl: ['pPr', 'rPr', 'lvlPicBulletId'] };
   const propertyKeys = (kind, el) => wordNS(el.namespaceURI) ? P.propertyFields[kind][el.localName] : kind === 'rPr' && /word\/2010\/wordml$/.test(el.namespaceURI || '') ? ({ shadow: ['shadow'], textFill: ['color'], textOutline: ['outline'] }[el.localName]) : undefined;
   const field = (model, path) => path.split('.').reduce((v, k) => v?.[k], model);
   const propertyValues = (model, keys) => JSON.stringify(keys.map(k => field(model, k) ?? null), (k, v) => k === 'x' && v?.fragment ? undefined : v);
@@ -180,7 +218,7 @@
     const kept = model.x, root = propertyAttributes('<w:' + kind + ' xmlns:w="' + N.w + '">' + generated + '</w:' + kind + '>', attributes);
     if (!kept) return generated ? root : '';
     let repaired = false;
-    const type = numberTypes[kind] || { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr', sectPr: 'w:CT_SectPr' }[kind];
+    const type = numberTypes[kind] || { rPr: 'w:CT_RPr', pPr: 'w:CT_PPr', tblPr: 'w:CT_TblPr', trPr: 'w:CT_TrPr', tblPrEx: 'w:CT_TblPrEx', tcPr: 'w:CT_TcPr', sectPr: 'w:CT_SectPr', style: 'w:CT_Style' }[kind];
     if (!propertyRanks.has(type)) {
       const ranks = new Map();
       K.schema.types[type].forEach((slot, i) => slot.forEach(name => ranks.set('{' + K.schema.namespaces[name.split(':')[0]] + '}' + name.split(':')[1], i)));
@@ -190,7 +228,7 @@
     const original = K.parse(kept.fragment.xml), fresh = kids(K.parse(root)), present = new Set(propertyChildren(original).map(expanded));
     // Paragraph-mark revisions belong to CT_ParaRPr. They precede CT_RPr's
     // shared property sequence; pPr's nested mark/section are regenerated too.
-    const mark = e => kind === 'rPr' && wordNS(e.namespaceURI) && ['ins', 'del'].includes(e.localName);
+    const mark = e => kind === 'rPr' && wordNS(e.namespaceURI) && ['ins', 'del', 'moveFrom', 'moveTo'].includes(e.localName);
     const merge = (xml, outer = false) => {
       let tree = K.parse(xml);
       const patches = kids(tree).filter(alternatives).map(e => ({ ...location(e), value: merge(K.raw(e)) }));
@@ -274,7 +312,7 @@
       if (repaired) ctx.writer.loss({ id: 'property:repair:' + (kept.fragment.source || '') + ':' + kept.fragment.part, what: 'Invalid source formatting was normalized for compatibility.', where: kept.fragment.part, action: 'conversion' });
       return ctx.writer.emit(K.slice(kept.fragment, propertyAttributes(xml, attributes)), ctx.part);
     } catch (error) {
-      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (numberTypes[kind] ? 'list' : kind === 'rPr' ? 'text' : kind === 'sectPr' ? 'section' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
+      ctx?.writer.loss({ id: 'property:' + kept.key, what: 'Some ' + (numberTypes[kind] ? 'list' : kind === 'rPr' ? 'text' : kind === 'sectPr' ? 'section' : kind === 'style' ? 'style' : kind === 'trPr' || kind === 'tcPr' || kind === 'tblPrEx' ? 'table' : 'paragraph') + ' formatting could not be retained: ' + error.message, where: kept.fragment.part, action: 'conversion' });
       return generated ? root : '';
     }
   };
@@ -302,10 +340,12 @@
       writer.ids.bind(definition.source, 'numbering', kind, definition.id, id, 'numbering', f.copy);
     }
   };
-  P.rangeMarker = function (el, context) {
-    const name = el.localName, bookmark = name.startsWith('bookmark');
-    return D.item(bookmark ? name.endsWith('Start') ? 'bs' : 'be' : 'perm', { id: attr(el, 'id'), name: bookmark ? attr(el, 'name') : undefined,
-      end: name.endsWith('End'), keep: K.fragment(K.parse(K.raw(el)), context) });
+  /* after: an end read between blocks and given to the paragraph before it (true; 'table' after a table, 'row' or 'cell'
+     between rows or cells); a move's end is written there again (docx-write), so its mark or row stays in the move */
+  P.rangeMarker = function (el, context, after = false) {
+    const name = el.localName, bookmark = name.startsWith('bookmark'), move = /^(moveFrom|moveTo)Range/.exec(name)?.[1], end = name.endsWith('End');
+    return D.item(bookmark ? name.endsWith('Start') ? 'bs' : 'be' : 'perm', { id: attr(el, 'id'), name: bookmark || move ? attr(el, 'name') : undefined,
+      end, keep: K.fragment(K.parse(K.raw(el)), context), ...move && { move }, ...move && end && after && { after } });
   };
   P.prepareRanges = function (doc) {
     const valid = new Map(), visited = new Set();
@@ -314,7 +354,7 @@
       D.walk(story, p => {
         if (p.t !== 'p' || visited.has(p)) return;
         visited.add(p);
-        for (const it of p.runs) if (['bs', 'be', 'perm'].includes(it.t)) {
+        for (const it of p.runs) if (['bs', 'be', 'perm'].includes(it.t) && !it.move) {
           const key = (it.t === 'perm' ? 'permission:' : 'bookmark:') + it.id;
           if (!pairs.has(key)) pairs.set(key, { start: [], end: [] });
           pairs.get(key)[it.t === 'be' || it.end ? 'end' : 'start'].push(it);
@@ -324,7 +364,57 @@
     }
     return valid;
   };
+  /* A tracked move is read as a deletion and an insertion with move set (docx-read). Its wrappers and paragraph marks are written
+     as moveFrom and moveTo again inside a complete range of their kind, start, end and content, whose counterpart of the same name,
+     the other direction, is complete too. After an edit that breaks it (one half accepted, rejected or deleted), both halves are
+     written as an ordinary deletion and insertion and the ranges go, as Word shows a move whose other half is gone. */
+  P.prepareMoves = function (doc) {
+    const ranges = [], runs = [], visited = new Set();
+    const counts = it => D.ilen(it) || ['fb', 'fs', 'fe'].includes(it.t);
+    for (const story of D.stories(doc)) {
+      const byId = new Map(), open = { moveFrom: new Set(), moveTo: new Set() };
+      const range = it => {
+        const key = it.move + ':' + it.id;
+        if (!byId.has(key)) { byId.set(key, { kind: it.move, start: null, end: null, content: false }); ranges.push(byId.get(key)); }
+        return byId.get(key);
+      };
+      const inside = (object, kind, rev, during) => {
+        if (!rev?.move || !during.size) return;
+        runs.push({ object, kind, ranges: [...during] });
+        for (const r of during) r.content = true;
+      };
+      D.walk(story, p => {
+        if (p.t !== 'p' || visited.has(p)) return;
+        visited.add(p);
+        // a paragraph mark is in every range open at some point in its paragraph
+        const during = { moveFrom: new Set(open.moveFrom), moveTo: new Set(open.moveTo) };
+        for (const it of p.runs) {
+          if (it.t === 'perm' && it.move) {
+            const r = range(it);
+            if (it.end ? r.end : r.start) continue; // a second boundary of one id (a pasted copy) goes
+            if (it.end) { r.end = it; r.reversed = !r.start; open[it.move].delete(r); } else { r.start = it; open[it.move].add(r); during[it.move].add(r); }
+          } else if (counts(it)) { inside(it, 'moveFrom', it.rPr?.del, open.moveFrom); inside(it, 'moveTo', it.rPr?.ins, open.moveTo); }
+        }
+        inside(p, 'moveFrom', p.mark?.del, during.moveFrom); inside(p, 'moveTo', p.mark?.ins, during.moveTo);
+      });
+    }
+    const complete = r => !!(r.start && r.end && r.content && !r.reversed), names = new Map();
+    for (const r of ranges) if (complete(r)) {
+      if (!names.has(r.start.name)) names.set(r.start.name, new Set());
+      names.get(r.start.name).add(r.kind);
+    }
+    const live = r => complete(r) && names.get(r.start.name).size === 2;
+    const out = { markers: new Map(), from: new Set(), to: new Set() };
+    for (const r of ranges) for (const m of [r.start, r.end]) if (m) out.markers.set(m, live(r));
+    for (const x of runs) if (x.ranges.some(live)) out[x.kind === 'moveFrom' ? 'from' : 'to'].add(x.object);
+    return out;
+  };
   P.markerXML = function (item, ctx) {
+    if (item.move && !ctx.moves?.markers.get(item)) {
+      ctx.writer.loss({ id: 'move:' + (item.keep?.source || '') + ':' + ctx.part + ':' + item.move + ':' + item.id,
+        what: 'Tracked move: a move whose other half is gone or incomplete was saved as an ordinary deletion and insertion.', where: ctx.part, action: 'conversion' });
+      return '';
+    }
     if (ctx.ranges?.get(item) === false) {
       ctx.writer.loss({ id: 'range:' + item.t + ':' + (item.keep?.source || '') + ':' + ctx.part + ':' + item.id,
         what: (item.t === 'perm' ? 'Permission range' : 'Bookmark') + ': an incomplete boundary was removed.', where: ctx.part, action: 'drop' });
@@ -388,15 +478,9 @@
   P.registerObject = function (fragment, doc, label, scope = 'run') {
     const key = fragment.record || D.nid();
     const record = { key, fragment, label, scope, count: 1, index: 0 };
-    // Word's diagram data may name a drawing relationship on the story part
-    // through dataModelExt@relId, outside the relationships namespace.
-    for (const dep of fragment.deps) if (/\/diagramData$/.test(dep.type || '')) {
-      const pkg = K.package(dep.source), tree = pkg?.xml(dep.part);
-      for (const el of tree?.getElementsByTagName('*') || []) if (el.localName === 'dataModelExt') {
-        const id = attr(el, 'relId'), rel = pkg.rels(fragment.part).find(r => r.id === id);
-        if (rel) (record.related || (record.related = [])).push({ source: dep.source, owner: fragment.part, dataPart: dep.part, ...rel });
-      }
-    }
+    // Word's diagram data may name a drawing relationship on the story part (K.diagramRelated).
+    const pkg = K.package(fragment.source), related = pkg ? K.diagramRelated(pkg, fragment) : [];
+    if (related.length) record.related = related;
     const objects = doc.keep.objects || (doc.keep.objects = []);
     if (!objects.some(o => o.key === key)) objects.push({ key, part: fragment.part, label, rels: [...fragment.deps, ...(record.related || [])].map(r => ({ source: r.source, owner: r.owner, id: r.id })) });
     return record;
@@ -418,7 +502,7 @@
     // added definition private to this object, so both the original save and a
     // partial copy have one complete, unique type definition and matching refs.
     if (addedTypes.size) {
-      const copy = 'vml-type:' + crypto.randomUUID();
+      const copy = 'vml-type:' + K.uuid();
       for (const id of fragment.ids) if (id.kind.startsWith('vmlType') && addedTypes.has((id.prefix || '').replace(/^#/, '') + id.id)) id.copy = copy;
     }
     opaqueStore(object, true).opaque = P.registerObject(fragment, doc, label || object.name || object.alt || 'Drawing');
@@ -581,36 +665,9 @@
           fragment.ids = fragment.ids.map(id => shared.has(typeKey(fragment, id)) ? { ...id, copy: undefined } : id);
         }
       }
-      const diagrams = new Map();
-      for (const rel of record.related || []) {
-        const id = ctx.writer.keepRel(ctx.part, rel);
-        if (id === rel.id) continue;
-        const key = rel.source + ':' + rel.dataPart;
-        if (!diagrams.has(key)) diagrams.set(key, { source: rel.source, part: rel.dataPart, ids: new Map() });
-        diagrams.get(key).ids.set(rel.id, id);
-      }
-      for (const { source, part, ids } of diagrams.values()) {
-        const pkg = K.package(source), tree = pkg?.xml(part);
-        if (!tree) throw new Error('The copied diagram has no data part.');
-        const cache = ctx.objects.diagrams || (ctx.objects.diagrams = new Map());
-        const key = JSON.stringify([ctx.part, source, part, [...ids]]);
-        let dest = cache.get(key);
-        if (!dest) {
-          let xml = K.raw(tree);
-          const patches = Array.from(K.parse(xml).getElementsByTagName('*')).filter(e => e.localName === 'dataModelExt' && ids.has(attr(e, 'relId'))).map(e => ({ ...location(e), value: K.attributes(K.raw(e), { relId: ids.get(attr(e, 'relId')) }) }));
-          xml = K.patch(xml, patches);
-          const slash = part.lastIndexOf('/');
-          dest = ctx.writer.name(part.slice(0, slash), 'data', 'xml');
-          ctx.writer.copyPart(pkg, part, dest);
-          ctx.writer.put(dest, xml, pkg.type(part)); cache.set(key, dest);
-        }
-        // The implicit dataModelExt link belongs to the destination story. A
-        // private data part keeps another pasted instance/story independent.
-        fragment = K.slice(fragment, fragment.xml.replace(/\u0001rel:(\d+)\u0001/g, (token, index) => {
-          const dep = fragment.deps[+index];
-          return dep.source === source && dep.part === part ? ctx.writer.rels(ctx.part).add(dep.type, K.relative(ctx.part, dest), false) : token;
-        }));
-      }
+      // The implicit dataModelExt link belongs to the destination story. A
+      // private data part keeps another pasted instance/story independent.
+      fragment = ctx.writer.diagram(fragment, record.related, ctx.part, ctx.objects.diagrams || (ctx.objects.diagrams = new Map()));
       let xml = ctx.writer.emit(fragment, ctx.part, group.moved ? { box: group.boxChange } : {});
       if (record.drawing) xml = P.mergeDrawing(xml, object, record.drawing, ctx);
       group.emitted = true; return xml;
@@ -792,7 +849,7 @@
   P.duplicateControls = function (blocks) {
     const copy = K.duplicate(blocks), scan = P.controls({ main: { blocks: copy }, hf: {}, fn: {}, en: {}, comments: {} }, false), ids = new Map(), stores = new Map();
     for (const [key, r] of scan.records) {
-      if (!r.complete) { P.removeControl(scan, key); continue; }
+      if (!r.complete) continue; // its markers go in the loop below, once
       ids.set(key, D.nid()); r.control.key = ids.get(key);
       const b = r.control.binding;
       if (b && b.source !== D.doc?.pkg?.id) {
@@ -804,7 +861,7 @@
           if (!stores.has(storeKey)) {
             let id = D.doc?.keep?.storeCopies?.[storeKey];
             if (!id) {
-              id = '{' + crypto.randomUUID().toUpperCase() + '}';
+              id = K.guid();
               if (D.doc) { D.touchKey(D.doc, 'keep'); D.doc.keep = D.doc.keep || {}; (D.doc.keep.storeCopies || (D.doc.keep.storeCopies = {}))[storeKey] = id; }
             }
             stores.set(storeKey, id);
@@ -826,7 +883,7 @@
     D.walk({ blocks: copy }, b => {
       if (b.t !== 'p') return;
       paragraphs.push(b);
-      for (const it of b.runs) if (['bs', 'be', 'perm'].includes(it.t)) {
+      for (const it of b.runs) if (['bs', 'be', 'perm'].includes(it.t) && !it.move) {
         const key = (it.t === 'perm' ? 'perm:' : 'bm:') + it.id; if (!bookmarks.has(key)) bookmarks.set(key, {});
         bookmarks.get(key)[it.t === 'be' || it.end ? 'be' : 'bs'] = it;
       }
@@ -840,6 +897,7 @@
       }
     }
     for (const p of paragraphs) p.runs = p.runs.filter(it => {
+      if (it.move) return false; // a copy of moved text is an ordinary deletion or insertion, outside the move's ranges
       if (['bs', 'be', 'perm'].includes(it.t)) {
         const pair = bookmarks.get((it.t === 'perm' ? 'perm:' : 'bm:') + it.id); if (!pair.id) return false; it.id = pair.id;
       }

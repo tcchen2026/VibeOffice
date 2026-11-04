@@ -29,9 +29,11 @@
 | `desktop/licenses/` | license texts of what ships with the app but is not a crate (`WebView2Loader.txt`, from the WebView2 SDK package; `appimage-runtime.txt`, the AppImage runtime's and its parts'), and in `crates/` those of the crates whose package has none (taken from their repositories), for `public/oss-licenses.html` |
 | `desktop/patches/option-ext/` | our own stand-in for the `option-ext` crate (MPL-2.0), which `dirs-sys` uses through Tauri: the one method it needs, Apache-2.0, put in its place by `[patch.crates-io]` in `Cargo.toml` (AGENTS.md, Code from other projects) |
 | `desktop/build.sh` | release build: the exe, the installer and the zip in `desktop/target/dist/` |
-| `.github/workflows/windows.yml` | CI, run by hand: `build.sh` on Ubuntu; the zip as the run's artifact and a GitHub release |
-| `.github/workflows/linux.yml` | CI, run by hand: `linux/build.sh` on Ubuntu 22.04 with a smoke run there, then each system in a container (without WebKitGTK, then with it), screenshots; the AppImage in the version's GitHub release when asked |
-| `.github/workflows/macos.yml` | CI, run by hand: `macos/build.sh` on a macOS runner, a smoke run with screenshots; the DMG in the version's GitHub release; the App Store package to App Store Connect when asked (macOS, below) |
+| `.github/workflows/release.yml` | CI, run by hand: every download in one run: the version's release as a draft, then Windows, the macOS DMG and Linux one after another (the workflows below), published once all three files are in it |
+| `.github/workflows/windows.yml` | CI, run by hand or by `release.yml`: `build.sh` on Ubuntu; the zip as the run's artifact and a GitHub release |
+| `.github/workflows/linux.yml` | CI, run by hand or by `release.yml`: `linux/build.sh` on Ubuntu 22.04, the AppImage in the version's GitHub release; with *smoke*, first a smoke run there and each system in a container (without WebKitGTK, then with it), screenshots |
+| `.github/workflows/macos.yml` | CI, run by hand or by `release.yml`: `macos/build.sh dmg` on a macOS runner, with *smoke* a smoke run with screenshots; the DMG in the version's GitHub release (macOS, below) |
+| `.github/workflows/appstore.yml` | CI, run by hand: `macos/build.sh appstore`, the App Store package to App Store Connect and as the run's artifact (macOS, below) |
 | `tests/desktop/` | `host.test.mjs` and `host-stub.js` (Host interface, below); `setup-wine.py`, the installer end to end in Wine (The installer, below) |
 
 ## Host interface
@@ -185,6 +187,12 @@ side is `L.file` in `public/common/core.js`):
 
 ## Versions and updates
 
+A release is made with Actions ▸ Release (`release.yml`): the version's GitHub release as a draft, then Windows, the
+macOS DMG and Linux one after another, each adding its download, and the release published once all three are in it.
+A system that fails stops the ones after it and leaves the draft: its own workflow, run again on the same commit, adds
+the missing file, then the draft is published by hand. The Mac App Store edition goes to App Store Connect from its own
+workflow (`appstore.yml`).
+
 A version is `v<yyyy>.<mm>.<dd>-<6 hex>`, the date (UTC) and commit of the tree it was built from, e.g. `v2026.10.11-d2134d`: `tools/current-tree-version.sh [commit]` prints it. `build.sh` stamps it into the app and the installer (`VO_VERSION`, shown as `VO.VERSION` on the Start Center and in About); the release is tagged with it, and the zip keeps one name. Windows wants numbers: the exes' file version is `2026.10.11`. A plain `cargo build` says `dev`.
 
 `public/updater/current.json`, edited by hand (nothing updates it): per policy, per platform (`web`, `macos`, `windows`, `linux`), the version an edition must be at least. The Mac App Store edition never reads it (`VO.host.updates`): the store updates it, and it has no network; its Check for updates opens the update page as `macos_store`.
@@ -221,7 +229,7 @@ The rules are checked from a page: with `VO_NET_PROBE=1`, the Start Center's win
 own (a `data:` URL with no policy of its own, so only the rules can refuse anything). It tries a picture from
 github.com, a fetch of api.github.com and a WebSocket to echo.websocket.org, with a picture from vibeoffice.work as the
 control, and prints `network probe: blocked` on stderr, or `REACHED` and what got through. Then the window goes on to
-the Start Center. The macOS smoke run sets it and fails without `blocked`. On Windows a WebSocket may get through
+the Start Center. The macOS smoke run (*smoke* ticked) sets it and fails without `blocked`. On Windows a WebSocket may get through
 WebView2's filter; the pages' own Content-Security-Policy refuses it there (todos/HARDENING.md, phase 1).
 
 The app's own pages and IPC (`tauri://`, `ipc://`; `https://tauri.localhost` and `https://ipc.localhost` on Windows, a secure context, where WebView2 doesn't look up links' host names ahead) and
@@ -315,11 +323,12 @@ The Mac's ways (`main.rs`):
 
     desktop/macos/build.sh        # desktop/target/dist/: VibeOffice.app, and the DMG and package it can sign
 
-It builds both binaries, joins them (`lipo`) and bundles `VibeOffice.app`; then, by the identities in the keychain
-(found by name; `MACOS_DEVELOPER_ID`, `MACOS_APPSTORE_ID`, `MACOS_INSTALLER_ID` choose others):
+It builds both binaries, joins them (`lipo`) and bundles `VibeOffice.app` for one edition: `build.sh` (or
+`build.sh dmg`) the direct one, `build.sh appstore` the Mac App Store's. By the identities in the keychain (found by
+name; `MACOS_DEVELOPER_ID`, `MACOS_APPSTORE_ID`, `MACOS_INSTALLER_ID` choose others):
 
-- none: the app signed ad hoc, to try on that Mac (and the CI smoke run);
-- Developer ID Application: the DMG (the app and an Applications link), notarized with an App Store Connect API key
+- `dmg`, none: the app signed ad hoc, to try on that Mac (and the CI smoke run);
+- `dmg`, Developer ID Application: the DMG (the app and an Applications link), notarized with an App Store Connect API key
   (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH`, the .p8 file) and stapled. Its window shows the two side by side
   on a light sky with an arrow from the app to Applications and Scout under it, pointing the same way; the volume has
   the app's icon. dmgbuild (MIT; Python 3.9 or later, fetched into `target/dmgbuild` from
@@ -329,8 +338,8 @@ It builds both binaries, joins them (`lipo`) and bundles `VibeOffice.app`; then,
   GestureRight) from the settings' window size and icon places, so run it after changing those (`--preview` adds
   stand-ins for the icons, in `tmp/dmg-preview.png`). Finder draws the icons' names in black on a background picture,
   in Dark Mode too, so the picture stays light under them;
-- Apple Distribution and Mac Installer Distribution, with `MACOS_PROVISION_PROFILE` (the profile's path): the App Store
-  package.
+- `appstore`, Apple Distribution and Mac Installer Distribution, with `MACOS_PROVISION_PROFILE` (the profile's path):
+  the App Store package; without them it fails.
 
 The bundle's version is the date (`2026.10.15`), its build number the commit's UTC time (`2026.1015.641`), which rises
 with every commit, as App Store Connect requires.
@@ -342,13 +351,17 @@ only, so nothing here links, bundles or runs. After `rustup target add aarch64-a
     cd desktop && CC_aarch64_apple_darwin=clang CFLAGS_aarch64_apple_darwin=--target=arm64-apple-macos11 \
       cargo check --release --target aarch64-apple-darwin
 
-**CI**, run by hand: Actions ▸ macOS ▸ Run workflow (`.github/workflows/macos.yml`, on `macos-15`). It builds, then
-opens the app alone and with a .docx, a .csv and a .md (`open -a`, as Finder does) and keeps a screenshot after each
+**CI**, run by hand: Actions ▸ macOS ▸ Run workflow (`.github/workflows/macos.yml`, on `macos-15`; also run by
+`release.yml` with Windows and Linux) builds the DMG; with
+*smoke* ticked (off by default) it then opens the app alone and with a .docx, a .csv and a .md (`open -a`, as Finder does) and keeps a screenshot after each
 (artifact `VibeOffice-macOS-smoke`, with the app's log), and one of the DMG's window opened in Finder when there is a
 DMG (`0-dmg.png`). With the signing secrets it adds the DMG to the version's GitHub release (the tag Windows uses, so
-one release holds both; `desktop/release-notes.md`) and, with *app_store* ticked, uploads the package to App Store
-Connect (`altool`). Without them the app is signed ad hoc and nothing is released: artifact
-`VibeOffice-macOS-unsigned`, which starts after `xattr -dr com.apple.quarantine VibeOffice.app`.
+one release holds both; `desktop/release-notes.md`). Without them the app is signed ad hoc and nothing is released:
+artifact `VibeOffice-macOS-unsigned`, which starts after `xattr -dr com.apple.quarantine VibeOffice.app`. The App
+Store edition has its own: Actions ▸ Mac App Store ▸ Run workflow (`.github/workflows/appstore.yml`) builds the
+package, keeps it as the run's artifact (`VibeOffice-macOS-AppStore`, for Transporter) and, with *upload* ticked (the
+default), uploads it to App Store Connect (`altool`); it fails without the App Store secrets. App Store Connect takes
+each build number once, and the build number is the commit's time: one upload a commit.
 
 The signing material is in the secrets of the `release` environment (Settings ▸ Environments; limit it to `main`, so
 runs from other branches and from forks never see them):
@@ -387,11 +400,12 @@ it from 12 on).
   FUSE (`fusermount3`); without FUSE, `--appimage-extract-and-run` or `APPIMAGE_EXTRACT_AND_RUN=1`. Its licences,
   libfuse's (LGPL-2.1, inside the runtime) among them, are in the open source licenses
   (`desktop/licenses/appimage-runtime.txt`).
-- **CI** (`.github/workflows/linux.yml`, run by hand): builds on `ubuntu-22.04` and runs the smoke run there
-  (`desktop/linux/smoke.sh`: the Start Center, then a .docx, a CSV and a .md handed to the running app, each found by
-  its window's title, a screenshot after each); then Ubuntu 24.04 and 26.04, Debian 12 and 13 and Fedora, each in a
-  container (`desktop/linux/on-system.sh`): without WebKitGTK the AppImage must not start and must name that system's
-  command, with it the smoke run. Ticking "release" puts the AppImage into the version's release.
+- **CI** (`.github/workflows/linux.yml`, run by hand): builds on `ubuntu-22.04` and puts the AppImage into the
+  version's release. With *smoke* ticked (off by default) it first runs the smoke run there (`desktop/linux/smoke.sh`:
+  the Start Center, then a .docx, a CSV and a .md handed to the running app, each found by its window's title, a
+  screenshot after each), then Ubuntu 24.04 and 26.04, Debian 12 and 13 and Fedora, each in a container
+  (`desktop/linux/on-system.sh`): without WebKitGTK the AppImage must not start and must name that system's command,
+  with it the smoke run; the release waits for them all.
 
 Building here needs the development files of WebKitGTK 4.1, GTK 3 and libsoup 3 (`libwebkit2gtk-4.1-dev`,
 `libgtk-3-dev`, `libsoup-3.0-dev`), and squashfs-tools for the AppImage:

@@ -48,6 +48,15 @@ test('OLE spid resolves in its related VML preview rather than slide shape IDs',
   assert.equal(run('check', await pkg('ole-vml', parts('_x0000_s1030'))).status, 'ok');
   assert.ok(run('check', await pkg('ole-missing-vml', parts('_x0000_s1031'))).issues.some(i => i.code === 'unresolved-vml-preview'));
 });
+test('an ActiveX control\'s spid names its VML shape by o:spid; Office\'s conditional VML markers parse', async () => {
+  const parts = id => ({ 'slide.xml': slide(`<p:cSld><p:spTree/><p:controls><p:control spid="${id}" name="CommandButton1" r:id="ax"/></p:controls></p:cSld>`),
+    '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/></Types>',
+    '_rels/slide.xml.rels': rels(rel('vml', 'vml.vml', 'vmlDrawing') + rel('ax', 'ax.xml', 'control')),
+    'ax.xml': '<ax:ocx xmlns:ax="http://schemas.microsoft.com/office/2006/activeX"/>',
+    'vml.vml': '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><![if gte mso 9]><v:shape id="CommandButton1" o:spid="_x0000_s1030"/><![endif]></xml>' });
+  assert.deepEqual(run('check', await pkg('control-vml', parts('1030'))).issues, []);
+  assert.ok(run('check', await pkg('control-missing-vml', parts('1031'))).issues.some(i => i.code === 'unresolved-vml-preview'));
+});
 test('PowerPoint graphic frames cannot carry DrawingML rotation or flips', async () => {
   const frame = attrs => slide(`<p:graphicFrame><p:xfrm${attrs}><a:off x="0" y="0"/><a:ext cx="1" cy="1"/></p:xfrm></p:graphicFrame>`);
   assert.equal(run('check', await pkg('plain-frame', { 'slide.xml': frame('') })).status, 'ok');
@@ -108,6 +117,46 @@ test('a SmartArt data part names its layout part by uniqueId, or PowerPoint draw
   });
   assert.equal(run('check', await pkg('dgm-same', parts('urn:example/layout/process#1f2e3d4c'))).status, 'ok');
   assert.ok(run('check', await pkg('dgm-differ', parts('urn:example/layout/process'))).issues.some(i => i.code === 'diagram-layout-id'));
+});
+test('text moved away with Track Changes stays w:t inside w:moveFrom, or Word refuses the file', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const doc = (text) => ({ 'word/document.xml': `<w:document xmlns:w="${W}"><w:body><w:p><w:moveFrom w:id="1" w:author="A"><w:r>${text}</w:r></w:moveFrom><w:del w:id="2" w:author="A"><w:r><w:delText>gone</w:delText></w:r></w:del></w:p></w:body></w:document>` });
+  assert.equal(run('check', await pkg('move-text', doc('<w:t>moved</w:t>'))).status, 'ok');
+  assert.ok(run('check', await pkg('move-deltext', doc('<w:delText>moved</w:delText>'))).issues.some(i => i.code === 'moved-deleted-text'));
+});
+test('a styles part holds at most 4,092 styles, or Word 2016 refuses the file', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const styles = (n) => ({ 'word/styles.xml': `<w:styles xmlns:w="${W}">${Array.from({ length: n }, (_, i) => `<w:style w:type="paragraph" w:styleId="S${i}"><w:name w:val="S ${i}"/></w:style>`).join('')}</w:styles>` });
+  assert.equal(run('check', await pkg('styles-4092', styles(4092))).status, 'ok');
+  assert.ok(run('check', await pkg('styles-4093', styles(4093))).issues.some(i => i.code === 'too-many-styles'));
+});
+test('a sheet comment drawn by DrawingML names a shape of the sheet\'s drawing, or Excel 2016 refuses the file', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', XDR = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing';
+  const parts = (id) => ({
+    'xl/worksheets/sheet1.xml': `<worksheet xmlns="${S}"/>`,
+    'xl/worksheets/_rels/sheet1.xml.rels': rels(rel('c', '../comments1.xml', 'comments') + rel('d', '../drawings/drawing1.xml', 'drawing')),
+    'xl/comments1.xml': `<comments xmlns="${S}" xmlns:mc="${MC}" xmlns:v="urn:schemas-microsoft-com:vml"><commentList><comment ref="A1" shapeId="1025"><text><t>Note</t></text><mc:AlternateContent><mc:Choice Requires="v"/><mc:Fallback><commentPr/></mc:Fallback></mc:AlternateContent></comment></commentList></comments>`,
+    'xl/drawings/drawing1.xml': `<xdr:wsDr xmlns:xdr="${XDR}" xmlns:mc="${MC}" xmlns:v="urn:schemas-microsoft-com:vml"><mc:AlternateContent><mc:Choice Requires="v"/><mc:Fallback><xdr:twoCellAnchor><xdr:sp><xdr:nvSpPr><xdr:cNvPr id="${id}" name="Comment"/></xdr:nvSpPr></xdr:sp></xdr:twoCellAnchor></mc:Fallback></mc:AlternateContent></xdr:wsDr>`,
+  });
+  assert.deepEqual(run('check', await pkg('comment-shape-kept', parts(1025))).issues.map(i => i.code + ' ' + i.detail), []);
+  assert.ok(run('check', await pkg('comment-shape-gone', parts(1026))).issues.some(i => i.code === 'comment-shape'));
+});
+test('comment extensions use the w15 namespace the other parts bind, or Word 2016 refuses the file', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', DRAFT = 'http://schemas.microsoft.com/office/word/2010/11/wordml';
+  const parts = (ex) => ({ 'word/document.xml': `<w:document xmlns:w="${W}" xmlns:w15="${DRAFT}"><w:body/></w:document>`, 'word/commentsExtended.xml': `<w15:commentsEx xmlns:w15="${ex}"/>` });
+  assert.equal(run('check', await pkg('w15-draft', parts(DRAFT))).status, 'ok');
+  assert.ok(run('check', await pkg('w15-mixed', parts('http://schemas.microsoft.com/office/word/2012/wordml'))).issues.some(i => i.code === 'w15-namespaces'));
+});
+test('a SmartArt data part\'s presentation links name its layout part, or PowerPoint 2016 draws nothing', async () => {
+  const DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram', id = 'urn:example/layout/process#1f2e3d4c';
+  const frame = `<p:cSld><p:spTree><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Diagram"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><a:graphic><a:graphicData uri="${DGM}"><dgm:relIds xmlns:dgm="${DGM}" r:dm="d" r:lo="l" r:qs="d" r:cs="d"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:cSld>`;
+  const parts = (presId) => ({
+    'slide.xml': slide(frame), '_rels/slide.xml.rels': rels(rel('d', 'data.xml', 'diagramData') + rel('l', 'layout.xml', 'diagramLayout')),
+    'data.xml': `<dgm:dataModel xmlns:dgm="${DGM}"><dgm:ptLst><dgm:pt modelId="1" type="doc"><dgm:prSet loTypeId="${id}"/></dgm:pt><dgm:pt modelId="2" type="pres"/></dgm:ptLst><dgm:cxnLst><dgm:cxn modelId="3" type="presOf" srcId="1" destId="2" presId="${presId}"/></dgm:cxnLst></dgm:dataModel>`,
+    'layout.xml': `<dgm:layoutDef xmlns:dgm="${DGM}" uniqueId="${id}"/>`,
+  });
+  assert.equal(run('check', await pkg('dgm-pres-same', parts(id))).status, 'ok');
+  assert.ok(run('check', await pkg('dgm-pres-differ', parts('urn:example/layout/process'))).issues.some(i => i.code === 'diagram-pres-id'));
 });
 test('every branch of a SmartArt choice keeps the same algorithm type, or PowerPoint draws its default list', async () => {
   const DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram';

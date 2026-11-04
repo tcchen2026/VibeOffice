@@ -1005,26 +1005,49 @@
     // Shape XML is saved as an opaque object. Capture before selecting a
     // display branch, so nested equations and effects keep Choice/Fallback.
     const originalShapes = new WeakMap(el.getElementsByTagName('*').filter(e => /^(sp|grpSp|cxnSp|pic)$/.test(e.localName)).map(e => [e, XML.serialize(e)]));
+    // What each anchor held before a Markup Compatibility branch was picked: an object the model can't show is
+    // kept as it was (a kept frame), and so is an AlternateContent shown by its Fallback (an add-in, chartex).
+    // Only in a standard drawing: pre-release (2005) XML can't go into a current file.
+    const standard = /\/spreadsheetDrawing$/.test(el.namespaceURI || ''), held = new WeakMap();
+    if (standard && ctx.wb.pkg) for (const a of el.children) if (/Anchor$/.test(a.localName)) {
+      const c = a.children.find(c => /^(AlternateContent|pic|graphicFrame|sp|grpSp|cxnSp|contentPart)$/.test(c.localName));
+      if (c) held.set(a, { xml: XML.serialize(c), fallback: c.localName === 'AlternateContent' && !kids(c, 'Choice').slice(0, 1).some(usableChoice) });
+    }
+    // Whole anchors in an AlternateContent whose Choice holds nothing (LibreOffice's comment shapes: VML for readers of
+    // VML, the same shape in DrawingML as the Fallback) are kept as they were, in their place among the anchors: a
+    // comment whose commentPr names that shape doesn't open in Excel 2016 without it (universal-content-strict)
+    if (standard && ctx.wb.pkg) {
+      let at = 0;
+      for (const c of el.children) {
+        if (/Anchor$/.test(c.localName)) at++;
+        else if (c.localName === 'AlternateContent' && kids(c, 'Choice').find(usableChoice)?.children.length === 0 && kid(c, 'Fallback')?.children.length)
+          (sh.extra.drawingAlternates ||= []).push({ at, xml: XML.serialize(c), source: ctx.wb.pkg.id, part });
+      }
+    }
     const owned = new Set((sh.extra.objectGroups || []).flatMap(g => g.ids));
     const slicers = L.slicers.captureDrawing(el, sh, part);
     resolveAC(el, true);
     const rels = await pkg.rels(part);
+    let anchors = 0, unshown = 0;
     for (const a of el.children) {
       const kind = a.localName;
       if (!/Anchor$/.test(kind)) continue;
+      anchors++;
       const anchor = { type: kind === 'twoCellAnchor' ? 'two' : kind === 'oneCellAnchor' ? 'one' : 'abs' };
       if (kind === 'twoCellAnchor') { anchor.from = anchorPt(kid(a, 'from')); anchor.to = anchorPt(kid(a, 'to')); anchor.editAs = at(a, 'editAs') || 'twoCell'; }
       else if (kind === 'oneCellAnchor') { anchor.from = anchorPt(kid(a, 'from')); const ex = kid(a, 'ext'); anchor.w = num(ex, 'cx', 0) / EMU; anchor.h = num(ex, 'cy', 0) / EMU; }
       else { const p = kid(a, 'pos'), ex = kid(a, 'ext'); anchor.x = num(p, 'x', 0) / EMU; anchor.y = num(p, 'y', 0) / EMU; anchor.w = num(ex, 'cx', 0) / EMU; anchor.h = num(ex, 'cy', 0) / EMU; }
       const obj = a.children.find((c) => /^(pic|graphicFrame|sp|grpSp|cxnSp|contentPart)$/.test(c.localName));
-      const record = slicers.get(a);
-      if (!obj && !record) continue;
+      const record = slicers.get(a), kept = !record && held.get(a);
+      if (!obj && !record && !kept) continue;
       let d = obj && await readDrawingObject(pkg, obj, rels, ctx, sh);
       if (!d && record) d = { kind: 'shape', text: record.names.join(', '), geom: 'rect' };
-      if (!d) continue;
+      if (!d && kept) d = keptFrame(kept.xml, obj);
+      if (!d) { unshown++; continue; }
       if (d.kind === 'shape' && originalShapes.has(obj)) d.xml = originalShapes.get(obj);
       d.anchor = anchor;
-      if (d.kind === 'shape' && ctx.wb.pkg) d.keep = { source: ctx.wb.pkg.id, part };
+      if ((d.kind === 'shape' || d.kind === 'frame') && ctx.wb.pkg) d.keep = { source: ctx.wb.pkg.id, part };
+      if (d.kind === 'frame') { d.keep.key = K.uuid(); (ctx.wb.extra.keptFrames ||= []).push({ key: d.keep.key, sheet: sh.name, label: d.label, xml: d.xml, source: ctx.wb.pkg.id, part }); }
       if (d.kind === 'image' && owned.has(d.id) && originalShapes.has(obj)) d.keep = { source: ctx.wb.pkg.id, part,
         frame: K.fragment(K.parse(originalShapes.get(obj)), { pkg: ctx.wb.pkg, part }) };
       else if (d.kind === 'image' && ctx.wb.pkg && originalShapes.has(obj)) {
@@ -1035,8 +1058,21 @@
       if (cd && at(cd, 'fLocksWithSheet') === '0') d.unlocked = true;
       if (cd && at(cd, 'fPrintsWithSheet') === '0') d.noPrint = true;
       if (record) L.slicers.attach(d, record);
+      if (kept?.fallback && d.kind !== 'frame' && !owned.has(d.id)) {
+        d.keep ||= { source: ctx.wb.pkg.id, part };
+        d.keep.alternate = { xml: kept.xml, values: L.sheetObjects.alternateValues(d) };
+      }
       sh.drawings.push(d);
     }
+    if (!anchors && !sh.extra.drawingAlternates) sh.extra.ooxmlDrawingEmpty = true;
+    if (!standard && unshown) sh.extra.unshownObjects = unshown;
+  }
+  /** an anchored object the model can't show (SmartArt, ink, a picture with no picture), kept as its original XML */
+  function keptFrame(xml, obj) {
+    const tree = XML.parse(xml), all = [tree, ...tree.getElementsByTagName('*')];
+    const cnv = all.find(e => e.localName === 'cNvPr'), uri = at(all.find(e => e.localName === 'graphicData'), 'uri') || '';
+    const label = /\/diagram$/.test(uri) ? 'IntelliArt' : obj?.localName === 'contentPart' || all.some(e => e.localName === 'contentPart') ? 'Ink' : 'Object';
+    return { kind: 'frame', id: num(cnv, 'id', 0), name: at(cnv, 'name') || '', descr: at(cnv, 'descr') || undefined, hidden: bool(cnv, 'hidden', false) || undefined, label, xml };
   }
   async function readDrawingObject(pkg, obj, rels, ctx, sh) {
     const nv = obj.children.find((c) => /^nv/.test(c.localName));
@@ -1099,6 +1135,14 @@
     }
     return null;
   }
+  /** a Choice branch the reader can show: no slicers, chartex or ink, and only namespaces it reads */
+  function usableChoice(c) {
+    const req = (at(c, 'Requires') || '').split(/\s+/);
+    const inner = c.getElementsByTagName('*');
+    const bad = inner.some((e) => e.localName === 'graphicData' && /slicer|timeslicer|chartex|chartEx|ink/i.test(at(e, 'uri') || '')) || inner.some((e) => e.localName === 'contentPart');
+    const ok = req.every((r) => /^(a14|x14|x15|xr|xr2|xr3|x14ac|c14|c16|c16r2|c16r3|a16|mc|v|o|x)$/.test(r) || !r);
+    return ok && !bad;
+  }
   /** Markup Compatibility: drop the Choice branches we cannot render (slicers, chartex, ink) for their Fallback */
   function resolveAC(root, drawing) {
     const acs = root.getElementsByTagName('*').filter((e) => e.localName === 'AlternateContent').reverse();
@@ -1106,14 +1150,7 @@
       if (!ac.parentNode) continue;
       const ch = kids(ac, 'Choice');
       const fb = kid(ac, 'Fallback');
-      let pick = null;
-      for (const c of ch) {
-        const req = (at(c, 'Requires') || '').split(/\s+/);
-        const inner = c.getElementsByTagName('*');
-        const bad = inner.some((e) => e.localName === 'graphicData' && /slicer|timeslicer|chartex|chartEx|ink/i.test(at(e, 'uri') || '')) || inner.some((e) => e.localName === 'contentPart');
-        const ok = req.every((r) => /^(a14|x14|x15|xr|xr2|xr3|x14ac|c14|c16|c16r2|c16r3|a16|mc|v|o|x)$/.test(r) || !r);
-        if (ok && !bad) { pick = c; break; }
-      }
+      let pick = ch.find(usableChoice) || null;
       if (!pick) pick = fb || null;
       if (pick) {
         /* the lifted children lose the namespace declarations made on mc:AlternateContent / mc:Choice */
@@ -1277,6 +1314,7 @@
     if (wb.active >= wb.sheets.length || wb.active < 0) wb.active = 0;
     if (wb.sheets[wb.active].state !== 'visible') wb.active = Math.max(0, wb.sheets.findIndex((s) => s.state === 'visible'));
     wb.extra.keepValues = L.preserve.values(wb);
+    wb.extra.inUse = L.preserve.inUse(wb);
     L.pivots.read(wb);
     L.slicers.read(wb);
     L.tableKeep.readWorkbook(wb);

@@ -156,7 +156,8 @@ class Package:
         for n, data in self.data.items():
             if n.endswith(('.xml', '.rels', '.vml')):
                 try:
-                    self.xml[n] = parse_xml(data)
+                    # Office's VML wraps definitions in conditional markers (<![if gte mso 9]> ... <![endif]>)
+                    self.xml[n] = parse_xml(re.sub(rb'<!\[(?:if [^\]]*|endif)\]>', b'', data) if n.endswith('.vml') else data)
                 except ET.ParseError as e:
                     self.issue('invalid-xml', n, str(e))
         cts = self.xml.get('[Content_Types].xml')
@@ -327,6 +328,12 @@ class Package:
                     if not found:
                         self.issue('unresolved-vml-preview', part, at(el, 'spid'), path)
                     previews[(part, at(el, 'spid'))].append((path, branches))
+                elif ns in P and tag == 'control' and at(el, 'spid') is not None:
+                    # An ActiveX control's spid is the number in its VML shape's o:spid, not a cNvPr.
+                    targets = [r['target'] for r in self.rels.get(part, {}).values() if r['type'].endswith('/vmlDrawing') and not r['external']]
+                    found = any(e.get('{urn:schemas-microsoft-com:office:office}spid') == '_x0000_s' + at(el, 'spid') for target in targets if target in self.xml for e in self.xml[target].iter())
+                    if not found:
+                        self.issue('unresolved-vml-preview', part, at(el, 'spid'), path)
                 elif ns in P and at(el, 'spid') is not None:
                     references.append((part, 'shape', at(el, 'spid'), path, branches))
                 if tag == 'cNvPr' and parent is not None and split(parent.tag)[1] == 'nvGraphicFramePr' and ns in P:
@@ -346,6 +353,26 @@ class Package:
                         lo_type, unique = pr.get('loTypeId') if pr is not None else None, self.xml[lo].get('uniqueId')
                         if lo_type is not None and lo_type != unique:
                             self.issue('diagram-layout-id', dm, f'{lo_type} / {unique}', path)
+                        # PowerPoint 2016 draws nothing for a SmartArt whose presentation links (presOf, presParOf) name
+                        # another layout than that uniqueId; later versions draw it. All 233 corpus data parts with such
+                        # links name their own layout
+                        other = sorted({c.get('presId') for c in self.xml[dm].iter('{%s}cxn' % DGM) if c.get('type') in ('presOf', 'presParOf') and c.get('presId') != unique})
+                        if unique is not None and other:
+                            self.issue('diagram-pres-id', dm, f'{other[0]} / {unique}', path)
+                # Word refuses a file whose moved-away text is deletion text ("an incorrect text node"): inside
+                # w:moveFrom, text stays w:t / w:instrText, as in all 50 such runs in the corpus
+                if ns in W and tag in ('delText', 'delInstrText'):
+                    a = parent
+                    while a is not None and not (split(a.tag)[0] in W and split(a.tag)[1] in ('del', 'ins', 'moveFrom', 'moveTo')):
+                        a = parents.get(a)
+                    if a is not None and split(a.tag)[1] == 'moveFrom':
+                        self.issue('moved-deleted-text', part, tag, path)
+                # Word 2016 refuses a styles part with more than 4,092 styles ("Unspecified error" in /word/styles.xml;
+                # 4,092 opens, 4,093 doesn't, in two files); the corpus's largest, fdo76101, has 4,091
+                if tag == 'styles' and ns in W:
+                    count = sum(1 for c in el if split(c.tag) == (split(el.tag)[0], 'style'))
+                    if count > 4092:
+                        self.issue('too-many-styles', part, str(count), path)
                 # PowerPoint rejects a whole SmartArt layout definition (and draws its default list) when the
                 # branches of a choice give one layout node different algorithm types; none of the corpus's
                 # 303 choices in 60 Office definitions do
@@ -385,6 +412,25 @@ class Package:
         for part, id_, path in pivot_refs:
             if id_ not in caches:
                 self.issue('unresolved-cache-id', part, id_, path)
+        # Excel 2016 refuses a sheet comment drawn by DrawingML (a commentPr, even in an AlternateContent branch) whose
+        # shapeId names no shape in the sheet's drawing: universal-content-strict without its drawing's Fallback anchor
+        for sheet, rels in self.rels.items():
+            targets = {r['type'].rsplit('/', 1)[-1]: r['target'] for r in rels.values() if not r['external']}
+            comments = self.xml.get(targets.get('comments'))
+            if comments is None:
+                continue
+            drawing = self.xml.get(targets.get('drawing'))
+            shapes = {el.get('id') for el in drawing.iter() if split(el.tag)[1] == 'cNvPr'} if drawing is not None else set()
+            for c in comments.iter():
+                if split(c.tag) in ((ns, 'comment') for ns in S) and any(split(e.tag)[1] == 'commentPr' for e in c.iter()) and c.get('shapeId') not in shapes:
+                    self.issue('comment-shape', targets['comments'], (c.get('ref') or '') + ' / ' + str(c.get('shapeId')))
+        # Word 2016 refuses a package ("Xml parsing error") whose comment extensions use the released w15 namespace
+        # while another part binds the draft one of Word 2013's preview; each of the corpus's 2,396 Word files uses one
+        for part, root in self.xml.items():
+            if root.tag == '{http://schemas.microsoft.com/office/word/2012/wordml}commentsEx':
+                draft = next((n for n, d in self.data.items() if n != part and b'http://schemas.microsoft.com/office/word/2010/11/wordml' in d), None)
+                if draft:
+                    self.issue('w15-namespaces', part, draft)
         return self.issues
 
     def canonical(self, part, root, name_map=None):

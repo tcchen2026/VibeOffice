@@ -1280,6 +1280,8 @@
           const g = await smartArtFrom(gd, base, ctx);
           if (g) return g;
         }
+        /* a PowerPoint 97-2003 diagram in the slide's VML: kept as a frame (frames.js) */
+        if (/\/compatibility$/.test(uri)) return null;
         /* OLE object or unknown: try fallback picture */
         const pic = desc(el, 'pic');
         if (pic) {
@@ -1843,8 +1845,8 @@
       const bg = bgOf(cSld, ctx, master.theme);
       if (bg) slide.bg = bg;
       slide.shapes = await shapesFrom(kid(cSld, 'spTree'), ctx, {});
-      /* ActiveX controls are shown by their preview pictures (they are not run here) */
-      const ctrls = kid(cSld, 'controls');
+      /* ActiveX controls are shown by their preview pictures (they are not run here) and kept as frames (frames.js) */
+      const ctrls = kid(cSld, 'controls'), source = original(ctx.partPath);
       if (ctrls) for (const c of kids(ctrls, 'control')) {
         try {
           const pic = kid(c, 'pic');
@@ -1853,19 +1855,24 @@
             /* the 2007 form: the preview lives in the legacy VML drawing */
             const vr = Object.values(ctx.rels).find((r) => r.type === 'vmlDrawing' && !r.external);
             const vml = vr ? await getText(vr.target) : null;
-            const m = vml && new RegExp('<v:shape\\b[^>]*\\b(?:o:spid|id)="_x0000_s' + String(at(c, 'spid')).replace(/[^\w]/g, '') + '"[\\s\\S]*?</v:shape>').exec(vml);
-            const im = m && /<v:imagedata\b[^>]*o:relid="([^"]+)"/.exec(m[0]);
-            const st = m && /style="([^"]*)"/.exec(m[0]);
+            const m = vml && new RegExp('<v:shape\\b[^>]*\\b(?:o:spid|id)=["\']_x0000_s' + String(at(c, 'spid')).replace(/[^\w]/g, '') + '["\'][\\s\\S]*?</v:shape>').exec(vml);
+            const im = m && /<v:imagedata\b[^>]*o:relid=["']([^"']+)["']/.exec(m[0]);
+            const st = m && /style=(["'])(.*?)\1/.exec(m[0]);
             if (im && st) {
               const vrels = await rels(vr.target);
               const r = vrels[im[1]];
               const mid = r && !r.external ? await loadMedia(r.target) : null;
-              const css = {}; st[1].split(';').forEach((kv) => { const [k, v] = kv.split(':'); if (k && v) css[k.trim()] = v.trim(); });
+              const css = {}; st[2].split(';').forEach((kv) => { const [k, v] = kv.split(':'); if (k && v) css[k.trim()] = v.trim(); });
               const ptv = (v) => (/pt$/.test(v) ? parseFloat(v) : /in$/.test(v) ? parseFloat(v) * 72 : /px$/.test(v) ? parseFloat(v) * 0.75 : parseFloat(v) || 0);
               if (mid) sh = { id: L.uid('s'), name: at(c, 'name') || 'Control', type: 'image', geom: 'rect', media: mid, x: ptv(css['margin-left'] || css.left), y: ptv(css['margin-top'] || css.top), w: ptv(css.width), h: ptv(css.height), rot: 0, crop: { l: 0, t: 0, r: 0, b: 0 }, line: { t: 'none' }, lockAspect: true, img: {} };
             }
           }
-          if (sh && !Array.isArray(sh)) { if (!sh.name) sh.name = at(c, 'name') || 'Control'; slide.shapes.push(sh); }
+          if (!sh && source) sh = L.frames.placeholder(c, c, ctrls, ctx);
+          if (sh && !Array.isArray(sh)) {
+            if (!sh.name) sh.name = at(c, 'name') || 'Control';
+            if (source) L.frames.attach([sh], c, c, ctrls, pkg, ctx.partPath);
+            slide.shapes.push(sh);
+          }
         } catch (e) { /* skip the control */ }
       }
       await finalizeMedia(ctx, slide);
@@ -1936,6 +1943,7 @@
     for (const d of Object.values(pres.designs)) [d.deco, d.titleDeco].concat(d.layoutDecos ? Object.values(d.layoutDecos) : []).forEach((list) => list && L.model.walk(list, pick));
     for (const sh of clearPics) { const v = await L.media.withTransparent(sh.media, sh.img.clear, 3); if (v) sh.img.view = v; }
     pres.keep = { values: L.preserve.values(pres), media: Object.fromEntries(Array.from(mediaCache, ([part, id]) => [id, part])) };
+    if (pkg) pres.keep.inUse = L.preserve.inUse(pres, pkg);
     await L.frames.seal(pres, mediaCache);
     L.preserve.seal(pres);
     L.preserve.readSlideLists(pres);

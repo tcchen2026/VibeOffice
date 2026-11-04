@@ -205,6 +205,33 @@
       cells: row.cells.map(c => c && { v: c.f ? undefined : c.v, f: c.f, s: c.s, rt: c.rt, dt: c.dt, af: c.af }) }),
     cols: sh.cols, merges: sh.merges, print: sh.print, tabColor: sh.tabColor,
   });
+  /** the original chart, picture and add-in parts the sheets' objects use: a chart by its part, a picture by its media,
+   *  a kept AlternateContent (an add-in) by its relationships */
+  P.inUse = function (wb) {
+    const pkg = wb.pkg, out = new Set();
+    if (!pkg) return [];
+    for (const sh of wb.sheets) for (const d of sh.drawings || []) {
+      if (!d) continue;
+      if (d.kind === 'chart' && d.part) out.add(d.part);
+      if (d.media && wb.media?.get(d.media)?.part) out.add(wb.media.get(d.media).part);
+      const alternate = d.keep?.alternate;
+      if (alternate && d.keep.part) try { for (const dep of K.fragment(K.parse(alternate.xml), { pkg, part: d.keep.part }).deps) if (dep.part) out.add(dep.part); } catch (_) { /* nothing to account for */ }
+    }
+    return [...out];
+  };
+  // What the user deleted takes its parts along: a sheet (its drawing, charts, tables…), and a chart, picture or add-in
+  // the sheets used when the workbook was opened (wb.extra.inUse) and no longer use. Something the model never used,
+  // or still uses, is not explained this way, and a part that is written anyway records nothing.
+  P.deletions = function (wb, writer) {
+    const pkg = wb.pkg; if (!pkg) return;
+    const written = part => writer.parts.has(writer.mapping.get(writer.key(pkg, part)));
+    const deleted = (part, what) => { const id = 'deleted:' + part; writer.loss({ id, what, where: part, action: 'drop', notify: false }); writer.coverLoss(id, [part]); };
+    const sheets = new Set(wb.sheets.map(s => s.extra.ooxmlPart).filter(Boolean));
+    for (const r of pkg.rels(pkg.main)) if (!r.external && /\/(worksheet|chartsheet|dialogsheet|xlMacrosheet|xlIntlMacrosheet)$/.test(r.type) && !sheets.has(r.part) && !written(r.part)) deleted(r.part, 'A deleted sheet takes its drawing, charts, tables and other parts along.');
+    const then = wb.extra.inUse; if (!then) return;
+    const now = new Set(P.inUse(wb));
+    for (const part of then) if (!now.has(part) && !written(part)) deleted(part, 'A deleted chart, picture or add-in takes its parts along.');
+  };
   P.begin = function (wb, format) {
     const pkg = wb.pkg;
     const previewBook = pkg?.main && pkg.xml(pkg.main)?.namespaceURI === preview2006;
@@ -219,6 +246,7 @@
       convert: base => base === 'xl/theme/theme1.xml' ? L.xlsxWrite.themeXml(wb) : null,
       merge: (base, source, data, writer) => P.merge(wb, base, source, data, writer),
       audit: writer => {
+        P.deletions(wb, writer);
         if (!previewBook && !previewTheme) return;
         for (const [part, data] of writer.parts) {
           if (!part.startsWith('xl/') || !part.endsWith('.xml')) continue;

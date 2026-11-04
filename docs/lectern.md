@@ -105,6 +105,11 @@ New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.
 * **PDF** — one slide per page, or exactly what Print Preview shows (handouts, notes pages, outline).
 * **Single-file web page** (its one script allowed by its hash in the page's own security policy), **PNG** of the current slide, **plain-text outline**.
 
+In PowerPoint 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 726 decks **open without repair
+in 719** (3 of them then showing their comments pane); 5 stop at a prompt PowerPoint shows for the original too (a
+security notice, 4, and a password to modify); the other 2 are originals PowerPoint also refuses (a crash test and
+`mcppt`).
+
 Pictures survive a round trip in every form they come in: SVG pictures keep the vector original next to a PNG copy, linked pictures keep their link, pictures whose image is missing keep their frame, and a transparent colour (Picture toolbar ▸ Set Transparent Color, or `a:clrChange` in a file) is stored as a setting, not baked into the image.
 
 Imported video and audio retain their original media bytes, links, pictures and playback timing on
@@ -166,6 +171,8 @@ Counts alone do not establish rendering fidelity; the edit checks below verify o
 | Kept; PowerPoint samples accepted | Masters and layouts | All 54 masters and 276 layouts in the 13 unused-master decks remain; 52 masters and every layout retain exact bytes. Two damaged source masters require conversion |
 | Kept; PowerPoint samples accepted | SmartArt, OLE and newer charts | 184/184 SmartArt, 71/71 OLE entries and 4/4 chartEx frames remain attached to their slides across all 135 relevant inputs; three missing drawing-cache references are removed with a notice |
 | Kept; PowerPoint samples accepted | Ink and 3-D models | 44/44 ink/content-part entries and 2/2 3-D models; unavailable previews have editable placeholder frames |
+| Kept; PowerPoint acceptance pending | ActiveX controls | 84/84 controls in the 14 decks that have them (13 Forms kinds with their binaries, a Flash movie and a media player drawn only in VML) go back under the slide's `p:controls` as they came; moving or resizing updates the VML shape PowerPoint uses; deleting one takes its parts. A copy, a rotation or flip, a group or an edited picture saves the picture, with a notice |
+| Kept; PowerPoint acceptance pending | PowerPoint 97-2003 diagrams | 1/1 organization chart drawn in the slide's VML (`com:legacyDrawing`) keeps its frame, VML drawing and diagram text; shown as a "Diagram" placeholder, it can be moved, resized or deleted; any other edit saves an empty rectangle, with a notice |
 | Kept; PowerPoint samples accepted | Extended visual effects | The property sweep retains all 18 glow, 30 reflection, 16 soft-edge, 36 inner-shadow, 136 scene3d, 123 sp3d and 6 picture-treatment entries; unknown run/paragraph details remain with their properties |
 | Kept; PowerPoint samples accepted | Program/macro actions and shape tags | All 29 action settings and 13 slide/shape tag lists remain in the property sweep; copied tag parts and shape identities are independent |
 | Converted, with a notice | Edited opaque contents, imported charts and notes formatting | The text script converts 67 selected SmartArt previews and removes two effects targeting one converted object's parts; untouched inventoried features remain |
@@ -188,7 +195,7 @@ results are above. The **15 PowerPoint batch-4 samples rebuilt from `56de065`** 
 and LibreOffice with expected counts. Their previous-writer differences are reviewed, and the user
 accepted all 15 in PowerPoint. Fresh LibreOffice checks of those exact handed-off files also pass;
 hashes and results are in `~/corpora/results/office-accepted-2026-10-09/`. The accepted checklist is
-`~/Downloads/lossless-check/office-batch-4/CHECKLIST.md`.
+`tmp/lossless/office-batch-4/CHECKLIST.md`.
 
 The user accepted the PPTM video, VBA and authors/handout samples in Office batch 1. The slide-6
 repair is fixed and confirmed in PowerPoint: presets write complete adjustment lists and masters
@@ -337,6 +344,7 @@ Unrelated orphan parts and distinct animation conversions remain reported.
 | Edit | Save behavior |
 |---|---|
 | Change shadow, fill, line, crop or picture treatment | Replace that property only; retain sibling effects, 3-D and extensions |
+| Save a picture whose fill is an AlternateContent (PowerPoint for Mac: a PDF version, a PNG Fallback) | Keep the AlternateContent while the image, crop and adjustments are unchanged; after such an edit write the PNG fill and record that the Mac version went |
 | Change text or bold/size/alignment | Keep unknown run/paragraph/body properties, including empty formatted runs and line text bodies |
 | Move or resize a group | Keep its effects and update the group/child coordinate transforms together |
 | Copy shapes, slides or paste into another deck | Copy tags independently; remap actions, shape identities and dependencies; include preview bytes |
@@ -364,6 +372,6 @@ counts. Four pages load without console errors. All 15 batch-4 samples passed Po
 * Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
 * SmartArt in a layout Lectern does not have is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped; PowerPoint SmartArt edited here takes our layout of the same name, so its look in PowerPoint changes to ours (*IntelliArt (SmartArt)*). When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
-* Embedded OLE objects and ActiveX controls import as their preview pictures.
+* Embedded OLE objects and ActiveX controls import as their preview pictures and are kept on save; a control can be moved, resized or deleted. A copied, rotated, flipped or grouped control, or one whose picture was edited, is saved as its picture, and the save says so.
 * Fonts that aren't installed fall back to metric-compatible ones: Carlito, Caladea and Gelasio (for Calibri, Cambria and Georgia) are served with the site, and Save as Web Page embeds the ones its slides name; Arial, Times New Roman and Courier New use the computer's own copies or the Liberation/Arimo/Tinos/Cousine fonts of the same widths where installed.
 * Spelling uses the browser's spell checker.

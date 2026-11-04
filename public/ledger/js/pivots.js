@@ -215,7 +215,7 @@
     const p = state(wb); if (!p) return;
     for (const t of p.tables.slice()) if (!t.drop && t.sheet === from.id) {
       let i = 1, name; do { name = t.name + '_' + i++; } while (p.tables.some(t => t.name === name));
-      p.tables.push({ ...clone(t), sheet: to.id, name, copy: true, uid: '{' + root.crypto.randomUUID().toUpperCase() + '}' });
+      p.tables.push({ ...clone(t), sheet: to.id, name, copy: true, uid: K.guid() });
     }
   };
   // Patch only requested attributes, without serializing the rest of a part.

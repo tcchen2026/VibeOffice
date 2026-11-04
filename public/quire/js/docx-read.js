@@ -288,12 +288,15 @@
           case 'rPrChange': r.chg = Object.assign(rev(c), { old: rPr(kid(c, 'rPr')) }); break;
           case 'ins': r._ins = rev(c); break;
           case 'del': r._del = rev(c); break;
+          case 'moveTo': r._ins = rev(c, true); break;
+          case 'moveFrom': r._del = rev(c, true); break;
           default: break;
         }
       }
       return L.preserve.properties(r, el, 'rPr', propertyContext(el));
     }
-    const rev = (el) => ({ author: at(el, 'author') || 'Unknown', date: at(el, 'date') || '', id: num(el, 'id', 0) });
+    /* a tracked move is a deletion (moveFrom) and an insertion (moveTo) to edit; the writer keeps it a move inside its ranges (preserve.js, prepareMoves) */
+    const rev = (el, move) => Object.assign({ author: at(el, 'author') || 'Unknown', date: at(el, 'date') || '', id: num(el, 'id', 0) }, move ? { move: true } : {});
 
     /* ---- paragraph properties ---- */
     const JC = { start: 'left', end: 'right', left: 'left', right: 'right', center: 'center', both: 'both', distribute: 'distribute', justify: 'both', lowKashida: 'both', mediumKashida: 'both', highKashida: 'both', thaiDistribute: 'distribute' };
@@ -386,15 +389,24 @@
     /* ---- styles ---- */
     const stylesRel = relOfType('styles');
     const stX = stylesRel ? await xml(stylesRel.target) : null;
-    const defaults = { rPr: { font: 'Times New Roman', sz: 10 }, pPr: {} };
+    /* Where a file names no default run properties (no styles part, no docDefaults or no rPrDefault) Word uses
+       Calibri 11 pt, and with no default paragraph properties 8 pt after and 1.08 lines; a default that is there
+       but leaves a value out keeps the format's own (Times New Roman, 10 pt, single). Word 2016, in every
+       compatibility mode; the writer then names them */
+    const dd = stX && kid(stX, 'docDefaults'), rd = dd && kid(dd, 'rPrDefault'), pd = dd && kid(dd, 'pPrDefault');
+    const defaults = { rPr: rd ? Object.assign({ font: 'Times New Roman', sz: 10 }, rPr(kid(rd, 'rPr'))) : { font: 'Calibri', sz: 11 },
+      pPr: pd ? pPr(kid(pd, 'pPr')) : { sp: { a: 8, line: 259 / 240, rule: 'auto' } } };
     const imported = {};
     if (stX) {
-      const dd = kid(stX, 'docDefaults');
-      if (dd) {
-        const rd = X.path(dd, 'rPrDefault', 'rPr'), pd = X.path(dd, 'pPrDefault', 'pPr');
-        Object.assign(defaults.rPr, rPr(rd));
-        defaults.pPr = pPr(pd);
-      }
+      /* Word's settings for the built-in styles the file doesn't define (gallery, visibility): written back as they
+         were, and given to a built-in style the writer adds because something uses it, as Word does */
+      const ls = kid(stX, 'latentStyles');
+      const flags = (e, prefix) => { const n = (name) => prefix ? 'def' + name[0].toUpperCase() + name.slice(1) : name; const prio = at(e, prefix ? 'defUIPriority' : 'uiPriority');
+        return { prio: prio != null ? +prio : undefined, semiHidden: X.bool(at(e, n('semiHidden'))), unhide: X.bool(at(e, n('unhideWhenUsed'))), q: X.bool(at(e, n('qFormat'))) }; };
+      if (ls) doc.keep.latentStyles = { fragment: L.opc.fragment(ls, propertyContext(ls)), def: flags(ls, true),
+        names: Object.fromEntries(kids(ls, 'lsdException').map((e) => [(at(e, 'name') || '').toLowerCase(), flags(e, false)])) };
+      doc.keep.styles = true;
+      let order = 0;
       for (const s of kids(stX, 'style')) {
         /* some generators omit styleId: Word then matches the style by name */
         const id = at(s, 'styleId') || (at(kid(s, 'name'), 'val') || '').replace(/\s+/g, '');
@@ -405,6 +417,7 @@
         if (X.bool(at(s, 'customStyle'))) st.custom = true; else st.builtin = true;
         if (kid(s, 'qFormat')) st.q = true;
         if (kid(s, 'semiHidden')) st.semiHidden = true;
+        if (kid(s, 'unhideWhenUsed')) st.unhide = true;
         if (kid(s, 'hidden')) st.hidden = true;
         if (kid(s, 'uiPriority')) st.prio = num(kid(s, 'uiPriority'), 'val', 99);
         if (kid(s, 'autoRedefine')) st.autoRedefine = true;
@@ -426,6 +439,9 @@
           }
         }
         if (type === 'numbering' && st.pPr.num) st.numStyle = true;
+        /* the style as the file has it: the writer keeps what Quire doesn't model, and the file's order */
+        L.preserve.properties(st, s, 'style', propertyContext(s));
+        st.x.order = order++;
         imported[id] = st;
       }
     }
@@ -455,6 +471,16 @@
       if (nid !== id && styles[id]) delete styles[id];
       styles[nid] = s;
     }
+    /* a built-in the file has under an id of its own (Überschrift1 named "heading 1", as Word writes in other languages) stays for
+       commands that ask for it by id, but names the file's style (sameAs): the writer leaves it out and writes its uses with the file's
+       style, since two styles of one name are not what Word writes and other readers give the file's paragraphs the second one's look */
+    const own = new Set(Object.values(imported));
+    const byName = new Map(Object.values(imported).map((s) => [s.type + ':' + String(s.name).toLowerCase(), s.id]));
+    for (const k of Object.keys(styles)) {
+      const other = !own.has(styles[k]) && byName.get(styles[k].type + ':' + String(styles[k].name).toLowerCase());
+      if (other && other !== k) styles[k].sameAs = other;
+    }
+    for (const s of Object.values(styles)) if (!own.has(s)) for (const f of ['basedOn', 'next', 'link']) if (styles[s[f]]?.sameAs) s[f] = styles[s[f]].sameAs;
     /* built-in heading styles not present in the file: inherit the document's Normal look but keep their emphasis */
     if (stX) {
       for (const k of Object.keys(styles)) {
@@ -477,6 +503,8 @@
     doc.defaults = defaults;
     if (!styles.Normal) styles.Normal = { id: 'Normal', name: 'Normal', type: 'paragraph', pPr: {}, rPr: {}, builtin: true, isDefault: true };
     styles.Normal.isDefault = true;
+    /* the built-ins Quire adds to a file's styles: the writer leaves out the ones nothing uses and nobody changed */
+    if (stX) doc.keep.catalogue = Object.fromEntries(Object.values(styles).filter((s) => !s.x).map((s) => [s.id, JSON.stringify(s)]));
 
     /* ---- media ---- */
     const mediaCache = new Map();
@@ -725,10 +753,10 @@
           }
           case 'customXml': case 'ins': case 'moveTo': case 'smartTag': parseBlocks(c, ctx, out); break;
           case 'del': case 'moveFrom': parseBlocks(c, ctx, out); break;
-          case 'bookmarkStart': case 'permStart': ctx.pendingBm.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
-          case 'bookmarkEnd': case 'permEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
+          case 'bookmarkStart': case 'permStart': case 'moveFromRangeStart': case 'moveToRangeStart': ctx.pendingBm.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
+          case 'bookmarkEnd': case 'permEnd': case 'moveFromRangeEnd': case 'moveToRangeEnd': { const last = lastParaIn(out), item = L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, last ? (out.at(-1)?.t === 'tbl' ? 'table' : true) : false); if (last) last.runs.push(item); else ctx.pendingBm.push(item); break; }
           case 'commentRangeStart': ctx.pendingBm.push(D.item('cs', { id: at(c, 'id') })); break;
-          case 'commentRangeEnd': { const last = lastParaIn(out); const it = D.item('ce', { id: at(c, 'id') }); if (last) last.runs.push(it); else ctx.pendingBm.push(it); break; }
+          case 'commentRangeEnd': { const last = lastParaIn(out); const it = D.item('ce', { id: at(c, 'id') }); if (last) last.runs.push(it); else ctx.pendingBm.push(it); (ctx.cmtEnds || (ctx.cmtEnds = new Map())).set(it.id, it); break; }
           case 'altChunk': out.push(L.preserve.opaqueBlock(c, ctx, doc, 'Embedded document')); break;
           default: break;
         }
@@ -739,9 +767,23 @@
     }
     const lastParaIn = (bl) => { for (let i = bl.length - 1; i >= 0; i--) { if (bl[i].t === 'p') return bl[i]; if (bl[i].t === 'tbl') return D.lastPara([bl[i]]); } return null; };
 
+    /* a paragraph's, run's or row's editing-session ids (w:rsid*) and paragraph ids (w14:paraId, w14:textId): kept as
+       they were, as Word 2016 places text per rsid run and Compare, Combine and comments use them */
+    const W14 = 'http://schemas.microsoft.com/office/word/2010/wordml';
+    const elementIds = (el) => {
+      let o = null;
+      for (const a of el.attributes) {
+        const name = (a.namespaceURI === L.opc.NS.w || a.namespaceURI === 'http://purl.oclc.org/ooxml/wordprocessingml/main') && /^rsid/.test(a.localName) ? 'w:' + a.localName
+          : a.namespaceURI === W14 && (a.localName === 'paraId' || a.localName === 'textId') ? 'w14:' + a.localName : null;
+        if (name) (o || (o = {}))[name] = a.value;
+      }
+      return o;
+    };
     function parseP(el, ctx) {
       const pp = kid(el, 'pPr');
       const p = D.para([], pPr(pp), {});
+      const pids = elementIds(el);
+      if (pids) p.ids = pids;
       if (p.pPr.style) p.pPr.style = rn(p.pPr.style);
       if (p.pPr.style === 'Normal') delete p.pPr.style;
       if (pp) {
@@ -768,8 +810,35 @@
       return D.item('br', { type: type === 'page' ? 'page' : type === 'column' ? 'column' : 'line',
         clear: at(el, 'clear') || undefined, ...(recovered ? { recoveredPlacement: true } : {}) }, props);
     }
+    /* A field whose instructions hold more than text (nested fields, a picture: { IF { PAGE } = 1 "<logo>" }) keeps
+       those runs as they were, written back while its instruction is unchanged. Only runs that are siblings of the
+       field's begin and separate runs; anything else between them (a bookmark) leaves the field as plain text. */
+    function complexInstructions(parent, ctx) {
+      if (!doc.pkg) return;
+      const list = kids(parent), chars = r => kids(r, 'fldChar').map((f) => at(f, 'fldCharType'));
+      const only = (r, names) => kids(r).every((k) => names.includes(k.localName));
+      for (let i = 0; i < list.length; i++) {
+        const r = list[i];
+        if (r.localName !== 'r' || !only(r, ['rPr', 'fldChar']) || chars(r).join() !== 'begin') continue;
+        let depth = 1, complex = false, j = i + 1;
+        const region = [];
+        for (; j < list.length; j++) {
+          const c = list[j];
+          if (c.localName === 'proofErr') { region.push(c); continue; }
+          if (c.localName !== 'r') { complex = false; break; }
+          const types = chars(c);
+          if (depth === 1 && types.length === 1 && types[0] !== 'begin' && only(c, ['rPr', 'fldChar'])) break;
+          for (const type of types) depth += type === 'begin' ? 1 : type === 'end' ? -1 : 0;
+          if (depth < 1) { complex = false; break; }
+          if (!only(c, ['rPr', 'instrText', 'delInstrText'])) complex = true;
+          region.push(c);
+        }
+        if (complex && j < list.length) (ctx.instructions || (ctx.instructions = new Map())).set(r, region.map((e) => L.opc.fragment(L.opc.parse(L.opc.raw(e)), { pkg: doc.pkg, part: ctx.part })));
+      }
+    }
     function parseInline(el, p, ctx, inh) {
       const ac = L.preserve.readAlternates(el, p.runs, ctx, doc, 'inline', inh);
+      complexInstructions(el, ctx);
       for (const c of el.children) {
         const from = p.runs.length;
         switch (c.localName) {
@@ -785,8 +854,8 @@
             parseInline(c, p, ctx, Object.assign({}, inh, { link: link.url || link.anchor ? link : undefined }));
             break;
           }
-          case 'ins': case 'moveTo': parseInline(c, p, ctx, Object.assign({}, inh, { ins: rev(c) })); break;
-          case 'del': case 'moveFrom': parseInline(c, p, ctx, Object.assign({}, inh, { del: rev(c) })); break;
+          case 'ins': case 'moveTo': parseInline(c, p, ctx, Object.assign({}, inh, { ins: rev(c, c.localName === 'moveTo') })); break;
+          case 'del': case 'moveFrom': parseInline(c, p, ctx, Object.assign({}, inh, { del: rev(c, c.localName === 'moveFrom') })); break;
           case 'fldSimple': {
             const instr = at(c, 'instr') || '';
             const f = 'f' + ++fid;
@@ -794,7 +863,7 @@
             if (ty === 'HYPERLINK') { parseInline(c, p, ctx, Object.assign({}, inh, { link: parseHyperInstr(instr) })); break; }
             const firstR = kid(c, 'r');
             const base = firstR ? rPr(kid(firstR, 'rPr')) : {};
-            p.runs.push(D.item('fb', { fid: f, instr }, L.clone(base)));
+            p.runs.push(D.item('fb', { fid: f, instr, ...X.bool(at(c, 'fldLock')) && { lock: true }, ...X.bool(at(c, 'dirty')) && { dirty: true } }, L.clone(base)));
             p.runs.push(D.item('fs', { fid: f }, L.clone(base)));
             parseInline(c, p, ctx, inh);
             p.runs.push(D.item('fe', { fid: f }, L.clone(base)));
@@ -813,9 +882,13 @@
             if (control) p.runs.push(D.item('sdte', { key: control.key }));
             break;
           }
-          case 'bookmarkStart': case 'bookmarkEnd': case 'permStart': case 'permEnd': p.runs.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
+          case 'bookmarkStart': case 'bookmarkEnd': case 'permStart': case 'permEnd': case 'moveFromRangeStart': case 'moveFromRangeEnd': case 'moveToRangeStart': case 'moveToRangeEnd': p.runs.push(L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part })); break;
           case 'commentRangeStart': p.runs.push(D.item('cs', { id: at(c, 'id') })); ctx.cmtOpen.add(at(c, 'id')); break;
-          case 'commentRangeEnd': p.runs.push(D.item('ce', { id: at(c, 'id') })); ctx.cmtSeen = ctx.cmtSeen || new Set(); ctx.cmtSeen.add(at(c, 'id')); break;
+          case 'commentRangeEnd': {
+            const ce = D.item('ce', { id: at(c, 'id') }), first = ctx.cmtRefFirst?.get(ce.id);
+            if (first && first.p === p && first.at === p.runs.length) { ce.ref = { ...first.ref, first: true }; ctx.cmtRefFirst.delete(ce.id); }
+            p.runs.push(ce); ctx.cmtSeen = ctx.cmtSeen || new Set(); ctx.cmtSeen.add(ce.id); (ctx.cmtEnds || (ctx.cmtEnds = new Map())).set(ce.id, ce); break;
+          }
           case 'oMath': case 'oMathPara': p.runs.push(mathItem(c)); break;
           case 'r_': break;
           default: break;
@@ -830,13 +903,15 @@
       return D.item('raw', { math: true, text, xml: new XMLSerializer().serializeToString(c), para: c.localName === 'oMathPara' }, sz ? { sz } : {});
     }
     function parseHyperInstr(instr) {
-      const link = {};
-      const m = /HYPERLINK\s+(?:"([^"]*)"|(\S+))?/i.exec(instr);
-      if (m && (m[1] || m[2]) && !/^\\/.test(m[2] || '')) link.url = m[1] || m[2];
-      const l = /\\l\s+"([^"]*)"/.exec(instr);
-      if (l) link.anchor = l[1];
-      const o = /\\o\s+"([^"]*)"/.exec(instr);
-      if (o) link.tip = o[1];
+      /* in a quoted argument \" is a quote and \\ a backslash; a path's doubled backslashes stay as they are in the address;
+         an argument whose closing quote is missing runs to the end of the code, as LibreOffice reads it */
+      const link = {}, quoted = '"((?:[^"\\\\]|\\\\.)*?)(?:"|\\s*$)', plain = (s) => s.replace(/\\(.)/g, '$1');
+      const m = new RegExp('HYPERLINK\\s+(?:' + quoted + '|(\\S+))?', 'i').exec(instr);
+      if (m && (m[1] || m[2]) && !/^\\/.test(m[2] || '')) link.url = m[1] ? m[1].replace(/\\"/g, '"') : m[2];
+      const l = new RegExp('\\\\l\\s+' + quoted).exec(instr);
+      if (l) link.anchor = plain(l[1]);
+      const o = new RegExp('\\\\o\\s+' + quoted).exec(instr);
+      if (o) link.tip = plain(o[1]);
       return link.url || link.anchor ? link : undefined;
     }
     function topField(ctx) { return ctx.fstack[ctx.fstack.length - 1]; }
@@ -844,6 +919,7 @@
     function fieldLink(ctx) { for (let i = ctx.fstack.length - 1; i >= 0; i--) if (ctx.fstack[i].link && ctx.fstack[i].phase === 'result') return ctx.fstack[i].link; return undefined; }
 
     function parseRun(r, p, ctx, inh) {
+      const rids = elementIds(r), first = p.runs.length;
       const base = rPr(kid(r, 'rPr'));
       delete base._ins; delete base._del;
       if (base.style) base.style = rn(base.style);
@@ -857,10 +933,12 @@
         p.runs.push(it);
       };
       const text = s => { if (s) push(D.text(s, base)); };
-      let customMark = false;
+      let customMark = false, instrRun = null;
       const ac = L.preserve.readAlternates(r, p.runs, ctx, doc, 'run', base);
       for (const c of r.children) {
         const from = p.runs.length;
+        // inside field instructions only the field code counts (an object there is kept with its field: complexInstructions)
+        if (inInstr(ctx) && !['rPr', 'fldChar', 'instrText', 'delInstrText'].includes(c.localName)) { if (ctx.fstack[0]) ctx.fstack[0].complex = true; continue; }
         switch (c.localName) {
           case 'rPr': break;
           case 't': {
@@ -888,9 +966,10 @@
           case 'fldChar': {
             const ty = at(c, 'fldCharType');
             if (ty === 'begin') {
-              if (inInstr(ctx)) { ctx.fstack.push({ nested: true, phase: 'instr' }); break; }
+              if (inInstr(ctx)) { if (ctx.fstack[0]) ctx.fstack[0].complex = true; ctx.fstack.push({ nested: true, phase: 'instr' }); break; }
               const f = 'f' + ++fid;
               const item = D.item('fb', { fid: f, instr: '' }, L.clone(base));
+              if (ctx.instructions?.has(r)) item.instrKeep = { runs: ctx.instructions.get(r) };
               if (X.bool(at(c, 'fldLock'))) item.lock = true;
               const ffd = kid(c, 'ffData');
               if (ffd) {
@@ -911,18 +990,34 @@
               if (!t) break;
               if (t.nested) { t.phase = 'result'; break; }
               t.phase = 'result';
+              if (t.item.instrKeep) t.item.instrKeep.instr = t.item.instr;
+              else if (t.complex) t.item.instrFlattened = true;
               const fty = D.fieldType(t.item.instr);
               if (fty === 'HYPERLINK') { t.link = parseHyperInstr(t.item.instr); if (t.link) { ctx.dropFids.add(t.fid); } }
               p.runs.push(D.item('fs', { fid: t.fid }, L.clone(base)));
             } else if (ty === 'end') {
               const t = ctx.fstack.pop();
               if (!t || t.nested) break;
+              if (t.phase === 'instr' && t.item.instrKeep) t.item.instrKeep.instr = t.item.instr;
+              else if (t.phase === 'instr' && t.complex) t.item.instrFlattened = true;
               if (t.phase === 'instr' && D.fieldType(t.item.instr) === 'HYPERLINK') ctx.dropFids.add(t.fid);
               p.runs.push(D.item('fe', { fid: t.fid }, L.clone(base)));
             }
             break;
           }
-          case 'instrText': { const t = topField(ctx); if (t && t.phase === 'instr' && !t.nested && ctx.fstack.filter((f) => f.phase === 'instr').length === 1) t.item.instr += c.textContent; break; }
+          case 'instrText': {
+            const t = topField(ctx);
+            if (!(t && t.phase === 'instr' && !t.nested && ctx.fstack.filter((f) => f.phase === 'instr').length === 1)) break;
+            t.item.instr += c.textContent;
+            // the instruction's runs as they were (Word formats the result from them), written back while it is unchanged
+            if (instrRun?.field === t.item) { instrRun.run.text += c.textContent; break; }
+            const rp = L.clone(base);
+            delete rp.link; delete rp.ins; delete rp.del;
+            instrRun = { field: t.item, run: { rPr: rp, text: c.textContent } };
+            if (rids) instrRun.run.ids = rids;
+            (t.item.instrRuns || (t.item.instrRuns = [])).push(instrRun.run);
+            break;
+          }
           case 'delInstrText': { const t = topField(ctx); if (t && t.phase === 'instr' && !t.nested) t.item.instr += c.textContent; break; }
           case 'footnoteReference': case 'endnoteReference': {
             const kind = c.localName === 'footnoteReference' ? 'fn' : 'en';
@@ -941,6 +1036,19 @@
             // A reference may precede its real range. Point comments have virtual
             // editor boundaries, but must not add duplicate OOXML range IDs.
             if (!ctx.cmtRanges.has(id)) { p.runs.push(D.item('cs', { id, point: true })); p.runs.push(D.item('ce', { id, point: true })); }
+            // the reference run's properties and ids, and the comment marks Word wrote between the range's end and it
+            // (overlapping comments ending together: their ends, then their references), written back the same way;
+            // a reference right before its range's end stays there
+            const end = p.runs.findLastIndex(it => it.t === 'ce' && it.id === id), ce = p.runs[end] || ctx.cmtEnds?.get(id);
+            const rp = L.clone(base);
+            delete rp.link; delete rp.ins; delete rp.del;
+            const ref = { rPr: rp, seq: ctx.cmtRefs = (ctx.cmtRefs || 0) + 1 };
+            if (rids) ref.ids = rids;
+            if (ce && !ce.ref) {
+              const between = end < 0 ? [] : p.runs.slice(end + 1);
+              if (between.length && between.every(it => it.t === 'cs' || it.t === 'ce')) ref.skip = between.length;
+              ce.ref = ref;
+            } else if (!ce) (ctx.cmtRefFirst || (ctx.cmtRefFirst = new Map())).set(id, { p, at: p.runs.length, ref });
             break;
           }
           case 'drawing': { const it = parseDrawing(c, ctx, base); push(L.preserve.keepObject(it, c, ctx, doc, it?.diagram ? 'SmartArt' : it?.alt || 'Drawing')); break; }
@@ -975,6 +1083,7 @@
         const txt = descAll(r, 't').map((x) => x.textContent).join('');
         if (txt) { customMark.custom = txt; const last = p.runs[p.runs.length - 1]; if (last && last.t === 'text' && last.text === txt) p.runs.pop(); }
       }
+      if (rids) for (let k = first; k < p.runs.length; k++) p.runs[k].ids = rids;
     }
 
     /* ---- tables ---- */
@@ -1053,29 +1162,42 @@
       }
       return o;
     }
+    const RANGE_MARK = /^(bookmarkStart|bookmarkEnd|permStart|permEnd|move(?:From|To)Range(?:Start|End)|commentRangeStart|commentRangeEnd)$/;
     function parseTbl(el, ctx) {
       const tp = tblPr(kid(el, 'tblPr'));
       L.preserve.properties(tp, kid(el, 'tblPr'), 'tblPr', { pkg: doc.pkg, part: ctx.part });
-      const grid = kids(kid(el, 'tblGrid'), 'gridCol').map((g) => tw(at(g, 'w')));
+      const grid = kids(kid(el, 'tblGrid'), 'gridCol').map((g) => tw(at(g, 'w'))), gridSignature = JSON.stringify(grid);
       const rows = [];
       const rowAlternates = L.preserve.readAlternates(el, rows, ctx, doc, 'row');
       const rowEls = [];
       const rowControls = [], rowModels = new Map(), emptyRows = [];
-      const collectRows = (parent) => { for (const c of parent.children) { if (c.localName === 'tr') rowEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n = rowEls.length; collectRows(sc); rowControls.push({ control: L.preserve.control(c, ctx, doc), elements: rowEls.slice(n) }); } } else if (c.localName === 'customXml' || c.localName === 'ins' || c.localName === 'del') collectRows(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(el)) emptyRows.push({ el: c, index: rowEls.length }); } };
+      const collectRows = (parent) => { for (const c of parent.children) { if (c.localName === 'tr' || RANGE_MARK.test(c.localName)) rowEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n = rowEls.length; collectRows(sc); rowControls.push({ control: L.preserve.control(c, ctx, doc), elements: rowEls.slice(n) }); } } else if (c.localName === 'customXml' || c.localName === 'ins' || c.localName === 'del') collectRows(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(el)) emptyRows.push({ el: c, index: rowEls.length }); } };
       collectRows(el);
+      // A bookmark, permission or comment boundary between rows or cells: a start goes to the next cell's first
+      // paragraph, an end to the previous cell's last one (Word reads them at those places)
+      let lastPara = null;
+      const rangeMark = (c, level) => {
+        const item = /^comment/.test(c.localName) ? D.item(c.localName === 'commentRangeStart' ? 'cs' : 'ce', { id: at(c, 'id') }) : L.preserve.rangeMarker(c, { pkg: doc.pkg, part: ctx.part }, lastPara ? level : false);
+        if (/Start$/.test(c.localName) || !lastPara) ctx.pendingBm.push(item); else lastPara.runs.push(item);
+      };
       for (const tr of rowEls) {
-        const rp = trPr(kid(tr, 'trPr'));
+        if (RANGE_MARK.test(tr.localName)) { rangeMark(tr, 'row'); continue; }
+        const rp = L.preserve.properties(trPr(kid(tr, 'trPr')), kid(tr, 'trPr'), 'trPr', { pkg: doc.pkg, part: ctx.part });
         const ex = kid(tr, 'tblPrEx');
         const cells = [];
         const cellAlternates = L.preserve.readAlternates(tr, cells, ctx, doc, 'cell');
         const cellEls = [];
         const cellControls = [], cellModels = new Map(), emptyCells = [];
         const cellBound = new Map(); /* cell-level content controls bound to a data store */
-        const collectCells = (parent) => { for (const c of parent.children) { if (c.localName === 'tc') cellEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n0 = cellEls.length; collectCells(sc); const bv = boundText(kid(c, 'sdtPr')); if (bv != null && cellEls.length === n0 + 1) cellBound.set(cellEls[n0], bv); cellControls.push({ control: L.preserve.control(c, ctx, doc), elements: cellEls.slice(n0) }); } } else if (c.localName === 'customXml') collectCells(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(tr)) emptyCells.push({ el: c, index: cellEls.length }); } };
+        const collectCells = (parent) => { for (const c of parent.children) { if (c.localName === 'tc' || RANGE_MARK.test(c.localName)) cellEls.push(c); else if (c.localName === 'sdt') { const sc = kid(c, 'sdtContent'); if (sc) { const n0 = cellEls.length; collectCells(sc); const bv = boundText(kid(c, 'sdtPr')); if (bv != null && cellEls.length === n0 + 1) cellBound.set(cellEls[n0], bv); cellControls.push({ control: L.preserve.control(c, ctx, doc), elements: cellEls.slice(n0) }); } } else if (c.localName === 'customXml') collectCells(c); else if (c.namespaceURI === 'urn:vibeoffice:keep' && L.opc.alternate(c) && L.opc.alternate(c) !== L.opc.alternate(tr)) emptyCells.push({ el: c, index: cellEls.length }); } };
         collectCells(tr);
         for (const tc of cellEls) {
+          if (RANGE_MARK.test(tc.localName)) { rangeMark(tc, 'cell'); continue; }
           const cp = tcPr(kid(tc, 'tcPr'));
+          /* the cell's width is kept as the file has it (a percentage, auto) while the table's grid is unchanged */
+          if (kid(tc, 'tcPr')) { cp._grid = gridSignature; L.preserve.properties(cp, kid(tc, 'tcPr'), 'tcPr', { pkg: doc.pkg, part: ctx.part }); delete cp._grid; }
           const blocks = parseBlocks(tc, ctx);
+          lastPara = blocks.filter((b) => b.t === 'p').at(-1) || lastPara;
           if (cellBound.has(tc)) { const ps = blocks.filter((b) => b.t === 'p'); if (ps.length === 1) ps[0].runs = boundRuns(cellBound.get(tc), ps[0].runs); }
           if (!blocks.length || blocks[blocks.length - 1].t !== 'p') { const sp = D.para(); if (blocks.length) sp.synth = true; blocks.push(sp); }
           cells.push({ id: D.nid(), tcPr: cp, blocks });
@@ -1098,7 +1220,11 @@
         if (!cells.length) continue;
         L.preserve.emptyAlternates(emptyCells, cellEls.map(e => cellModels.get(e)).map(c => cells.includes(c) ? c : null), ctx, doc);
         const row = { id: D.nid(), trPr: rp, cells };
+        const tids = elementIds(tr);
+        if (tids) row.ids = tids;
         if (ex) { const xp = tblPr(ex); if (xp.borders) row.exBorders = xp.borders; }
+        /* the row's exceptions to the table's properties as the file has them (margins, shading, width, …); Quire models the borders */
+        if (ex) row.ex = L.preserve.properties({ borders: row.exBorders }, ex, 'tblPrEx', { pkg: doc.pkg, part: ctx.part });
         rows.push(row);
         rowModels.set(tr, row);
         rowAlternates.add(tr, rows.length - 1);
@@ -1121,6 +1247,9 @@
       g = g.map((x) => (x > 0 ? L.round(x, 2) : 4));
       const t = D.table(rows, g, tp);
       if (grid.length !== g.length || grid.some((w, i) => Math.abs(w - g[i]) > 0.0001)) t.keep = { gridRepair: true };
+      /* a tracked change to the columns is written back while the columns are as read */
+      const gridChange = kid(kid(el, 'tblGrid'), 'tblGridChange');
+      if (gridChange) t.keep = Object.assign(t.keep || {}, { gridChange: { fragment: L.opc.fragment(gridChange, { pkg: doc.pkg, part: ctx.part }), grid: gridSignature } });
       return t;
     }
 
@@ -1820,6 +1949,12 @@
         doc.keep.commentExtension = { part: exRel.target, namespace: exRoot.namespaceURI, values: L.preserve.commentMetadata(doc) };
       }
     }
+    // A file from Word 2013's preview binds its w15 prefix to the draft namespace; Word refuses it when comment extensions
+    // added on save use the released one, so they use the draft too (tools/ooxml/package.py, w15-namespaces)
+    {
+      const root = docX.documentElement || docX;
+      if (Array.from(root.attributes || []).some(a => a.value === 'http://schemas.microsoft.com/office/word/2010/11/wordml')) doc.keep.w15 = 'http://schemas.microsoft.com/office/word/2010/11/wordml';
+    }
 
     /* ---- body ---- */
     await preload(docRels);
@@ -1830,15 +1965,20 @@
     mctx.hfMap = hfMap;
     if (body) {
       doc.main.blocks = parseBlocks(body, mctx);
-      const fs = kid(body, 'sectPr');
+      /* a damaged body with several final sections: Word and LibreOffice use the last one (tdf108849) */
+      const fs = kids(body, 'sectPr').at(-1);
       doc.sect = fs ? parseSect(fs, mctx) : D.defaultSect();
     }
     /* sections inside paragraphs need the header map too (parsed during parseBlocks) */
     if (!doc.main.blocks.length || doc.main.blocks[doc.main.blocks.length - 1].t !== 'p') doc.main.blocks.push(D.para());
-    if (mctx.pendingBm.length) doc.main.blocks[doc.main.blocks.length - 1].runs.push(...mctx.pendingBm);
     finishStory(doc.main, mctx);
 
     function finishStory(story, ctx) {
+      /* range boundaries after the last paragraph (a header's empty bookmarks) belong to it */
+      if (ctx.pendingBm?.length && story.blocks) {
+        if (story.blocks.at(-1)?.t !== 'p') story.blocks.push(D.para());
+        story.blocks.at(-1).runs.push(...ctx.pendingBm); ctx.pendingBm = [];
+      }
       /* drop hyperlink field markers (links live on the runs) and repair unmatched field markers */
       const seen = new Map();
       D.walk(story, (b) => { if (b.t === 'p') for (const it of b.runs) if (it.fid) { const s = seen.get(it.fid) || {}; s[it.t] = true; seen.set(it.fid, s); } });
@@ -1871,6 +2011,7 @@
     D.stylesChanged();
     doc._idxDirty = true;
     L.preserve.finishObjects(doc);
+    doc.keep.inUse = L.preserve.inUse(doc);
     return { doc, warnings };
   };
 })();

@@ -102,6 +102,7 @@ test('feature notices describe actual assembled losses, survive drafts, and clea
 test('one object notice covers its opaque dependency graph without hiding unrelated losses', async () => {
   const source = await pkg({
     'frame.xml': '<payload/>', 'leaf.xml': '<payload/>', 'content.xml': '<content/>', 'unrelated.xml': '<payload/>',
+    '_rels/.rels': rels(rel('rId1', N.rel + '/officeDocument', 'content.xml') + rel('rId2', N.rel + '/customXml', 'frame.xml')),
     '_rels/frame.xml.rels': rels(rel('rId1', N.rel + '/customXml', 'leaf.xml') + rel('rId2', N.rel + '/slide', 'content.xml')),
     '_rels/leaf.xml.rels': rels(rel('rId1', N.rel + '/customXml', 'frame.xml')),
     '_rels/content.xml.rels': rels(rel('rId1', N.rel + '/customXml', 'unrelated.xml')),
@@ -247,7 +248,7 @@ test('copying an opaque notes page redirects its slide backlink and shares immut
 });
 
 test('failed carry leaves no partial output and respects regenerated dependency boundaries', async () => {
-  const p = await pkg({ 'good.xml': '<good/>', 'broken.xml': '<broken/>',
+  const p = await pkg({ 'good.xml': '<good/>', 'broken.xml': `<broken xmlns:r="${N.rel}" r:id="two"/>`,
     '_rels/broken.xml.rels': rels(rel('one', 'urn:child', 'good.xml') + rel('two', 'urn:child', 'absent.xml')) });
   const w = new K.Writer(p), names = [...w.names], mapping = [...w.mapping];
   assert.throws(() => w.carry(p, 'broken.xml'), /Missing dependency: absent.xml/);
@@ -467,7 +468,7 @@ test('the checker shows only notify entries; audit catch-alls stay recorded for 
   const doc = {}, w = new K.Writer(p, { doc }); w.carryRels(p, '', '');
   w.omit('gone.xml', 'Removed with the object the user deleted.');
   w.finish();
-  const orphan = doc.losses.find(e => e.id.startsWith('unreferenced:'));
+  const orphan = doc.losses.find(e => e.id.startsWith('orphan:'));
   assert.equal(orphan?.where, 'orphan.xml'); assert.equal(orphan.notify, false);
   assert.equal(doc.losses.find(e => e.where === 'gone.xml').notify, false, 'omit is silent unless asked');
   assert.deepEqual(K.noticeLosses(doc).map(e => e.id.split(':')[0]), ['signature']);
@@ -475,7 +476,7 @@ test('the checker shows only notify entries; audit catch-alls stay recorded for 
   const next = new K.Writer(p, { doc: {} }); next.omit('gone.xml', 'Pivot table saved as plain cells.', { notify: true, place: 'Sheet1: Pivot1' });
   assert.deepEqual(K.noticeLosses(next.doc).map(e => [e.what, e.place]), [['Pivot table saved as plain cells.', 'Sheet1: Pivot1']]);
   // An object whose part the original already lacked was broken before the save: writers record it silently
-  const broken = await pkg({ 'main.xml': '<main/>', '_rels/main.xml.rels': rels(rel('rId1', N.rel + '/image', 'media/absent.png')) });
+  const broken = await pkg({ 'main.xml': `<main xmlns:r="${N.rel}" r:embed="rId1"/>`, '_rels/main.xml.rels': rels(rel('rId1', N.rel + '/image', 'media/absent.png')) });
   const error = (() => { try { new K.Writer(broken, { doc: {} }).carry(broken, 'main.xml'); } catch (e) { return e; } })();
   assert.ok(K.sourceMissing(error), String(error)); assert.ok(!K.sourceMissing(new Error('Cannot preserve main.xml: deleted dependency')));
 });
@@ -612,4 +613,62 @@ test('a preset shape writes all of its adjustment values or none', () => {
   assert.equal(K.presetAdjust('rect', undefined), '');
   assert.equal(K.presetAdjust('roundRect', { adj: 30000.4, bogus: 1 }), '<a:gd name="adj" fmla="val 30000"/>');
   assert.equal(K.presetAdjust('notAPreset', { a: 1 }), '<a:gd name="a" fmla="val 1"/>');
+});
+
+const reopen = async result => K.open(new Uint8Array(await (await L.zip.write(result.files)).arrayBuffer()));
+
+test('part names compare case-insensitively: a relationship finds a part stored in another case', async () => {
+  // Word's templates name docProps/thumbnail.jpeg while their ZIP holds docProps/Thumbnail.jpeg
+  const p = await pkg({ 'main.xml': '<main/>', 'docProps/Thumbnail.bin': new Uint8Array([1, 2]),
+    '_rels/.rels': rels(rel('rId1', N.rel + '/officeDocument', 'main.xml') + rel('rId2', N.pkg + '/metadata/thumbnail', 'docProps/thumbnail.bin')) });
+  assert.equal(p.rels('').find(r => r.id === 'rId2').part, 'docProps/Thumbnail.bin');
+  const doc = {}, w = new K.Writer(p, { doc }); w.carryRels(p, '', ''); const result = w.finish();
+  assert.deepEqual(result.dropped, []);
+  const saved = await reopen(result);
+  assert.deepEqual(saved.bytes(saved.rels('').find(r => r.id === 'rId2').part), new Uint8Array([1, 2]));
+});
+
+test('a relationship to a part the original lacks costs only that relationship, unless the markup needs it', async () => {
+  const C = 'http://schemas.openxmlformats.org/drawingml/2006/chart';
+  const chart = `<c:chartSpace xmlns:c="${C}" xmlns:r="${N.rel}"><c:chart/><c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData><c:userShapes r:id="rId2"/></c:chartSpace>`;
+  const p = await pkg({ 'main.xml': '<main/>', 'glossary.xml': '<glossary/>', 'chart.xml': chart, 'shapes.xml': '<shapes/>',
+    'theme.xml': `<theme xmlns:r="${N.rel}"><blip r:embed="rId1"/></theme>`, 'picture.xml': `<picture xmlns:r="${N.rel}"><blip r:embed="rId1"/></picture>`,
+    '_rels/.rels': rels(rel('rId1', N.rel + '/officeDocument', 'main.xml')),
+    '_rels/main.xml.rels': rels(rel('rId1', N.rel + '/glossaryDocument', 'glossary.xml') + rel('rId2', N.rel + '/chart', 'chart.xml') + rel('rId3', N.rel + '/theme', 'theme.xml')),
+    '_rels/glossary.xml.rels': rels(rel('rId1', N.rel + '/webSettings', 'webSettings.xml')),
+    '_rels/chart.xml.rels': rels(rel('rId1', N.rel + '/package', 'embeddings/book.xlsx') + rel('rId2', N.rel + '/chartUserShapes', 'shapes.xml')),
+    '_rels/theme.xml.rels': rels(rel('rId1', N.rel + '/image', 'NULL')),
+    '_rels/picture.xml.rels': rels(rel('rId1', N.rel + '/image', 'media/absent.png')) });
+  const doc = {}, w = new K.Writer(p, { doc }); w.carryRels(p, '', ''); const result = w.finish();
+  const saved = await reopen(result);
+  // a glossary keeps its building blocks; only its relationship to the missing web settings goes
+  assert.equal(text(saved.bytes('glossary.xml')), '<glossary/>'); assert.deepEqual(saved.rels('glossary.xml'), []);
+  // a chart keeps its formatting and user shapes; only the link to its missing workbook goes
+  assert.doesNotMatch(text(saved.bytes('chart.xml')), /externalData|autoUpdate/);
+  assert.match(text(saved.bytes('chart.xml')), /<c:userShapes r:id="rId2"\/>/);
+  assert.deepEqual(saved.rels('chart.xml').map(r => r.part), ['shapes.xml']);
+  // Office writes Target="NULL" for an image that isn't there (Excel 2007 templates' themes); so do we
+  assert.equal(text(saved.bytes('theme.xml')), text(p.bytes('theme.xml'))); assert.equal(saved.rels('theme.xml')[0].target, 'NULL');
+  assert.deepEqual(result.dropped.map(e => [e.id.split(':')[0], e.where, e.notify]), [['dangling', 'glossary.xml', false], ['dangling', 'chart.xml', false], ['orphan', 'picture.xml', false]]);
+  // markup that names a missing part still can't be carried as it is
+  const error = (() => { try { new K.Writer(p, { doc: {} }).carry(p, 'picture.xml'); } catch (e) { return e; } })();
+  assert.ok(K.sourceMissing(error), String(error));
+});
+
+test('the signature notice accounts for the signature parts', async () => {
+  const p = await pkg({ 'main.xml': '<main/>', 'sigs/origin.bin': new Uint8Array(0), 'sigs/sig1.xml': '<Signature/>',
+    '_rels/.rels': rels(rel('rId1', N.rel + '/officeDocument', 'main.xml') + rel('rId2', N.pkg + '/digital-signature/origin', 'sigs/origin.bin')),
+    'sigs/_rels/origin.bin.rels': rels(rel('rId1', N.pkg + '/digital-signature/signature', 'sig1.xml')) });
+  const doc = {}, w = new K.Writer(p, { doc }); w.carryRels(p, '', ''); w.finish();
+  assert.deepEqual(doc.losses.map(e => e.id.split(':')[0]), ['signature']);
+});
+
+test('the audit tells a part the original used from one it never reached', async () => {
+  const p = await pkg({ 'main.xml': '<main/>', 'used.xml': '<used/>', 'orphan.xml': '<orphan/>', 'unnamed.bin': new Uint8Array([1]),
+    '_rels/.rels': rels(rel('rId1', N.rel + '/officeDocument', 'main.xml')),
+    // the custom XML part is reached by its type; the picture's relationship is one main.xml never names
+    '_rels/main.xml.rels': rels(rel('rId1', N.rel + '/customXml', 'used.xml') + rel('rId2', N.rel + '/image', 'unnamed.bin')) });
+  const doc = {}, w = new K.Writer(p, { doc }); w.claim('main.xml'); w.put('main.xml', '<main/>', 'application/xml'); w.finish();
+  assert.deepEqual(Object.fromEntries(doc.losses.map(e => [e.where, [e.id.split(':')[0], e.notify]])),
+    { 'used.xml': ['unreferenced', false], 'orphan.xml': ['orphan', false], 'unnamed.bin': ['orphan', false] });
 });

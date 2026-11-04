@@ -23,11 +23,11 @@
     const r = L.clone(src ? src.rPr : p.rPr) || {};
     delete r.ins; delete r.del; delete r.chg;
     /* typing after a footnote/endnote reference or hyperlink end should not continue the reference style */
-    if (r.style === 'FootnoteReference' || r.style === 'EndnoteReference' || r.style === 'CommentReference') { delete r.style; delete r.vert; }
+    if (D.isStyle(doc(), r.style, 'footnote reference', 'endnote reference', 'annotation reference', 'CommentReference')) { delete r.style; delete r.vert; }
     if (fromBefore && r.link) {
       /* only stay inside the link when there is more link text after the caret */
       const nx = D.itemAfter(p, pos.o);
-      if (!nx || !nx.rPr || nx.rPr.link !== src.rPr.link && JSON.stringify(nx.rPr.link) !== JSON.stringify(src.rPr.link)) { delete r.link; if (r.style === 'Hyperlink') delete r.style; }
+      if (!nx || !nx.rPr || nx.rPr.link !== src.rPr.link && JSON.stringify(nx.rPr.link) !== JSON.stringify(src.rPr.link)) { delete r.link; if (D.isStyle(doc(), r.style, 'Hyperlink', 'FollowedHyperlink')) delete r.style; }
     }
     return r;
   };

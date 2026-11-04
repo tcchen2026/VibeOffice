@@ -119,6 +119,13 @@
   }
   RD.edge = edge;
 
+  function borders(st, ts, cf) {
+    let b = st.border;
+    if (ts && ts.border) b = Object.assign({}, ts.border, b || {});
+    if (cf && cf.dxf && cf.dxf.border) b = Object.assign({}, b || {}, cf.dxf.border);
+    return b;
+  }
+
   /* ------------------------------------------------------------ icon sets */
   const ICONSETS = {
     '3Arrows': [['arrow', 'down', '#C00000'], ['arrow', 'side', '#E6B200'], ['arrow', 'up', '#00A050']],
@@ -352,16 +359,22 @@
     }
     const mi = LY.mergeIndex(sh);
     const tstyle = L.tstyle && wb.tables.length ? L.tstyle : null;
+    const borderAt = (r, c) => {
+      const cell = sh.get(r, c);
+      return borders(LY.styleOf(sh, r, c, cell), tstyle && tstyle.at(sh, r, c), sh.cf.length && L.cf.at(sh, r, c, cell));
+    };
     /* collect cells: stored cells plus styled rows / columns */
     const items = [];
     const doneMerge = new Set();
     const colStyled = [];
     for (let c = c0; c <= c1; c++) { const o = sh.cols[c] || (sh.colTail && c >= sh.colTail.from ? sh.colTail.o : null); if (o && o.s) colStyled.push(c); }
     const rowRange = (r) => sh.rows[r];
-    /* merged areas that start above / left of the viewport */
+    /* Merges whose top-left cell is offscreen, absent or hidden still have a visible outline. */
     for (const m of sh.merges) {
       if (m.r2 < r0 || m.r1 > r1 || m.c2 < c0 || m.c1 > c1) continue;
-      if (m.r1 < r0 || m.c1 < c0) items.push({ r: m.r1, c: m.c1, cell: sh.get(m.r1, m.c1), m });
+      const cell = sh.get(m.r1, m.c1);
+      if (m.r1 < r0 || m.c1 < c0 || !cell || X(m.c1 + 1) === X(m.c1) || Y(m.r1 + 1) === Y(m.r1))
+        items.push({ r: m.r1, c: m.c1, cell, m });
     }
     for (let r = r0; r <= r1; r++) {
       if (ys[r - r0 + 1] === ys[r - r0]) continue; /* hidden row */
@@ -419,17 +432,35 @@
     /* pass 3: borders */
     for (const it of items) {
       if (it.w <= 0 || it.h <= 0 || !it.st) continue;
-      let b = it.st.border;
-      if (it.ts && it.ts.border) b = Object.assign({}, it.ts.border, b || {});
-      if (it.cf && it.cf.dxf && it.cf.dxf.border) b = Object.assign({}, b || {}, it.cf.dxf.border);
-      if (!b) continue;
-      const { x, y, w, h } = it;
+      const b = borders(it.st, it.ts, it.cf);
+      if (!b && !it.m) continue;
+      const { x, y, w, h, m } = it;
       const right = x + w, bottom = y + h;
-      if (b.t) edge(ctx, wb, b.t, x - 1, y, right, y, true, z);
-      if (b.b) edge(ctx, wb, b.b, x - 1, bottom, right, bottom, true, z);
-      if (b.l) edge(ctx, wb, b.l, x, y - 1, x, bottom, false, z);
-      if (b.r) edge(ctx, wb, b.r, right, y - 1, right, bottom, false, z);
-      if (b.d) {
+      if (m) {
+        /* Excel stores a merge's outline on its perimeter cells, including blank ones. Each cell
+           supplies only its own segment; internal edges stay hidden and styles can vary along a side.
+           Limit the walks to this pane, so even a whole-column merge visits only visible rows. */
+        for (let c = Math.max(m.c1, c0); c <= Math.min(m.c2, c1); c++) {
+          const x1 = X(c), x2 = X(c + 1);
+          if (x2 <= x1) continue;
+          const top = borderAt(m.r1, c), bot = borderAt(m.r2, c);
+          if (top && top.t) edge(ctx, wb, top.t, x1 - 1, y, x2, y, true, z);
+          if (bot && bot.b) edge(ctx, wb, bot.b, x1 - 1, bottom, x2, bottom, true, z);
+        }
+        for (let r = Math.max(m.r1, r0); r <= Math.min(m.r2, r1); r++) {
+          const y1 = Y(r), y2 = Y(r + 1);
+          if (y2 <= y1) continue;
+          const left = borderAt(r, m.c1), rt = borderAt(r, m.c2);
+          if (left && left.l) edge(ctx, wb, left.l, x, y1 - 1, x, y2, false, z);
+          if (rt && rt.r) edge(ctx, wb, rt.r, right, y1 - 1, right, y2, false, z);
+        }
+      } else {
+        if (b.t) edge(ctx, wb, b.t, x - 1, y, right, y, true, z);
+        if (b.b) edge(ctx, wb, b.b, x - 1, bottom, right, bottom, true, z);
+        if (b.l) edge(ctx, wb, b.l, x, y - 1, x, bottom, false, z);
+        if (b.r) edge(ctx, wb, b.r, right, y - 1, right, bottom, false, z);
+      }
+      if (b && b.d) {
         ctx.save();
         ctx.strokeStyle = M.colorHex(wb, b.d.color, '#000000');
         ctx.lineWidth = RD.borderWidth(b.d);

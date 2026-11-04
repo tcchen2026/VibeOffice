@@ -111,7 +111,15 @@
     return K.formats[type];
   };
   const esc = K.esc = XML.esc;
-  const uuid = () => root.crypto?.randomUUID ? root.crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  /* a random (version 4) UUID; the browser gives randomUUID only to secure (https) pages, getRandomValues to every page.
+     The suite's one source of them: K.guid below, and the apps' copies, unique keys and GUIDs (tests/insecure.test.mjs). */
+  const uuid = K.uuid = () => {
+    if (root.crypto.randomUUID) return root.crypto.randomUUID();
+    const b = root.crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const x = Array.from(b, (n) => n.toString(16).padStart(2, '0')).join('');
+    return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
+  };
   const elements = el => Array.from(el.children || []);
   const walk = (el, fn) => { if (el.nodeType === 1) fn(el); for (const c of elements(el)) walk(c, fn); };
   const attrs = el => Array.from(el.attributes || []);
@@ -252,10 +260,15 @@
       }
       return parsed.get(name);
     };
+    // Part names compare case-insensitively (OPC): Word's templates name docProps/thumbnail.jpeg and store
+    // docProps/Thumbnail.jpeg. A reference finds the stored name unless two stored names differ only in case.
+    const folded = new Map();
+    for (const name of bytes.keys()) { const key = name.toLowerCase(); folded.set(key, folded.has(key) ? null : name); }
+    const stored = name => bytes.has(name) ? name : folded.get(name.toLowerCase()) || name;
     const defaults = new Map(), overrides = new Map();
     for (const el of elements(parse('[Content_Types].xml') || {})) {
       if (el.localName === 'Default') defaults.set((el.getAttribute('Extension') || '').toLowerCase(), el.getAttribute('ContentType'));
-      if (el.localName === 'Override') overrides.set(decodeURIComponent((el.getAttribute('PartName') || '').replace(/^\//, '')), el.getAttribute('ContentType'));
+      if (el.localName === 'Override') overrides.set(stored(decodeURIComponent((el.getAttribute('PartName') || '').replace(/^\//, ''))), el.getAttribute('ContentType'));
     }
     for (const name of bytes.keys()) {
       types.set(name, overrides.get(name) || defaults.get(name.split('.').pop().toLowerCase()) || null);
@@ -266,10 +279,11 @@
         const external = el.getAttribute('TargetMode') === 'External', target = el.getAttribute('Target') || '';
         try {
           const dest = external ? {} : K.resolve(owner, target);
+          if (!external) dest.part = stored(dest.part);
           list.push(Object.freeze({ id: el.getAttribute('Id'), type: el.getAttribute('Type'), target, external, ...dest }));
         } catch (e) { problems.push(Object.freeze({ part: name, why: e.message })); }
       }
-      rels.set(owner, Object.freeze(list));
+      rels.set(owner && stored(owner), Object.freeze(list));
     }
     const rootRel = (rels.get('') || []).find(r => r.type === NS.rel + '/officeDocument' || r.type === NS.strictRel + '/officeDocument');
     const pkg = Object.freeze({
@@ -367,11 +381,13 @@
     else if (tag === 'cNvPr' && name === 'id') { kind = 'shape'; definition = true; }
     else if (isP && tag === 'cTn' && name === 'id') { kind = 'timing'; definition = true; }
     else if (isP && tag === 'tn' && name === 'val') kind = 'timing';
-    // An OLE preview names a shape in the related VML part, not this slide's cNvPr space.
-    else if ((isP && name === 'spid' && tag !== 'oleObj') || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
+    // An OLE preview or an ActiveX control names a shape in the related VML part, not this slide's cNvPr space.
+    else if ((isP && name === 'spid' && !['oleObj', 'control'].includes(tag)) || ['stCxn', 'endCxn'].includes(tag) && name === 'id') kind = 'shape';
     else if (isP && name === 'grpId' && ['cTn', 'bldP', 'bldDgm', 'bldOleChart', 'bldGraphic'].includes(tag)) { kind = 'build'; definition = tag !== 'cTn'; }
     else if (isW && name === 'id' && /^(bookmark|perm)(Start|End)$/.test(tag)) { kind = tag.startsWith('bookmark') ? 'bookmark' : 'permission'; definition = tag.endsWith('Start'); }
-    else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
+    else if (isW && name === 'id' && /^(ins|del|moveFrom|moveTo|\w+PrChange|numberingChange|cellIns|cellDel|cellMerge|tblGridChange|tblPrExChange)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = true; }
+    // a move's range shares Word's revision numbers; its end names its start
+    else if (isW && name === 'id' && /^move(From|To)Range(Start|End)$/.test(tag)) { kind = 'revision'; scope = 'document'; definition = tag.endsWith('Start'); }
     else if (isP && name === 'id' && ['sldId', 'sldMasterId', 'sldLayoutId'].includes(tag)) { kind = tag; scope = 'presentation'; definition = true; }
     else if (isS && name === 'sheetId') { kind = 'sheet'; scope = 'workbook'; definition = tag === 'sheet'; }
     else if (isS && name === 'cacheId') { kind = 'cache'; scope = 'workbook'; definition = tag === 'pivotCache'; }
@@ -437,7 +453,20 @@
     });
     return { ...fragment, xml, deps, ids, record: null };
   };
-  K.guid = () => '{' + root.crypto.randomUUID().toUpperCase() + '}';
+  // SmartArt: a frame's diagram data names a drawing-cache relationship of the frame's own part through
+  // dsp:dataModelExt/@relId, outside the relationships namespace. Those relationships go with the frame.
+  K.diagramRelated = function (pkg, fragment) {
+    const related = [];
+    for (const dep of fragment.deps) if (/\/diagramData$/.test(dep.type || '')) {
+      let tree; try { tree = pkg.xml(dep.part); } catch (_) { continue; }
+      for (const el of tree?.getElementsByTagName('*') || []) if (el.localName === 'dataModelExt') {
+        const rel = pkg.rels(fragment.part).find(r => r.id === el.getAttribute('relId'));
+        if (rel) related.push({ source: pkg.id, owner: fragment.part, dataPart: dep.part, ...rel });
+      }
+    }
+    return related;
+  };
+  K.guid = () => '{' + uuid().toUpperCase() + '}';
   const isGuid = value => /^\{?[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}\}?$/i.test(value || '');
   const guidKey = value => '{' + value.replace(/[{}]/g, '').toUpperCase() + '}';
   // Only identity attributes are rewritten. GUID-looking text, links, extension
@@ -825,6 +854,8 @@
       if (!el || value == null) return;
       const previous = el.getAttribute(name);
       if (previous === String(value) || previous != null && typeof value === 'number' && +previous === value) return;
+      // an absent rotation or flip is already the default
+      if (previous == null && ['rot', 'flipH', 'flipV'].includes(name) && ['0', 0].includes(value)) return;
       const p = XML.source.get(el), a = p.attrs.find(a => a.name === name), v = esc(value).replace(/'/g, '&apos;');
       if (a) edits.push({ start: a.start, end: a.end, value: v });
       else { const pos = p.openEnd - (xml[p.openEnd - 2] === '/' ? 2 : 1); insertions.set(pos, (insertions.get(pos) || '') + ' ' + name + '="' + v + '"'); }
@@ -924,6 +955,38 @@
     }
   }
   K.Rels = Rels;
+  // An original target is written back as it was only if it names the stored part exactly (not in another case)
+  const literal = (owner, target, part) => { try { return K.resolve(owner, target).part === part; } catch (_) { return false; } };
+  // Elements whose relationship may go when its target is missing: the chart keeps its cached values
+  const OPTIONAL_REFERENCE = new Set(['externalData']);
+  const officeNull = (pkg, r) => r.target === 'NULL' && !pkg.has(r.part || 'NULL');
+  // The parts an original uses: reached through relationships from the package root, where a relationship of a
+  // type its owner must name by id (r:embed, r:id…) counts only if the owner's markup names it.
+  const NAMED_REL = /\/(image|oleObject|package|chart|chartUserShapes|diagramData|diagramLayout|diagramQuickStyle|diagramColors|video|audio|media|drawing|vmlDrawing|control|hyperlink|slicer|timeline)$/;
+  // Which of the parts in question the original used. Only the owners on a path to one of them are walked, and
+  // an owner's markup is read only there, never for a whole save.
+  function usage(pkg, parts) {
+    const incoming = new Map(), lead = new Set(), stack = parts.slice(), used = new Set(), pending = [''], texts = new Map();
+    for (const owner of ['', ...pkg.names]) for (const r of pkg.rels(owner)) if (!r.external) {
+      if (!incoming.has(r.part)) incoming.set(r.part, []);
+      incoming.get(r.part).push(owner);
+    }
+    while (stack.length) { const part = stack.pop(); if (lead.has(part)) continue; lead.add(part); for (const owner of incoming.get(part) || []) if (owner) stack.push(owner); }
+    const names = (owner, id) => {
+      if (!texts.has(owner)) texts.set(owner, /\.(xml|vml)$/i.test(owner) ? pkg.text(owner) || '' : null);
+      const text = texts.get(owner); return text == null || text.includes('"' + id + '"');
+    };
+    while (pending.length) {
+      const owner = pending.pop();
+      for (const r of pkg.rels(owner)) {
+        if (r.external || !lead.has(r.part) || used.has(r.part) || !pkg.has(r.part)) continue;
+        if (owner && NAMED_REL.test(K.relationshipType(r.type) || '') && !names(owner, r.id)) continue;
+        used.add(r.part); pending.push(r.part);
+      }
+    }
+    return used;
+  }
+  const DIAGRAM_PART = /\/diagram(?:Data|Layout|QuickStyle|Colors)$/;
   const signatureRel = type => /^http:\/\/schemas\.openxmlformats\.org\/package\/2006\/relationships\/digital-signature\//.test(type || '');
   class Writer {
     constructor(pkg, options = {}) {
@@ -935,13 +998,13 @@
       if (pkg?.main && pkg.xml(pkg.main)?.namespaceURI?.startsWith(strictBase)) this.standardFormatNotice();
       this.names = new Set((pkg?.names || []).map(n => n.toLowerCase())); this.mapping = new Map();
       this.classes = new Map(); this.omitted = new Set(); this.carried = new Set(); this.relationships = new Map(); this.emitted = new Set();
-      this.explained = new Set();
+      this.explained = new Set(); this.danglingParts = new Map();
       this.ids = new Identities();
       if (pkg) {
         for (const name of pkg.names) {
           this.mapping.set(this.key(pkg, name), name);
           const text = /\.(xml|vml)$/i.test(name) ? pkg.text(name) : null;
-          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|PicBulletId|sdtPr|dxf|_x0000_|PrChange|numberingChange|cellIns|cellDel|cellMerge|<(?:[\w.-]+:)?(?:nsid|ins|del|moveFrom|moveTo)(?=[\s/>])/.test(text)) continue;
+          if (!text || !/docPr|cNvPr|cTn|bookmark|permStart|permEnd|sldId|sldMasterId|sldLayoutId|sheetId|cacheId|numId|abstractNumId|PicBulletId|sdtPr|dxf|_x0000_|PrChange|numberingChange|cellIns|cellDel|cellMerge|<(?:[\w.-]+:)?(?:nsid|ins|del|moveFrom|moveTo)(?:Range(?:Start|End))?(?=[\s/>])/.test(text)) continue;
           let tree; try { tree = K.parse(text); } catch (e) { continue; } // carried opaque if the original XML is malformed
           walk(tree, el => {
             if (el.localName === 'dxfs' && el.namespaceURI === NS.s) elements(el).forEach((e, i) => this.ids.reserve('styles', 'dxf', i));
@@ -1028,14 +1091,16 @@
       if (!pkg || !dep.type) throw sourceMissing('Unresolved relationship ' + (dep.id || '') + ' in ' + (dep.owner || owner));
       if (signatureRel(dep.type)) {
         this.loss({ id: 'signature:' + pkg.id, what: 'The digital signature will be removed. Saving changes to a signed file always invalidates its signature.', where: dep.owner || '/', action: 'drop', notify: true });
+        if (!dep.external && pkg === this.pkg) this.coverLoss('signature:' + pkg.id, [dep.part || K.resolve(dep.owner || '', dep.target).part]);
         return null;
       }
       let target = dep.target;
-      if (!dep.external) {
+      if (!dep.external && officeNull(pkg, dep)) target = dep.target;
+      else if (!dep.external) {
         const part = dep.part || K.resolve(dep.owner || '', dep.target).part;
         const dest = this.carry(pkg, part);
         if (!dest) return null;
-        target = pkg === this.pkg && dest === part && owner === dep.owner ? dep.target : K.relative(owner, dest) + (dep.fragment || '');
+        target = pkg === this.pkg && dest === part && owner === dep.owner && literal(dep.owner || '', dep.target, part) ? dep.target : K.relative(owner, dest) + (dep.fragment || '');
       }
       const preferred = pkg === this.pkg && owner === (dep.owner ? this.target(pkg, dep.owner) : '') ? dep.id : undefined;
       return this.rels(owner).add(dep.type, target, dep.external, preferred);
@@ -1056,9 +1121,37 @@
         if (this.omitted.has(key)) throw new Error('Cannot preserve ' + part + ': deleted dependency ' + name);
         if (!pkg.has(name)) throw sourceMissing('Missing dependency: ' + name);
         if (this.mode(pkg, name) !== 'opaque') continue;
-        for (const r of pkg.rels(name)) if (!r.external && !signatureRel(r.type)) pending.push(r.part);
+        const dangling = this.dangling(pkg, name);
+        if (dangling.missing) throw sourceMissing('Missing dependency: ' + dangling.missing);
+        for (const r of pkg.rels(name)) if (!r.external && !signatureRel(r.type) && !dangling.skip.has(r.id)) pending.push(r.part);
       }
       return this._carry(pkg, part);
+    }
+    // An opaque part's relationships to parts the original lacks. Office writes Target="NULL" for an
+    // image that isn't there; that one goes back as it was. One the markup doesn't name (a glossary's
+    // web settings) is dropped, and so is one only an optional element names (a chart's link to its
+    // embedded workbook), with that element. Any other leaves the part impossible to carry.
+    dangling(pkg, part) {
+      const key = this.key(pkg, part);
+      if (this.danglingParts.has(key)) return this.danglingParts.get(key);
+      const result = { skip: new Set(), keep: new Set(), drop: [], missing: null, text: null };
+      this.danglingParts.set(key, result);
+      const absent = pkg.rels(part).filter(r => !r.external && !signatureRel(r.type) && !pkg.has(r.part));
+      if (!absent.length) return result;
+      let tree = null; try { tree = /\.(xml|vml)$/i.test(part) ? pkg.xml(part) : null; } catch (_) { tree = null; }
+      const users = new Map();
+      if (tree) walk(tree, el => { for (const a of attrs(el)) if (relAttr(el, a)) { if (!users.has(a.value)) users.set(a.value, []); users.get(a.value).push(el); } });
+      const edits = [];
+      for (const r of absent) {
+        const named = users.get(r.id) || [];
+        if (officeNull(pkg, r)) { result.skip.add(r.id); result.keep.add(r.id); }
+        else if (named.every(el => OPTIONAL_REFERENCE.has(el.localName))) {
+          result.skip.add(r.id); result.drop.push({ rel: r, element: named[0]?.localName });
+          for (const el of named) { const p = XML.source.get(el); edits.push({ start: p.start, end: p.end, value: '' }); }
+        } else if (!result.missing) result.missing = r.part;
+      }
+      if (edits.length) result.text = K.patch(XML.source.get(tree).text, edits);
+      return result;
     }
     _carry(pkg, part) {
       const key = this.key(pkg, part), dest = this.target(pkg, part);
@@ -1066,21 +1159,25 @@
       if (!pkg.has(part)) throw sourceMissing('Missing dependency: ' + part);
       this.carried.add(key); // mark before following edges: layouts can point back at masters
       if (this.mode(pkg, part) !== 'opaque') return dest;
-      this.put(dest, pkg.bytes(part), pkg.type(part) || this.contentType?.(pkg, part));
-      const relationships = pkg.rels(part), rewritten = [];
+      const dangling = this.dangling(pkg, part);
+      this.put(dest, dangling.text ?? pkg.bytes(part), pkg.type(part) || this.contentType?.(pkg, part));
+      for (const { rel, element } of dangling.drop) this.loss({ id: 'dangling:' + key + ':' + rel.id, where: part, action: 'drop', notify: false,
+        what: element === 'externalData' ? 'The chart\'s link to its embedded workbook, which the original file doesn\'t contain, was removed; the chart keeps its values.' : 'A relationship to a part missing from the original file was removed.' });
+      const relationships = pkg.rels(part).filter(r => !dangling.skip.has(r.id) || dangling.keep.has(r.id)), rewritten = [];
       for (const r of relationships) {
         if (signatureRel(r.type)) {
           this.keepRel(dest, { source: pkg.id, owner: part, ...r }); continue;
         }
+        if (dangling.keep.has(r.id)) { rewritten.push(r); continue; }
         const target = r.external ? r.target : this._carry(pkg, r.part);
         if (target == null) {
           this.loss({ id: 'dependency:' + key + ':' + r.id, what: 'A preserved part refers to a deleted part.', where: part, action: 'drop' });
           throw new Error('Cannot preserve ' + part + ': deleted dependency ' + r.part);
         }
-        rewritten.push({ ...r, target: r.external ? r.target : escapedURI(dest === part && target === r.part ? r.target : K.relative(dest, target) + (r.fragment || '')) });
+        rewritten.push({ ...r, target: r.external ? r.target : escapedURI(dest === part && target === r.part && literal(part, r.target, r.part) ? r.target : K.relative(dest, target) + (r.fragment || '')) });
       }
       if (relationships.length || pkg.has(K.relsPath(part))) {
-        const unchanged = relationships.length === rewritten.length && relationships.every((r, i) => r.target === rewritten[i].target);
+        const unchanged = !dangling.drop.length && relationships.length === rewritten.length && relationships.every((r, i) => r.target === rewritten[i].target);
         if (unchanged) this.put(K.relsPath(dest), pkg.bytes(K.relsPath(part)), 'application/vnd.openxmlformats-package.relationships+xml');
         else {
           const rels = new Rels(); for (const r of rewritten) rels.add(r.type, r.target, r.external, r.id);
@@ -1088,6 +1185,63 @@
         }
       }
       return dest;
+    }
+    // Keeps a SmartArt frame's drawing-cache relationships (K.diagramRelated) in `owner`. Where an id had to change
+    // (another owner), the frame gets a private data part whose dataModelExt names the new id, so each instance
+    // stays independent. With `copy`, every diagram part is private, as Office writes a copy (data, layout,
+    // styles, colours and drawing of its own). Returns the fragment to emit; `cache` shares a private part within one save.
+    diagram(fragment, related, owner, cache = new Map(), { copy = false } = {}) {
+      if (copy && (related?.length || fragment.deps.some(d => DIAGRAM_PART.test(d.type || '')))) return this.diagramCopy(fragment, related || [], owner);
+      const diagrams = new Map();
+      for (const rel of related || []) {
+        const id = this.keepRel(owner, rel);
+        if (id === rel.id) continue;
+        const key = rel.source + ':' + rel.dataPart;
+        if (!diagrams.has(key)) diagrams.set(key, { source: rel.source, part: rel.dataPart, ids: new Map() });
+        diagrams.get(key).ids.set(rel.id, id);
+      }
+      for (const { source, part, ids } of diagrams.values()) {
+        const pkg = packages.get(source), tree = pkg?.xml(part);
+        if (!tree) throw new Error('The copied diagram has no data part.');
+        const key = JSON.stringify([owner, source, part, [...ids]]);
+        let dest = cache.get(key);
+        if (!dest) {
+          let xml = K.raw(tree);
+          const patches = Array.from(K.parse(xml).getElementsByTagName('*')).filter(e => e.localName === 'dataModelExt' && ids.has(e.getAttribute('relId')))
+            .map(e => ({ ...XML.source.get(e), value: K.attributes(K.raw(e), { relId: ids.get(e.getAttribute('relId')) }) }));
+          xml = K.patch(xml, patches);
+          const slash = part.lastIndexOf('/');
+          dest = this.name(part.slice(0, slash), 'data', 'xml');
+          this.copyPart(pkg, part, dest);
+          this.put(dest, xml, pkg.type(part)); cache.set(key, dest);
+        }
+        fragment = K.slice(fragment, fragment.xml.replace(/\u0001rel:(\d+)\u0001/g, (token, index) => {
+          const dep = fragment.deps[+index];
+          return dep.source === source && dep.part === part ? this.rels(owner).add(dep.type, K.relative(owner, dest), false) : token;
+        }));
+      }
+      return fragment;
+    }
+    diagramCopy(fragment, related, owner) {
+      const own = (dep, transform) => {
+        const pkg = packages.get(dep.source); if (!pkg?.has(dep.part)) throw sourceMissing('Missing dependency: ' + dep.part);
+        const slash = dep.part.lastIndexOf('/'), dot = dep.part.lastIndexOf('.');
+        const dest = this.name(dep.part.slice(0, slash), dep.part.slice(slash + 1, dot).replace(/\d+$/, ''), dep.part.slice(dot + 1));
+        this.copyPart(pkg, dep.part, dest);
+        if (transform) this.put(dest, transform(pkg.text(dep.part)), pkg.type(dep.part));
+        return this.rels(owner).add(dep.type, K.relative(owner, dest), false);
+      };
+      // the drawing cache first: the copied data names it
+      const ids = new Map(related.filter(r => !r.external).map(r => [r.id, own(r)]));
+      const renamed = text => {
+        const patches = Array.from(K.parse(text).getElementsByTagName('*')).filter(e => e.localName === 'dataModelExt' && ids.has(e.getAttribute('relId')))
+          .map(e => ({ ...XML.source.get(e), value: K.attributes(K.raw(e), { relId: ids.get(e.getAttribute('relId')) }) }));
+        return K.patch(text, patches);
+      };
+      return K.slice(fragment, fragment.xml.replace(/\u0001rel:(\d+)\u0001/g, (token, index) => {
+        const dep = fragment.deps[+index];
+        return DIAGRAM_PART.test(dep.type || '') ? own(dep, /\/diagramData$/.test(dep.type) ? renamed : null) : token;
+      }));
     }
     copyPart(pkg, part, dest, references = {}) {
       if (!pkg.has(part)) throw sourceMissing('Missing dependency: ' + part);
@@ -1139,17 +1293,20 @@
       for (const [owner, rels] of this.relationships) if (rels.list.length) this.put(K.relsPath(owner), rels.xml(), 'application/vnd.openxmlformats-package.relationships+xml');
       for (const [name, data] of this.parts) if (name.endsWith('.rels')) {
         const owner = K.owner(name), tree = K.parse(typeof data === 'string' ? data : XML.decode(data));
-        for (const rel of elements(tree)) if (rel.getAttribute('TargetMode') !== 'External') {
+        for (const rel of elements(tree)) if (rel.getAttribute('TargetMode') !== 'External' && rel.getAttribute('Target') !== 'NULL') {
           const target = K.resolve(owner, rel.getAttribute('Target')).part;
           if (!this.parts.has(target)) throw new Error('Unwritten relationship target: ' + target + ' from ' + owner);
         }
       }
-      if (this.pkg) for (const name of this.pkg.names) {
-        if (name === '[Content_Types].xml' || name.endsWith('.rels') || this.mode(this.pkg, name) !== 'opaque') continue;
-        if (!this.parts.has(this.mapping.get(this.key(this.pkg, name))) && !this.omitted.has(this.key(this.pkg, name)) && !this.explained.has(this.key(this.pkg, name))) {
-          // Audit catch-all for the test drivers (often a part the original never used); a real loss
-          // the user should hear about gets its own notice where it happens.
-          this.loss({ id: 'unreferenced:' + this.pkg.id + ':' + name, what: 'This preserved part has no remaining reference in the saved file.', where: name, action: 'drop', notify: false });
+      if (this.pkg) {
+        // Audit catch-all for the test drivers: `unreferenced:` is a part the original used, a defect in the
+        // writer unless a notice where it happened accounts for it; `orphan:` is one the original never used.
+        const lost = this.pkg.names.filter(name => name !== '[Content_Types].xml' && !name.endsWith('.rels') && this.mode(this.pkg, name) === 'opaque' &&
+          !this.parts.has(this.mapping.get(this.key(this.pkg, name))) && !this.omitted.has(this.key(this.pkg, name)) && !this.explained.has(this.key(this.pkg, name)));
+        const used = lost.length ? usage(this.pkg, lost) : new Set();
+        for (const name of lost) {
+          if (used.has(name)) this.loss({ id: 'unreferenced:' + this.pkg.id + ':' + name, what: 'This preserved part has no remaining reference in the saved file.', where: name, action: 'drop', notify: false });
+          else this.loss({ id: 'orphan:' + this.pkg.id + ':' + name, what: 'This part, which nothing in the original file used, was not saved.', where: name, action: 'drop', notify: false });
         }
       }
       /* As Office writes it: Defaults for .rels, .xml and every extension whose parts all share one type

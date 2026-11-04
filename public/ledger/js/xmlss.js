@@ -223,6 +223,15 @@
           for (let k = 1; k <= span; k++) Object.assign(sh.rowObj(r + k), { ht: row.ht, customHeight: row.customHeight, hidden: row.hidden, s: row.s });
           r += span;
         }
+        /* this format keeps a merge's format on its top-left cell only; the grid draws a merge's outline from
+           the cells along its edges, as Excel does, so they take that format, as Merge Cells gives it */
+        for (const m of sh.merges) {
+          const s = (sh.get(m.r1, m.c1) || {}).s;
+          if (!s) continue;
+          const edge = (r, c) => { const cell = sh.cell(r, c); if (cell.s == null) cell.s = s; };
+          for (let c = m.c1; c <= m.c2; c++) { edge(m.r1, c); edge(m.r2, c); }
+          for (let r = m.r1 + 1; r < m.r2; r++) { edge(r, m.c1); edge(r, m.c2); }
+        }
       }
       for (const n of nameEls(ws)) names.push({ el: n, scope: wb.sheets.length - 1 });
       const opts = kid(ws, 'WorksheetOptions');

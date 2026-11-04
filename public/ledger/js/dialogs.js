@@ -864,15 +864,15 @@
   async function checkPw(attrs, pw) {
     if (!attrs) return true;
     if (attrs.password) return D.legacyHash(pw) === String(attrs.password).toUpperCase();
-    if (attrs.hashValue && attrs.algorithmName && root.crypto && root.crypto.subtle) {
+    if (attrs.hashValue && attrs.algorithmName) {
       const alg = { 'SHA-512': 'SHA-512', 'SHA-256': 'SHA-256', 'SHA-384': 'SHA-384', 'SHA-1': 'SHA-1' }[attrs.algorithmName];
       if (!alg) return false;
       const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
       const salt = b64(attrs.saltValue || '');
       const enc = new Uint8Array(Array.from(String(pw)).flatMap((ch) => { const c = ch.charCodeAt(0); return [c & 255, c >> 8]; }));
-      let hbuf = new Uint8Array(await crypto.subtle.digest(alg, new Uint8Array([...salt, ...enc])));
+      let hbuf = await L.sha.digest(alg, new Uint8Array([...salt, ...enc]));   /* common/sha.js: also over plain http */
       const n = +attrs.spinCount || 0;
-      for (let i = 0; i < n; i++) { const it = new Uint8Array(4); new DataView(it.buffer).setUint32(0, i, true); hbuf = new Uint8Array(await crypto.subtle.digest(alg, new Uint8Array([...hbuf, ...it]))); }
+      for (let i = 0; i < n; i++) { const it = new Uint8Array(4); new DataView(it.buffer).setUint32(0, i, true); hbuf = await L.sha.digest(alg, new Uint8Array([...hbuf, ...it])); }
       return btoa(String.fromCharCode(...hbuf)) === attrs.hashValue;
     }
     return !attrs.password && !attrs.hashValue;

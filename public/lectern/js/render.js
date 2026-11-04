@@ -567,7 +567,7 @@
 
   /* content-placeholder icon palette (2003) */
   /* what a picture that can't be shown is (pptx-read.js, frames.js), in the UI's language */
-  const MISSING = { Picture: L.N('Picture'), 'Embedded object': L.N('Embedded object'), Ink: L.N('Ink'), '3-D model': L.N('3-D model'), 'New chart': L.N('New chart'), IntelliArt: L.N('IntelliArt') };
+  const MISSING = { Picture: L.N('Picture'), 'Embedded object': L.N('Embedded object'), Ink: L.N('Ink'), '3-D model': L.N('3-D model'), 'New chart': L.N('New chart'), IntelliArt: L.N('IntelliArt'), Diagram: L.N('Diagram') };
   const missingText = (label) => (/^Linked picture: /.test(label || '') ? L.t('Linked picture: {0}', label.slice(16)) : L.t(MISSING[label] || label || 'Picture'));
   const CONTENT_ICONS = [['table', 'Insert Table'], ['chart', 'Insert Chart'], ['clipart', 'Insert Clip Art'], ['picture', 'Insert Picture'], ['diagram', 'Insert Diagram or Organization Chart'], ['media', 'Insert Media Clip']];
 

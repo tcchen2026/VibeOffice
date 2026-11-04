@@ -1,0 +1,90 @@
+{
+  "issue": "https://github.com/tcchen2026/VibeOffice/issues/22",
+  "source": "https://github.com/user-attachments/files/33520771/Excel.Test.xlsx",
+  "checkedAt": "2026-11-02",
+  "baselineCommit": "345e95f",
+  "finding": "Merged outlines are stored on the perimeter cells. The old renderer used only the top-left cell, losing the right and bottom edges and expanding partial edges.",
+  "originalCells": 275,
+  "originalMergedRanges": 37,
+  "pageCounts": {
+    "excelOriginal": 3,
+    "excelLedgerSave": 3,
+    "ledgerPrint": 3,
+    "excelControls": 1
+  },
+  "excelOriginal": {
+    "id": "a461bcbddee72f4884a79b222295b17f",
+    "inputSha256": "e30b9afee42bb607725b6a47ee5d9c6978520754425e3125f86cc6916bf49499",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "73ddc583957dcf4575c73828c696daf1af4582ca5f57b0187f2cb419eefad828",
+    "inputUnchanged": true,
+    "dialogs": []
+  },
+  "excelLedgerSave": {
+    "id": "a5fefd6bdae66e2cea3925030f88de05",
+    "inputSha256": "689abe4530f3a47d168224b87423490ff5c96cf16244df74025ea41874d36ae1",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "ef548dd7dd14e247775a230a9bbb634ef5dceb9ba539b74e2fe85de2de575df4",
+    "inputUnchanged": true,
+    "dialogs": []
+  },
+  "excelControls": {
+    "id": "6fa4f40715f7a199ae3be177b27a9bd7",
+    "inputSha256": "5ad4f56f1cb4910419d387d1a5d2b6a255b76921be1903254c1e4f21bc6d8761",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "f0f8aef5d4540ae6a2497715eb82c12f93534d88859c5535ee9e324833888220",
+    "inputUnchanged": true,
+    "dialogs": []
+  },
+  "controls": [
+    {
+      "range": "B3:D5",
+      "expected": "Only the top and left segments belonging to B3 are visible; its internal bottom/right borders stay hidden."
+    },
+    {
+      "range": "B8:D10",
+      "expected": "Three medium top segments are red, green and blue; both vertical sides are black and the bottom is blue."
+    },
+    {
+      "range": "B13:D15",
+      "expected": "The top-left cell is absent; the right and bottom outline still draw."
+    },
+    {
+      "range": "B18:D20",
+      "expected": "The diagonal spans the merge, but the left and right borders cover only the first row; top and bottom span all columns."
+    }
+  ],
+  "roundTrip": {
+    "cellsCompared": 275,
+    "modelDifferences": 0,
+    "changedPartsVsPreviousWriter": []
+  },
+  "pdfComparison": {
+    "dpi": 96,
+    "identicalPages": [
+      1,
+      2,
+      3
+    ],
+    "originalPagePngSha256": {
+      "original-page-1.png": "d257078fcabd6b1245279ba25eb9d33c110d27acc6298048ca294da51505f661",
+      "original-page-2.png": "9d428def617655c759937c09877c7af1833820242208d425a16a41bd1e1a6230",
+      "original-page-3.png": "581232d734cae4c87242ab48f2450c15e8916a853361e15b587d82bcf89da55f"
+    }
+  },
+  "regression": "node --test tests/from-issues/22/borders.test.mjs",
+  "baselineRegression": "node tools/older.mjs HEAD -- tests/from-issues/22/borders.test.mjs: all four tests failed on 345e95f",
+  "localEvidence": "tmp/issue22"
+}

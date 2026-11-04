@@ -37,7 +37,7 @@
   "browserRequirements": "Requires JavaScript; works best in Chrome or Edge",
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "inLanguage": ["en", "ja", "ko", "fr", "de", "zh-CN", "zh-Hant"],
+  "inLanguage": ["en", "fr", "de", "zh-CN", "zh-Hant", "ja", "ko"],
   "featureList": [
     "Word processor: .docx, .docm, .dotx, .dotm, .rtf, Markdown, HTML and text; PDF export",
     "Track changes, comments, footnotes, tables of contents and mail merge",
@@ -168,6 +168,12 @@
 
   /* recent files */
   main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+  /* served over plain http: what the browser keeps off (start.js) */
+  .warnbar { flex: none; display: flex; align-items: flex-start; gap: 8px; margin: 12px 24px 0; padding: 7px 10px; border: 1px solid var(--warn-line); border-radius: 3px;
+    background: var(--warn-bg); color: var(--warn-ink); }
+  .warnbar svg { flex: none; margin-top: 1px; }
+  .warnbar path { fill: var(--warn-mark); }
+  .warnbar p { margin: 0; }
   .bar { flex: none; display: flex; align-items: center; gap: 12px; padding: 14px 24px 10px; border-bottom: 1px solid var(--start-line); }
   .bar h1 { margin: 0; font-size: 16px; color: var(--pane-ink); }
   .bar .status { flex: 1; color: var(--error-ink); }
@@ -262,6 +268,7 @@
   </nav>
 
   <main id="main">
+    <div class="warnbar" id="insecure" role="note" hidden><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .8l7.6 13.6H.4zM7 5.2v4.6h2V5.2zM7 11v1.8h2V11z" fill-rule="evenodd"/></svg><p><b>This site isn't served over HTTPS.</b> Your browser turns some features off here, such as saving files with a password, the Paste button (Ctrl+V still works) and the fonts on this computer, and other things may not work as expected.</p></div>
     <div class="bar">
       <h1 id="viewtitle">Recent Files</h1>
       <span class="status" id="status" role="status"></span>
@@ -286,7 +293,7 @@
           <li class="webonly"><b>Works offline.</b> After the first visit it opens without a connection, and Chrome and Edge can install it as an app.</li>
           <li><b>In your language.</b> Menus and dialogs in the languages below (Settings), and new documents with each language's fonts and page setup.</li>
         </ul>
-        <p class="langs" translate="no">English · 日本語 · 한국어 · Français · Deutsch · 简体中文 · 繁體中文</p>
+        <p class="langs" translate="no">English · Français · Deutsch · 简体中文 · 繁體中文 · 日本語 · 한국어</p>
         <p class="hint">Drop a document here or pick an app on the left side to create one.</p>
       </div>
     </div>

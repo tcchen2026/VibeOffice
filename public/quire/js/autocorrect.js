@@ -160,8 +160,8 @@
     const keep = E.sel.f;
     const d = doc();
     E.edit('AutoFormat', () => {
-      if (!d.styles.Hyperlink) { D.touchKey(d, 'styles'); d.styles.Hyperlink = D.builtinStyles().Hyperlink; D.stylesChanged(); }
-      O.formatRange(D.pos(p, a), D.pos(p, b), (r) => Object.assign(r, { link: { url }, style: 'Hyperlink' }));
+      const style = D.useStyle(d, 'Hyperlink');
+      O.formatRange(D.pos(p, a), D.pos(p, b), (r) => Object.assign(r, { link: { url }, style }));
       return keep;
     });
     E.pending = { link: undefined, style: undefined };
@@ -208,6 +208,7 @@
         const width = L.tables.availWidth(D.pos(prev, 0));
         E.edit('AutoFormat', () => {
           const tbl = D.simpleTable(1, segs.length, width);
+          tbl.tblPr.style = D.useStyle(doc(), tbl.tblPr.style);
           tbl.grid = segs.map((n) => L.round((n / total) * width, 2));
           L.tables.fixWidths(tbl);
           const cont = D.touchList(D.info(d, prev).cont);

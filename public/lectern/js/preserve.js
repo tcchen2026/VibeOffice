@@ -99,17 +99,42 @@
     }
     return output;
   };
+  /** the original media files and tags parts the model uses: media by id (pres.keep.media), tags through kept XML */
+  P.inUse = function (pres, pkg) {
+    const parts = pres.keep?.media || {}, media = new Set(), tags = new Set(), seen = new Set();
+    const tagged = new Set(pres.slides.flatMap(s => s.keep?.part ? pkg.rels(s.keep.part).filter(r => !r.external && /\/tags$/.test(r.type)).map(r => r.part) : []));
+    const walk = v => {
+      if (!v || typeof v !== 'object' || seen.has(v)) return; seen.add(v);
+      if (Array.isArray(v.deps)) for (const d of v.deps) if (d?.source === pkg.id && tagged.has(d.part)) tags.add(d.part);
+      for (const [k, x] of Object.entries(v)) { if (typeof x === 'string') { if (parts[x]) media.add(parts[x]); } else if (k !== 'keep' || v !== pres) walk(x); }
+    };
+    walk(pres);
+    return { media: [...media], tags: [...tags] };
+  };
   P.reportLosses = writer => {
     const pkg = writer.pkg, losses = writer.doc.losses || [];
     if (pkg) for (const record of writer.doc.keep?.frames || []) {
       const notice = losses.find(e => e.phase === 'save' && (e.id === 'frame:' + record.key || e.id.startsWith('frame:' + pkg.id + '|' + record.part + '|' + record.key + '|')));
       if (notice) writer.coverLoss(notice.id, pkg.rels(record.part).filter(r => !r.external && record.rels.includes(r.id)).map(r => r.part));
     }
+    // What the user deleted takes its parts along: a slide (its notes, pictures, charts…), and what the presentation
+    // used when it was opened (P.inUse) and no longer uses: a picture or media file, a shape's tags. Something the
+    // model never used is not explained this way, nor is anything still in use.
+    if (pkg) {
+      const pres = writer.doc, slides = new Set(pres.slides.map(s => s.keep?.part).filter(Boolean));
+      const written = part => writer.parts.has(writer.mapping.get(writer.key(pkg, part)));
+      const deleted = (part, what) => { const id = 'deleted:' + part; writer.loss({ id, what, where: part, action: 'drop', notify: false }); writer.coverLoss(id, [part]); };
+      for (const r of pkg.rels(pkg.main)) if (!r.external && /\/slide$/.test(r.type) && !slides.has(r.part) && !written(r.part)) deleted(r.part, 'A deleted slide takes its notes, pictures and other parts along.');
+      const then = pres.keep?.inUse, now = then && P.inUse(pres, pkg);
+      if (then) for (const part of then.media) if (!now.media.includes(part) && !written(part)) deleted(part, 'A deleted picture or media clip takes its file along.');
+      if (then) for (const part of then.tags) if (!now.tags.includes(part) && !written(part)) deleted(part, 'A deleted shape takes its tags along.');
+    }
     K.reportFeatures(writer, {
       accepts: el => ['sld', 'notes', 'sldMaster', 'sldLayout'].includes(el.localName) && [N.p, 'http://purl.oclc.org/ooxml/presentationml/main'].includes(el.namespaceURI),
-      classify: el => ['http://purl.oclc.org/ooxml/presentationml/main', N.p].includes(el.namespaceURI) && el.localName === 'control' ? 'controls' :
+      // one per control: its Choice and Fallback are one control
+      classify: el => ['http://purl.oclc.org/ooxml/presentationml/main', N.p].includes(el.namespaceURI) && el.localName === 'control' && el.parentNode?.localName !== 'Choice' ? 'controls' :
         ['http://purl.oclc.org/ooxml/drawingml/main', N.a].includes(el.namespaceURI) && el.localName === 'fld' ? 'fields' : null,
-      labels: { controls: 'Some original form controls were converted to previews or removed', fields: 'Some original text fields were converted to ordinary text' },
+      labels: { controls: 'ActiveX controls not in the saved file (each converted one has its own notice)', fields: 'Some original text fields were converted to ordinary text' },
     });
     if (writer.doc.repaired?.parts?.length) writer.loss({ id: 'read:damaged', what: L.N('Part of this file is damaged. Whatever couldn\'t be read from it won\'t be saved.'), notify: true, where: writer.doc.repaired.parts.join(', '), action: 'conversion' });
   };

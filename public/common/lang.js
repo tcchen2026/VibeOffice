@@ -4,8 +4,8 @@
 (function () {
   'use strict';
   const VO = window.VO || (window.VO = {});
-  const LANGS = [['auto', 'Auto'], ['en', 'English'], ['ja', '日本語'], ['ko', '한국어'], ['fr', 'Français'], ['de', 'Deutsch'],
-    ['zh-CN', '简体中文'], ['zh-Hant', '繁體中文']];
+  const LANGS = [['auto', 'Auto'], ['en', 'English'], ['fr', 'Français'], ['de', 'Deutsch'], ['zh-CN', '简体中文'],
+    ['zh-Hant', '繁體中文'], ['ja', '日本語'], ['ko', '한국어']];
   const normalize = (tag) => {
     const s = String(tag || '').trim().toLowerCase();
     if (/^zh-(?:tw|hk|mo|hant)(?:-|$)/.test(s)) return 'zh-Hant';

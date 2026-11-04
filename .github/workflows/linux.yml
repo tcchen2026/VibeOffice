@@ -2,22 +2,32 @@
 # (glibc 2.35, the oldest system with WebKitGTK 4.1) so that it starts on every newer one that has WebKitGTK 4.1:
 # Ubuntu 22.04 to 26.04, Debian 12 and 13, Fedora. The app uses the system's WebKitGTK, GTK and libsoup; AppRun says
 # how to install WebKitGTK where it is missing.
-# Each run tries it: the smoke run here on Ubuntu 22.04, and on each other system in a container, first without
-# WebKitGTK (the install command must show), then with it (desktop/linux/on-system.sh). Screenshots are artifacts.
-# Run by hand only: Actions ▸ Linux ▸ Run workflow. With "release" ticked, the AppImage goes into the version's
-# GitHub release (tools/current-tree-version.sh), the same one as Windows and macOS; its name stays the same in every
-# release, so releases/latest/download/VibeOffice-Linux-x86_64.AppImage is always the newest.
+# The AppImage goes into the version's GitHub release (tools/current-tree-version.sh), the same one as Windows and
+# macOS; its name stays the same in every release, so releases/latest/download/VibeOffice-Linux-x86_64.AppImage is
+# always the newest. With smoke ticked the run first tries it: the smoke run here on Ubuntu 22.04, and on each other
+# system in a container, first without WebKitGTK (the install command must show), then with it
+# (desktop/linux/on-system.sh); screenshots are artifacts, and the release waits for all of them to pass.
+# Run by hand (Actions ▸ Linux ▸ Run workflow), or by release.yml with the other systems. Running it again on the same
+# commit replaces the release's AppImage.
 name: Linux
 
 on:
   workflow_dispatch:
     inputs:
-      release:
-        description: Add the AppImage to the version's GitHub release
-        type: boolean
-        default: false
       prerelease:
         description: Mark the release as a pre-release (when this run creates it)
+        type: boolean
+        default: false
+      smoke:
+        description: Try the AppImage first (Ubuntu 22.04, then each system in a container), with screenshots
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      prerelease:
+        type: boolean
+        default: false
+      smoke:
         type: boolean
         default: false
 
@@ -35,8 +45,7 @@ jobs:
       - name: Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
-            squashfs-tools fuse3 xvfb x11-utils imagemagick
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev squashfs-tools
           rustup toolchain install stable --profile minimal
           rustup default stable
 
@@ -56,10 +65,13 @@ jobs:
 
       # here the AppImage mounts itself with FUSE, as on a desktop
       - name: Smoke (Ubuntu 22.04)
-        run: xvfb-run -a -s "-screen 0 1400x900x24" desktop/linux/smoke.sh desktop/target/dist/VibeOffice-Linux-x86_64.AppImage "$RUNNER_TEMP/smoke"
+        if: inputs.smoke
+        run: |
+          sudo apt-get install -y --no-install-recommends fuse3 xvfb x11-utils imagemagick
+          xvfb-run -a -s "-screen 0 1400x900x24" desktop/linux/smoke.sh desktop/target/dist/VibeOffice-Linux-x86_64.AppImage "$RUNNER_TEMP/smoke"
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && inputs.smoke
         with:
           name: VibeOffice-Linux-smoke-ubuntu-22.04
           path: ${{ runner.temp }}/smoke/*.*
@@ -73,6 +85,7 @@ jobs:
 
   systems:
     needs: build
+    if: inputs.smoke
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -106,9 +119,10 @@ jobs:
           path: ${{ runner.temp }}/out/*.*
           if-no-files-found: warn
 
+  # after the systems' tries when there are any (skipped without smoke), never after a failed one
   release:
     needs: [build, systems]
-    if: inputs.release
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.systems.result != 'failure' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

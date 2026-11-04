@@ -258,7 +258,7 @@
           if (!touchedNum) { D.touchKey(d, 'numbering'); touchedNum = true; }
           if (kind === 'b') { if (!bulletNum || lastKind !== 'b') bulletNum = D.addNum(d, D.makeBulletAbs('•', 'Symbol', '')); p.pPr.num = { id: bulletNum, lvl: 0 }; }
           else { if (!numNum || lastKind !== 'n') numNum = D.addNum(d, D.makeNumberAbs(/[a-z]/.test(mn[1]) ? 'lowerLetter' : /[A-Z]/.test(mn[1]) ? 'upperLetter' : 'decimal', '%1.')); p.pPr.num = { id: numNum, lvl: 0 }; }
-          if (!p.pPr.style || p.pPr.style === 'Normal') p.pPr.style = 'ListParagraph' in d.styles ? 'ListParagraph' : p.pPr.style;
+          if (!p.pPr.style || p.pPr.style === 'Normal') p.pPr.style = 'ListParagraph' in d.styles ? D.useStyle(d, 'ListParagraph') : p.pPr.style;
           lastKind = kind;
           n++;
         }
@@ -274,8 +274,7 @@
           const prev = blocks[i - 1];
           if (prev && prev.t === 'p' && plain(prev).trim() && !D.headingLevel(d, prev)) continue;
           D.touch(p);
-          p.pPr.style = /^[A-Z0-9 \-:&]+$/.test(t) || i < 3 ? 'Heading1' : 'Heading2';
-          if (!d.styles[p.pPr.style]) { D.touchKey(d, 'styles'); d.styles[p.pPr.style] = D.builtinStyles()[p.pPr.style]; D.stylesChanged(); }
+          p.pPr.style = D.useStyle(d, /^[A-Z0-9 \-:&]+$/.test(t) || i < 3 ? 'Heading1' : 'Heading2');
           n++;
         }
       }
@@ -422,11 +421,11 @@
       const sz = { 10: [684, 297], DL: [623.6, 311.8], C5: [649.15, 459.2], Monarch: [540, 279] }[size.value];
       E.edit('Add Envelope', () => {
         const cont = D.touchList(d.main);
-        if (!d.styles.EnvelopeAddress) { D.touchKey(d, 'styles'); d.styles.EnvelopeAddress = D.builtinStyles().EnvelopeAddress; d.styles.EnvelopeReturn = D.builtinStyles().EnvelopeReturn; D.stylesChanged(); }
+        const addressStyle = D.useStyle(d, 'EnvelopeAddress'), returnStyle = D.useStyle(d, 'EnvelopeReturn');
         const blocks = [];
-        if (!omit.input.checked) for (const line of ret.value.split('\n')) blocks.push(D.para(line ? [D.text(line)] : [], { style: 'EnvelopeReturn' }));
+        if (!omit.input.checked) for (const line of ret.value.split('\n')) blocks.push(D.para(line ? [D.text(line)] : [], { style: returnStyle }));
         const lines = addr.value.split('\n');
-        lines.forEach((line, i) => blocks.push(D.para(line ? [D.text(line)] : [], { style: 'EnvelopeAddress', ind: { l: sz[0] * 0.42 }, sp: i === 0 ? { b: Math.max(0, sz[1] * 0.42 - (omit.input.checked ? 0 : 60)) } : undefined })));
+        lines.forEach((line, i) => blocks.push(D.para(line ? [D.text(line)] : [], { style: addressStyle, ind: { l: sz[0] * 0.42 }, sp: i === 0 ? { b: Math.max(0, sz[1] * 0.42 - (omit.input.checked ? 0 : 60)) } : undefined })));
         const last = blocks[blocks.length - 1];
         last.sect = Object.assign(D.defaultSect(), { pgW: sz[0], pgH: sz[1], orient: 'landscape', mt: 18, mb: 18, ml: 36, mr: 36, type: 'nextPage' });
         cont.blocks.unshift(...blocks);

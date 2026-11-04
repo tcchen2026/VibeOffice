@@ -68,11 +68,10 @@
           sect.refs[kind] = Object.assign({}, sect.refs[kind]);
           const add = (ty, jc) => {
             let story = sect.refs[kind][ty] && d.hf[sect.refs[kind][ty]];
-            if (!story) { const id = (kind === 'hdr' ? 'h' : 'f') + D.nid(); story = d.hf[id] = { kind, id, blocks: [D.para([], { style: kind === 'hdr' ? 'Header' : 'Footer' })] }; sect.refs[kind][ty] = id; }
-            const fid = D.newFid();
+            if (!story) { const id = (kind === 'hdr' ? 'h' : 'f') + D.nid(); story = d.hf[id] = { kind, id, blocks: [D.para([], { style: D.useStyle(d, kind === 'hdr' ? 'Header' : 'Footer') })] }; sect.refs[kind][ty] = id; }
+            const fid = D.newFid(), pn = D.useStyle(d, 'PageNumber');
             /* Word puts the number in its own paragraph aligned as chosen */
-            story.blocks.push(D.para([D.item('fb', { fid, instr: ' PAGE ' }, { style: 'PageNumber' }), D.item('fs', { fid }, { style: 'PageNumber' }), D.text('1', { style: 'PageNumber' }), D.item('fe', { fid }, { style: 'PageNumber' })], { style: kind === 'hdr' ? 'Header' : 'Footer', jc }));
-            if (!d.styles.PageNumber) { D.touchKey(d, 'styles'); d.styles.PageNumber = D.builtinStyles().PageNumber; }
+            story.blocks.push(D.para([D.item('fb', { fid, instr: ' PAGE ' }, { style: pn }), D.item('fs', { fid }, { style: pn }), D.text('1', { style: pn }), D.item('fe', { fid }, { style: pn })], { style: D.useStyle(d, kind === 'hdr' ? 'Header' : 'Footer'), jc }));
           };
           const jc = (v, even) => (v === 'inside' ? (even ? 'right' : 'left') : v === 'outside' ? (even ? 'left' : 'right') : v);
           add('default', jc(al.value, false));
@@ -370,7 +369,7 @@
   function applyTocFormat(kind, levels) {
     const d = doc();
     const look = { classic: [{ b: true, caps: true }, { smallCaps: true }, { i: true }], distinctive: [{ b: true, font: 'Arial', sz: 12 }, { font: 'Arial', sz: 11 }, { sz: 10 }], formal: [{ caps: true, b: true }, { caps: true }, { i: true }], simple: [{}, {}, {}] }[kind];
-    E.edit('TOC Format', () => { D.touchKey(d, 'styles'); for (let i = 1; i <= levels; i++) { const id = 'TOC' + i; d.styles[id] = d.styles[id] || D.builtinStyles()[id]; d.styles[id].rPr = Object.assign({}, look[Math.min(i - 1, 2)]); } D.stylesChanged(); return E.sel; });
+    E.edit('TOC Format', () => { D.touchKey(d, 'styles'); for (let i = 1; i <= levels; i++) { const id = D.useStyle(d, 'TOC' + i); d.styles[id].rPr = Object.assign({}, look[Math.min(i - 1, 2)]); } D.stylesChanged(); return E.sel; });
   }
   G.markEntry = function () {
     const sel = E.sel && !E.collapsed() ? O.textRange(...E.range(), ' ').trim() : '';
@@ -478,15 +477,16 @@
           link = { anchor: a || '_top' };
         } else { const m = mail.value.trim(); if (!m) return false; link = { url: 'mailto:' + m + (subj.value ? '?subject=' + encodeURIComponent(subj.value) : '') }; }
         if (screenTip) link.tip = screenTip;
+        if (cur?.target) link.target = cur.target; // the frame it opens in, which this dialog doesn't show
         const text = disp.value || (kind === 0 ? addr.value : kind === 2 ? mail.value : place.get() || 'Top of the Document');
-        if (!d.styles.Hyperlink) E.edit(L.N('Style'), () => { D.touchKey(d, 'styles'); d.styles.Hyperlink = D.builtinStyles().Hyperlink; D.stylesChanged(); return E.sel; });
         E.edit(cur ? 'Edit Hyperlink' : 'Insert Hyperlink', () => {
-          if (range && !D.eqPos(range[0], range[1]) && text === selText) { O.formatRange(range[0], range[1], (r) => Object.assign(r, { link, style: 'Hyperlink' })); return { a: range[0], f: range[1] }; }
+          const style = D.useStyle(d, 'Hyperlink');
+          if (range && !D.eqPos(range[0], range[1]) && text === selText) { O.formatRange(range[0], range[1], (r) => Object.assign(r, { link, style })); return { a: range[0], f: range[1] }; }
           E.sel = { a: range[0], f: range[1] };
           const pos = E.deleteSelection();
           const base = O.inheritRPr(pos);
           delete base.link;
-          return O.insertText(pos, text, Object.assign(base, { link, style: 'Hyperlink' }));
+          return O.insertText(pos, text, Object.assign(base, { link, style }));
         });
         E.pending = { link: undefined, style: undefined };
       } }, { label: 'Cancel' }]),

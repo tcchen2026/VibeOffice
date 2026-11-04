@@ -66,15 +66,18 @@
     if (!s) return '';
     return `<w:shd w:val="${s.val || 'clear'}" w:color="${hex(s.color || 'auto')}" w:fill="${hex(s.fill || 'auto')}"/>`;
   }
-  /** run properties; mark: paragraph-mark revision info */
-  function rPrXML(r, mark, ctx) {
+  /** run properties; mark: paragraph-mark revision info, its paragraph's in moved (a tracked move's mark, preserve.js prepareMoves) */
+  function rPrXML(r, mark, ctx, moved) {
     r = r || {};
     let x = '';
     if (mark) {
-      if (mark.ins) x += `<w:ins w:id="${ctx.rev()}" w:author="${X(mark.ins.author)}" ${DT(mark.ins.date)}/>`;
-      if (mark.del) x += `<w:del w:id="${ctx.rev()}" w:author="${X(mark.del.author)}" ${DT(mark.del.date)}/>`;
+      const from = mark.del && ctx.moves?.from.has(moved), to = mark.ins && ctx.moves?.to.has(moved);
+      if (mark.ins && !to) x += `<w:ins w:id="${ctx.rev()}" w:author="${X(mark.ins.author)}" ${DT(mark.ins.date)}/>`;
+      if (mark.del && !from) x += `<w:del w:id="${ctx.rev()}" w:author="${X(mark.del.author)}" ${DT(mark.del.date)}/>`;
+      if (from) x += `<w:moveFrom w:id="${ctx.rev()}" w:author="${X(mark.del.author)}" ${DT(mark.del.date)}/>`;
+      if (to) x += `<w:moveTo w:id="${ctx.rev()}" w:author="${X(mark.ins.author)}" ${DT(mark.ins.date)}/>`;
     }
-    if (r.style) x += `<w:rStyle w:val="${X(r.style)}"/>`;
+    if (r.style) { const id = ctx?.ownStyle?.(r.style) ?? r.style; ctx?.styleRefs?.add(id); x += `<w:rStyle w:val="${X(id)}"/>`; }
     if (r.font || r.fontEA || r.fontCS) {
       const a = [];
       if (r.font) a.push(`w:ascii="${X(r.font)}" w:hAnsi="${X(r.font)}"`);
@@ -92,7 +95,8 @@
     if (r.kern) x += `<w:kern w:val="${hp(r.kern)}"/>`;
     if (r.pos) x += `<w:position w:val="${hp(r.pos)}"/>`;
     if (r.sz) x += `<w:sz w:val="${hp(r.sz)}"/>`;
-    if (r.szCs || r.sz) x += `<w:szCs w:val="${hp(r.szCs || r.sz)}"/>`;
+    /* complex-script size: Word writes it with the size; a run read without one (r.x, its w:rPr) is kept without */
+    if (r.szCs || r.sz && !r.x) x += `<w:szCs w:val="${hp(r.szCs || r.sz)}"/>`;
     if (r.hl) x += `<w:highlight w:val="${r.hl}"/>`;
     if (r.u) x += `<w:u w:val="${r.u}"${r.uColor ? ` w:color="${hex(r.uColor)}"` : ''}/>`;
     if (r.effect) x += `<w:effect w:val="${r.effect}"/>`;
@@ -109,7 +113,7 @@
   function pPrXML(p, ctx, opts) {
     p = p || {};
     let x = '';
-    if (p.style && p.style !== 'Normal') x += `<w:pStyle w:val="${X(p.style)}"/>`;
+    if (p.style && p.style !== 'Normal') { const id = ctx?.ownStyle?.(p.style) ?? p.style; ctx?.styleRefs?.add(id); x += `<w:pStyle w:val="${X(id)}"/>`; }
     else if (p.style === 'Normal' && opts && opts.inStyle) x += '';
     if (p.keepNext != null) x += `<w:keepNext${ON(p.keepNext)}/>`;
     if (p.keepLines != null) x += `<w:keepLines${ON(p.keepLines)}/>`;
@@ -212,7 +216,7 @@
   function tblPrXML(t, ctx) {
     const p = t || {};
     let x = '';
-    if (p.style) x += `<w:tblStyle w:val="${X(p.style)}"/>`;
+    if (p.style) { const id = ctx?.ownStyle?.(p.style) ?? p.style; ctx?.styleRefs?.add(id); x += `<w:tblStyle w:val="${X(id)}"/>`; }
     if (p.float && ctx && ctx.full) {
       const f = p.float, a = [];
       if (f.l != null) a.push(`w:leftFromText="${tw(f.l)}"`);
@@ -272,15 +276,17 @@
   }
 
   /* ================= content ================= */
-  const sameLink = (a, b) => (a === b) || (!!a && !!b && a.url === b.url && a.anchor === b.anchor && a.tip === b.tip);
+  const sameLink = (a, b) => (a === b) || (!!a && !!b && a.url === b.url && a.anchor === b.anchor && a.tip === b.tip && a.target === b.target);
   const sameRev = (a, b) => (!a && !b) || (!!a && !!b && a.author === b.author && a.date === b.date);
+  const sameMove = (a, b, ctx) => !ctx.moves || ctx.moves.from.has(a) === ctx.moves.from.has(b) && ctx.moves.to.has(a) === ctx.moves.to.has(b);
   function textXML(s, del, afterCR = false) {
     /* split at characters that need their own elements */
     let out = '';
     let buf = '';
     const tag = del ? 'w:delText' : 'w:t';
     // A literal CR would be normalized to LF when XML is read again.
-    const flush = () => { if (buf) { out += `<${tag} xml:space="preserve">${X(buf).replace(/\r/g, '&#13;')}</${tag}>`; buf = ''; } };
+    // xml:space="preserve" only where the text needs it, as Word writes it: Word 2016 places text with it a fraction differently
+    const flush = () => { if (buf) { out += `<${tag}${/^[ \r\n]|[ \r\n]$| {2}|[\r\n]/.test(buf) ? ' xml:space="preserve"' : ''}>${X(buf).replace(/\r/g, '&#13;')}</${tag}>`; buf = ''; } };
     for (const ch of s) {
       if (ch === '‑') { flush(); out += '<w:noBreakHyphen/>'; }
       else if (ch === '­') { flush(); out += '<w:softHyphen/>'; }
@@ -295,17 +301,22 @@
     return out;
   }
   /** XML for a paragraph's runs */
-  function wrapRunGroup(inner, r, ctx) {
+  function wrapRunGroup(inner, r, ctx, moved) {
     if (!inner) return '';
     const { link, ins, del } = r;
-    /* inserted, then deleted: Word nests the deletion inside the insertion */
-    if (del) inner = `<w:del w:id="${ctx.rev()}" w:author="${X(del.author)}" ${DT(del.date)}>${inner}</w:del>`;
-    if (ins) inner = `<w:ins w:id="${ctx.rev()}" w:author="${X(ins.author)}" ${DT(ins.date)}>${inner}</w:ins>`;
+    /* inserted, then deleted: Word nests the deletion inside the insertion, but inserted text moved away inside its moveFrom;
+       moved: the group's first item, written as a move if it is in one (preserve.js, prepareMoves) */
+    const from = del && moved && ctx.moves?.from.has(moved), to = ins && moved && ctx.moves?.to.has(moved);
+    const wrap = (tag, r) => { inner = `<w:${tag} w:id="${ctx.rev()}" w:author="${X(r.author)}" ${DT(r.date)}>${inner}</w:${tag}>`; };
+    if (del && !from) wrap('del', del);
+    if (ins) wrap(to ? 'moveTo' : 'ins', ins);
+    if (from) wrap('moveFrom', del);
     if (link) {
       const a = [];
       if (link.url) a.push(`r:id="${ctx.rels.add(RT('hyperlink'), link.url, true)}"`);
       if (link.anchor) a.push(`w:anchor="${X(link.anchor)}"`);
       if (link.tip) a.push(`w:tooltip="${X(link.tip)}"`);
+      if (link.target) a.push(`w:tgtFrame="${X(link.target)}"`);
       a.push('w:history="1"'); inner = `<w:hyperlink ${a.join(' ')}>${inner}</w:hyperlink>`;
     }
     return inner;
@@ -318,9 +329,10 @@
     let i = 0;
     while (i < items.length) {
       const it = items[i];
+      if (ctx.cmtQueue?.length && it.t !== 'cs' && it.t !== 'ce') out += commentRefs(ctx, null, true);
       const original = L.preserve.objectXML(it, 'ac', ctx);
       if (original != null) {
-        if (original) out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx);
+        if (original) { const outer = ctx.runIds; ctx.runIds = it.ids; try { out += it.keep.ac.scope === 'run' ? wrapRunGroup(runWrap(it.rPr, original, ctx), it.rPr || {}, ctx, it) : wrapRunGroup(original, it.keep.ac.wrapper || {}, ctx); } finally { ctx.runIds = outer; } }
         trackText(it);
         i++; continue;
       }
@@ -339,17 +351,29 @@
           const n = items[j], nr = n.rPr || {};
           if (n.keep?.ac) break;
           if (D.isMarker(n) && n.t !== 'fb' && n.t !== 'fs' && n.t !== 'fe') break;
-          if (!sameLink(link, D.ilen(n) ? nr.link : null) || !sameRev(ins, nr.ins) || !sameRev(del, nr.del)) break;
+          if (!sameLink(link, D.ilen(n) ? nr.link : null) || !sameRev(ins, nr.ins) || !sameRev(del, nr.del) || !sameMove(it, n, ctx)) break;
           j++;
         }
       }
       let inner = '';
-      for (let k = i; k < j; k++) { inner += itemXML(items[k], p, ctx, !!del, textState.afterCR); trackText(items[k]); }
+      /* moved-away text stays w:t and w:instrText inside its moveFrom: Word refuses deletion text there */
+      const deleted = !!del && !ctx.moves?.from.has(it);
+      for (let k = i; k < j; k++) { inner += itemXML(items[k], p, ctx, deleted, textState.afterCR); trackText(items[k]); }
       /* revision marks sit inside hyperlinks (w:hyperlink may contain w:ins/w:del, not the reverse) */
-      out += wrapRunGroup(inner, { link, ins, del }, ctx);
+      out += wrapRunGroup(inner, { link, ins, del }, ctx, it);
       i = j;
     }
-    return out;
+    return ctx.cmtQueue?.length ? out + commentRefs(ctx, null, true) : out;
+  }
+  /* comment references waiting for the comment marks Word wrote before them (docx-read, commentReference): each
+     comment mark counts one off; the due ones are written in the order they were read, the rest before other content */
+  function commentRefs(ctx, ref, all) {
+    const queue = ctx.cmtQueue || (ctx.cmtQueue = []);
+    if (!all) for (const q of queue) q.left--;
+    if (ref) queue.push(ref);
+    const due = all ? queue.splice(0) : queue.filter(q => q.left <= 0);
+    if (!all) ctx.cmtQueue = queue.filter(q => q.left > 0);
+    return due.sort((a, b) => a.seq - b.seq).map(q => q.xml).join('');
   }
   function cleanRPr(r) {
     if (!r) return {};
@@ -359,9 +383,24 @@
   }
   function runWrap(r, content, ctx) {
     const rp = rPrXML(cleanRPr(r), null, ctx);
-    return `<w:r>${rp}${content}</w:r>`;
+    return `<w:r${idsXML(ctx?.runIds, ctx)}>${rp}${content}</w:r>`;
   }
+  /* the attributes a paragraph, run or row was read with (docx-read, elementIds); a paragraph id already written
+     in this save (a copied paragraph) is left out with its text id, so each stays unique */
+  function idsXML(ids, ctx) {
+    if (!ids) return '';
+    const used = ctx?.paraIds, pid = ids['w14:paraId'];
+    const again = pid && used && used.has(pid);
+    if (pid && used && !again) used.add(pid);
+    return Object.entries(ids).filter(([k]) => !again || !/^w14:/.test(k)).map(([k, v]) => ` ${k}="${X(v)}"`).join('');
+  }
+  /* a run's content is written with the ids of the run it was read from */
   function itemXML(it, p, ctx, del, afterCR) {
+    const outer = ctx.runIds;
+    ctx.runIds = it.ids;
+    try { return itemContentXML(it, p, ctx, del, afterCR); } finally { ctx.runIds = outer; }
+  }
+  function itemContentXML(it, p, ctx, del, afterCR) {
     const r = it.rPr || {};
     const original = L.preserve.objectXML(it, 'opaque', ctx);
     if (original != null) return original ? runWrap(r, original, ctx) : '';
@@ -381,6 +420,7 @@
       }
       case 'sym': return runWrap(r, `<w:sym w:font="${X(it.font || 'Symbol')}" w:char="${it.code || it.char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}"/>`, ctx);
       case 'fb': {
+        const fieldCode = (s) => (s || '').replace(/\s+/g, ' ').trim();   // the model spaces a field code its own way
         let ff = '';
         if (it.ff) {
           const f = it.ff;
@@ -393,16 +433,40 @@
           ff = `<w:ffData>${inner}</w:ffData>`;
         }
         const begin = runWrap(r, `<w:fldChar w:fldCharType="begin"${it.lock ? ' w:fldLock="1"' : ''}${it.dirty ? ' w:dirty="1"' : ''}>${ff}${ff ? '</w:fldChar>' : '</w:fldChar>'}`.replace('></w:fldChar>', ff ? '></w:fldChar>' : '/>'), ctx);
-        return begin + runWrap(r, del ? `<w:delInstrText xml:space="preserve">${X(it.instr || '')}</w:delInstrText>` : `<w:instrText xml:space="preserve">${X(it.instr || '')}</w:instrText>`, ctx);
+        // instructions with nested fields or pictures go back as they were while the field code is unchanged
+        const kept = it.instrKeep;
+        if (kept && ctx.writer && !del && fieldCode(kept.instr) === fieldCode(it.instr)) {
+          try { return begin + kept.runs.map((f) => ctx.writer.emit(f, ctx.part)).join(''); } catch (e) { /* written as plain field code below */ }
+        }
+        if ((kept || it.instrFlattened) && ctx.writer) ctx.writer.loss({ id: 'field-code:' + ctx.part + ':' + it.fid, where: ctx.part, action: 'drop', notify: true,
+          place: (D.fieldType(it.instr) || 'Field') + ' field',
+          what: kept ? 'Nested fields or pictures in this field\'s code were removed, because the field code was edited.' : 'Nested fields or pictures in this field\'s code can\'t be kept and will be removed.' });
+        const tag = del ? 'w:delInstrText' : 'w:instrText';
+        // the instruction's runs as they were read (docx-read, instrText) while the field code is unchanged
+        const runs = it.instrRuns;
+        if (runs && fieldCode(runs.map(x => x.text).join('')) === fieldCode(it.instr)) {
+          const outer = ctx.runIds;
+          try { return begin + runs.map(x => { ctx.runIds = x.ids; return runWrap(x.rPr, `<${tag}${/^ |  | $/.test(x.text) ? ' xml:space="preserve"' : ''}>${X(x.text)}</${tag}>`, ctx); }).join(''); } finally { ctx.runIds = outer; }
+        }
+        return begin + runWrap(r, `<${tag} xml:space="preserve">${X(it.instr || '')}</${tag}>`, ctx);
       }
       case 'fs': return runWrap(r, '<w:fldChar w:fldCharType="separate"/>', ctx);
       case 'fe': return runWrap(r, '<w:fldChar w:fldCharType="end"/>', ctx);
       case 'bs': { const k = 's' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return L.preserve.markerXML(it, ctx) ?? `<w:bookmarkStart w:id="${ctx.bmId(it.id)}" w:name="${X(it.name || '_bm' + it.id)}"/>`; }
       case 'be': { const k = 'e' + it.id; if (ctx.bmSeen.has(k)) return ''; ctx.bmSeen.add(k); return L.preserve.markerXML(it, ctx) ?? `<w:bookmarkEnd w:id="${ctx.bmId(it.id)}"/>`; }
       case 'perm': return L.preserve.markerXML(it, ctx) || '';
-      case 'cs': return ctx.cmtOk(it.id) && !it.point ? `<w:commentRangeStart w:id="${ctx.cmtId(it.id)}"/>` : '';
-      case 'ce': return ctx.cmtOk(it.id) ? (it.point ? '' : `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>`) +
-        (ctx.cmtReference(it.id) ? runWrap({ style: 'CommentReference' }, `<w:commentReference w:id="${ctx.cmtId(it.id)}"/>`, ctx) : '') : '';
+      case 'cs': return (ctx.cmtOk(it.id) && !it.point ? `<w:commentRangeStart w:id="${ctx.cmtId(it.id)}"/>` : '') + commentRefs(ctx);
+      case 'ce': {
+        if (!ctx.cmtOk(it.id)) return commentRefs(ctx);
+        let ref = null;
+        if (ctx.cmtReference(it.id)) {
+          const outer = ctx.runIds;
+          ctx.runIds = it.ref?.ids;
+          try { ref = { seq: it.ref?.seq ?? Infinity, left: it.ref?.skip || 0, xml: runWrap(it.ref?.rPr || { style: 'CommentReference' }, `<w:commentReference w:id="${ctx.cmtId(it.id)}"/>`, ctx) }; } finally { ctx.runIds = outer; }
+        }
+        if (ref && it.ref?.first) return ref.xml + `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>` + commentRefs(ctx);
+        return (it.point ? '' : `<w:commentRangeEnd w:id="${ctx.cmtId(it.id)}"/>`) + commentRefs(ctx, ref);
+      }
       case 'fn': case 'en': {
         const kind = it.t === 'fn' ? 'footnote' : 'endnote';
         if (it.self) return runWrap(Object.assign({ style: it.t === 'fn' ? 'FootnoteReference' : 'EndnoteReference' }, cleanRPr(r)), `<w:${kind}Ref/>`, ctx);
@@ -530,7 +594,7 @@
     }
     const shapeFill = isWA ? '<a:noFill/>' : isLine ? '<a:noFill/>' : fillXML(it.fill || { t: 'none' }, ctx);
     const shapeLine = isWA ? '<a:ln><a:noFill/></a:ln>' : lineXML(it.line || { t: 'none' });
-    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb ? 'Text Box ' : isWA ? 'LettersArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${it.tb || it.tbLink || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${isWA ? '<a:normAutofit/>' : it.autofit ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
+    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb ? 'Text Box ' : isWA ? 'LettersArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${it.tb || it.tbLink || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${it.autofit && !isWA ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
   }
   function groupXML(g, ctx, x, y, id, nested) {
     let kids = '';
@@ -606,34 +670,46 @@
   }
 
   /* ================= blocks ================= */
+  /* a move's ends read after a paragraph, a table, a row or a cell (preserve.js, rangeMarker): the trailing ones of a paragraph */
+  const trailingEnds = (p) => { let n = p.runs.length; while (n && ['perm', 'bs', 'be', 'cs', 'ce'].includes(p.runs[n - 1].t)) n--; return p.runs.slice(n).filter((it) => it.after); };
+  /* the table writer takes those of its levels before its paragraphs are written, and writes them after the element */
+  const hoistEnds = (p, level, ctx) => { const ends = p ? trailingEnds(p).filter((it) => it.after === level) : []; for (const it of ends) ctx.hoisted.add(it); return () => ends.map((it) => L.preserve.markerXML(it, ctx) || '').join(''); };
   function paraXML(p, ctx) {
-    const markR = rPrXML(p.rPr || {}, p.mark, ctx);
+    const markR = rPrXML(p.rPr || {}, p.mark, ctx, p);
     const pPr = pPrXML(p.pPr, ctx, { rPr: markR, sect: p.sect && ctx.main ? sectXML(p.sect, ctx) : '' });
-    /* display math paragraphs */
-    const runs = runsXML(p, ctx);
-    return `<w:p>${pPr}${runs}</w:p>`;
+    const after = trailingEnds(p);
+    const runs = runsXML(after.length ? { ...p, runs: p.runs.filter((it) => !after.includes(it)) } : p, ctx);
+    return `<w:p${idsXML(p.ids, ctx)}>${pPr}${runs}</w:p>${after.filter((it) => !ctx.hoisted?.has(it)).map((it) => L.preserve.markerXML(it, ctx) || '').join('')}`;
   }
   function tableXML(t, ctx) {
     if (t.keep?.gridRepair) ctx.writer.loss({ id: 'table-grid:' + ctx.part, what: 'Incomplete or unusable table column widths were reconstructed. Table layout may change.', where: ctx.part, action: 'conversion' });
     const map = L.R.tblMap(t);
-    const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { full: true }), ctx);
-    let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}</w:tblGrid>`;
+    const pr = L.preserve.propertyXML('tblPr', t.tblPr, tblPrXML(Object.assign({}, t.tblPr, { w: t.tblPr.w || { type: 'auto', v: 0 } }), { ...ctx, full: true }), ctx);
+    const gridChange = t.keep?.gridChange, sameGrid = gridChange && JSON.stringify(t.grid) === gridChange.grid;
+    if (gridChange && !sameGrid) ctx.writer.loss({ id: 'grid-change:' + ctx.part, what: 'A tracked change to a table\'s columns was left out, because the columns were changed.', where: ctx.part, action: 'drop' });
+    let x = `<w:tbl>${pr}<w:tblGrid>${t.grid.map((g) => `<w:gridCol w:w="${tw(g)}"/>`).join('')}${sameGrid ? ctx.writer.emit(gridChange.fragment, ctx.part) : ''}</w:tblGrid>`;
+    const lastTop = (blocks) => blocks?.filter((b) => b.t === 'p').at(-1);
+    const tableEnds = hoistEnds(D.lastPara([t]), 'table', ctx);
     x += L.preserve.controlSequence(t.rows, row => row.trPr, row => L.preserve.tableMemberXML(row, ctx, () => {
-      const ri = t.rows.indexOf(row);
+      const ri = t.rows.indexOf(row), rowEnds = hoistEnds(lastTop(row.cells.at(-1)?.blocks), 'row', ctx);
       const trp = trPrXML(row.trPr, ctx);
-      let rowXML = `<w:tr>${trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
+      /* a row and a cell read from a file keep what Quire doesn't model (preserve.js, propertyFields) */
+      const exb = row.exBorders ? bordersEl('tblBorders', row.exBorders, ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']) : '';
+      const ex = row.ex ? L.preserve.propertyXML('tblPrEx', { ...row.ex, borders: row.exBorders }, exb, ctx) : exb ? `<w:tblPrEx>${exb}</w:tblPrEx>` : '';
+      let rowXML = `<w:tr${idsXML(row.ids, ctx)}>${ex}${row.trPr?.x ? L.preserve.propertyXML('trPr', row.trPr, trp, ctx) : trp ? `<w:trPr>${trp}</w:trPr>` : ''}`;
       rowXML += L.preserve.controlSequence(row.cells, cell => cell.tcPr, cell => L.preserve.tableMemberXML(cell, ctx, () => {
         const ci = row.cells.indexOf(cell);
         const m = map[ri][ci];
         const w = cell.tcPr.w != null ? cell.tcPr.w : t.grid.slice(m.c0, m.c0 + m.span).reduce((a, b) => a + b, 0);
-        const blocks = cell.blocks.length ? cell.blocks : [D.para()];
+        const blocks = cell.blocks.length ? cell.blocks : [D.para()], cellEnds = hoistEnds(lastTop(cell.blocks), 'cell', ctx);
         let inner = blocksXML(blocks, ctx);
         if (!blocks.length || blocks[blocks.length - 1].t !== 'p') inner += '<w:p/>';
-        return `<w:tc><w:tcPr>${tcPrXML(cell.tcPr, w)}</w:tcPr>${inner}</w:tc>`;
+        const tcp = tcPrXML(cell.tcPr, w);
+        return `<w:tc>${cell.tcPr.x ? L.preserve.propertyXML('tcPr', { ...cell.tcPr, _grid: JSON.stringify(t.grid) }, tcp, ctx) : `<w:tcPr>${tcp}</w:tcPr>`}${inner}</w:tc>${cellEnds()}`;
       }), ctx);
-      return rowXML + '</w:tr>';
+      return rowXML + '</w:tr>' + rowEnds();
     }), ctx);
-    return x + '</w:tbl>';
+    return x + '</w:tbl>' + tableEnds();
   }
   function blocksXML(blocks, ctx) {
     return L.preserve.controlSequence(blocks, b => b.t === 'p' ? b.pPr : b.tblPr, b => L.preserve.objectXML(b, 'ac', ctx) ?? L.preserve.objectXML(b, 'opaque', ctx) ?? (b.t === 'p' ? paraXML(b, ctx) : b.t === 'tbl' ? tableXML(b, ctx) : ''), ctx);
@@ -642,22 +718,57 @@
   /* ================= styles, numbering, settings ================= */
   function stylesXML(doc, ctx) {
     const dd = doc.defaults || {};
+    /* a built-in standing in for the file's own style of its name (sameAs, docx-read) is left out: what uses it is written with the
+       file's style (ctx.ownStyle), as Word applies a document's own Heading 1 or Table Grid; still written if something names it anyway */
+    const refs = new Set(ctx.styleRefs);
+    for (const a of Object.values(doc.numbering.abs)) for (const lv of a.levels || []) if (lv?.pStyle) refs.add(ctx.ownStyle(lv.pStyle));
+    const left = new Set(Object.values(doc.styles).filter((s) => s?.sameAs && doc.styles[s.sameAs] && !refs.has(s.id)).map((s) => s.id));
+    const ref = (id) => (left.has(id) ? doc.styles[id].sameAs : id);
+    /* a file's styles part defines the styles it uses and leaves the other built-ins to its latent styles, as Word does:
+       a built-in Quire has but the file doesn't is written once something uses it or it was changed (a new document still gets them all) */
+    let used = null;
+    const catalogue = doc.keep?.catalogue, asAdded = (s) => catalogue?.[s.id] === JSON.stringify(s);
+    if (doc.keep?.styles) {
+      used = new Set(['Normal', 'DefaultParagraphFont', 'TableNormal', 'NoList', ...refs]);
+      /* the file's styles, and the ones created or changed since: with the styles they're based on, below */
+      for (const s of Object.values(doc.styles)) if (s?.x || s && !asAdded(s)) used.add(s.id);
+      for (const a of Object.values(doc.numbering.abs)) for (const id of [a.styleLink, a.styleDef]) if (id) used.add(id);
+      for (const queue = [...used]; queue.length;) {
+        const s = doc.styles[queue.pop()];
+        for (const f of ['basedOn', 'next', 'link']) { const id = s?.[f] && doc.styles[s[f]] ? ref(s[f]) : null; if (id && !used.has(id)) { used.add(id); queue.push(id); } }
+      }
+    }
+    const latent = doc.keep?.latentStyles;
     let x = HEAD + `<w:styles xmlns:w="${NS.w}" xmlns:r="${NS.r}" xmlns:mc="${NS.mc}" xmlns:w14="${NS.w14}" mc:Ignorable="w14">`;
     x += `<w:docDefaults><w:rPrDefault>${rPrXML(Object.assign({ font: 'Times New Roman', sz: 12, lang: 'en-US' }, dd.rPr || {}), null, ctx)}</w:rPrDefault><w:pPrDefault>${pPrXML(dd.pPr, ctx)}</w:pPrDefault></w:docDefaults>`;
-    const order = Object.values(doc.styles).sort((a, b) => (a.id === 'Normal' ? -1 : b.id === 'Normal' ? 1 : 0));
+    if (latent) x += ctx.writer.emit(latent.fragment, ctx.part);
+    /* the file's styles in its order, then the others, Normal first */
+    const rank = (s) => s.x?.order ?? (s.id === 'Normal' ? -1 : 1e9);
+    const order = Object.values(doc.styles).filter(Boolean).sort((a, b) => rank(a) - rank(b));
+    /* Word 2016 refuses a styles part with more than 4,092 styles (tools/ooxml/package.py, too-many-styles): beyond that, the
+       styles the file didn't have are left out, and what uses them takes the Normal style in Word */
+    let room = 4092;
+    const over = [];
     for (const s of order) {
-      if (!s || !s.id) continue;
+      if (!s.id || left.has(s.id) || used && !used.has(s.id)) continue;
+      if (room-- <= 0) { over.push(s.name || s.id); continue; }
       if (s.keep?.defaultStyleRepair) ctx.writer.loss({ id: 'default-styles:' + ctx.part, what: 'Conflicting default styles were normalized. Text layout may change.', where: ctx.part, action: 'conversion' });
       const type = s.type || 'paragraph';
-      let st = `<w:style w:type="${type}"${s.isDefault ? ' w:default="1"' : ''}${s.custom ? ' w:customStyle="1"' : ''} w:styleId="${X(s.id)}"><w:name w:val="${X(s.name || s.id)}"/>`;
-      if (s.basedOn && doc.styles[s.basedOn]) st += `<w:basedOn w:val="${X(s.basedOn)}"/>`;
-      if (s.next && doc.styles[s.next]) st += `<w:next w:val="${X(s.next)}"/>`;
-      if (s.link && doc.styles[s.link]) st += `<w:link w:val="${X(s.link)}"/>`;
+      /* a built-in the file didn't have takes the file's latent settings for what it was given as added (a new style and
+         what an edit set keep theirs), as Word writes it */
+      const added = latent && !s.x && !s.custom && catalogue?.[s.id] ? JSON.parse(catalogue[s.id]) : null;
+      const own = added && latent.names[String(s.name).toLowerCase()];
+      const look = (k) => (added && JSON.stringify(s[k]) === JSON.stringify(added[k]) ? (own && own[k] !== undefined ? own[k] : latent.def[k]) : s[k]);
+      let st = `<w:name w:val="${X(s.name || s.id)}"/>`;
+      if (s.basedOn && doc.styles[s.basedOn]) st += `<w:basedOn w:val="${X(ref(s.basedOn))}"/>`;
+      if (s.next && doc.styles[s.next]) st += `<w:next w:val="${X(ref(s.next))}"/>`;
+      if (s.link && doc.styles[s.link]) st += `<w:link w:val="${X(ref(s.link))}"/>`;
       if (s.autoRedefine) st += '<w:autoRedefine/>';
       if (s.hidden) st += '<w:hidden/>';
-      if (s.prio != null) st += `<w:uiPriority w:val="${s.prio}"/>`;
-      if (s.semiHidden) st += '<w:semiHidden/>';
-      if (s.q) st += '<w:qFormat/>';
+      if (look('prio') != null) st += `<w:uiPriority w:val="${look('prio')}"/>`;
+      if (look('semiHidden')) st += '<w:semiHidden/>';
+      if (look('unhide')) st += '<w:unhideWhenUsed/>';
+      if (look('q')) st += '<w:qFormat/>';
       if (type === 'paragraph' || type === 'table' || type === 'numbering') {
         const pp = Object.assign({}, s.pPr || {});
         delete pp.style;
@@ -680,15 +791,19 @@
           st += `<w:tblStylePr w:type="${ty}">${cx}</w:tblStylePr>`;
         }
       }
-      x += st + '</w:style>';
+      /* a style from a file keeps what Quire doesn't model (aliases, locked, rsid, a table style's trPr) and the children it didn't change */
+      x += s.x ? L.preserve.propertyXML('style', s, st, ctx, { type, default: s.isDefault ? '1' : null, customStyle: s.custom ? '1' : null, styleId: s.id })
+        : `<w:style w:type="${type}"${s.isDefault ? ' w:default="1"' : ''}${s.custom ? ' w:customStyle="1"' : ''} w:styleId="${X(s.id)}">${st}</w:style>`;
     }
+    if (over.length) ctx.writer.loss({ id: 'styles-limit:' + ctx.part, where: ctx.part, action: 'drop', notify: true, place: 'Styles',
+      what: `Word opens at most 4,092 styles, so ${over.length} style${over.length > 1 ? 's' : ''} (${over.slice(0, 3).join(', ')}${over.length > 3 ? ', …' : ''}) ${over.length > 1 ? 'were' : 'was'} left out; text using ${over.length > 1 ? 'them' : 'it'} shows in the Normal style in Word.` });
     return x + '</w:styles>';
   }
   function lvlXML(lv, i, ctx) {
     let x = `<w:start w:val="${lv.start != null ? lv.start : 1}"/>`;
     x += lv.custFmt ? `<w:numFmt w:val="custom" w:format="${X(lv.custFmt)}"/>` : `<w:numFmt w:val="${lv.fmt || 'decimal'}"/>`;
     if (lv.restart != null) x += `<w:lvlRestart w:val="${lv.restart + 1}"/>`;
-    if (lv.pStyle) x += `<w:pStyle w:val="${X(lv.pStyle)}"/>`;
+    if (lv.pStyle) x += `<w:pStyle w:val="${X(ctx?.ownStyle?.(lv.pStyle) ?? lv.pStyle)}"/>`;
     if (lv.isLgl) x += '<w:isLgl/>';
     if (lv.suff && lv.suff !== 'tab') x += `<w:suff w:val="${lv.suff}"/>`;
     x += `<w:lvlText w:val="${X(lv.text == null ? '' : lv.text)}"/>`;
@@ -900,7 +1015,7 @@
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const docRels = pack.rels('word/document.xml');
     D.reindex(doc);
-    const ranges = L.preserve.prepareRanges(doc);
+    const ranges = L.preserve.prepareRanges(doc), moves = L.preserve.prepareMoves(doc), hoisted = new Set();
     const objects = L.preserve.prepareObjects(doc, pack.writer);
     L.preserve.prepareNumbering(doc.numbering, pack.writer);
     /* --- context shared by every story --- */
@@ -916,9 +1031,11 @@
     const highNote = kind => Math.max(0, ...Object.keys(kind === 'fn' ? doc.fn : doc.en).map(x => +x || 0), ...(doc.keep?.notes?.[kind] || []).map(n => +n.id || 0)) + 1;
     let fnN = highNote('fn'), enN = highNote('en');
     const charts = [];
-    const usedPaths = new Set();
+    const usedPaths = new Set(), styleRefs = new Set(), paraIds = new Set();
+    /** the id to write for style id: the file's own style of its name for a built-in marked sameAs (docx-read), otherwise id */
+    const ownStyle = (id) => { const s = doc.styles[id]; return s?.sameAs && doc.styles[s.sameAs] ? s.sameAs : id; };
     const mkCtx = (rels, main) => ({
-      rels, main, doc, ranges, objects, writer: pack.writer, part: rels.owner, mainPart: pack.part('word/document.xml'),
+      rels, main, doc, ranges, moves, hoisted, objects, writer: pack.writer, styleRefs, ownStyle, paraIds, part: rels.owner, mainPart: pack.part('word/document.xml'),
       drawingXML,
       rev: () => pack.writer.ids.fresh('document', 'revision'),
       docPrId: () => {
@@ -1035,7 +1152,7 @@
         const st = store[orig];
         if (!st) continue;
         let inner = blocksXML(st.blocks, ctx);
-        if (!/<w:(footnote|endnote)Ref\/>/.test(inner)) inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference'}"/></w:rPr><w:${tag}Ref/></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>`);
+        if (!/<w:(footnote|endnote)Ref\/>/.test(inner)) { const ref = ownStyle(kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference'); styleRefs.add(ref); inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${X(ref)}"/></w:rPr><w:${tag}Ref/></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>`); }
         x += `<w:${tag} w:id="${nid}">${inner}</w:${tag}>`;
       }
       return { xml: HEAD + `<w:${tag}s ${NSDECL}>${x}</w:${tag}s>`, rels };
@@ -1051,28 +1168,30 @@
       let x = '', ex = '';
       const reservedParaIds = new Set(Object.values(doc.comments).map(c => c.keep?.paraId).filter(Boolean));
       let paraN = Math.max(0x10000000, ...Array.from(reservedParaIds, p => parseInt(p, 16) || 0));
-      const paraIds = new Map();
+      const commentParas = new Map();
       for (const [orig, nid] of cmtIds) {
         const c = doc.comments[orig];
         if (!c) continue;
         let inner = blocksXML(c.blocks, ctx);
-        if (!/annotationRef/.test(inner)) inner = prependParagraph(inner, '<w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:annotationRef/></w:r>');
-        const pid = c.keep?.paraId || (++paraN).toString(16).toUpperCase().padStart(8, '0');
-        paraIds.set(String(orig), pid);
-        /* tag the last paragraph with a paraId for threading / done state */
-        const lastIdx = inner.lastIndexOf('<w:p>');
-        if (lastIdx >= 0) inner = inner.slice(0, lastIdx) + `<w:p w14:paraId="${pid}" w14:textId="77777777">` + inner.slice(lastIdx + 5);
-        x += `<w:comment w:id="${nid}" w:author="${X(c.author || 'Unknown')}" w:date="${X(c.date || iso())}" w:initials="${X(c.initials || '')}">${inner}</w:comment>`;
+        if (!/annotationRef/.test(inner)) { const ref = ownStyle('CommentReference'); styleRefs.add(ref); inner = prependParagraph(inner, `<w:r><w:rPr><w:rStyle w:val="${X(ref)}"/></w:rPr><w:annotationRef/></w:r>`); }
+        let pid = c.keep?.paraId;
+        if (!pid) { do pid = (++paraN).toString(16).toUpperCase().padStart(8, '0'); while (paraIds.has(pid)); paraIds.add(pid); }
+        commentParas.set(String(orig), pid);
+        /* tag the last paragraph with a paraId for threading / done state (in place of the one it was read with) */
+        const last = [...inner.matchAll(/<w:p(?=[ >])[^>]*>/g)].at(-1);
+        if (last) inner = inner.slice(0, last.index) + last[0].replace(/ w14:(?:paraId|textId)="[^"]*"/g, '').replace('<w:p', `<w:p w14:paraId="${pid}" w14:textId="77777777"`) + inner.slice(last.index + last[0].length);
+        // a comment read without a date is saved without one (57 in the corpus); new ones get one (review.js)
+        x += `<w:comment w:id="${nid}" w:author="${X(c.author || 'Unknown')}"${c.date ? ` w:date="${X(c.date)}"` : ''} w:initials="${X(c.initials || '')}">${inner}</w:comment>`;
       }
       for (const [orig] of cmtIds) {
         const c = doc.comments[orig];
         if (!c) continue;
-        const pid = paraIds.get(String(orig));
-        const parent = c.parent != null ? paraIds.get(String(c.parent)) : null;
+        const pid = commentParas.get(String(orig));
+        const parent = c.parent != null ? commentParas.get(String(c.parent)) : null;
         ex += `<w15:commentEx w15:paraId="${pid}"${parent ? ` w15:paraIdParent="${parent}"` : ''} w15:done="${c.done ? 1 : 0}"/>`;
       }
       cmPart = { xml: HEAD + `<w:comments ${NSDECL}>${x}</w:comments>`, rels };
-      const extendedNS = doc.keep?.commentExtension?.namespace || NS.w15;
+      const extendedNS = doc.keep?.commentExtension?.namespace || doc.keep?.w15 || NS.w15;
       cmExPart = HEAD + `<w15:commentsEx xmlns:mc="${NS.mc}" xmlns:w15="${X(extendedNS)}" mc:Ignorable="w15">${ex}</w15:commentsEx>`;
     }
     /* --- media names --- */

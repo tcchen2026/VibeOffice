@@ -1037,7 +1037,7 @@
       const attrs = [];
       if (s.hidden) attrs.push('show="0"');
       if (s.hideMaster) attrs.push('showMasterSp="0"');
-      const xml = L.properties.finishSlide(s, ctx, HEAD + `<p:sld ${NSDECL}${attrs.length ? ' ' + attrs.join(' ') : ''}><p:cSld>${s.bg ? bgXML(s.bg, ctx, d) : ''}<p:spTree>${GRP.replace('id="1"', 'id="' + rootId + '"')}${tree}</p:spTree>${comments.creation}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${transition}${timing}${comments.ext}</p:sld>`);
+      const xml = L.properties.finishSlide(s, ctx, HEAD + `<p:sld ${NSDECL}${attrs.length ? ' ' + attrs.join(' ') : ''}><p:cSld>${s.bg ? bgXML(s.bg, ctx, d) : ''}<p:spTree>${GRP.replace('id="1"', 'id="' + rootId + '"')}${tree}</p:spTree>${ctx.controls?.length ? '<p:controls>' + ctx.controls.join('') + '</p:controls>' : ''}${comments.creation}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${transition}${timing}${comments.ext}</p:sld>`);
       if (s.notes && s.notes.trim() || s.keep?.notes) {
         if (s.keep?.copy && s.keep.notes?.text === s.notes && pres.pkg?.has(s.keep.notes.part)) {
           const target = pack.part(`ppt/notesSlides/notesSlide${n}.xml`);
@@ -1103,7 +1103,7 @@
     add('ppt/_rels/presentation.xml.rels', presRels.xml());
     overrides.unshift(['/ppt/presentation.xml', mainCT]);
     const sh = pres.show || {};
-    add('ppt/presProps.xml', HEAD + `<p:presentationPr ${NSDECL}><p:showPr${sh.loop ? ' loop="1"' : ''} showNarration="1"${sh.noAnim ? ' showAnimation="0"' : ''}${sh.useTimings === false ? ' useTimings="0"' : ''}>${sh.kiosk ? '<p:kiosk/>' : '<p:present/>'}${sh.from && sh.to ? `<p:sldRg st="${sh.from}" end="${sh.to}"/>` : '<p:sldAll/>'}<p:penClr>${clr(sh.penColor || '#FF0000')}</p:penClr></p:showPr></p:presentationPr>`);
+    add('ppt/presProps.xml', HEAD + `<p:presentationPr ${NSDECL}><p:showPr${sh.loop ? ' loop="1"' : ''} showNarration="1"${sh.noAnim ? ' showAnimation="0"' : ''}${sh.useTimings === false ? ' useTimings="0"' : ''}>${sh.kiosk ? '<p:kiosk/>' : '<p:present/>'}${sh.from && sh.to ? `<p:sldRg st="${sh.from}" end="${sh.to}"/>` : '<p:sldAll/>'}<p:penClr>${!sh.penColor || /^#FF0000$/i.test(sh.penColor) ? '<a:prstClr val="red"/>' : clr(sh.penColor)}</p:penClr></p:showPr></p:presentationPr>`);
     overrides.push(['/ppt/presProps.xml', CT.presProps]);
     add('ppt/viewProps.xml', HEAD + `<p:viewPr ${NSDECL}><p:normalViewPr><p:restoredLeft sz="15620"/><p:restoredTop sz="94660"/></p:normalViewPr><p:gridSpacing cx="76200" cy="76200"/></p:viewPr>`);
     overrides.push(['/ppt/viewProps.xml', CT.viewProps]);

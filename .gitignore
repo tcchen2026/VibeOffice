@@ -3,6 +3,7 @@ node_modules
 *.zip
 .*
 !.gitignore
+!.dockerignore
 /issues/*.png
 /issues/*/*.png
 /tmp

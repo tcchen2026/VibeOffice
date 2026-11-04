@@ -82,6 +82,28 @@
     p.runs = keep;
     D.normalize(p);
   }
+  /* A field's begin, separator and end take no room, so RV.list doesn't show their revisions (nor a move's around
+     them); Accept All and Reject All settle them with the rest. A field whose marks all go (an accepted deletion, a
+     rejected insertion) goes; otherwise its marks stay and lose the revision. */
+  const FIELD = new Set(['fb', 'fs', 'fe']);
+  function fieldMarks(d) {
+    const out = [];
+    for (const st of D.stories(d)) D.walk(st, (p) => { if (p.t === 'p') for (const it of p.runs) if (FIELD.has(it.t)) out.push([p, it]); });
+    return out;
+  }
+  const revised = (marks) => marks.filter(([, it]) => it.rPr && (it.rPr.ins || it.rPr.del));
+  function settleMarkers(marks, accept) {
+    const gone = accept ? 'del' : 'ins', kept = accept ? 'ins' : 'del', whole = new Map();
+    for (const [, it] of marks) whole.set(it.fid, (whole.get(it.fid) ?? true) && !!it.rPr?.[gone]);
+    const touched = new Set();
+    for (const [p, it] of revised(marks)) {
+      D.touch(p); touched.add(p);
+      it.rPr = Object.assign({}, it.rPr);
+      delete it.rPr[kept];
+      if (!whole.get(it.fid)) delete it.rPr[gone];
+    }
+    for (const p of touched) { p.runs = p.runs.filter((it) => !(FIELD.has(it.t) && whole.get(it.fid))); D.normalize(p); }
+  }
   function joinNoTrack(p) {
     const d = doc();
     const trk = d.settings.track;
@@ -100,7 +122,8 @@
       const st = D.storyOf(d, a.p);
       targets = RV.list(st).filter((r) => D.cmp(d, D.pos(r.p, r.b), a) >= 0 && D.cmp(d, D.pos(r.p, r.a), b) <= 0 && !(r.p === b.p && r.a >= b.o && r.a !== r.b) && !(r.p === a.p && r.b <= a.o && r.a !== r.b));
     } else { const r = RV.revisionAt(); targets = r ? [r] : []; }
-    if (!targets.length) {
+    const markers = scope === 'all' ? revised(fieldMarks(d)) : [];
+    if (!targets.length && !markers.length) {
       if (scope === 'selection') { RV.step(1); app().status(accept ? 'There are no tracked changes at the selection.' : 'There are no tracked changes or comments at the selection.'); }
       return;
     }
@@ -113,9 +136,10 @@
         const marks = order.filter((r) => r.type === 'mins' || r.type === 'mdel');
         for (const r of order) if (!(r.type === 'mins' || r.type === 'mdel')) resolve(r, accept);
         for (const r of marks) if (D.info(d, r.p)) resolve(r, accept);
+        if (markers.length) settleMarkers(fieldMarks(d), accept);
       } finally { d.settings.track = trk; }
-      const p = targets[0].p;
-      return D.info(d, p) ? D.pos(p, Math.min(targets[0].a, D.plen(p))) : E.sel;
+      const p = targets[0]?.p;
+      return p && D.info(d, p) ? D.pos(p, Math.min(targets[0].a, D.plen(p))) : E.sel;
     });
     if (scope === 'selection' && E.collapsed()) RV.step(1, true);
   };
@@ -149,8 +173,8 @@
     let target = null;
     E.edit('Insert Comment', () => {
       D.touchKey(d, 'comments');
-      if (!d.styles.CommentText) { D.touchKey(d, 'styles'); d.styles.CommentText = D.builtinStyles().CommentText; d.styles.CommentReference = d.styles.CommentReference || D.builtinStyles().CommentReference; D.stylesChanged(); }
-      const p = D.para([], { style: 'CommentText' });
+      D.useStyle(d, 'CommentReference');
+      const p = D.para([], { style: D.useStyle(d, 'CommentText') });
       d.comments[id] = { kind: 'cmt', id, author: O.author(), initials: O.initials(), date: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), blocks: [p] };
       D.touch(b.p);
       const ib = D.splitAt(b.p, b.o);

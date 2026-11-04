@@ -30,6 +30,8 @@ The browser profile keeps IndexedDB between runs of `shot.mjs`, so a test can ha
 
 Check after a change to `suite.js` or to an app's start, open or save code: `<app>/?new` starts blank; a handed-over file opens in place of the blank document (one window); the file and a thumbnail appear under Recent Files; clicking it reopens it. Clear the list with `await VO.recent.clear()`.
 
+Plain http: `node --test tests/insecure.test.mjs` checks that only the shared helpers call `crypto.randomUUID` and `crypto.subtle`, which a page served over plain http lacks, and that their fallbacks work: random UUIDs, and a password-protected file opening without WebCrypto (docs/suite.md, Plain http). To see such a page, serve the site on an address that isn't loopback, for example the Docker image (docs/suite.md, Self-hosting with Docker) published on a port and opened at the machine's LAN address: the Start Center shows its bar.
+
 Templates: `node tools/templates.mjs` opens every template (`<app>/?template=<id>`) and fails on a script error or a missing preview; look at the new previews in the Create File view.
 
 Pattern fills: the preset bitmaps in `common/geometry.js` are PowerPoint's. `node tools/patterns/deck.mjs` writes `tmp/patterns/patterns.pptx` (each of the 54 presets in a labelled rectangle); save it as PDF from PowerPoint and `python3 tools/patterns/read-pdf.py patterns.pdf` prints the tiles, the form of `tests/patterns.powerpoint.json` (`node --test tests/patterns.test.mjs`). Ledger's cell patterns (`js/render.js`) likewise: `node tools/patterns/sheet.mjs` writes `tmp/patterns/cellpatterns.xlsx` (the 17 patterns), Excel saves it as PDF, and `read-pdf.py --cells` prints the tiles, `tests/patterns.excel-mac.json` (from Excel for Mac, which draws them at double size; the test applies the rule in `render.js` that brings them to single pixels).
@@ -221,6 +223,44 @@ The engine and the file readers and writers load in Node through `load.js` (the 
 The compatibility numbers in each app's doc come from public test corpora (LibreOffice, Apache POI, Open XML SDK, XlsxWriter, ClosedXML and others; see the app docs for the list). They are not checked in; download them outside the repo and point the per-file scripts at the folder.
 
 ## Lossless same-format save: reproducible baseline
+
+### Office 2016 VM: HTTP open/repair and PDF checks
+
+`tools/win_test_server/` is a standalone Go test server for the `win10` VM, working in `C:\vo`.
+Build from the repository root with
+`GOOS=windows GOARCH=amd64 go -C tools/win_test_server build -o ../../tmp/win-test-server/win_test_server.exe .`
+(create `tmp/win-test-server/` first). Copy the executable and `install.ps1` there with `scp`, then run
+`ssh win10 powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:/vo/install.ps1`.
+The installer registers an interactive logon task; keep the VM signed in and unlocked. The server binds
+to VM loopback `127.0.0.1:8765`; reach it through `ssh -N -L 18765:127.0.0.1:8765 win10`.
+
+```sh
+curl -fsS --data-binary @saved.docx \
+  'http://127.0.0.1:18765/convert?filename=saved.docx&timeout=120' -o tmp/office-result.json
+```
+
+Raw DOCX/XLSX/PPTX uploads only, up to 100 MiB. `POST /convert` waits for the JSON result;
+`POST /jobs` queues it and returns an ID (`202`); `GET /jobs/<id>` reads its result. `GET /health`
+reports active/pending counts. The result's `pdf` and `dialogs[].screenshot` are downloadable relative URLs.
+Office jobs run serially, with a 120 s default deadline (5–600 s), fresh processes, alerts enabled,
+macros disabled, read-only normal opens and no repair retries. Existing Office processes cause `busy`.
+The Word/Excel/PPT native exporters produce the PDFs; Excel respects print areas, PPT includes hidden slides.
+
+`canOpenWithoutRepair` is `true` only after an observed successful normal open, `false` for an open rejection
+or repair request, and `null` when inconclusive (including unknown dialogs and timeouts). A COM rejection may
+have no visible prompt; keep its error. `pdfStatus` separately reports export success. Completed jobs return
+HTTP 200 even on failure: inspect the JSON. Results retain source/PDF hashes, unchanged-input verification,
+Office build, dialog text/images and timings in `C:\vo\jobs\<id>`. Opening/exporting is evidence for the
+lossless-save review, not proof that objects remain editable or content is unchanged: test original and saved
+files, compare their PDFs, and retain the feature checklist and package/SDK checks.
+
+`node --test tests/win-test-server.test.mjs` tests the HTTP protocol, serial queue, failure evidence and
+Windows cross-build. The opt-in `python3 tests/win_test_server/live.py --out tmp/win-test-server/live`
+uses local public-corpus files, historical confirmed repair cases, password and timeout controls on the VM.
+The VM was checked on 2026-11-02 with Office build `16.0.4266.1003`. Before replacing its executable, wait for
+an idle queue and stop the task `VibeOffice Office 2016 Test API`; run `install.ps1` again after copying.
+
+### Corpus drivers
 
 `sh tools/corpora.sh ~/corpora` fetches the pinned LibreOffice, Apache POI and Open XML SDK revisions
 listed in `tools/ooxml/corpora.py`. It resumes interrupted fetches, refuses dirty or unrelated checkouts,
@@ -580,7 +620,7 @@ A full run should use a frozen writer revision, served on a separate port while 
 The browser harness disables persistence in its own tabs, captures loss metadata after snapshot, and
 checks the recovered document. Locked content-control edits are explicit exclusions, not undo failures.
 
-`python3 tools/ooxml/samples.py ~/corpora /tmp/lossless ~/Downloads/lossless-check/baseline`
+`python3 tools/ooxml/samples.py ~/corpora /tmp/lossless tmp/lossless/baseline`
 selects small independently authored files for each carried-feature test, copies original/saved/edited
 variants where available, and writes a manifest. It refuses to replace differing handoff files.
 Use a new destination for each implementation stage. Record actual Word/Excel/PowerPoint repair

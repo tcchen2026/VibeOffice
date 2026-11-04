@@ -16,8 +16,10 @@
 
 Modeled on LibreOffice's Start Center, drawn in the suite's look (see Looks). No title bar of its own (installed, the window has the system's). Left: Open File…, Recent Files, Create File, *Apps*: Quire (word processor), Ledger (spreadsheet), Lectern (presentations), each opening with its demo file, Update VibeOffice (desktop app, when `updater/current.json` asks; docs/desktop.md, Versions and updates) or Check for updates (a version two months old or more, with its age in months, on the site, in the installed PWA and in the desktop app, the Mac App Store edition too: it opens the updater page), Install (on https://vibeoffice.work and 127.0.0.1, when the browser offers it; anywhere else the browser's own prompt is cancelled, `VO.offersInstall`), Feedback on our GitHub, the privacy note and the version, then a row of three links with icons: Settings, Themes (a dialog with a live preview of each look, see Looks) and About. In a narrow window (or a large UI size) the note goes but the links stay. Right, one of two views:
 
-- **Recent Files** (the default): cards (thumbnail, name, app, when), each with a remove button; *Clear Recent Documents*; when the list is empty, the welcome: what the suite is, the three apps with what they do and their formats, why it is different (files kept whole, private, familiar, offline and installable, in your language: the line on offline and installing is hidden in the desktop app), the UI's languages, each in its own name (`translate="no"`), and the drop hint. It is static HTML, so search engines read it (Search engines, below).
+- **Recent Files** (the default): cards (thumbnail, name, app, when), each with a remove button; *Clear Recent Documents*; when the list is empty, the welcome: what the suite is, the three apps with what they do and their formats, why it is different (files kept whole, private, familiar, offline and installable, in your language: the line on offline and installing shows only where the service worker runs and Install is offered, `VO.offersInstall`, so not in the desktop app or a copy of the site served elsewhere), the UI's languages, each in its own name (`translate="no"`), and the drop hint. It is static HTML, so search engines read it (Search engines, below).
 - **Create File** (`#create`, so Back returns to Recent Files): Documents, Spreadsheets and Presentations, each starting with Blank (`<app>/?new`) followed by the app's templates (`<app>/?template=<id>`), with a preview of each.
+
+Over plain http (Plain http, below) a yellow bar above the view says the site isn't served over HTTPS and names features the browser keeps off; its colours are the looks' `--warn-*` settings.
 
 **Settings** (what applies to every app): UI size (the desktop app's zoom, 100–400 %; on the web, a pointer to the browser's own zoom: CSS zoom breaks the apps' hit-testing), Fonts on this computer (load, reload or forget the list Local Font Access gave, where the browser has it) and Recent Files (how many, how much this browser keeps, Clear Recent Documents). Per-app settings stay in each app's Tools ▸ Options.
 
@@ -88,8 +90,8 @@ One copy of everything the three apps share; a change here is a change in every 
 | `search.js` | Search commands, the box at the top right of every app (see Search commands) | all |
 | `ribbon.js` | the ribbon of the Paper 2016 look, drawn from each app's `js/ribbon.js` (see The ribbon) | all |
 | `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |
-| `zip.js`, `sha.js`, `crypto.js` | ZIP read/write; SHA; ECMA-376 encryption (password-protected files) | all |
-| `xml.js`, `opc.js`, `opc-order.js` | Portable XML tree, immutable OOXML packages, dependency and identity maps, fragment capture and geometry adapters; generated schema order and preset adjustment tables. | all |
+| `zip.js`, `sha.js`, `crypto.js` | ZIP read/write; SHA (`L.sha.digest`: WebCrypto's, or its own over plain http); ECMA-376 encryption (password-protected files) | all |
+| `xml.js`, `opc.js`, `opc-order.js` | Portable XML tree, immutable OOXML packages, dependency and identity maps, fragment capture and geometry adapters, the suite's random UUIDs and GUIDs (`K.uuid`, `K.guid`); generated schema order and preset adjustment tables. | all |
 | `geometry.js`, `metafile.js` | AutoShape presets and preset pattern fills; WMF/EMF player | all |
 | `charts.js` | chart model, SVG renderer, chart data dialog (Lectern's `chart-draw.js` adds the v2 renderer) | all |
 | `numfmt.js` | Excel number formats | Ledger, Lectern |
@@ -224,7 +226,7 @@ Script order: `suite.js`, the app config, `core.js`, then the libraries and the 
 
 ## Language
 
-The UI's language is one choice for the whole suite, like the look: Auto (the default: the first of the browser's languages that VibeOffice has, else English), English, 日本語, 한국어, Français, Deutsch, 简体中文 or 繁體中文, in the Start Center's Settings or Tools ▸ Options ▸ General ▸ Language of any app. It is `localStorage['vibeoffice.lang']`; the shared `common/lang.js` in each page's head resolves it into `<html lang>` before the first paint (`?lang=` overrides it for one page, as the tests do with `lang=en`), and a change applies to the windows opened after it (the Start Center reloads). `common/i18n.js` reads it, loads the dictionary and gives `VO.t` / `L.t`; the apps start once it is loaded. Chinese uses `zh-CN` and `zh-Hant`; `zh-TW`, `zh-HK`, `zh-MO` and `zh-Hant` map to `zh-Hant`, while other Chinese tags map to `zh-CN`. See docs/i18n.md.
+The UI's language is one choice for the whole suite, like the look: Auto (the default: the first of the browser's languages that VibeOffice has, else English), English, Français, Deutsch, 简体中文, 繁體中文, 日本語 or 한국어, in the Start Center's Settings or Tools ▸ Options ▸ General ▸ Language of any app. It is `localStorage['vibeoffice.lang']`; the shared `common/lang.js` in each page's head resolves it into `<html lang>` before the first paint (`?lang=` overrides it for one page, as the tests do with `lang=en`), and a change applies to the windows opened after it (the Start Center reloads). `common/i18n.js` reads it, loads the dictionary and gives `VO.t` / `L.t`; the apps start once it is loaded. Chinese uses `zh-CN` and `zh-Hant`; `zh-TW`, `zh-HK`, `zh-MO` and `zh-Hant` map to `zh-Hant`, while other Chinese tags map to `zh-CN`. See docs/i18n.md.
 
 ## The assistant: Scout
 
@@ -314,8 +316,30 @@ identity attributes only: relationship IDs, text, URLs and extension URIs keep t
 The loss ledger distinguishes conversion from deletion and keeps stable entry identities. Specific
 object conversion/deletion notices can account for their opaque dependency trees with `coverLoss`;
 this suppresses redundant part notices without removing any parts or crossing rewritten-content
-boundaries. Unexplained missing parts still produce their own loss entries. Digital
-signatures are removed and reported because a changed package cannot retain their validity. Missing
+boundaries. Unexplained missing parts still produce their own loss entries: `unreferenced:` for a part
+the original used (reached through relationships from the package root, where a relationship its owner
+must name by id counts only if the owner's markup names it), a writer defect unless a notice where it
+happened accounts for it; `orphan:` for a part nothing in the original used. The check walks only the
+owners on a path to a missing part, so it costs nothing on an ordinary save. What the user deleted is
+recorded as `deleted:` and accounts for its parts: a slide or sheet with what only it used, and a picture, chart,
+media clip, add-in or shape's tags the document used when it was opened (each app's `L.preserve.inUse`) and no
+longer uses. Something the model never used, or still uses, is not explained this way, so in an edit run
+`unreferenced:` keeps meaning a writer defect. Digital
+signatures are removed and reported because a changed package cannot retain their validity; that notice
+accounts for the signature parts.
+
+Part names compare case-insensitively, as OPC defines them: a relationship to `docProps/thumbnail.jpeg`
+finds a stored `docProps/Thumbnail.jpeg`, and the save writes the stored name. A relationship to a part
+the original lacks no longer stops its owner from being carried: Office's own `Target="NULL"` (an image
+that isn't there, in Excel 2007 templates' themes and PowerPoint pictures) is written back as it was; one
+the owner's markup doesn't name (a glossary's web settings) is dropped; one only an optional element
+names (`c:externalData`, a chart's embedded workbook) goes with that element, and the chart keeps its
+values. Anything else still makes the object a conversion, as before.
+
+SmartArt keeps its drawing cache through `dsp:dataModelExt/@relId` in its data part, a relationship of
+the frame's own part outside the relationships namespace: `diagramRelated` finds those relationships,
+and `Writer.diagram` keeps them with the frame, giving a frame in another owner a private data part, and
+a copy (`copy: true`) private data, layout, style, colour and drawing parts, as Office writes a copy. Missing
 dependencies and unavoidable conversions are reported by the writer; draft recovery retains pending
 entries even when the original content has already been converted in the draft.
 `output` runs its app-owned audit after assembling content. `reportFeatures` compares specified
@@ -390,3 +414,49 @@ Icons: edit the SVGs, then render the PNGs in Chromium:
 **Progress.** While it installs, the worker posts `{ type: 'vo-cache', state: 'progress', update, progress, received, total, version }` to every page of the site (progress: the download up to 0.8, then the unpacking; received and total: the zip's bytes, total 0 if the server didn't say), then `{ state: 'failed', error }`, or `{ state: 'done', update }` once the new worker has taken over (from its activation, so a reload is answered by the new version). `common/suite.js` turns these into a `vo-cache` event on `window`. The Start Center shows *Updating cached resources* (*Caching resources for offline use* on the first visit) above the GitHub button, with a progress bar and the megabytes (*1.9 of 4.2 MB*); after an update it turns into a notice with a green tick that draws itself and pulses a few times (none with reduced motion), *Just updated successfully, Click here to reload*; a click reloads the Start Center in the new version (other open pages get it the next time they load).
 
 `node --test tests/sw.test.mjs` checks all of this on staged copies (docs/testing.md).
+
+## Plain http
+
+A copy of the site served over http from any address but `localhost` and `127.0.0.1` is not a secure context, and the
+browser takes some features away from its pages. What the suite does without them:
+
+- **`crypto.subtle`:** hashes come from `common/sha.js` instead (`L.sha.digest`, WebCrypto's where the page has it):
+  opening password-protected files (`common/crypto.js` does AES decryption itself), Ledger's sheet and workbook
+  passwords, Quire's document protection. Saving with a password to open needs WebCrypto's AES and fails with
+  *Saving with a password needs a secure (https) page.*
+- **`crypto.randomUUID`:** `K.uuid` and `K.guid` (`common/opc.js`) make version 4 UUIDs from `getRandomValues`, which
+  every page has. Nothing else calls `randomUUID` or `crypto.subtle` (`tests/insecure.test.mjs`).
+- **Kept off:** the async clipboard (the Paste button and menu command can't read what another program copied; Ctrl+V can), Local Font Access (Settings offers no fonts on
+  this computer), the screen wake lock in slide shows, persistent storage for Recent Files and unsaved versions, and the
+  service worker and Install, which run only on https://vibeoffice.work and 127.0.0.1 anyway (Service worker, PWA).
+
+The Start Center says so (`isSecureContext === false`): a bar above the view names the main losses and warns that other
+things may not work as expected, and the welcome's line on offline use and installing is hidden.
+
+## Self-hosting with Docker
+
+`Dockerfile` builds an image of nginx (`nginx:stable-alpine`) serving `public/` as it is, with
+`tools/docker/nginx.conf`; `.dockerignore` sends only those two to the build. No account is needed to build or run it
+(the base image comes from Docker Hub anonymously), only to push the image to a registry.
+
+    docker build -t vibeoffice .
+    docker run -d --name vibeoffice -p 8080:80 vibeoffice
+
+then open http://localhost:8080/. Podman builds and runs the same (`podman build`, `podman run`); the base image is
+named in full (`docker.io/library/nginx`), so Podman doesn't ask which registry to use.
+
+The server sends `Cache-Control: no-cache` on everything (a page's 20 to 45 scripts must all be of one version; an
+unchanged file is a 304), `X-Content-Type-Options: nosniff`, gzip, the manifest as `application/manifest+json`, and
+relative redirects (`/quire` to `/quire/`, which keeps working when the published port isn't 80). It adds no
+Content-Security-Policy: every page carries its own (Security, above).
+
+**Published image.** `.github/workflows/docker.yml` (Actions ▸ Docker ▸ Run workflow; like the other workflows it
+is started by hand, from the default branch) builds the image, runs it and checks its answers (the pages, the types
+of scripts and the manifest, `/quire` sent to `/quire/` on the published port), then pushes it for linux/amd64 and
+linux/arm64 to Docker Hub as `<Docker ID>/vibeoffice:<version>` (`tools/current-tree-version.sh`) and `:latest`. It
+needs the repository variable `DOCKERHUB_USERNAME` (the Docker ID) and the secret `DOCKERHUB_TOKEN` (a Docker Hub
+personal access token with Read & Write). Then anyone runs it with `docker run -d -p 8080:80 <Docker ID>/vibeoffice`.
+
+A copy is unstamped (`VERSION = 'dev'`, as About shows), and the service worker and Install run only on
+https://vibeoffice.work and 127.0.0.1, so it has no offline use. For other machines serve it over HTTPS (a reverse proxy
+with a certificate in front of the container); over plain http the browser keeps more features off (Plain http).

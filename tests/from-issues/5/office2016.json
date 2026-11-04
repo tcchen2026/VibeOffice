@@ -1,0 +1,184 @@
+{
+  "issue": "https://github.com/tcchen2026/VibeOffice/issues/5",
+  "source": "https://github.com/user-attachments/files/33294408/1.docx",
+  "checkedAt": "2026-11-02",
+  "quireCommit": "767a51e5e782f1ccefbd512daaed9987fb2e4d94",
+  "finding": "Fixed in Quire rendering: inline pictures clip at column-gap midpoints; their saved sizes stay intact. Floating pictures and inline AutoShapes remain free to cross columns.",
+  "columnWidthPt": 196.85,
+  "pictureWidthsPt": [
+    278.75,
+    318.5115748031496
+  ],
+  "pageCounts": {
+    "quire": 3,
+    "wordOriginal": 3,
+    "wordQuireSave": 3
+  },
+  "wordOriginal": {
+    "id": "5fbdbe17de8dfe1c21c600a4454ba193",
+    "inputSha256": "005cdcfa9ac54bec9ba9c103af787b37c5cf2ce1711edefeb255495bf0a4f81d",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "cae7318aa76c7c3eaa2cc9d735bd95d3084c7016a21c100759f825ce541c41ae",
+    "inputUnchanged": true,
+    "dialogs": []
+  },
+  "wordQuireSave": {
+    "id": "e268cbd6e27799e9f2e642e52712f1a6",
+    "inputSha256": "39f224bf38df81048ab30b947470e82c0559bc5caa50404d792960c539dd96bb",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "5cbe832df13283bcfe1c5efdf35fc6bfa166dd0ff3721f4e1be9bbec7e1065d4",
+    "inputUnchanged": true,
+    "dialogs": []
+  },
+  "affectedFirstPage": {
+    "wordRendersIdentical": true,
+    "rasterLongestSidePx": 1200,
+    "pngSha256": "6c7ce4af5273ac4f7a0e92118301ac0eef74e0ffec0fcb174845dfa7b651db1c"
+  },
+  "cause": {
+    "columns": "public/quire/js/layout.js:newRegion creates pg-col frames with position/width but no clipping. public/quire/index.html leaves their overflow visible.",
+    "pictures": "public/quire/js/render.js:R.image preserves the fixed document width; the img wrapper clips only to that oversized width."
+  },
+  "reproduce": "node tests/from-issues/5/inspect.mjs INPUT.docx OUTPUT_DIR; submit INPUT.docx and OUTPUT_DIR/quire-saved.docx to the Office 2016 API.",
+  "localEvidence": "tmp/from-issues/5/office2016-20261102",
+  "clipRightPt": 297.6,
+  "columnControls": {
+    "generator": "tests/from-issues/5/fixtures.mjs",
+    "officeBuild": "16.0.4266.1003",
+    "pageWidthPt": 612,
+    "cases": {
+      "two": {
+        "id": "65848ef1927f6ae10aff1982cd603084",
+        "inputSha256": "258d7a8610d00277236e1f9bdda78d38c7079fa9e762c4ebcb566c009e420e45",
+        "status": "ok",
+        "canOpenWithoutRepair": true,
+        "pdfSha256": "9ea81d509b20448b570a059fd2d772e779bfa5316024ef8da77b00f51b8901dc",
+        "dialogs": [],
+        "horizontalClipBoundsPt": [
+          0,
+          306,
+          612
+        ]
+      },
+      "unequal": {
+        "id": "81b5b17ac0ebff51878198b2b6042e1e",
+        "inputSha256": "8597aa030189a46e925d1c15d0b8502630f1313f06abf5925cb60c7d6a0ecf23",
+        "status": "ok",
+        "canOpenWithoutRepair": true,
+        "pdfSha256": "c77b0cfc5919abe269c6f824e74e5f2c3f827e18af0fd0db5780d7a95b82282b",
+        "dialogs": [],
+        "horizontalClipBoundsPt": [
+          0,
+          201,
+          365.04,
+          612
+        ]
+      },
+      "single": {
+        "id": "7083034e651be1b9f249044d7b370efc",
+        "inputSha256": "4bea19b42779b382fd392d10e4eb7ef332b177a0e2b597285471188e8770e6aa",
+        "status": "ok",
+        "canOpenWithoutRepair": true,
+        "pdfSha256": "30a4fdbd7a124dfb1cf4b9a99a75ac1ee666f4317376557d8f0e15a7993d361f",
+        "dialogs": [],
+        "horizontalClipBoundsPt": [
+          0,
+          612
+        ]
+      },
+      "floating": {
+        "id": "00cac315e8dd2f697eb090f566be5aa4",
+        "inputSha256": "10dd8bec7edbb0a8d588244bb8bd7613cd835c9404e3a6229f14606b3bf33cf4",
+        "status": "ok",
+        "canOpenWithoutRepair": true,
+        "pdfSha256": "6cc7eef37bfab25ddd8f0f60a1e63ee22cd0ad02bf9d3c9b06b4b326f84190c5",
+        "dialogs": [],
+        "horizontalClipBoundsPt": [
+          0,
+          306,
+          612
+        ],
+        "floatingClipBoundsPt": [
+          0,
+          612
+        ]
+      },
+      "rotated": {
+        "id": "4a94ad9c3272c75b81c804ccde29b073",
+        "inputSha256": "c85c1588f1ed710db191a6b0928df554566dbc52dee570564a8eb2f2fffe3205",
+        "status": "ok",
+        "canOpenWithoutRepair": true,
+        "pdfSha256": "fc40e8bd241ca412cc8bb4e135bfa46bdb606608b7ec1c677f8581af7ce71f62",
+        "dialogs": [],
+        "horizontalClipBoundsPt": [
+          0,
+          306,
+          612
+        ],
+        "note": "Horizontal boundary verified; Word also clips rotation vertically to the line, an existing separate rendering limit."
+      },
+      "shapes": {
+        "id": "b341d1494416abba90709f05fd0bad80",
+        "inputSha256": "67ed6ed7165e8d0b0599eced669744aca1069b891b3028d2c4b5717c70fcdb8d",
+        "status": "ok",
+        "canOpenWithoutRepair": true,
+        "pdfSha256": "3958c0f857547fcf91e5ef47f98ebd3149ec33b45f02d294b482e059f7649d6b",
+        "dialogs": [],
+        "horizontalClipBoundsPt": [
+          0,
+          612
+        ]
+      }
+    }
+  },
+  "afterFix": {
+    "id": "e0bf6b2a486e51eeaacfc29e826fc7b2",
+    "inputSha256": "6d3878437f22ad54caa8eecdfeefc838da9379e0ea2d7f8c89076b801da6dc48",
+    "status": "ok",
+    "canOpenWithoutRepair": true,
+    "officeVersion": "16.0",
+    "officeBuild": "16.0.4266.1003",
+    "pdfStatus": "ok",
+    "pdfSha256": "ec708fa371243b23801687e821f5064abdf255ae89671b9b5526c43ab433ee9a",
+    "inputUnchanged": true,
+    "dialogs": [],
+    "savedDocxPartsIdenticalToBeforeFix": true,
+    "wordRasterPagesMatchOriginal": true,
+    "renderingChange": "public/quire/js/layout.js:clipColumnPictures, after pagination; no model or writer changes.",
+    "wordRasterPages": [
+      {
+        "page": 1,
+        "same": true,
+        "sha256": "6c7ce4af5273ac4f7a0e92118301ac0eef74e0ffec0fcb174845dfa7b651db1c"
+      },
+      {
+        "page": 2,
+        "same": true,
+        "sha256": "de05564fec940085922e91be1f3ac1f3a2bdebc0ad915104cff4fa0886e2c12b"
+      },
+      {
+        "page": 3,
+        "same": true,
+        "sha256": "d41c23a713be41a8a33acfe789bd8521bca40239426bfcc1197254b87784e923"
+      }
+    ],
+    "regression": "node --test tests/from-issues/5/columns.test.mjs; fails on 345e95f through tools/older.mjs.",
+    "quickCheck": {
+      "command": "node tools/quick.mjs",
+      "passed": true,
+      "nodeTests": 160,
+      "smokeTests": 4,
+      "ledgerUITests": 38,
+      "quireUITests": 51
+    },
+    "localEvidence": "tmp/from-issues/5/office2016-20261102/after"
+  }
+}

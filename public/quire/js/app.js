@@ -362,7 +362,7 @@
   A.styleOptions = function () {
     const d = doc();
     const used = D.usedStyles(d);
-    const ids = Object.keys(d.styles).filter((k) => { const s = d.styles[k]; return (s.type === 'paragraph' || s.type === 'character') && (used.has(k) || s.q || /^Heading[1-3]$/.test(k) || k === 'Normal') && !s.hidden; });
+    const ids = Object.keys(d.styles).filter((k) => { const s = d.styles[k]; return (s.type === 'paragraph' || s.type === 'character') && (used.has(k) || s.q || /^Heading[1-3]$/.test(k) || /^heading [1-3]$/i.test(s.name || '') || k === 'Normal') && !s.hidden && !s.sameAs; });
     return ids.map((k) => {
       const s = d.styles[k];
       const r = s.type === 'paragraph' ? D.styleProps(d, k).rPr : D.mergeRPr(d.defaults.rPr, D.charStyleProps(d, k));

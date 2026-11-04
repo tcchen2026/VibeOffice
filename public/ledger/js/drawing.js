@@ -125,6 +125,14 @@
         if (d.chart) { try { content.appendChild(L.xchart.render(d.chart, wb(), s, w, hh, z)); } catch (e) { console.error(e); content.appendChild(h('div', { class: 'gobj-ph', translate: 'no', text: d.name || L.t('Chart') })); } }
         else content.appendChild(h('div', { class: 'gobj-ph', translate: 'no', text: L.t('{0}\n(this chart type is not displayed)', d.name || L.t('Chart')) }));
       }
+    } else if (d.kind === 'frame') {
+      /* kept as it came from the file and saved back unchanged; not drawn here */
+      const key = 'f' + d.name;
+      if (el._key !== key) {
+        el._key = key;
+        content.textContent = '';
+        content.appendChild(h('div', { class: 'gobj-ph', translate: 'no', text: d.label === 'IntelliArt' ? L.t('{0}\n(IntelliArt is not displayed)', d.name || L.t('IntelliArt')) : L.t('{0}\n(this object is not displayed)', d.name || L.t('Object')) }));
+      }
     } else {
       const p = shapeProps(d);
       const key = `s${w}x${hh}@${z}:${d.xml ? d.xml.length : ''}:${JSON.stringify([p.geom, p.fill, p.line, p.lineW, d.text, p.text, d.font, d.align])}`;
@@ -414,14 +422,14 @@
     if (d.kind === 'chart') items.push({ label: 'Chart &Type...', run: () => L.chartWizard.typeMenu({ x: e.clientX, y: e.clientY }) }, { label: '&Chart Options...', run: () => L.chartWizard.open({ edit: d }) }, '-');
     if (d.kind === 'shape') items.push({ label: 'Edit Te&xt', run: () => DR.editText(d) }, '-');
     items.push({ label: 'O&rder', sub: [{ label: 'Bring to Fr&ont', run: () => DR.order('front') }, { label: 'Send to Bac&k', run: () => DR.order('back') }, { label: 'Bring &Forward', run: () => DR.order('forward') }, { label: 'Send &Backward', run: () => DR.order('backward') }] }, { label: 'Assign Macro...', disabled: true }, '-',
-      { label: d.kind === 'image' ? 'F&ormat Picture...' : d.kind === 'chart' ? 'F&ormat Chart Area...' : d.kind === 'shape' && shapeProps(d).geom === 'rect' && d.txBox ? 'F&ormat Text Box...' : 'F&ormat AutoShape...', run: () => DR.format(d) },
+      ...(d.kind === 'frame' ? [] : [{ label: d.kind === 'image' ? 'F&ormat Picture...' : d.kind === 'chart' ? 'F&ormat Chart Area...' : d.kind === 'shape' && shapeProps(d).geom === 'rect' && d.txBox ? 'F&ormat Text Box...' : 'F&ormat AutoShape...', run: () => DR.format(d) }]),
       { label: '&Delete', run: () => L.app.deleteObject(d) });
     ui.openMenu(items, { x: e.clientX, y: e.clientY });
   };
 
   /* ------------------------------------------------------------ Format Object */
   DR.format = function (d) {
-    if (!d) return;
+    if (!d || d.kind === 'frame') return;   /* a kept frame has no properties of its own here */
     const s = sh();
     const p = d.kind === 'shape' ? shapeProps(d) : null;
     const el = Array.from(L.$('#glayer').children).find((x) => x._d === d);

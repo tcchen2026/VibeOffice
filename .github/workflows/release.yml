@@ -1,0 +1,85 @@
+# Every download in one run (docs/desktop.md): the version's GitHub release (tools/current-tree-version.sh) made as a
+# draft first, then windows.yml, macos.yml (the DMG) and linux.yml one after another, each adding its file to it; once
+# all three files are there, the release is published. A system that fails stops the ones after it and the release
+# stays a draft: run the failed one's own workflow again on the same commit, then publish the draft by hand, or run
+# this again. A release that exists already (published) only gets its files replaced. The Mac App Store edition has a
+# workflow of its own (appstore.yml).
+# Run by hand only: Actions ▸ Release ▸ Run workflow.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Mark the release as a pre-release
+        type: boolean
+        default: false
+      smoke:
+        description: Try each system's build first (macOS and Linux), with screenshots
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # create the release and its tag
+
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.draft.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Draft release
+        id: draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          version=$(tools/current-tree-version.sh)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "$version" > /dev/null 2>&1; then
+            echo "The release $version exists: each system's file replaces its own"
+          else
+            flag=""
+            [ "$PRERELEASE" = "true" ] && flag="--prerelease"
+            gh release create "$version" --draft --target "$GITHUB_SHA" --title "VibeOffice $version" $flag \
+              --notes-file desktop/release-notes.md
+          fi
+
+  windows:
+    needs: draft
+    uses: ./.github/workflows/windows.yml
+    with:
+      prerelease: ${{ inputs.prerelease }}
+
+  macos:
+    needs: windows
+    uses: ./.github/workflows/macos.yml
+    secrets: inherit
+    with:
+      prerelease: ${{ inputs.prerelease }}
+      smoke: ${{ inputs.smoke }}
+
+  linux:
+    needs: macos
+    uses: ./.github/workflows/linux.yml
+    with:
+      prerelease: ${{ inputs.prerelease }}
+      smoke: ${{ inputs.smoke }}
+
+  publish:
+    needs: [draft, linux]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.draft.outputs.version }}
+        run: |
+          have=$(gh release view "$VERSION" --json assets --jq '.assets[].name')
+          for file in VibeOffice-Windows-x64.zip VibeOffice-macOS.dmg VibeOffice-Linux-x86_64.AppImage; do
+            echo "$have" | grep -qx "$file" || { echo "::error::$file isn't in the release $VERSION: it stays a draft"; exit 1; }
+          done
+          gh release edit "$VERSION" --draft=false

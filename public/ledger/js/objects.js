@@ -8,7 +8,7 @@
   const at = (el, name) => el?.getAttribute(name);
   const clone = v => JSON.parse(JSON.stringify(v));
   const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-  const uid = () => root.crypto.randomUUID();
+  const uid = () => K.uuid();
   const shapeId = value => /^_x0000_s\d+$/.test(value || '') ? +value.slice(8) : +value || 0;
   const vmlId = el => shapeId(at(el, 'id')) || shapeId(el.getAttributeNS(K.KNOWN_NS.o, 'spid'));
   const values = d => ({ xml: d.xml, media: d.media, imgLink: d.imgLink, crop: d.crop, text: d.text,
@@ -160,6 +160,10 @@
     return state.pack.writer.emit(X.drawing(d, d.keep.frame, state, size), owner);
   };
   const pictureValues = d => Object.fromEntries(['media', 'imgLink', 'crop', 'lineXml', 'rot', 'flipH', 'flipV', 'name', 'descr', 'hidden', 'link'].map(key => [key, d[key]]));
+  // What an object shown by its AlternateContent Fallback was when read: the AlternateContent is written back while
+  // these are unchanged (the anchor may change)
+  X.alternateValues = d => clone({ ...values(d), ...pictureValues(d), chart: !!d.chart?.dirty });
+  X.sameValues = same;
   X.keepPicture = (d, fragment) => { d.keep.picture = { fragment, id: d.id, anchor: clone(d.anchor), values: clone(pictureValues(d)) }; };
   X.picture = function (d, generated, state, owner) {
     const keep = d.keep?.picture; if (!keep) return generated;

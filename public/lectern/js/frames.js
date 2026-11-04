@@ -9,17 +9,23 @@
   const box = s => Object.fromEntries([...GEOMETRY].map(k => [k, s[k] || 0]));
   const key = f => [f.source, f.part, f.record || f.key, f.copy || ''].join('|');
   const rootNames = new Set(['sp', 'pic', 'cxnSp', 'grpSp', 'graphicFrame', 'contentPart', 'model3d']);
+  const PML = new Set([N.p, 'http://purl.oclc.org/ooxml/presentationml/main']);
+  // elements naming a shape in the slide's VML drawing: an OLE object or ActiveX control by spid, an old diagram
+  const VML_USERS = ['oleObj', 'control', 'legacyDrawing'];
   function label(root) {
     const nodes = all(root);
+    if (nodes.some(e => e.localName === 'control' && PML.has(e.namespaceURI))) return 'ActiveX control';
     if (nodes.some(e => e.localName === 'relIds' && /\/diagram$/.test(e.namespaceURI))) return 'IntelliArt';
     if (nodes.some(e => e.localName === 'oleObj')) return 'Embedded object';
     if (nodes.some(e => e.localName === 'contentPart')) return 'Ink';
     if (nodes.some(e => e.localName === 'model3d')) return '3-D model';
     if (nodes.some(e => e.localName === 'chart' && /\/chartex$/.test(e.namespaceURI))) return 'New chart';
+    // a PowerPoint 97-2003 diagram or organization chart, drawn in the slide's VML (com:legacyDrawing)
+    if (nodes.some(e => e.localName === 'legacyDrawing' && /\/compatibility$/.test(e.namespaceURI))) return 'Diagram';
     return null;
   }
   function source(working, original, parent) {
-    if (!rootNames.has(working.localName) && working.localName !== 'AlternateContent') return null;
+    if (!rootNames.has(working.localName) && !['AlternateContent', 'control'].includes(working.localName)) return null;
     const alternate = K.alternate(working);
     // Descendants of the chosen group belong to that group's outer wrapper.
     if (alternate && alternate === K.alternate(parent)) return null;
@@ -39,15 +45,8 @@
     const src = source(working, original, parent); if (!src) return;
     const fragment = K.fragment(src.alternate ? working : src.tree, { pkg, part });
     fragment.key = fragment.record || L.uid('frame');
-    const related = [];
-    for (const dep of fragment.deps) if (/\/diagramData$/.test(dep.type || '')) {
-      let tree; try { tree = pkg.xml(dep.part); } catch (_) { continue; }
-      for (const el of all(tree).filter(e => e.localName === 'dataModelExt')) {
-        const rel = pkg.rels(part).find(r => r.id === at(el, 'relId'));
-        if (rel) related.push({ source: pkg.id, owner: part, dataPart: dep.part, ...rel });
-      }
-    }
-    if (src.label === 'Embedded object' && all(src.tree).some(e => e.localName === 'oleObj' && e.hasAttribute('spid'))) {
+    const related = K.diagramRelated(pkg, fragment);
+    if (all(src.tree).some(e => VML_USERS.includes(e.localName) && e.hasAttribute('spid'))) {
       for (const rel of pkg.rels(part).filter(r => /\/vmlDrawing$/.test(r.type))) related.push({ source: pkg.id, owner: part, ...rel });
     }
     for (const s of models) {
@@ -155,6 +154,8 @@
     Ink: ['This ink drawing will be saved as ordinary shapes, because it was edited here.', 'This ink drawing will be saved as ordinary shapes, because the original couldn\'t be kept.'],
     '3-D model': ['This 3-D model will be saved as ordinary shapes, because it was edited here.', 'This 3-D model will be saved as ordinary shapes, because the original couldn\'t be kept.'],
     'New chart': ['This chart will be saved as ordinary shapes, because it was edited here.', 'This chart will be saved as ordinary shapes, because the original couldn\'t be kept.'],
+    Diagram: ['This diagram will be saved as an empty rectangle, because it was edited here.', 'This diagram will be saved as an empty rectangle, because the original couldn\'t be kept.'],
+    'ActiveX control': ['This ActiveX control will be saved as its picture and stop working, because its picture was edited here.', 'This ActiveX control will be saved as its picture and stop working, because the original couldn\'t be kept.'],
   };
   const savedAs = (label, notKept) => (SAVED_AS[label] || SAVED_AS.IntelliArt)[notKept ? 1 : 0];
   const slidePlace = (pres, part) => { const i = pres.slides.findIndex(s => s.keep?.part === part); return i < 0 ? undefined : L.t ? L.t('Slide {0}', i + 1) : 'Slide ' + (i + 1); };
@@ -197,6 +198,8 @@
     }
     return K.patch(xml, edits);
   }
+  // An OLE object or old diagram names its VML shape by id (_x0000_s1038); an ActiveX control by the number in its o:spid
+  const vmlNamed = (e, id) => at(e, 'id') === id || /^\d+$/.test(id) && e.getAttributeNS(K.KNOWN_NS.o, 'spid') === '_x0000_s' + id;
   function vml(record, rel, shape, ctx, changed) {
     const w = ctx.writer, pkg = K.package(record.fragment.source), copied = !!record.fragment.copy || pkg !== w.pkg;
     if (!copied && !changed) return { id: w.keepRel(ctx.part, rel), spids: new Map() };
@@ -207,13 +210,13 @@
       const target = original ? w.target(w.pkg, original.part) : w.name('ppt/drawings', 'vmlDrawing', 'vml');
       const xml = original ? w.pkg.text(original.part) : '<xml xmlns:v="' + K.KNOWN_NS.v + '" xmlns:o="' + K.KNOWN_NS.o + '"/>';
       state = { target, xml, original }; cache.set(ctx.part, state);
-      if (original) { w.claim(original.part, 'merged', target); w.carryRels(w.pkg, original.part, target); }
+      if (original) { w.claim(original.part, 'merged', target); w.carryRels(w.pkg, original.part, target); w.put(target, xml, w.pkg.type(original.part)); }
       w.ids.reserve(target, 'vml:_x0000_s', 1024);
     }
     const spids = new Map(), tree = pkg.xml(rel.part);
-    const references = all(K.parse(record.fragment.xml)).filter(e => e.localName === 'oleObj' && e.hasAttribute('spid')).map(e => at(e, 'spid'));
+    const references = all(K.parse(record.fragment.xml)).filter(e => VML_USERS.includes(e.localName) && e.hasAttribute('spid')).map(e => at(e, 'spid'));
     for (const id of new Set(references)) {
-      const node = all(tree).find(e => e.namespaceURI === K.KNOWN_NS.v && at(e, 'id') === id);
+      const node = all(tree).find(e => e.namespaceURI === K.KNOWN_NS.v && vmlNamed(e, id));
       if (!node) throw Error('Missing embedded-object preview ' + id);
       let f = K.fragment(node, { pkg, part: rel.part }), types = [];
       const typeIds = new Set(all(node).filter(e => e.namespaceURI === K.KNOWN_NS.v && e.hasAttribute('type')).map(e => at(e, 'type').replace(/^#/, '')));
@@ -229,10 +232,14 @@
       if (copied) { const bundle = K.duplicate({ f, types }); f = bundle.f; types = bundle.types; }
       const added = types.map(t => w.emit(t, state.target));
       let xml = w.emit(f, state.target);
-      if (changed || copied) xml = K.setBox(xml, box(shape));
-      spids.set(id, at(K.parse(xml), 'id'));
+      // a copy takes the whole box; a moved or resized object only what changed, as the VML's own values may differ slightly
+      if (changed || copied) {
+        const now = box(shape), was = record.box || {}, round = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v;
+        xml = K.setBox(xml, Object.fromEntries(Object.entries(now).filter(([k, v]) => copied || v !== was[k]).map(([k, v]) => [k, round(v)])));
+      }
+      spids.set(id, /^\d+$/.test(id) ? (K.parse(xml).getAttributeNS(K.KNOWN_NS.o, 'spid') || '').replace(/^_x0000_s/, '') : at(K.parse(xml), 'id'));
       if (!copied) {
-        const original = all(K.parse(state.xml)).find(e => e.namespaceURI === K.KNOWN_NS.v && at(e, 'id') === id);
+        const original = all(K.parse(state.xml)).find(e => e.namespaceURI === K.KNOWN_NS.v && vmlNamed(e, id));
         if (original) { const p = X.source.get(original); state.xml = K.patch(state.xml, [{ start: p.start, end: p.end, value: xml }]); }
         else added.push(xml);
       } else added.push(xml);
@@ -284,7 +291,7 @@
     let xml = f.xml.replace(/\u0001rel:(\d+)\u0001/g, (_, i) => relation(f.deps[+i]));
     if (spids.size) {
       const edits = [];
-      for (const el of all(K.parse(xml))) if (el.localName === 'oleObj' && spids.has(at(el, 'spid'))) {
+      for (const el of all(K.parse(xml))) if (VML_USERS.includes(el.localName) && spids.has(at(el, 'spid'))) {
         const p = X.source.get(el), a = p.attrs.find(a => a.name === 'spid'); edits.push({ start: a.start, end: a.end, value: spids.get(at(el, 'spid')) });
       }
       xml = K.patch(xml, edits);
@@ -305,10 +312,19 @@
   F.intact = (shape, ctx) => { const record = shape.keep?.frame; return !!(record && ctx.frames?.get(key(record.fragment))?.intact); };
   F.emit = function (shape, ctx) {
     const record = shape.keep?.frame; if (!record) return null;
-    const group = ctx.frames?.get(key(record.fragment));
-    const loss = (what, error) => ctx.writer.loss({ id: 'frame:' + key(record.fragment), what, detail: error?.message, where: ctx.part, place: ctx.place, action: 'conversion', notify: !K.sourceMissing(error) });
+    const group = ctx.frames?.get(key(record.fragment)), control = record.label === 'ActiveX control';
+    // a control the file gave no picture is saved as an empty frame, whatever the reason
+    const loss = (what, error) => ctx.writer.loss({ id: 'frame:' + key(record.fragment), what: control && !shape.media ? 'This ActiveX control has no picture, so it will be saved as an empty frame and stop working.' : what,
+      detail: error?.message, where: ctx.part, place: ctx.place, action: 'conversion', notify: !K.sourceMissing(error) });
     if (!group?.intact) { loss(savedAs(record.label, false)); return null; }
     if (group.emitted) return '';
+    if (control) {
+      // A control's identities span the slide, its VML drawing and its ActiveX parts: a copy, a rotation or a group isn't kept yet
+      const now = box(shape), why = record.fragment.copy || record.fragment.source !== ctx.writer.pkg?.id ? 'This copy of an ActiveX control will be saved as its picture and won\'t work.'
+        : ['rot', 'flipH', 'flipV'].some(k => (now[k] || 0) !== (record.box?.[k] || 0)) ? 'This ActiveX control will be saved as its picture and stop working, because it was rotated or flipped here.'
+          : ctx.inGroup ? 'This ActiveX control will be saved as its picture and stop working, because it was grouped here.' : null;
+      if (why) { loss(why); return null; }
+    }
     try {
       const fragment = dependencies(record, shape, ctx, group.moved || ctx.inGroup);
       let xml = ctx.writer.emit(fragment, ctx.part);
@@ -316,8 +332,10 @@
         const current = group.entries.length === 1 ? box(shape) : group.bounds;
         xml = transform(xml, record.localBounds, current);
       }
-      xml = L.comments.shapeIdentity(shape, ctx, xml);
-      group.emitted = true; return xml;
+      group.emitted = true;
+      // controls belong to the slide's p:controls, after its shape tree (pptx-write.js)
+      if (control) { (ctx.controls ||= []).push(xml); return ''; }
+      return L.comments.shapeIdentity(shape, ctx, xml);
     } catch (error) { group.intact = false; loss(savedAs(record.label, true), error); return null; }
   };
   F.references = function (item) {

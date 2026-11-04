@@ -75,7 +75,9 @@
   T.fixWidths = fixWidths;
   const firstPos = (cell) => { const p = D.firstPara(cell.blocks); return D.pos(p, 0); };
   const emptyLike = (cell) => { const p = D.firstPara(cell.blocks) || D.para(); return D.para([], L.clone(p.pPr), L.clone(p.rPr)); };
-  const newCellLike = (cell, span) => { const tc = L.clone(cell.tcPr); delete tc.vMerge; delete tc.span; if (span > 1) tc.span = span; return D.cell([emptyLike(cell)], tc); };
+  /* a new row's or cell's properties: the source's formatting, not the XML it was read with (its revisions and history) */
+  const fresh = (props) => { const o = L.clone(props); delete o.x; return o; };
+  const newCellLike = (cell, span) => { const tc = fresh(cell.tcPr); delete tc.vMerge; delete tc.span; if (span > 1) tc.span = span; return D.cell([emptyLike(cell)], tc); };
 
   /* ================= insert ================= */
   T.insert = function (nr, nc, opts) {
@@ -88,7 +90,8 @@
       const width = opts.width || availWidth(pos);
       const cur = pos.p;
       const t = D.simpleTable(nr, nc, opts.colWidth ? opts.colWidth * nc : width, { pPr: cur.pPr.style && !/^Heading/.test(cur.pPr.style) ? { style: cur.pPr.style } : {} });
-      if (opts.style) { T.ensureStyle(opts.style); t.tblPr.style = opts.style; }
+      t.tblPr.style = D.useStyle(doc(), t.tblPr.style);
+      if (opts.style) t.tblPr.style = T.ensureStyle(opts.style) || opts.style;
       if (opts.look) t.tblPr.look = Object.assign({}, opts.look);
       if (opts.autofit === 'window') t.tblPr.w = { type: 'pct', v: 5000 };
       if (opts.autofit === 'fixed' || opts.colWidth) { t.tblPr.w = { type: 'dxa', v: L.round(t.grid.reduce((a, b) => a + b, 0), 2) }; t.tblPr.layout = 'fixed'; }
@@ -164,7 +167,7 @@
           if (inMerge) nc.tcPr.vMerge = 'continue';
           cells.push(nc);
         }
-        const trPr = L.clone(ref.trPr);
+        const trPr = fresh(ref.trPr);
         if (!above || refIdx > 0) { if (!(t.rows[at] && t.rows[at].trPr.header && trPr.header)) delete trPr.header; }
         news.push(D.row(cells, trPr));
       }
@@ -312,7 +315,7 @@
       } else {
         /* shift cells down: append a row at the end, then move contents down in the selected columns */
         const last = t.rows[t.rows.length - 1];
-        const nrow = D.row(last.cells.map((c) => newCellLike(c, c.tcPr.span || 1)), L.clone(last.trPr));
+        const nrow = D.row(last.cells.map((c) => newCellLike(c, c.tcPr.span || 1)), fresh(last.trPr));
         delete nrow.trPr.header;
         const nAdd = rg.r1 - rg.r0 + 1;
         for (let k = 0; k < nAdd; k++) t.rows.push(k ? D.row(last.cells.map((c) => newCellLike(c, c.tcPr.span || 1)), L.clone(nrow.trPr)) : nrow);
@@ -507,7 +510,7 @@
         c.tcPr.vMerge = 'continue';
         return c;
       });
-      const trPr = L.clone(row.trPr);
+      const trPr = fresh(row.trPr);
       delete trPr.header;
       if (h) trPr.h = L.round(h / n, 2);
       newRows.push(D.row(cells, trPr));
@@ -974,6 +977,7 @@
     const width = availWidth(D.pos(paras[0], 0));
     E.edit('Convert Text to Table', () => {
       const t = D.simpleTable(rowsText.length, nc, opts.colWidth ? opts.colWidth * nc : width);
+      t.tblPr.style = D.useStyle(doc(), t.tblPr.style);
       rowsText.forEach((r, ri) => r.forEach((c, cix) => { const p = t.rows[ri].cells[cix].blocks[0]; p.runs = c.runs.map((x) => L.clone(x)); p.pPr = L.clone(c.src.pPr); delete p.pPr.num; D.normalize(p); }));
       const cont = D.touchList(info.cont);
       const i0 = cont.blocks.indexOf(paras[0]);
@@ -1065,13 +1069,16 @@
   T.styleId = (name) => (name === 'Table Grid' ? 'TableGrid' : name.replace(/[^A-Za-z0-9]/g, ''));
   T.ensureStyle = function (idOrName) {
     const d = doc();
-    if (d.styles[idOrName]) return idOrName;
+    if (d.styles[idOrName]) return D.useStyle(d, idOrName);
     const name = Object.keys(T.STYLES).find((n) => T.styleId(n) === idOrName || n === idOrName);
     if (!name) return null;
     const id = T.styleId(name);
-    if (d.styles[id]) return id;
+    if (d.styles[id]) return D.useStyle(d, id);
+    /* the file's own style of that name (Word in other languages gives it an id of its own) */
+    const own = Object.values(d.styles).find((s) => s && s.type === 'table' && !s.sameAs && String(s.name).toLowerCase() === name.toLowerCase());
+    if (own) return own.id;
     const def = T.STYLES[name];
-    if (!def) return 'TableGrid';
+    if (!def) return D.useStyle(d, 'TableGrid');
     D.touchKey(d, 'styles');
     d.styles[id] = { id, name, type: 'table', basedOn: 'TableNormal', builtin: true, tblPr: Object.assign({ cellMar: { l: 5.4, r: 5.4, t: 0, b: 0 } }, L.clone(def.tblPr || {})), pPr: {}, rPr: L.clone(def.rPr || {}), tcPr: L.clone(def.tcPr || {}), cond: L.clone(def.cond || {}) };
     D.stylesChanged();

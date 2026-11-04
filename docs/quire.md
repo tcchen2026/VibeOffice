@@ -51,6 +51,12 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   break and a section break or a break at their end, 4 more show it (42 in all), one more comes closer,
   and none moves away. A centred table wider than its column overhangs both margins evenly, a
   right-aligned one the left margin.
+- Inline pictures wider than a column are clipped halfway across the gap to the next column,
+  preserving their size and crop in the document. The outside page margins stay available to
+  negative indents; floating pictures and inline AutoShapes can cross columns. Checked against
+  Word 2016 PDFs of six controls (equal/unequal columns, single column, floats, rotation/flips,
+  AutoShapes) and issue #5's three-page document (`tests/from-issues/5/`). Both its original and
+  Quire's save open without repair prompts; this display fix changes no saved DOCX part.
 - East Asian text is drawn with the run's East Asian font (`w:eastAsia`, or the theme's for the
   document's East Asian language) and marked with its East Asian language, and takes that font's line
   height where it is the taller ([i18n.md](i18n.md), Fonts). A new document follows the UI's language:
@@ -69,7 +75,8 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   within 0.51pt (`tests/quire/lines.test.mjs`); 15 synthetic cases match LibreOffice within 0.2pt. Of
   2,289 Word-saved corpus files, 2,136 show Word's stored page count (2,127 before); the 10 whose count
   changed all moved toward Word's, none away (`tools/quire-pages.mjs`).
-  Not covered yet: a picture in a line with exact spacing (Word clips it to the line), a picture alone
+  Not covered yet: a picture in a line with exact spacing or a rotated inline picture (Word clips
+  these vertically to the line), a picture alone
   with multiple spacing or on a grid, a line of only a small picture (Quire follows LibreOffice: the
   mark's line, the picture at its foot), and a large paragraph mark after small text (matched to
   LibreOffice only).
@@ -309,9 +316,9 @@ scoped MC rules and Strict list-alignment entries retain their reviewed source p
 No new package/SDK diagnostic accompanies them. Office batches 1–2, including the
 comment repair and all namespace follow-ups, are accepted. Batch 5's section/numbering samples
 are also accepted.
-The Office checklist is `~/Downloads/lossless-check/office-batch-2/CHECKLIST.md`; file 12 records its
+The Office checklist is `tmp/lossless/office-batch-2/CHECKLIST.md`; file 12 records its
 original repair and links the accepted corrected save. Both samples in
-`~/Downloads/lossless-check/office-batch-2-comment-fix/` pass Word, package/SDK checks and LibreOffice,
+`tmp/lossless/office-batch-2-comment-fix/` pass Word, package/SDK checks and LibreOffice,
 with unchanged page counts.
 
 ### Content controls: edit behavior
@@ -340,8 +347,12 @@ a built-in document-property binding into another document also unbinds it and r
 | Type or change an unrelated property | Keep the original property XML, compatibility alternatives and dependencies |
 | Change font, colour, shadow, spacing or another modeled property | Replace that property; retain unrelated extensions and attributes in schema order |
 | Clear all formatting | Remove direct formatting, including retained extensions |
+| Open a file from Word in another language (styles under ids of its own: `berschrift1` for heading 1, `Textkrper2` for Body Text 2) | Save its styles without a second built-in of the same name; Heading 1, a table of contents, an index, a footnote or a comment, and anything else that asks for a built-in, uses the file's own style of that name, as Word does |
 | Copy a bookmark/permission range | Remap both endpoints; incomplete copies omit the markers |
 | Delete one range endpoint | Omit the incomplete pair on save and report it |
+| Open a range whose boundary sits between table rows or cells, or after a story's last paragraph | Keep it: a start belongs to the next cell's first paragraph, an end to the previous cell's last one, a boundary after the last paragraph to that paragraph (as Word reads them) |
+| Save a field whose code holds nested fields or a picture (`{ IF { PAGE } = 1 "logo" }`) | Write its instruction runs back as they were while the field code is unchanged; an edited code is saved as plain text with a notice. A code Word wouldn't write that way (all in one run, across paragraphs, around a bookmark) is saved as plain text with a notice naming the field |
+| Save text in explicit direction wrappers (`w:dir`, `w:bdo`) | Save it as ordinary text and say so: mixed right-to-left and left-to-right text may change order |
 | Set a page colour | Replace the original background; other edits keep its fill/picture |
 | Change a page size, margin, numbering or grid setting | Change its owned attributes; keep other section settings, revision metadata and compatibility branches |
 | Change page-number format or starting number | Keep the existing chapter heading level and separator unless chapter numbering is explicitly disabled |
@@ -401,6 +412,12 @@ and LibreOffice compare the saved file with its original. Page counts, Word's sa
 and reference PDFs help diagnose layout. Missing fonts, tight wrapping around irregular pictures,
 vertical text and complex data bindings remain known differences. RC4-encrypted legacy binary files
 are outside the supported OOXML encryption path.
+
+In Word 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 2,310 distinct Word files (made at
+6e697db) **open without repair in 2,287**; 3 stop at a prompt Word shows for the original too (a mail merge's
+database query); the other 20 are damaged originals that Word also repairs (8) or refuses (12, two of them broken
+ZIP files). One of those, `tdf92157-1-minimized`, Word repairs as an original and refuses as a save. The later save
+changes (8753823, f8f2a1a) passed batches of their own.
 
 Markdown checks remain separate: **24/24 unchanged documents save byte for byte**, edits stay inside
 the edited block in **24/24**, and CommonMark/GFM specifications pass **652/652 and 22/22** cases.

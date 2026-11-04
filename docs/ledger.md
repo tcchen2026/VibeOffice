@@ -252,12 +252,14 @@ part in `tdf76115` explicitly.
 | Kept; Excel samples accepted | Threaded comments | 6/6 corpus records across four workbooks; five thread parts and four person parts remain byte-identical. Focused edits retain replies, mentions, person IDs and shifted cell references |
 | Kept | Notes, tables, merges, validation and names | 373/373 notes, 230/230 tables, 56,263/56,263 merges, 259/259 validations, 2,106/2,106 names |
 | Kept; Excel samples accepted | Page setup, absent defaults and printer settings | Seven public fixtures / 49 save/edit/history/draft states add no package/SDK diagnostics; all seven unedited render pairs retain their page counts. Paper and print-quality edits retain sibling options and binary printer settings |
+| Kept; Excel acceptance pending | SmartArt, Office add-ins, ink and other objects Ledger can't show | A drawing object the reader can't model is kept as its original XML (a kept frame) and shown as a placeholder with its name; it can be moved, resized, copied and deleted. SmartArt keeps its data, layout, style, colour and drawing-cache parts byte for byte; a copy gets parts of its own, as Excel writes them. An object shown by its AlternateContent Fallback (an add-in's picture, chartex, a 3-D model) keeps the whole AlternateContent until the shown object is edited, which says so. Unedited corpus saves losing a part the original used: 22 files → 1 (a fuzz file) |
 | Kept, with exceptions | Charts, pictures and shapes | 155/157 charts, 164/165 pictures and 492/493 shapes; unedited raw shapes retain nested compatibility alternatives and relationships |
 | Kept; Excel samples accepted | Worksheet extensions and newer conditional formatting | The 65-workbook extension sweep retains 100/100 extension entries with unchanged expanded XML: 23/23 extended bars, 53/53 extended rules, 20/20 extended validations, 9/9 sparkline groups and 63/63 unknown entries. Package checks add no issues; SDK comparisons pass in 64, with one malformed original unvalidatable |
 | Kept; Excel samples accepted | Controls, OLE, non-comment VML and sheet custom properties | All 40 relevant workbooks save without new package/SDK errors: 344/344 control references, 370/370 control/ActiveX parts, 26/26 OLE entries, 367/367 non-note VML shapes and 31/31 sheet properties. All 43 VML parts retain their original bytes |
 | Kept; Excel samples accepted | Slicers and timelines | Three pinned supplemental workbooks retain 7/7 views and 12/12 definition/cache parts byte for byte; edits cover shared pivots, table copies, source deletion and drafts. OLAP cases remain unmeasured |
 | Kept; Excel samples accepted | Query tables and column metadata | Ten public workbooks retain 23/23 query parts and 10/10 connections parts byte for byte, with 20/20 query tables and 68/68 column identities. Eight focused cases cover column edits, copies, deletion and history |
 | Converted, with a notice | Edited imported charts, opaque drawing contents and macro/dialog sheets | Regenerate the edited model content. The checker shows edited objects/controls, slicers and macro/dialog sheets; chart formatting conversions are recorded only |
+| Dropped, with a notice | Charts and drawings in a pre-release (2005) Excel 2007 file | Shown, naming the sheet; they can't be written into a current file |
 | Dropped, with a notice | Missing or unreferenced package dependencies; VBA in macro-free Save As | One source connection dependency is missing; two unreferenced custom-XML parts are not reattached (recorded only). Macro removal is shown and requires the selected format and successful save |
 
 Package figures compare bytes, content types, original rIds and intended targets. The user accepted
@@ -475,6 +477,24 @@ browser drivers exercise the shipping readers/writers, real undo operations and 
 Independent ZIP/XML checks, Open XML SDK diagnostics and openpyxl comparisons are separate from the
 app's own reopen check. Commands and comparison policies are in [testing.md](testing.md).
 
+In Excel 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 729 workbooks **open without repair
+in 716** (with b9f4c69, which fixed `universal-content-strict`; 45 of them stopped later, at a prompt during PDF export:
+nothing to print, 44, and a large operation); the other 13 are originals Excel also refuses or repairs. One of those,
+`54764-2`, Excel repairs as an original and refuses as a save.
+
+Merged-cell borders are drawn from the individual perimeter cells, retaining partial edges and
+different styles along a side, including blank cells and merges whose anchor is hidden or scrolled
+out of view. The same renderer supplies Print Preview and PDF output. Issue #22's workbook (275
+cells, 37 merged ranges) and four small border controls were checked against Excel 2016 on Windows
+10, build `16.0.4266.1003`, on 2026-11-02. The original, Ledger save and controls opened without
+repair prompts; all three Excel PDF pages of the original and Ledger save matched pixel for pixel
+at 96 dpi. An XML Spreadsheet 2003 file can hold a merge's format only on its top-left cell, so on
+opening, the merge's edge cells take that format and keep the whole outline.
+`tests/from-issues/22/borders.test.mjs` checks the screen and print borders, colors, partial edges,
+zoom, scrolling, frozen panes, hidden anchors and an XML Spreadsheet 2003 merge; the four on Excel
+workbooks fail before the fix, and the fifth fails with the new drawing alone. The fixtures and API
+evidence are in `tests/from-issues/22/`.
+
 Formula recalculation, CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`.
 Their earlier broad-corpus measurements are archived with the run history, rather than mixed into
 the current OOXML preservation figures. Current preservation does not imply exact print layout or
@@ -491,6 +511,8 @@ support for every formula or external data source.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.
 - One window per workbook (Window ▸ New Window is not available); the binary `.xls` format is not read.
+- Saved as XML Spreadsheet 2003, a merged range whose top-left cell holds nothing (no value, no format)
+  is not written: that format records a merge on its top-left cell.
 - Spelling is English only (U.S. and U.K.).
 - Fonts are drawn with what the browser has. Calibri, Cambria, Arial, Times New Roman and Courier New
   are drawn with the real font when installed, otherwise its metric-compatible stand-in, so column
