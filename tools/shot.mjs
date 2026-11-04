@@ -10,6 +10,7 @@
 //        js is an async function body evaluated in the page; its return value is printed.
 //        shot is written to --out (default /tmp/shots); .png or .jpg by extension.
 // --qs     query string appended to the page URL
+// --scale  device pixels per CSS pixel (default 1; 1.5 or 2 for a high-density screen)
 // --ready  JS expression to wait for (default: the document has loaded; then 500 ms for the app to start)
 // --keep   leave the tab open (brought to the front) instead of closing it
 // --transparent  no default white page background, so .png shots keep transparency (e.g. icons)
@@ -30,7 +31,7 @@ const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const argv = process.argv.slice(2);
 const opt = (name, def) => { const i = argv.indexOf(name); return i < 0 ? def : argv.splice(i, 2)[1]; };
 const flag = (name) => { const i = argv.indexOf(name); return i >= 0 && !!argv.splice(i, 1); };
-const W = +opt('--w', 1280), H = +opt('--h', 800), qs = opt('--qs', '');
+const W = +opt('--w', 1280), H = +opt('--h', 800), qs = opt('--qs', ''), scale = +opt('--scale', 1);
 const ready = opt('--ready', "document.readyState === 'complete'");
 const out = opt('--out', '/tmp/shots');
 const inject = opt('--inject', '');
@@ -97,7 +98,7 @@ try {
   await send('Emulation.setFocusEmulationEnabled', { enabled: true });
   // an automated browser (navigator.webdriver), so the assistant waits to be asked (common/scout/assistant.js)
   await send('Emulation.setAutomationOverride', { enabled: true });
-  await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: scale, mobile: false });
   if (transparent) await send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } });
 
   await send('Page.addScriptToEvaluateOnNewDocument', { source: WATCH_CSP });

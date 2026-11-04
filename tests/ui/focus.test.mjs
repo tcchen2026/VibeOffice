@@ -139,6 +139,13 @@ for (const [app, A] of Object.entries(APPS)) for (const look of ['classic', 'pap
         if (!p) continue;
         await s.test(`a press on ${sel} where it has no control`, () => keeps(async () => { await t.click(await blank(t, sel)); }));
       }
+      /* a dialog's underlined letter with Alt (ui.dialog): Zoom's &200% is chosen, then Esc */
+      await s.test('a dialog\'s access key pressed with Alt, then Esc', () => keeps(async () => {
+        await t.evaluate(`L.ui.exec('zoomDlg')`); await pause(300);
+        await t.key('2', { alt: true }); await pause(150);
+        assert.match(await t.evaluate(`(() => { const r = [...document.querySelectorAll('.dlg input[type=radio]')].find((x) => x.checked); return r ? r.parentElement.textContent : ''; })()`), /^200\s?%$/, 'Alt+2 chose 200%');
+        await t.esc();
+      }));
       /* the status bar's zoom slider (ui.zoomSlider) is chrome too: the zoom changes, the keyboard and selection stay */
       const zoomNow = () => t.evaluate(`+document.querySelector('#statusbar .zs-track').getAttribute('aria-valuenow')`);
       await s.test('the zoom slider\'s thumb dragged', () => keeps(async () => {

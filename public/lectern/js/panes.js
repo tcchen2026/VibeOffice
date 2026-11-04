@@ -481,11 +481,11 @@
   const TP = (P.task = { stack: [], pos: -1, registry: {} });
   TP.mount = function (el) {
     TP.el = el;
-    TP.back = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Back', html: L.icons.get('back') });
-    TP.fwd = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Forward', html: L.icons.get('forward') });
-    TP.home = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Home', html: L.icons.get('home') });
+    TP.back = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Back', 'data-tip': 'Back', html: L.icons.get('back') });
+    TP.fwd = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Forward', 'data-tip': 'Forward', html: L.icons.get('forward') });
+    TP.home = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Home', 'data-tip': 'Home', html: L.icons.get('home') });
     TP.title = h('div', { class: 'tp-title', role: 'button', tabindex: '0', 'aria-haspopup': 'menu' }, h('span', { text: '' }), h('span', { class: 'dd-arrow' }));
-    const close = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Close task pane', html: L.icons.get('close', 12) });
+    const close = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Close task pane', 'data-tip': 'Close', html: L.icons.get('close', 12) });
     TP.body = h('div', { class: 'tp-body' });
     el.append(h('div', { class: 'tp-head' }, TP.back, TP.fwd, TP.home, TP.title, close), TP.body);
     TP.back.addEventListener('click', () => TP.go(TP.pos - 1));
@@ -532,9 +532,9 @@
       const q = h('input', { type: 'text', id: 'gs-search', placeholder: 'Search help', style: 'flex:1;min-width:0' });
       q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { P.helpQuery = q.value; TP.show('help'); } });
       b.append(
-        h('div', { class: 'tp-row' }, h('span', { html: L.icons.app(32) }), h('b', { text: window.VO ? VO.editionName('Lectern') : 'Lectern', translate: 'no', style: 'color:var(--pane-ink)' })),
+        h('div', { class: 'tp-row tp-brand' }, h('span', { html: L.icons.app(32) }), h('b', { text: window.VO ? VO.editionName('Lectern') : 'Lectern', translate: 'no' })),
         sec('Search for:', h('div', { class: 'tp-row' }, q, ui.button('Go', () => { P.helpQuery = q.value; TP.show('help'); }, { class: 'btn small' }))),
-        sec(L.N('Open'), window.VO ? VO.recentLinks(4) : null, link('open', L.N('Open a presentation (.pptx)...'), () => ui.exec('open')), link('new', 'Create a new presentation...', () => TP.show('new')), link('slideshow', 'View the sample presentation', () => L.app.loadSample())),
+        sec(L.N('Open'), window.VO ? VO.recentLinks(4) : null, link('open', 'More...', () => ui.exec('open')), link('new', 'Create a new presentation...', () => TP.show('new')), link('slideshow', 'View the sample presentation', () => L.app.loadSample())),
         sec(L.N('Learn'), link('help', 'Keyboard shortcuts and help', () => TP.show('help')), link('design', 'Apply a design template', () => TP.show('design')), link('animation', 'Animate your slides', () => TP.show('customAnim'))));
     },
   });
@@ -562,8 +562,11 @@
     [L.N('Files'), L.N('File ▸ Open reads .pptx, .ppsx and .potx files. File ▸ Save writes a .pptx that opens in PowerPoint, Keynote, Google Slides and LibreOffice. Save As also offers .ppsx, .potx, a single-file web page, a PNG of the current slide and a text outline.')],
   ];
   const KEYS = [['Ctrl+N / Ctrl+O / Ctrl+S', L.N('New, Open, Save')], ['Ctrl+M', L.N('New slide')], ['Ctrl+D', L.N('Duplicate')], ['Ctrl+Z / Ctrl+Y', L.N('Undo / Redo')], ['Ctrl+X / C / V', L.N('Cut, Copy, Paste')], ['Ctrl+A', L.N('Select all')], ['Ctrl+G / Ctrl+Shift+G', L.N('Group / Ungroup')], ['Ctrl+B / I / U', L.N('Bold, Italic, Underline')], ['Ctrl+E / L / R / J', L.N('Center, Left, Right, Justify')], ['Ctrl+Shift+> / <', L.N('Grow / Shrink font')], ['Ctrl+T', L.N('Font dialog')], ['Shift+F3', L.N('Change case')], ['Ctrl+K', L.N('Hyperlink')], ['Ctrl+F / Ctrl+H', L.N('Find / Replace')], ['Tab / Shift+Tab', L.N('Demote / Promote; next object')], [L.N('Arrow keys'), L.N('Nudge (Ctrl for fine nudge)')], ['F2', L.N('Toggle between text and object selection')], ['F5 / Shift+F5', L.N('Slide show from start / current')], ['Page Up / Page Down', L.N('Previous / next slide')], ['Ctrl+F1', L.N('Task pane')]];
+  /* the keys as shown: their names in the UI's language (Strg+M), the descriptions translated */
+  const keyRows = () => KEYS.map(([k, d]) => [k.split(' / ').map((x) => (/ [a-z]/.test(x) ? L.t(x) : ui.keyText(x))).join(' / '), L.t(d)]);
+  const keyTable = (rows) => h('table', { class: 'kbd-table', translate: 'no' }, ...rows.map(([k, d]) => h('tr', null, h('td', { text: k }), h('td', { text: d }))));
   TP.register({
-    id: 'help', title: 'Help',
+    id: 'help', title: 'Lectern Help',
     render(b) {
       const q = h('input', { type: 'text', id: 'hp-q', value: P.helpQuery || '', placeholder: 'Search', style: 'flex:1;min-width:0' });
       const res = h('div');
@@ -574,9 +577,8 @@
         /* searched as shown: the topics in the UI's language, the keys with their names there (Strg+M) */
         const topics = HELP.map(([t, d]) => [L.t(t), L.t(d)]).filter(([t, d]) => !words.length || hit(t + ' ' + d));
         for (const [t, d] of topics) res.appendChild(h('div', { class: 'help-topic' }, h('h4', { text: t }), h('p', { text: d })));
-        const keyName = (k) => k.split(' / ').map((x) => (/ [a-z]/.test(x) ? L.t(x) : ui.keyText(x))).join(' / ');
-        const keys = KEYS.map(([k, d]) => [keyName(k), L.t(d)]).filter(([k, d]) => !words.length || hit(k + ' ' + d));
-        if (keys.length) res.appendChild(h('div', { class: 'help-topic' }, h('h4', { text: 'Keyboard shortcuts' }), h('table', { class: 'kbd-table' }, ...keys.map(([k, d]) => h('tr', null, h('td', { text: k, translate: 'no' }), h('td', { text: d }))))));
+        const keys = keyRows().filter(([k, d]) => !words.length || hit(k + ' ' + d));
+        if (keys.length) res.appendChild(h('div', { class: 'help-topic' }, h('h4', { text: 'Keyboard shortcuts' }), keyTable(keys)));
         if (!res.children.length) res.appendChild(h('div', { class: 'tp-note', text: 'No topics match. Try a different word.' }));
       };
       q.addEventListener('input', draw);
@@ -585,27 +587,10 @@
     },
   });
 
+  TP.register({ id: 'keys', title: 'Keyboard Shortcuts', render: (b) => b.appendChild(keyTable(keyRows())) });
+
   /* --- Clip Art --- */
-  TP.register({
-    id: 'clipart', title: 'Clip Art',
-    render(b) {
-      const q = h('input', { type: 'text', id: 'ca-q', placeholder: 'e.g. people, growth, time', style: 'flex:1;min-width:0' });
-      const grid = h('div', { class: 'clip-grid' });
-      const draw = () => {
-        L.clear(grid);
-        const list = L.clipart.search(q.value);
-        for (const it of list) {
-          const c = h('button', { class: 'clip-it', type: 'button', 'data-tip': it.name }, h('img', { src: L.clipart.url(it), alt: it.name }), h('span', { text: it.name }));
-          c.addEventListener('click', () => L.app.insertClipArt(it));
-          grid.appendChild(c);
-        }
-        if (!list.length) grid.appendChild(h('div', { class: 'tp-note', text: 'No clips found.' }));
-      };
-      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') draw(); });
-      b.append(sec('Search for:', h('div', { class: 'tp-row' }, q, ui.button('Go', draw, { class: 'btn small' }))), sec(L.N('Results'), grid), h('div', { class: 'tp-note', text: 'Click a clip to insert it on the current slide.' }));
-      draw();
-    },
-  });
+  TP.register({ id: 'clipart', title: 'Clip Art', render: (b) => L.clipart.pane(b, (it) => L.app.insertClipArt(it), L.N('Click a clip to insert it on the current slide.')) });
 
   /* --- Clipboard --- */
   TP.register({

@@ -2,6 +2,7 @@
  * dialogs, form controls, status bar. Colours, fonts and shadows come from the look settings in looks.css,
  * loaded first; each app's own CSS comes after this file and wins. */
 [hidden] { display: none !important; }
+input[type=checkbox], input[type=radio], input[type=range], progress { accent-color: var(--check); }
 html, body { height: 100%; }
 body { margin: 0; background: var(--dock-b); color: var(--ink); font: var(--ui-size)/1.25 var(--ui-font); overflow: hidden; }
 * { box-sizing: border-box; }
@@ -34,12 +35,26 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .cs-none { padding-left: 28px; }
 .toolbars { display: flex; flex-direction: column; gap: 0; padding: 0 2px 2px; }
 .tb-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 2px 3px; min-height: 26px; }
+/* Customize ▸ Options ▸ two rows off: the Standard and Formatting rows (a .tb-pair) share one row, each cut short
+   with its Toolbar Options (») when they don't fit */
+/* the Drawing toolbar's row above the status bar */
+.drawrow { flex: none; padding: 1px 2px 2px; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-top: 1px solid var(--chrome-line); overflow-x: auto; scrollbar-width: none; }
+.drawrow::-webkit-scrollbar { display: none; }
+.tb-pair { display: contents; }
+.toolbars.one-row .tb-pair { display: flex; flex-wrap: nowrap; align-items: stretch; gap: 2px 3px; min-height: 26px; }
+.toolbars.one-row .tb-pair .toolbar { flex: 0 1 auto; min-width: 48px; }
+.toolbars.one-row .tb-pair > .tb-row { display: contents; }
+body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .toolbar { display: inline-flex; align-items: center; height: 26px; padding: 0 2px 0 0; border-radius: 3px; border-bottom: 1px solid var(--tb-border); border-right: 1px solid var(--tb-edge);
   background: linear-gradient(var(--tb-a), var(--tb-b) 50%, var(--tb-c)); max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; flex: none; }
 .toolbar::-webkit-scrollbar { display: none; }
 .tb-grip { flex: none; width: 7px; height: 18px; margin: 0 2px 0 3px; background: radial-gradient(circle at 1px 1px, var(--grip) 0.8px, transparent 1px) 0 0 / 4px 4px, radial-gradient(circle at 2px 2px, var(--grip-hi) 0.8px, transparent 1px) 0 0 / 4px 4px; }
 .tb-sep { flex: none; width: 2px; height: 18px; margin: 0 3px; border-left: 1px solid var(--sep-dark); border-right: 1px solid var(--sep-light); }
 .tb-end { flex: none; width: 2px; }
+.tb-more { position: sticky; right: 0; flex: none; align-self: stretch; margin-left: auto; width: 13px; padding: 0; border: 0; border-radius: 0 3px 3px 0; color: var(--ink); background: linear-gradient(var(--tb-a), var(--tb-b) 50%, var(--tb-c)); font-weight: bold; line-height: 1; }
+.tb-more:hover, .tb-more.open { background: linear-gradient(var(--hot-a), var(--hot-b)); }
+.tb-pop { position: fixed; z-index: 900; height: auto; max-width: 300px; flex-wrap: wrap; overflow: visible; padding: 2px; border: 1px solid var(--menu-border); box-shadow: 2px 2px 3px var(--shadow-c); }
+.tb-pop > .tb-sep:first-child { display: none; }
 .tb-btn { flex: none; display: inline-flex; align-items: center; gap: 3px; height: 22px; min-width: 23px; padding: 0 3px; border: 1px solid transparent; background: none; border-radius: 0; cursor: default; justify-content: center; }
 .tb-btn .ico { display: block; flex: none; }
 .tb-btn.with-label { padding: 0 5px 0 3px; }
@@ -148,6 +163,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .rf-tree { background: var(--surface); border: 1px solid var(--box-line); padding: 4px; font-size: 11px; }
 .rf-tree h5 { margin: 6px 0 2px; font-size: 11px; color: var(--pane-ink); }
 .rf-tree div { padding-left: 12px; color: var(--ink-2); }
+.tp-brand { gap: 8px; align-items: center; }
+.tp-brand b { color: var(--brand-ink); font-size: 13px; }
 .clip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
 .clip-it { border: 1px solid var(--card-line); background: var(--surface); padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: default; }
 .clip-it:hover { border-color: var(--hot-border); background: var(--menu-hot); }
@@ -162,6 +179,14 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .kbd-table { width: 100%; border-collapse: collapse; }
 .kbd-table td { padding: 2px 3px; border-bottom: 1px solid var(--row-line); vertical-align: top; }
 .kbd-table td:first-child { white-space: nowrap; font-weight: bold; color: var(--ink-key); }
+.cz-list { background: var(--surface); border: 1px solid var(--field-border); height: 200px; overflow: auto; padding: 2px 4px; display: flex; flex-direction: column; gap: 1px; }
+.cz-box { background: var(--surface); border: 1px solid var(--field-border); height: 226px; overflow: auto; outline: none; }
+.cz-box:focus-visible { box-shadow: 0 0 0 1px var(--sel) inset; }
+.cz-cmds th { position: sticky; top: 0; text-align: left; font-weight: normal; padding: 2px 3px; background: var(--th-bg); border-bottom: 1px solid var(--th-line); }
+.cz-cmds td:first-child { font-weight: normal; color: inherit; white-space: normal; }
+.cz-cmds td:last-child { color: var(--muted); white-space: nowrap; }
+.cz-cmds tr { cursor: default; }
+.cz-cmds tr.on td { background: var(--sel); color: var(--sel-ink); }
 .search-hit { background: var(--surface); border: 1px solid var(--card-line); padding: 4px 6px; margin-bottom: 4px; cursor: pointer; line-height: 1.35; }
 .search-hit:hover { border-color: var(--hot-border); background: var(--menu-hot); }
 .search-hit b { background: var(--find-hit); font-weight: normal; }

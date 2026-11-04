@@ -62,7 +62,7 @@ Break Preview and the zoom slider are also at the right of the status bar, docs/
 
 **Insert.** Cells, Rows, Columns, Worksheet, Chart (the four-step Chart Wizard), Symbol, Page Break,
 Function (Insert Function and Function Arguments with live results and help for every function),
-Name (Define, Paste, Create, Apply), Comment, Picture from file, AutoShapes, Text Box, Hyperlink. Open
+Name (Define, Paste, Create, Apply), Comment, Picture (Clip Art from the suite's own clips in the task pane, or from a file), AutoShapes, Text Box, Hyperlink. Open
 Hyperlink goes to a reference in the workbook; a web, mail or file address is shown to copy, never opened
 (docs/suite.md, Hyperlinks).
 

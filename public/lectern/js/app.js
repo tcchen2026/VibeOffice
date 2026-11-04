@@ -68,7 +68,7 @@
         label: '&View', items: () => ['viewNormal', 'viewSorter', 'showFromStart', 'viewNotes', '-',
           { label: '&Master', sub: ['viewMaster'] },
           { label: 'Co&lor/Grayscale', sub: ['viewColor', 'viewGray', 'viewBW'] }, '-',
-          'taskPane', 'slidesPane', { label: '&Toolbars', sub: ['tb_standard', 'tb_formatting', 'tb_drawing', 'tb_outlining', 'tb_picture', 'tb_tables', 'tb_wordart'] }, 'ruler', 'gridGuides', '-', 'headerFooter', '-', 'zoomDlg'],
+          'taskPane', 'slidesPane', { label: '&Toolbars', sub: ['tb_standard', 'tb_formatting', 'tb_drawing', 'tb_outlining', 'tb_picture', 'tb_tables', 'tb_wordart', '-', 'customize'] }, 'ruler', 'gridGuides', '-', 'headerFooter', '-', 'zoomDlg'],
       },
       {
         label: '&Insert', items: ['newSlide', 'duplicateSlide', '-', 'insertSlideNumber', 'insertDateTime', 'insertSymbol', '-', 'slidesFromFiles', 'slidesFromOutline', '-',
@@ -76,14 +76,14 @@
           'insertDiagram', 'textBox', 'insertMedia', 'insertChart', 'insertTable', '-', 'hyperlink'],
       },
       { label: 'F&ormat', items: ['fontDlg', 'bulletsDlg', { label: '&Alignment', sub: ['alignLeft', 'alignCenter', 'alignRight', 'justify'] }, 'lineSpacing', 'changeCase', 'replaceFonts', '-', 'slideDesign', 'slideLayout', 'background', '-', 'formatObject'] },
-      { label: '&Tools', items: ['spelling', '-', 'autocorrectDlg', '-', 'optionsDlg'] },
+      { label: '&Tools', items: ['spelling', '-', 'autocorrectDlg', 'customize', 'optionsDlg'] },
       {
         label: 'Sli&de Show', items: () => ['showFromStart', 'setupShow', 'rehearse', '-',
           { label: 'Act&ion Buttons', sub: [{ custom: (close) => shapeGrid(L.geom.MENU['Action Buttons'], close) }] }, 'actionSettings', '-',
           'animSchemes', 'customAnim', 'transitionPane', '-', 'hideSlide'],
       },
       { label: '&Window', items: () => [{ label: '&1 ' + A.fileName.replace(/&/g, '&&'), raw: true, checked: () => true, run: () => {} }] },
-      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'gettingStarted', '-', 'about'] },
+      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'gettingStarted', 'keyboardHelp', '-', 'about'] },
     ];
     void autoShapeSub;
     const row = L.$('#menurow');
@@ -195,8 +195,8 @@
     const host = L.$('#toolbars');
     const fontCombo = A.parts.font(), sizeCombo = A.parts.size(), zoomCombo = A.parts.zoom();
     A.toolbarsEl = {
-      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', '|', 'print', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'painter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'insertChart', 'insertTable', ui.tbButton('tb_tables', { icon: 'tablesBorders' }), 'hyperlink', '|', 'expandAll', 'showFormatting', 'showGrid', ui.tbSplit('viewGray', (r) => ui.openMenu(['viewColor', 'viewGray', 'viewBW'], r)), zoomCombo, 'help']),
-      formatting: ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, 'bold', 'italic', 'underline', 'shadowText', '|', 'alignLeft', 'alignCenter', 'alignRight', '|', 'numbering', 'bullets', '|', 'growFont', 'shrinkFont', '|', 'promote', 'demote', '|', ui.tbSplit('fontColor', colorDD('font')), '|', ui.tbButton('slideDesign', { label: 'Design' }), ui.tbButton('newSlide', { label: 'New Slide' })]),
+      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', '|', 'print', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'painter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'insertChart', 'insertTable', ui.tbButton('tb_tables', { icon: 'tablesBorders' }), 'hyperlink', '|', 'expandAll', 'showFormatting', 'showGrid', ui.tbSplit('viewGray', (r) => ui.openMenu(['viewColor', 'viewGray', 'viewBW'], r)), '|', zoomCombo, '|', 'help']),
+      formatting: ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, '|', 'bold', 'italic', 'underline', 'shadowText', '|', 'alignLeft', 'alignCenter', 'alignRight', '|', 'numbering', 'bullets', '|', 'growFont', 'shrinkFont', '|', 'promote', 'demote', '|', ui.tbSplit('fontColor', colorDD('font')), '|', ui.tbButton('slideDesign', { label: 'Design' }), ui.tbButton('newSlide', { label: 'New Slide' })]),
       outlining: ui.toolbar('outlining', 'Outlining', ['promote', 'demote', 'moveParaUp', 'moveParaDown', '|', 'summarySlide', 'showFormatting']),
       picture: ui.toolbar('picture', 'Picture', ['insertPicture', ui.tbDrop('', 'colorPic', A.menus.picColor, 'Color'), 'picMoreContrast', 'picLessContrast', 'picMoreBright', 'picLessBright', '|', 'picCrop', 'rotateLeft', ui.tbDrop('', 'lineStyle', lineStyleMenu, 'Line Style'), '|', ui.tbButton('formatObject', { icon: 'formatPicture' }), 'picTransparent', 'picReset']),
       tables: ui.toolbar('tables', 'Tables and Borders', [ui.tbDrop('', 'dashStyle', (r) => ui.openMenu([{ custom: (close) => listPanel(L.dlg.DASHES.map(([k, n]) => ({ html: lineSVG(2, (L.render.dashArray(k, 2) || '').replace(/,/g, ' ')), label: n, run: () => { A.tblBorder.dash = k; } })), close) }], r), 'Border Style'),
@@ -221,8 +221,9 @@
     A.toolbarsEl.diagram = ui.toolbar('diagram', 'Diagram', [ui.tbSplit('diagramAddShape', (r) => ui.openMenu(['diagramAddAfter', 'diagramAddBefore', 'diagramAddAbove', 'diagramAddBelow'], r)), 'diagramPromote', 'diagramDemote', 'diagramMoveUp', 'diagramMoveDown', '|',
       ui.tbDrop('&Layout', 'layout', (r) => DGM().layoutMenu(r), 'Change Layout'), ui.tbDrop('', 'colorPic', (r) => DGM().colorsMenu(r), 'Change Colors'), ui.tbDrop('', 'themes', (r) => DGM().styleMenu(r), 'IntelliArt Styles'), '|', 'diagramTextPane', 'diagramReset', 'diagramToShapes']);
     const row3 = h('div', { class: 'tb-row' }, A.toolbarsEl.picture, A.toolbarsEl.tables, A.toolbarsEl.wordart, A.toolbarsEl.diagram, A.toolbarsEl.master, A.toolbarsEl.sorter);
-    host.append(row1, row2, row3);
+    host.append(h('div', { class: 'tb-pair' }, row1, row2), row3);
     A.tbRows = [row1, row2, row3];
+    ui.toolbarPrefs(A.opts);
     /* drawing toolbar */
     const asBtn = ui.tbDrop('A&utoShapes', null, (r) => openAutoShapes(r), 'AutoShapes');
     asBtn.setAttribute('data-as', '1');
@@ -1195,9 +1196,9 @@ addEventListener('resize',fit);fit();show(0);`;
   A.toggleRun = function (key) {
     const st = L.fmt.state();
     if (!st) return;
-    const on = !st[key];
-    const label = { b: L.N('Bold'), i: L.N('Italic'), u: L.N('Underline'), shd: L.N('Shadow') }[key];
-    L.fmt.run((r) => { const n = Object.assign({}, r); if (key === 'u') { if (on) n.u = 'sng'; else n.u = 'none'; } else n[key] = on ? true : false; return n; }, label, (wa) => { if (key === 'b' || key === 'i') wa[key] = on; if (key === 'shd') wa.shadow = on ? { c: '#000000', a: 0.4, dx: 3, dy: 3, blur: 0 } : null; });
+    const on = key === 'strike' ? !(st.r.strike && st.r.strike !== 'noStrike') : !st[key];
+    const label = { b: L.N('Bold'), i: L.N('Italic'), u: L.N('Underline'), shd: L.N('Shadow'), strike: L.N('Strikethrough') }[key];
+    L.fmt.run((r) => { const n = Object.assign({}, r); if (key === 'u') { if (on) n.u = 'sng'; else n.u = 'none'; } else if (key === 'strike') n.strike = on ? 'sngStrike' : 'noStrike'; else n[key] = on ? true : false; return n; }, label, (wa) => { if (key === 'b' || key === 'i') wa[key] = on; if (key === 'shd') wa.shadow = on ? { c: '#000000', a: 0.4, dx: 3, dy: 3, blur: 0 } : null; });
   };
   A.toggleBaseline = function (v) {
     const st = L.fmt.state();
@@ -1782,7 +1783,7 @@ addEventListener('resize',fit);fit();show(0);`;
     parts.push(k);
     return parts.join('+');
   }
-  const SHORTCUTS = {
+  const SHORTCUTS = A.SHORTCUTS = {
     'Ctrl+N': 'new', 'Ctrl+O': 'open', 'Ctrl+S': 'save', 'Ctrl+P': 'print', 'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo', 'Ctrl+Shift+Z': 'redo',
     'Ctrl+M': 'newSlide', 'Ctrl+D': 'duplicate', 'Ctrl+F': 'find', 'Ctrl+H': 'replace', 'Ctrl+K': 'hyperlink', 'Ctrl+T': 'fontDlg',
     'Ctrl+B': 'bold', 'Ctrl+I': 'italic', 'Ctrl+U': 'underline', 'Ctrl+E': 'alignCenter', 'Ctrl+L': 'alignLeft', 'Ctrl+R': 'alignRight', 'Ctrl+J': 'justify',

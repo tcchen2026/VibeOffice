@@ -130,7 +130,8 @@
     return panels.get(id);
   }
   function tabButton(t, cls) {
-    const b = h('button', { class: 'rb-tab' + (cls ? ' ' + cls : ''), type: 'button', role: 'tab', 'data-tab': t.id, html: ui.ampHTML(t.label) });
+    /* no underlined letter, as in Office 2016: Alt shows the KeyTips instead */
+    const b = h('button', { class: 'rb-tab' + (cls ? ' ' + cls : ''), type: 'button', role: 'tab', 'data-tab': t.id, html: L.esc(ui.stripAmp(t.label)) });
     b.addEventListener('pointerdown', (e) => e.preventDefault());
     b.addEventListener('click', () => (t.id === 'file' ? openFile(b) : RB.select(t.id)));
     if (t.id !== 'file') b.addEventListener('dblclick', () => RB.collapse());

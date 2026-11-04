@@ -254,7 +254,7 @@
   /* ------------------------------------------------------------ save */
   /* what Ledger saves, for the desktop app's Save dialog (L.file): the workbook types are saves, the rest exports
      (a CSV or text file Ledger opened is saved where it is) */
-  L.file.types = [{ id: 'xlsx', label: L.N('Microsoft Office Excel Workbook (*.xlsx)'), ext: ['xlsx'] }, { id: 'xlsm', label: L.N('Excel Macro-Enabled Workbook (*.xlsm)'), ext: ['xlsm'] },
+  L.file.types = [{ id: 'xlsx', label: L.N('Excel Workbook (*.xlsx)'), ext: ['xlsx'] }, { id: 'xlsm', label: L.N('Excel Macro-Enabled Workbook (*.xlsm)'), ext: ['xlsm'] },
     { id: 'xltx', label: L.N('Template (*.xltx)'), ext: ['xltx'] }, { id: 'xltm', label: L.N('Macro-Enabled Template (*.xltm)'), ext: ['xltm'] },
     { id: 'xmlss', label: L.N('XML Spreadsheet 2003 (*.xml)'), ext: ['xml'] }, { id: 'csv', label: L.N('CSV (Comma delimited) (*.csv)'), ext: ['csv'] },
     { id: 'txt', label: L.N('Text (Tab delimited) (*.txt)'), ext: ['txt'] }, { id: 'html', label: L.N('Web Page (*.htm)'), ext: ['htm', 'html'] }, { id: 'pdf', label: L.N('PDF (*.pdf)'), ext: ['pdf'] }];
@@ -560,8 +560,8 @@
           { label: '&Group and Outline', sub: ['hideDetail', 'showDetail', '-', 'groupRows', 'ungroupRows', 'autoOutline', 'clearOutline', '-', 'outlineSettings'] }, '-', 'pivotTable',
           { label: 'Import External &Data', sub: ['importText'] }, '-', { label: '&List', sub: ['createList', 'totalRow', 'convertToRange'] }, '-', 'refreshData'],
       },
-      { label: '&Window', items: () => ['newWindow', 'arrangeWindows', '-', 'splitWindow', 'freezePanes', '-', ...(window.VO && VO.oneDocument ? VO.windowItems() : A.books.map((b, i) => ({ label: `&${i + 1} ${b.name.replace(/&/g, '&&')}`, raw: true, radio: true, checked: () => i === A.cur, run: () => A.switchBook(i) })))] },
-      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'keyboardHelp', 'functionsHelp', '-', 'about'] },
+      { label: '&Window', items: () => ['newWindow', 'arrangeWindows', '-', 'splitWindow', 'freezePanes', '-', ...(window.VO && VO.oneDocument ? VO.windowItems() : A.books.map((b, i) => ({ label: `&${i + 1} ${b.name.replace(/&/g, '&&')}`, raw: true, checked: () => i === A.cur, run: () => A.switchBook(i) })))] },
+      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'gettingStarted', 'keyboardHelp', 'functionsHelp', '-', 'about'] },
     ];
     const row = L.$('#menurow');
     A.menuBar = ui.menuBar(row, menus);
@@ -572,9 +572,9 @@
   const TB = {};
   /* the toolbars' boxes and buttons with menus, also used by the ribbon (js/ribbon.js): each call makes a new one */
   A.parts = {
-    font: (o) => ui.combo(Object.assign({ id: 'fontname', width: 128, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.fontSections({ major: wb().theme?.major, minor: wb().theme?.minor }), preview: (v) => `font-family:${LY.fontStack(v)}`, note: L.fontNote, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; L.addRecentFont(v); O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, L.N('Font')); G().paint(); } }, o)),
-    size: (o) => ui.combo(Object.assign({ id: 'fontsize', width: 42, tip: 'Font Size', value: () => String((curStyle().font || {}).sz || 10), options: () => L.SIZE_LIST, onChange: (v) => { const n = parseFloat(v); if (!(n >= 1 && n <= 409)) { ui.msg('The number must be between 1 and 409.', { icon: 'warn' }); return; } if (G().guardProtect('formatCells')) return; O.format(sh(), G().ranges(), { font: { sz: n } }, 'Font Size'); O.tx(wb(), L.N('AutoFit'), () => { for (const r of A.selRows()) O.autoRow(sh(), r); }); G().paint(); } }, o)),
-    zoom: (o) => ui.combo(Object.assign({ id: 'zoombox', width: 52, tip: 'Zoom', value: () => (sh().view.zoom || 100) + '%', options: () => ['200%', '100%', '75%', '50%', '25%', { value: 'Selection', label: L.t('Selection') }], onChange: (v) => { if (/^sel/i.test(v)) { A.zoomToSelection(); return; } const n = parseInt(v, 10); if (n >= 10 && n <= 400) G().setZoom(n); else ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); } }, o)),
+    font: (o) => ui.combo(Object.assign({ id: 'fontname', width: 136, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.fontSections({ major: wb().theme?.major, minor: wb().theme?.minor }), preview: (v) => `font-family:${LY.fontStack(v)}`, note: L.fontNote, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; L.addRecentFont(v); O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, L.N('Font')); G().paint(); } }, o)),
+    size: (o) => ui.combo(Object.assign({ id: 'fontsize', width: 44, tip: 'Font Size', value: () => String((curStyle().font || {}).sz || 10), options: () => L.SIZE_LIST, onChange: (v) => A.setFontSize(parseFloat(v)) }, o)),
+    zoom: (o) => ui.combo(Object.assign({ id: 'zoombox', width: 64, tip: 'Zoom', value: () => (sh().view.zoom || 100) + '%', options: () => ['200%', '100%', '75%', '50%', '25%', { value: 'Selection', label: L.t('Selection') }], onChange: (v) => { if (/^sel/i.test(v)) { A.zoomToSelection(); return; } const n = parseInt(v, 10); if (n >= 10 && n <= 400) G().setZoom(n); else ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); } }, o)),
   };
   A.menus = {
     autoSum: (at) => ui.openMenu([
@@ -593,7 +593,7 @@
     const fillSplit = ui.tbSplit('fillColorApply', A.menus.fill);
     const fontSplit = ui.tbSplit('fontColorApply', A.menus.fontColor);
     const borderSplit = ui.tbSplit('bordersApply', A.menus.borders);
-    TB.standard = ui.toolbar('standard', 'Standard', ['newBook', 'open', 'save', '|', 'printQuick', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'formatPainter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'hyperlink', sumSplit, 'sortAsc', 'sortDesc', '|', 'chartWizard', ui.tbButton('tb_drawing', { icon: 'drawing' }), zoomCombo, '|', 'help']);
+    TB.standard = ui.toolbar('standard', 'Standard', ['newBook', 'open', 'save', '|', 'printQuick', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'formatPainter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'hyperlink', sumSplit, 'sortAsc', 'sortDesc', '|', 'chartWizard', ui.tbButton('tb_drawing', { icon: 'drawing' }), '|', zoomCombo, '|', 'help']);
     TB.formatting = ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, '|', 'bold', 'italic', 'underline', '|', 'alignLeft', 'alignCenter', 'alignRight', 'mergeCenter', '|', 'currencyStyle', 'percentStyle', 'commaStyle', 'incDecimal', 'decDecimal', '|', 'decIndent', 'incIndent', '|', borderSplit, fillSplit, fontSplit]);
     TB.borders = ui.toolbar('borders', 'Borders', [ui.tbSplit('bordersApply', A.menus.borders), ui.tbButton('borderNone', { icon: 'bordersNone' }), ui.tbButton('borderOutline', { icon: 'bordersOut' })]);
     TB.auditing = ui.toolbar('auditing', 'Formula Auditing', ['traceError', '|', 'tracePrecedents', 'traceDependents', 'removeArrows', '|', 'insertComment', 'validation', 'circleInvalid', 'clearCircles', '|', 'watchWindow', 'evaluateFormula']);
@@ -602,10 +602,12 @@
     TB.chart = ui.toolbar('chart', 'Chart', [ui.tbDrop('Chart Type', 'chart', (at) => L.chartWizard && L.chartWizard.typeMenu(at)), ui.tbButton('formatObject', { label: 'Format' })]);
     TB.drawing = ui.toolbar('drawing', 'Drawing', [ui.tbDrop('D&raw', 'draw', A.menus.draw), '|',
       ui.tbButton('insertShape', { icon: 'rect' }), ui.tbButton('insertTextBox'), ui.tbButton('insertPicture'), '|', ui.tbButton('fillColorApply')]);
-    const row1 = h('div', { class: 'tb-row' }), row2 = h('div', { class: 'tb-row' });
-    row1.append(TB.standard, TB.formatting);
-    row2.append(TB.borders, TB.auditing, TB.reviewing, TB.list, TB.chart, TB.drawing);
-    host.append(row1, row2);
+    const row1 = h('div', { class: 'tb-row' }, TB.standard), row2 = h('div', { class: 'tb-row' }, TB.formatting);
+    const row3 = h('div', { class: 'tb-row' }, TB.borders, TB.auditing, TB.reviewing, TB.list, TB.chart);
+    L.$('#drawrow').appendChild(TB.drawing);   /* docked above the status bar, as in Office 2003 */
+    host.append(h('div', { class: 'tb-pair' }, row1, row2), row3);
+    A.tbRows = [row1, row2, row3];
+    ui.toolbarPrefs(A.opts);
     A.updateToolbars();
   }
   function borderPalette(el) {
@@ -630,8 +632,8 @@
   A.toggleToolbar = (id, force) => { const cur = A.toolbarVisible(id); A.opts.toolbars[id] = force != null ? force : !cur; A.updateToolbars(); A.saveOpts(); };
   A.updateToolbars = function () {
     for (const id in TB) { const v = A.toolbarVisible(id); TB[id].hidden = !v; }
-    const r2 = TB.borders && TB.borders.parentElement;
-    if (r2) r2.hidden = !Array.from(r2.children).some((x) => !x.hidden);
+    for (const r of A.tbRows || []) r.hidden = Array.from(r.children).every((x) => x.hidden);
+    if (TB.drawing) L.$('#drawrow').hidden = TB.drawing.hidden;
     ui.refresh();
   };
   const curStyle = () => { const s = G().sel(); return LY.styleOf(sh(), s.r, s.c, sh().get(s.r, s.c)); };
@@ -1289,12 +1291,27 @@
     L.dlg.comment(r, c, cm);
   };
 
+  A.setFontSize = (n) => {
+    if (!(n >= 1 && n <= 409)) { ui.msg('The number must be between 1 and 409.', { icon: 'warn' }); return; }
+    if (G().guardProtect('formatCells')) return;
+    O.format(sh(), G().ranges(), { font: { sz: n } }, 'Font Size');
+    O.tx(wb(), L.N('AutoFit'), () => { for (const r of A.selRows()) O.autoRow(sh(), r); });
+    G().paint();
+  };
+  /** Home ▸ Increase / Decrease Font Size: the next size in the Font Size list, as Excel */
+  A.stepFont = (d) => {
+    const cur = (curStyle().font || {}).sz || 11, list = L.SIZE_LIST.filter(Number.isInteger);
+    A.setFontSize(d > 0 ? list.find((x) => x > cur) || Math.min(409, cur + 10) : [...list].reverse().find((x) => x < cur) || Math.max(1, cur - 1));
+  };
+
   /* pictures */
   A.insertPicture = async function () {
     const files = await L.pickFiles('image/*,.emf,.wmf', true);
     for (const f of files) await A.insertPictureFile(f);
   };
-  A.insertPictureFile = async function (file) {
+  /** a clip from the Clip Art pane (common/clipart.js), an inch and a third across at the active cell */
+  A.insertClipArt = async (it) => A.insertPictureFile(new File([await L.clipart.toPNG(it, 512)], it.name + '.png', { type: 'image/png' }), 128);
+  A.insertPictureFile = async function (file, maxPx) {
     if (G().guardProtect('objects')) return;
     const w = wb(), shx = sh(), s = G().sel();
     const bytes = new Uint8Array(await L.readAsArrayBuffer(file));
@@ -1316,7 +1333,7 @@
     const id = 'img' + (w.media.size + 1) + '_' + Date.now().toString(36);
     w.media.set(id, { bytes: data, ext, type, name: file.name.replace(/\.svg$/i, '.png') });
     const dims = await new Promise((res) => { const url = URL.createObjectURL(new Blob([bytes], { type: file.type || L.extToMime(ext) })); const im = new Image(); im.onload = () => { res({ w: im.naturalWidth, h: im.naturalHeight }); URL.revokeObjectURL(url); }; im.onerror = () => res({ w: 200, h: 150 }); im.src = url; });
-    const scale = Math.min(1, 480 / dims.w, 360 / dims.h);
+    const scale = Math.min(1, (maxPx || 480) / dims.w, (maxPx || 360) / dims.h);
     const d = { kind: 'image', media: id, name: 'Picture ' + (shx.drawings.length + 1), id: shx.drawings.length + 2, anchor: { type: 'one', from: { r: s.r, c: s.c, rOff: 0, cOff: 0 }, w: dims.w * scale * 0.75, h: dims.h * scale * 0.75 } };
     O.tx(w, 'Insert Picture', () => O.setDrawings(shx, shx.drawings.concat([d])));
     G().selectObject(d);

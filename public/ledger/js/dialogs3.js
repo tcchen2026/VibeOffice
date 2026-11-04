@@ -378,13 +378,13 @@
     let area = getName('_xlnm.print_area');
     const titles = L.print.titles(s);
     /* page */
-    const adj = ui.spin({ value: p.scale || 100, min: 10, max: 400, step: 5, dec: 0, fmt: (v) => L.t('{0}% normal size', Math.round(v)), onChange: (v) => { p.scale = Math.round(v); } });
+    const adj = ui.spin({ value: p.scale || 100, min: 10, max: 400, step: 5, dec: 0, unit: '%', onChange: (v) => { p.scale = Math.round(v); } });
     const fitW = ui.spin({ value: p.fitW == null ? 1 : p.fitW, min: 0, max: 32767, step: 1, dec: 0, onChange: (v) => { p.fitW = Math.round(v) || null; } });
     const fitH = ui.spin({ value: p.fitH == null ? 1 : p.fitH, min: 0, max: 32767, step: 1, dec: 0, onChange: (v) => { p.fitH = Math.round(v) || null; } });
     const first = h('input', { type: 'text', value: p.firstPage != null ? String(p.firstPage) : L.t('Auto'), style: 'width:70px' });
     const pageTab = h('div', { class: 'col' },
       ui.group('Orientation', h('div', { class: 'row', style: 'gap:24px' }, ui.radio('ps-o', 'Por&trait', p.orientation !== 'landscape', () => { p.orientation = 'portrait'; }), ui.radio('ps-o', '&Landscape', p.orientation === 'landscape', () => { p.orientation = 'landscape'; }))),
-      ui.group('Scaling', h('div', { class: 'row', style: 'gap:8px' }, ui.radio('ps-s', '&Adjust to:', !p.fit, () => { p.fit = false; }), adj), h('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap' }, ui.radio('ps-s', '&Fit to:', !!p.fit, () => { p.fit = true; }), fitW, h('span', { text: 'page(s) wide by' }), fitH, h('span', { text: 'tall' }))),
+      ui.group('Scaling', h('div', { class: 'row', style: 'gap:8px;align-items:center' }, ui.radio('ps-s', '&Adjust to:', !p.fit, () => { p.fit = false; }), adj, h('span', { text: 'normal size' })), h('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;align-items:center' }, ui.radio('ps-s', '&Fit to:', !!p.fit, () => { p.fit = true; }), fitW, h('span', { text: 'page(s) wide by' }), fitH, h('span', { text: 'tall' }))),
       ui.field('Paper si&ze:', ui.select(Object.keys(L.print.PAPERS).map((k) => [k, L.t('{0} ({1} x {2} in)', L.t(L.print.PAPERS[k][0]), L.print.PAPERS[k][1], L.print.PAPERS[k][2])]), p.paper || 1, (v) => { p.paper = +v; })),
       ui.field('Print &quality:', ui.select(['600 dpi', '300 dpi', '150 dpi'], '600 dpi', null, { translate: 'no' })),
       ui.field('Fi&rst page number:', first));

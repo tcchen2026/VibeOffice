@@ -21,7 +21,7 @@
         { label: 'Slides', items: [{ split: 'newSlide', size: 'large', label: 'New Slide', menu: open(['newSlide', 'duplicateSlide', '-', 'slidesFromFiles', 'slidesFromOutline']) }, { cmd: 'slideLayout', label: 'Layout' }, 'duplicateSlide', 'deleteSlide'] },
         { label: 'Font', icon: 'font', launcher: 'fontDlg', items: [
           { row: [{ make: () => A().parts.font({ width: 130, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 44, id: 'rb-size' }) }, 'growFont', 'shrinkFont', 'changeCase'] },
-          { row: ['bold', 'italic', 'underline', 'shadowText', 'subscript', 'superscript', '|', { split: 'fontColor', menu: (r, b) => A().menus.color('font')(r, b) }] }] },
+          { row: ['bold', 'italic', 'underline', 'shadowText', 'strike', 'subscript', 'superscript', '|', { split: 'fontColor', menu: (r, b) => A().menus.color('font')(r, b) }] }] },
         { label: 'Paragraph', icon: 'paragraph', launcher: 'bulletsDlg', items: [
           { row: ['bullets', 'numbering', '|', 'promote', 'demote', '|', 'lineSpacing'] },
           { row: ['alignLeft', 'alignCenter', 'alignRight', 'justify'] }] },

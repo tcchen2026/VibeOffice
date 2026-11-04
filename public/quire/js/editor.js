@@ -575,8 +575,8 @@
     const ctx = LY.tblCtx(pos.p);
     return D.rProps(doc(), pos.p, it && !D.isMarker(it) ? it : null, ctx);
   }
-  /** is a run property uniform over the selection? returns value or undefined when mixed */
-  E.uniformRun = function (key) {
+  /** is a run property uniform over the selection? returns its value, or `mixed` (default undefined) when it varies */
+  E.uniformRun = function (key, mixed) {
     if (!E.sel || E.collapsed()) return E.curRun()[key];
     const [a, b] = E.range();
     const d = doc();
@@ -590,7 +590,7 @@
         const s0 = pos; pos += n;
         if (!n || pos <= s || s0 >= e) continue;
         const v = D.rProps(d, p, it, ctx)[key];
-        if (first) { val = v; first = false; } else if (JSON.stringify(v) !== JSON.stringify(val)) return undefined;
+        if (first) { val = v; first = false; } else if (JSON.stringify(v) !== JSON.stringify(val)) return mixed;
       }
     }
     return first ? E.curRun()[key] : val;

@@ -70,7 +70,7 @@
       const q = h('input', { type: 'text', id: 'gs-search', placeholder: 'Search help', style: 'flex:1;min-width:0' });
       q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { P.helpQuery = q.value; TP.show('help'); } e.stopPropagation(); });
       b.append(
-        h('div', { class: 'tp-row' }, h('span', { html: L.icons.app ? L.icons.app(32) : '' }), h('b', { text: window.VO ? VO.editionName('Quire') : 'Quire', translate: 'no', style: 'color:var(--pane-ink)' })),
+        h('div', { class: 'tp-row tp-brand' }, h('span', { html: L.icons.app ? L.icons.app(32) : '' }), h('b', { text: window.VO ? VO.editionName('Quire') : 'Quire', translate: 'no' })),
         sec('Search for:', h('div', { class: 'tp-row' }, q, ui.button('Go', () => { P.helpQuery = q.value; TP.show('help'); }, { class: 'btn small' }))),
         sec(L.N('Open'), window.VO ? VO.recentLinks(4) : null, link('open', 'More...', () => ui.exec('open')), link('new', 'Create a new document...', () => TP.show('new')), link('sample', 'Open the welcome document', () => A().newDocument({ build: (d) => Object.assign(d, A().buildSample()) }))),
         sec(L.N('Learn'), link('help', 'Keyboard shortcuts and help', () => { P.helpTopic = 'keys'; TP.show('help'); }), link('stylesPane', 'Styles and Formatting', () => TP.show('styles')), link('mailMerge', 'Mail Merge wizard', () => TP.show('mailmerge'))));
@@ -165,27 +165,7 @@
     },
   });
   /* ---------- Clip Art ---------- */
-  TP.register({
-    id: 'clipart', title: 'Clip Art',
-    render(b) {
-      const q = h('input', { type: 'text', id: 'ca-q', value: P.clipQuery || '', style: 'flex:1;min-width:0' });
-      const grid = h('div', { class: 'clip-grid' });
-      const draw = () => {
-        L.clear(grid);
-        const items = L.clipart ? L.clipart.search(q.value) : [];
-        for (const it of items) {
-          const el = h('button', { class: 'clip-it', type: 'button', 'data-tip': it.name, 'aria-label': it.name }, h('img', { src: L.clipart.url(it), alt: '' }), h('span', { text: it.name }));
-          el.addEventListener('click', () => P.insertClip(it));
-          grid.appendChild(el);
-        }
-        if (!items.length) grid.appendChild(h('div', { class: 'tp-note', text: 'No clips match. Try "people", "chart", "nature" or "office".' }));
-      };
-      q.addEventListener('input', () => { P.clipQuery = q.value; draw(); });
-      q.addEventListener('keydown', (e) => e.stopPropagation());
-      b.append(sec('Search for:', h('div', { class: 'tp-row' }, q, ui.button('Go', draw, { class: 'btn small' }))), grid, h('div', { class: 'tp-note', text: 'Click a clip to insert it at the insertion point.' }));
-      draw();
-    },
-  });
+  TP.register({ id: 'clipart', title: 'Clip Art', render: (b) => L.clipart.pane(b, (it) => P.insertClip(it), L.N('Click a clip to insert it at the insertion point.')) });
   P.insertClip = async function (it) {
     const blob = await L.clipart.toPNG(it, 512);
     const id = L.media.add(blob, it.name.replace(/\W+/g, '_') + '.png');
@@ -554,7 +534,7 @@
     D.reindex(d);
     const heads = [];
     for (const p of d.main.paras) { const lv = D.headingLevel(d, p); if (lv) heads.push({ p, lv }); }
-    if (!heads.length) { el.appendChild(h('div', { class: 'dm-item', style: 'color:#666', text: '(No headings)' })); return; }
+    if (!heads.length) { el.appendChild(h('div', { class: 'dm-item', style: 'color:var(--muted)', text: '(No headings)' })); return; }
     let hideBelow = 0;
     heads.forEach((x, i) => {
       if (hideBelow && x.lv > hideBelow) return;

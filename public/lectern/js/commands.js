@@ -24,18 +24,18 @@
   C('open', { label: '&Open...', icon: 'open', key: 'Ctrl+O', tip: 'Open', run: () => A().openDialog() });
   C('close', { label: '&Close', run: () => A().closePresentation() });
   C('save', { label: '&Save', icon: 'save', key: 'Ctrl+S', tip: 'Save', run: () => A().save() });
-  C('saveAs', { label: 'Save &As...', run: () => A().saveAs() });
+  C('saveAs', { label: 'Save &As...', key: 'F12', run: () => A().saveAs() });
   C('saveWeb', { label: 'Save as Web Pa&ge...', icon: 'webPage', run: () => A().exportAs('html') });
-  C('pageSetup', { label: 'Page Set&up...', run: () => L.dlg.pageSetup() });
+  C('pageSetup', { label: 'Page Set&up...', icon: 'pageSetup', run: () => L.dlg.pageSetup() });
   C('printPreview', { label: 'Print Pre&view', icon: 'preview', tip: 'Print Preview', run: () => A().setView('preview') });
   C('print', { label: '&Print...', icon: 'print', key: 'Ctrl+P', tip: 'Print', run: () => L.dlg.print() });
   C('properties', { label: 'Propert&ies', icon: 'properties', run: () => L.dlg.properties() });
   C('versions', { label: 'Versio&ns...', icon: 'open', enabled: () => L.file.bound(), run: () => L.file.showVersions(A().fileName) });   // the desktop app
-  C('exitApp', { label: 'E&xit', icon: 'exit', run: () => A().exit() });
+  C('exitApp', { label: 'E&xit', run: () => A().exit() });
 
   /* ---------- Edit ---------- */
-  C('undo', { label: '&Undo', icon: 'undo', key: 'Ctrl+Z', get menuLabel() { return L.hist.undo.length ? L.t('&Undo {0}', L.t(L.hist.undo[L.hist.undo.length - 1].label)) : "&Can't Undo"; }, enabled: () => L.hist.undo.length > 0, run: () => A().undo() });
-  C('redo', { label: '&Redo', icon: 'redo', key: 'Ctrl+Y', get menuLabel() { return L.hist.redo.length ? L.t('&Redo {0}', L.t(L.hist.redo[L.hist.redo.length - 1].label)) : "&Can't Redo"; }, enabled: () => L.hist.redo.length > 0, run: () => A().redo() });
+  C('undo', { label: '&Undo', icon: 'undo', key: 'Ctrl+Z', get menuLabel() { return L.hist.undo.length ? L.t('&Undo {0}', L.t(L.hist.undo[L.hist.undo.length - 1].label)) : "Can't &Undo"; }, enabled: () => L.hist.undo.length > 0, run: () => A().undo() });
+  C('redo', { label: '&Redo', icon: 'redo', key: 'Ctrl+Y', get menuLabel() { return L.hist.redo.length ? L.t('&Redo {0}', L.t(L.hist.redo[L.hist.redo.length - 1].label)) : "Can't &Repeat"; }, enabled: () => L.hist.redo.length > 0, run: () => A().redo() });
   C('cut', { label: 'Cu&t', icon: 'cut', key: 'Ctrl+X', enabled: () => editing() || hasSel() || slideCtx(), run: () => A().cmdClipboard('cut') });
   C('copy', { label: '&Copy', icon: 'copy', key: 'Ctrl+C', enabled: () => editing() || hasSel() || slideCtx(), run: () => A().cmdClipboard('copy') });
   C('paste', { label: '&Paste', icon: 'paste', key: 'Ctrl+V', enabled: () => !!A().clip, run: () => A().paste() });
@@ -60,7 +60,7 @@
   C('viewGray', { label: '&Grayscale', icon: 'grayscale', radio: true, checked: () => !!A().opts.gray, tip: 'Color/Grayscale', run: () => A().setColorMode(A().opts.gray ? 'color' : 'gray') });
   C('viewBW', { label: '&Pure Black and White', radio: true, checked: () => !!A().opts.bw, run: () => A().setColorMode('bw') });
   C('taskPane', { label: 'Tas&k Pane', icon: 'taskpane', key: 'Ctrl+F1', checked: () => A().taskOpen(), run: () => A().toggleTask() });
-  C('slidesPane', { label: 'Slides and Outline Pane', checked: () => A().leftOpen(), run: () => A().toggleLeft() });
+  C('slidesPane', { label: '&Slides and Outline Pane', checked: () => A().leftOpen(), run: () => A().toggleLeft() });
   for (const [id, label] of [['standard', '&Standard'], ['formatting', '&Formatting'], ['drawing', '&Drawing'], ['outlining', '&Outlining'], ['picture', '&Picture'], ['tables', '&Tables and Borders'], ['wordart', '&LettersArt']]) {
     C('tb_' + id, { label, checked: () => A().tbShown(id), run: () => A().toggleToolbar(id) });
   }
@@ -68,7 +68,7 @@
   C('showGrid', { label: '&Gridlines', icon: 'grid', tip: 'Show/Hide Grid', checked: () => E().grid.show, run: () => { E().grid.show = !E().grid.show; E().layout(); A().saveOpts(); } });
   C('showGuides', { label: 'G&uides', icon: 'guides', tip: 'Show/Hide Drawing Guides', checked: () => !!E().grid.guides, run: () => { E().grid.guides = !E().grid.guides; E().layout(); A().saveOpts(); } });
   C('gridGuides', { label: 'Gr&id and Guides...', icon: 'grid', run: () => L.dlg.grid() });
-  C('headerFooter', { label: '&Header and Footer...', run: () => L.dlg.headerFooter() });
+  C('headerFooter', { label: '&Header and Footer...', icon: 'headerFooter', run: () => L.dlg.headerFooter() });
   C('zoomDlg', { label: '&Zoom...', icon: 'zoom', run: () => L.dlg.zoom() });
   C('exportPDF', { label: 'Export to &PDF...', icon: 'print', tip: 'Export to PDF, one slide per page', enabled: () => L.pres.slides.length > 0, run: () => A().exportAs('pdf', A().fileName) });
   C('zoomFit', { label: 'Fit to &Window', icon: 'zoomFit', tip: 'Fit slide to current window', enabled: () => A().view === 'normal' || A().view === 'master', run: () => E().setZoom('fit') });
@@ -95,7 +95,7 @@
 
   /* ---------- Format ---------- */
   C('fontDlg', { label: '&Font...', icon: 'font', key: 'Ctrl+T', enabled: textCtx, run: () => L.dlg.font() });
-  C('bulletsDlg', { label: '&Bullets and Numbering...', enabled: textCtx, run: () => L.dlg.bullets() });
+  C('bulletsDlg', { label: '&Bullets and Numbering...', icon: 'bullets', enabled: textCtx, run: () => L.dlg.bullets() });
   C('lineSpacing', { label: 'Line &Spacing...', icon: 'lineSpacing', enabled: textCtx, run: () => L.dlg.lineSpacing() });
   C('changeCase', { label: 'C&hange Case...', icon: 'changeCase', key: 'Shift+F3', enabled: textCtx, run: () => L.dlg.changeCase() });
   C('replaceFonts', { label: 'Re&place Fonts...', run: () => L.dlg.replaceFonts() });
@@ -110,6 +110,7 @@
   C('bold', { label: 'Bold', icon: 'bold', key: 'Ctrl+B', enabled: textCtx, checked: () => { const s = fmtState(); return !!s && s.b; }, run: () => A().toggleRun('b') });
   C('italic', { label: 'Italic', icon: 'italic', key: 'Ctrl+I', enabled: textCtx, checked: () => { const s = fmtState(); return !!s && s.i; }, run: () => A().toggleRun('i') });
   C('underline', { label: 'Underline', icon: 'underline', key: 'Ctrl+U', enabled: textCtx, checked: () => { const s = fmtState(); return !!s && s.u; }, run: () => A().toggleRun('u') });
+  C('strike', { label: 'Strikethrough', icon: 'strike', enabled: textCtx, checked: () => { const s = fmtState(); return !!s && !!s.r.strike && s.r.strike !== 'noStrike'; }, run: () => A().toggleRun('strike') });
   C('shadowText', { label: 'Shadow', icon: 'shadowText', enabled: textCtx, checked: () => { const s = fmtState(); return !!s && s.shd; }, run: () => A().toggleRun('shd') });
   C('superscript', { label: 'Superscript', key: 'Ctrl+Shift+=', enabled: textCtx, run: () => A().toggleBaseline(30000) });
   C('subscript', { label: 'Subscript', key: 'Ctrl+=', enabled: textCtx, run: () => A().toggleBaseline(-25000) });
@@ -133,7 +134,8 @@
   /* ---------- Tools ---------- */
   C('spelling', { label: '&Spelling...', icon: 'spell', key: 'F7', tip: 'Spelling', run: () => A().spelling() });
   C('autocorrectDlg', { label: '&AutoCorrect Options...', run: () => L.dlg.autocorrect() });
-  C('optionsDlg', { label: '&Options...', icon: 'options', run: () => L.dlg.options() });
+  C('customize', { label: '&Customize...', run: () => ui.customize({ toolbars: ['standard', 'formatting', 'drawing', 'outlining', 'picture', 'tables', 'wordart'], opts: A().opts, save: () => A().saveOpts(), shortcuts: A().SHORTCUTS }) });
+  C('optionsDlg', { label: '&Options...', run: () => L.dlg.options() });
 
   /* ---------- Slide Show ---------- */
   C('showFromStart', { label: '&View Show', icon: 'slideshowStart', key: 'F5', tip: 'Slide Show (from start)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: 0 }) });
@@ -149,8 +151,9 @@
 
   /* ---------- Help ---------- */
   C('help', { label: 'Lectern &Help', icon: 'help', key: 'F1', tip: 'Lectern Help', run: () => L.panes.task.show('help') });
-  C('about', { label: '&About Lectern', icon: 'about', run: () => L.dlg.about() });
+  C('about', { label: '&About Lectern', run: () => L.dlg.about() });
   C('gettingStarted', { label: '&Getting Started', run: () => L.panes.task.show('getting-started') });
+  C('keyboardHelp', { label: '&Keyboard Shortcuts', run: () => L.panes.task.show('keys') });
 
   /* ---------- Drawing ---------- */
   C('select', { label: 'Select Objects', icon: 'select', checked: () => !E().tool, run: () => { E().cancelFreeform(false); E().setTool(null); } });

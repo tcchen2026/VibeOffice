@@ -75,7 +75,8 @@
     const t = target.getAttribute('data-tip');
     if (!t) return;
     if (!tipEl) { tipEl = h('div', { class: 'tooltip', role: 'tooltip' }); document.body.appendChild(tipEl); }
-    tipEl.textContent = target.closest('[translate="no"]') ? t : (L.t ? L.t(t) : t);   // data (a font's name) stays as it is
+    const key = target.getAttribute('data-tip-key');
+    tipEl.textContent = (target.closest('[translate="no"]') ? t : (L.t ? L.t(t) : t)) + (key && !document.body.classList.contains('notipkeys') ? ` (${key})` : '');   // data (a font's name) stays as it is
     tipEl.hidden = false;
     const r = tipEl.getBoundingClientRect();
     let left = x + 2, top = y + 20;
@@ -285,7 +286,7 @@
     opts = opts || {};
     const c = ui.cmds[id] || {};
     const label = opts.label != null ? opts.label : c.tbLabel;
-    const b = h('button', { class: 'tb-btn' + (label ? ' with-label' : ''), type: 'button', 'data-cmd': id, 'aria-label': stripAmp(c.label || id), 'data-tip': stripAmp(c.tip || c.label || id) + (c.key ? ` (${keyText(c.key)})` : '') });
+    const b = h('button', { class: 'tb-btn' + (label ? ' with-label' : ''), type: 'button', 'data-cmd': id, 'aria-label': stripAmp(c.label || id), 'data-tip': stripAmp(c.tip || c.label || id), 'data-tip-key': c.key ? keyText(c.key) : null });
     b.innerHTML = (c.icon || opts.icon ? L.icons.get(opts.icon || c.icon) : '') + (label ? `<span class="tb-lbl">${ampHTML(label)}</span>` : '');
     b.addEventListener('pointerdown', (e) => e.preventDefault()); /* keep the focus and selection where they are */
     b.addEventListener('click', (e) => ui.exec(id, opts.arg, e));
@@ -371,8 +372,59 @@
       else if (it instanceof Node) tb.appendChild(it);
     }
     tb.appendChild(h('span', { class: 'tb-end' }));
+    toolbarOptions(tb);
     return tb;
   };
+  /* Toolbar Options (») at the end of a toolbar cut short by the window or by a shared row, as in Office 2003: it shows
+     the controls that don't fit in a pop-up, the controls themselves (moved there while it is open), so their menus,
+     lists and states work as on the toolbar */
+  function toolbarOptions(tb) {
+    const more = h('button', { class: 'tb-more', type: 'button', tabindex: '-1', 'aria-label': 'Toolbar Options', 'data-tip': 'Toolbar Options', 'aria-haspopup': 'true', hidden: true, html: '<span aria-hidden="true">»</span>' });
+    const end = tb.lastChild;
+    let pop = null;
+    tb.appendChild(more);
+    const update = () => {
+      if (pop) return;
+      const need = tb.scrollWidth - (more.hidden ? 0 : more.offsetWidth);
+      more.hidden = !(need > tb.clientWidth + 1);
+    };
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(update).observe(tb);
+    const close = () => {
+      if (!pop) return;
+      for (const n of [...pop.children]) tb.insertBefore(n, end);
+      pop.remove(); pop = null;
+      tb.style.width = tb.style.flex = '';
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('keydown', esc, true);
+      more.classList.remove('open');
+      update();
+    };
+    const outside = (e) => { if (!pop.contains(e.target) && !more.contains(e.target) && !e.target.closest('.menu')) close(); };
+    const esc = (e) => { if (e.key === 'Escape' && !ui.menuOpen()) { e.preventDefault(); e.stopPropagation(); close(); } };
+    more.addEventListener('pointerdown', (e) => e.preventDefault());
+    more.addEventListener('click', () => {
+      if (pop) { close(); return; }
+      const edge = more.getBoundingClientRect().left;
+      const kids = [...tb.children];
+      const from = kids.findIndex((n) => n !== more && n !== end && n.getClientRects().length && n.getBoundingClientRect().right > edge + 1);
+      if (from < 0) return;
+      /* the toolbar keeps its width while its controls are away */
+      tb.style.width = tb.getBoundingClientRect().width + 'px'; tb.style.flex = 'none';
+      pop = h('div', { class: 'toolbar tb-pop', role: 'toolbar', 'aria-label': tb.getAttribute('aria-label') });
+      for (const n of kids.slice(from)) if (n !== more && n !== end) pop.appendChild(n);
+      document.body.appendChild(pop);
+      const r = more.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+      pop.style.left = Math.max(2, Math.min(r.right - pr.width, window.innerWidth - pr.width - 2)) + 'px';
+      pop.style.top = r.bottom + 1 + 'px';
+      more.classList.add('open');
+      document.addEventListener('pointerdown', outside, true);
+      document.addEventListener('keydown', esc, true);
+      /* a button that runs its command closes the pop-up; a drop-down's arrow or list keeps it until the choice is made */
+      pop.addEventListener('click', (e) => { const b = e.target.closest('.tb-btn'); if (b && !b.classList.contains('tb-drop')) setTimeout(close); });
+      ui.refresh();
+    });
+    window.addEventListener('resize', close);
+  }
   /** the Undo or Redo drop-down: labels are the steps, newest first; choosing one undoes (or redoes) it and every step
    * after it, as in Office */
   ui.historyMenu = function (r, kind, labels) {
@@ -544,6 +596,7 @@
         const pi = (opts.buttons || []).findIndex((b) => b.primary);
         if (pi >= 0) { e.preventDefault(); btns[pi].click(); return true; }
       }
+      if (e.altKey && !e.ctrlKey && !e.metaKey && accessKeyIn(dlg, e)) { e.preventDefault(); return true; }
       if (e.key === 'Tab') {
         const f = L.$$('input,select,textarea,button,[tabindex="0"]', dlg).filter((x) => !x.disabled && x.offsetParent !== null);
         if (!f.length) return false;
@@ -575,6 +628,23 @@
     if (opts.onOpen) opts.onOpen(dlg);
     return { el: dlg, body, close, done, buttons: btns };
   };
+  /* Alt+letter in a dialog, as in Office: the underlined letter's button is pressed, a tab chosen, a checkbox or radio
+     ticked, a label's box focused; when several share the letter, each press moves to the next. The letter is the key's
+     own (e.key), or its place on a US keyboard where Option or AltGr makes another character (e.code) */
+  function accessKeyIn(dlg, e) {
+    const want = new Set([e.key.length === 1 ? e.key.toLowerCase() : '', (/^Key([A-Z])$/.exec(e.code) || /^Digit(\d)$/.exec(e.code) || [])[1]].filter(Boolean).map((x) => x.toLowerCase()));
+    const hits = L.$$('u', dlg).filter((u) => want.has(u.textContent.toLowerCase()) && u.getClientRects().length)
+      .map((u) => u.closest('button, label')).filter((x) => x && !x.disabled && !(x.control && x.control.disabled));
+    if (!hits.length) return false;
+    const target = (x) => (x.tagName === 'BUTTON' ? x : x.control || L.$$('input,select,textarea,button,[tabindex="0"]', dlg).find((c) => (x.compareDocumentPosition(c) & 4) && !c.disabled && c.getClientRects().length));
+    const at = hits.findIndex((x) => target(x) === document.activeElement);
+    const x = hits[(at + 1) % hits.length], c = target(x);
+    if (!c) return true;
+    if (hits.length > 1) { c.focus(); return true; }
+    if (c.tagName === 'BUTTON' || c.type === 'checkbox' || c.type === 'radio') { c.focus(); c.click(); }
+    else { c.focus(); if (c.select && c.type !== 'file') c.select(); }
+    return true;
+  }
   ui.dialogKey = (e) => { const top = dlgStack[dlgStack.length - 1]; return top ? top.keys(e) || true : false; };
 
   /** A document's hyperlink, which the suite never opens itself: a link in a file can lead anywhere, so it shows
@@ -758,10 +828,10 @@
     if (!window.VO || !VO.look) return null;
     let pick = VO.look.get();
     const sel = ui.select(VO.look.list().map((l) => [l.id, l.name]), pick, (v) => { pick = v; }, { id: 'op-look' });
-    const el = h('div', { class: 'col' }, ui.field('Theme:', sel));
+    const el = h('div', { class: 'col' }, ui.field('T&heme:', sel));
     let lang = VO.lang && VO.lang.get();
     /* each language named in itself */
-    if (VO.lang) el.appendChild(ui.field('Language:', ui.select(VO.lang.list().map((l) => [l.id, l.id === 'auto' ? t('Auto (as the browser)') : l.name]), lang, (v) => { lang = v; }, { id: 'op-lang', translate: 'no' })));
+    if (VO.lang) el.appendChild(ui.field('L&anguage:', ui.select(VO.lang.list().map((l) => [l.id, l.id === 'auto' ? t('Auto (as the browser)') : l.name]), lang, (v) => { lang = v; }, { id: 'op-lang', translate: 'no' })));
     return {
       el,
       apply: () => {
@@ -769,6 +839,76 @@
         if (VO.lang && lang !== VO.lang.get()) { VO.lang.set(lang); ui.toast('The new language is used in the windows you open from now on.'); }
       },
     };
+  };
+
+  /* ---------- Tools ▸ Customize ---------- */
+  /** the Customize options an app keeps in its saved options o, all on unless false: Standard and Formatting
+   *  toolbars on two rows (twoRows; the two rows sit in a .tb-pair), ScreenTips (screenTips), shortcut keys in them (tipKeys) */
+  ui.toolbarPrefs = (o) => {
+    const host = document.getElementById('toolbars');
+    if (host) host.classList.toggle('one-row', o.twoRows === false);
+    document.body.classList.toggle('notips', o.screenTips === false);
+    document.body.classList.toggle('notipkeys', o.tipKeys === false);
+  };
+  /** Tools ▸ Customize. o: { toolbars: ids, each with a 'tb_<id>' toggle command; opts: the app's saved options;
+   *  save(); shortcuts: { key: command id } besides the commands' own keys }. Changes apply at once, as in Office */
+  ui.customize = function (o) {
+    const plain = (label) => h('span', { text: stripAmp(label), translate: 'no' });
+    const tbs = h('div', { class: 'cz-list' });
+    for (const id of o.toolbars) {
+      const c = ui.cmds['tb_' + id];
+      if (!c) continue;
+      const inp = h('input', { type: 'checkbox', id: 'cz-tb-' + id });
+      inp.checked = ui.checked('tb_' + id);
+      inp.addEventListener('change', () => { ui.exec('tb_' + id); inp.checked = ui.checked('tb_' + id); });
+      tbs.appendChild(h('label', { class: 'ck', for: inp.id }, inp, plain(c.label)));
+    }
+    /* every command with a name (not the toolbars' toggles or symbols), its shortcut keys beside it */
+    const keys = {};
+    for (const [k, id] of Object.entries(o.shortcuts || {})) (keys[id] || (keys[id] = new Set())).add(k);
+    const seen = new Set(), rows = [];
+    for (const c of Object.values(ui.cmds)) {
+      /* the command's own name: a fixed menu label or label, not one that tells the moment ("Undo Typing") */
+      const fixed = (k) => { const d = Object.getOwnPropertyDescriptor(c, k); return d && !d.get ? d.value : null; };
+      const name = c.label && !c.id.startsWith('tb_') ? stripAmp(fixed('menuLabel') || fixed('label') || c.tip || c.label).replace(/\.\.\.$|…$/, '') : '';
+      if (!/\p{L}/u.test(name)) continue;
+      const ks = new Set(keys[c.id]); if (c.key) ks.add(c.key);
+      const kt = [...ks].map(keyText).sort().join(', ');
+      if (seen.has(name + '\u0000' + kt)) continue;
+      seen.add(name + '\u0000' + kt);
+      rows.push({ id: c.id, name, kt });
+    }
+    rows.sort((a, b) => a.name.localeCompare(b.name));
+    const table = h('table', { class: 'kbd-table cz-cmds', translate: 'no' }, h('tr', null, h('th', { text: 'Command' }), h('th', { text: 'Shortcut keys' })));
+    let on = null;
+    const pick = (tr) => { if (on) on.classList.remove('on'); on = tr; if (tr) { tr.classList.add('on'); tr.scrollIntoView({ block: 'nearest' }); } };
+    for (const r of rows) {
+      const tr = h('tr', null, h('td', { text: r.name, translate: 'no' }), h('td', { text: r.kt, translate: 'no' }));
+      tr.addEventListener('click', () => pick(tr));
+      tr.addEventListener('dblclick', () => ui.exec(r.id));
+      tr.cmd = r.id;
+      table.appendChild(tr);
+    }
+    const box = h('div', { class: 'cz-box', tabindex: '0', role: 'grid', 'aria-label': 'Commands' }, table);
+    box.addEventListener('keydown', (e) => {
+      const all = [...table.rows].slice(1);
+      const i = all.indexOf(on);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); pick(all[L.clamp(i + (e.key === 'ArrowDown' ? 1 : -1), 0, all.length - 1)]); }
+      else if (e.key === 'Enter' && on) { e.preventDefault(); e.stopPropagation(); ui.exec(on.cmd); }
+    });
+    const op = o.opts;
+    const set = (k, v) => { op[k] = v; o.save(); ui.toolbarPrefs(op); };
+    const keyTips = ui.check('Show shortcut &keys in ScreenTips', op.tipKeys !== false, (v) => set('tipKeys', v));
+    keyTips.input.disabled = op.screenTips === false;
+    const options = h('div', { class: 'col' },
+      ui.check('Show Standard and Formatting toolbars on t&wo rows', op.twoRows !== false, (v) => set('twoRows', v)),
+      ui.check('Show Screen&Tips on toolbars', op.screenTips !== false, (v) => { set('screenTips', v); keyTips.input.disabled = !v; }),
+      keyTips);
+    ui.dialog({ title: 'Customize', width: 440, body: ui.tabs([
+      { label: 'Tool&bars', body: h('div', { class: 'col' }, h('label', { for: tbs.firstChild && tbs.firstChild.htmlFor, text: 'Toolbars:' }), tbs) },
+      { label: '&Commands', body: h('div', { class: 'col' }, h('div', { class: 'hint', text: 'Double-click a command to run it.' }), box) },
+      { label: '&Options', body: options },
+    ]), buttons: [{ label: 'Close', primary: true }] });
   };
 
   /* ---------- colour pickers ---------- */

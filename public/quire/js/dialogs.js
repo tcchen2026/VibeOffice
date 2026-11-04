@@ -132,8 +132,9 @@
   };
   const FONTS = () => Array.from(new Set(L.FONT_LIST.concat(Object.values(doc().styles).map((s) => s.rPr && s.rPr.font).filter(Boolean), [doc().defaults.rPr.font]))).sort((a, b) => a.localeCompare(b));
   G.FONTS = FONTS;
-  /** mixed values across the selection (undefined when mixed) */
-  const uni = (k) => E.uniformRun(k);
+  /** a run property over the selection, MIXED when it varies */
+  const MIXED = {};
+  const uni = (k) => E.uniformRun(k, MIXED);
   /** apply props and remember the dialog choices */
   function preview(el, r) {
     el.style.cssText = R.runCSS(Object.assign({}, r, { sz: Math.min(r.sz || 12, 30) }), 1) + ';white-space:nowrap;overflow:hidden';
@@ -148,12 +149,14 @@
   G.font = function (opts) {
     opts = opts || {};
     const base = opts.target ? Object.assign({}, opts.base || {}, opts.target) : E.curRun();
-    const val = (k) => (opts.target ? base[k] : uni(k));
+    /* the properties that vary over the selection: blank or indeterminate in the dialog, untouched unless changed */
+    const mixed = new Set();
+    const val = (k) => { if (opts.target) return base[k]; const v = uni(k); if (v !== MIXED) return v; mixed.add(k); return undefined; };
     const st = { font: val('font'), sz: val('sz'), b: val('b'), i: val('i'), u: val('u'), uColor: val('uColor'), color: val('color'), strike: val('strike'), dstrike: val('dstrike'), vert: val('vert'), shadow: val('shadow'), outline: val('outline'), emboss: val('emboss'), imprint: val('imprint'), smallCaps: val('smallCaps'), caps: val('caps'), hidden: val('hidden'), w: val('w'), spacing: val('spacing'), position: val('position'), kern: val('kern'), effect: val('effect') };
     const changed = new Set();
     const set = (k, v) => { st[k] = v; changed.add(k); upd(); };
     const fontLB = G.listBox(FONTS(), st.font || '', { input: true, height: 110, id: 'fd-font', translate: 'no', onChange: (v) => set('font', v) });
-    const styleName = () => (st.b && st.i ? 'Bold Italic' : st.b ? 'Bold' : st.i ? 'Italic' : st.b === undefined || st.i === undefined ? '' : 'Regular');
+    const styleName = () => (st.b && st.i ? 'Bold Italic' : st.b ? 'Bold' : st.i ? 'Italic' : (opts.target ? st.b === undefined || st.i === undefined : mixed.has('b') || mixed.has('i')) ? '' : 'Regular');
     const styleLB = G.listBox([L.N('Regular'), L.N('Italic'), L.N('Bold'), L.N('Bold Italic')], styleName(), { input: true, height: 110, id: 'fd-style', onChange: (v) => { const s = String(v).toLowerCase(); st.b = /bold/.test(s); st.i = /italic/.test(s); changed.add('b'); changed.add('i'); upd(); } });
     const sizeLB = G.listBox(L.SIZE_LIST.map(String), st.sz != null ? String(L.round(st.sz, 1)) : '', { input: true, height: 110, id: 'fd-size', translate: 'no', onChange: (v) => { const n = parseFloat(v); if (n > 0) set('sz', L.clamp(Math.round(n * 2) / 2, 1, 1638)); } });
     const color = G.color(st.color == null ? 'auto' : st.color, { id: 'fd-color', onChange: (v) => set('color', v === 'auto' ? undefined : v) });
@@ -169,7 +172,7 @@
         else { st[k] = v || (opts.target ? undefined : false); changed.add(k); if (v && k === 'strike') { st.dstrike = undefined; fxEls.dstrike.input.checked = false; changed.add('dstrike'); } if (v && k === 'dstrike') { st.strike = undefined; fxEls.strike.input.checked = false; changed.add('strike'); } if (v && k === 'caps') { st.smallCaps = undefined; fxEls.smallCaps.input.checked = false; changed.add('smallCaps'); } if (v && k === 'smallCaps') { st.caps = undefined; fxEls.caps.input.checked = false; changed.add('caps'); } if (v && k === 'emboss') { st.imprint = undefined; fxEls.imprint.input.checked = false; changed.add('imprint'); } if (v && k === 'imprint') { st.emboss = undefined; fxEls.emboss.input.checked = false; changed.add('emboss'); } }
         upd();
       });
-      if (k !== 'sup' && k !== 'sub' && st[k] === undefined && !opts.target && E.uniformRun(k) === undefined && !E.collapsed()) c.input.indeterminate = true;
+      if (k === 'sup' || k === 'sub' ? mixed.has('vert') : mixed.has(k)) c.input.indeterminate = true;
       fxEls[k] = c;
       fxBox.appendChild(c);
     }
@@ -200,7 +203,7 @@
     const anim = ui.select([['', '(none)'], ['blinkBackground', 'Blinking Background'], ['lights', 'Las Vegas Lights'], ['antsBlack', 'Marching Black Ants'], ['antsRed', 'Marching Red Ants'], ['shimmer', 'Shimmer'], ['sparkle', 'Sparkle Text']], st.effect || '', (v) => set('effect', v || undefined), { id: 'fd-anim', size: 7, style: 'width:100%' });
     const tabs = ui.tabs([
       { label: 'Fo&nt', body: h('div', null, G.row(h('div', { class: 'col', style: 'flex:2;min-width:150px' }, h('label', { for: 'fd-font', html: ui.ampHTML('&Font:') }), fontLB), h('div', { class: 'col', style: 'flex:1.2;min-width:100px' }, h('label', { for: 'fd-style', html: ui.ampHTML('Font st&yle:') }), styleLB), h('div', { class: 'col', style: 'flex:0.7;min-width:60px' }, h('label', { for: 'fd-size', html: ui.ampHTML('&Size:') }), sizeLB)),
-        G.row(G.f('Font &color:', color), G.f('&Underline style:', ul), G.f('Underline color:', ulColor)), ui.group('Effects', fxBox)) },
+        G.row(G.f('Font &color:', color), G.f('&Underline style:', ul), G.f('Underline co&lor:', ulColor)), ui.group('Effects', fxBox)) },
       { label: 'Cha&racter Spacing', body: h('div', { class: 'col' }, G.f('S&cale:', scale, 'wide'), G.row(G.f('&Spacing:', spKind, 'wide'), G.f('&By:', spBy, 'narrow')), G.row(G.f('&Position:', posKind, 'wide'), G.f('B&y:', posBy, 'narrow')), G.row(kern, G.f('Poi&nts and above', kernAt))) },
       { label: 'Te&xt Effects', body: h('div', { class: 'col' }, h('label', { for: 'fd-anim', text: 'Animations:' }), anim, h('div', { class: 'tp-note', text: 'Animated text effects are kept in the file; they display as plain text, as in later versions of Word.' })) },
     ], opts.tab || 0);

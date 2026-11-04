@@ -222,7 +222,7 @@
   C('new', { label: '&New...', menuLabel: '&New...', icon: 'new', key: 'Ctrl+N', tip: 'New Blank Document', run: (arg, ev) => { if (ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) A.newDocument(); else if (window.VO) VO.newDialog('quire', (id) => (id ? L.templates.create(id) : A.newDocument())); else pane('new')(); } });
   C('newBlank', { label: '&Blank document', icon: 'new', run: () => A.newDocument() });
   C('open', { label: '&Open...', icon: 'open', key: 'Ctrl+O', run: () => A.openDialog() });
-  C('close', { label: '&Close', icon: 'close', run: () => A.closeDocument() });
+  C('close', { label: '&Close', run: () => A.closeDocument() });
   C('save', { label: '&Save', icon: 'save', key: 'Ctrl+S', enabled: () => !!D.doc, run: () => A.save() });
   C('saveAs', { label: 'Save &As...', key: 'F12', run: () => A.saveAs() });
   C('saveWeb', { label: 'Save as Web Pa&ge...', icon: 'webPage', run: () => A.exportAs('html') });
@@ -240,8 +240,8 @@
   C('exitApp', { label: 'E&xit', run: async () => { for (;;) { const last = A.docs.length <= 1; if (!(await A.closeDocument())) return; if (last) break; } if (window.VO) VO.exit(); } });
 
   /* ================= Edit ================= */
-  C('undo', { get label() { return D.canUndo() ? L.t('&Undo {0}', L.t(D.undoLabel())) : "&Can't Undo"; }, tip: 'Undo', icon: 'undo', key: 'Ctrl+Z', enabled: () => D.canUndo() && !viewing(), run: () => { D.undo(); } });
-  C('redo', { get label() { return D.canRedo() ? L.t('&Redo {0}', L.t(D.redoLabel())) : "&Repeat"; }, tip: 'Redo', icon: 'redo', key: 'Ctrl+Y', enabled: () => D.canRedo() && !viewing(), run: () => { D.redo(); } });
+  C('undo', { get label() { return D.canUndo() ? L.t('&Undo {0}', L.t(D.undoLabel())) : "Can't &Undo"; }, tip: 'Undo', icon: 'undo', key: 'Ctrl+Z', enabled: () => D.canUndo() && !viewing(), run: () => { D.undo(); } });
+  C('redo', { get label() { return D.canRedo() ? L.t('&Redo {0}', L.t(D.redoLabel())) : "Can't &Repeat"; }, tip: 'Redo', icon: 'redo', key: 'Ctrl+Y', enabled: () => D.canRedo() && !viewing(), run: () => { D.redo(); } });
   C('cut', { label: 'Cu&t', icon: 'cut', key: 'Ctrl+X', enabled: () => canEdit() && (hasSel() || objSel()), run: () => { E.focus(); if (!clip()) { const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } } E.edit(L.N('Cut'), () => E.deleteSelection()); } });
   C('copy', { label: '&Copy', icon: 'copy', key: 'Ctrl+C', enabled: () => hasSel() || objSel(), run: () => { E.focus(); const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } clip(); } });
   C('officeClipboard', { label: 'Office Clip&board...', icon: 'clipboard', run: pane('clipboard') });
@@ -545,8 +545,8 @@
   C('hfShowText', { label: 'Show/Hide Document Text', icon: 'showDocText', enabled: hfOnly, checked: () => LY.root && LY.root.classList.contains('hidebody'), run: () => LY.root.classList.toggle('hidebody') });
   C('hfLinkPrev', { label: 'Link to Previous', icon: 'linkPrev', enabled: () => hfOnly() && A.hfSectionIndex() > 0, checked: () => hfOnly() && A.hfLinked(), run: () => A.hfToggleLink() });
   C('hfSwitch', { label: 'Switch Between Header and Footer', icon: 'hfSwitch', enabled: hfOnly, run: () => A.hfSwitch() });
-  C('hfPrev', { label: 'Show Previous', icon: 'showPrev', enabled: hfOnly, run: () => A.hfStep(-1) });
-  C('hfNext', { label: 'Show Next', icon: 'showNext', enabled: hfOnly, run: () => A.hfStep(1) });
+  C('hfPrev', { label: 'Show Previous', icon: 'showPrevHF', enabled: hfOnly, run: () => A.hfStep(-1) });
+  C('hfNext', { label: 'Show Next', icon: 'showNextHF', enabled: hfOnly, run: () => A.hfStep(1) });
   C('hfClose', { label: 'Close Header and Footer', enabled: hfOnly, run: () => A.closeHeaderFooter() });
 
   /* ================= Mail Merge toolbar ================= */
@@ -560,8 +560,8 @@
   C('mmInsertField', { label: 'Insert Merge Fields', icon: 'mmField', enabled: () => canEdit() && hasData(), run: mm('fieldDialog') });
   C('mmViewData', { label: 'View Merged Data', icon: 'mmView', enabled: hasData, checked: () => !!(L.mailmerge && L.mailmerge.preview), run: mm('togglePreview') });
   C('mmFirst', { label: 'First Record', icon: 'first', enabled: hasData, run: mm('go', 0) });
-  C('mmPrev', { label: 'Previous Record', icon: 'showPrev', enabled: hasData, run: mm('step', -1) });
-  C('mmNext', { label: 'Next Record', icon: 'showNext', enabled: hasData, run: mm('step', 1) });
+  C('mmPrev', { label: 'Previous Record', icon: 'prevRecord', enabled: hasData, run: mm('step', -1) });
+  C('mmNext', { label: 'Next Record', icon: 'nextRecord', enabled: hasData, run: mm('step', 1) });
   C('mmLast', { label: 'Last Record', icon: 'last', enabled: hasData, run: mm('go', -1) });
   C('mmMergeNew', { label: 'Merge to New Document', icon: 'mmMergeNew', enabled: hasData, run: mm('mergeToNew') });
   C('mmMergePrint', { label: 'Merge to Printer', icon: 'mmMergePrint', enabled: hasData, run: mm('mergeToPDF') });

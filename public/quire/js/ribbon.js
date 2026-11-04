@@ -19,7 +19,7 @@
       { id: 'home', label: '&Home', groups: [
         { label: 'Clipboard', launcher: 'officeClipboard', items: [{ split: 'paste', size: 'large', menu: open(['paste', 'pasteSpecial', 'pasteHyperlink']) }, 'cut', 'copy', 'painter'] },
         { label: 'Font', icon: 'font', launcher: 'fontDlg', items: [
-          { row: [{ make: () => A().parts.font({ width: 128, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 42, id: 'rb-size' }) }, 'growFont', 'shrinkFont', 'changeCase', 'clearFormats'] },
+          { row: [{ make: () => A().parts.font({ width: 130, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 44, id: 'rb-size' }) }, 'growFont', 'shrinkFont', 'changeCase', 'clearFormats'] },
           { row: ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', '|', { split: 'highlightBtn', menu: (r, b) => A().menus.highlight(r, b) }, { split: 'fontColorBtn', menu: (r, b) => A().menus.fontColor(r, b) }] }] },
         { label: 'Paragraph', icon: 'paragraph', launcher: 'paragraphDlg', items: [
           { row: [{ split: 'bullets', menu: open(['bulletsDlg']) }, 'numbering', 'decIndent', 'incIndent', '|', 'sortDlg', 'showMarks'] },
@@ -33,7 +33,7 @@
         { label: 'Illustrations', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', { drop: 'Shapes', icon: 'autoshapes', menu: (r) => A().openAutoShapes(r) }, 'insertDiagram', 'insertChart'] },
         { label: 'Links', items: ['hyperlink', 'bookmark', 'crossReference'] },
         { label: 'Comments', items: [{ cmd: 'insertComment', size: 'large', label: 'Comment' }] },
-        { label: 'Header & Footer', items: ['headerFooter', 'pageNumbers'] },
+        { label: 'Header & Footer', items: [{ cmd: 'headerFooter', label: 'Header & Footer' }, 'pageNumbers'] },
         { label: 'Text', items: [{ cmd: 'textBox', size: 'large', label: 'Text Box' }, 'insertWordArt', 'dropCap', 'dateTime', 'insertField', 'insertObject', 'insertFile'] },
         { label: 'Symbols', items: [{ cmd: 'insertSymbol', size: 'large', label: 'Symbol' }] },
       ] },

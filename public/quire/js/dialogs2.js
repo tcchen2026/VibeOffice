@@ -314,7 +314,7 @@
     pvToc();
     const tocOptions = () => {
       const d = doc();
-      const rows = h('div', { style: 'max-height:240px;overflow:auto;border:1px solid #919b9c;background:#fff' });
+      const rows = h('div', { style: 'max-height:240px;overflow:auto;border:1px solid var(--field-border);background:var(--surface)' });
       const ids = Object.keys(d.styles).filter((k) => d.styles[k].type === 'paragraph').sort((a, b) => D.styleDisplayName(d.styles[a]).localeCompare(D.styleDisplayName(d.styles[b])));
       const inputs = {};
       for (const k of ids) { const lv = D.styleProps(d, k).pPr.outline; const inp = h('input', { type: 'text', style: 'width:36px', value: tStyles ? tStyles[k] || '' : lv != null && lv < tLevels.get() && /^Heading\d$/.test(k) ? String(lv + 1) : '' }); inputs[k] = inp; rows.appendChild(h('div', { class: 'row', style: 'justify-content:space-between;padding:1px 4px' }, G.raw('span', null, D.styleDisplayName(d.styles[k])), inp)); }

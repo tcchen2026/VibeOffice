@@ -30,6 +30,7 @@
   --muted: #4c5a72; --dis-ink: #8d8d8d; --dis-ink-2: #888;
   /* surfaces, selection, grids */
   --surface: #fff; --canvas: #9097A3; --work: #B7C6E2;
+  --check: #316AC5;   /* checked boxes, radios and sliders in dialogs and panes */
   --sel: #316AC5; --sel-ink: #fff; --sel-line: #1b3d7a; --sel-soft: #c6d6f3; --sel-pale: #dce6f8; --sel-pale-2: #e8eefc;
   --rule: #c5c5c5; --cell-line: #8a9bb8; --grid-line: #888; --grid-line-2: #e3e3e3; --sample-line: #b5b5b5; --bd-on: #ffe6a8;
   --sheet-grid: #c0c0c0; --sheet-hdr-a: #f4f4f4; --sheet-hdr-b: #dcdcdc;
@@ -101,6 +102,7 @@
   --ink: #24211C; --ink-2: #2E2A24; --ink-3: #3B372F; --ink-4: #4A463F; --ink-5: #5E584E; --ink-key: #24211C;
   --muted: #7A7368; --dis-ink: #B0A99D; --dis-ink-2: #A39C90;
   --surface: #fff; --canvas: #E9E5DE; --work: #E9E5DE;
+  --check: var(--p-accent);
   --sel: var(--p-accent); --sel-ink: #fff; --sel-line: var(--p-accent-ink); --sel-soft: var(--p-accent-mid);
   --sel-pale: var(--p-accent-soft); --sel-pale-2: var(--p-accent-soft);
   --rule: var(--p-line); --cell-line: var(--p-line-strong); --grid-line: var(--p-line-strong); --grid-line-2: #EFEBE4;

@@ -95,7 +95,8 @@ another tab and back. Two runs at once each need a Chromium of their own: `CDP=h
   exactly what was there, any other ending changed and recorded nothing. A new drag adds its `matrix(…)` there, and a
   new mode goes into the lists of both files: what broke in review broke only in a mode no test had on.
 - `focus.test.mjs`: the keyboard back to the document, in each app and in the Classic and Paper 2016 looks: dialogs
-  from a shortcut, a toolbar or ribbon button and the context menu, closed with Esc, Cancel and OK; menu-bar commands;
+  from a shortcut, a toolbar or ribbon button and the context menu, closed with Esc, Cancel and OK; a dialog's access
+  key with Alt (Zoom's 200%); menu-bar commands;
   the ribbon's tabs; presses on chrome without a control (toolbars, grips, the status bar, the ribbon's tab strip);
   the status bar's zoom slider dragged, dragged and cancelled with Esc, and its + clicked (a view control: no gestures
   test, as a zoom makes no undo step).

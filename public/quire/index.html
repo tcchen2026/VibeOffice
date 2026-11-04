@@ -201,14 +201,12 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 .thumb { border: 1px solid var(--grid-line); background: var(--surface); position: relative; overflow: hidden; cursor: pointer; }
 .thumb.on { outline: 3px solid var(--thumb-on); }
 .thumb-n { font-size: 10px; text-align: center; }
-.revpane { flex: none; height: 140px; background: var(--surface); border-top: 1px solid var(--chrome-line); overflow: auto; font: 11px Tahoma, var(--ui-font); }
+.revpane { flex: none; height: 140px; background: var(--surface); border-top: 1px solid var(--chrome-line); overflow: auto; font: var(--ui-size) var(--ui-font); }
 .rp-head { position: sticky; top: 0; background: linear-gradient(var(--tb-a), var(--tb-b)); padding: 2px 6px; border-bottom: 1px solid var(--ruler-line); font-weight: bold; display: flex; justify-content: space-between; }
 .rp-item { border-bottom: 1px solid var(--row-line); padding: 3px 6px; }
 .rp-item .rp-h { font-weight: bold; }
 .rp-item .rp-b { outline: none; }
 /* bottom bars */
-.drawrow { flex: none; padding: 1px 2px 2px; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-top: 1px solid var(--chrome-line); overflow-x: auto; scrollbar-width: none; }
-.drawrow::-webkit-scrollbar { display: none; }
 /* floating toolbars */
 /* ---------- dialogs (Windows XP) ---------- */
 .para-preview { height: 130px; width: 160px; background: var(--surface); border: 1px solid var(--preview-line); padding: 6px 8px; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
@@ -216,7 +214,7 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 .para-preview b { display: block; height: 3px; background: var(--ink-3); flex: none; }
 .gal-grid { display: grid; grid-template-columns: repeat(4, 90px); gap: 8px; }
 .gal-grid button { height: 92px; border: 1px solid var(--grid-line); background: var(--surface); padding: 6px 7px; display: flex; flex-direction: column; justify-content: center; gap: 7px; font: 12px Arial, Arimo, sans-serif; overflow: hidden; text-align: left; }
-.gal-grid button.none { align-items: center; justify-content: center; font: 14px Tahoma, var(--ui-font); }
+.gal-grid button.none { align-items: center; justify-content: center; font: calc(var(--ui-size) + 3px) var(--ui-font); }
 .gal-grid button.on { outline: 2px solid var(--pane-link); outline-offset: 1px; }
 .gal-grid button div { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .gal-grid button div i { flex: 1; border-top: 2px solid var(--ink-9); }
@@ -308,7 +306,6 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 /* ---- split window ---- */
 .split2 { position: relative; overflow: auto; background: var(--canvas); min-height: 60px; border-bottom: 1px solid var(--chrome-line); }
 /* ---- preferences ---- */
-body.notips .tooltip:not(.ac-tip) { display: none !important; }
 body.bluebg .pages .pg { background: #0000a8 !important; }
 body.bluebg .pages .pc, body.bluebg .pages .pc span { color: #fff !important; }
 /* ---- find & replace "highlight all items" ---- */

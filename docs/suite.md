@@ -86,7 +86,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `looks.css` | the looks: every chrome colour, font and shadow as a named setting, one block per look (see Looks) | all, and the Start Center |
 | `ui.css` | the chrome: layout of menus, toolbars, task panes, dialogs, controls, status bar, from the look's settings; each app's CSS follows and wins | all |
 | `core.js` | DOM helpers, colours, units, events, storage, file saving (`L.saveFile`, which tells `vo-saved`), PDF writer, media store, fonts and substitutes, symbol bullets, platform (`L.isMac`, `L.isMobile`: iOS or Android) | all |
-| `ui.js` | commands, menus, toolbars, the status bar's right end (`ui.statusGroup`, `ui.zoomSlider`), the Undo/Redo list (`ui.historyMenu`), combo boxes, dialogs, colour menus, password and prompt boxes, drags and brushes (`ui.drag`, `ui.brush`, below); the events `vo-command`, `vo-busy`, `vo-message` (what the user does, followed by the assistant) | all |
+| `ui.js` | commands, menus, toolbars (with Toolbar Options »), Tools ▸ Customize (`ui.customize`, `ui.toolbarPrefs`), the status bar's right end (`ui.statusGroup`, `ui.zoomSlider`), the Undo/Redo list (`ui.historyMenu`), combo boxes, dialogs (with their access keys), colour menus, password and prompt boxes, drags and brushes (`ui.drag`, `ui.brush`, below); the events `vo-command`, `vo-busy`, `vo-message` (what the user does, followed by the assistant) | all |
 | `search.js` | Search commands, the box at the top right of every app (see Search commands) | all |
 | `ribbon.js` | the ribbon of the Paper 2016 look, drawn from each app's `js/ribbon.js` (see The ribbon) | all |
 | `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |
@@ -97,7 +97,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `numfmt.js` | Excel number formats | Ledger, Lectern |
 | `dml.js` | DrawingML helpers | Quire, Ledger |
 | `spell.js` | spelling engine: word lists (`dict/`), checking, suggestions, custom dictionary, Ignore All | Quire, Ledger |
-| `clipart.js` | built-in clip art | Quire, Lectern |
+| `clipart.js` | built-in clip art and the Clip Art task pane's body (`L.clipart.pane`; each app registers the pane) | all |
 | `smartart.js` | the SmartArt layout engine: items → shapes for each layout, one text size per role (`tests/smartart.test.mjs`) | Lectern |
 | `scout/` | the assistant (see The assistant): `scout.js` the character, `assistant.js` the suite's use of him, `scout.css` his balloon | all |
 | `suite.js`, `dict/`, `templates.json` | the suite: Start Center services; word lists; template gallery | — |
@@ -224,6 +224,26 @@ give way when the window is narrow: below 960 px the cells an app marks `opt` (Q
 EXT/OVR, Ledger's key indicators, Lectern's design name) drop out. The ribbon's View › Zoom group has Office 2016's
 buttons (Quire: Zoom, 100%, One Page, Multiple Pages, Page Width; Ledger: Zoom, 100%, Zoom to Selection; Lectern:
 Zoom, Fit to Window); the classic toolbars keep their Zoom box. Ctrl+wheel (a trackpad's pinch) zooms in all three.
+
+### Toolbars, Customize and dialogs
+
+- Tools ▸ Customize (and View ▸ Toolbars ▸ Customize) is one dialog in all three apps, `ui.customize`: Toolbars (each
+  app's list of `tb_<id>` toggles), Commands (every named command with its shortcut keys; double-click or Enter runs one)
+  and Options. Its options apply at once and are kept in the app's options (`twoRows`, `screenTips`, `tipKeys`), applied
+  by `ui.toolbarPrefs` at start: the Standard and Formatting toolbars on two rows (on), or sharing one (the two rows sit
+  in a `.tb-pair`); ScreenTips; shortcut keys in them (a toolbar button keeps its key in `data-tip-key`, so the tip
+  itself is translated).
+- A toolbar cut short by the window or by a shared row shows Toolbar Options (») at its end, as Office 2003 does: it
+  opens the controls that don't fit in a pop-up (the controls themselves, moved there while it is open, so their
+  menus and lists work), and the toolbar keeps its width meanwhile.
+- Dialogs: Alt and an underlined letter presses that button, picks that tab, ticks that checkbox or radio, or puts the
+  keyboard in that label's box; a letter two labels share moves between them. So every letter in a dialog is used
+  once; a new label takes a free one.
+- To do (the cross-app audit of 2026-11-04, still different between the apps): one Spelling dialog (Lectern only
+  points at the browser's underlines); one Insert Hyperlink, Symbol, Print and Properties dialog; one colour button
+  and one list box for dialogs (three of each now); AutoCorrect's replacement list as two columns (Quire, Ledger);
+  Options › View laid out alike; Ledger's Drawing toolbar and Drawing Tools with the others' controls; Lectern's
+  Clear All Formatting; tabbed dialogs that keep one height across tabs; the Window menu's New Window and Arrange All.
 
 ### Search commands
 

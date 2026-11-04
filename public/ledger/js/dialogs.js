@@ -214,7 +214,7 @@
     }
     prev();
     const fontBody = h('div', { class: 'fc-font' },
-      h('div', { class: 'fc-f3' }, h('div', { class: 'col' }, h('label', { text: 'Font:' }), fontName, fontList), h('div', { class: 'col' }, h('label', { text: 'Font style:' }), styleList), h('div', { class: 'col' }, h('label', { text: 'Size:' }), sizeIn, sizeList)),
+      h('div', { class: 'fc-f3' }, h('div', { class: 'col' }, h('label', { html: ui.ampHTML('&Font:') }), fontName, fontList), h('div', { class: 'col' }, h('label', { html: ui.ampHTML('Font st&yle:') }), styleList), h('div', { class: 'col' }, h('label', { html: ui.ampHTML('&Size:') }), sizeIn, sizeList)),
       h('div', { class: 'row', style: 'gap:12px;align-items:flex-end' }, ui.field('&Underline:', uSel), ui.field('&Color:', fcol), normal),
       h('div', { class: 'row', style: 'gap:12px;align-items:stretch' },
         ui.group('Effects', ui.check('Stri&kethrough', !!f.strike, (x) => { f.strike = x || undefined; changed.font = true; prev(); }), ui.check('Sup&erscript', f.vert === 'superscript', (x) => { f.vert = x ? 'superscript' : undefined; changed.font = true; prev(); }), ui.check('Su&bscript', f.vert === 'subscript', (x) => { f.vert = x ? 'subscript' : undefined; changed.font = true; prev(); })),
@@ -552,7 +552,7 @@
     const names = w.names.filter((n) => !n.hidden && !/^_xlnm\./i.test(n.name) && (n.scope == null || n.scope === w.active)).map((n) => n.name).concat(w.tables.map((t) => t.name)).concat(A().lastGoTo || []);
     const ref = h('input', { type: 'text', style: 'width:100%' });
     const lb = list(Array.from(new Set(names)), null, (v) => { ref.value = v; }, { translate: 'no' });
-    const d = ui.dialog({ title: 'Go To', width: 320, body: h('div', { class: 'col' }, h('label', { text: 'Go to:' }), lb, ui.field('&Reference:', ref)),
+    const d = ui.dialog({ title: 'Go To', width: 320, body: h('div', { class: 'col' }, h('label', { html: ui.ampHTML('&Go to:') }), lb, ui.field('&Reference:', ref)),
       buttons: [{ label: '&Special...', onClick: () => { d.close(null); D.goToSpecial(); return false; } }, { label: 'OK', primary: true, onClick: () => { if (!A().goToRef(ref.value.trim())) { ui.msg('Reference is not valid.', { icon: 'warn' }); return false; } } }, { label: 'Cancel' }] });
     lb.ondbl = (v) => { d.close(0); A().goToRef(v); };
   };
@@ -611,7 +611,7 @@
     const what = [['all', '&All'], ['formulas', '&Formulas'], ['values', '&Values'], ['formats', 'Forma&ts'], ['comments', '&Comments'], ['validation', 'Validatio&n'], ['noBorders', 'All e&xcept borders'], ['colWidths', 'Column &widths'], ['formulasNF', 'Formulas and number f&ormats'], ['valuesNF', 'Values and number for&mats']];
     const ops = [['none', 'N&one'], ['add', 'A&dd'], ['sub', '&Subtract'], ['mul', 'M&ultiply'], ['div', 'D&ivide']];
     const half = (arr, name, key) => { const radios = arr.map(([k, l]) => ui.radio(name, l, k === st[key], () => { st[key] = k; })); const m = Math.ceil(radios.length / 2); return h('div', { class: 'ps-cols' }, h('div', { class: 'col' }, ...radios.slice(0, m)), h('div', { class: 'col' }, ...radios.slice(m))); };
-    ui.dialog({ title: 'Paste Special', width: 400, body: h('div', { class: 'col' }, ui.group('Paste', half(what, 'ps-what', 'what')), ui.group('Operation', half(ops, 'ps-op', 'op')), h('div', { class: 'row', style: 'gap:24px' }, ui.check('Skip &blanks', false, (v) => { st.skipBlanks = v; }), ui.check('Transpos&e', false, (v) => { st.transpose = v; }))),
+    ui.dialog({ title: 'Paste Special', width: 440, body: h('div', { class: 'col' }, ui.group('Paste', half(what, 'ps-what', 'what')), ui.group('Operation', half(ops, 'ps-op', 'op')), h('div', { class: 'row', style: 'gap:24px' }, ui.check('Skip &blanks', false, (v) => { st.skipBlanks = v; }), ui.check('Transpos&e', false, (v) => { st.transpose = v; }))),
       buttons: [{ label: 'Paste &Link', onClick: () => tryRun(() => L.clip.pasteInternal({ link: true })) }, { label: 'OK', primary: true, onClick: () => tryRun(() => L.clip.pasteInternal(st)) }, { label: 'Cancel' }] });
   };
 
@@ -685,8 +685,8 @@
         } }, { label: 'Cancel' }] });
       } }], { left: r.left, bottom: r.bottom });
     };
-    return ui.dialog({ title: 'Save As', width: 460, body: h('div', { class: 'col' }, ui.field('File &name:', name), ui.field('Save as &type:', ui.select(types, type, (v) => { type = v; })), h('div', { class: 'hint', text: 'The file is saved to your browser\'s downloads.' })),
-      buttons: [{ label: 'Tools', onClick: (close, button) => { tools(button); return false; } }, { label: '&Save', primary: true, onClick: () => {
+    return ui.dialog({ title: 'Save As', width: 460, body: h('div', { class: 'col' }, ui.field('File &name:', name), ui.field('Save as &type:', ui.select(types, type, (v) => { type = v; })), h('div', { class: 'tp-note', text: 'Your browser asks where to save the file, or saves it to the Downloads folder.' })),
+      buttons: [{ label: 'Too&ls', onClick: (close, button) => { tools(button); return false; } }, { label: '&Save', primary: true, onClick: () => {
         const ext = { xmlss: 'xml', html: 'htm' }[type] || type;
         const n = (name.value.trim() || base).replace(/\.(xlsx|xlsm|xltx|xltm|xml|csv|txt|htm|html|pdf)$/i, '') + '.' + ext;
         b.password = pw.open || undefined;
@@ -715,12 +715,14 @@
 
   /* ================================================================ Zoom, Symbol */
   D.zoom = function () {
-    const s = sh();
-    let z = s.view.zoom || 100, fit = false;
-    const custom = h('input', { type: 'text', value: String(z) + '%', style: 'width:60px' });
-    const opts = [200, 100, 75, 50, 25].map((v) => ui.radio('zoom', v + '%', v === z, () => { z = v; fit = false; }));
-    ui.dialog({ title: 'Zoom', width: 240, body: ui.group('Magnification', ...opts, ui.radio('zoom', '&Fit selection', false, () => { fit = true; }), h('div', { class: 'row', style: 'gap:6px' }, ui.radio('zoom', '&Custom:', ![200, 100, 75, 50, 25].includes(z), () => { fit = false; z = parseInt(custom.value, 10) || 100; }), custom)),
-      buttons: [{ label: 'OK', primary: true, onClick: () => { if (fit) { A().zoomToSelection(); return; } if (custom === document.activeElement || ![200, 100, 75, 50, 25].includes(z)) z = parseInt(custom.value, 10) || z; if (!(z >= 10 && z <= 400)) { ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); return false; } G().setZoom(z); } }, { label: 'Cancel' }] });
+    const z = sh().view.zoom || 100;
+    const PRESETS = [[200, '&200%'], [100, '&100%'], [75, '&75%'], [50, '5&0%'], [25, '2&5%']];
+    let pick = PRESETS.some(([v]) => v === z) ? z : 'custom';
+    const custom = ui.spin({ value: z, min: 10, max: 400, step: 5, dec: 0, unit: '%', id: 'zm-custom', onChange: () => { pick = 'custom'; customR.input.checked = true; } });
+    const customR = ui.radio('zoom', '&Custom:', pick === 'custom', () => { pick = 'custom'; });
+    const opts = PRESETS.map(([v, l]) => ui.radio('zoom', l, v === pick, () => { pick = v; custom.set(v); }));
+    ui.dialog({ title: 'Zoom', width: 240, body: ui.group('Magnification', h('div', { class: 'col', style: 'gap:2px' }, ...opts, ui.radio('zoom', '&Fit selection', false, () => { pick = 'fit'; }), h('div', { class: 'row', style: 'gap:6px' }, customR, custom))),
+      buttons: [{ label: 'OK', primary: true, onClick: () => { if (pick === 'fit') A().zoomToSelection(); else G().setZoom(pick === 'custom' ? Math.round(custom.get()) : pick); } }, { label: 'Cancel' }] });
   };
   D.symbol = function () {
     const font = h('input', { type: 'text', value: 'Arial', style: 'width:140px' });
@@ -985,12 +987,7 @@
     ui.dialog({ title: 'Edit Links', width: 520, body: h('div', { class: 'col' }, h('table', { class: 'fr-table' }, h('tr', null, h('th', { text: 'Source' }), h('th', { text: 'Type' }), h('th', { text: 'Update' }), h('th', { text: 'Status' })), ...rows), h('div', { class: 'hint', text: 'Formulas that refer to other workbooks use the values Excel saved with this file. Break Link replaces those formulas with their values.' })),
       buttons: [{ label: '&Break Link', onClick: () => { tryRun(() => { O.tx(w, 'Break Links', () => { for (const s of w.sheets) s.rows.forEach((row, r) => { if (row) row.cells.forEach((cl, c) => { if (cl && cl.f != null && /\[\d+\]/.test(cl.f)) O.setValue(s, r, c, cl.v, true); }); }); }); w.externalLinks = []; }); } }, { label: 'Close', primary: true }] });
   };
-  D.customize = function () {
-    const ids = [['standard', L.N('Standard')], ['formatting', L.N('Formatting')], ['borders', L.N('Borders')], ['chart', L.N('Chart')], ['drawing', L.N('Drawing')], ['auditing', 'Formula Auditing'], ['reviewing', L.N('Reviewing')], ['list', L.N('List')]];
-    const box = h('div', { class: 'lbox checks' }, ...ids.map(([k, l]) => ui.check(l, A().toolbarVisible(k), (x) => A().toggleToolbar(k, x))));
-    const opts = h('div', { class: 'col' }, ui.check('Show Standard and Formatting toolbars on &two rows', true, null), ui.check('Show Screen&Tips on toolbars', true, null), ui.check('Show shortcut &keys in ScreenTips', true, null));
-    ui.dialog({ title: 'Customize', width: 380, body: ui.tabs([{ label: 'Toolbars', body: box }, { label: 'Options', body: opts }]), buttons: [{ label: 'Close', primary: true }] });
-  };
+  D.customize = () => ui.customize({ toolbars: ['standard', 'formatting', 'borders', 'chart', 'drawing', 'auditing', 'reviewing', 'picture', 'list'], opts: A().opts, save: () => A().saveOpts(), shortcuts: A().SHORTCUTS });
   D.about = () => ui.about({ name: 'Ledger', text: [
     L.N('A spreadsheet that runs entirely in your browser. Workbooks are read and written as Office Open XML (.xlsx, .xlsm), CSV and text; nothing is uploaded.'),
     'The calculation engine implements more than 450 worksheet functions, array and dynamic-array formulas, structured references and iterative calculation.'] });

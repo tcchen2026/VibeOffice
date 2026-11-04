@@ -13,7 +13,7 @@ SCRIPTS = ['common/core', 'common/i18n', 'common/locales', 'common/xml', 'common
            'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng', 'common/dml', 'common/charts', 'xchart',
            'pivots', 'threads', 'objects', 'slicers', 'extensions', 'tables', 'preserve', 'xlsx-read', 'xlsx-write', 'csv', 'xmlss', 'styles', 'cf', 'layout', 'render', 'ops', 'clipboard',
            'fninfo', 'grid', 'editor', 'common/spell', 'spell', 'filter', 'drawing', 'commands', 'dialogs',
-           'dialogs2', 'dialogs3', 'print', 'panes', 'common/scout/scout', 'common/scout/assistant', 'common/search', 'common/ribbon', 'ribbon', 'app']
+           'dialogs2', 'dialogs3', 'print', 'common/clipart', 'panes', 'common/scout/scout', 'common/scout/assistant', 'common/search', 'common/ribbon', 'ribbon', 'app']
 tpl = open(os.path.join(D, 'template.html')).read()
 css = open(os.path.join(D, 'ledger.css')).read()   # after public/common/ui.css, linked by the template
 def src(s):

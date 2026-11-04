@@ -16,7 +16,7 @@
   /** a dropdown button that edits a Fill; returns element with .get() */
   function fillPicker(fill, mode, onChange) {
     let cur = L.clone(fill || { t: 'none' });
-    const sw = h('span', { class: 'fp-sw', style: 'display:inline-block;width:70px;height:14px;border:1px solid #555;vertical-align:middle' });
+    const sw = h('span', { class: 'fp-sw', style: 'display:inline-block;width:70px;height:14px;border:1px solid var(--swatch-line);vertical-align:middle' });
     const btn = h('button', { type: 'button', class: 'btn small', style: 'min-width:100px;display:inline-flex;align-items:center;gap:6px' }, sw, h('span', { class: 'dd-arrow' }));
     const paint = () => {
       if (!cur || cur.t === 'none') { sw.style.background = 'repeating-linear-gradient(45deg,#fff 0 4px,#eee 4px 8px)'; sw.title = mode === 'line' ? L.t('No Line') : L.t('No Fill'); }
@@ -40,7 +40,7 @@
   D.fillPicker = fillPicker;
   function colorPick(c, onChange, opts) {
     let cur = c;
-    const sw = h('span', { style: 'display:inline-block;width:60px;height:14px;border:1px solid #555;vertical-align:middle' });
+    const sw = h('span', { style: 'display:inline-block;width:60px;height:14px;border:1px solid var(--swatch-line);vertical-align:middle' });
     const btn = h('button', { type: 'button', class: 'btn small', style: 'min-width:90px;display:inline-flex;align-items:center;gap:6px' }, sw, h('span', { class: 'dd-arrow' }));
     const paint = () => { sw.style.background = cur ? L.model.resolveColor(cur, design()) : 'repeating-linear-gradient(45deg,#fff 0 4px,#eee 4px 8px)'; };
     paint();
@@ -145,8 +145,8 @@
     NUM_SETS.forEach((v) => mkBtn(ng, v, '', true));
     const customize = ui.button('C&ustomize...', () => D.symbol((ch) => { customCh = ch; pick = ch; kind = 'char'; const b = L.$$('button', bg)[7]; L.clear(b); for (let i = 0; i < 3; i++) b.appendChild(h('div', null, h('span', { text: ch, style: 'min-width:16px' }), h('i'))); L.$$('button', bg).forEach((x) => x.classList.remove('on')); b.classList.add('on'); BULLET_SETS[7] = ch; }));
     const tabs = ui.tabs([
-      { label: 'Bulle&ted', body: h('div', { class: 'col' }, bg, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { text: 'Size:' }), sizeSp, h('span', { text: '% of text' }), h('label', { text: 'Color:' }), col, customize)) },
-      { label: '&Numbered', body: h('div', { class: 'col' }, ng, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { text: 'Size:' }), sizeSp2, h('span', { text: '% of text' }), h('label', { text: 'Color:' }), col2, h('label', { text: 'Start at:' }), startSp)) },
+      { label: 'Bulle&ted', body: h('div', { class: 'col' }, bg, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { html: ui.ampHTML('&Size:') }), sizeSp, h('span', { text: '% of text' }), h('label', { html: ui.ampHTML('&Color:') }), col, customize)) },
+      { label: '&Numbered', body: h('div', { class: 'col' }, ng, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { html: ui.ampHTML('&Size:') }), sizeSp2, h('span', { text: '% of text' }), h('label', { html: ui.ampHTML('&Color:') }), col2, h('label', { html: ui.ampHTML('&Start at:') }), startSp)) },
     ], tabIdx != null ? tabIdx : kind === 'num' ? 1 : 0);
     const d = ui.dialog({
       title: 'Bullets and Numbering', body: tabs, width: 420, buttons: [{
@@ -317,7 +317,7 @@
         L.clear(variants);
         for (let v = 0; v < 4; v++) {
           const gv = buildGrad(v);
-          const b = h('button', { type: 'button', style: `width:46px;height:46px;border:1px solid #888;padding:0;background:${fillCSS(gv)};${v === variant ? 'outline:2px solid #0b3fa8;outline-offset:1px' : ''}` });
+          const b = h('button', { type: 'button', style: `width:46px;height:46px;border:1px solid var(--swatch-line);padding:0;background:${fillCSS(gv)};${v === variant ? 'outline:2px solid var(--sel);outline-offset:1px' : ''}` });
           b.addEventListener('click', () => { variant = v; current = buildGrad(v); paintSample(); refreshVariants(); });
           variants.appendChild(b);
         }
@@ -711,7 +711,7 @@
     const placeSel = h('select', { id: 'hl-place', size: 10, style: 'width:100%' }, ...places.map(([v, l], i) => h('option', { value: v, text: l, translate: i < 4 ? null : 'no' })));
     if (existing && existing.slide) placeSel.value = 's:' + existing.slide; else if (existing && existing.action) placeSel.value = 'a:' + existing.action; else placeSel.selectedIndex = 2;
     const panes = {
-      web: h('div', { class: 'col' }, h('label', { for: 'hl-addr', html: ui.ampHTML('Addr&ess:') }), addr, h('label', { for: 'hl-tip', text: 'ScreenTip:' }), tip),
+      web: h('div', { class: 'col' }, h('label', { for: 'hl-addr', html: ui.ampHTML('Addr&ess:') }), addr, h('label', { for: 'hl-tip', html: ui.ampHTML('Scree&nTip:') }), tip),
       place: h('div', { class: 'col' }, h('label', { for: 'hl-place', html: ui.ampHTML('Select a place in this d&ocument:') }), placeSel),
       mail: h('div', { class: 'col' }, h('label', { for: 'hl-mail', html: ui.ampHTML('&E-mail address:') }), mail, h('label', { for: 'hl-subj', html: ui.ampHTML('Su&bject:') }), subj),
     };
@@ -911,12 +911,12 @@
     const types = L.file.types.map((t) => [t.id, t.label]);
     const cur = types.some(([k]) => k === L.app.fileType) ? L.app.fileType : 'pptx';
     const type = ui.select(types, cur);
-    return ui.dialog({ title: 'Save As', body: h('div', { class: 'col' }, ui.field('File &name:', name, { cls: 'wide' }), ui.field('Save as &type:', type, { cls: 'wide' }), h('div', { class: 'tp-note', text: 'Your browser decides where downloaded files go.' })), width: 470, buttons: [{ label: '&Save', primary: true, onClick: () => cb((name.value.trim() || base).replace(/\.(pptx|pptm|ppsx|ppsm|potx|potm)$/i, ''), type.value) }, { label: 'Cancel' }] });
+    return ui.dialog({ title: 'Save As', body: h('div', { class: 'col' }, ui.field('File &name:', name, { cls: 'wide' }), ui.field('Save as &type:', type, { cls: 'wide' }), h('div', { class: 'tp-note', text: 'Your browser asks where to save the file, or saves it to the Downloads folder.' })), width: 470, buttons: [{ label: '&Save', primary: true, onClick: () => cb((name.value.trim() || base).replace(/\.(pptx|pptm|ppsx|ppsm|potx|potm)$/i, ''), type.value) }, { label: 'Cancel' }] });
   };
 
   /* ---------- Zoom ---------- */
   D.zoom = function () {
-    const presets = [['fit', L.N('Fit')], [4, '400%'], [2, '200%'], [1, '100%'], [0.66, '66%'], [0.5, '50%'], [0.33, '33%']];
+    const presets = [['fit', L.N('&Fit')], [4, '&400%'], [2, '&200%'], [1, '&100%'], [0.66, '&66%'], [0.5, '&50%'], [0.33, '&33%']];
     let pick = E().zoom;
     const pct = ui.spin({ value: E().zoomPct(), min: 10, max: 400, step: 1, unit: '%', dec: 0, onChange: (v) => { pick = v / 100; } });
     const body = h('div', { class: 'row' }, ui.group('Zoom to', h('div', { class: 'col' }, ...presets.map(([v, l]) => ui.radio('zm', l, String(v) === String(E().zoom), () => { pick = v; if (v !== 'fit') pct.set(Math.round(v * 100)); })))), h('div', { class: 'col' }, ui.field('&Percent:', pct)));
@@ -1008,7 +1008,7 @@
     try { src = await L.pptx.read(await L.readAsArrayBuffer(files[0])); } catch (e) { ui.busy(false); ui.msg(L.t('{0} could not be opened: {1}', files[0].name, e.message), { icon: 'error' }); return; }
     ui.busy(false);
     const picked = new Set();
-    const grid = h('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:320px;overflow:auto;padding:4px;background:#fff;border:1px solid #888' });
+    const grid = h('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:320px;overflow:auto;padding:4px;background:var(--surface);border:1px solid var(--field-border)' });
     src.slides.forEach((s, i) => {
       const cell = h('label', { style: 'display:flex;flex-direction:column;gap:3px;align-items:flex-start;cursor:default' });
       const ck = h('input', { type: 'checkbox' });

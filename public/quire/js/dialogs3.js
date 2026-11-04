@@ -552,22 +552,7 @@
   };
 
   /* ================= Customize ================= */
-  G.customize = function () {
-    const tbs = ['standard', 'formatting', 'drawing', 'tables', 'reviewing', 'picture', 'outlining', 'headerFooter', 'mailMerge', 'wordart'].map((k) => ui.check(ui.cmds['tb_' + k].label, A().tbShown(k), () => A().toggleToolbar(k)));
-    const cmds = Object.values(ui.cmds).filter((c) => c.label && !c.id.startsWith('tb_')).sort((a, b) => ui.stripAmp(a.label).localeCompare(ui.stripAmp(b.label)));
-    /* the commands' names as shown (stripAmp translates them) and their keys */
-    const cmdList = G.listBox(cmds.map((c) => ({ value: c.id, label: ui.stripAmp(c.menuLabel || c.label) + (c.key ? '   ' + ui.keyText(c.key) : '') })), null, { height: 220, translate: 'no' });
-    const keys = h('table', { class: 'kbd-table', translate: 'no' });
-    for (const [k, id] of Object.entries(A().SHORTCUTS).sort((a, b) => a[1].localeCompare(b[1]))) { const c = ui.cmds[id]; if (c) keys.appendChild(h('tr', null, h('td', null, document.createTextNode(ui.keyText(k))), h('td', null, document.createTextNode(ui.stripAmp(c.menuLabel || c.label))))); }
-    const o = A().opts;
-    ui.dialog({ title: 'Customize', width: 460, body: ui.tabs([
-      { label: 'Tool&bars', body: h('div', { class: 'col' }, ...tbs) },
-      { label: '&Commands', body: h('div', { class: 'col' }, h('div', { class: 'tp-note', text: 'All Quire commands. Double-click one to run it.' }), cmdList), onShow: () => {} },
-      { label: '&Options', body: h('div', { class: 'col' }, ui.check('Show Standard and Formatting toolbars on two rows', true, null), ui.check('Always show full menus', true, null), ui.check('Show Scree&nTips on toolbars', o.screenTips !== false, (v) => { o.screenTips = v; A().saveOpts(); document.body.classList.toggle('notips', !v); }), ui.check('Show shortcut &keys in ScreenTips', true, null)) },
-      { label: '&Keyboard', body: h('div', { style: 'max-height:300px;overflow:auto' }, keys) },
-    ]), buttons: [{ label: 'Close', primary: true }] });
-    cmdList.querySelector('.listbox').addEventListener('dblclick', () => { const id = cmdList.get(); if (id) ui.exec(id); });
-  };
+  G.customize = () => ui.customize({ toolbars: ['standard', 'formatting', 'drawing', 'tables', 'reviewing', 'picture', 'outlining', 'headerFooter', 'mailMerge', 'wordart'], opts: A().opts, save: () => A().saveOpts(), shortcuts: A().SHORTCUTS });
 
   /* ================= Options ================= */
   G.options = function (tab) {
