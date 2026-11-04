@@ -618,45 +618,41 @@
   };
 
   /* ================= Properties ================= */
+  /** File ▸ Properties (common ui.propertiesDialog); custom properties keep { type, v } (docx-write customValue) */
   G.properties = function () {
     const d = doc();
     const p = d.props;
     const st = D.stats(D.allParas(d));
-    const fld = (k, l) => { const inp = h('input', { type: 'text', id: 'pr-' + k, value: p[k] || '', style: 'width:100%' }); return { k, inp, el: G.f(l, inp, 'wide') }; };
-    const fields = [fld('title', '&Title:'), fld('subject', '&Subject:'), fld('creator', '&Author:'), fld('manager', '&Manager:'), fld('company', 'C&ompany:'), fld('category', 'Cat&egory:'), fld('keywords', '&Keywords:')];
-    const comments = h('textarea', { rows: 3, id: 'pr-desc', style: 'width:100%' });
-    comments.value = p.description || '';
-    const hb = fld('hyperlinkBase', '&Hyperlink base:');
-    const fmt = (s) => (s ? new Date(s).toLocaleString() : '');
-    const statT = h('table', { class: 'wc-table' });
-    for (const [k, v] of [['Pages:', LY.pages.length || 1], ['Paragraphs:', st.paras], ['Lines:', A().docStats().lines], ['Words:', st.words], ['Characters:', st.charsNoSp], ['Characters (with spaces):', st.chars]]) statT.appendChild(h('tr', null, h('td', { text: k }), h('td', { text: Number(v).toLocaleString() })));
-    const heads = h('div', { class: 'tp-box', style: 'max-height:200px;overflow:auto' });
+    const fmt = (x) => (x ? new Date(x).toLocaleString() : '');
     D.reindex(d);
-    heads.setAttribute('translate', 'no');   // the document's own headings
-    for (const q of d.main.paras) { const lv = D.headingLevel(d, q); if (lv) heads.appendChild(h('div', { style: `padding-left:${(lv - 1) * 12}px` }, document.createTextNode(D.plainText(q).trim()))); }
-    if (!heads.childNodes.length) heads.textContent = L.t('(no headings)');
-    /* custom */
-    const cName = h('input', { type: 'text', id: 'pr-cn', list: 'pr-cnl', style: 'width:100%' });
-    const cnl = h('datalist', { id: 'pr-cnl' }, ...['Checked by', 'Client', 'Date completed', 'Department', 'Destination', 'Disposition', 'Division', 'Document number', 'Editor', 'Forward to', 'Group', 'Language', 'Mailstop', 'Matter', 'Office', 'Owner', 'Project', 'Publisher', 'Purpose', 'Received from', 'Recorded by', 'Recorded date', 'Reference', 'Source', 'Status', 'Telephone number', 'Typist'].map((x) => h('option', { value: x })));
-    const cType = ui.select([['text', 'Text'], ['date', 'Date'], ['number', 'Number'], ['bool', 'Yes or no']], 'text', null, { id: 'pr-ct' });
-    const cVal = h('input', { type: 'text', id: 'pr-cv', style: 'width:100%' });
-    const custom = Object.assign({}, d.custom || {});
-    const cList = G.listBox([], null, { height: 110, translate: 'no', onChange: (v) => { const c = custom[v]; cName.value = v; cVal.value = c && c.v != null ? c.v : c; cType.value = (c && c.type) || 'text'; } });
-    const fillC = () => cList.setItems(Object.keys(custom).map((k) => ({ value: k, label: `${k}: ${custom[k] && custom[k].v != null ? custom[k].v : custom[k]}` })));
-    fillC();
-    /* a label and its value as shown (translated where it is set, else the document's own) */
-    const prop = ([a, b]) => h('tr', null, h('td', { text: a }), h('td', { translate: 'no' }, document.createTextNode(b)));
-    const tabs = ui.tabs([
-      { label: 'General', body: h('div', { class: 'col' }, h('div', { class: 'row', style: 'align-items:center' }, h('span', { html: L.icons.get('new') }), h('b', { translate: 'no' }, document.createTextNode(A().fileName + '.docx'))), h('table', { class: 'wc-table' }, ...[['Type:', L.t('Microsoft Word Document')], ['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last printed:', fmt(p.printed)]].map(prop))) },
-      { label: 'Summary', body: h('div', { class: 'col' }, ...fields.map((f) => f.el), h('label', { for: 'pr-desc', html: ui.ampHTML('Co&mments:') }), comments, hb.el, h('div', { class: 'tp-note', text: L.t('Template: {0}', p.template || 'Normal') })) },
-      { label: 'Statistics', body: h('div', { class: 'col' }, h('table', { class: 'wc-table' }, ...[['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last saved by:', p.lastModifiedBy || ''], ['Revision number:', String(p.revision || 1)], ['Total editing time:', L.t('{0} Minutes', p.totalTime || 0)]].map(prop)), h('div', { class: 'cd-cap', text: 'Statistics:' }), statT) },
-      { label: 'Contents', body: h('div', { class: 'col' }, h('div', { text: 'Document contents:' }), heads) },
-      { label: 'Custom', body: h('div', { class: 'col' }, cnl, G.f('&Name:', cName, 'wide'), G.f('&Type:', cType, 'wide'), G.f('&Value:', cVal, 'wide'), h('div', { class: 'tp-btns' }, ui.button('&Add', () => { if (!cName.value.trim()) return; custom[cName.value.trim()] = { type: cType.value, v: cType.value === 'number' ? +cVal.value : cType.value === 'bool' ? /^(y|yes|true|1)$/i.test(cVal.value) : cVal.value }; fillC(); }, { class: 'btn small' }), ui.button('&Delete', () => { delete custom[cName.value.trim()]; fillC(); }, { class: 'btn small' })), h('label', { text: 'Properties:' }), cList) },
-    ], 1);
-    ui.dialog({ title: L.t('{0} Properties', A().fileName), width: 420, body: tabs, buttons: [{ label: 'OK', primary: true, onClick: () => {
-      E.edit('Properties', () => { D.touchKey(d, 'props'); D.touchKey(d, 'custom'); for (const f of fields) d.props[f.k] = f.inp.value; d.props.description = comments.value; d.props.hyperlinkBase = hb.inp.value || undefined; d.custom = custom; return E.sel; });
-      A().updateTitle();
-    } }, { label: 'Cancel' }] });
+    const heads = d.main.paras.map((q) => [D.headingLevel(d, q), q]).filter(([lv]) => lv).map(([lv, q]) => '  '.repeat(lv - 1) + D.plainText(q).trim());
+    const TYPE_OF = { text: 'text', date: 'date', number: 'number', bool: 'bool' };
+    ui.propertiesDialog({
+      name: A().fileName, icon: 'new',
+      general: [['Type:', L.t('Microsoft Word Document')], ['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last printed:', fmt(p.printed || p.lastPrinted)]],
+      fields: { title: p.title, subject: p.subject, author: p.creator, manager: p.manager, company: p.company, category: p.category, keywords: p.keywords, comments: p.description },
+      template: p.template || 'Normal',
+      statistics: [['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last saved by:', p.lastModifiedBy || ''], ['Revision number:', String(p.revision || 1)]],
+      counts: [['Pages:', LY.pages.length || 1], ['Paragraphs:', st.paras], ['Lines:', A().docStats().lines], ['Words:', st.words], ['Characters:', st.charsNoSp], ['Characters (with spaces):', st.chars]],
+      contents: [[L.t('Headings'), heads]],
+      custom: Object.entries(d.custom || {}).map(([name, v]) => (v && typeof v === 'object' ? { name, type: TYPE_OF[v.type] || 'text', value: v.v, kept: true } : { name, type: 'text', value: v == null ? '' : String(v), kept: true })),
+      apply: ({ fields, custom }) => {
+        const KEY = { author: 'creator', comments: 'description' };
+        E.edit('Properties', () => {
+          D.touchKey(d, 'props');
+          for (const [k, v] of Object.entries(fields)) d.props[KEY[k] || k] = v;
+          if (custom) {
+            D.touchKey(d, 'custom');
+            /* an unchanged property keeps what was read (and the file's XML); a new or changed one its type */
+            const old = d.custom || {};
+            d.custom = {};
+            for (const c of custom) d.custom[c.name] = c.kept ? old[c.name] : { type: c.type, v: c.value };
+          }
+          return E.sel;
+        });
+        A().updateTitle();
+      },
+    });
   };
 
   /* ================= Zoom ================= */
@@ -676,11 +672,9 @@
     pagesIn.addEventListener('focus', () => range.set('pages'));
     const what = ui.select([['doc', 'Document'], ['markup', 'Document showing markup'], ['props', 'Document properties'], ['list', 'List of markup'], ['styles', 'Styles'], ['autotext', 'AutoText entries'], ['keys', 'Key assignments']], 'doc', null, { id: 'pr-what' });
     const which = ui.select([['all', 'All pages in range'], ['odd', 'Odd pages'], ['even', 'Even pages']], 'all', null, { id: 'pr-which' });
-    const perSheet = ui.select([[1, '1 page'], [2, '2 pages'], [4, '4 pages'], [6, '6 pages'], [8, '8 pages'], [16, '16 pages']], 1, null, { id: 'pr-pps' });
-    const copies = G.num(1, { min: 1, max: 99, id: 'pr-copies' });
     ui.dialog({
       title: 'Print', width: 470,
-      body: h('div', { class: 'col' }, ui.group('Printer', G.f('&Name:', ui.select([['pdf', 'Save as PDF (Quire)']], 'pdf', null, { id: 'pr-printer' }), 'wide'), h('div', { class: 'tp-note', text: 'Status: Ready — the pages are saved as a PDF that you can print from any viewer.' })), G.row(ui.group('Page range', range, pagesIn, h('div', { class: 'tp-note', text: 'Enter page numbers and/or page ranges separated by commas. For example, 1,3,5–12' })), ui.group('Copies', G.f('Number of &copies:', copies))), G.row(G.f('Print &what:', what, 'wide'), G.f('P&rint:', which)), ui.group('Zoom', G.f('Pages per s&heet:', perSheet, 'wide'))),
+      body: h('div', { class: 'col' }, ui.group('Printer', G.f('&Name:', ui.select([['pdf', 'Save as PDF']], 'pdf', null, { id: 'pr-printer' }), 'wide'), h('div', { class: 'tp-note', text: 'Status: Ready — the pages are saved as a PDF that you can print from any viewer.' })), G.row(ui.group('Page range', range, pagesIn, h('div', { class: 'tp-note', text: 'Enter page numbers and/or page ranges separated by commas. For example, 1,3,5–12' }))), G.row(G.f('Print &what:', what, 'wide'), G.f('P&rint:', which))),
       buttons: [{ label: '&Options...', onClick: () => { G.options('print'); return false; } }, { label: 'OK', primary: true, onClick: () => { doPrint(); } }, { label: 'Cancel' }],
       onOpen: (el) => el.querySelector('.dlg-foot .btn').classList.add('left'),
     });

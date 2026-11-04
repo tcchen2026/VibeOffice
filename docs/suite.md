@@ -97,7 +97,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `numfmt.js` | Excel number formats | Ledger, Lectern |
 | `dml.js` | DrawingML helpers | Quire, Ledger |
 | `spell.js` | spelling engine: word lists (`dict/`), checking, suggestions, custom dictionary, Ignore All | all |
-| `dialogs.js` | the dialogs the apps share, each with an app adapter: Symbol (`ui.symbolDialog`), Insert Hyperlink (`ui.hyperlinkDialog`, `ui.completeAddress`), Spelling (`ui.spellingDialog`, the app walks its text) | all |
+| `dialogs.js` | the dialogs the apps share, each with an app adapter: Symbol (`ui.symbolDialog`), Insert Hyperlink (`ui.hyperlinkDialog`, `ui.completeAddress`), Spelling (`ui.spellingDialog`, the app walks its text), Properties (`ui.propertiesDialog`) | all |
 | `clipart.js` | built-in clip art and the Clip Art task pane's body (`L.clipart.pane`; each app registers the pane) | all |
 | `smartart.js` | the SmartArt layout engine: items → shapes for each layout, one text size per role (`tests/smartart.test.mjs`) | Lectern |
 | `scout/` | the assistant (see The assistant): `scout.js` the character, `assistant.js` the suite's use of him, `scout.css` his balloon | all |
@@ -242,12 +242,16 @@ Zoom, Fit to Window); the classic toolbars keep their Zoom box. Ctrl+wheel (a tr
   once; a new label takes a free one.
 - One of each, in `ui.js` and `dialogs.js`: the list box (`ui.listBox`: arrow keys, Home/End, Page keys and typed
   letters move it; an optional box above picks as you type), the colour button (`ui.colorButton`: a swatch, the
-  colour's name, an arrow; an app's own values through `paint`, `name` and `convert`), the Symbol, Insert Hyperlink
-  and Spelling dialogs. A tabbed dialog keeps its tallest tab's height, so OK and Cancel don't move.
-- To do (the cross-app audit of 2026-11-04, still different between the apps): one Print and Properties dialog;
-  AutoCorrect's replacement list as two columns (Quire, Ledger);
+  colour's name, an arrow; an app's own values through `paint`, `name` and `convert`), the Symbol, Insert Hyperlink,
+  Spelling and Properties dialogs. A tabbed dialog keeps its tallest tab's height, so OK and Cancel don't move.
+  Properties applies on OK what changed, as one undo step (Lectern's applied each keystroke and had no Cancel); its
+  Custom tab has Office's types (Text, Date, Number, Yes or no), written as Word and Excel do (`vt:lpwstr`, `vt:i4`
+  or `vt:r8`, `vt:bool`, `vt:filetime`).
+- To do (the cross-app audit of 2026-11-04, still different between the apps): one Print dialog (Lectern prints
+  through Print Preview); Hyperlink base in Properties (no app reads or writes it yet); custom properties in
+  Lectern (custom.xml is not read); AutoCorrect's replacement list as two columns (Quire, Ledger);
   Options › View laid out alike; Ledger's Drawing toolbar and Drawing Tools with the others' controls; Lectern's
-  Clear All Formatting; tabbed dialogs that keep one height across tabs; the Window menu's New Window and Arrange All.
+  Clear All Formatting; the Window menu's New Window and Arrange All.
 
 ### Search commands
 

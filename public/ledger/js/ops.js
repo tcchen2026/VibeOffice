@@ -228,8 +228,8 @@
   O.clear = function (sh, ranges, what) {
     what = what || 'contents';
     const wb = sh.wb;
-    if (what !== 'formats' && what !== 'comments') { const a = O.cutsArray(sh, ranges); if (a) throw Object.assign(new Error('You cannot change part of an array.'), { code: 'array' }); }
-    O.tx(wb, what === 'all' ? N('Clear') : what === 'formats' ? 'Clear Formats' : what === 'comments' ? 'Clear Comments' : 'Clear Contents', () => {
+    if (what !== 'formats' && what !== 'comments' && what !== 'hyperlinks') { const a = O.cutsArray(sh, ranges); if (a) throw Object.assign(new Error('You cannot change part of an array.'), { code: 'array' }); }
+    O.tx(wb, what === 'all' ? N('Clear') : what === 'formats' ? 'Clear Formats' : what === 'comments' ? 'Clear Comments' : what === 'hyperlinks' ? 'Clear Hyperlinks' : 'Clear Contents', () => {
       for (const rg0 of ranges) {
         const whole = rg0.c1 === 0 && rg0.c2 >= MAXC - 1 || rg0.r1 === 0 && rg0.r2 >= MAXR - 1;
         const rg = O.clip(sh, rg0);

@@ -91,6 +91,7 @@
   C('insertChart', { label: 'C&hart...', icon: 'chart', tip: 'Insert Chart', run: (arg) => A().insertChart(arg && arg.ph) });
   C('insertTable', { label: 'Ta&ble...', icon: 'table', tip: 'Insert Table', run: (arg) => L.dlg.insertTable((r, c) => A().insertTable(r, c, arg && arg.ph)) });
   C('insertMedia', { label: 'Mo&vies and Sounds', icon: 'movie', run: () => ui.msg('Movies and sounds are not supported in this edition. Pictures, charts, tables and diagrams are available from the Insert menu.') });
+  C('removeHyperlink', { label: '&Remove Hyperlink', enabled: () => !!(L.dlg.linkAtCaret() || (!L.te.active() && E().selected().some((x) => x.link))), run: () => L.dlg.removeHyperlink() });
   C('hyperlink', { label: 'Hyperl&ink...', icon: 'hyperlink', key: 'Ctrl+K', tip: 'Insert Hyperlink', enabled: () => editing() || hasSel(), run: () => L.dlg.hyperlink() });
 
   /* ---------- Format ---------- */

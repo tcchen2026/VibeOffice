@@ -674,22 +674,31 @@
   };
 
   /* ================================================================ Properties */
+  /** File ▸ Properties (common ui.propertiesDialog); a custom property's type is its vt element (lpwstr, i4, bool…) */
   D.properties = function () {
     const w = wb(), p = w.props;
-    const fld = (k, label) => { const i = h('input', { type: 'text', value: p[k] || '', style: 'width:100%' }); i.dataset.k = k; return ui.field(label, i); };
-    const summary = h('div', { class: 'col props' }, fld('title', '&Title:'), fld('subject', '&Subject:'), fld('creator', '&Author:'), fld('manager', '&Manager:'), fld('company', 'C&ompany:'), fld('category', 'Ca&tegory:'), fld('keywords', '&Keywords:'), fld('description', 'C&omments:'));
-    const cells = w.sheets.reduce((n, s) => { let k = 0; s.rows.forEach((row) => { if (row) row.cells.forEach((cl) => { if (cl && (cl.v != null || cl.f != null)) k++; }); }); return n + k; }, 0);
-    const formulas = w.sheets.reduce((n, s) => { let k = 0; s.rows.forEach((row) => { if (row) row.cells.forEach((cl) => { if (cl && cl.f != null) k++; }); }); return n + k; }, 0);
-    const stats = h('table', { class: 'kv' }, ...[['Created:', p.created ? new Date(p.created).toLocaleString() : ''], ['Modified:', p.modified ? new Date(p.modified).toLocaleString() : ''], ['Last saved by:', p.lastModifiedBy || ''], ['Application:', p.application || ''], ['Sheets:', w.sheets.length], ['Cells with data:', cells], ['Formulas:', formulas], ['Defined names:', w.names.filter((n) => !n.hidden).length], ['Lists (tables):', w.tables.length]].map(([k, v]) => h('tr', null, h('td', { text: k }), h('td', { translate: 'no', text: String(v) }))));
-    const contents = h('div', { class: 'col' }, h('b', { text: 'Worksheets' }), ...w.sheets.map((s) => h('div', { translate: 'no', text: '   ' + (s.state !== 'visible' ? L.t('{0} (hidden)', s.name) : s.name) })), h('b', { text: 'Named Ranges' }), ...w.names.filter((n) => !n.hidden).map((n) => h('div', { translate: 'no', text: '   ' + n.name })));
-    const custom = (p.custom || []).slice();
-    const cbox = h('div');
-    const drawCustom = () => { cbox.textContent = ''; cbox.appendChild(h('table', { class: 'kv' }, ...custom.map((c, i) => h('tr', null, h('td', { translate: 'no', text: c.name }), h('td', { translate: 'no', text: c.value }), h('td', null, ui.button('Delete', () => { custom.splice(i, 1); drawCustom(); }, { class: 'btn small' })))))); };
-    drawCustom();
-    const cn = h('input', { type: 'text', placeholder: 'Name' }), cv = h('input', { type: 'text', placeholder: 'Value' });
-    const customTab = h('div', { class: 'col' }, h('div', { class: 'row', style: 'gap:6px' }, cn, cv, ui.button('&Add', () => { if (!cn.value.trim()) return; custom.push({ name: cn.value.trim(), type: 'lpwstr', value: cv.value }); cn.value = cv.value = ''; drawCustom(); })), cbox);
-    ui.dialog({ title: L.t('{0} Properties', A().books[A().cur].name), width: 420, body: ui.tabs([{ label: 'Summary', body: summary }, { label: 'Statistics', body: stats }, { label: 'Contents', body: contents }, { label: 'Custom', body: customTab }]),
-      buttons: [{ label: 'OK', primary: true, onClick: () => { const old = Object.assign({}, p); const now = Object.assign({}, p); L.$$('input[data-k]', summary).forEach((i) => { now[i.dataset.k] = i.value; }); now.custom = custom; O.tx(w, L.N('Properties'), () => { Object.assign(p, now); w.undo.op(() => Object.assign(p, old), () => Object.assign(p, now)); }); } }, { label: 'Cancel' }] });
+    const fmt = (x) => (x ? new Date(x).toLocaleString() : '');
+    let cells = 0, formulas = 0;
+    for (const s of w.sheets) s.rows.forEach((row) => { if (row) row.cells.forEach((cl) => { if (cl && (cl.v != null || cl.f != null)) cells++; if (cl && cl.f != null) formulas++; }); });
+    const VT = { lpwstr: 'text', bstr: 'text', i4: 'number', i8: 'number', int: 'number', r4: 'number', r8: 'number', decimal: 'number', bool: 'bool', filetime: 'date', date: 'date' };
+    const toVt = (c) => (c.type === 'number' ? (Number.isInteger(c.value) ? 'i4' : 'r8') : c.type === 'bool' ? 'bool' : c.type === 'date' ? 'filetime' : 'lpwstr');
+    const toValue = (c) => (c.type === 'bool' ? (c.value ? 'true' : 'false') : c.type === 'date' ? new Date(c.value).toISOString().replace(/\.\d{3}Z$/, 'Z') : String(c.value));
+    ui.propertiesDialog({
+      name: A().books[A().cur].name,
+      fields: { title: p.title, subject: p.subject, author: p.creator, manager: p.manager, company: p.company, category: p.category, keywords: p.keywords, comments: p.description },
+      statistics: [['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last saved by:', p.lastModifiedBy || ''], ['Application:', p.application || '']],
+      counts: [['Sheets:', w.sheets.length], ['Cells with data:', cells], ['Formulas:', formulas], ['Defined names:', w.names.filter((n) => !n.hidden).length], ['Lists (tables):', (w.tables || []).length]],
+      contents: [[L.t('Worksheets'), w.sheets.map((s) => (s.state !== 'visible' ? L.t('{0} (hidden)', s.name) : s.name))], [L.t('Named Ranges'), w.names.filter((n) => !n.hidden).map((n) => n.name)]],
+      custom: (p.custom || []).map((c) => { const type = VT[c.type] || 'text'; return { name: c.name, type, value: type === 'number' ? Number(c.value) : type === 'bool' ? /^(1|true)$/i.test(c.value) : type === 'date' ? String(c.value).slice(0, 10) : c.value, was: c }; }),
+      apply: ({ fields, custom }) => {
+        const KEY = { author: 'creator', comments: 'description' };
+        const old = Object.assign({}, p), now = Object.assign({}, p);
+        for (const [k, v] of Object.entries(fields)) now[KEY[k] || k] = v;
+        /* an unchanged custom property stays as it was read */
+        if (custom) now.custom = custom.map((c) => c.was || { name: c.name, type: toVt(c), value: toValue(c) });
+        O.tx(w, L.N('Properties'), () => { Object.assign(p, now); w.undo.op(() => Object.assign(p, old), () => Object.assign(p, now)); });
+      },
+    });
   };
 
   /* ================================================================ Zoom, Symbol */

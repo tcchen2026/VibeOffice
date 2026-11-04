@@ -1761,7 +1761,7 @@ addEventListener('resize',fit);fit();show(0);`;
     ui.contextMenu(e, items);
   };
   A.contextSlide = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'ruler', 'gridGuides', '-', 'slideDesign', 'slideLayout', 'background', '-', 'transitionPane', 'newSlide']);
-  A.contextText = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'fontDlg', 'bulletsDlg', 'lineSpacing', '-', 'hyperlink', '-', { label: 'Exit Edit Text', run: () => { const id = TE.target().sh.id; TE.end(); E.select([id]); } }]);
+  A.contextText = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'fontDlg', 'bulletsDlg', 'lineSpacing', '-', ...(L.dlg.linkAtCaret() ? [{ label: '&Edit Hyperlink...', cmd: 'hyperlink' }, 'removeHyperlink'] : ['hyperlink']), '-', { label: 'Exit Edit Text', run: () => { const id = TE.target().sh.id; TE.end(); E.select([id]); } }]);
   A.contextThumb = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'newSlide', 'deleteSlide', 'duplicateSlide', '-', 'slideDesign', 'slideLayout', 'background', 'transitionPane', '-', 'hideSlide']);
 
   /* ================= keyboard ================= */

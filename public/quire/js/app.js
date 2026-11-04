@@ -1127,7 +1127,7 @@
     const items = ['cut', 'copy', 'paste', '-'];
     if (E.objSel) items.push({ label: 'Text W&rapping', sub: () => A.wrapItems() }, 'formatObject', '-');
     const ln = e.target.closest && e.target.closest('[data-link]');
-    if (ln) items.push('hyperlink', { label: '&Open Hyperlink', run: () => L.ed.followLink(ln.dataset.link) }, { label: '&Remove Hyperlink', run: () => ui.exec('removeHyperlink') }, '-');
+    if (ln) items.push({ label: '&Edit Hyperlink...', cmd: 'hyperlink' }, { label: '&Open Hyperlink', run: () => L.ed.followLink(ln.dataset.link) }, { label: '&Remove Hyperlink', run: () => ui.exec('removeHyperlink') }, '-');
     if (inTable) items.push({ label: '&Insert', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', 'insertCells'] }, { label: '&Delete', sub: ['deleteTable', 'deleteCols', 'deleteRows', 'deleteCells'] }, 'mergeCells', 'splitCells', '-', 'distRows', 'distCols', '-', 'bordersDlg', { label: 'Cell Alignment', sub: ['cellTop', 'cellMiddle', 'cellBottom'] }, 'tableAutoFormat', 'tableProps', '-');
     const f = L.fields && L.fields.at(E.sel && E.sel.f);
     if (f) items.push('updateField', 'editField', 'toggleCodes', '-');
@@ -1136,7 +1136,7 @@
     if (L.review && L.review.revisionAt && L.review.revisionAt()) items.push('acceptChange', 'rejectChange', '-');
     const cm = L.review && L.review.commentAt && L.review.commentAt();
     if (cm) items.push({ label: '&Edit Comment', run: () => L.review.editComment(cm) }, { label: 'Delete Co&mment', run: () => L.review.deleteComment(cm) }, '-');
-    items.push('fontDlg', 'paragraphDlg', 'bulletsDlg', '-', 'hyperlink', 'research');
+    items.push('fontDlg', 'paragraphDlg', 'bulletsDlg', '-', ...(ln ? [] : ['hyperlink']), 'research');
     /* on a misspelled word or a grammar problem Word shows only the proofing menu */
     if (!E.objSel && L.spell && L.spell.suggestionsAt) { const s = L.spell.suggestionsAt(e); if (s && s.length) { ui.openMenu(s.concat(['-', 'cut', 'copy', 'paste']), { x: e.clientX, y: e.clientY }); return; } }
     ui.openMenu(items, { x: e.clientX, y: e.clientY });

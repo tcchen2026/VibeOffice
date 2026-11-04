@@ -958,10 +958,19 @@
       `<Template>${X(p.template || 'Normal.dotm')}</Template><TotalTime>0</TotalTime><Pages>${stats.pages}</Pages><Words>${stats.words}</Words><Characters>${stats.charsNoSp}</Characters><Application>Quire</Application><DocSecurity>0</DocSecurity><Lines>${stats.lines}</Lines><Paragraphs>${stats.paras}</Paragraphs><ScaleCrop>false</ScaleCrop>` +
       (p.manager ? `<Manager>${X(p.manager)}</Manager>` : '') + `<Company>${X(p.company || '')}</Company><LinksUpToDate>false</LinksUpToDate><CharactersWithSpaces>${stats.chars}</CharactersWithSpaces><SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged><AppVersion>11.0000</AppVersion></Properties>`;
   }
+  /** a custom property's value as Word writes it: a string read from the file is text; one set in File ▸ Properties
+   *  is { type: 'text' | 'number' | 'bool' | 'date', v } (unchanged ones keep the file's own XML, opc.js customProperties) */
+  function customValue(v) {
+    if (!v || typeof v !== 'object') return `<vt:lpwstr>${X(v == null ? '' : v)}</vt:lpwstr>`;
+    if (v.type === 'number') { const n = Number(v.v); return Number.isInteger(n) && Math.abs(n) < 2 ** 31 ? `<vt:i4>${n}</vt:i4>` : `<vt:r8>${isFinite(n) ? n : 0}</vt:r8>`; }
+    if (v.type === 'bool') return `<vt:bool>${v.v ? 'true' : 'false'}</vt:bool>`;
+    if (v.type === 'date') { const d = new Date(v.v); if (!isNaN(d)) return `<vt:filetime>${d.toISOString().replace(/\.\d{3}Z$/, 'Z')}</vt:filetime>`; }
+    return `<vt:lpwstr>${X(v.v == null ? '' : v.v)}</vt:lpwstr>`;
+  }
   function customXML(doc) {
     const keys = Object.keys(doc.custom || {});
     return HEAD + '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
-      keys.map((k, i) => `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${i + 2}" name="${X(k)}"><vt:lpwstr>${X(doc.custom[k])}</vt:lpwstr></property>`).join('') + '</Properties>';
+      keys.map((k, i) => `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${i + 2}" name="${X(k)}">${customValue(doc.custom[k])}</property>`).join('') + '</Properties>';
   }
   /** VML text/picture watermark for headers */
   function watermarkXML(wm, ctx) {

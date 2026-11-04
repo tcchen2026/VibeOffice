@@ -770,20 +770,28 @@
   };
 
   /* ---------- Hyperlink ---------- */
+  /** the link of the run at the caret (or the selection's start) in the text being edited */
+  D.linkAtCaret = () => {
+    if (!L.te.active()) return null;
+    const t = L.te.target(), s = L.te.currentSel(), p = t && s && t.tx.ps[s.p0];
+    if (!p) return null;
+    let acc = 0;
+    for (const r of p.rs) { const n = r.t.length; if (s.o0 < acc + n || (s.o0 === acc + n && r.link)) return r.link || null; acc += n; }
+    return null;
+  };
+  /** Remove Hyperlink: from the link's word at the caret or the selected text, else from the selected shapes */
+  D.removeHyperlink = () => {
+    const fn = (r) => { const n = Object.assign({}, r); delete n.link; return n; };
+    if (L.te.active()) L.te.applyRun(fn, L.N('Remove Hyperlink'));
+    else E().commit(L.N('Remove Hyperlink'), () => { for (const x of E().selected()) delete x.link; });
+  };
   /** Insert ▸ Hyperlink (common ui.hyperlinkDialog): on the text being edited, or on the selected shapes */
   D.hyperlink = function () {
     const ed = E();
     const editing = L.te.active();
     const sh = ed.primary();
     if (!sh && !editing) { ui.msg('Select text or an object to link.'); return; }
-    /* the link of the run at the caret (or the selection's start) */
-    const existing = editing ? (() => {
-      const t = L.te.target(), s = L.te.currentSel(), p = t && s && t.tx.ps[s.p0];
-      if (!p) return null;
-      let acc = 0;
-      for (const r of p.rs) { const n = r.t.length; if (s.o0 < acc + n || (s.o0 === acc + n && r.link)) return r.link || null; acc += n; }
-      return null;
-    })() : sh.link;
+    const existing = editing ? D.linkAtCaret() : sh.link;
     const ACTIONS = [['first', L.N('First Slide')], ['last', L.N('Last Slide')], ['next', L.N('Next Slide')], ['prev', L.N('Previous Slide')]];
     if (existing && existing.action === 'lastViewed') ACTIONS.push(['lastViewed', L.N('Last Slide Viewed')]);
     if (existing && existing.action === 'end') ACTIONS.push(['end', L.N('End Show')]);
@@ -926,16 +934,23 @@
   };
 
   /* ---------- Properties ---------- */
+  /** File ▸ Properties (common ui.propertiesDialog): OK applies the changes as one undo step, Cancel leaves them */
   D.properties = function () {
     const p = L.pres.props;
-    const f = (k, label) => { const i = h('input', { type: 'text', id: 'pr-' + k, value: p[k] || '', style: 'width:260px' }); i.addEventListener('input', () => { p[k] = i.value; if (k === 'title') L.pres.title = i.value; }); return ui.field(label, i, { cls: 'wide' }); };
-    const cm = h('textarea', { id: 'pr-cm', rows: 3, style: 'width:260px' }); cm.value = p.comments || ''; cm.addEventListener('input', () => { p.comments = cm.value; });
     const words = L.pres.slides.reduce((a, s) => a + (M.allText(s).match(/\S+/g) || []).length, 0);
-    const tabs = ui.tabs([
-      { label: 'Summary', body: h('div', { class: 'col' }, f('title', '&Title:'), f('subject', '&Subject:'), f('author', '&Author:'), f('company', 'C&ompany:'), f('category', 'Ca&tegory:'), f('keywords', '&Keywords:'), ui.field('&Comments:', cm, { cls: 'wide' })) },
-      { label: 'Statistics', body: h('table', { class: 'kbd-table' }, ...[['Created:', p.created ? new Date(p.created).toLocaleString() : '—'], ['Slides:', L.pres.slides.length], ['Hidden slides:', L.pres.slides.filter((s) => s.hidden).length], ['Notes:', L.pres.slides.filter((s) => s.notes).length], ['Words:', words], ['Pictures:', L.media.all().size]].map(([a, b]) => h('tr', null, h('td', { text: a }), h('td', { text: String(b), translate: 'no' })))) },
-    ]);
-    ui.dialog({ title: L.t('{0} Properties', L.app.fileName || 'Presentation'), body: tabs, width: 430, buttons: [{ label: 'OK', primary: true }] });
+    ui.propertiesDialog({
+      name: L.app.fileName || L.t('Presentation'),
+      fields: { title: p.title, subject: p.subject, author: p.author, company: p.company, category: p.category, keywords: p.keywords, comments: p.comments },
+      statistics: [['Created:', p.created ? new Date(p.created).toLocaleString() : '']],
+      counts: [['Slides:', L.pres.slides.length], ['Hidden slides:', L.pres.slides.filter((s) => s.hidden).length], ['Notes:', L.pres.slides.filter((s) => s.notes).length], ['Words:', words], ['Pictures:', L.media.all().size]],
+      contents: [[L.t('Slide Titles'), L.pres.slides.map((s, i) => M.slideTitle(s) || L.t('Slide {0}', i + 1))]],
+      apply: ({ fields }) => {
+        L.hist.push(L.N('Properties'));
+        Object.assign(p, fields);
+        if ('title' in fields) L.pres.title = fields.title;
+        E().touched();
+      },
+    });
   };
 
   /* ---------- Save As ---------- */

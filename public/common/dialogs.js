@@ -190,7 +190,8 @@
       else { r.place = places.get(); r.ref = refIn ? refIn.value.trim() : undefined; if (r.place == null && !r.ref) { places.list.focus(); return false; } }
       return o.apply(r);
     } }, { label: 'Cancel' });
-    return ui.dialog({ title: cur ? 'Edit Hyperlink' : 'Insert Hyperlink', width: 560, body, buttons, focus: o.textLocked ? (kind === 'web' ? addr : undefined) : disp });
+    /* the keyboard starts in the kind's own box, as in Office (Address for a web page) */
+    return ui.dialog({ title: cur ? 'Edit Hyperlink' : 'Insert Hyperlink', width: 560, body, buttons, focus: kind === 'web' ? addr : kind === 'mail' ? mail : refIn || places.list });
   };
 
   /* ================= Spelling ================= */
@@ -261,5 +262,76 @@
     btnUndo.style.width = '';
     go();
     return dlg;
+  };
+
+  /* ================= Properties ================= */
+  /* the Summary tab as Office's, in its order and with its keys; an app shows the ones its files keep */
+  const SUMMARY = [['title', N('&Title:')], ['subject', N('&Subject:')], ['author', N('&Author:')], ['manager', N('&Manager:')], ['company', N('C&ompany:')],
+    ['category', N('Cat&egory:')], ['keywords', N('&Keywords:')], ['comments', N('Comme&nts:')], ['hyperlinkBase', N('&Hyperlink base:')]];
+  /* Office's names for custom properties, offered in the Name box */
+  const CUSTOM_NAMES = ['Checked by', 'Client', 'Date completed', 'Department', 'Destination', 'Disposition', 'Division', 'Document number', 'Editor', 'Forward to', 'Group', 'Language', 'Mailstop',
+    'Matter', 'Office', 'Owner', 'Project', 'Publisher', 'Purpose', 'Received from', 'Recorded by', 'Recorded date', 'Reference', 'Source', 'Status', 'Telephone number', 'Typist'];
+  const CUSTOM_TYPES = [['text', N('Text')], ['date', N('Date')], ['number', N('Number')], ['bool', N('Yes or no')]];
+  /**
+   * File ▸ Properties, one dialog for the three apps. o: { name (the file's, for the title), fields: { title, subject,
+   * author, manager, company, category, keywords, comments, hyperlinkBase } (the keys an app has: the Summary tab
+   * shows those), template (a note under them), general: [[label, value]] (a General tab, with o.type and o.icon),
+   * statistics: [[label, value]], counts: [[label, value]] (under "Statistics:"), contents: [[heading, [names]]],
+   * custom: [{ name, type: 'text' | 'date' | 'number' | 'bool', value }] (a Custom tab), apply({ fields, custom }) }.
+   * OK applies what changed, once (one undo step); nothing changed, nothing is applied. The tabs have no access keys,
+   * as Office's property sheets, so the Summary's letters are all free.
+   */
+  ui.propertiesDialog = function (o) {
+    const keys = SUMMARY.filter(([k]) => k in o.fields);
+    const inputs = {};
+    const summary = h('div', { class: 'col pr-summary' }, ...keys.map(([k, label]) => {
+      const el = k === 'comments' ? h('textarea', { id: 'pr-' + k, rows: 3 }) : h('input', { type: 'text', id: 'pr-' + k, autocomplete: 'off' });
+      el.value = o.fields[k] || '';
+      inputs[k] = el;
+      return ui.field(label, el, { cls: 'wide' });
+    }), o.template != null ? h('div', { class: 'tp-note', text: L.t('Template: {0}', o.template) }) : null);
+    const table = (rows) => h('table', { class: 'pr-table' }, ...rows.map(([a, b]) => h('tr', null, h('td', { text: a }), h('td', { translate: 'no', text: b == null ? '' : typeof b === 'number' ? b.toLocaleString() : String(b) }))));
+    const tabs = [];
+    if (o.general) tabs.push({ label: 'General', body: h('div', { class: 'col' }, h('div', { class: 'row', style: 'align-items:center' }, h('span', { html: L.icons.get(o.icon || 'new', 32) }), h('b', { translate: 'no', text: o.name })), table(o.general)) });
+    tabs.push({ label: 'Summary', body: summary });
+    if (o.statistics || o.counts) tabs.push({ label: 'Statistics', body: h('div', { class: 'col' }, o.statistics ? table(o.statistics) : null, o.counts ? h('div', { class: 'cd-cap', text: 'Statistics:' }) : null, o.counts ? table(o.counts) : null) });
+    if (o.contents) tabs.push({ label: 'Contents', body: h('div', { class: 'col' }, h('div', { class: 'cd-cap', text: 'Contents:' }), h('div', { class: 'tp-box pr-contents', translate: 'no' }, ...o.contents.map(([head, names]) => h('div', null, h('b', { text: head }), ...(names.length ? names : [L.t('(none)')]).map((n) => h('div', { class: 'pr-item', text: n }))))) ) });
+    /* Custom: Name, Type and Value, Add and Delete, and the list of them */
+    let custom = o.custom ? o.custom.map((c) => Object.assign({}, c)) : null, customChanged = false;
+    if (custom) {
+      const cName = h('input', { type: 'text', id: 'pr-cn', list: 'pr-cnl', autocomplete: 'off' });
+      const names = h('datalist', { id: 'pr-cnl' }, ...CUSTOM_NAMES.map((n) => h('option', { value: L.t(n) })));
+      const cType = ui.select(CUSTOM_TYPES, 'text', null, { id: 'pr-ct' });
+      const cVal = h('input', { type: 'text', id: 'pr-cv', autocomplete: 'off' });
+      const typeName = (t) => L.t((CUSTOM_TYPES.find((x) => x[0] === t) || CUSTOM_TYPES[0])[1]);
+      const list = ui.listBox([], null, { height: 110, translate: 'no', onChange: (n) => { const c = custom.find((x) => x.name === n); if (!c) return; cName.value = c.name; cType.value = c.type; cVal.value = c.type === 'bool' ? (c.value ? L.t('Yes') : L.t('No')) : c.value; } });
+      const fill = () => list.setItems(custom.map((c) => ({ value: c.name, label: c.name, note: (c.type === 'bool' ? (c.value ? L.t('Yes') : L.t('No')) : String(c.value)) + ' · ' + typeName(c.type) })));
+      fill();
+      const add = ui.button('&Add', () => {
+        const n = cName.value.trim();
+        if (!n) { cName.focus(); return; }
+        const t = cType.value, v = cVal.value.trim();
+        let value = v;
+        if (t === 'number') { value = Number(v.replace(',', '.')); if (!isFinite(value)) { ui.msg('The value doesn\'t match the type you chose. Type a number.', { icon: 'warn' }); return; } }
+        else if (t === 'date') { const d = new Date(v); if (isNaN(d)) { ui.msg('The value doesn\'t match the type you chose. Type a date.', { icon: 'warn' }); return; } value = d.toISOString().slice(0, 10); }
+        else if (t === 'bool') value = /^(y|yes|true|1)$/i.test(v) || v.toLowerCase() === L.t('Yes').toLowerCase();
+        custom = custom.filter((x) => x.name !== n).concat([{ name: n, type: t, value }]);
+        customChanged = true;
+        fill(); list.set(n);
+      }, { class: 'btn small' });
+      const del = ui.button('&Delete', () => { const n = list.get(); if (n == null) return; custom = custom.filter((x) => x.name !== n); customChanged = true; fill(); cName.value = cVal.value = ''; }, { class: 'btn small' });
+      tabs.push({ label: 'Custom', body: h('div', { class: 'col' }, names,
+        h('div', { class: 'row', style: 'flex-wrap:nowrap;align-items:flex-start' }, h('div', { class: 'col', style: 'flex:1;min-width:0' }, ui.field('&Name:', cName, { cls: 'wide' }), ui.field('&Type:', cType, { cls: 'wide' }), ui.field('&Value:', cVal, { cls: 'wide' })), h('div', { class: 'col', style: 'width:76px' }, add, del)),
+        h('label', { text: 'Properties:' }), list) });
+    }
+    const summaryAt = tabs.findIndex((t) => t.label === 'Summary');
+    return ui.dialog({
+      title: L.t('{0} Properties', o.name), width: 440, body: ui.tabs(tabs, summaryAt), focus: inputs.title,
+      buttons: [{ label: 'OK', primary: true, onClick: () => {
+        const fields = {};
+        for (const [k] of keys) if (inputs[k].value !== (o.fields[k] || '')) fields[k] = inputs[k].value;
+        if (Object.keys(fields).length || customChanged) o.apply({ fields, custom: customChanged ? custom : null });
+      } }, { label: 'Cancel' }],
+    });
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -454,11 +454,10 @@
     to.value = String(Math.max(1, items.length));
     return new Promise((res) => {
       ui.dialog({ title: 'Print', width: 440, body: h('div', { class: 'col' },
-        ui.group('Printer', ui.field('&Name:', ui.select([['pdf', 'Ledger PDF Writer']], 'pdf')), h('div', { class: 'hint', text: 'Ledger prints by creating a PDF that you can open and print on any printer.' })),
+        ui.group('Printer', ui.field('&Name:', ui.select([['pdf', 'Save as PDF']], 'pdf', null, { id: 'pr-printer' })), h('div', { class: 'tp-note', text: 'Status: Ready — the pages are saved as a PDF that you can print from any viewer.' })),
         h('div', { class: 'row', style: 'gap:10px;align-items:stretch' },
           ui.group('Print range', ui.radio('pr-r', '&All', true, () => { st.range = 'all'; }), h('div', { class: 'row', style: 'gap:6px' }, ui.radio('pr-r', 'Pa&ge(s)', false, () => { st.range = 'pages'; }), h('span', { text: 'From:' }), from, h('span', { text: 'To:' }), to)),
-          ui.group('Print what', ui.radio('pr-w', 'Selectio&n', false, () => { st.what = 'selection'; }), ui.radio('pr-w', 'Active s&heet(s)', true, () => { st.what = 'sheets'; }), ui.radio('pr-w', '&Entire workbook', false, () => { st.what = 'workbook'; }))),
-        ui.field('Number of &copies:', ui.spin({ value: 1, min: 1, max: 99, step: 1, dec: 0 }))),
+          ui.group('Print what', ui.radio('pr-w', 'Selectio&n', false, () => { st.what = 'selection'; }), ui.radio('pr-w', 'Active s&heet(s)', true, () => { st.what = 'sheets'; }), ui.radio('pr-w', '&Entire workbook', false, () => { st.what = 'workbook'; })))),
       buttons: [{ label: 'Pre&view', onClick: () => { setTimeout(() => L.print.preview(), 0); } }, { label: 'OK', primary: true, onClick: () => { const o = { what: st.what }; if (st.range === 'pages') { o.from = parseInt(from.value, 10) || 1; o.to = parseInt(to.value, 10) || o.from; } L.print.exportPDF(o); } }, { label: 'Cancel' }] }).done.then(res);
     });
   };

@@ -324,6 +324,13 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .hl-pane input[type=text] { width: 100%; }
 .hl-f { gap: 2px; margin-bottom: 8px; }
 .sy-name { flex: 1; min-height: 16px; }
+/* File ▸ Properties (common/dialogs.js) */
+.pr-summary textarea { width: 100%; }
+.pr-table { border-collapse: collapse; }
+.pr-table td { padding: 2px 12px 2px 0; vertical-align: top; }
+.pr-table td:first-child { white-space: nowrap; color: var(--ink-3); }
+.pr-contents { max-height: 240px; overflow: auto; }
+.pr-item { padding-left: 14px; }
 .sym-grid { display: grid; grid-template-columns: repeat(16, minmax(24px, 1fr)); max-height: 230px; overflow: auto; border: 1px solid var(--grid-line); background: var(--surface); }
 .sym-grid button { height: 26px; border: 0; border-right: 1px solid var(--grid-line-2); border-bottom: 1px solid var(--grid-line-2); background: var(--surface); padding: 0; font-size: 16px; }
 .sym-grid button.on { background: var(--sel); color: var(--sel-ink); }
