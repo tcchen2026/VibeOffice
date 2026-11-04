@@ -128,6 +128,17 @@ for (const [app, A] of Object.entries(APPS)) for (const look of ['classic', 'pap
         await s.test('a menu opened from the menu bar and closed with Esc', () => keeps(async () => {
           await t.menu('Edit'); await pause(150); await t.esc();
         }));
+        /* Toolbar Options (») of a toolbar cut short (Standard and Formatting sharing a row at 1280 px): the pop-up
+           holds the controls that don't fit, Esc closes it and they go back */
+        await s.test('Toolbar Options (») opened, then closed with Esc', () => keeps(async () => {
+          await t.evaluate(`(L.app.opts.twoRows = false, L.ui.toolbarPrefs(L.app.opts))`); await pause(300);
+          try {
+            await t.click(await t.el('#tb-standard .tb-more'));
+            assert.equal(await t.evaluate(`!!document.querySelector('.tb-pop [data-cmd="help"]')`), true, 'Help is in the pop-up');
+            await t.esc();
+            assert.equal(await t.evaluate(`!document.querySelector('.tb-pop') && !!document.querySelector('#tb-standard [data-cmd="help"]')`), true, 'closed, Help back on the toolbar');
+          } finally { await t.evaluate(`(L.app.opts.twoRows = true, L.ui.toolbarPrefs(L.app.opts))`); }
+        }));
       } else {
         await s.test('the ribbon\'s tabs clicked', () => keeps(async () => {
           await t.click(await t.el('.rb-tab[data-tab="insert"]')); await pause(150);
