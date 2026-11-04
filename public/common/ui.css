@@ -337,6 +337,7 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .sy-name { flex: 1; min-height: 16px; }
 /* File ▸ Properties (common/dialogs.js) */
 .pr-summary textarea { width: 100%; }
+.pr-summary .field > input { flex: 1 1 140px; min-width: 0; }
 .pr-table { border-collapse: collapse; }
 .pr-table td { padding: 2px 12px 2px 0; vertical-align: top; }
 .pr-table td:first-child { white-space: nowrap; color: var(--ink-3); }
