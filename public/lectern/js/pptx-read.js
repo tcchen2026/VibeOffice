@@ -32,7 +32,11 @@
       const kidsEl = Array.from(ac.children);
       const fb = kidsEl.find((c) => c.localName === 'Fallback');
       const ch = kidsEl.find((c) => c.localName === 'Choice');
-      const pick = fb && fb.children.length ? fb : ch || fb;
+      // Equations are now retained as atoms. Prefer their supported a14 branch
+      // inside a diagram point instead of the old picture-only fallback.
+      const mathChoice = kidsEl.find(c => c.localName === 'Choice' && hasMath(c) &&
+        (c.getAttribute('Requires') || '').trim().split(/\s+/).every(p => c.lookupNamespaceURI(p) === 'http://schemas.microsoft.com/office/drawing/2010/main'));
+      const pick = mathChoice || (fb && fb.children.length ? fb : ch || fb);
       if (pick?.children.length) ac.replaceWith(...Array.from(pick.childNodes));
       else if (!['spTree', 'grpSp'].includes(ac.parentNode.localName)) ac.remove();
     }
@@ -180,6 +184,9 @@
   }
 
   /* ---------- text ---------- */
+  const MATH_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/math';
+  const isMath = e => e?.localName === 'm' && e.namespaceURI === 'http://schemas.microsoft.com/office/drawing/2010/main';
+  const hasMath = e => !!e && Array.from(e.getElementsByTagName('*')).some(isMath);
   const fontName = (f) => (!f ? undefined : f === '+mj-lt' || f === '+mj-ea' || f === '+mj-cs' ? '+mj' : f === '+mn-lt' || f === '+mn-ea' || f === '+mn-cs' ? '+mn' : f);
   function runProps(rPr, ctx) {
     const r = {};
@@ -291,6 +298,10 @@
           const rp = runProps(kid(c, 'rPr'), ctx);
           if (type === 'slidenum' || /^datetime/.test(type)) para.rs.push(Object.assign({ t: t ? t.textContent : '', fld: type }, rp));
           else para.rs.push(Object.assign({ t: t ? t.textContent : '' }, rp));
+        } else if (isMath(c)) {
+          const rp = runProps(desc(c, 'rPr'), ctx); delete rp.keep;
+          para.rs.push({ ...rp, t: Array.from(c.getElementsByTagNameNS(MATH_NS, 't')).map(t => t.textContent).join(''), fld: 'math',
+            keep: { math: K.fragment(K.parse(K.raw(c)), { pkg: ctx.pkg, part: ctx.partPath }) } });
         } else if (c.localName === 'endParaRPr') {
           const rp = runProps(c, ctx);
           delete rp.link;
@@ -830,10 +841,12 @@
     const presX = await xml(presPath);
     /* table style definitions (PowerPoint embeds every style a table uses) */
     const tblStyles = new Map();
+    let tableStylesPath;
     {
       const pr = await rels(presPath);
       const tsRel = Object.values(pr || {}).find((r) => r.type === 'tableStyles');
-      const tsX = await xml(tsRel ? tsRel.target : 'ppt/tableStyles.xml');
+      tableStylesPath = tsRel ? tsRel.target : 'ppt/tableStyles.xml';
+      const tsX = await xml(tableStylesPath);
       if (tsX) for (const st of kids(tsX, 'tblStyle')) tblStyles.set((at(st, 'styleId') || '').toUpperCase(), st);
     }
     if (!presX || presX.localName !== 'presentation') throw new Error(L.N('This file does not contain a PowerPoint presentation.'));
@@ -1134,6 +1147,9 @@
             const models = Array.isArray(s) ? s : [s];
             for (const shape of models) L.preserve.shape(shape, source.map.get(String(shape.numId)), el, pkg, ctx.partPath);
             L.frames.attach(models, el, raw, tree, pkg, ctx.partPath);
+          }
+          if (at(el, 'modelId') && /\/diagram$/.test(el.namespaceURI)) for (const shape of Array.isArray(s) ? s : [s]) {
+            shape.keep ||= {}; shape.keep.diagramPoint = at(el, 'modelId');
           }
           if (Array.isArray(s)) out.push(...s); else out.push(s);
         } catch (e) { console.warn('shape skipped', e); }
@@ -1485,8 +1501,12 @@
         for (const k of ['l', 'r', 't', 'b']) if (!cell.own.bd.includes(k) && bd[k]) cell.bd[k] = L.clone(bd[k]);
         if (tx.color || tx.b != null || tx.i != null) {
           for (const p of cell.tx.ps) {
-            for (const run of p.rs) { if (run.color == null && tx.color) run.color = tx.color; if (run.b == null && tx.b != null) run.b = tx.b; if (run.i == null && tx.i != null) run.i = tx.i; }
+            for (const run of p.rs) {
+              if (!run.keep) L.properties.capture(run, K.parse('<a:rPr xmlns:a="' + K.NS.a + '"/>'), ctx, 'run');
+              if (run.color == null && tx.color) run.color = tx.color; if (run.b == null && tx.b != null) run.b = tx.b; if (run.i == null && tx.i != null) run.i = tx.i;
+            }
             const e = Object.assign({}, p.end || {});
+            if (!e.keep) L.properties.capture(e, K.parse('<a:endParaRPr xmlns:a="' + K.NS.a + '"/>'), ctx, 'run');
             if (e.color == null && tx.color) e.color = tx.color; if (e.b == null && tx.b != null) e.b = tx.b;
             p.end = e;
           }
@@ -1498,16 +1518,20 @@
       const tp = kid(tbl, 'tblPr');
       const styled = !!(tp && kid(tp, 'tableStyleId'));
       const firstRow = bool(at(tp, 'firstRow')), bandRow = bool(at(tp, 'bandRow')), firstCol = bool(at(tp, 'firstCol'));
-      const cols = kids(kid(tbl, 'tblGrid'), 'gridCol').map((g) => L.round(pt(num(g, 'w', 0)), 3));
+      const gridEMU = kids(kid(tbl, 'tblGrid'), 'gridCol').map(g => num(g, 'w', 0));
+      const cols = gridEMU.map(pt);
       const rows = kids(tbl, 'tr').map((tr, ri) => ({
-        h: L.round(pt(num(tr, 'h', 0)), 3),
+        h: pt(num(tr, 'h', 0)),
+        keep: { height: { pt: pt(num(tr, 'h', 0)), emu: num(tr, 'h', 0) } },
         cells: kids(tr, 'tc').map((tc, ci) => {
           const txb = kid(tc, 'txBody');
           const pr = kid(tc, 'tcPr');
           const tx = Object.assign({ anchor: 't', wrap: true, autofit: 'none', ins: [7.2, 3.6, 7.2, 3.6] }, bodyPr(txb ? kid(txb, 'bodyPr') : null, {}));
           if (pr) {
-            tx.ins = [pr.hasAttribute('marL') ? pt(num(pr, 'marL', 91440)) : 7.2, pr.hasAttribute('marT') ? pt(num(pr, 'marT', 45720)) : 3.6, pr.hasAttribute('marR') ? pt(num(pr, 'marR', 91440)) : 7.2, pr.hasAttribute('marB') ? pt(num(pr, 'marB', 45720)) : 3.6].map((v) => L.round(v, 3));
+            tx.ins = [pr.hasAttribute('marL') ? pt(num(pr, 'marL', 91440)) : 7.2, pr.hasAttribute('marT') ? pt(num(pr, 'marT', 45720)) : 3.6, pr.hasAttribute('marR') ? pt(num(pr, 'marR', 91440)) : 7.2, pr.hasAttribute('marB') ? pt(num(pr, 'marB', 45720)) : 3.6];
             if (at(pr, 'anchor')) tx.anchor = { t: 't', ctr: 'ctr', b: 'b' }[at(pr, 'anchor')] || 't';
+            // Table text direction belongs to tcPr, not the text body's bodyPr.
+            if (pr.hasAttribute('vert')) tx.vert = at(pr, 'vert');
           }
           tx.ps = txb ? paragraphs(txb, ctx) : [L.txt.para('')];
           const cell = { tx, fill: { t: 'none' }, bd: {} };
@@ -1519,6 +1543,8 @@
           if (bool(at(tc, 'hMerge'))) cell.hm = true;
           if (bool(at(tc, 'vMerge'))) cell.vm = true;
           cell.own = { fill: !!f, bd: Object.keys(cell.bd) };
+          L.properties.capture(cell, pr || K.parse('<a:tcPr xmlns:a="' + K.NS.a + '"/>'), ctx, 'cell');
+          if (cell.keep && ctx.clrMapOvr) cell.keep.colorMap = { ...ctx.clrMapOvr };
           return cell;
         }),
       }));
@@ -1526,6 +1552,14 @@
       if (styled) applyTableStyle(rows, cols.length, (at(kid(tp, 'tableStyleId'), 'val') || kid(tp, 'tableStyleId').textContent || '').trim().toUpperCase(), { firstRow, lastRow, firstCol, lastCol, bandRow, bandCol }, ctx);
       for (const r of rows) for (const c of r.cells) delete c.own;
       const t = Object.assign(base, { type: 'table', tbl: { cols, rows, firstRow, bandRow } });
+      if (tp?.hasAttribute('rtl')) t.tbl.rtl = bool(at(tp, 'rtl'));
+      for (const name of ['lastRow', 'firstCol', 'lastCol', 'bandCol']) if (tp?.hasAttribute(name)) t.tbl[name] = bool(at(tp, name));
+      if (styled) t.tbl.styleId = (at(kid(tp, 'tableStyleId'), 'val') || kid(tp, 'tableStyleId').textContent || '').trim();
+      L.properties.capture(t.tbl, tp, ctx, 'table');
+      t.tbl.keep ||= {};
+      t.tbl.keep.gridWidths = gridEMU.map((emu, i) => ({ emu, pt: cols[i] }));
+      const definition = tblStyles.get(t.tbl.styleId?.toUpperCase());
+      if (definition && t.tbl.keep) t.tbl.keep.styleDefinition = K.fragment(definition, { pkg, part: tableStylesPath });
       const sumW = cols.reduce((a, b) => a + b, 0);
       if (sumW > 0) t.w = sumW;
       const sumH = rows.reduce((a, r) => a + r.h, 0);
@@ -1585,18 +1619,26 @@
     }
 
     async function smartArtFrom(gd, base, ctx) {
-      const relIds = kids(gd).find((c) => c.localName === 'relIds');
+      let relIds = kids(gd).find((c) => c.localName === 'relIds');
       if (!relIds) return null;
-      const dm = ctx.rels[rid(relIds, 'dm')];
-      let drawingPath = null, sa = null;
+      let dm = ctx.rels[rid(relIds, 'dm')];
+      // Office's a14 Choice may hold the equation while its old-version Fallback
+      // points to a picture-only data model. Use the math-bearing source for text.
+      const alternate = K.alternate(gd);
+      if (alternate) for (const candidate of descAll(K.parse(alternate.xml), 'relIds')) {
+        const data = ctx.rels[rid(candidate, 'dm')];
+        if (data && hasMath(await xml(data.target))) { relIds = candidate; dm = data; break; }
+      }
+      let drawingPath = null, sa = null, dataTree = null;
       const withSa = (g) => { if (g && sa) g.sa = sa; return g; };
       if (dm) {
         const dx = await xml(dm.target);
+        dataTree = dx;
         /* a diagram Lectern wrote (our layout ids): editable again as SmartArt (js/diagram.js) */
         if (dx && L.saIO) try { sa = L.saIO.read(dx); } catch (e) { sa = null; }
         /* an item's own formatting: its point's fill and outline, its text's colour, bold and italic */
         /* a shape filled with a picture: not something our layouts carry, so the diagram stays as it came */
-        if (sa && sa.points.some(([pt]) => desc(pt, 'blipFill'))) sa = null;
+        if (sa && (hasMath(dx) || sa.points.some(([pt]) => desc(pt, 'blipFill')))) sa = null;
         if (sa) for (const [pt, item] of sa.points) {
           const sp = kid(pt, 'spPr'), f = {};
           const fe = sp && kids(sp).find((c) => /Fill$/.test(c.localName));
@@ -1617,14 +1659,27 @@
       if (!drawingPath) { const r = Object.values(ctx.rels).find((x) => x.type === 'diagramDrawing'); if (r) drawingPath = r.target; }
       if (!drawingPath) return withSa(await smartArtFromData(relIds, base, ctx));
       const dx = await xml(drawingPath);
+      if (hasMath(dx)) sa = null; // item text is plain; equations stay in the opaque group's runs
       const tree = dx && desc(dx, 'spTree');
       if (!tree) return withSa(await smartArtFromData(relIds, base, ctx));
       const dRels = await rels(drawingPath);
       const dctx = Object.assign({}, ctx, { rels: dRels, partPath: drawingPath, map: (b) => ({ x: base.x + b.x, y: base.y + b.y, w: b.w, h: b.h }), layout: null, pendingMedia: ctx.pendingMedia });
       dctx.media = (id) => { const r = dRels[id]; if (!r || r.external) return null; const m = mediaCache.get(r.target); if (m) return m; ctx.pendingMedia.add(r.target); return '__pending__:' + r.target; };
       const kidsS = await shapesFrom(tree, dctx, {});
-      /* dsp shapes may carry a separate text frame */
-      for (const sp of kids(tree, 'sp')) void sp;
+      // The data is authoritative when an older drawing cache has no equation.
+      // Office's presOf/presAssocID links identify its text shape; never match by text or position.
+      if (hasMath(dataTree)) {
+        const points = new Map(descAll(dataTree, 'pt').map(p => [at(p, 'modelId'), p]));
+        const links = new Map(descAll(dataTree, 'cxn').filter(c => at(c, 'type') === 'presOf').map(c => [at(c, 'destId'), at(c, 'srcId')]));
+        const mctx = { ...ctx, partPath: dm.target, rels: await rels(dm.target) };
+        L.model.walk(kidsS, shape => {
+          const id = shape.keep?.diagramPoint, point = points.get(id);
+          const source = points.get(at(kid(point, 'prSet'), 'presAssocID') || links.get(id)) || point;
+          const text = kid(source, 't');
+          if (shape.tx && hasMath(text) && !shape.tx.ps.some(p => p.rs.some(r => r.fld === 'math'))) shape.tx.ps = paragraphs(text, mctx);
+          return true;
+        });
+      }
       if (!kidsS.length) return withSa(await smartArtFromData(relIds, base, ctx));
       const g = Object.assign(base, { type: 'group', kids: kidsS, name: base.name || 'Diagram' });
       if (sa) g.sa = sa;
@@ -1648,7 +1703,8 @@
         if (type !== 'node' && type !== 'doc') continue;
         const tEl = kid(p, 't');
         const text = tEl ? kids(tEl, 'p').map((ap) => descAll(ap, 't').map((t) => t.textContent).join('')).join(' ').trim() : '';
-        pts.set(at(p, 'modelId'), { id: at(p, 'modelId'), type, text, kids: [] });
+        const ps = hasMath(tEl) ? paragraphs(tEl, { ...ctx, partPath: dmRel.target, rels: await rels(dmRel.target) }) : null;
+        pts.set(at(p, 'modelId'), { id: at(p, 'modelId'), type, text, ps, kids: [] });
       }
       const parent = new Map();
       for (const c of descAll(dm, 'cxn')) {
@@ -1699,9 +1755,12 @@
       const pending = [];
       const box = (x, y, bw, bh, text, sub, geom, o) => {
         o = o || {};
+        const rich = text?.ps, subRich = (sub || []).map(t => t?.ps);
+        text = text && typeof text === 'object' ? text.text : text;
+        sub = (sub || []).map(t => typeof t === 'object' ? t.text : t);
         const sh = { id: L.uid('s'), name: 'Diagram shape', type: 'shape', geom: geom || 'roundRect', x: X + x, y: Y + y, w: bw, h: bh, rot: 0, fill: o.fill || fillOf(o.i || 0), line: o.noLine ? { t: 'none' } : { c: lineC, w: 1.5 } };
         if (geom === 'roundRect' || !geom) sh.adj = { adj: 10000 };
-        pending.push({ sh, text, sub: sub || [], role: o.role || 'node', color: o.color || textC, w: bw * (o.textW || 1), h: o.textH || bh, algn: o.algn || 'ctr', anchor: o.anchor || 'ctr' });
+        pending.push({ sh, text, rich, sub, subRich, role: o.role || 'node', color: o.color || textC, w: bw * (o.textW || 1), h: o.textH || bh, algn: o.algn || 'ctr', anchor: o.anchor || 'ctr' });
         out.push(sh);
         return sh;
       };
@@ -1709,11 +1768,11 @@
       const connector = (x1, y1, x2, y2) => out.push({ id: L.uid('s'), name: 'Diagram connector', type: 'line', geom: 'line', x: X + Math.min(x1, x2), y: Y + Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1), rot: 0, flipH: x2 < x1, fill: { t: 'none' }, line: { c: fills.length ? fills[0].c : 'accent1', w: 1.5 } });
       const light = (i) => ({ t: 'solid', c: L.color.lighten(L.model.resolveColor(fillOf(i).c, ctx.design), 0.8), a: 1 });
       const n = tops.length;
-      const kidsText = (p) => p.kids.map((k) => k.text);
+      const kidsText = p => p.kids;
       const fam = kind.replace(/^.*\//, '').replace(/#.*$/, '');
       if (/chevron/.test(fam)) {
         const bw = W / (n - (n - 1) * 0.15), bh = Math.min(H, bw * 0.45), y = (H - bh) / 2;
-        tops.forEach((p, i) => box(i * bw * 0.85, y, bw, bh, p.text, kidsText(p), i === 0 && !/chevron2/.test(fam) ? 'homePlate' : 'chevron', { i, textW: 0.7 }));
+        tops.forEach((p, i) => box(i * bw * 0.85, y, bw, bh, p, kidsText(p), i === 0 && !/chevron2/.test(fam) ? 'homePlate' : 'chevron', { i, textW: 0.7 }));
       } else if (/^(hlist|lprocess|hprocess)/.test(fam)) {
         /* columns: a heading box with the children below it */
         const gap = Math.min(W / (n * 8), 16), bw = (W - gap * (n - 1)) / n;
@@ -1722,12 +1781,12 @@
           const x = i * (bw + gap);
           if (grouped) {
             const kidsP = p.kids, hh = H * 0.2, ch = (H - hh - gap * (kidsP.length + 1)) / Math.max(1, kidsP.length);
-            box(x, 0, bw, H, p.text, null, 'roundRect', { i, fill: light(i), color: 'dk1', role: 'head', anchor: 't', textH: hh });
-            kidsP.forEach((k, j) => box(x + bw * 0.1, hh + gap + j * (ch + gap), bw * 0.8, ch, k.text, null, 'roundRect', { i, role: 'child' }));
+            box(x, 0, bw, H, p, null, 'roundRect', { i, fill: light(i), color: 'dk1', role: 'head', anchor: 't', textH: hh });
+            kidsP.forEach((k, j) => box(x + bw * 0.1, hh + gap + j * (ch + gap), bw * 0.8, ch, k, null, 'roundRect', { i, role: 'child' }));
           } else {
             /* the body box is drawn even when it has no text, as Office does */
             const hh = H * 0.2;
-            box(x, 0, bw, hh, p.text, null, 'rect', { i, role: 'head' });
+            box(x, 0, bw, hh, p, null, 'rect', { i, role: 'head' });
             box(x, hh, bw, H - hh, '', kidsText(p), 'rect', { i, fill: light(i), color: 'dk1', role: 'child', algn: 'l', anchor: 't', noLine: true });
           }
         });
@@ -1738,36 +1797,36 @@
           const y = i * (bh + gap);
           if (/^vlist5/.test(fam)) {
             const hw = W * 0.3;
-            box(0, y, hw, bh, p.text, null, 'roundRect', { i, role: 'head' });
+            box(0, y, hw, bh, p, null, 'roundRect', { i, role: 'head' });
             if (p.kids.length) box(hw, y + bh * 0.08, W - hw, bh * 0.84, '', kidsText(p), 'rect', { i, fill: light(i), color: 'dk1', role: 'child', algn: 'l' });
           } else {
             const hh = p.kids.length ? bh * 0.45 : bh;
-            box(0, y, W, hh, p.text, null, 'roundRect', { i, role: 'head', algn: 'l' });
+            box(0, y, W, hh, p, null, 'roundRect', { i, role: 'head', algn: 'l' });
             if (p.kids.length) box(W * 0.03, y + hh, W * 0.97, bh - hh, '', kidsText(p), 'rect', { i, fill: { t: 'none' }, noLine: true, color: 'dk1', role: 'child', algn: 'l', anchor: 't' });
           }
         });
       } else if (/process|arrow/.test(fam)) {
         const gap = Math.min(W / (n * 4), 40), bw = (W - gap * (n - 1)) / n, bh = Math.min(H, bw * 0.75), y = (H - bh) / 2;
-        tops.forEach((p, i) => { box(i * (bw + gap), y, bw, bh, p.text, kidsText(p), 'roundRect', { i }); if (i < n - 1) arrow(i * (bw + gap) + bw + gap * 0.15, H / 2 - gap * 0.35, gap * 0.7, gap * 0.7); });
+        tops.forEach((p, i) => { box(i * (bw + gap), y, bw, bh, p, kidsText(p), 'roundRect', { i }); if (i < n - 1) arrow(i * (bw + gap) + bw + gap * 0.15, H / 2 - gap * 0.35, gap * 0.7, gap * 0.7); });
       } else if (/cycle|radial|target/.test(fam)) {
         const r = Math.min(W, H) / 2, bw = Math.min(r * 0.8, (2 * Math.PI * r * 0.55) / n), bh = bw * 0.6;
-        tops.forEach((p, i) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; box(W / 2 + (r - bw / 2) * Math.cos(a) - bw / 2, H / 2 + (r - bh / 2) * Math.sin(a) - bh / 2, bw, bh, p.text, null, 'ellipse', { i }); });
+        tops.forEach((p, i) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; box(W / 2 + (r - bw / 2) * Math.cos(a) - bw / 2, H / 2 + (r - bh / 2) * Math.sin(a) - bh / 2, bw, bh, p, null, 'ellipse', { i }); });
       } else if (/hierarchy|orgchart/.test(fam)) {
         const levels = [];
         const pos = new Map();
         const walk = (p, d) => { (levels[d] = levels[d] || []).push(p); for (const k of p.kids) walk(k, d + 1); };
         for (const t of tops) walk(t, 0);
         const lh = H / levels.length;
-        levels.forEach((row, d) => { const bw = Math.min((W / row.length) * 0.85, W * 0.3), gap = (W - bw * row.length) / (row.length + 1); row.forEach((p, i) => { const x = gap + i * (bw + gap), y = d * lh + lh * 0.12; box(x, y, bw, lh * 0.7, p.text, null, 'rect', { i: d, role: 'node' }); pos.set(p, { cx: x + bw / 2, top: y, bottom: y + lh * 0.7 }); }); });
+        levels.forEach((row, d) => { const bw = Math.min((W / row.length) * 0.85, W * 0.3), gap = (W - bw * row.length) / (row.length + 1); row.forEach((p, i) => { const x = gap + i * (bw + gap), y = d * lh + lh * 0.12; box(x, y, bw, lh * 0.7, p, null, 'rect', { i: d, role: 'node' }); pos.set(p, { cx: x + bw / 2, top: y, bottom: y + lh * 0.7 }); }); });
         /* connectors: down from the parent, across, and down to each child */
         for (const [p, pp] of pos) for (const k of p.kids) { const kp = pos.get(k); if (!kp) continue; const mid = (pp.bottom + kp.top) / 2; connector(pp.cx, pp.bottom, pp.cx, mid); connector(pp.cx, mid, kp.cx, mid); connector(kp.cx, mid, kp.cx, kp.top); }
         out.unshift(...out.splice(out.length - [...pos].reduce((a, [p]) => a + p.kids.filter((k) => pos.has(k)).length * 3, 0)));
       } else if (/pyramid/.test(fam)) {
         const bh = H / n;
-        tops.forEach((p, i) => { const bw = W * (i + 1) / n; box((W - bw) / 2, i * bh, bw, bh * 0.94, p.text, kidsText(p), 'rect', { i }); });
+        tops.forEach((p, i) => { const bw = W * (i + 1) / n; box((W - bw) / 2, i * bh, bw, bh * 0.94, p, kidsText(p), 'rect', { i }); });
       } else if (/matrix/.test(fam)) {
         const cols = 2, rows = Math.ceil(n / 2), gap = Math.min(W, H) * 0.04, bw = (W - gap) / cols, bh = (H - gap * (rows - 1)) / rows;
-        tops.forEach((p, i) => box((i % cols) * (bw + gap), Math.floor(i / cols) * (bh + gap), bw, bh, p.text, kidsText(p), 'roundRect', { i, algn: p.kids.length ? 'l' : 'ctr' }));
+        tops.forEach((p, i) => box((i % cols) * (bw + gap), Math.floor(i / cols) * (bh + gap), bw, bh, p, kidsText(p), 'roundRect', { i, algn: p.kids.length ? 'l' : 'ctr' }));
       } else if (/^(default|blist|snake)/.test(fam) || (!/^vlist/.test(fam) && n > 3 && tops.every((p) => !p.kids.length))) {
         /* Basic Block List: rows of 3:2 boxes, the last row centred */
         let best = null;
@@ -1781,11 +1840,11 @@
         tops.forEach((p, i) => {
           const r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols), c = i % cols;
           const left0 = (W - (inRow * bw + (inRow - 1) * gx)) / 2;
-          box(left0 + c * (bw + gx), top0 + r * (bh + gy), bw, bh, p.text, kidsText(p), 'rect', { i, algn: p.kids.length ? 'l' : 'ctr' });
+          box(left0 + c * (bw + gx), top0 + r * (bh + gy), bw, bh, p, kidsText(p), 'rect', { i, algn: p.kids.length ? 'l' : 'ctr' });
         });
       } else {
         const gap = Math.min(H / (n * 6), 8), bh = (H - gap * (n - 1)) / n;
-        tops.forEach((p, i) => box(0, i * (bh + gap), W, bh, p.text, kidsText(p), 'roundRect', { i }));
+        tops.forEach((p, i) => box(0, i * (bh + gap), W, bh, p, kidsText(p), 'roundRect', { i }));
       }
       /* the diagram's own background and outline (dgm:bg, dgm:whole) */
       const dbg = kid(dm, 'bg'), dwhole = kid(dm, 'whole');
@@ -1799,8 +1858,12 @@
       for (const it of pending) {
         const sz = Math.round(sizes.get(it.role) * 2) / 2;
         const lines = [];
-        if (it.text) lines.push(L.txt.para(it.text, { algn: it.algn }, { sz, color: it.color }));
-        for (const t of it.sub) lines.push(L.txt.para(t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, { sz: Math.round(sz * (it.text ? 0.85 : 1) * 2) / 2, color: it.color }));
+        if (it.rich) lines.push(...L.clone(it.rich));
+        else if (it.text) lines.push(L.txt.para(it.text, { algn: it.algn }, { sz, color: it.color }));
+        for (const [i, t] of it.sub.entries()) {
+          if (it.subRich[i]) lines.push(...L.clone(it.subRich[i]));
+          else lines.push(L.txt.para(t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, { sz: Math.round(sz * (it.text ? 0.85 : 1) * 2) / 2, color: it.color }));
+        }
         if (!lines.length) lines.push(L.txt.para('', { algn: 'ctr' }, { color: it.color }));
         it.sh.tx = L.txt.body(lines, { anchor: it.anchor === 't' ? 't' : 'ctr', ins: [5, 4, 5, 4] });
       }

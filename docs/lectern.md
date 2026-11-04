@@ -90,9 +90,50 @@ IntelliArt is Lectern's name for its diagrams; in the file they are Office Smart
 * **In the sample deck and templates:** the sample's "How we choose a city" is a Funnel; the templates use a Basic Chevron Process (Project Status Report), a Vertical Process agenda (Team Meeting), a Basic Radial (Lesson) and a Basic Timeline (Event Announcement). Decks built in code use `L.diagram.make(pres, slide, placeholder or box, layout, lines)`, where a tab before a line makes it a sub-item.
 * **SmartArt PowerPoint made** in a layout we also have (Office's `default`, `orgChart1`, `hierarchy1`/`2`, `vList2`, `hList1`, `process1`/`2`, `chevron1`, `hProcess11`, `cycle2`/`3`, `radial1`, `venn1`/`3`, `target1`, `funnel1`, `matrix1`, `pyramid1`/`2`/`3`; `OFFICE` in `smartart-io.js`) opens as an editable diagram: its items, colours and style are read from the file, and it is shown and saved exactly as PowerPoint made it until its items are edited here (text pane, typing in a shape, Add Shape, a gallery). From then on it is laid out and saved with our layout of the same name (a toast says so when it happens; the save records the change). Changed only as shapes (moved, a shape recoloured, ungrouped), it is kept or converted as other SmartArt is. Diagrams with picture-filled shapes stay as they came. Each item is one paragraph of plain text here, so an item with several paragraphs is joined into one line when the diagram is first edited, and an org chart's assistants become ordinary members.
 * **Other SmartArt** (layouts we do not have) is shown and kept as before (*Opaque frames*); editing its contents converts it to shapes, with a notice.
+* **Equations in imported diagrams** stay as opaque `a14:m` runs, including when a diagram is converted to shapes. They move, copy and survive undo/redo and drafts as a unit; typing before or after one adds ordinary text without changing its formula. Their internals are read-only in Lectern. Diagrams containing equations keep their imported shapes instead of entering the plain-text IntelliArt pane. The browser preview draws text, superscripts and subscripts; other equation structures have a linear preview. When edited contents become ordinary shapes, the existing conversion notice identifies the slide and its audit detail lists the diagram parts actually removed. In the `tdf131553` reduction, PowerPoint 2016 now retains all four equation text tokens after conversion, previously zero; placement still differs by up to 1.19 pt from the original diagram (2026-11-04).
 * **Measured on the corpus** (2026-10-10, `tests/lectern/smartart-office.py`): of the 43 decks with a mapped layout (50 of their 84 diagrams open editable), every unedited save keeps every diagram part byte-identical; editing one diagram in each (42 decks) gives saves with no new `package.py` findings and no Open XML SDK diagnostics, and each reopens with that diagram editable. LibreOffice draws the edited diagrams.
 
 Checked (2026-10-10): a deck with one diagram per layout (26) passes the Open XML SDK validator and `package.py`; LibreOffice 25.2 draws every one from the saved drawing (upside-down layers are drawn as outlines so their text stays upright); reopened in Lectern all 26 are editable, and editing one rewrites only its parts (the other 25 byte-identical). With the first ten, LibreOffice also re-saved them as SmartArt and Lectern reopened that copy with all ten editable. PowerPoint opened our hand-written process diagram with and without the drawing and edited it (text pane, Add Shape, Change Colors); PowerPoint lays SmartArt out from the definition, never from the saved drawing, so each diagram is saved with a definition that places its shapes where Lectern draws them (progress and the PowerPoint rounds: [smartart.md](smartart.md)).
+
+## Tables
+
+Table cells retain PowerPoint's text direction (`a:tcPr/@vert`), including explicit horizontal and
+absent defaults, through text edits, copies, undo/redo and draft recovery. `vert` and `vert270` draw
+as rotated text frames. East Asian and Mongolian vertical text use the browser's vertical writing;
+stacked WordArt text uses upright glyphs. Those modes approximate Office's glyph shaping and spacing,
+while the original direction value is saved unchanged. Measured on the five affected public corpus
+decks (2026-11-04): all 11 non-horizontal cells survive, previously zero.
+
+Right-to-left tables retain `a:tblPr/@rtl` and show their columns in reading order, independently
+of paragraph direction. Clicking, dragging a cell range and Tab use the same logical cell identities.
+All 10 RTL tables in the affected `stress021` corpus deck now keep the flag, previously zero.
+
+Table style links and embedded definitions remain attached through text edits, copies, history and
+drafts. Header and banding formatting stays inherited, so changing the style later in PowerPoint
+still applies. Copying into a deck with a different definition for the same style gives the imported
+definition its own stable ID. All 183 links in the 54 affected corpus decks now survive (2026-11-04).
+
+Table fills and borders keep their theme colour and colour transforms rather than saving the resolved
+RGB value. A border-width edit preserves its colour; choosing a different explicit colour replaces it.
+Retained table colours follow theme changes in the renderer, and survive copies, history and drafts.
+The eight affected public corpus decks now have zero of the 5,492 scheme-to-RGB conversions measured
+before this fix (2026-11-04).
+
+Unchanged column widths, row heights and cell margins retain their original EMU values; absent
+margins stay absent. Editing one dimension changes only that dimension. In the two measured source
+decks, all 38 widths, 66 heights and 912 margin attributes/defaults survive exactly. PowerPoint 2016
+PDFs of the RTL and vertical reductions now match their originals at 50 and 144 dpi: the previous
+580-pixel RTL difference came from left-margin rounding, and the 130-pixel vertical difference from
+row-height rounding (2026-11-04).
+
+The final preservation audit (2026-11-04) covered 744 PowerPoint input paths and 6,696 save,
+repeat-save, edit and history cases: 5,554 passed, 1,132 had no applicable edit, and 10 repeated
+known failures (nine scenarios on one unreadable input, plus one text-edit timeout). Among 726
+comparable saves, all measured table directions, RTL flags and style links survive, with no new
+package-checker findings. Repeat-save drift remains in the same 540 files with the same causes.
+The edit comparison adds only the restored equation to its existing changes outside the edited
+object; it introduces no new such loss. Formula previews and conversion placement retain the
+limits described under *IntelliArt (SmartArt)*.
 
 ## Slide size
 

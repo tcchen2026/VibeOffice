@@ -53,7 +53,7 @@
       s.keep ||= { source: pkg.id, part };
       s.keep.frame = { fragment: JSON.parse(JSON.stringify(fragment)), label: src.label, related, localBox: K.getBox(K.raw(working)) };
       // After ungrouping, the children still explain the conversion of their original frame.
-      L.model.walk(s.kids || [], child => { child.keep ||= {}; child.keep.frameOrigin = { key: fragment.key, label: src.label, part }; return true; });
+      L.model.walk(s.kids || [], child => { child.keep ||= {}; child.keep.frameOrigin = { key: fragment.key, label: src.label, part, source: pkg.id, rels: [...fragment.deps, ...related].map(d => d.id) }; return true; });
     }
   };
   function containers(pres, visit) {
@@ -159,6 +159,35 @@
   };
   const savedAs = (label, notKept) => (SAVED_AS[label] || SAVED_AS.IntelliArt)[notKept ? 1 : 0];
   const slidePlace = (pres, part) => { const i = pres.slides.findIndex(s => s.keep?.part === part); return i < 0 ? undefined : L.t ? L.t('Slide {0}', i + 1) : 'Slide ' + (i + 1); };
+  function trackConversion(writer, notice, record) {
+    if (record.label !== 'IntelliArt') return;
+    const f = record.fragment, pkg = K.package(f?.source || record.source) || writer.pkg;
+    if (!pkg) return;
+    const deps = f ? [...f.deps, ...(record.related || [])] : pkg.rels(record.part).filter(r => record.rels?.includes(r.id));
+    const parts = new Set(), pending = deps.filter(d => !d.external && d.part).map(d => d.part);
+    while (pending.length) {
+      const part = pending.pop(); if (parts.has(part) || !pkg.has(part)) continue;
+      parts.add(part); if (pkg.has(K.relsPath(part))) parts.add(K.relsPath(part));
+      for (const rel of pkg.rels(part)) if (!rel.external) pending.push(rel.part);
+    }
+    (writer.diagramConversions ||= new Map()).set(notice.id, { pkg, parts });
+  }
+  // The existing shown notice describes the lost diagram editability. Its audit
+  // detail names exactly which source parts the finished conversion removed;
+  // parts still used by another object are never reported as removed.
+  F.reportConversions = function (writer) {
+    for (const [id, { pkg, parts }] of writer.diagramConversions || []) {
+      const notice = writer.doc.losses.find(n => n.id === id); if (!notice) continue;
+      const removedParts = [], retainedParts = [];
+      for (const part of parts) {
+        const owner = part.endsWith('.rels') ? K.owner(part) : part;
+        let target = writer.mapping.get(writer.key(pkg, owner)) || owner;
+        if (part.endsWith('.rels')) target = K.relsPath(target);
+        (writer.parts.has(target) ? retainedParts : removedParts).push(part);
+      }
+      notice.detail = JSON.stringify({ removedParts: removedParts.sort(), retainedParts: retainedParts.sort(), ...(notice.detail ? { reason: notice.detail } : {}) });
+    }
+  };
   F.prepare = function (pres, writer) {
     const groups = new Map(), seen = new Set(), converted = new Map();
     containers(pres, list => {
@@ -179,7 +208,10 @@
     }
     for (const record of [...(pres.keep?.frames || []), ...converted.values()]) if (!seen.has(record.key)) {
       // Removed objects were deleted by the user; converted ones were ungrouped or edited
-      if (converted.has(record.key)) writer.loss({ id: 'frame:' + record.key, what: savedAs(record.label, false), where: record.part, place: slidePlace(pres, record.part), action: 'conversion', notify: true });
+      if (converted.has(record.key)) {
+        const notice = writer.loss({ id: 'frame:' + record.key, what: savedAs(record.label, false), where: record.part, place: slidePlace(pres, record.part), action: 'conversion', notify: true });
+        trackConversion(writer, notice, record);
+      }
       else writer.loss({ id: 'frame:' + record.key, what: record.label + ' was removed.', where: record.part, action: 'drop', notify: false });
     }
     return groups;
@@ -314,8 +346,11 @@
     const record = shape.keep?.frame; if (!record) return null;
     const group = ctx.frames?.get(key(record.fragment)), control = record.label === 'ActiveX control';
     // a control the file gave no picture is saved as an empty frame, whatever the reason
-    const loss = (what, error) => ctx.writer.loss({ id: 'frame:' + key(record.fragment), what: control && !shape.media ? 'This ActiveX control has no picture, so it will be saved as an empty frame and stop working.' : what,
-      detail: error?.message, where: ctx.part, place: ctx.place, action: 'conversion', notify: !K.sourceMissing(error) });
+    const loss = (what, error) => {
+      const notice = ctx.writer.loss({ id: 'frame:' + key(record.fragment), what: control && !shape.media ? 'This ActiveX control has no picture, so it will be saved as an empty frame and stop working.' : what,
+        detail: error?.message, where: ctx.part, place: ctx.place, action: 'conversion', notify: !K.sourceMissing(error) });
+      trackConversion(ctx.writer, notice, record);
+    };
     if (!group?.intact) { loss(savedAs(record.label, false)); return null; }
     if (group.emitted) return '';
     if (control) {

@@ -227,6 +227,10 @@ class Package:
             for el, path, branches in walk(root):
                 ns, tag = split(el.tag)
                 parent = parents.get(el)
+                # PowerPoint 2016 refuses a table style list without its required
+                # default, even if every table names an embedded style explicitly.
+                if ns in A and tag == 'tblStyleLst' and 'def' not in el.attrib:
+                    self.issue('table-style-default', part, 'Table style list needs its default style ID (a built-in style need not be embedded).', path)
                 if ns in A and tag == 'graphicData' and el.get('uri') == 'urn:vibeoffice:test:unread':
                     # Batch 7: our unguarded synthetic frame repairs in Office,
                     # even in its original fixture. Do not reject unfamiliar

@@ -315,11 +315,14 @@
   T.plain = (tx) => (tx && tx.ps ? tx.ps.map(T.paraText).join('\n') : '');
   T.isEmpty = (tx) => !tx || !tx.ps || tx.ps.every((p) => !T.paraText(p).length);
   T.RUN_KEYS = ['b', 'i', 'u', 'strike', 'sz', 'font', 'fontEA', 'color', 'base', 'shd', 'shdX', 'link', 'fld', 'spc', 'cap', 'fill', 'ln', 'hl', 'emb', 'keep'];
-  T.runProps = (r) => { const o = {}; for (const k of T.RUN_KEYS) if (r[k] !== undefined && k !== 'fld') o[k] = r[k]; return o; };
+  T.runProps = (r) => { const o = {}; for (const k of T.RUN_KEYS) if (r[k] !== undefined && k !== 'fld' && !(k === 'keep' && r.fld === 'math')) o[k] = r[k]; return o; };
   T.sameProps = (a, b) => L.equal(T.runProps(a), T.runProps(b)) && !a.fld && !b.fld;
   T.normalize = (p) => {
     const out = [];
     for (const r of p.rs) {
+      // Typing next to an atomic equation may inherit a DOM span's properties,
+      // but its opaque payload belongs only to the equation itself.
+      if (r.fld !== 'math' && r.keep?.math) { r.keep = { ...r.keep }; delete r.keep.math; if (!Object.keys(r.keep).length) delete r.keep; }
       if (!r.fld && !r.t && !r.keep) continue;
       const prev = out[out.length - 1];
       if (prev && T.sameProps(prev, r)) prev.t += r.t;

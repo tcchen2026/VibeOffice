@@ -10,6 +10,12 @@
   const same = (a, b) => JSON.stringify(plain(a)) === JSON.stringify(plain(b));
   const replace = (xml, el, next) => { const p = X.source.get(el); return K.patch(xml, [{ start: p.start, end: p.end, value: next }]); };
   const fillNames = 'noFill solidFill gradFill blipFill pattFill grpFill';
+  // Table-specific property orders, used by the shared property merger.
+  // Office tables put borders before the cell fill; a line puts its paint before dash/join/ends.
+  K.schema.types['a:CT_LineProperties'] ||= [fillNames.split(' ').map(n => 'a:' + n), ['a:prstDash', 'a:custDash'], ['a:round', 'a:bevel', 'a:miter'], ['a:headEnd'], ['a:tailEnd'], ['a:extLst']];
+  K.schema.types['a:CT_TableCellProperties'] ||= ['lnL', 'lnR', 'lnT', 'lnB', 'lnTlToBr', 'lnBlToTr', 'cell3D'].map(n => ['a:' + n]).concat([fillNames.split(' ').map(n => 'a:' + n), ['a:extLst']]);
+  K.schema.types['a:CT_TableProperties'] ||= [fillNames.split(' ').map(n => 'a:' + n), ['a:effectLst', 'a:effectDag'], ['a:tableStyle', 'a:tableStyleId'], ['a:extLst']];
+  const tableFields = { firstRow: '@firstRow', lastRow: '@lastRow', firstCol: '@firstCol', lastCol: '@lastCol', bandRow: '@bandRow', bandCol: '@bandCol', rtl: '@rtl', styleId: 'tableStyleId tableStyle' };
   const GEOMETRY = ['x', 'y', 'w', 'h', 'rot', 'flipH', 'flipV'];
   const shapeFields = [...GEOMETRY, 'type', 'fill', 'line', 'shadow', 'geom', 'adj', 'path', 'crop', 'img', 'media', 'svgMedia', 'linkUrl', 'lockAspect', 'ph', 'wa'];
   function snapshot(o, fields) { return Object.fromEntries(fields.map(k => [k, plain(o[k])])); }
@@ -63,7 +69,8 @@
       seen.add(o);
       const keep = o.keep;
       if (keep?.kind) {
-        const before = plain(o); delete before.t; delete before.ps;
+        const before = keep.kind === 'cell' ? snapshot(o, ['fill', 'bd']) : keep.kind === 'table' ? snapshot(o, Object.keys(tableFields)) : plain(o); delete before.t; delete before.ps;
+        if (keep.kind === 'cell') before.ins = plain(o.tx?.ins);
         if (keep.kind === 'para') before.lvl = keep.before.lvl;
         keep.before = before;
         if (keep.list) keep.listBefore = plain(o.lst);
@@ -141,6 +148,94 @@
     return K.patch(xml, edits);
   };
   Q.list = (tx, ctx, generated) => ctx?.writer && tx.keep?.list && same(tx.lst, tx.keep.listBefore) ? Q.emit(tx.keep.list, ctx) ?? generated : generated;
+  const cellPaintTrees = new WeakMap();
+  Q.cellPaint = function (cell, design) {
+    const out = { fill: cell.fill, bd: cell.bd || {} }, keep = cell.keep;
+    if (keep?.kind !== 'cell' || !keep.fragment) return out;
+    let tree = cellPaintTrees.get(keep);
+    if (!tree) { tree = K.parse(keep.fragment.xml); cellPaintTrees.set(keep, tree); }
+    const theme = el => {
+      const c = kid(el, 'schemeClr'); if (!c) return null;
+      const slot = c.getAttribute('val'), base = L.model.resolveColor(keep.colorMap?.[slot] || slot, design);
+      return L.color.applyMods(base, kids(c).filter(e => !/^alpha/.test(e.localName)).map(e => ({ name: e.localName, val: +(e.getAttribute('val') || 0) })));
+    };
+    const repaint = (paint, parent) => {
+      const el = kids(parent).find(e => fillNames.split(' ').includes(e.localName));
+      if (!paint || !el) return paint;
+      if (paint.t === 'solid') { const c = theme(el); return c ? { ...paint, c } : paint; }
+      if (paint.t === 'grad') return { ...paint, stops: paint.stops.map((s, i) => ({ ...s, c: theme(kids(kid(el, 'gsLst'))[i]) || s.c })) };
+      if (paint.t === 'patt') return { ...paint, fg: theme(kid(el, 'fgClr')) || paint.fg, bg: theme(kid(el, 'bgClr')) || paint.bg };
+      return paint;
+    };
+    if (same(cell.fill, keep.before.fill)) out.fill = repaint(cell.fill, tree);
+    out.bd = { ...out.bd };
+    for (const [edge, tag] of [['l', 'lnL'], ['r', 'lnR'], ['t', 'lnT'], ['b', 'lnB']]) {
+      const b = out.bd[edge], old = keep.before.bd?.[edge];
+      if (b && old && ['c', 'a', 't'].every(k => same(b[k], old[k]))) {
+        const c = theme(kid(kid(tree, tag), 'solidFill'));
+        if (c) out.bd[edge] = { ...b, c };
+      }
+    }
+    return out;
+  };
+  Q.cell = function (cell, ctx, generated) {
+    const keep = cell.keep;
+    if (!ctx?.writer || keep?.kind !== 'cell' || !keep.fragment) return generated;
+    const xml = Q.emit(keep.fragment, ctx); if (xml == null) return generated;
+    const old = K.parse(xml), fresh = K.parse('<root xmlns:a="' + N.a + '">' + generated + '</root>').children[0];
+    const changes = {}, before = keep.before;
+    const fill = kids(old).find(e => fillNames.split(' ').includes(e.localName));
+    if (same(cell.fill, before.fill)) {
+      for (const name of fillNames.split(' ')) changes['{' + N.a + '}' + name] = name === fill?.localName ? raw(fill) : '';
+    }
+    for (const [edge, name] of [['l', 'lnL'], ['r', 'lnR'], ['t', 'lnT'], ['b', 'lnB']]) {
+      const a = kid(old, name), b = kid(fresh, name);
+      if (!a && same(cell.bd?.[edge], before.bd?.[edge])) changes['{' + N.a + '}' + name] = '';
+      if (a && b) changes['{' + N.a + '}' + name] = L.designs.property(raw(a), raw(b), cell.bd?.[edge], before.bd?.[edge], {
+        t: fillNames, c: fillNames, a: fillNames, w: '@w', cap: '@cap', cmpd: '@cmpd', dash: 'prstDash custDash', join: 'round bevel miter', head: 'headEnd', tail: 'tailEnd',
+      }, 'a:CT_LineProperties');
+    }
+    const margins = {};
+    for (const [i, name] of ['marL', 'marT', 'marR', 'marB'].entries()) {
+      if (cell.tx?.ins?.[i] === before.ins?.[i]) margins[name] = old.getAttribute(name);
+    }
+    return K.merge(K.attributes(raw(fresh), margins), changes, 'a:CT_TableCellProperties');
+  };
+  Q.table = function (table, ctx, generated) {
+    const keep = table.keep;
+    if (!ctx?.writer || keep?.kind !== 'table') return generated;
+    const xml = Q.emit(keep.fragment, ctx); if (xml == null) return generated;
+    const current = { ...table, styleId: ctx.writer.tableStyleIds?.get(table) || table.styleId };
+    const fresh = raw(K.parse('<root xmlns:a="' + N.a + '">' + generated + '</root>').children[0]);
+    return L.designs.property(xml, fresh, current, keep.before, tableFields, 'a:CT_TableProperties');
+  };
+  Q.prepareTables = function (pres, pack) {
+    const writer = pack.writer, pkg = pres.pkg;
+    const sourcePart = pkg?.rels(pkg.main).find(r => /\/tableStyles$/.test(r.type) && !r.external)?.part;
+    const original = sourcePart && pkg.text(sourcePart);
+    const root = K.parse(original || '<a:tblStyleLst xmlns:a="' + N.a + '" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>');
+    const styles = new Map(kids(root).filter(e => e.localName === 'tblStyle').map(e => [e.getAttribute('styleId').toUpperCase(), e]));
+    const value = e => JSON.stringify([e.namespaceURI, e.localName, Array.from(e.attributes).filter(a => a.name !== 'xmlns' && a.prefix !== 'xmlns').map(a => [a.name, a.value]).sort(), kids(e).length ? kids(e).map(value) : e.textContent]);
+    const added = [], imported = new Map(); writer.tableStyleIds = new WeakMap();
+    for (const list of Q.lists(pres)) L.model.walk(list, shape => {
+      const t = shape.tbl, f = t?.keep?.styleDefinition;
+      if (!f || t.styleId !== t.keep.before.styleId) return true;
+      const key = f.source + ':' + t.styleId, definition = K.parse(f.xml);
+      if (imported.has(key)) { writer.tableStyleIds.set(t, imported.get(key)); return true; }
+      let id = t.styleId, existing = styles.get(id.toUpperCase());
+      if (existing && f.source !== pkg?.id && value(existing) !== value(definition)) {
+        id = t.keep.styleCopyId ||= K.guid(); existing = styles.get(id.toUpperCase());
+      }
+      if (!existing) {
+        const xml = K.attributes(Q.emit(f, { writer, part: pack.part('ppt/tableStyles.xml') }), { styleId: id });
+        added.push(xml); styles.set(id.toUpperCase(), K.parse(xml));
+      }
+      imported.set(key, id); writer.tableStyleIds.set(t, id); return true;
+    });
+    if (!added.length) return null;
+    if (sourcePart) pack.bind('ppt/tableStyles.xml', sourcePart, 'regenerated');
+    return K.mergeBag(raw(root), { __append: added });
+  };
   Q.apply = function (shape, ctx, generated) {
     const keep = shape.keep?.properties; if (!keep?.before || !ctx.writer) return generated;
     const before = keep.before, changed = k => !same(shape[k], before[k]);

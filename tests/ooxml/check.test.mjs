@@ -63,6 +63,11 @@ test('PowerPoint graphic frames cannot carry DrawingML rotation or flips', async
   const bad = run('check', await pkg('rotated-frame', { 'slide.xml': frame(' rot="60000" flipH="0" flipV="1"') }));
   assert(bad.issues.some(i => i.code === 'graphic-frame-orientation'));
 });
+test('PowerPoint table style lists name their default style even when it is built in', async () => {
+  const styles = attr => ({ 'ppt/tableStyles.xml': `<a:tblStyleLst xmlns:a="${A}"${attr}/>` });
+  assert.equal(run('check', await pkg('table-style-default', styles(' def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"'))).status, 'ok');
+  assert.ok(run('check', await pkg('table-style-no-default', styles(''))).issues.some(i => i.code === 'table-style-default'));
+});
 test('synthetic unread graphics need an unsupported compatibility choice with a fallback', async () => {
   const graphic = '<p:graphicFrame><a:graphic><a:graphicData uri="urn:vibeoffice:test:unread"><probe:object xmlns:probe="urn:vibeoffice:test:unread"/></a:graphicData></a:graphic></p:graphicFrame>';
   const check = async (name, xml) => run('check', await pkg(name, { 'slide.xml': slide(xml) }));

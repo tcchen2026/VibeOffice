@@ -238,6 +238,18 @@
     const parts = String(text).split('\n');
     parts.forEach((t, i) => { if (i) el.appendChild(h('br')); if (t) el.appendChild(document.createTextNode(t)); });
   }
+  const mathTrees = new WeakMap();
+  function appendMath(el, fragment) {
+    let root = mathTrees.get(fragment);
+    if (!root) { root = L.opc.parse(fragment.xml); mathTrees.set(fragment, root); }
+    const mathNS = 'http://schemas.openxmlformats.org/officeDocument/2006/math';
+    const add = (node, parent) => {
+      if (node.namespaceURI === mathNS && node.localName === 't') { appendText(parent, node.textContent); return; }
+      if (node.namespaceURI === mathNS && ['sup', 'sub'].includes(node.localName)) { const child = h(node.localName); parent.appendChild(child); parent = child; }
+      for (const child of node.children) add(child, parent);
+    };
+    add(root, el);
+  }
   /**
    * Render paragraphs into a container. Returns the container.
    * opts: {scale, prompt(string), editMode}
@@ -298,11 +310,13 @@
           const rp = L.style.run(ps, r);
           const sp = h('span', { class: 'r' });
           const own = L.txt.runProps(r);
+          if (r.fld === 'math') own.keep = r.keep;
           if (Object.keys(own).length) sp.dataset.r = JSON.stringify(own);
           if (r.fld) { sp.dataset.fld = r.fld; sp.contentEditable = 'false'; }
           R.runStyle(sp, rp, design, ctx, scale);
           if (r.link) sp.dataset.link = JSON.stringify(r.link);
-          appendText(sp, r.fld ? fieldText(r, ctx) : r.t);
+          if (r.fld === 'math' && r.keep?.math) appendMath(sp, r.keep.math);
+          else appendText(sp, r.fld ? fieldText(r, ctx) : r.t);
           el.appendChild(sp);
         }
         if (/\n$/.test(L.txt.paraText(p))) el.appendChild(h('br'));
@@ -461,6 +475,7 @@
   function tableEl(sh, design, ctx, opts) {
     const t = sh.tbl;
     const tbl = h('table', { class: 'tbl' });
+    if (t.rtl) tbl.style.direction = 'rtl';
     tbl.style.width = L.round(t.cols.reduce((a, b) => a + b, 0), 2) + 'px';
     const cg = h('colgroup');
     for (const w of t.cols) cg.appendChild(h('col', { style: `width:${L.round(w, 2)}px` }));
@@ -477,18 +492,35 @@
       row.cells.forEach((cell, ci) => {
         if (cell.hm || cell.vm) return;
         const td = h('td');
+        // Column order is independent of the text direction of each paragraph.
+        if (t.rtl) td.style.direction = 'ltr';
         td.dataset.r = ri; td.dataset.c = ci;
         if (cell.gs > 1) td.colSpan = cell.gs;
         if (cell.rs > 1) td.rowSpan = cell.rs;
         const ins = (cell.tx && cell.tx.ins) || [7.2, 3.6, 7.2, 3.6];
         td.style.padding = `${L.round(ins[1], 2)}px ${L.round(ins[2], 2)}px ${L.round(ins[3], 2)}px ${L.round(ins[0], 2)}px`;
         td.style.verticalAlign = cell.tx && cell.tx.anchor === 'ctr' ? 'middle' : cell.tx && cell.tx.anchor === 'b' ? 'bottom' : 'top';
-        td.style.background = R.fillCSS(cell.fill, design);
-        const bd = cell.bd || {};
+        const paint = L.properties.cellPaint(cell, design);
+        td.style.background = R.fillCSS(paint.fill, design);
+        const bd = paint.bd;
         td.style.borderLeft = bdCSS(bd.l); td.style.borderRight = bdCSS(bd.r); td.style.borderTop = bdCSS(bd.t); td.style.borderBottom = bdCSS(bd.b);
-        const inner = h('div', { class: 'txi' });
-        R.paragraphs(sh, cell.tx || L.txt.body(), design, ctx, inner, {});
-        td.appendChild(inner);
+        const tx = cell.tx || L.txt.body();
+        if (tx.vert && tx.vert !== 'horz') {
+          const w = t.cols.slice(ci, ci + (cell.gs || 1)).reduce((a, b) => a + b, 0);
+          const h = t.rows.slice(ri, ri + (cell.rs || 1)).reduce((a, r) => a + r.h, 0);
+          td.style.padding = '0';
+          const body = R.textBody(sh, tx, design, ctx, [0, 0, w, h], {});
+          if (tx.vert !== 'vert' && tx.vert !== 'vert270') {
+            // Browser vertical writing approximates Office's stacked/East Asian modes.
+            Object.assign(body.style, { transform: '', left: ins[0] + 'px', top: ins[1] + 'px', width: Math.max(0, w - ins[0] - ins[2]) + 'px', height: Math.max(0, h - ins[1] - ins[3]) + 'px', writingMode: tx.vert === 'mongolianVert' ? 'vertical-lr' : 'vertical-rl' });
+            if (/^wordArtVert/.test(tx.vert)) body.style.textOrientation = 'upright';
+          }
+          td.appendChild(body);
+        } else {
+          const inner = h('div', { class: 'txi' });
+          R.paragraphs(sh, tx, design, ctx, inner, {});
+          td.appendChild(inner);
+        }
         tr.appendChild(td);
       });
       tbl.appendChild(tr);

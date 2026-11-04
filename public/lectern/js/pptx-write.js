@@ -198,6 +198,7 @@
       x += pPrXML(p.pp || {}, 'a:pPr', p.lvl || 0, ctx, design, false) || '';
       for (const r of p.rs) {
         const props = L.txt.runProps(r);
+        if (r.fld === 'math' && r.keep?.math) { x += L.properties.emit(r.keep.math, ctx) || `<a:r>${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:r>`; continue; }
         if (r.fld) { x += `<a:fld id="${ctx.fieldId ? ctx.fieldId() : K.guid()}" type="${X(r.fld)}">${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:fld>`; continue; }
         const parts = String(r.t).split('\n');
         parts.forEach((t, i) => {
@@ -315,9 +316,10 @@
   }
   function tableXML(sh, id, ctx, design) {
     const t = sh.tbl;
-    const grid = t.cols.map((w) => `<a:gridCol w="${emu(w)}"/>`).join('');
+    const size = (v, original) => original && v === original.pt ? original.emu : emu(v);
+    const grid = t.cols.map((w, i) => `<a:gridCol w="${size(w, t.keep?.gridWidths?.[i])}"/>`).join('');
     const bd = (b, tag) => lineXML(b && b.c && b.t !== 'none' ? b : { t: 'none', w: 1 }, design, tag);
-    const rows = t.rows.map((r) => `<a:tr h="${emu(r.h)}">` + r.cells.map((c) => {
+    const rows = t.rows.map((r) => `<a:tr h="${size(r.h, r.keep?.height)}">` + r.cells.map((c) => {
       const a = [];
       if (c.gs > 1) a.push(`gridSpan="${c.gs}"`);
       if (c.rs > 1) a.push(`rowSpan="${c.rs}"`);
@@ -326,10 +328,13 @@
       const tx = c.tx || L.txt.body();
       const ins = tx.ins || [7.2, 3.6, 7.2, 3.6];
       const ps = tx.ps && tx.ps.length ? tx.ps : [L.txt.para('')];
-      const tcPr = `<a:tcPr marL="${emu(ins[0])}" marR="${emu(ins[2])}" marT="${emu(ins[1])}" marB="${emu(ins[3])}" anchor="${tx.anchor || 't'}">${bd(c.bd && c.bd.l, 'a:lnL')}${bd(c.bd && c.bd.r, 'a:lnR')}${bd(c.bd && c.bd.t, 'a:lnT')}${bd(c.bd && c.bd.b, 'a:lnB')}${fillXML(c.fill || { t: 'none' }, ctx, design) || '<a:noFill/>'}</a:tcPr>`;
-      return `<a:tc${a.length ? ' ' + a.join(' ') : ''}><a:txBody><a:bodyPr/>${lstStyleXML(null)}${parasXML(ps, ctx, design)}</a:txBody>${tcPr}</a:tc>`;
+      const tcPr = `<a:tcPr marL="${emu(ins[0])}" marR="${emu(ins[2])}" marT="${emu(ins[1])}" marB="${emu(ins[3])}" anchor="${tx.anchor || 't'}"${tx.vert ? ` vert="${X(tx.vert)}"` : ''}>${bd(c.bd && c.bd.l, 'a:lnL')}${bd(c.bd && c.bd.r, 'a:lnR')}${bd(c.bd && c.bd.t, 'a:lnT')}${bd(c.bd && c.bd.b, 'a:lnB')}${fillXML(c.fill || { t: 'none' }, ctx, design) || '<a:noFill/>'}</a:tcPr>`;
+      return `<a:tc${a.length ? ' ' + a.join(' ') : ''}><a:txBody><a:bodyPr/>${lstStyleXML(null)}${parasXML(ps, ctx, design)}</a:txBody>${L.properties.cell(c, ctx, tcPr)}</a:tc>`;
     }).join('') + '</a:tr>').join('');
-    return `<p:graphicFrame><p:nvGraphicFramePr>${cNvPr(id, sh, ctx)}<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>${phXML(sh.ph)}</p:nvGraphicFramePr>${xfrm(sh, 'p:xfrm')}<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr firstRow="${t.firstRow ? 1 : 0}" bandRow="${t.bandRow ? 1 : 0}"/><a:tblGrid>${grid}</a:tblGrid>${rows}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
+    const styleId = ctx.writer?.tableStyleIds?.get(t) || t.styleId;
+    const flags = ['firstRow', 'lastRow', 'firstCol', 'lastCol', 'bandRow', 'bandCol', 'rtl'].filter(k => t[k] != null).map(k => ` ${k}="${t[k] ? 1 : 0}"`).join('');
+    const tblPr = L.properties.table(t, ctx, `<a:tblPr${flags}>${styleId ? `<a:tableStyleId>${X(styleId)}</a:tableStyleId>` : ''}</a:tblPr>`);
+    return `<p:graphicFrame><p:nvGraphicFramePr>${cNvPr(id, sh, ctx)}<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>${phXML(sh.ph)}</p:nvGraphicFramePr>${xfrm(sh, 'p:xfrm')}<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl>${tblPr}<a:tblGrid>${grid}</a:tblGrid>${rows}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
   }
   function wordartXML(sh, id, ctx, design) {
     const wa = sh.wa || {};
@@ -787,6 +792,7 @@
     const mainCT = format.contentType;
     const presRels = pack.rels('ppt/presentation.xml');
     const frames = L.frames.prepare(pres, writer);
+    const tableStyles = L.properties.prepareTables(pres, pack);
     const mediaMap = new Map(); /* media id → {name} */
     let chartN = 0;
     const charts = [];
@@ -1107,7 +1113,7 @@
     overrides.push(['/ppt/presProps.xml', CT.presProps]);
     add('ppt/viewProps.xml', HEAD + `<p:viewPr ${NSDECL}><p:normalViewPr><p:restoredLeft sz="15620"/><p:restoredTop sz="94660"/></p:normalViewPr><p:gridSpacing cx="76200" cy="76200"/></p:viewPr>`);
     overrides.push(['/ppt/viewProps.xml', CT.viewProps]);
-    add('ppt/tableStyles.xml', HEAD + `<a:tblStyleLst xmlns:a="${NS_A}" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>`);
+    add('ppt/tableStyles.xml', tableStyles || HEAD + `<a:tblStyleLst xmlns:a="${NS_A}" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>`);
     overrides.push(['/ppt/tableStyles.xml', CT.tableStyles]);
 
     /* document properties */
@@ -1134,6 +1140,7 @@
     const types = new Map(overrides.map(([name, type]) => [name.slice(1), type]));
     for (const file of files) pack.put(file.name, file.data, types.get(file.name) || defaults.get(file.name.split('.').pop()));
     const result = pack.finish();
+    L.frames.reportConversions(writer);
     const blob = await L.zip.write(result.files, mime);
     blob.dropped = result.dropped;
     /* a password to open: the package is encrypted (AES-256) inside a compound file, as PowerPoint 2013 and later do */
