@@ -212,6 +212,12 @@
   C('cellTop', { label: 'Align Top', icon: 'alignTop', enabled: isTable, run: () => A().tableCmd('anchor', 't') });
   C('cellMiddle', { label: 'Center Vertically', icon: 'alignMiddle', enabled: isTable, run: () => A().tableCmd('anchor', 'ctr') });
   C('cellBottom', { label: 'Align Bottom', icon: 'alignBottom', enabled: isTable, run: () => A().tableCmd('anchor', 'b') });
+  /* a cell's text direction, as PowerPoint 2016's Layout ▸ Text Direction (a:tcPr/@vert) */
+  const dirIs = (v) => () => isTable() && A().cellTextDir() === v;
+  C('cellHorz', { label: '&Horizontal', enabled: isTable, checked: dirIs('horz'), run: () => A().tableCmd('vert', 'horz') });
+  C('cellVert', { label: 'Rotate all text &90°', enabled: isTable, checked: dirIs('vert'), run: () => A().tableCmd('vert', 'vert') });
+  C('cellVert270', { label: 'Rotate all text &270°', enabled: isTable, checked: dirIs('vert270'), run: () => A().tableCmd('vert', 'vert270') });
+  C('cellStacked', { label: '&Stacked', enabled: isTable, checked: dirIs('wordArtVert'), run: () => A().tableCmd('vert', 'wordArtVert') });
   C('distRows', { label: 'Distribute Rows Evenly', icon: 'distRows', enabled: isTable, run: () => A().tableCmd('distRows') });
   C('distCols', { label: 'Distribute Columns Evenly', icon: 'distCols', enabled: isTable, run: () => A().tableCmd('distCols') });
   C('selectTable', { label: 'Select &Table', enabled: isTable, run: () => A().tableCmd('selectAll') });

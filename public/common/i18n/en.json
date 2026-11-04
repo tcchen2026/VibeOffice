@@ -691,7 +691,7 @@
  },
  "&Color:": {
   "where": [
-   "lectern/js/app.js:1496",
+   "lectern/js/app.js:1504",
    "lectern/js/dialogs.js:91",
    "lectern/js/dialogs.js:140",
    "lectern/js/dialogs.js:141"
@@ -923,7 +923,7 @@
  },
  "&Date last updated": {
   "where": [
-   "lectern/js/app.js:1600"
+   "lectern/js/app.js:1608"
   ]
  },
  "&Date line:": {
@@ -1167,14 +1167,14 @@
  },
  "&Edit Hyperlink...": {
   "where": [
-   "lectern/js/app.js:1764",
+   "lectern/js/app.js:1772",
    "ledger/js/app.js:866",
    "quire/js/app.js:1130"
   ]
  },
  "&Edit Text": {
   "where": [
-   "lectern/js/app.js:1758"
+   "lectern/js/app.js:1766"
   ]
  },
  "&Edit Wrap Points": {
@@ -1359,7 +1359,7 @@
  },
  "&Finish": {
   "where": [
-   "lectern/js/app.js:1603",
+   "lectern/js/app.js:1611",
    "ledger/js/csv.js:365",
    "ledger/js/dialogs2.js:258",
    "ledger/js/dialogs2.js:835"
@@ -1429,7 +1429,7 @@
  },
  "&Footer:": {
   "where": [
-   "lectern/js/app.js:1602",
+   "lectern/js/app.js:1610",
    "ledger/js/dialogs3.js:393",
    "ledger/js/dialogs3.js:401",
    "quire/js/dialogs.js:690"
@@ -1660,7 +1660,7 @@
  },
  "&Grouping": {
   "where": [
-   "lectern/js/app.js:1760"
+   "lectern/js/app.js:1768"
   ]
  },
  "&Growth": {
@@ -1785,6 +1785,7 @@
  },
  "&Horizontal": {
   "where": [
+   "lectern/js/commands.js:217",
    "lectern/js/dialogs.js:333"
   ]
  },
@@ -2590,7 +2591,7 @@
  "&Order": {
   "where": [
    "lectern/js/app.js:157",
-   "lectern/js/app.js:1760",
+   "lectern/js/app.js:1768",
    "quire/js/app.js:400"
   ]
  },
@@ -2732,12 +2733,12 @@
  },
  "&Paste as Lectern objects": {
   "where": [
-   "lectern/js/app.js:1715"
+   "lectern/js/app.js:1723"
   ]
  },
  "&Paste as slides": {
   "where": [
-   "lectern/js/app.js:1715"
+   "lectern/js/app.js:1723"
   ]
  },
  "&Paste...": {
@@ -3440,6 +3441,11 @@
    "quire/js/dialogs3.js:50"
   ]
  },
+ "&Stacked": {
+  "where": [
+   "lectern/js/commands.js:220"
+  ]
+ },
  "&Standard": {
   "where": [
    "lectern/js/commands.js:64",
@@ -3523,7 +3529,7 @@
  },
  "&Style:": {
   "where": [
-   "lectern/js/app.js:1496",
+   "lectern/js/app.js:1504",
    "lectern/js/dialogs.js:404"
   ]
  },
@@ -3605,7 +3611,7 @@
  },
  "&Table": {
   "where": [
-   "lectern/js/app.js:1759",
+   "lectern/js/app.js:1767",
    "quire/js/commands.js:430",
    "quire/js/commands.js:434",
    "quire/js/dialogs2.js:684"
@@ -3722,7 +3728,7 @@
  "&Title:": {
   "where": [
    "common/dialogs.js:403",
-   "lectern/js/app.js:1602",
+   "lectern/js/app.js:1610",
    "ledger/js/dialogs2.js:120",
    "ledger/js/dialogs2.js:124"
   ]
@@ -4058,7 +4064,7 @@
  },
  "&Width:": {
   "where": [
-   "lectern/js/app.js:1496",
+   "lectern/js/app.js:1504",
    "lectern/js/dialogs.js:560",
    "quire/js/dialogs.js:343",
    "quire/js/dialogs3.js:98"
@@ -4364,7 +4370,7 @@
  },
  "1 slide: {0}": {
   "where": [
-   "lectern/js/app.js:1645"
+   "lectern/js/app.js:1653"
   ]
  },
  "1. Formatting restrictions": {
@@ -6066,7 +6072,7 @@
  },
  "AutoContent Wizard": {
   "where": [
-   "lectern/js/app.js:1602"
+   "lectern/js/app.js:1610"
   ]
  },
  "AutoCorr&ect": {
@@ -6832,14 +6838,14 @@
  "Borders": {
   "where": [
    "lectern/js/app.js:205",
-   "lectern/js/app.js:1458",
-   "lectern/js/app.js:1496",
+   "lectern/js/app.js:1466",
+   "lectern/js/app.js:1504",
    "lectern/js/ribbon.js:111"
   ]
  },
  "Borders and &Fill...": {
   "where": [
-   "lectern/js/commands.js:218"
+   "lectern/js/commands.js:224"
   ]
  },
  "Borders and Shading": {
@@ -6851,7 +6857,7 @@
  "Bottom": {
   "where": [
    "common/charts.js:395",
-   "lectern/js/app.js:1495",
+   "lectern/js/app.js:1503",
    "lectern/js/dialogs.js:445",
    "ledger/js/dialogs.js:154"
   ]
@@ -6922,7 +6928,7 @@
  },
  "Brainstorming Session": {
   "where": [
-   "lectern/js/app.js:1589"
+   "lectern/js/app.js:1597"
   ]
  },
  "Brass": {
@@ -7908,8 +7914,8 @@
  "Chart": {
   "where": [
    "common/charts.js:438",
-   "lectern/js/app.js:1512",
-   "lectern/js/app.js:1514",
+   "lectern/js/app.js:1520",
+   "lectern/js/app.js:1522",
    "lectern/js/ribbon.js:40"
   ]
  },
@@ -8400,7 +8406,7 @@
  },
  "Click a button to apply borders:": {
   "where": [
-   "lectern/js/app.js:1496"
+   "lectern/js/app.js:1504"
   ]
  },
  "Click a cell and type, then press Enter (moves down), Tab (moves right) or an arrow key. F2 edits the active cell; Alt+Enter starts a new line inside a cell. Ctrl+Enter fills the typed entry into every selected cell. Numbers, dates (3/14/2026, 14-Mar), times (9:30 AM), percentages (12%) and currency ($1,200) are recognised and formatted automatically. Start an entry with an apostrophe to keep it as text.": {
@@ -10335,7 +10341,7 @@
  },
  "D&esign:": {
   "where": [
-   "lectern/js/app.js:1602"
+   "lectern/js/app.js:1610"
   ]
  },
  "D&estination:": {
@@ -11306,7 +11312,7 @@
  },
  "Distribute Columns Evenly": {
   "where": [
-   "lectern/js/commands.js:216",
+   "lectern/js/commands.js:222",
    "quire/js/commands.js:446",
    "quire/js/tables.js:721"
   ]
@@ -11318,7 +11324,7 @@
  },
  "Distribute Rows Evenly": {
   "where": [
-   "lectern/js/commands.js:215",
+   "lectern/js/commands.js:221",
    "quire/js/commands.js:445",
    "quire/js/tables.js:721"
   ]
@@ -11797,7 +11803,7 @@
  },
  "Drop a .pptx to open it, or pictures to insert them": {
   "where": [
-   "lectern/js/app.js:1901"
+   "lectern/js/app.js:1909"
   ]
  },
  "Drop a document here or pick an app on the left side to create one.": {
@@ -11957,7 +11963,7 @@
  },
  "Edit Chart Data...": {
   "where": [
-   "lectern/js/app.js:1514"
+   "lectern/js/app.js:1522"
   ]
  },
  "Edit Co&mment": {
@@ -11999,7 +12005,7 @@
  },
  "Edit LettersArt Text": {
   "where": [
-   "lectern/js/app.js:1536",
+   "lectern/js/app.js:1544",
    "lectern/js/dialogs.js:1026",
    "quire/js/dialogs2.js:562"
   ]
@@ -12031,7 +12037,7 @@
  },
  "Edit Te&xt...": {
   "where": [
-   "lectern/js/commands.js:221",
+   "lectern/js/commands.js:227",
    "quire/js/commands.js:520"
   ]
  },
@@ -12043,7 +12049,7 @@
  "Edit Text...": {
   "where": [
    "lectern/js/app.js:209",
-   "lectern/js/commands.js:221",
+   "lectern/js/commands.js:227",
    "quire/js/app.js:304"
   ]
  },
@@ -12762,7 +12768,7 @@
  },
  "Exit Edit Text": {
   "where": [
-   "lectern/js/app.js:1764"
+   "lectern/js/app.js:1772"
   ]
  },
  "Expand": {
@@ -13187,7 +13193,7 @@
  },
  "Fill": {
   "where": [
-   "lectern/js/app.js:1496",
+   "lectern/js/app.js:1504",
    "lectern/js/dialogs.js:402",
    "lectern/js/dialogs.js:403",
    "ledger/js/dialogs.js:153"
@@ -13200,7 +13206,7 @@
  },
  "Fill &color:": {
   "where": [
-   "lectern/js/app.js:1496"
+   "lectern/js/app.js:1504"
   ]
  },
  "Fill Across Worksheets": {
@@ -13213,7 +13219,7 @@
   "where": [
    "lectern/js/app.js:206",
    "lectern/js/app.js:1154",
-   "lectern/js/app.js:1481",
+   "lectern/js/app.js:1489",
    "lectern/js/commands.js:128"
   ]
  },
@@ -13892,7 +13898,7 @@
  },
  "Footer (optional)": {
   "where": [
-   "lectern/js/app.js:1598"
+   "lectern/js/app.js:1606"
   ]
  },
  "Footer Placeholder": {
@@ -14070,7 +14076,7 @@
  },
  "Format Table": {
   "where": [
-   "lectern/js/app.js:1497",
+   "lectern/js/app.js:1505",
    "lectern/js/dialogs.js:386"
   ]
  },
@@ -14978,7 +14984,7 @@
  "Harbor & Pine — 2027 Expansion (sample)": {
   "where": [
    "lectern/js/app.js:992",
-   "lectern/js/app.js:2207"
+   "lectern/js/app.js:2215"
   ]
  },
  "He&ader:": {
@@ -15756,7 +15762,7 @@
  },
  "Insert Chart": {
   "where": [
-   "lectern/js/app.js:1506",
+   "lectern/js/app.js:1514",
    "lectern/js/commands.js:91",
    "lectern/js/render.js:604",
    "ledger/js/xchart.js:408"
@@ -15910,7 +15916,7 @@
  },
  "Insert LettersArt": {
   "where": [
-   "lectern/js/app.js:1525",
+   "lectern/js/app.js:1533",
    "lectern/js/commands.js:87",
    "quire/js/commands.js:300",
    "quire/js/dialogs2.js:548"
@@ -17070,7 +17076,7 @@
  },
  "LettersArt Gallery": {
   "where": [
-   "lectern/js/commands.js:222",
+   "lectern/js/commands.js:228",
    "lectern/js/dialogs.js:1014",
    "quire/js/commands.js:521",
    "quire/js/dialogs2.js:539"
@@ -17078,7 +17084,7 @@
  },
  "LettersArt Same Letter Heights": {
   "where": [
-   "lectern/js/commands.js:223"
+   "lectern/js/commands.js:229"
   ]
  },
  "LettersArt Shape": {
@@ -17090,7 +17096,7 @@
  },
  "LettersArt Style": {
   "where": [
-   "lectern/js/app.js:1540"
+   "lectern/js/app.js:1548"
   ]
  },
  "LettersArt Styles": {
@@ -17106,7 +17112,7 @@
  },
  "LettersArt Vertical Text": {
   "where": [
-   "lectern/js/commands.js:224"
+   "lectern/js/commands.js:230"
   ]
  },
  "LettersArt style {0}": {
@@ -18139,7 +18145,7 @@
  },
  "Middle": {
   "where": [
-   "lectern/js/app.js:1495",
+   "lectern/js/app.js:1503",
    "lectern/js/dialogs.js:445"
   ]
  },
@@ -20487,10 +20493,10 @@
  },
  "Paste": {
   "where": [
-   "lectern/js/app.js:1669",
-   "lectern/js/app.js:1683",
-   "lectern/js/app.js:1686",
-   "lectern/js/app.js:1703"
+   "lectern/js/app.js:1677",
+   "lectern/js/app.js:1691",
+   "lectern/js/app.js:1694",
+   "lectern/js/app.js:1711"
   ]
  },
  "Paste &Link": {
@@ -20549,12 +20555,12 @@
  },
  "Paste Slides": {
   "where": [
-   "lectern/js/app.js:1674"
+   "lectern/js/app.js:1682"
   ]
  },
  "Paste Special": {
   "where": [
-   "lectern/js/app.js:1716",
+   "lectern/js/app.js:1724",
    "ledger/js/clipboard.js:190",
    "ledger/js/dialogs.js:593",
    "ledger/js/panes.js:130"
@@ -20568,7 +20574,7 @@
  },
  "Paste as &Unformatted Text": {
   "where": [
-   "lectern/js/app.js:1715"
+   "lectern/js/app.js:1723"
   ]
  },
  "Paste as Hyperlink": {
@@ -20726,8 +20732,8 @@
  },
  "Photo Album": {
   "where": [
-   "lectern/js/app.js:1547",
-   "lectern/js/app.js:1549",
+   "lectern/js/app.js:1555",
+   "lectern/js/app.js:1557",
    "lectern/js/dialogs.js:1049"
   ]
  },
@@ -21086,12 +21092,12 @@
  },
  "Presentation title": {
   "where": [
-   "lectern/js/app.js:1597"
+   "lectern/js/app.js:1605"
   ]
  },
  "Presentation type:": {
   "where": [
-   "lectern/js/app.js:1602"
+   "lectern/js/app.js:1610"
   ]
  },
  "Presentation: {0}": {
@@ -21385,7 +21391,7 @@
  },
  "Project Overview": {
   "where": [
-   "lectern/js/app.js:1587"
+   "lectern/js/app.js:1595"
   ]
  },
  "Project Status Report": {
@@ -21934,7 +21940,7 @@
  },
  "Recommending a Strategy": {
   "where": [
-   "lectern/js/app.js:1586"
+   "lectern/js/app.js:1594"
   ]
  },
  "Record macro": {
@@ -21959,7 +21965,7 @@
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
   "where": [
-   "lectern/js/app.js:2223"
+   "lectern/js/app.js:2231"
   ]
  },
  "Recovered the unsaved changes. Save the workbook to keep them.": {
@@ -24375,6 +24381,16 @@
    "quire/js/commands.js:495"
   ]
  },
+ "Rotate all text &270°": {
+  "where": [
+   "lectern/js/commands.js:219"
+  ]
+ },
+ "Rotate all text &90°": {
+  "where": [
+   "lectern/js/commands.js:218"
+  ]
+ },
  "Rotate or Fl&ip": {
   "where": [
    "lectern/js/app.js:160",
@@ -25124,7 +25140,7 @@
  },
  "Select &Table": {
   "where": [
-   "lectern/js/commands.js:217"
+   "lectern/js/commands.js:223"
   ]
  },
  "Select A&ll": {
@@ -25356,7 +25372,7 @@
  },
  "Selling a Product or Service": {
   "where": [
-   "lectern/js/app.js:1591"
+   "lectern/js/app.js:1599"
   ]
  },
  "Semi-block": {
@@ -26185,7 +26201,7 @@
  },
  "Slide &number": {
   "where": [
-   "lectern/js/app.js:1600",
+   "lectern/js/app.js:1608",
    "lectern/js/dialogs.js:586"
   ]
  },
@@ -26632,7 +26648,7 @@
  },
  "Source: {0}": {
   "where": [
-   "lectern/js/app.js:1715"
+   "lectern/js/app.js:1723"
   ]
  },
  "South": {
@@ -27126,7 +27142,7 @@
  },
  "Status Report": {
   "where": [
-   "lectern/js/app.js:1588"
+   "lectern/js/app.js:1596"
   ]
  },
  "Status: Ready — the pages are saved as a PDF that you can print from any viewer.": {
@@ -27853,6 +27869,11 @@
    "quire/js/commands.js:304"
   ]
  },
+ "Te&xt Direction": {
+  "where": [
+   "lectern/js/app.js:1767"
+  ]
+ },
  "Te&xt Direction...": {
   "where": [
    "quire/js/commands.js:319"
@@ -27983,7 +28004,7 @@
  },
  "Text &alignment:": {
   "where": [
-   "lectern/js/app.js:1496"
+   "lectern/js/app.js:1504"
   ]
  },
  "Text &anchor point:": {
@@ -28020,7 +28041,7 @@
  },
  "Text Box": {
   "where": [
-   "lectern/js/app.js:1496",
+   "lectern/js/app.js:1504",
    "lectern/js/commands.js:89",
    "lectern/js/dialogs.js:459",
    "lectern/js/ribbon.js:42"
@@ -28028,6 +28049,8 @@
  },
  "Text Direction": {
   "where": [
+   "lectern/js/app.js:208",
+   "lectern/js/ribbon.js:118",
    "quire/js/dialogs.js:870",
    "quire/js/tables.js:569"
   ]
@@ -29618,7 +29641,7 @@
  "Top": {
   "where": [
    "common/charts.js:395",
-   "lectern/js/app.js:1495",
+   "lectern/js/app.js:1503",
    "lectern/js/dialogs.js:445",
    "ledger/js/dialogs.js:154"
   ]
@@ -29756,7 +29779,7 @@
  },
  "Training": {
   "where": [
-   "lectern/js/app.js:1590"
+   "lectern/js/app.js:1598"
   ]
  },
  "Transition": {
@@ -29930,7 +29953,7 @@
  },
  "Typing": {
   "where": [
-   "lectern/js/app.js:1892",
+   "lectern/js/app.js:1900",
    "lectern/js/diagram.js:438",
    "lectern/js/diagram.js:487",
    "lectern/js/diagram.js:497"
@@ -30187,7 +30210,7 @@
  },
  "Untitled": {
   "where": [
-   "lectern/js/app.js:1645"
+   "lectern/js/app.js:1653"
   ]
  },
  "Up": {
@@ -31305,7 +31328,7 @@
  },
  "Your Text Here": {
   "where": [
-   "lectern/js/app.js:1518",
+   "lectern/js/app.js:1526",
    "lectern/js/dialogs.js:1022",
    "quire/js/dialogs2.js:542",
    "quire/js/dialogs2.js:554"
@@ -32155,7 +32178,7 @@
  },
  "{0} objects: {1}": {
   "where": [
-   "lectern/js/app.js:1635"
+   "lectern/js/app.js:1643"
   ]
  },
  "{0} of 24 - Clipboard. Click an item to paste.": {
@@ -32204,7 +32227,7 @@
   "where": [
    "lectern/js/app.js:128",
    "lectern/js/app.js:203",
-   "lectern/js/app.js:1491",
+   "lectern/js/app.js:1499",
    "quire/js/app.js:418"
   ]
  },
@@ -32220,7 +32243,7 @@
  },
  "{0} slides: {1}": {
   "where": [
-   "lectern/js/app.js:1645"
+   "lectern/js/app.js:1653"
   ]
  },
  "{0} toolbar": {

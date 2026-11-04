@@ -205,7 +205,7 @@
         ui.tbDrop('', 'bordersAll', A.menus.tableBorders, 'Borders'),
         ui.tbDrop('', 'fillColor', A.menus.tableFill, 'Fill Color'),
         '|', ui.tbDrop('Table', null, (r) => ui.openMenu(['insertTable', '-', 'colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', '-', 'selectTable', '-', 'tableBordersFill'], r), 'Table'),
-        'mergeCells', 'splitCell', '|', 'cellTop', 'cellMiddle', 'cellBottom', '|', 'distRows', 'distCols']),
+        'mergeCells', 'splitCell', '|', 'cellTop', 'cellMiddle', 'cellBottom', ui.tbDrop('', 'textDir', (r) => ui.openMenu(['cellHorz', 'cellVert', 'cellVert270', 'cellStacked'], r), 'Text Direction'), '|', 'distRows', 'distCols']),
       wordart: ui.toolbar('wordart', 'LettersArt', ['insertWordArt', ui.tbButton('wordartEdit', { label: 'Edit Text...' }), 'wordartGallery', ui.tbButton('formatObject', { icon: 'formatPicture' }),
         ui.tbDrop('', 'waShape', A.menus.waShape, 'LettersArt Shape'),
         'waSameHeight', 'waVertical',
@@ -1437,6 +1437,8 @@ addEventListener('resize',fit);fit();show(0);`;
         break;
       }
       case 'anchor': for (let r = c.r0; r <= c.r1; r++) for (let q = c.c0; q <= c.c1; q++) t.rows[r].cells[q].tx.anchor = arg; break;
+      /* horizontal is the default: a cell the file wrote as horz keeps saying so, the others say nothing */
+      case 'vert': for (let r = c.r0; r <= c.r1; r++) for (let q = c.c0; q <= c.c1; q++) { const tx = t.rows[r].cells[q].tx; if (!tx) continue; if (arg !== 'horz') tx.vert = arg; else if (tx.vert !== 'horz') delete tx.vert; } break;
       case 'distRows': { const total = t.rows.slice(c.r0, c.r1 + 1).reduce((a, r) => a + r.h, 0); const n = c.r1 - c.r0 + 1; for (let r = c.r0; r <= c.r1; r++) t.rows[r].h = L.round(total / n, 2); break; }
       case 'distCols': { const total = t.cols.slice(c.c0, c.c1 + 1).reduce((a, b) => a + b, 0); const n = c.c1 - c.c0 + 1; for (let q = c.c0; q <= c.c1; q++) t.cols[q] = L.round(total / n, 2); break; }
       case 'selectAll': L.hist.undo.pop(); E.cellSel = { r0: 0, c0: 0, r1: t.rows.length - 1, c1: t.cols.length - 1 }; if (snap) TE.resume(snap); E.cellSel = { r0: 0, c0: 0, r1: t.rows.length - 1, c1: t.cols.length - 1 }; E.drawOverlay(); return;
@@ -1447,6 +1449,12 @@ addEventListener('resize',fit);fit();show(0);`;
     E.render({ keepEdit: false });
     if (snap && E.shape(sh.id)) { snap.cell = [Math.min(snap.cell ? snap.cell[0] : 0, t.rows.length - 1), Math.min(snap.cell ? snap.cell[1] : 0, t.cols.length - 1)]; snap.sel = null; TE.resume(snap); }
     E.touched();
+  };
+  /** the text direction of the (first) cell the table command acts on: 'horz', 'vert', 'vert270', 'wordArtVert'… */
+  A.cellTextDir = function () {
+    const c = tableCtx();
+    const cell = c && c.sh.tbl.rows[c.r0] && c.sh.tbl.rows[c.r0].cells[c.c0];
+    return cell ? (cell.tx && cell.tx.vert) || 'horz' : null;
   };
   A.tableBorders = function (kind) {
     const c = tableCtx();
@@ -1756,7 +1764,7 @@ addEventListener('resize',fit);fit();show(0);`;
     if (s && s.type === 'wordart') items.push('wordartEdit', 'wordartGallery');
     else if (s && s.type === 'chart') items.push('editChart');
     else if (s && (s.tx || s.type === 'shape')) items.push({ label: '&Edit Text', run: () => TE.begin(s.id, { atEnd: true }) });
-    if (s && s.type === 'table') items.push({ label: '&Table', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', '-', 'tableBordersFill'] });
+    if (s && s.type === 'table') items.push({ label: '&Table', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', { label: 'Te&xt Direction', sub: ['cellHorz', 'cellVert', 'cellVert270', 'cellStacked'] }, '-', 'tableBordersFill'] });
     items.push('-', { label: '&Grouping', sub: ['group', 'ungroup', 'regroup'] }, { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward'] }, '-', 'setDefaults', 'customAnim', 'actionSettings', 'formatObject', 'hyperlink');
     ui.contextMenu(e, items);
   };

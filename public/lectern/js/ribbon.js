@@ -115,7 +115,7 @@
           { label: 'Rows & Columns', items: [{ drop: 'Delete', icon: 'deleteTable', size: 'large', menu: open(['deleteRows', 'deleteCols']) }, 'rowAbove', 'rowBelow', 'colLeft', 'colRight'] },
           { label: 'Merge', items: ['mergeCells', 'splitCell'] },
           { label: 'Cell Size', items: ['distRows', 'distCols'] },
-          { label: 'Alignment', items: ['cellTop', 'cellMiddle', 'cellBottom'] },
+          { label: 'Alignment', items: ['cellTop', 'cellMiddle', 'cellBottom', { drop: 'Text Direction', icon: 'textDir', size: 'large', menu: open(['cellHorz', 'cellVert', 'cellVert270', 'cellStacked']) }] },
         ] },
       ] },
       { id: 'wordart', set: 'LettersArt Tools', when: ctx('wordart'), tabs: [

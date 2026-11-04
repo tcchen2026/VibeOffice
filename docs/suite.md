@@ -256,8 +256,8 @@ Zoom, Fit to Window); the classic toolbars keep their Zoom box. Ctrl+wheel (a tr
   each app's own choices; Lectern's OK saves the PDF of what Print Preview lays out, without leaving its view.
 - To do (the cross-app audit of 2026-11-04, still different between the apps): Hyperlink base in Properties (no app
   reads or writes it yet); custom properties in Lectern (custom.xml is not read); Options › View laid out alike;
-  Ledger's Drawing toolbar and Drawing Tools with the others' controls; Lectern's Clear All Formatting and a Text
-  Direction command for table cells (the file keeps it); the Window menu's New Window and Arrange All.
+  Ledger's Drawing toolbar and Drawing Tools with the others' controls; Lectern's Clear All Formatting; the Window
+  menu's New Window and Arrange All.
 
 ### Search commands
 

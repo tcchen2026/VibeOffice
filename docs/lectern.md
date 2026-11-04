@@ -102,7 +102,9 @@ absent defaults, through text edits, copies, undo/redo and draft recovery. `vert
 as rotated text frames. East Asian and Mongolian vertical text use the browser's vertical writing;
 stacked WordArt text uses upright glyphs. Those modes approximate Office's glyph shaping and spacing,
 while the original direction value is saved unchanged. Measured on the five affected public corpus
-decks (2026-11-04): all 11 non-horizontal cells survive, previously zero.
+decks (2026-11-04): all 11 non-horizontal cells survive, previously zero. Text Direction (Table Tools ›
+Layout, the Tables and Borders toolbar, a cell's Table menu) sets it as PowerPoint 2016 does: Horizontal,
+Rotate all text 90° or 270°, Stacked.
 
 Right-to-left tables retain `a:tblPr/@rtl` and show their columns in reading order, independently
 of paragraph direction. Clicking, dragging a cell range and Tab use the same logical cell identities.
