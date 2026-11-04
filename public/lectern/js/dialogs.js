@@ -1105,30 +1105,23 @@
     const color = ui.select([['color', 'Color'], ['gray', 'Grayscale'], ['bw', 'Pure Black and White']], L.app.printOpts.color);
     const frame = ui.check('Fra&me slides', L.app.printOpts.frame);
     const hid = ui.check('Print &hidden slides', L.app.printOpts.hidden);
-    const all = ui.radio('pr-r', '&All', true), cur = ui.radio('pr-r', 'Curr&ent slide', false), rng = ui.radio('pr-r', '&Slides:', false);
-    const rIn = h('input', { type: 'text', id: 'pr-range', value: `1-${n}`, style: 'width:120px' });
-    const body = h('div', { class: 'col' }, ui.group('Print range', all, cur, h('div', { class: 'row', style: 'align-items:center' }, rng, rIn)), h('div', { class: 'row' }, ui.field('Print &what:', what), ui.field('Slides per page:', per)), ui.field('Color/gra&yscale:', color), frame, hid);
-    ui.dialog({
-      title: 'Print', body, width: 420, buttons: [{
-        label: 'Preview', primary: true, onClick: () => {
-          const range = all.input.checked ? null : cur.input.checked ? [E().idx] : parseRange(rIn.value, n);
-          Object.assign(L.app.printOpts, { what: what.value, per: +per.value, color: color.value, frame: frame.input.checked, hidden: hid.input.checked, range });
-          L.app.setView('preview');
-        },
-      }, { label: 'Cancel' }],
+    /* the choices go to Print Preview, which lays the pages out; OK saves its pages as a PDF */
+    const take = (r) => {
+      const range = r.range === 'all' ? null : r.range === 'current' ? [E().idx] : r.pages.map((i) => i - 1);
+      Object.assign(L.app.printOpts, { what: what.value, per: +per.value, color: color.value, frame: frame.input.checked, hidden: hid.input.checked, range });
+    };
+    ui.printDialog({
+      unit: 'slide', count: n, current: true,
+      what: h('div', { class: 'col' }, h('div', { class: 'row' }, ui.field('Print &what:', what), ui.field('Slides per page:', per)), ui.field('Color/gra&yscale:', color), frame, hid),
+      preview: (r) => { take(r); L.app.setView('preview'); },
+      print: (r) => {
+        take(r);
+        const back = L.app.view;
+        L.app.setView('preview');
+        requestAnimationFrame(async () => { await L.app.previewPDF(); if (back !== 'preview') L.app.setView(back); });
+      },
     });
   };
-  function parseRange(s, n) {
-    const out = [];
-    for (const part of String(s).split(/[,;]/)) {
-      const m = /^\s*(\d+)\s*(?:-\s*(\d+))?\s*$/.exec(part);
-      if (!m) continue;
-      const a = +m[1], b = m[2] ? +m[2] : a;
-      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= n) out.push(i - 1);
-    }
-    return out.length ? Array.from(new Set(out)) : null;
-  }
-
   /* ---------- About ---------- */
   D.about = () => ui.about({ name: 'Lectern', text: [
     L.N('A presentation editor that runs entirely in your browser. Presentations are read and written as Office Open XML (.pptx, .pptm); nothing is uploaded.'),

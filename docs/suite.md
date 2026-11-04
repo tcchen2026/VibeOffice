@@ -97,7 +97,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `numfmt.js` | Excel number formats | Ledger, Lectern |
 | `dml.js` | DrawingML helpers | Quire, Ledger |
 | `spell.js` | spelling engine: word lists (`dict/`), checking, suggestions, custom dictionary, Ignore All; AutoCorrect's replacement list | all |
-| `dialogs.js` | the dialogs the apps share, each with an app adapter: Symbol (`ui.symbolDialog`), Insert Hyperlink (`ui.hyperlinkDialog`, `ui.completeAddress`), Spelling (`ui.spellingDialog`, the app walks its text), Properties (`ui.propertiesDialog`) | all |
+| `dialogs.js` | the dialogs the apps share, each with an app adapter: Symbol (`ui.symbolDialog`), Insert Hyperlink (`ui.hyperlinkDialog`, `ui.completeAddress`), Spelling (`ui.spellingDialog`, the app walks its text), AutoCorrect's entries (`ui.autocorrectEntries`), Print (`ui.printDialog`), Properties (`ui.propertiesDialog`) | all |
 | `clipart.js` | built-in clip art and the Clip Art task pane's body (`L.clipart.pane`; each app registers the pane) | all |
 | `smartart.js` | the SmartArt layout engine: items → shapes for each layout, one text size per role (`tests/smartart.test.mjs`) | Lectern |
 | `scout/` | the assistant (see The assistant): `scout.js` the character, `assistant.js` the suite's use of him, `scout.css` his balloon | all |
@@ -251,10 +251,13 @@ Zoom, Fit to Window); the classic toolbars keep their Zoom box. Ctrl+wheel (a tr
   `autocorrectList`: the defaults less what an app leaves out, with the user's entries, a setting per app) and one
   part of each app's AutoCorrect tab (`ui.autocorrectEntries`): Replace and With over the entries in two columns,
   Add (Replace for an entry that is there) and Delete, which take effect at once; the tab's options apply on OK.
-- To do (the cross-app audit of 2026-11-04, still different between the apps): one Print dialog (Lectern prints
-  through Print Preview); Hyperlink base in Properties (no app reads or writes it yet); custom properties in
-  Lectern (custom.xml is not read); Options › View laid out alike; Ledger's Drawing toolbar and Drawing Tools with
-  the others' controls; Lectern's Clear All Formatting; the Window menu's New Window and Arrange All.
+  Print (`ui.printDialog`) has the printer (Save as PDF), the range (a list such as 1,3,5–12, read by
+  `ui.parsePages`, or Excel's From and To; one that names no page keeps the dialog open with Office's message) and
+  each app's own choices; Lectern's OK saves the PDF of what Print Preview lays out, without leaving its view.
+- To do (the cross-app audit of 2026-11-04, still different between the apps): Hyperlink base in Properties (no app
+  reads or writes it yet); custom properties in Lectern (custom.xml is not read); Options › View laid out alike;
+  Ledger's Drawing toolbar and Drawing Tools with the others' controls; Lectern's Clear All Formatting and a Text
+  Direction command for table cells (the file keeps it); the Window menu's New Window and Arrange All.
 
 ### Search commands
 

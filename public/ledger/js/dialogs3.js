@@ -447,18 +447,15 @@
   };
 
   /* ================================================================ Print */
+  /** File ▸ Print (common ui.printDialog): Excel's From and To, and Print what beside them */
   D.print = function () {
-    const st = { what: 'sheets', range: 'all', from: 1, to: 1, copies: 1 };
-    const from = h('input', { type: 'text', value: '1', style: 'width:40px' }), to = h('input', { type: 'text', value: '1', style: 'width:40px' });
+    let what = 'sheets';
     const items = L.print.allPages(A().selectedSheets(), null);
-    to.value = String(Math.max(1, items.length));
-    return new Promise((res) => {
-      ui.dialog({ title: 'Print', width: 440, body: h('div', { class: 'col' },
-        ui.group('Printer', ui.field('&Name:', ui.select([['pdf', 'Save as PDF']], 'pdf', null, { id: 'pr-printer' })), h('div', { class: 'tp-note', text: 'Status: Ready — the pages are saved as a PDF that you can print from any viewer.' })),
-        h('div', { class: 'row', style: 'gap:10px;align-items:stretch' },
-          ui.group('Print range', ui.radio('pr-r', '&All', true, () => { st.range = 'all'; }), h('div', { class: 'row', style: 'gap:6px' }, ui.radio('pr-r', 'Pa&ge(s)', false, () => { st.range = 'pages'; }), h('span', { text: 'From:' }), from, h('span', { text: 'To:' }), to)),
-          ui.group('Print what', ui.radio('pr-w', 'Selectio&n', false, () => { st.what = 'selection'; }), ui.radio('pr-w', 'Active s&heet(s)', true, () => { st.what = 'sheets'; }), ui.radio('pr-w', '&Entire workbook', false, () => { st.what = 'workbook'; })))),
-      buttons: [{ label: 'Pre&view', onClick: () => { setTimeout(() => L.print.preview(), 0); } }, { label: 'OK', primary: true, onClick: () => { const o = { what: st.what }; if (st.range === 'pages') { o.from = parseInt(from.value, 10) || 1; o.to = parseInt(to.value, 10) || o.from; } L.print.exportPDF(o); } }, { label: 'Cancel' }] }).done.then(res);
-    });
+    return ui.printDialog({
+      count: Math.max(1, items.length), fromTo: true,
+      beside: ui.group('Print what', h('div', { class: 'col', style: 'gap:2px' }, ui.radio('pr-w', 'Selectio&n', false, () => { what = 'selection'; }), ui.radio('pr-w', 'Active s&heet(s)', true, () => { what = 'sheets'; }), ui.radio('pr-w', '&Entire workbook', false, () => { what = 'workbook'; }))),
+      preview: () => { setTimeout(() => L.print.preview(), 0); },
+      print: (r) => { const o = { what }; if (r.range === 'pages') { o.from = r.from; o.to = r.to; } L.print.exportPDF(o); },
+    }).done;
   };
 })(typeof window !== 'undefined' ? window : globalThis);

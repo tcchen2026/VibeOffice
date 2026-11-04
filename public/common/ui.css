@@ -308,6 +308,9 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .listbox .li-dim { padding: 1px 4px; color: var(--muted); }
 .listbox .li-c1 { flex: none; width: 40%; overflow: hidden; text-overflow: ellipsis; }
 .listbox .li-c2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Print (common/dialogs.js): the range and an app's group beside it share the row's height */
+.pr-row { gap: 10px; align-items: stretch; flex-wrap: nowrap; }
+.pr-row > .grp { flex: 1; min-width: 0; }
 /* AutoCorrect's entries (common/dialogs.js): the list's two columns under the Replace and With boxes */
 .ac-boxes { display: grid; grid-template-columns: 120px 1fr; gap: 2px 6px; }
 .ac-boxes input { width: 100%; box-sizing: border-box; }

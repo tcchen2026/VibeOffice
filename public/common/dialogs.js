@@ -319,6 +319,85 @@
       list, h('div', { class: 'tp-btns ac-btns' }, add, del));
   };
 
+  /* ================= Print ================= */
+  /** "1,3,5-12" → the numbers it names, in its order, once each, within 1..count; null when it names none or isn't a list of
+   *  numbers and ranges (Office's "This is not a valid print range.") */
+  ui.parsePages = function (text, count) {
+    const out = [];
+    for (const part of String(text).split(/[,;]/)) {
+      if (!part.trim()) continue;
+      const m = /^\s*(\d+)\s*(?:[-–]\s*(\d+))?\s*$/.exec(part);
+      if (!m) return null;
+      const a = +m[1], b = m[2] ? +m[2] : a;
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= count) out.push(i);
+    }
+    return out.length ? [...new Set(out)] : null;
+  };
+  /**
+   * File ▸ Print, one dialog for the three apps, as Office's: the printer (the suite prints by saving the pages as a
+   * PDF, which any viewer prints), the range, and the app's own choices under them. o: { unit: 'page' | 'slide', count,
+   * current (offer Current page or slide), selection (true offers Selection, false shows it unavailable: nothing is
+   * selected), fromTo (Excel's From and To in place of a list), beside (an app's group beside the range: Excel's Print
+   * what), what (the app's part under them), options() (an Options... button), preview(r) (a Preview button),
+   * print(r) } where r is { range: 'all' | 'current' | 'selection' | 'pages', pages: [numbers from 1] | null, from, to }.
+   * A range that names no page keeps the dialog open.
+   */
+  ui.printDialog = function (o) {
+    const slide = o.unit === 'slide';
+    const kinds = [['all', '&All']];
+    if (o.current) kinds.push(['current', slide ? 'Curr&ent slide' : 'Curr&ent page']);
+    if (o.selection != null) kinds.push(['selection', '&Selection']);
+    kinds.push(['pages', o.fromTo ? 'Pa&ge(s)' : slide ? '&Slides:' : 'Pa&ges:']);
+    let kind = 'all';
+    const radios = {};
+    for (const [k, label] of kinds) radios[k] = ui.radio('pr-r', label, k === 'all', () => { kind = k; });
+    if (radios.selection && !o.selection) radios.selection.input.disabled = true;
+    const choosePages = () => { radios.pages.input.checked = true; kind = 'pages'; };
+    let list = null, from = null, to = null, pagesRow;
+    if (o.fromTo) {
+      from = h('input', { type: 'text', id: 'pr-from', value: '1', style: 'width:40px' });
+      to = h('input', { type: 'text', id: 'pr-to', value: String(Math.max(1, o.count)), style: 'width:40px' });
+      for (const x of [from, to]) x.addEventListener('focus', choosePages);
+      pagesRow = h('div', { class: 'row', style: 'gap:6px;align-items:center;flex-wrap:nowrap' }, radios.pages, h('label', { for: 'pr-from', text: 'From:' }), from, h('label', { for: 'pr-to', text: 'To:' }), to);
+    } else {
+      list = h('input', { type: 'text', id: 'pr-pages', value: slide ? `1-${o.count}` : '', style: 'width:150px', 'aria-label': L.t(slide ? 'Slides' : 'Pages') });
+      list.addEventListener('focus', choosePages);
+      pagesRow = h('div', { class: 'col', style: 'gap:2px' }, h('div', { class: 'row', style: 'gap:6px;align-items:center;flex-wrap:nowrap' }, radios.pages, list),
+        h('div', { class: 'tp-note', text: slide ? 'Enter slide numbers and/or slide ranges separated by commas. For example, 1,3,5–12' : 'Enter page numbers and/or page ranges separated by commas. For example, 1,3,5–12' }));
+    }
+    /* as Office's: All, then Current page and Selection on one line, then the pages */
+    const range = ui.group(slide || o.fromTo ? 'Print range' : 'Page range', radios.all,
+      radios.current || radios.selection ? h('div', { class: 'row', style: 'gap:12px' }, radios.current || null, radios.selection || null) : null, pagesRow);
+    /* the range chosen, or null (and a message) when it names no page */
+    const read = () => {
+      if (kind !== 'pages') return { range: kind, pages: null };
+      if (o.fromTo) {
+        const a = parseInt(from.value, 10), b = parseInt(to.value, 10);
+        if (!(a >= 1) || !(b >= a) || a > o.count) return null;
+        const pages = [];
+        for (let i = a; i <= Math.min(b, o.count); i++) pages.push(i);
+        return { range: 'pages', pages, from: a, to: Math.min(b, o.count) };
+      }
+      const pages = ui.parsePages(list.value, o.count);
+      return pages ? { range: 'pages', pages } : null;
+    };
+    const go = (fn) => {
+      const r = read();
+      if (!r) { ui.msg('This is not a valid print range.', { icon: 'warn', title: 'Print' }).then(() => { (from || list).focus(); (from || list).select(); }); return false; }
+      fn(r);
+    };
+    const buttons = [];
+    if (o.options) buttons.push({ label: '&Options...', cls: 'left', onClick: () => { o.options(); return false; } });
+    if (o.preview) buttons.push({ label: 'Pre&view', cls: o.options ? null : 'left', onClick: () => go(o.preview) });
+    buttons.push({ label: 'OK', primary: true, onClick: () => go(o.print) }, { label: 'Cancel' });
+    const body = h('div', { class: 'col' },
+      ui.group('Printer', ui.field('&Name:', ui.select([['pdf', 'Save as PDF']], 'pdf', null, { id: 'pr-printer' }), { cls: 'wide' }),
+        h('div', { class: 'tp-note', text: 'Status: Ready — the pages are saved as a PDF that you can print from any viewer.' })),
+      o.beside ? h('div', { class: 'row pr-row' }, range, o.beside) : range,
+      o.what || null);
+    return ui.dialog({ title: 'Print', width: 470, body, buttons });
+  };
+
   /* ================= Properties ================= */
   /* the Summary tab as Office's, in its order and with its keys; an app shows the ones its files keep */
   const SUMMARY = [['title', N('&Title:')], ['subject', N('&Subject:')], ['author', N('&Author:')], ['manager', N('&Manager:')], ['company', N('C&ompany:')],

@@ -661,28 +661,23 @@
     ui.dialog({ title: 'Zoom', width: 360, body: G.row(ui.group('Zoom to', r), h('div', { class: 'col' }, G.f('Percen&t:', pct), h('div', { class: 'cd-cap', text: 'Preview' }), pv)), buttons: [{ label: 'OK', primary: true, onClick: () => { const v = r.get(); if (v === 'pw') A().zoomTo('Page Width'); else if (v === 'tw') A().zoomTo('Text Width'); else if (v === 'wp') A().zoomTo('Whole Page'); else if (v === 'many') A().zoomTo('Two Pages'); else A().zoomTo(pct.get() + '%'); } }, { label: 'Cancel' }] });
   };
 
-  /* ================= Print (to PDF) ================= */
+  /* ================= Print (to PDF; common ui.printDialog) ================= */
   G.print = function () {
     const n = LY.pages.length || 1;
-    const range = G.radios('pr-r', [['all', '&All'], ['current', 'Curr&ent page'], ['selection', '&Selection'], ['pages', 'Pa&ges:']], 'all');
-    const pagesIn = h('input', { type: 'text', id: 'pr-pages', style: 'width:150px' });
-    pagesIn.addEventListener('focus', () => range.set('pages'));
     const what = ui.select([['doc', 'Document'], ['markup', 'Document showing markup'], ['props', 'Document properties'], ['list', 'List of markup'], ['styles', 'Styles'], ['autotext', 'AutoText entries'], ['keys', 'Key assignments']], 'doc', null, { id: 'pr-what' });
     const which = ui.select([['all', 'All pages in range'], ['odd', 'Odd pages'], ['even', 'Even pages']], 'all', null, { id: 'pr-which' });
-    ui.dialog({
-      title: 'Print', width: 470,
-      body: h('div', { class: 'col' }, ui.group('Printer', G.f('&Name:', ui.select([['pdf', 'Save as PDF']], 'pdf', null, { id: 'pr-printer' }), 'wide'), h('div', { class: 'tp-note', text: 'Status: Ready — the pages are saved as a PDF that you can print from any viewer.' })), G.row(ui.group('Page range', range, pagesIn, h('div', { class: 'tp-note', text: 'Enter page numbers and/or page ranges separated by commas. For example, 1,3,5–12' }))), G.row(G.f('Print &what:', what, 'wide'), G.f('P&rint:', which))),
-      buttons: [{ label: '&Options...', onClick: () => { G.options('print'); return false; } }, { label: 'OK', primary: true, onClick: () => { doPrint(); } }, { label: 'Cancel' }],
-      onOpen: (el) => el.querySelector('.dlg-foot .btn').classList.add('left'),
+    ui.printDialog({
+      count: n, current: true, selection: !!(E.sel && !E.collapsed()),
+      what: h('div', { class: 'col' }, G.f('Print &what:', what, 'wide'), G.f('P&rint:', which, 'wide')),
+      options: () => G.options('print'),
+      print: (r) => { doPrint(r); },
     });
-    async function doPrint() {
+    async function doPrint(r) {
       const w = what.value;
       if (w !== 'doc' && w !== 'markup') { printList(w); return; }
-      let pages = null;
-      const rv = range.get();
-      if (rv === 'current') pages = [Math.max(0, LY.pageOf(E.sel.f)) + 1];
-      else if (rv === 'selection' && E.sel && !E.collapsed()) { const [a, b] = E.range(); const p0 = LY.pageOf(a), p1 = LY.pageOf(b); pages = []; for (let i = p0; i <= p1; i++) pages.push(i + 1); }
-      else if (rv === 'pages') { pages = []; for (const part of pagesIn.value.split(',')) { const m = /^\s*(\d+)\s*(?:[-–]\s*(\d+))?\s*$/.exec(part); if (m) { const a = +m[1], b = m[2] ? +m[2] : a; for (let i = a; i <= b; i++) if (i >= 1 && i <= n) pages.push(i); } } }
+      let pages = r.pages;
+      if (r.range === 'current') pages = [Math.max(0, LY.pageOf(E.sel.f)) + 1];
+      else if (r.range === 'selection' && E.sel && !E.collapsed()) { const [a, b] = E.range(); const p0 = LY.pageOf(a), p1 = LY.pageOf(b); pages = []; for (let i = p0; i <= p1; i++) pages.push(i + 1); }
       if (which.value !== 'all') pages = (pages || Array.from({ length: n }, (_, i) => i + 1)).filter((i) => (which.value === 'odd' ? i % 2 === 1 : i % 2 === 0));
       const prevMarkup = LY.opts.markup;
       if (w === 'doc' && prevMarkup !== 'final') { LY.opts.markup = 'final'; LY.render(); }
