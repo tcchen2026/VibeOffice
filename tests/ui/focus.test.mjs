@@ -84,7 +84,7 @@ const APPS = {
   },
 };
 
-const CHROME = ['.cmdbars', '#statusbar', '#drawrow', '#viewbar', '#fbar', '.rb-tabs', '.tb-grip'];
+const CHROME = ['.cmdbars', '#statusbar', '#drawrow', '#fbar', '.rb-tabs', '.tb-grip'];
 
 for (const [app, A] of Object.entries(APPS)) for (const look of ['classic', 'paper2016']) {
   test(`${app}, ${look}: the keyboard stays with the document`, async (s) => {
@@ -139,6 +139,24 @@ for (const [app, A] of Object.entries(APPS)) for (const look of ['classic', 'pap
         if (!p) continue;
         await s.test(`a press on ${sel} where it has no control`, () => keeps(async () => { await t.click(await blank(t, sel)); }));
       }
+      /* the status bar's zoom slider (ui.zoomSlider) is chrome too: the zoom changes, the keyboard and selection stay */
+      const zoomNow = () => t.evaluate(`+document.querySelector('#statusbar .zs-track').getAttribute('aria-valuenow')`);
+      await s.test('the zoom slider\'s thumb dragged', () => keeps(async () => {
+        const z0 = await zoomNow(), tr = await t.el('#statusbar .zs-track'), th = await t.el('#statusbar .zs-thumb');
+        await t.drag({ x: th.x, y: tr.y }, { x: Math.min(tr.r - 2, th.x + 24), y: tr.y }, 6);
+        assert.ok(await zoomNow() > z0, `zoomed in from ${z0}%`);
+      }));
+      await s.test('the zoom slider dragged, then Esc', () => keeps(async () => {
+        const z0 = await zoomNow(), tr = await t.el('#statusbar .zs-track'), th = await t.el('#statusbar .zs-thumb'), to = { x: Math.max(tr.l + 2, th.x - 24), y: tr.y };
+        await t.press({ x: th.x, y: tr.y }); await t.glide({ x: th.x, y: tr.y }, to, 6);
+        await t.esc(); await t.release(to);
+        assert.equal(await zoomNow(), z0, 'the zoom is back');
+      }));
+      await s.test('the zoom slider\'s + clicked', () => keeps(async () => {
+        const z0 = await zoomNow();
+        await t.click(await t.evaluate(`(() => { const r = document.querySelectorAll('#statusbar .zs-step')[1].getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`));
+        assert.ok(await zoomNow() > z0, `zoomed in from ${z0}%`);
+      }));
       await s.test('no browser errors, no external requests', () => t.clean());
     } finally { await t.close(); }
   });

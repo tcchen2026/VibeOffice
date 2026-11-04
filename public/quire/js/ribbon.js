@@ -14,7 +14,7 @@
       setLanguage: 'language', deleteAllComments: 'delete', showComments: 'comment', compareDocs: 'compare', newWindow: 'newWindow', arrangeAll: 'arrangeAll', splitWindow: 'split',
       macros: 'macros', headingRows: 'headingRows', splitTable: 'splitTable', tableToText: 'tableToText', formulaDlg: 'fx', wordartEdit: 'editText', hfClose: 'close' },
     qat: ['save', { split: 'undo', menu: (r) => A().historyMenu(r, 'undo') }, { split: 'redo', menu: (r) => A().historyMenu(r, 'redo') }],
-    file: () => ['new', 'open', 'close', 'templates', 'fileSearch', '-', 'save', 'saveAs', 'saveWeb', 'webPreview', '-', 'properties', ...(L.file.native() ? ['versions'] : []), 'permission', 'links', '-', 'pageSetup', 'printPreview', 'print', '-', 'exportPDF', 'sendMail', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
+    file: () => ['new', 'open', 'close', 'templates', 'fileSearch', '-', 'save', 'saveAs', 'saveWeb', 'webPreview', '-', 'properties', ...(L.file.native() ? ['versions'] : []), 'permission', 'links', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', 'sendMail', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
     tabs: [
       { id: 'home', label: '&Home', groups: [
         { label: 'Clipboard', launcher: 'officeClipboard', items: [{ split: 'paste', size: 'large', menu: open(['paste', 'pasteSpecial', 'pasteHyperlink']) }, 'cut', 'copy', 'painter'] },
@@ -71,9 +71,9 @@
         { label: 'Protect', items: [{ cmd: 'protectDoc', size: 'large', label: 'Protect Document' }] },
       ] },
       { id: 'view', label: 'Vie&w', groups: [
-        { label: 'Views', items: [{ cmd: 'viewReading', size: 'large', label: 'Read Mode' }, { cmd: 'viewPrint', size: 'large', label: 'Print Layout' }, { cmd: 'viewWeb', size: 'large', label: 'Web Layout' }, 'viewOutline', 'viewNormal'] },
+        { label: 'Views', items: [{ cmd: 'viewReading', size: 'large', label: 'Read Mode' }, { cmd: 'viewPrint', size: 'large', label: 'Print Layout' }, { cmd: 'viewWeb', size: 'large', label: 'Web Layout' }, 'viewOutline', 'viewNormal', 'fullScreen'] },
         { label: 'Show', items: ['ruler', 'docMap', 'thumbnails', 'taskPane'] },
-        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { make: () => A().parts.zoom({ width: 90, id: 'rb-zoom' }) }, 'fullScreen'] },
+        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { cmd: 'zoom100', size: 'large' }, 'zoomOnePage', 'zoomMultiPage', 'zoomPageWidth'] },
         { label: 'Window', items: [{ cmd: 'newWindow', size: 'large', label: 'New Window' }, 'arrangeAll', 'splitWindow'] },
         { label: 'Macros', items: [{ cmd: 'macros', size: 'large', label: 'Macros' }] },
       ] },

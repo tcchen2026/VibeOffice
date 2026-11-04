@@ -86,7 +86,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `looks.css` | the looks: every chrome colour, font and shadow as a named setting, one block per look (see Looks) | all, and the Start Center |
 | `ui.css` | the chrome: layout of menus, toolbars, task panes, dialogs, controls, status bar, from the look's settings; each app's CSS follows and wins | all |
 | `core.js` | DOM helpers, colours, units, events, storage, file saving (`L.saveFile`, which tells `vo-saved`), PDF writer, media store, fonts and substitutes, symbol bullets, platform (`L.isMac`, `L.isMobile`: iOS or Android) | all |
-| `ui.js` | commands, menus, toolbars, combo boxes, dialogs, colour menus, password and prompt boxes, drags and brushes (`ui.drag`, `ui.brush`, below); the events `vo-command`, `vo-busy`, `vo-message` (what the user does, followed by the assistant) | all |
+| `ui.js` | commands, menus, toolbars, the status bar's right end (`ui.statusGroup`, `ui.zoomSlider`), the Undo/Redo list (`ui.historyMenu`), combo boxes, dialogs, colour menus, password and prompt boxes, drags and brushes (`ui.drag`, `ui.brush`, below); the events `vo-command`, `vo-busy`, `vo-message` (what the user does, followed by the assistant) | all |
 | `search.js` | Search commands, the box at the top right of every app (see Search commands) | all |
 | `ribbon.js` | the ribbon of the Paper 2016 look, drawn from each app's `js/ribbon.js` (see The ribbon) | all |
 | `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |
@@ -202,7 +202,7 @@ The chrome (menus, toolbars, task panes, dialogs, status bar, rulers, sheet head
 
 ### The ribbon
 
-In the Paper 2016 look each app shows a ribbon in place of the menu bar, toolbars and drawing bar (hidden by `[data-layout="ribbon"]` in `ui.css`); the view buttons, status bar and task pane stay. It follows Office 2016's arrangement and command names; the icons, colours and wording are our own (it is called the Paper 2016 look in the UI, and the box is "Search commands").
+In the Paper 2016 look each app shows a ribbon in place of the menu bar, toolbars and drawing bar (hidden by `[data-layout="ribbon"]` in `ui.css`); the status bar (with the view buttons and the zoom slider) and the task pane stay. It follows Office 2016's arrangement and command names; the icons, colours and wording are our own (it is called the Paper 2016 look in the UI, and the box is "Search commands").
 
 - `common/ribbon.js` (`L.ribbonUI`) draws it from the app's `js/ribbon.js`, which sets `L.ribbonSpec = () => ({ icons, qat, file, tabs, contextual })`. It is built the first time a ribbon look is in use (`L.ribbonUI.init()` after the app's toolbars, then `L.onLook`), so Classic and Paper never build it.
 - A tab is `{ id, label: '&Home', groups: [{ label, icon, launcher: cmdId, items }] }`. Items: `'cmdId'` (small button), `{ cmd, size: 'large'|'medium', label, icon }`, `{ split: cmdId, menu: (rect, el) => … }`, `{ drop: label, icon, menu }`, `{ make: () => element }` (a combo box from the app's `A.parts`), `{ row: [...] }` (a row of small buttons, as in the Font group) and `'|'` (a new column). Buttons are `ui.tbButton` / `tbSplit` / `tbDrop`, so enabled, checked and colour swatches update through `ui.refresh` as on the toolbars. `icons` gives an icon to commands that have none of their own; large buttons scale the 16 px icon to 32 px.
@@ -212,6 +212,18 @@ In the Paper 2016 look each app shows a ribbon in place of the menu bar, toolbar
 - Keyboard: Alt or F10 shows KeyTips (numbers on the Quick Access Toolbar, the access letters on the tabs); a tab's letter opens it and shows one or two letters on each command (`ui.barKeys` routes the menu bar's keys here). Esc goes back a level. Ctrl+F1 collapses the ribbon (as does a double-click on a tab or the arrow at the right, remembered per app as `ribbonCollapsed`); a tab then opens over the document. Task Pane, Ctrl+F1 in the other looks, is under View ▸ Show.
 - In a narrow window the groups fold from the right into one button each that opens the group below it.
 - Adding a command to an app: put it in that app's `js/ribbon.js` too, where Office has it. `node --test tests/ribbon.test.mjs` (needs Chromium, as `tools/shot.mjs`) checks in each app that every command id in the ribbon exists, every button has an icon, and every command of the menus can be reached from the ribbon, apart from a short list of exceptions kept in the test.
+
+### The status bar
+
+Every app's status bar ends the same way, in every look: the view buttons (Quire also has its browse buttons
+there), then the zoom slider: −, a track with 100 % at its centre tick (the minimum to 100 % on the left half, 100 %
+to the maximum on the right, as in Office), +, and the percentage, which opens the Zoom dialog; Lectern adds Fit to
+Window. It is chrome like a toolbar button: pressing it leaves the keyboard, the selection and the shortcuts with the
+document, and Esc during a drag puts the zoom back. Its colours are the look's. The information cells come first and
+give way when the window is narrow: below 960 px the cells an app marks `opt` (Quire's section, position and REC/TRK/
+EXT/OVR, Ledger's key indicators, Lectern's design name) drop out. The ribbon's View › Zoom group has Office 2016's
+buttons (Quire: Zoom, 100%, One Page, Multiple Pages, Page Width; Ledger: Zoom, 100%, Zoom to Selection; Lectern:
+Zoom, Fit to Window); the classic toolbars keep their Zoom box. Ctrl+wheel (a trackpad's pinch) zooms in all three.
 
 ### Search commands
 

@@ -373,6 +373,99 @@
     tb.appendChild(h('span', { class: 'tb-end' }));
     return tb;
   };
+  /** the Undo or Redo drop-down: labels are the steps, newest first; choosing one undoes (or redoes) it and every step
+   * after it, as in Office */
+  ui.historyMenu = function (r, kind, labels) {
+    if (!labels || !labels.length) return;
+    ui.openMenu([{ custom: (close) => {
+      const el = h('div', { class: 'style-list hist-list' });
+      const actions = (n) => (kind === 'undo' ? (n === 1 ? L.t('Undo {0} Action', n) : L.t('Undo {0} Actions', n)) : n === 1 ? L.t('Redo {0} Action', n) : L.t('Redo {0} Actions', n));
+      const lbl = h('div', { class: 'tgp-label', translate: 'no', text: actions(1) });
+      const btns = labels.slice(0, 40).map((label, i) => {
+        const b = h('button', { type: 'button', text: label });
+        b.addEventListener('pointerenter', () => { btns.forEach((x, k) => x.classList.toggle('on', k <= i)); lbl.textContent = actions(i + 1); });
+        b.addEventListener('click', () => { close(); for (let k = 0; k <= i; k++) ui.exec(kind); });
+        el.appendChild(b);
+        return b;
+      });
+      btns[0].classList.add('on');
+      return h('div', { class: 'hist-menu' }, el, lbl);
+    } }], r);
+  };
+  /* ---------- the status bar's right end: view buttons and the zoom slider, the same in every app ---------- */
+  /** a group of status-bar buttons (the view buttons): toolbar items, so a drop-down (tbDrop) fits too */
+  ui.statusGroup = function (items) {
+    const g = h('div', { class: 'sb-group', role: 'group' });
+    for (const it of items) {
+      if (it === '|') g.appendChild(h('span', { class: 'sb-gap' }));
+      else if (typeof it === 'string') g.appendChild(ui.tbButton(it));
+      else if (it instanceof Node) g.appendChild(it);
+    }
+    return g;
+  };
+  /** The zoom slider: −, a track with 100 % at its centre (min…100 % on the left half, 100 %…max on the right, as in
+   * Office), +, and the percentage, which opens the Zoom dialog. o = { min, max, value: () => percent,
+   * set(percent, final): final is false while the thumb is dragged, true when it is let go and for −/+;
+   * dialog: command id; fit: command id of a fit-to-window button; enabled(): false greys it out }.
+   * Like a toolbar button it never takes the keyboard: pressing it leaves typing, the selection and shortcuts with
+   * the document. Esc during a drag puts the zoom back. */
+  ui.zoomSlider = function (o) {
+    const min = o.min || 10, max = o.max || 400;
+    const toPos = (p) => (p <= 100 ? (Math.max(min, p) - min) / (100 - min) / 2 : 0.5 + (Math.min(max, p) - 100) / (max - 100) / 2);
+    const toPct = (x) => { if (Math.abs(x - 0.5) < 0.025) return 100; return Math.round(x < 0.5 ? min + (100 - min) * x * 2 : 100 + (max - 100) * (x - 0.5) * 2); };
+    const step = (dir) => { const p = o.value(); const n = dir > 0 ? Math.floor(p / 10) * 10 + 10 : Math.ceil(p / 10) * 10 - 10; o.set(L.clamp(n, min, max), true); ui.refresh(); };
+    const glyph = (plus) => `<svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true"><path d="M0 4.5h9${plus ? 'M4.5 0v9' : ''}" stroke="currentColor" stroke-width="1.4"/></svg>`;
+    const btn = (cls, tip, html, run) => {
+      const b = h('button', { class: cls, type: 'button', 'aria-label': tip, 'data-tip': tip });
+      b.innerHTML = html;
+      b.addEventListener('pointerdown', (e) => e.preventDefault());
+      b.addEventListener('click', run);
+      return b;
+    };
+    const out = btn('zs-step', L.N('Zoom Out'), glyph(false), () => step(-1));
+    const inn = btn('zs-step', L.N('Zoom In'), glyph(true), () => step(1));
+    const thumb = h('span', { class: 'zs-thumb' });
+    const track = h('div', { class: 'zs-track', role: 'slider', 'aria-label': 'Zoom', 'aria-valuemin': String(min), 'aria-valuemax': String(max) }, thumb);
+    const pct = btn('zs-pct', L.N('Zoom level'), '', () => ui.exec(o.dialog));
+    const wrap = h('div', { class: 'sb-zoom' }, out, track, inn, pct);
+    if (o.fit) wrap.appendChild(ui.tbButton(o.fit));
+    const show = (p) => { thumb.style.left = toPos(p) * 100 + '%'; pct.textContent = p + '%'; track.setAttribute('aria-valuenow', String(p)); track.setAttribute('aria-valuetext', p + '%'); };
+    let drag = null;
+    const at = (e) => { const r = track.getBoundingClientRect(); return toPct(L.clamp((e.clientX - r.left) / r.width, 0, 1)); };
+    const live = L.rafThrottle(() => { if (drag) o.set(drag.pct, false); });
+    const end = (keep) => {
+      if (!drag) return;
+      const d = drag; drag = null;
+      document.removeEventListener('keydown', onKey, true);
+      wrap.classList.remove('dragging');
+      o.set(keep ? d.pct : d.start, true);
+      ui.refresh();
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); end(false); } };
+    track.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (e.button !== 0 || wrap.classList.contains('dis')) return;
+      if (ui.hooks.commitEdit) ui.hooks.commitEdit();
+      drag = { start: o.value(), pct: at(e) };
+      track.setPointerCapture(e.pointerId);
+      wrap.classList.add('dragging');
+      document.addEventListener('keydown', onKey, true);
+      show(drag.pct); live();
+    });
+    track.addEventListener('pointermove', (e) => { if (!drag) return; drag.pct = at(e); show(drag.pct); live(); });
+    track.addEventListener('pointerup', () => end(true));
+    track.addEventListener('lostpointercapture', () => end(true));
+    wrap._refresh = () => {
+      const en = o.enabled ? o.enabled() : true;
+      wrap.classList.toggle('dis', !en);
+      for (const b of [out, inn, pct]) b.disabled = !en;
+      track.setAttribute('aria-disabled', String(!en));
+      if (!drag) show(o.value());
+    };
+    tbButtons.push(wrap);
+    wrap._refresh();
+    return wrap;
+  };
   ui.refresh = L.rafThrottle(() => {
     for (const b of tbButtons) {
       if (!b.isConnected) continue;

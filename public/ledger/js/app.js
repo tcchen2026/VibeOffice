@@ -321,6 +321,7 @@
   };
 
   /* ------------------------------------------------------------ undo */
+  A.historyMenu = (r, kind) => { const u = wb().undo; ui.historyMenu(r, kind, L.editor.active ? [] : (kind === 'undo' ? u.stack : u.redoStack).map((t) => t.label).reverse()); };
   A.undo = function () {
     if (L.editor.active) { L.editor.cancel(); return; }
     const w = wb();
@@ -529,7 +530,7 @@
   function buildMenus() {
     const recent = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['exportPDF', 'exportCSV'] }, 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', 'exportPDF', 'exportCSV', '-', 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'F&ill', sub: ['fillDown', 'fillRight', 'fillUp', 'fillLeft', 'fillAcross', 'fillSeries', 'fillJustify'] },
@@ -592,7 +593,7 @@
     const fillSplit = ui.tbSplit('fillColorApply', A.menus.fill);
     const fontSplit = ui.tbSplit('fontColorApply', A.menus.fontColor);
     const borderSplit = ui.tbSplit('bordersApply', A.menus.borders);
-    TB.standard = ui.toolbar('standard', 'Standard', ['newBook', 'open', 'save', '|', 'printQuick', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'formatPainter', '|', 'undo', 'redo', '|', 'hyperlink', sumSplit, 'sortAsc', 'sortDesc', '|', 'chartWizard', ui.tbButton('tb_drawing', { icon: 'drawing' }), zoomCombo, '|', 'help']);
+    TB.standard = ui.toolbar('standard', 'Standard', ['newBook', 'open', 'save', '|', 'printQuick', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'formatPainter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'hyperlink', sumSplit, 'sortAsc', 'sortDesc', '|', 'chartWizard', ui.tbButton('tb_drawing', { icon: 'drawing' }), zoomCombo, '|', 'help']);
     TB.formatting = ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, '|', 'bold', 'italic', 'underline', '|', 'alignLeft', 'alignCenter', 'alignRight', 'mergeCenter', '|', 'currencyStyle', 'percentStyle', 'commaStyle', 'incDecimal', 'decDecimal', '|', 'decIndent', 'incIndent', '|', borderSplit, fillSplit, fontSplit]);
     TB.borders = ui.toolbar('borders', 'Borders', [ui.tbSplit('bordersApply', A.menus.borders), ui.tbButton('borderNone', { icon: 'bordersNone' }), ui.tbButton('borderOutline', { icon: 'bordersOut' })]);
     TB.auditing = ui.toolbar('auditing', 'Formula Auditing', ['traceError', '|', 'tracePrecedents', 'traceDependents', 'removeArrows', '|', 'insertComment', 'validation', 'circleInvalid', 'clearCircles', '|', 'watchWindow', 'evaluateFormula']);
@@ -645,7 +646,10 @@
     sbCalc.addEventListener('contextmenu', (e) => { e.preventDefault(); calcMenu(e); });
     sbCalc.addEventListener('click', (e) => calcMenu(e));
     sb.append(sbMode, sbText, sbCalc);
-    for (const k of [L.N('CAPS'), L.N('NUM'), L.N('SCRL'), L.N('END')]) { sbInd[k] = h('div', { class: 'sb-cell ind off', text: k }); sb.appendChild(sbInd[k]); }
+    for (const k of [L.N('CAPS'), L.N('NUM'), L.N('SCRL'), L.N('END')]) { sbInd[k] = h('div', { class: 'sb-cell ind off opt', text: k }); sb.appendChild(sbInd[k]); }
+    // the right end, as in the other apps (ui.js): view buttons and the zoom slider of the active sheet
+    sb.appendChild(h('div', { class: 'sb-right' }, ui.statusGroup(['viewNormal', 'viewPageBreak']),
+      ui.zoomSlider({ min: 10, max: 400, value: () => sh().view.zoom || 100, set: (p) => G().setZoom(p), dialog: 'zoomDlg' })));
     document.addEventListener('keydown', (e) => { if (e.getModifierState) { sbInd.CAPS.classList.toggle('off', !e.getModifierState('CapsLock')); sbInd.NUM.classList.toggle('off', !e.getModifierState('NumLock')); sbInd.SCRL.classList.toggle('off', !e.getModifierState('ScrollLock')); G().scrollLock = e.getModifierState('ScrollLock'); } }, true);
   }
   function calcMenu(e) {

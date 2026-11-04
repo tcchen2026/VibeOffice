@@ -56,7 +56,7 @@
   function buildMenus() {
     const recentItems = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['sendMail', 'exportPDF'] }, 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', { label: 'Sen&d To', sub: ['sendMail'] }, 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'Cle&ar', sub: ['clearFormats', 'clearContents'] }, 'selectAll', '-', 'find', 'replace', 'goTo', '-', 'links', 'editObject'],
@@ -315,10 +315,6 @@
       ui.tbSplit('fillColor', (r, b) => A.objColorMenu(b, 'fill')), ui.tbSplit('lineColor', (r, b) => A.objColorMenu(b, 'line')), ui.tbSplit('fontColorBtn', fontColorDD), '|',
       ui.tbDrop('', 'lineStyle', (r) => A.objLineWeightMenu(r), 'Line Style'), ui.tbDrop('', 'dashStyle', (r) => A.objDashMenu(r), 'Dash Style'), ui.tbDrop('', 'arrowStyle', (r) => A.objArrowMenu(r), 'Arrow Style'), ui.tbDrop('', 'shadowStyle', (r) => A.objShadowMenu(r), 'Shadow Style')]);
     L.$('#drawrow').appendChild(A.toolbarsEl.drawing);
-    /* view buttons & browse */
-    const vb = L.$('#viewbar');
-    vb.append(ui.tbButton('viewNormal'), ui.tbButton('viewWeb'), ui.tbButton('viewPrint'), ui.tbButton('viewOutline'), ui.tbButton('viewReading'), h('span', { class: 'vb-sp' }),
-      h('span', { class: 'browse' }, ui.tbButton('browsePrev'), ui.tbDrop('', 'browseObj', (r) => A.browseMenu(r), 'Select Browse Object'), ui.tbButton('browseNext')));
   }
   A.fontOptions = () => {
     const docFonts = [doc().defaults.rPr.font];
@@ -396,24 +392,7 @@
     E.edit(L.N('Style'), () => { O.applyStyle(a, b, s.id); return E.sel; });
     E.refocus();
   };
-  A.historyMenu = function (r, kind) {
-    const list = kind === 'undo' ? D.undoList() : D.redoList();
-    if (!list.length) return;
-    ui.openMenu([{ custom: (close) => {
-      const el = h('div', { class: 'style-list', style: 'max-height:260px;overflow:auto;min-width:180px' });
-      const actions = (n) => (kind === 'undo' ? (n === 1 ? L.t('Undo {0} Action', n) : L.t('Undo {0} Actions', n)) : n === 1 ? L.t('Redo {0} Action', n) : L.t('Redo {0} Actions', n));
-      const lbl = h('div', { class: 'tgp-label', text: actions(1) });
-      const btns = list.slice(0, 40).map((label, i) => {
-        const b = h('button', { type: 'button', text: label });
-        b.addEventListener('pointerenter', () => { btns.forEach((x, k) => { x.style.background = k <= i ? '#316ac5' : ''; x.style.color = k <= i ? '#fff' : ''; }); lbl.textContent = actions(i + 1); });
-        b.addEventListener('click', () => { close(); for (let k = 0; k <= i; k++) ui.exec(kind); });
-        el.appendChild(b);
-        return b;
-      });
-      const wrap = h('div', { style: 'background:#fff' }, el, lbl);
-      return wrap;
-    } }], r);
-  };
+  A.historyMenu = (r, kind) => ui.historyMenu(r, kind, kind === 'undo' ? D.undoList() : D.redoList());
 
   /* ---------- drawing toolbar helpers ---------- */
   A.drawMenu = function (r) {
@@ -457,13 +436,13 @@
     const sb = L.$('#statusbar');
     const cell = (cls, tip) => h('div', { class: 'sb-cell ' + (cls || ''), 'data-tip': tip || null });
     A.sb = {
-      page: cell('', L.N('Page')), sec: cell('', L.N('Section')), pages: cell('', 'Page / pages'), at: cell('', 'Vertical position'), ln: cell('', L.N('Line|position')), col: cell('', L.N('Column|position')),
-      rec: cell('flag', 'Record macro'), trk: cell('flag act', 'Track Changes (double-click to toggle)'), ext: cell('flag act', 'Extend selection'), ovr: cell('flag act', 'Overtype (double-click to toggle)'),
+      page: cell('', L.N('Page')), sec: cell('opt', L.N('Section')), pages: cell('', 'Page / pages'), at: cell('opt', 'Vertical position'), ln: cell('', L.N('Line|position')), col: cell('', L.N('Column|position')),
+      rec: cell('flag opt', 'Record macro'), trk: cell('flag act opt', 'Track Changes (double-click to toggle)'), ext: cell('flag act opt', 'Extend selection'), ovr: cell('flag act opt', 'Overtype (double-click to toggle)'),
       lang: cell('act', L.N('Language')), spell: cell('act sb-spell', 'Spelling and grammar status'), msg: cell('grow'),
     };
     A.sb.rec.textContent = L.t('REC'); A.sb.trk.textContent = L.t('TRK'); A.sb.ext.textContent = L.t('EXT'); A.sb.ovr.textContent = L.t('OVR');
     A.sb.lang.textContent = A.langName('en-US');
-    A.sb.spell.innerHTML = '<svg width="18" height="14" viewBox="0 0 18 14"><rect x="1.5" y="1.5" width="11" height="11" fill="#fff" stroke="#556"/><path d="M3 4h7M3 6.5h7M3 9h5" stroke="#889"/><path d="M10 9l2.5 3 4.5-7" fill="none" stroke="#2f9a3a" stroke-width="1.6"/></svg>';
+    A.sb.spell.innerHTML = L.icons.get('spellStatus');
     A.sb.trk.addEventListener('dblclick', () => ui.exec('trackChanges'));
     A.sb.ovr.addEventListener('dblclick', () => { E.overtype = !E.overtype; A.updateStatus(); });
     A.sb.ext.addEventListener('dblclick', () => { E.extend = !E.extend; A.updateStatus(); });
@@ -484,7 +463,14 @@
     L.bus.on('doc-loaded', spellIcon);
     spellIcon();
     A.sb.page.addEventListener('dblclick', () => ui.exec('goTo'));
-    sb.append(A.sb.page, A.sb.sec, A.sb.pages, A.sb.at, A.sb.ln, A.sb.col, A.sb.rec, A.sb.trk, A.sb.ext, A.sb.ovr, A.sb.lang, A.sb.spell, A.sb.msg);
+    // the right end, as in the other apps (ui.js): browse buttons, view buttons, the zoom slider
+    const zoom = ui.zoomSlider({ min: 10, max: 500, value: () => Math.round(LY.zoom * 100), dialog: 'zoomDlg',
+      set: (p, final) => (final ? A.zoomTo(p + '%', { focus: false }) : A.zoomLive(p)) });
+    const browse = ui.statusGroup(['browsePrev', ui.tbDrop('', 'browseObj', (r) => A.browseMenu(r), 'Select Browse Object'), 'browseNext']);
+    browse.classList.add('sb-browse');
+    const views = ui.statusGroup(['viewNormal', 'viewWeb', 'viewPrint', 'viewOutline', 'viewReading']);
+    views.classList.add('sb-views');
+    sb.append(A.sb.page, A.sb.sec, A.sb.pages, A.sb.at, A.sb.ln, A.sb.col, A.sb.rec, A.sb.trk, A.sb.ext, A.sb.ovr, A.sb.lang, A.sb.spell, A.sb.msg, h('div', { class: 'sb-right' }, browse, views, zoom));
   }
   A.status = (msg, ms) => { if (!A.sb) return; A.sb.msg.textContent = L.t(msg); clearTimeout(statusTimer); statusTimer = setTimeout(() => { A.sb.msg.textContent = ''; }, ms || 4000); };
   A.updateStatus = L.debounce(function () {
@@ -589,7 +575,9 @@
     ui.refresh();
     L.bus.emit('view', v);
   };
-  A.zoomTo = function (v) {
+  /** zoom to v ('NN%', 'Page Width', 'Text Width', 'Whole Page', 'Two Pages'); the Zoom box and dialog give the
+      document the keyboard afterwards, the status bar's slider and the ribbon's buttons pass { focus: false } */
+  A.zoomTo = function (v, o) {
     let z;
     if (/page width/i.test(v)) z = LY.zoomFor('pageWidth');
     else if (/text width/i.test(v)) z = LY.zoomFor('textWidth');
@@ -600,7 +588,14 @@
     LY.setZoom(L.clamp(z, 0.1, 5));
     A.opts.zoom = LY.zoom; A.saveOpts();
     if (L.rulers) L.rulers.draw();
-    E.focus();
+    if (!o || o.focus !== false) E.focus();
+  };
+  /** while the slider is dragged: the same zoom without saving it; Web Layout, which lays the whole document out
+      again for a zoom, waits for the release */
+  A.zoomLive = function (pct) {
+    if (LY.view === 'web') return;
+    if (LY.multi && A.view !== 'reading') LY.setMultiPage(0);
+    LY.setZoom(L.clamp(pct / 100, 0.1, 5));
   };
 
   /* ================= toolbars visibility ================= */
@@ -1297,6 +1292,15 @@
     L.bus.on('layout-done', () => { A.updateStatus(); if (L.rulers) L.rulers.drawSoon(); if (L.drawing) L.drawing.placeHandles(); E.placeHandles(); });
     L.bus.on('zoom', () => { ui.refresh(); if (L.rulers) L.rulers.draw(); if (L.drawing) L.drawing.placeHandles(); E.placeHandles(); });
     LY.scroller.addEventListener('scroll', () => { if (L.rulers) L.rulers.drawSoon(); });
+    // Ctrl+wheel (a trackpad's pinch too) zooms in 10 % steps, as in Word and the other apps; Web Layout lays the
+    // document out again for each step, so it doesn't follow the wheel
+    LY.scroller.addEventListener('wheel', (e) => {
+      if (!(e.ctrlKey || e.metaKey) || !e.deltaY) return;
+      e.preventDefault();
+      if (LY.view === 'web') return;
+      const p = Math.round(LY.zoom * 100), n = e.deltaY < 0 ? Math.floor(p / 10) * 10 + 10 : Math.ceil(p / 10) * 10 - 10;
+      A.zoomTo(L.clamp(n, 10, 500) + '%', { focus: false });
+    }, { passive: false });
     window.addEventListener('beforeunload', (e) => { const any = (doc() && doc().dirty) || A.docs.some((w, i) => i !== A.cur && w && w.doc && w.doc.dirty); if (any) { e.preventDefault(); e.returnValue = ''; } });
     window.addEventListener('resize', L.debounce(() => { if (A.view === 'web') LY.render(); else LY.fitSizer(); if (L.rulers) L.rulers.draw(); }, 200));
     document.addEventListener('keydown', (e) => { LY.root.classList.toggle('ctrl', e.ctrlKey || e.metaKey); });

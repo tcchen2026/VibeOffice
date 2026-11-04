@@ -57,7 +57,8 @@ weekdays, months, quarters, custom lists), Ctrl+Enter and Alt+Enter.
 **View.** Normal and Page Break Preview (drag the blue page breaks), the task pane (while open it shows
 Chart, Picture or Drawing Tools for a selected object; docs/suite.md), the eight
 toolbars (Standard, Formatting, Borders, Chart, Drawing, Formula Auditing, Reviewing, List), formula
-bar, status bar, Header and Footer, Comments, Full Screen and Zoom (10–400 %, Fit Selection).
+bar, status bar, Header and Footer, Comments, Full Screen and Zoom (10–400 %, Zoom to Selection; Normal, Page
+Break Preview and the zoom slider are also at the right of the status bar, docs/suite.md).
 
 **Insert.** Cells, Rows, Columns, Worksheet, Chart (the four-step Chart Wizard), Symbol, Page Break,
 Function (Insert Function and Function Arguments with live results and help for every function),

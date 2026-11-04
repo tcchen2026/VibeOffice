@@ -96,7 +96,9 @@ another tab and back. Two runs at once each need a Chromium of their own: `CDP=h
   new mode goes into the lists of both files: what broke in review broke only in a mode no test had on.
 - `focus.test.mjs`: the keyboard back to the document, in each app and in the Classic and Paper 2016 looks: dialogs
   from a shortcut, a toolbar or ribbon button and the context menu, closed with Esc, Cancel and OK; menu-bar commands;
-  the ribbon's tabs; presses on chrome without a control (toolbars, grips, the status bar, the ribbon's tab strip).
+  the ribbon's tabs; presses on chrome without a control (toolbars, grips, the status bar, the ribbon's tab strip);
+  the status bar's zoom slider dragged, dragged and cancelled with Esc, and its + clicked (a view control: no gestures
+  test, as a zoom makes no undo step).
   After each, the element that had the keyboard has it again, with the same selection. Then the same in each app's
   modes (Classic): Quire with Track Changes, a header being edited, Outline view; Ledger with frozen panes, the second
   sheet, 150 %; Lectern with the speaker notes being edited, the Slides pane holding the keyboard, a slide with a

@@ -50,7 +50,7 @@
     A.opts = L.deepMerge(L.clone(DEFAULT_OPTS), o || {});
     E.grid = Object.assign(E.grid, A.opts.grid);
   };
-  A.saveOpts = () => { A.opts.grid = { show: E.grid.show, snap: E.grid.snap, size: E.grid.size }; L.store.set('opts', A.opts); };
+  A.saveOpts = () => { A.opts.grid = { show: E.grid.show, snap: E.grid.snap, size: E.grid.size, guides: E.grid.guides }; L.store.set('opts', A.opts); };
   A.applyOpts = () => {
     L.$('#statusbar').hidden = !A.opts.statusBar;
     A.updateToolbars();
@@ -62,7 +62,7 @@
   function buildMenus() {
     const autoShapeSub = (group) => ({ custom: (close) => shapeGrid(L.geom.MENU[group], close) });
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', '-', 'properties', ...(L.file.native() ? ['versions'] : []), ...((r) => (r.length ? ['-', ...r] : []))(window.VO ? VO.recentMenuItems(4) : []), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', 'properties', ...(L.file.native() ? ['versions'] : []), ...((r) => (r.length ? ['-', ...r] : []))(window.VO ? VO.recentMenuItems(4) : []), '-', 'exitApp'] },
       { label: '&Edit', items: ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', '-', 'clear', 'selectAll', 'duplicate', 'deleteSlide', '-', 'find', 'replace'] },
       {
         label: '&View', items: () => ['viewNormal', 'viewSorter', 'showFromStart', 'viewNotes', '-',
@@ -195,7 +195,7 @@
     const host = L.$('#toolbars');
     const fontCombo = A.parts.font(), sizeCombo = A.parts.size(), zoomCombo = A.parts.zoom();
     A.toolbarsEl = {
-      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', '|', 'print', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'painter', '|', 'undo', 'redo', '|', 'insertChart', 'insertTable', ui.tbButton('tb_tables', { icon: 'tablesBorders' }), 'hyperlink', '|', 'expandAll', 'showFormatting', 'showGrid', ui.tbSplit('viewGray', (r) => ui.openMenu(['viewColor', 'viewGray', 'viewBW'], r)), zoomCombo, 'help']),
+      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', '|', 'print', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'painter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'insertChart', 'insertTable', ui.tbButton('tb_tables', { icon: 'tablesBorders' }), 'hyperlink', '|', 'expandAll', 'showFormatting', 'showGrid', ui.tbSplit('viewGray', (r) => ui.openMenu(['viewColor', 'viewGray', 'viewBW'], r)), zoomCombo, 'help']),
       formatting: ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, 'bold', 'italic', 'underline', 'shadowText', '|', 'alignLeft', 'alignCenter', 'alignRight', '|', 'numbering', 'bullets', '|', 'growFont', 'shrinkFont', '|', 'promote', 'demote', '|', ui.tbSplit('fontColor', colorDD('font')), '|', ui.tbButton('slideDesign', { label: 'Design' }), ui.tbButton('newSlide', { label: 'New Slide' })]),
       outlining: ui.toolbar('outlining', 'Outlining', ['promote', 'demote', 'moveParaUp', 'moveParaDown', '|', 'summarySlide', 'showFormatting']),
       picture: ui.toolbar('picture', 'Picture', ['insertPicture', ui.tbDrop('', 'colorPic', A.menus.picColor, 'Color'), 'picMoreContrast', 'picLessContrast', 'picMoreBright', 'picLessBright', '|', 'picCrop', 'rotateLeft', ui.tbDrop('', 'lineStyle', lineStyleMenu, 'Line Style'), '|', ui.tbButton('formatObject', { icon: 'formatPicture' }), 'picTransparent', 'picReset']),
@@ -230,9 +230,6 @@
       ui.tbSplit('fillColor', colorDD('fill')), ui.tbSplit('lineColor', colorDD('line')), ui.tbSplit('fontColor', colorDD('font')), '|',
       ui.tbDrop('', 'lineStyle', lineStyleMenu, 'Line Style'), ui.tbDrop('', 'dashStyle', dashMenu, 'Dash Style'), ui.tbDrop('', 'arrowStyle', arrowMenu, 'Arrow Style'), ui.tbDrop('', 'shadowStyle', shadowMenu, 'Shadow Style')]);
     L.$('#drawrow').appendChild(A.toolbarsEl.drawing);
-    /* view buttons */
-    const vb = L.$('#viewbar');
-    vb.append(ui.tbButton('viewNormal'), ui.tbButton('viewSorter'), ui.tbButton('showFromCurrent'));
   }
   A.tblBorder = { c: 'tx1', w: 1, dash: 'solid' };
   let tsCache = null, tsTick = 0;
@@ -277,13 +274,14 @@
     const sb = L.$('#statusbar');
     A.sbSlide = h('div', { class: 'sb-cell fit', 'aria-live': 'polite' });
     A.sbMsg = h('div', { class: 'sb-cell grow' });
-    A.sbDesign = h('div', { class: 'sb-cell fit' });
+    A.sbDesign = h('div', { class: 'sb-cell fit opt' });
     A.sbLang = h('div', { class: 'sb-cell fit', text: 'English (U.S.)' });
-    const zr = h('input', { type: 'range', min: 10, max: 400, value: 100, id: 'sb-zoom', 'aria-label': 'Zoom' });
-    zr.addEventListener('input', () => E.setZoom(zr.value / 100));
-    A.sbZoom = h('div', { class: 'sb-cell fit sb-zoom' }, h('span', { text: '100%' }), zr);
-    sb.append(A.sbSlide, A.sbDesign, A.sbMsg, A.sbLang, A.sbZoom);
-    L.bus.on('zoom', () => { A.sbZoom.firstChild.textContent = E.zoomPct() + '%'; zr.value = E.zoomPct(); ui.refresh(); });
+    // the view buttons and the zoom slider (ui.js), as in the other apps; the slider works on the slide area, so it is
+    // greyed out in Slide Sorter, Notes Page and Print Preview
+    const zoom = ui.zoomSlider({ min: 10, max: 400, value: () => E.zoomPct(), set: (p) => E.setZoom(p / 100), dialog: 'zoomDlg', fit: 'zoomFit',
+      enabled: () => A.view === 'normal' || A.view === 'master' });
+    sb.append(A.sbSlide, A.sbDesign, A.sbMsg, A.sbLang, h('div', { class: 'sb-right' }, ui.statusGroup(['viewNormal', 'viewSorter', 'showFromCurrent']), zoom));
+    L.bus.on('zoom', () => ui.refresh());
   }
   A.status = (msg) => { if (!A.sbMsg) return; A.sbMsg.textContent = L.t(msg); clearTimeout(statusTimer); statusTimer = setTimeout(() => { A.sbMsg.textContent = ''; }, 3000); };
   A.updateStatus = function () {
@@ -602,6 +600,7 @@ addEventListener('resize',fit);fit();show(0);`;
   };
 
   /* ================= history ================= */
+  A.historyMenu = (r, kind) => ui.historyMenu(r, kind, L.hist[kind].map((e) => e.label).reverse());
   A.undo = () => { if (TE.active()) TE.sync(); if (L.hist.doUndo()) afterHistory(); };
   A.redo = () => { if (TE.active()) TE.sync(); if (L.hist.doRedo()) afterHistory(); };
   function afterHistory() {

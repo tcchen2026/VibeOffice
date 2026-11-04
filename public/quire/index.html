@@ -44,10 +44,6 @@
 .scroller.flowview { background: #fff; }
 .scroller.webview { background: #fff; }
 .sizer { position: relative; min-height: 100%; }
-.viewbar { flex: none; display: flex; align-items: center; height: 20px; padding: 0 3px; background: linear-gradient(var(--tb-a), var(--tb-b)); border-top: 1px solid var(--chrome-line); gap: 1px; }
-.viewbar .tb-btn { height: 17px; min-width: 19px; }
-.viewbar .vb-sp { flex: 1; }
-.browse { display: inline-flex; gap: 1px; }
 /* ---------- pages ---------- */
 .pages { position: absolute; top: 14px; left: 10px; transform-origin: 0 0; outline: none; color: #000; font-size: 16px; line-height: normal; caret-color: #000; -webkit-user-modify: read-write-plaintext-only; }
 .pages { -webkit-user-modify: read-write; }
@@ -248,16 +244,16 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 .mm-table input { border: 0; width: 90px; }
 .env-preview { width: 260px; height: 120px; background: var(--surface); border: 1px solid var(--grid-line); position: relative; font: 8px/1.2 Arial, Arimo, sans-serif; }
 /* ---------- print preview & reading layout ---------- */
-.app.preview .cmdbars .toolbars > :not(.preview-bar), .app.preview .drawrow, .app.preview .viewbar, .app.preview .taskpane, .app.preview .docmap { display: none; }
+.app.preview .cmdbars .toolbars > :not(.preview-bar), .app.preview .drawrow, .app.preview .sb-browse, .app.preview .sb-views, .app.preview .taskpane, .app.preview .docmap { display: none; }
 .app.preview .pages .pg-hdr, .app.preview .pages .pg-ftr { opacity: 1; }
 .app.preview .crop, .app.reading .crop { display: none; }
 .app.preview .scroller { cursor: zoom-in; }
 .app.preview .scroller.zoomed { cursor: zoom-out; }
-.app.reading .drawrow, .app.reading .viewbar, .app.reading .cmdbars .toolbars > .tb-row { display: none; }
+.app.reading .drawrow, .app.reading .sb-browse, .app.reading .cmdbars .toolbars > .tb-row { display: none; }
 .app.reading .scroller { background: #fff; }
 .app.reading .pages .pg { box-shadow: 0 0 0 1px #c9c9c9, 2px 2px 6px rgba(0,0,0,.2); }
 .app.reading .pages .pg-hdr, .app.reading .pages .pg-ftr { opacity: 1; }
-.app.fullscreen .cmdbars, .app.fullscreen .drawrow, .app.fullscreen .viewbar, .app.fullscreen .statusbar, .app.fullscreen .taskpane, .app.fullscreen .r-corner, .app.fullscreen .ruler-h, .app.fullscreen .ruler-v { display: none !important; }
+.app.fullscreen .cmdbars, .app.fullscreen .drawrow, .app.fullscreen .statusbar, .app.fullscreen .taskpane, .app.fullscreen .r-corner, .app.fullscreen .ruler-h, .app.fullscreen .ruler-v { display: none !important; }
 .app.fullscreen .work { grid-template-rows: 0 1fr; grid-template-columns: 0 1fr; }
 .closefs { position: fixed; right: 10px; top: 10px; z-index: 70; }
 /* ---------- printing (standalone tab) ---------- */
@@ -346,7 +342,6 @@ body.bluebg .pages .pc, body.bluebg .pages .pc span { color: #fff !important; }
         <div class="ruler-v" id="vruler"></div>
         <div class="scroller" id="scroller" tabindex="-1"></div>
       </div>
-      <div class="viewbar" id="viewbar"></div>
       <div class="revpane" id="revpane" hidden></div>
     </div>
     <div class="taskpane" id="taskpane"></div>

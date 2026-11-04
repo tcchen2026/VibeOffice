@@ -65,11 +65,13 @@
     C('tb_' + id, { label, checked: () => A().tbShown(id), run: () => A().toggleToolbar(id) });
   }
   C('ruler', { label: '&Ruler', icon: 'ruler', checked: () => !!A().opts.ruler, run: () => { A().opts.ruler = !A().opts.ruler; A().saveOpts(); E().layout(); } });
-  C('showGrid', { label: '&Grid and Guides...', icon: 'grid', tip: 'Show/Hide Grid', checked: () => E().grid.show, run: () => { E().grid.show = !E().grid.show; E().layout(); A().saveOpts(); } });
+  C('showGrid', { label: '&Gridlines', icon: 'grid', tip: 'Show/Hide Grid', checked: () => E().grid.show, run: () => { E().grid.show = !E().grid.show; E().layout(); A().saveOpts(); } });
+  C('showGuides', { label: 'G&uides', icon: 'guides', tip: 'Show/Hide Drawing Guides', checked: () => !!E().grid.guides, run: () => { E().grid.guides = !E().grid.guides; E().layout(); A().saveOpts(); } });
   C('gridGuides', { label: 'Gr&id and Guides...', icon: 'grid', run: () => L.dlg.grid() });
   C('headerFooter', { label: '&Header and Footer...', run: () => L.dlg.headerFooter() });
   C('zoomDlg', { label: '&Zoom...', icon: 'zoom', run: () => L.dlg.zoom() });
-  C('zoomFit', { label: '&Fit', run: () => E().setZoom('fit') });
+  C('exportPDF', { label: 'Export to &PDF...', icon: 'print', tip: 'Export to PDF, one slide per page', enabled: () => L.pres.slides.length > 0, run: () => A().exportAs('pdf', A().fileName) });
+  C('zoomFit', { label: 'Fit to &Window', icon: 'zoomFit', tip: 'Fit slide to current window', enabled: () => A().view === 'normal' || A().view === 'master', run: () => E().setZoom('fit') });
 
   /* ---------- Insert ---------- */
   C('newSlide', { label: 'New Slide...', menuLabel: '&New Slide...', tbLabel: 'New Slide', icon: 'newSlide', key: 'Ctrl+M', tip: 'New Slide', enabled: () => A().view !== 'master', run: () => A().newSlideCmd() });
@@ -134,8 +136,8 @@
   C('optionsDlg', { label: '&Options...', icon: 'options', run: () => L.dlg.options() });
 
   /* ---------- Slide Show ---------- */
-  C('showFromStart', { label: '&View Show', icon: 'slideshow', key: 'F5', tip: 'Slide Show (from start)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: 0 }) });
-  C('showFromCurrent', { label: 'Slide Show from current slide', icon: 'slideshow', key: 'Shift+F5', tip: 'Slide Show from current slide (Shift+F5)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: A().view === 'master' ? 0 : E().idx }) });
+  C('showFromStart', { label: '&View Show', icon: 'slideshowStart', key: 'F5', tip: 'Slide Show (from start)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: 0 }) });
+  C('showFromCurrent', { label: 'Slide Show from current slide', icon: 'slideshowCurrent', key: 'Shift+F5', tip: 'Slide Show from current slide (Shift+F5)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: A().view === 'master' ? 0 : E().idx }) });
   C('setupShow', { label: '&Set Up Show...', icon: 'setupShow', run: () => L.dlg.setupShow() });
   C('rehearse', { label: '&Rehearse Timings', icon: 'rehearse', tip: 'Rehearse Timings', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: 0, rehearse: true }) });
   C('actionSettings', { label: 'Act&ion Settings...', icon: 'actionSettings', enabled: hasSel, run: () => L.dlg.actionSettings() });

@@ -134,14 +134,8 @@
 .trans-list .li { padding: 1px 6px; }
 .cb-item .cb-ico { flex: none; }
 /* bottom bars */
-.viewbar { flex: none; display: flex; align-items: center; height: 22px; padding: 0 4px; background: linear-gradient(var(--tb-a), var(--tb-b)); border-top: 1px solid var(--chrome-line); gap: 1px; }
-.viewbar .tb-btn { height: 18px; min-width: 20px; }
 .drawrow { flex: none; padding: 1px 2px 2px; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-top: 1px solid var(--chrome-line); overflow-x: auto; scrollbar-width: none; }
 .drawrow::-webkit-scrollbar { display: none; }
-.sb-cell { padding: 0 10px; border-right: 1px solid var(--sb-sep); box-shadow: 1px 0 0 var(--sb-sep-hi); height: 16px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; }
-.sb-cell.fit { flex: none; }
-.sb-zoom { display: flex; align-items: center; gap: 4px; }
-.sb-zoom input[type=range] { width: 90px; height: 14px; accent-color: var(--sel); }
 /* ---------- slide rendering ---------- */
 .sl { position: relative; overflow: hidden; background: #fff; transform-origin: 0 0; font-kerning: normal; -webkit-font-smoothing: antialiased; }
 .sl .shp { position: absolute; pointer-events: none; transform-origin: 50% 50%; }
@@ -296,7 +290,6 @@
     </div>
     <div class="taskpane" id="taskpane"></div>
   </div>
-  <div class="viewbar" id="viewbar"></div>
   <div class="drawrow" id="drawrow"></div>
   <div class="statusbar" id="statusbar"></div>
 </div>

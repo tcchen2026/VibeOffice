@@ -173,8 +173,35 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .sb-cell.flag.on { color: var(--ink); }
 .sb-cell.act { cursor: default; }
 .sb-cell.act:hover { background: var(--menu-hot); }
+/* the Undo/Redo drop-down (ui.historyMenu) */
+.hist-menu { background: var(--surface); }
+.hist-list { max-height: 260px; overflow: auto; min-width: 180px; }
+.hist-list button.on { background: var(--sel); color: var(--sel-ink); }
 .sb-spell { display: inline-flex; align-items: center; }
 .sb-spell.off svg { filter: grayscale(1); opacity: .5; }
+/* the right end, the same in every app: view buttons, then the zoom slider (ui.statusGroup, ui.zoomSlider); the
+   information cells to its left give way first when the window is narrow */
+.statusbar { container-type: inline-size; }
+.statusbar > .sb-cell:not(.grow) { flex: 0 1 auto; min-width: 0; }
+/* a narrow window drops the cells an app marks optional (opt) before any cell is cut short */
+@container (max-width: 960px) { .statusbar > .sb-cell.opt { display: none; } }
+.statusbar .sb-right { flex: none; margin-left: auto; display: flex; align-items: center; gap: 8px; padding-left: 8px; height: 100%; }
+.statusbar .sb-group { display: flex; align-items: center; gap: 1px; }
+.statusbar .sb-group .tb-btn { height: 18px; min-width: 20px; padding: 0 1px; }
+.statusbar .sb-gap { width: 6px; }
+.sb-zoom { display: flex; align-items: center; gap: 1px; color: var(--ink); }
+.sb-zoom .zs-step { width: 18px; height: 18px; padding: 0; border: 1px solid transparent; border-radius: var(--ctl-radius); background: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; }
+.sb-zoom .zs-step:hover, .sb-zoom .zs-pct:hover { background: var(--menu-hot); border-color: var(--hot-border); }
+.sb-zoom .zs-track { position: relative; width: 104px; height: 18px; margin: 0 5px; touch-action: none; }
+.sb-zoom .zs-track::before { content: ''; position: absolute; left: 0; right: 0; top: 8px; height: 1px; background: var(--muted); }
+.sb-zoom .zs-track::after { content: ''; position: absolute; left: 50%; top: 5px; width: 1px; height: 7px; background: var(--muted); }
+.sb-zoom .zs-thumb { position: absolute; top: 3px; width: 5px; height: 12px; margin-left: -3px; background: var(--ink); border-radius: 1px; z-index: 1; }
+.sb-zoom .zs-track:hover .zs-thumb, .sb-zoom.dragging .zs-thumb { background: var(--sel); }
+.sb-zoom .zs-pct { min-width: 42px; height: 18px; padding: 0 4px; border: 1px solid transparent; border-radius: var(--ctl-radius); background: none; color: inherit; font: inherit; text-align: right; }
+.sb-zoom .tb-btn { height: 18px; min-width: 20px; margin-left: 2px; }
+.sb-zoom.dis { color: var(--dis-ink); }
+.sb-zoom.dis .zs-thumb { background: var(--dis-ink); }
+.sb-zoom.dis .zs-step, .sb-zoom.dis .zs-pct, .sb-zoom.dis .zs-track { pointer-events: none; }
 
 /* floating toolbars */
 .floatbar { position: absolute; z-index: 60; background: linear-gradient(var(--tb-a), var(--tb-b)); border: 1px solid var(--tb-border); border-radius: 3px; box-shadow: 2px 2px 5px var(--shadow-c); display: flex; flex-direction: column; }
@@ -357,8 +384,9 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .rb-launch { position: absolute; right: 0; bottom: 2px; width: 14px; height: 14px; padding: 0; border: 1px solid transparent; background: none; color: var(--rb-label-ink); display: flex; align-items: center; justify-content: center; }
 .rb-launch:hover { background: var(--menu-hot); border-color: var(--hot-border); }
 .tb-btn.rb-medium { justify-content: flex-start; padding: 0 5px 0 3px; }
-.tb-btn.rb-large, .tb-split.rb-large > .tb-btn { flex-direction: column; justify-content: flex-start; height: 62px; min-width: 44px; padding: 3px 4px 0; gap: 3px; }
-.tb-btn.rb-large .tb-lbl, .tb-split.rb-large .tb-lbl { max-width: 62px; white-space: normal; text-align: center; line-height: 1.15; }
+.tb-btn.rb-large, .tb-split.rb-large > .tb-btn { flex-direction: column; justify-content: flex-start; height: 66px; min-width: 44px; padding: 3px 4px 0; gap: 3px; }
+/* two lines at most (Page Break Preview, From Current Slide), never over the group's name */
+.tb-btn.rb-large .tb-lbl, .tb-split.rb-large .tb-lbl { max-width: 76px; white-space: normal; text-align: center; line-height: 1.15; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; flex: none; }
 .tb-btn.rb-large.tb-drop { position: relative; padding-bottom: 8px; }
 .tb-btn.rb-large.tb-drop .dd-arrow { margin: 0; }
 .tb-split.rb-large { flex-direction: column; }

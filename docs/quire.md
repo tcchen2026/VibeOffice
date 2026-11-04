@@ -14,7 +14,8 @@ feature. The proofing dictionaries are fetched at run time from `../common/dict/
 so the site is served rather than opened from disk (a `file://` page cannot fetch them; editing still
 works, but spelling and the thesaurus stay off). To run it locally, see [testing.md](testing.md).
 The metric-compatible fonts (see *Rendering notes*) are served with the site from `public/fonts/`.
-A hyperlink is never opened from the document: Ctrl+click and Open Hyperlink show its address to copy
+Zoom with the slider at the right of the status bar (with the view buttons), View › Zoom or Ctrl+wheel
+(docs/suite.md, The status bar). A hyperlink is never opened from the document: Ctrl+click and Open Hyperlink show its address to copy
 (docs/suite.md, Hyperlinks); `#bookmark` links go to the bookmark.
 
 ## Proofing tools (offline)

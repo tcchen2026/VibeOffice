@@ -88,6 +88,8 @@
   cmd('zoomDlg', { label: '&Zoom...', icon: 'zoom', run: run(() => D().zoom()) });
   cmd('zoomIn', { label: 'Zoom In', run: () => G().setZoom((sh().view.zoom || 100) + 10) });
   cmd('zoomOut', { label: 'Zoom Out', run: () => G().setZoom((sh().view.zoom || 100) - 10) });
+  cmd('zoom100', { label: '&100%', icon: 'zoom100', tip: 'Zoom the sheet to 100%', run: () => G().setZoom(100) });
+  cmd('zoomSelection', { label: 'Zoom to &Selection', icon: 'zoomSelection', tip: 'Zoom so the selected cells fill the window', run: () => A().zoomToSelection() });
   cmd('showFormulas', { label: 'Formula Auditing &Mode', icon: 'showFormulas', key: 'Ctrl+`', checked: () => !!sh().view.formulas, run: () => { sh().view.formulas = !sh().view.formulas; G().paint(); ui.refresh(); } });
   cmd('gridlinesView', { label: '&Gridlines', checked: () => sh().view.grid !== false, run: () => { sh().view.grid = sh().view.grid === false; G().paint(); } });
   cmd('headingsView', { label: 'Row & Column &Headers', checked: () => sh().view.headings !== false, run: () => { sh().view.headings = sh().view.headings === false; G().paint(); } });

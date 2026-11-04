@@ -231,7 +231,7 @@
   C('pageSetup', { label: 'Page Set&up...', icon: 'pageSetup', run: dlg('pageSetup') });
   C('printPreview', { label: 'Print Pre&view', icon: 'preview', key: 'Ctrl+F2', checked: () => A.view === 'preview', run: () => A.setView(A.view === 'preview' ? A.prevView || 'print' : 'preview') });
   C('print', { label: '&Print...', icon: 'print', key: 'Ctrl+P', tip: 'Print', run: (arg, ev) => { if (ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) A.printPDF(); else dlg('print')(); } });
-  C('exportPDF', { label: '&PDF Document...', icon: 'print', run: () => A.printPDF() });
+  C('exportPDF', { label: 'Export to &PDF...', icon: 'print', run: () => A.printPDF() });
   C('sendMail', { label: '&Mail Recipient (as Attachment)...', icon: 'mail', tip: 'E-mail', run: async () => { await A.exportAs('docx'); A.status('Saved a copy to attach to your e-mail message.', 6000); } });
   C('permission', { label: '&Permission', icon: 'permission', tip: 'Permission (Unrestricted Access)', run: pane('protect') });
   C('properties', { label: 'Propert&ies', icon: 'properties', run: dlg('properties') });
@@ -274,6 +274,10 @@
   C('markup', { label: '&Markup', checked: () => LY.opts.markup !== 'final' && LY.opts.markup !== 'original' && LY.opts.showComments, run: () => { const on = !(LY.opts.markup !== 'final' && LY.opts.markup !== 'original' && LY.opts.showComments); LY.opts.markup = on ? 'markup' : 'final'; LY.opts.showComments = on; LY.render(); E.restoreDom(true); } });
   C('fullScreen', { label: 'F&ull Screen', icon: 'fullScreen', checked: () => L.$('#app').classList.contains('fullscreen'), run: () => A.toggleFullScreen() });
   C('zoomDlg', { label: '&Zoom...', icon: 'zoom', run: dlg('zoom') });
+  C('zoom100', { label: '&100%', icon: 'zoom100', tip: 'Zoom the document to 100%', run: () => A.zoomTo('100%', { focus: false }) });
+  C('zoomOnePage', { label: '&One Page', icon: 'onePage', tip: 'Zoom so a whole page fits in the window', run: () => A.zoomTo('Whole Page', { focus: false }) });
+  C('zoomMultiPage', { label: '&Multiple Pages', icon: 'multiPage', tip: 'Zoom so two pages fit in the window', run: () => A.zoomTo('Two Pages', { focus: false }) });
+  C('zoomPageWidth', { label: 'Page &Width', icon: 'zoomPageWidth', tip: 'Zoom so the page is as wide as the window', run: () => A.zoomTo('Page Width', { focus: false }) });
   C('showMarks', { label: 'Show/Hide ¶', icon: 'showMarks', key: 'Ctrl+*', tip: 'Show/Hide ¶', checked: () => !!LY.opts.showMarks, run: () => { LY.opts.showMarks = !LY.opts.showMarks; LY.root.classList.toggle('marks', LY.opts.showMarks); LY.render(); E.restoreDom(true); } });
   C('gridlines', { label: 'Show &Gridlines', icon: 'grid', checked: () => LY.root && LY.root.classList.contains('gridlines'), run: () => { LY.root.classList.toggle('gridlines'); A.opts.gridlines = LY.root.classList.contains('gridlines'); A.saveOpts(); } });
 
@@ -712,7 +716,7 @@
       if (!pane2) {
         pane2 = L.h('div', { id: 'split2', class: 'split2', 'aria-label': 'Second pane' });
         const bar = L.h('div', { class: 'splitter h', id: 'split2-bar', role: 'separator' });
-        L.$('#center').insertBefore(bar, L.$('#viewbar'));
+        L.$('#center').insertBefore(bar, L.$('#revpane'));
         L.$('#center').insertBefore(pane2, bar);
         bar.addEventListener('pointerdown', (e) => {
           if (e.button !== 0) return;
