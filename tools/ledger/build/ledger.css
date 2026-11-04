@@ -187,14 +187,12 @@
 /* ================================================================ v2 components */
 .hint { color: var(--ink-5); font-size: 11px; line-height: 1.35; }
 /* list boxes */
-.lbox { background: var(--surface); border: 1px solid var(--field-border); height: 150px; overflow: auto; outline: none; min-width: 0; }
+.lbox { background: var(--surface); border: 1px solid var(--field-border); height: 150px; max-height: none; overflow: auto; outline: none; min-width: 0; }
 .lbox.short { height: 96px; }
 .lbox.fnlist { height: 170px; }
 .lbox.ac-list { height: 140px; }
 .lbox.checks { height: auto; max-height: 190px; padding: 2px 4px; display: flex; flex-direction: column; gap: 1px; }
 .lbox:focus { box-shadow: 0 0 0 1px var(--sel) inset; }
-.lbox-i { padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; font: var(--ui-size) var(--ui-font); }
-.lbox-i.on { background: var(--sel); color: var(--sel-ink); }
 /* drawing objects */
 .gobj-c { position: absolute; inset: 0; overflow: hidden; }
 .gobj.shape .gobj-c, .gobj.shape { overflow: visible; }
@@ -312,7 +310,6 @@
 .fc-psample { width: 140px; height: 60px; border: 1px solid #919b9c; }
 .swatch-btn { height: 20px; min-width: 40px; border: 1px solid var(--field-border); padding: 0 4px; display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; font: var(--ui-size) var(--ui-font); color: var(--ink); }
 .swatch-btn.wide { min-width: 120px; }
-.swatch-btn span:first-child { background: rgba(255,255,255,.85); padding: 0 2px; }
 .pat-grid button { width: 18px; height: 18px; border: 1px solid var(--swatch-line); padding: 0; }
 /* Find, Go To Special, Paste Special, misc dialogs */
 .fr-opts { display: flex; gap: 20px; padding: 6px 0; }
@@ -327,9 +324,6 @@
 .kv { border-collapse: collapse; }
 .kv td { padding: 2px 8px 2px 0; vertical-align: top; }
 .opt-cols { display: grid; grid-template-columns: repeat(3, auto); gap: 2px 12px; }
-.hl-bar { width: 120px; gap: 4px; }
-.hl-kind { border: 1px solid var(--ctl-line); background: var(--surface); padding: 6px 4px; text-align: left; font: var(--ui-size) var(--ui-font); white-space: normal; }
-.hl-kind.on { background: var(--sel-soft-2); border-color: var(--sel); }
 .refwrap { display: inline-flex; align-items: stretch; }
 .refwrap input { border-right: 0; }
 .ref-pick { width: 20px; border: 1px solid var(--field-border); background: linear-gradient(var(--btn-a), var(--btn-b)); padding: 0; display: flex; align-items: center; justify-content: center; }
@@ -361,10 +355,6 @@
 .hf-secs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .hf-secs textarea { width: 100%; }
 /* spelling */
-.sp-grid { display: flex; gap: 10px; align-items: flex-start; }
-.sp-grid > .col:first-child { flex: 1; min-width: 0; }
-.sp-btns { width: 140px; gap: 4px; }
-.sp-ctx { background: var(--surface); border: 1px solid var(--field-border); padding: 4px; min-height: 40px; white-space: pre-wrap; }
 /* task pane extras */
 .help-fn { padding: 3px 0; cursor: pointer; border-bottom: 1px dotted var(--card-line); }
 .help-fn:hover { background: var(--menu-hot); }
@@ -373,7 +363,7 @@
 .grid-menu .border-grid { grid-template-columns: repeat(4, 24px); }
 .app.fullscreen .cmdbars, .app.fullscreen .fbar, .app.fullscreen .statusbar { display: none; }
 @media (max-width: 700px) {
-  .fc-num, .fc-align, .fc-border, .fc-pat, .cw-cols, .sp-grid { flex-direction: column; }
+  .fc-num, .fc-align, .fc-border, .fc-pat, .cw-cols { flex-direction: column; }
   .fc-f3 { grid-template-columns: 1fr; }
   .fc-cats { width: auto; }
   .fc-cats .lbox { height: 110px; }

@@ -537,6 +537,20 @@
 
   /* ---------- dialogs ---------- */
   const dlgStack = [];
+  /* a tabbed dialog keeps one size whichever tab is shown, as Office's property sheets: its pages share the tallest
+     one's height, so OK and Cancel stay where they are */
+  function fitTabs(root) {
+    for (const bodies of L.$$('.tabs-body', root)) {
+      const panes = [...bodies.children], was = panes.map((p) => p.hidden);
+      if (panes.length < 2) continue;
+      let tallest = 0;
+      for (const p of panes) { panes.forEach((q) => { q.hidden = q !== p; }); tallest = Math.max(tallest, bodies.getBoundingClientRect().height); }
+      panes.forEach((q, i) => { q.hidden = was[i]; });
+      const cs = getComputedStyle(bodies);
+      const frame = cs.boxSizing === 'border-box' ? 0 : ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + (parseFloat(cs[k]) || 0), 0);
+      bodies.style.minHeight = Math.ceil(tallest - frame) + 'px';
+    }
+  }
   ui.dialogOpen = () => dlgStack.length > 0;
   /**
    * opts: {title, body, width, buttons:[{label, primary, cancel, onClick(close, button)→false to keep open}], onClose, help}
@@ -560,7 +574,7 @@
     let result;
     const done = new Promise((res) => { result = res; });
     const btns = (opts.buttons || [{ label: 'OK', primary: true }]).map((b, i) => {
-      const el = h('button', { class: 'btn' + (b.primary ? ' primary' : ''), type: 'button', html: ampHTML(b.label) });
+      const el = h('button', { class: 'btn' + (b.primary ? ' primary' : '') + (b.cls ? ' ' + b.cls : ''), type: 'button', html: ampHTML(b.label) });
       el.addEventListener('click', () => {
         if (b.onClick) { const r = b.onClick(close, el); if (r === false) return; }
         close(i);
@@ -571,6 +585,7 @@
     dlg.append(titleBar, body, foot);
     overlay.appendChild(dlg);
     (document.fullscreenElement || document.body).appendChild(overlay);   // over a slide show, which is full screen
+    fitTabs(dlg);
     /* center */
     const r = dlg.getBoundingClientRect();
     dlg.style.left = Math.max(4, (window.innerWidth - r.width) / 2) + 'px';
@@ -798,6 +813,139 @@
     wrap.setDisabled = (d) => { inp.disabled = d; up.disabled = d; dn.disabled = d; };
     return wrap;
   };
+  /** A list box, as Office's dialogs have (Font, Size, Go To, Date and Time…). items: values, [value, label] or
+   *  { value, label, note (shown at the right: a shortcut key), style, group (a heading), dim (a line that can't be
+   *  chosen) }; labels are UI text shown in the UI's language unless o.translate === 'no' (data:
+   *  fonts, sizes, names). o: { input (a box above that picks as you type, as Word's Font box), height, id (the
+   *  input's, else the list's), cls, translate, onChange(v, i), onDbl(v, i) }. Arrow keys, Home, End, Page Up/Down
+   *  and typed letters move the selection; the input's Up and Down move it too. Items are matched by value, never by
+   *  the text shown. Returns the element with get(), set(v), setItems(items), index(), .input and .list */
+  ui.listBox = function (items, value, o) {
+    o = o || {};
+    const data = o.translate === 'no';
+    const val = (it) => (Array.isArray(it) ? it[0] : it && typeof it === 'object' ? it.value : it);
+    const shown = (it) => { const s = String(Array.isArray(it) ? it[1] : it && typeof it === 'object' ? it.label : it); return data ? s : t(s); };
+    /* a group's heading, or a dimmed line that can't be chosen ("No Suggestions") */
+    const isGroup = (it) => !!(it && typeof it === 'object' && !Array.isArray(it) && (it.group || it.dim));
+    const box = h('div', { class: 'listbox' + (o.cls ? ' ' + o.cls : ''), role: 'listbox', tabindex: '0', id: o.input ? null : o.id || null, style: o.height ? `height:${o.height}px` : null, translate: data ? 'no' : null });
+    let list = items.slice(), cur = value;
+    const label = (v) => { const it = list.find((x) => !isGroup(x) && String(val(x)) === String(v)); return it ? shown(it) : v == null ? '' : String(v); };
+    const inp = o.input ? h('input', { type: 'text', class: 'listbox-in', id: o.id || 'lb' + (++ctlId), value: label(value), autocomplete: 'off', translate: data ? 'no' : null }) : null;
+    const rows = () => [...box.querySelectorAll('.li')];
+    const indexOf = (v) => rows().findIndex((r) => String(r._v) === String(v));
+    const mark = (v, scroll) => {
+      for (const r of rows()) { const on = v !== undefined && String(r._v) === String(v); r.classList.toggle('on', on); r.setAttribute('aria-selected', String(on)); if (on && scroll) r.scrollIntoView({ block: 'nearest' }); }
+    };
+    const pick = (v, fromInput) => { cur = v; if (inp && !fromInput) inp.value = label(v); mark(v, true); if (o.onChange) o.onChange(v, indexOf(v)); };
+    const render = () => {
+      L.clear(box);
+      for (const it of list) {
+        const el = h('div', { class: isGroup(it) ? (it.dim ? 'li-dim' : 'li-group') : 'li', role: isGroup(it) ? 'presentation' : 'option' });
+        el.textContent = shown(it);
+        /* a second column on the right: a shortcut key, a count */
+        if (it && typeof it === 'object' && it.note) el.appendChild(h('span', { class: 'li-note', translate: 'no', text: it.note }));
+        if (it && typeof it === 'object' && it.style) el.style.cssText += it.style;
+        box.appendChild(el);
+        if (isGroup(it)) continue;
+        const v = val(it);
+        el._v = v;
+        el.addEventListener('click', () => pick(v));
+        el.addEventListener('dblclick', () => { pick(v); if (o.onDbl) o.onDbl(v, indexOf(v)); });
+      }
+      mark(cur);
+      const on = box.querySelector('.li.on');
+      if (on) setTimeout(() => on.scrollIntoView({ block: 'nearest' }), 0);
+    };
+    /* the keys that move the selection: in the list all of them, from the input only Up, Down, Page Up and Page Down */
+    const move = (e, all) => {
+      const rs = rows();
+      if (!rs.length) return false;
+      let i = rs.findIndex((r) => r.classList.contains('on'));
+      const page = Math.max(1, Math.floor(box.clientHeight / (rs[0].offsetHeight || 16)) - 1);
+      const k = e.key;
+      if (k === 'ArrowDown') i = Math.min(rs.length - 1, i + 1);
+      else if (k === 'ArrowUp') i = Math.max(0, i - 1);
+      else if (k === 'PageDown') i = Math.min(rs.length - 1, Math.max(0, i) + page);
+      else if (k === 'PageUp') i = Math.max(0, i - page);
+      else if (all && k === 'Home') i = 0;
+      else if (all && k === 'End') i = rs.length - 1;
+      else return false;
+      e.preventDefault(); e.stopPropagation();
+      pick(rs[i]._v);
+      return true;
+    };
+    let typed = '', typedAt = 0;
+    box.addEventListener('keydown', (e) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || move(e, true)) return;
+      if (e.key.length !== 1 || e.key === ' ') return;
+      /* letters typed in quick succession find the first item that starts with them */
+      typed = (Date.now() - typedAt < 800 ? typed : '') + e.key.toLowerCase(); typedAt = Date.now();
+      const rs = rows(), from = Math.max(0, rs.findIndex((r) => r.classList.contains('on')));
+      const order = typed.length > 1 ? rs.slice(from).concat(rs.slice(0, from)) : rs.slice(from + 1).concat(rs.slice(0, from + 1));
+      const hit = order.find((r) => r.textContent.toLowerCase().startsWith(typed));
+      if (hit) { e.preventDefault(); e.stopPropagation(); pick(hit._v); }
+    });
+    if (inp) {
+      inp.addEventListener('keydown', (e) => { if (!e.altKey && !e.ctrlKey && !e.metaKey) move(e, false); });
+      inp.addEventListener('input', () => {
+        const v = inp.value, lc = v.toLowerCase();
+        const hit = list.find((x) => !isGroup(x) && shown(x).toLowerCase().startsWith(lc));
+        /* a label typed in the UI's language stands for its value */
+        const exact = list.find((x) => !isGroup(x) && shown(x).toLowerCase() === lc);
+        cur = exact && shown(exact) !== String(val(exact)) ? val(exact) : v;
+        mark(hit ? val(hit) : undefined, true);
+        if (o.onChange) o.onChange(cur, exact ? indexOf(val(exact)) : -1);
+      });
+    }
+    render();
+    const wrap = inp ? h('div', { class: 'col listbox-wrap', style: 'gap:2px' }, inp, box) : box;
+    wrap.get = () => (inp ? (cur != null && label(cur) === inp.value ? String(cur) : inp.value) : cur);
+    wrap.set = (v) => { cur = v; if (inp) inp.value = label(v); mark(v, true); };
+    wrap.setItems = (it) => { list = it.slice(); render(); };
+    wrap.index = () => indexOf(cur);
+    wrap.input = inp;
+    wrap.list = box;
+    return wrap;
+  };
+  /** A colour button in a dialog (Font color, Border color, Fill…): a swatch, the colour's name and an arrow that
+   *  opens ui.colorMenu. Values: 'auto', null (none), '#RRGGBB' or what the app's colour menu gives (a theme colour,
+   *  a fill). o: { id, mode ('font' | 'fill' | 'line' | 'plain'), automatic (offer Automatic; default for 'font'),
+   *  none (offer No Color in 'plain' and 'font'), autoText, noneText, autoColor (the swatch for Automatic),
+   *  paint(v) → CSS background, or null for the none pattern (theme colours, fills), name(v) → its label,
+   *  convert(pick, current) → the new value from the menu's pick (a fill keeping its transparency), effects(current)
+   *  → a promise of the value from Fill Effects… (undefined: cancelled), grid, design, onChange(v) }. Returns the
+   *  button with get() and set(v) */
+  ui.colorButton = function (value, o) {
+    o = o || {};
+    let val = value;
+    const sw = h('span', { class: 'cpk-sw' });
+    const lbl = h('span', { class: 'cpk-l' });
+    const btn = h('button', { type: 'button', class: 'cpk', id: o.id || 'cb' + (++ctlId), 'aria-haspopup': 'true' }, sw, lbl, h('span', { class: 'dd-arrow' }));
+    const show = () => {
+      const custom = o.paint && val && val !== 'auto' ? o.paint(val) : undefined;
+      const bg = custom !== undefined ? custom : val === 'auto' ? o.autoColor || '#000' : typeof val === 'string' && val[0] === '#' ? val : null;
+      sw.style.background = bg || '';
+      sw.classList.toggle('none', !bg);
+      const name = val === 'auto' ? t(o.autoText || 'Automatic') : !val ? t(o.noneText || (o.mode === 'fill' ? 'No Fill' : o.mode === 'line' ? 'No Line' : 'No Color')) : o.name ? o.name(val) : typeof val === 'string' && val[0] === '#' ? ui.colorName(val) : '';
+      lbl.textContent = name;
+      btn.setAttribute('aria-label', name);
+    };
+    show();
+    btn.addEventListener('click', () => ui.colorMenu(btn, { mode: o.mode || 'font', automatic: o.automatic, noneLabel: o.none ? o.noneText || 'No Color' : null, effects: !!o.effects, grid: o.grid, design: o.design, current: typeof val === 'string' && val[0] === '#' ? val : null }, async (v) => {
+      let next;
+      if (v && v.effects) { next = await o.effects(val); if (next === undefined) return; }
+      else if (v && v.auto) next = 'auto';
+      else if (v && v.none) next = null;
+      else if (typeof v === 'string') next = v[0] === '#' ? v.toUpperCase() : v;
+      else return;
+      val = o.convert && !(v && v.effects) ? o.convert(next, val) : next;
+      show();
+      if (o.onChange) o.onChange(val);
+    }));
+    btn.get = () => val;
+    btn.set = (v) => { val = v; show(); };
+    return btn;
+  };
   /** Tabs: [{label, body}] */
   ui.tabs = (tabs, active) => {
     const head = h('div', { class: 'tabs-head', role: 'tablist' });
@@ -915,9 +1063,10 @@
   const recent = [];
   ui.addRecentColor = (c) => { if (!c || c[0] !== '#') return; const i = recent.indexOf(c); if (i >= 0) recent.splice(i, 1); recent.unshift(c); recent.length = Math.min(recent.length, 8); };
   /**
-   * Colour drop-down. o: {mode:'fill'|'line'|'font'|'plain', design, noneLabel, effects:bool, automatic:bool,
+   * Colour drop-down. o: {mode:'fill'|'line'|'font'|'plain', design, effects:bool, automatic:bool (false: no Automatic,
+   *   even in 'font'), noneLabel (a No Color entry where the mode has none), current ('#hex' More Colors starts at),
    *   scheme:bool (theme colours; on when the app provides ui.schemeColors), grid:bool (the standard colours too)}
-   * onPick(value) where value is a colour ('#hex' or scheme ref), {none:true}, {auto:true}, {more:true}, {effects:true}
+   * onPick(value) where value is a colour ('#hex' or scheme ref), {none:true}, {auto:true}, {effects:true}
    */
   ui.colorMenu = function (anchor, o, onPick) {
     o = o || {};
@@ -927,7 +1076,8 @@
     const panel = (close) => {
       const el = h('div', { class: 'color-panel' });
       if (o.mode === 'fill' || o.mode === 'line') el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'fill' ? 'No Fill' : 'No Line', onclick: () => { close(); onPick({ none: true }); } }));
-      if (o.mode === 'font' || o.automatic) el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: 'Automatic', onclick: () => { close(); onPick({ auto: true }); } }));
+      if (o.automatic !== false && (o.mode === 'font' || o.automatic)) el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: 'Automatic', onclick: () => { close(); onPick({ auto: true }); } }));
+      else if (o.noneLabel && o.mode !== 'fill' && o.mode !== 'line') el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.noneLabel, onclick: () => { close(); onPick({ none: true }); } }));
       el.appendChild(h('div', { class: 'cp-sep' }));
       if (scheme && ui.schemeColors) {
         const row = h('div', { class: 'cp-row' });
@@ -951,7 +1101,7 @@
         el.appendChild(g);
       }
       el.appendChild(h('div', { class: 'cp-sep' }));
-      el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'fill' ? 'More Fill Colors...' : o.mode === 'line' ? 'More Line Colors...' : 'More Colors...', onclick: () => { close(); ui.moreColors(null, (c) => { if (c) { ui.addRecentColor(c); onPick(c); } }); } }));
+      el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'fill' ? 'More Fill Colors...' : o.mode === 'line' ? 'More Line Colors...' : 'More Colors...', onclick: () => { close(); ui.moreColors(o.current || null, (c) => { if (c) { ui.addRecentColor(c); onPick(c); } }); } }));
       if (o.effects) el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'line' ? 'Patterned Lines...' : 'Fill Effects...', onclick: () => { close(); onPick({ effects: true }); } }));
       return el;
     };

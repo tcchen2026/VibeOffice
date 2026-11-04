@@ -168,50 +168,18 @@
     });
   };
 
-  /* ================= Symbol ================= */
-  const SPECIALS = [['—', L.N('Em Dash'), 'Alt+Ctrl+Num -'], ['–', L.N('En Dash'), 'Ctrl+Num -'], ['‑', L.N('Nonbreaking Hyphen'), 'Ctrl+_'], ['­', L.N('Optional Hyphen'), 'Ctrl+-'], [' ', L.N('Em Space'), ''], [' ', L.N('En Space'), ''], [' ', L.N('1/4 Em Space'), ''], [' ', L.N('Nonbreaking Space'), 'Ctrl+Shift+Space'], ['©', L.N('Copyright'), 'Alt+Ctrl+C'], ['®', L.N('Registered'), 'Alt+Ctrl+R'], ['™', L.N('Trademark'), 'Alt+Ctrl+T'], ['§', L.N('Section'), ''], ['¶', L.N('Paragraph'), ''], ['…', L.N('Ellipsis'), 'Alt+Ctrl+.'], ['‘', L.N('Single Opening Quote'), "Ctrl+`,`"], ['’', L.N('Single Closing Quote'), "Ctrl+','"], ['“', L.N('Double Opening Quote'), 'Ctrl+`,"'], ['”', L.N('Double Closing Quote'), "Ctrl+',\""], ['​', L.N('No-Width Optional Break'), ''], ['⁠', L.N('No-Width Non Break'), '']];
-  const SUBSETS = [[L.N('Basic Latin'), 0x20, 0x7e], [L.N('Latin-1 Supplement'), 0xa0, 0xff], [L.N('Latin Extended-A'), 0x100, 0x17f], [L.N('Greek and Coptic'), 0x370, 0x3ff], [L.N('Cyrillic'), 0x400, 0x4ff], [L.N('General Punctuation'), 0x2010, 0x205e], [L.N('Currency Symbols'), 0x20a0, 0x20bf], [L.N('Letterlike Symbols'), 0x2100, 0x214f], [L.N('Number Forms'), 0x2150, 0x218b], [L.N('Arrows'), 0x2190, 0x21ff], [L.N('Mathematical Operators'), 0x2200, 0x22ff], [L.N('Miscellaneous Technical'), 0x2300, 0x23ff], [L.N('Box Drawing'), 0x2500, 0x257f], [L.N('Block Elements'), 0x2580, 0x259f], [L.N('Geometric Shapes'), 0x25a0, 0x25ff], [L.N('Miscellaneous Symbols'), 0x2600, 0x26ff], [L.N('Dingbats'), 0x2700, 0x27bf]];
+  /* ================= Symbol (common ui.symbolDialog) ================= */
+  /** opts.pick(ch, font): a picker (a note mark, a bullet) instead of inserting */
   G.symbol = function (opts) {
     opts = opts || {};
-    let cur = null;
-    const recent = L.store.get('recentSymbols', ['€', '£', '¥', '©', '®', '™', '±', '≠', '≤', '≥', '÷', '×', '∞', 'µ', 'α', 'β']);
-    const font = ui.select([['', L.t('(normal text)')], ['Symbol', 'Symbol'], ['Wingdings', 'Wingdings'], ['Webdings', 'Webdings']].concat(G.FONTS().map((f) => [f, f])), '', () => fill(), { id: 'sy-font', translate: 'no' });
-    const subset = ui.select(SUBSETS.map((s, i) => [i, s[0]]), 1, () => fill(), { id: 'sy-sub' });
-    const grid = h('div', { class: 'sym-grid' });
-    const codeIn = h('input', { type: 'text', id: 'sy-code', style: 'width:70px' });
-    const name = h('div', { class: 'tp-note', style: 'min-height:16px' });
-    const fill = () => {
-      L.clear(grid);
-      const f = font.value;
-      const chars = [];
-      if (f === 'Symbol' || f === 'Wingdings' || f === 'Webdings') for (let c = 0x21; c <= 0xff; c++) { if (c >= 0x7f && c < 0xa1) continue; const u = L.mapSymbolChar(String.fromCharCode(c), f); if (u) chars.push({ ch: u, raw: String.fromCharCode(c), font: f }); }
-      else { const [, a, b] = SUBSETS[+subset.value]; for (let c = a; c <= b; c++) chars.push({ ch: String.fromCodePoint(c), font: f }); }
-      for (const c of chars) {
-        const b = h('button', { type: 'button', text: c.ch, style: c.font && !/Symbol|Wingdings|Webdings/.test(c.font) ? `font-family:${L.fontStack(c.font)}` : '' });
-        b.addEventListener('click', () => { L.$$('button.on', grid).forEach((x) => x.classList.remove('on')); b.classList.add('on'); cur = c; codeIn.value = c.ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0'); name.textContent = L.t('Unicode character {0}', codeIn.value); });
-        b.addEventListener('dblclick', () => { cur = c; insertBtn.click(); });
-        grid.appendChild(b);
-      }
-    };
-    fill();
-    codeIn.addEventListener('change', () => { const n = parseInt(codeIn.value, 16); if (!isNaN(n)) { cur = { ch: String.fromCodePoint(n), font: '' }; name.textContent = L.t('Unicode character {0}', codeIn.value.toUpperCase()); } });
-    const rec = h('div', { class: 'sym-recent' });
-    for (const c of recent.slice(0, 16)) { const b = h('button', { type: 'button', text: c }); b.addEventListener('click', () => { cur = { ch: c, font: '' }; codeIn.value = c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0'); }); b.addEventListener('dblclick', () => { cur = { ch: c, font: '' }; insertBtn.click(); }); rec.appendChild(b); }
-    const spec = G.listBox(SPECIALS.map(([c, n, k]) => ({ value: c, label: L.t(n) + (k ? '   ' + ui.keyText(k) : '') })), SPECIALS[0][0], { height: 220, onDbl: () => insertBtn.click() });
-    const tabs = ui.tabs([{ label: '&Symbols', body: h('div', { class: 'col' }, G.row(G.f('&Font:', font), G.f('Subset:', subset)), grid, h('div', { class: 'cd-cap', text: 'Recently used symbols:' }), rec, G.row(name, G.f('Character code:', codeIn))) }, { label: 'S&pecial Characters', body: spec }]);
-    let tabIdx = 0;
-    tabs.querySelectorAll('.tab').forEach((t, i) => t.addEventListener('click', () => { tabIdx = i; }));
-    const doInsert = () => {
-      const c = tabIdx === 1 ? { ch: spec.get(), font: '' } : cur;
-      if (!c) return;
-      if (opts.pick) { opts.pick(c.ch, c.font); return; }
-      const list = [c.ch].concat(recent.filter((x) => x !== c.ch)).slice(0, 16);
-      L.store.set('recentSymbols', list);
-      if (c.raw && c.font) E.insertItem(D.item('sym', { font: c.font, char: c.raw, code: c.raw.charCodeAt(0).toString(16).toUpperCase() }, O.inheritRPr(E.sel.f)), 'Insert Symbol');
-      else E.insertTextAt(c.ch, 'Insert Symbol');
-    };
-    const dlg = ui.dialog({ title: 'Symbol', width: 520, body: tabs, buttons: [{ label: '&Insert', primary: true, onClick: () => { doInsert(); if (opts.pick) return; return false; } }, { label: opts.pick ? 'Cancel' : 'Close' }] });
-    const insertBtn = dlg.buttons[0];
+    ui.symbolDialog({
+      fonts: G.FONTS(), keys: true, pick: opts.pick ? (c) => opts.pick(c.ch, c.font) : null,
+      /* a character of Symbol, Wingdings or Webdings stays one, with its code in that font (w:sym) */
+      insert: (c) => {
+        if (c.raw && c.font) E.insertItem(D.item('sym', { font: c.font, char: c.raw, code: c.raw.charCodeAt(0).toString(16).toUpperCase() }, O.inheritRPr(E.sel.f)), 'Insert Symbol');
+        else E.insertTextAt(c.ch, 'Insert Symbol');
+      },
+    });
   };
 
   /* ================= Footnote and Endnote ================= */
@@ -429,6 +397,7 @@
   };
 
   /* ================= Hyperlink ================= */
+  /** Insert ▸ Hyperlink (common ui.hyperlinkDialog): the link at the caret is edited as a whole */
   G.hyperlink = function () {
     const d = doc();
     let cur = null;
@@ -444,44 +413,33 @@
       if (s >= 0) range = [D.pos(p, s), D.pos(p, e)];
     }
     const selText = range && !D.eqPos(range[0], range[1]) ? O.textRange(range[0], range[1], ' ') : '';
-    const disp = h('input', { type: 'text', id: 'hl-disp', value: selText || '<<Selection in Document>>', style: 'width:100%' });
-    if (!selText) disp.value = '';
-    const addr = h('input', { type: 'text', id: 'hl-addr', value: cur && cur.url && !/^mailto:/.test(cur.url) ? cur.url : '', style: 'width:100%' });
-    const tip = cur && cur.tip ? cur.tip : '';
-    const place = G.listBox([], cur && cur.anchor ? cur.anchor : null, { height: 170, translate: 'no' });   // headings and bookmarks: the document's own
-    const places = [{ value: '', label: L.t('Top of the Document') }];
+    /* the places: the top, the headings (a bookmark is made for one when it is linked), the bookmarks */
     D.reindex(d);
-    places.push({ value: '', label: L.t('Headings'), group: true });
+    const places = [{ value: '', label: L.t('Top of the Document') }, { label: L.t('Headings'), group: true }];
     for (const p of d.main.paras) { const lv = D.headingLevel(d, p); if (lv) places.push({ value: '§' + p.id, label: '    '.repeat(lv - 1) + D.plainText(p).trim().slice(0, 60) }); }
-    places.push({ value: '', label: L.t('Bookmarks'), group: true });
+    places.push({ label: L.t('Bookmarks'), group: true });
     for (const [n] of F().bookmarks()) if (!n.startsWith('_')) places.push({ value: n, label: n });
-    place.setItems(places);
-    const mail = h('input', { type: 'text', id: 'hl-mail', value: cur && /^mailto:/.test(cur.url || '') ? cur.url.slice(7).split('?')[0] : '', style: 'width:100%' });
-    const subj = h('input', { type: 'text', id: 'hl-subj', style: 'width:100%' });
-    let kind = cur && cur.anchor && !cur.url ? 1 : cur && /^mailto:/.test(cur.url || '') ? 2 : 0;
-    const tabs = ui.tabs([
-      { label: 'E&xisting File or Web Page', body: h('div', { class: 'col' }, h('label', { for: 'hl-addr', html: ui.ampHTML('Addr&ess:') }), addr, h('div', { class: 'tp-note', text: L.t('Type a web address (https://…) or the name of a file.') })), onShow: () => { kind = 0; } },
-      { label: 'Place in This &Document', body: h('div', { class: 'col' }, h('div', { text: 'Select a place in this document:' }), place), onShow: () => { kind = 1; } },
-      { label: 'E-&mail Address', body: h('div', { class: 'col' }, h('label', { for: 'hl-mail', text: 'E-mail address:' }), mail, h('label', { for: 'hl-subj', text: 'Subject:' }), subj), onShow: () => { kind = 2; } },
-    ], kind);
-    let screenTip = tip;
-    ui.dialog({
-      title: cur ? 'Edit Hyperlink' : 'Insert Hyperlink', width: 520, focus: kind === 0 ? addr : null,
-      body: h('div', { class: 'col' }, G.row(h('label', { for: 'hl-disp', html: ui.ampHTML('&Text to display:'), style: 'width:110px' }), h('div', { style: 'flex:1' }, disp), ui.button('ScreenTi&p...', async () => { const t = await ui.prompt('ScreenTip text:', screenTip, 'Set Hyperlink ScreenTip'); if (t != null) screenTip = t; }, { class: 'btn small' })), tabs),
-      buttons: (cur ? [{ label: '&Remove Link', onClick: () => { A().removeHyperlink(); } }] : []).concat([{ label: 'OK', primary: true, onClick: () => {
+    const anchor = cur && cur.anchor != null && !cur.url ? (cur.anchor === '_top' ? '' : cur.anchor) : undefined;
+    ui.hyperlinkDialog({
+      link: cur ? { url: cur.url, place: anchor, tip: cur.tip } : null, text: selText, places,
+      remove: () => A().removeHyperlink(),
+      apply: (r) => {
         let link;
-        if (kind === 0) { let u = addr.value.trim(); if (!u) return false; if (/^www\./i.test(u)) u = 'http://' + u; link = { url: u }; }
-        else if (kind === 1) {
-          let a = place.get();
+        if (r.kind === 'place') {
+          let a = r.place;
           if (a && a.startsWith('§')) { const p = D.byId(d, +a.slice(1)); E.edit(L.N('Bookmark'), () => { a = F().ensureParaBookmark(p, '_Toc'); return E.sel; }); }
           link = { anchor: a || '_top' };
-        } else { const m = mail.value.trim(); if (!m) return false; link = { url: 'mailto:' + m + (subj.value ? '?subject=' + encodeURIComponent(subj.value) : '') }; }
-        if (screenTip) link.tip = screenTip;
+        } else {
+          link = { url: r.url };
+          if (cur && cur.anchor && cur.url === r.url) link.anchor = cur.anchor;   // the place in the file it points to
+        }
+        if (r.tip) link.tip = r.tip;
         if (cur?.target) link.target = cur.target; // the frame it opens in, which this dialog doesn't show
-        const text = disp.value || (kind === 0 ? addr.value : kind === 2 ? mail.value : place.get() || 'Top of the Document');
+        const placeName = () => { const it = places.find((x) => !x.group && x.value === r.place); return it ? it.label.trim() : String(r.place || ''); };
+        const text = r.text || (r.kind === 'web' ? r.url : r.kind === 'mail' ? r.url.replace(/^mailto:/i, '').split('?')[0] : placeName());
         E.edit(cur ? 'Edit Hyperlink' : 'Insert Hyperlink', () => {
           const style = D.useStyle(d, 'Hyperlink');
-          if (range && !D.eqPos(range[0], range[1]) && text === selText) { O.formatRange(range[0], range[1], (r) => Object.assign(r, { link, style })); return { a: range[0], f: range[1] }; }
+          if (range && !D.eqPos(range[0], range[1]) && text === selText) { O.formatRange(range[0], range[1], (x) => Object.assign(x, { link, style })); return { a: range[0], f: range[1] }; }
           E.sel = { a: range[0], f: range[1] };
           const pos = E.deleteSelection();
           const base = O.inheritRPr(pos);
@@ -489,7 +447,7 @@
           return O.insertText(pos, text, Object.assign(base, { link, style }));
         });
         E.pending = { link: undefined, style: undefined };
-      } }, { label: 'Cancel' }]),
+      },
     });
   };
 

@@ -13,29 +13,13 @@
   const wb = () => G().wb;
   const tryRun = (fn) => { try { fn(); } catch (e) { A().error(e); } G().paint(); G().syncObjects(); ui.refresh(); };
   const num = (v, d) => { const x = parseFloat(String(v).replace(/,/g, '')); return isNaN(x) ? d : x; };
+  /** a list box (common ui.listBox) with Ledger's names: select(v), value() (null when nothing is chosen), index(),
+   *  ondbl; o.class keeps its height ('lbox short', 'lbox fnlist'…), o.translate 'no': its items are data */
   const list = (items, value, onPick, o) => {
-    /* a Windows-style list box; o.translate 'no': its items are data (names, codes), shown as they are */
-    const el = h('div', Object.assign({ class: 'lbox', role: 'listbox', tabindex: '0' }, o || {}));
-    const raw = !!o && o.translate === 'no';
-    let cur = -1;
-    const rows = items.map((it, i) => {
-      const [v, label] = Array.isArray(it) ? it : [it, it];
-      const r = h('div', { class: 'lbox-i', role: 'option', text: raw ? null : label });
-      if (raw) r.textContent = label;
-      r._v = v;
-      r.addEventListener('click', () => { set(i); if (onPick) onPick(v, i); });
-      r.addEventListener('dblclick', () => { if (el.ondbl) el.ondbl(v, i); });
-      el.appendChild(r);
-      return r;
-    });
-    const set = (i, scroll) => { if (rows[cur]) rows[cur].classList.remove('on'); cur = i; if (rows[cur]) { rows[cur].classList.add('on'); if (scroll !== false) rows[cur].scrollIntoView({ block: 'nearest' }); } };
-    el.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); const n = Math.max(0, Math.min(rows.length - 1, cur + (e.key === 'ArrowDown' ? 1 : -1))); set(n); if (onPick) onPick(rows[n]._v, n); }
-    });
-    el.select = (v) => { const i = rows.findIndex((r) => String(r._v) === String(v)); set(i); return i; };
-    el.value = () => (rows[cur] ? rows[cur]._v : null);
-    el.index = () => cur;
-    if (value != null) setTimeout(() => el.select(value), 0);
+    o = o || {};
+    const el = ui.listBox(items, value, { cls: o.class || 'lbox', translate: o.translate, onChange: onPick ? (v, i) => onPick(v, i) : null, onDbl: (v, i) => { if (el.ondbl) el.ondbl(v, i); } });
+    el.select = (v) => { el.set(v); return el.index(); };
+    el.value = () => (el.index() >= 0 ? el.get() : null);
     return el;
   };
   D.list = list;
@@ -191,19 +175,15 @@
       ui.group('Orientation', h('div', { class: 'row' }, vert, dial), ui.field('', rotSpin)));
     /* ---------- Font ---------- */
     const f = out.font;
-    const fontName = h('input', { type: 'text', value: LY.fontName(w, f), style: 'width:100%' });
-    const fontList = list(L.FONT_LIST, LY.fontName(w, f), (x) => { fontName.value = x; f.name = x; delete f.scheme; changed.font = true; prev(); }, { class: 'lbox short', translate: 'no' });
-    fontName.addEventListener('input', () => { f.name = fontName.value; delete f.scheme; changed.font = true; prev(); });
-    const styles = [['r', L.N('Regular')], ['i', L.N('Italic')], ['b', L.N('Bold')], ['bi', 'Bold Italic']];
+    /* the three lists with a box above each, as in Excel (common ui.listBox): picking or typing changes the font */
+    const fontList = ui.listBox(L.FONT_LIST, LY.fontName(w, f), { input: true, height: 96, id: 'fc-font', translate: 'no', onChange: (x) => { if (!String(x).trim()) return; f.name = String(x); delete f.scheme; changed.font = true; prev(); } });
+    const styles = [['r', L.N('Regular')], ['i', L.N('Italic')], ['b', L.N('Bold')], ['bi', L.N('Bold Italic')]];
     const curStyle = (f.b ? 'b' : '') + (f.i ? 'i' : '') || 'r';
-    const styleList = list(styles, curStyle, (x) => { f.b = /b/.test(x) || undefined; f.i = /i/.test(x) || undefined; changed.font = true; prev(); }, { class: 'lbox short' });
-    const sizeIn = h('input', { type: 'text', value: String(f.sz || 10), style: 'width:100%' });
-    const sizeList = list(L.SIZE_LIST, f.sz || 10, (x) => { sizeIn.value = x; f.sz = +x; changed.font = true; prev(); }, { class: 'lbox short' });
-    sizeIn.addEventListener('input', () => { const x = num(sizeIn.value, null); if (x >= 1 && x <= 409) { f.sz = x; changed.font = true; prev(); } });
+    const styleList = ui.listBox(styles, curStyle, { input: true, height: 96, id: 'fc-style', onChange: (x) => { if (!/^(r|i|b|bi)$/.test(x)) return; f.b = /b/.test(x) || undefined; f.i = /i/.test(x) || undefined; changed.font = true; prev(); } });
+    const sizeList = ui.listBox(L.SIZE_LIST.map(String), String(f.sz || 10), { input: true, height: 96, id: 'fc-size', translate: 'no', onChange: (x) => { const n = num(x, null); if (n >= 1 && n <= 409) { f.sz = n; changed.font = true; prev(); } } });
     const uSel = ui.select([['none', 'None'], ['single', 'Single'], ['double', 'Double'], ['singleAccounting', 'Single Accounting'], ['doubleAccounting', 'Double Accounting']], f.u || 'none', (x) => { f.u = x === 'none' ? undefined : x; changed.font = true; prev(); });
-    const fcol = h('button', { type: 'button', class: 'swatch-btn wide', style: `background:${M.colorHex(w, f.color, '#000000')}` }, h('span', { text: f.color && !f.color.auto ? '' : 'Automatic' }), h('span', { class: 'dd-arrow' }));
-    fcol.addEventListener('click', () => ui.colorMenu(fcol, { mode: 'font', grid: true }, (c) => { if (c.auto) { f.color = undefined; fcol.style.background = '#000'; fcol.firstChild.textContent = L.t('Automatic'); } else if (typeof c === 'string') { f.color = M.rgb(c); fcol.style.background = c; fcol.firstChild.textContent = ''; } changed.font = true; prev(); }));
-    const normal = ui.check('&Normal font', false, (x) => { if (x) { Object.keys(f).forEach((k) => delete f[k]); Object.assign(f, JSON.parse(JSON.stringify(w.styles.get(0).font))); fontName.value = LY.fontName(w, f); sizeIn.value = f.sz; changed.font = true; prev(); } });
+    const fcol = ui.colorButton(f.color && !f.color.auto ? M.colorHex(w, f.color, '#000000') : 'auto', { mode: 'font', grid: true, onChange: (c) => { f.color = c === 'auto' ? undefined : M.rgb(c); changed.font = true; prev(); } });
+    const normal = ui.check('&Normal font', false, (x) => { if (x) { Object.keys(f).forEach((k) => delete f[k]); Object.assign(f, JSON.parse(JSON.stringify(w.styles.get(0).font))); fontList.set(LY.fontName(w, f)); sizeList.set(String(f.sz)); styleList.set((f.b ? 'b' : '') + (f.i ? 'i' : '') || 'r'); changed.font = true; prev(); } });
     const fprev = h('div', { class: 'fc-fprev', text: 'AaBbCcYyZz' });
     function prev() {
       fprev.style.font = LY.cssFont(Object.assign({}, f, { name: LY.fontName(w, f) }), 1.3);
@@ -214,7 +194,7 @@
     }
     prev();
     const fontBody = h('div', { class: 'fc-font' },
-      h('div', { class: 'fc-f3' }, h('div', { class: 'col' }, h('label', { html: ui.ampHTML('&Font:') }), fontName, fontList), h('div', { class: 'col' }, h('label', { html: ui.ampHTML('Font st&yle:') }), styleList), h('div', { class: 'col' }, h('label', { html: ui.ampHTML('&Size:') }), sizeIn, sizeList)),
+      h('div', { class: 'fc-f3' }, h('div', { class: 'col' }, h('label', { for: 'fc-font', html: ui.ampHTML('&Font:') }), fontList), h('div', { class: 'col' }, h('label', { for: 'fc-style', html: ui.ampHTML('Font st&yle:') }), styleList), h('div', { class: 'col' }, h('label', { for: 'fc-size', html: ui.ampHTML('&Size:') }), sizeList)),
       h('div', { class: 'row', style: 'gap:12px;align-items:flex-end' }, ui.field('&Underline:', uSel), ui.field('&Color:', fcol), normal),
       h('div', { class: 'row', style: 'gap:12px;align-items:stretch' },
         ui.group('Effects', ui.check('Stri&kethrough', !!f.strike, (x) => { f.strike = x || undefined; changed.font = true; prev(); }), ui.check('Sup&erscript', f.vert === 'superscript', (x) => { f.vert = x ? 'superscript' : undefined; changed.font = true; prev(); }), ui.check('Su&bscript', f.vert === 'subscript', (x) => { f.vert = x ? 'subscript' : undefined; changed.font = true; prev(); })),
@@ -233,8 +213,7 @@
     const LINE_NAMES = { none: L.N('None'), hair: L.N('Hairline'), dotted: L.N('Dotted'), dashDotDot: 'Dash dot dot', dashDot: 'Dash dot', dashed: L.N('Dashed'), thin: L.N('Thin'), mediumDashDotDot: 'Medium dash dot dot', slantDashDot: 'Slanted dash dot', mediumDashDot: 'Medium dash dot', mediumDashed: 'Medium dashed', medium: L.N('Medium'), thick: L.N('Thick'), double: L.N('Double') };
     for (const k of ['none'].concat(LINES)) { const b = h('button', { type: 'button', class: 'fc-line' + (k === 'thin' ? ' on' : ''), html: k === 'none' ? `<span style="font-size:10px">${L.esc(L.t('None'))}</span>` : lineSvg(k), 'aria-label': LINE_NAMES[k] }); b.addEventListener('click', () => { L.$$('.fc-line', lineBox).forEach((x) => x.classList.remove('on')); b.classList.add('on'); line = k === 'none' ? null : Object.assign({}, line || {}, { style: k }); }); lineBox.appendChild(b); }
     let lineColor = null;
-    const lcol = h('button', { type: 'button', class: 'swatch-btn wide', style: 'background:#000' }, h('span', { text: 'Automatic' }), h('span', { class: 'dd-arrow' }));
-    lcol.addEventListener('click', () => ui.colorMenu(lcol, { mode: 'font', grid: true }, (c) => { if (c.auto) { lineColor = null; lcol.style.background = '#000'; lcol.firstChild.textContent = L.t('Automatic'); } else if (typeof c === 'string') { lineColor = M.rgb(c); lcol.style.background = c; lcol.firstChild.textContent = ''; } }));
+    const lcol = ui.colorButton('auto', { mode: 'font', grid: true, onChange: (c) => { lineColor = c === 'auto' ? null : M.rgb(c); } });
     const prevBox = h('div', { class: 'fc-bprev' });
     const curLine = () => (line ? Object.assign({ style: line.style }, lineColor ? { color: lineColor } : {}) : null);
     const toggle = (k) => { const cur = edges[k]; const ln = curLine(); edges[k] = cur && ln && cur.style === ln.style && JSON.stringify(cur.color || null) === JSON.stringify(ln.color || null) ? null : ln; touched[k] = true; drawB(); };
@@ -724,25 +703,11 @@
     ui.dialog({ title: 'Zoom', width: 240, body: ui.group('Magnification', h('div', { class: 'col', style: 'gap:2px' }, ...opts, ui.radio('zoom', '&Fit selection', false, () => { pick = 'fit'; }), h('div', { class: 'row', style: 'gap:6px' }, customR, custom))),
       buttons: [{ label: 'OK', primary: true, onClick: () => { if (pick === 'fit') A().zoomToSelection(); else G().setZoom(pick === 'custom' ? Math.round(custom.get()) : pick); } }, { label: 'Cancel' }] });
   };
-  D.symbol = function () {
-    const font = h('input', { type: 'text', value: 'Arial', style: 'width:140px' });
-    const ranges = [['Basic Latin', 0x20, 0x7e], ['Latin-1 Supplement', 0xa1, 0xff], ['Latin Extended-A', 0x100, 0x17f], [L.N('Greek'), 0x391, 0x3c9], [L.N('Cyrillic'), 0x410, 0x44f], ['General Punctuation', 0x2010, 0x205e], ['Currency Symbols', 0x20a0, 0x20bf], ['Letterlike Symbols', 0x2100, 0x214f], ['Number Forms', 0x2150, 0x218b], [L.N('Arrows'), 0x2190, 0x21ff], ['Mathematical Operators', 0x2200, 0x22ff], ['Box Drawing', 0x2500, 0x257f], ['Geometric Shapes', 0x25a0, 0x25ff], ['Miscellaneous Symbols', 0x2600, 0x26ff], [L.N('Dingbats'), 0x2700, 0x27bf]];
-    let pick = null;
-    const grid = h('div', { class: 'sym-grid', translate: 'no' });
-    const info = h('div', { class: 'hint' });
-    const draw = (i) => { grid.textContent = ''; const [, a, b] = ranges[i]; for (let cp = a; cp <= b; cp++) { const ch = String.fromCodePoint(cp); const btn = h('button', { type: 'button', translate: 'no', text: ch, 'aria-label': 'U+' + cp.toString(16).toUpperCase() }); btn.style.fontFamily = LY.fontStack(font.value); btn.addEventListener('click', () => { L.$$('button', grid).forEach((x) => x.classList.remove('on')); btn.classList.add('on'); pick = ch; info.textContent = L.t('Character code: {0} (Unicode hex)', cp.toString(16).toUpperCase().padStart(4, '0')); }); btn.addEventListener('dblclick', () => { pick = ch; insert(); }); grid.appendChild(btn); } };
-    const sub = ui.select(ranges.map((r, i) => [i, r[0]]), 1, (v) => draw(+v));
-    draw(1);
-    const special = list([['—', L.N('— Em Dash')], ['–', L.N('– En Dash')], ['©', L.N('© Copyright')], ['®', L.N('® Registered')], ['™', L.N('™ Trademark')], ['§', L.N('§ Section')], ['¶', L.N('¶ Paragraph')], ['…', L.N('… Ellipsis')], ['‘', L.N('‘ Single Opening Quote')], ['’', L.N('’ Single Closing Quote')], ['“', L.N('“ Double Opening Quote')], ['”', L.N('” Double Closing Quote')], [' ', 'Nonbreaking Space']], null, (v) => { pick = v; });
-    const insert = () => {
-      if (!pick) return;
-      if (L.editor.active) { L.editor.insertText(pick); return; }
-      L.editor.begin('edit');
-      L.editor.insertText(pick);
-    };
-    ui.dialog({ title: 'Symbol', width: 520, body: ui.tabs([{ label: '&Symbols', body: h('div', { class: 'col' }, h('div', { class: 'row', style: 'gap:10px' }, ui.field('&Font:', font), ui.field('Su&bset:', sub)), grid, info) }, { label: 'S&pecial Characters', body: special }]),
-      buttons: [{ label: '&Insert', primary: true, onClick: () => { insert(); return false; } }, { label: 'Close' }] });
-  };
+  /** Insert ▸ Symbol (common ui.symbolDialog): into the cell being edited, or the active cell's text */
+  D.symbol = () => ui.symbolDialog({
+    fonts: L.FONT_LIST,
+    insert: (c) => { if (!L.editor.active) L.editor.begin('edit'); L.editor.insertText(c.ch); },
+  });
 
   /* ================================================================ comments */
   /** Excel edits a comment in place: a yellow note beside the cell */
@@ -937,39 +902,37 @@
   };
 
   /* ================================================================ Hyperlink */
+  /** Insert ▸ Hyperlink (common ui.hyperlinkDialog) on the active cell: Text to display is the cell's text, and only
+   *  a changed text replaces the cell's value (a number stays a number) */
   D.hyperlink = function () {
     const s = sh(), w = wb(), sel = G().sel();
     if (G().guardProtect('insertHyperlinks')) return;
     const cur = s.links.find((l) => M.rangeContains(l.ref, sel.r, sel.c));
-    const text = h('input', { type: 'text', value: cur && cur.display != null ? cur.display : L.csv.cellText(s, sel.r, sel.c), style: 'width:100%' });
-    const addr = h('input', { type: 'text', value: cur && cur.target ? cur.target : '', style: 'width:100%', placeholder: 'https://', translate: 'no' });
-    const cellRef = h('input', { type: 'text', value: cur && cur.location ? String(cur.location).split('!').pop() : 'A1', style: 'width:100%' });
-    const sheetSel = ui.select(w.sheets.map((x) => [x.name, x.name]).concat(w.names.filter((n) => !n.hidden && !/^_xlnm/.test(n.name)).map((n) => ['name:' + n.name, L.t('{0} (defined name)', n.name)])), cur && cur.location && /!/.test(cur.location) ? cur.location.split('!')[0].replace(/^'|'$/g, '').replace(/''/g, "'") : s.name, null, { translate: 'no' });
-    const mailTo = h('input', { type: 'text', value: cur && /^mailto:/i.test(cur.target || '') ? cur.target.replace(/^mailto:/i, '').split('?')[0] : '', style: 'width:100%' });
-    const subj = h('input', { type: 'text', style: 'width:100%' });
-    const tip = h('input', { type: 'text', value: cur && cur.tooltip || '', style: 'width:100%' });
-    let kind = cur && cur.location ? 'place' : cur && /^mailto:/i.test(cur.target || '') ? 'mail' : 'web';
-    const pages = { web: h('div', { class: 'col' }, ui.field('Addr&ess:', addr)), place: h('div', { class: 'col' }, ui.field('Type the cell refere&nce:', cellRef), ui.field('Or select a place in this document:', sheetSel)), mail: h('div', { class: 'col' }, ui.field('&E-mail address:', mailTo), ui.field('Su&bject:', subj)) };
-    const right = h('div', { class: 'col', style: 'flex:1' });
-    const showKind = () => { right.textContent = ''; right.appendChild(pages[kind]); L.$$('.hl-kind', body).forEach((b) => b.classList.toggle('on', b.dataset.k === kind)); };
-    const kbtn = (k, label) => { const b = h('button', { type: 'button', class: 'hl-kind', text: label }); b.dataset.k = k; b.addEventListener('click', () => { kind = k; showKind(); }); return b; };
-    const body = h('div', { class: 'col' }, ui.field('&Text to display:', text), h('div', { class: 'row', style: 'gap:10px;align-items:stretch' }, h('div', { class: 'hl-bar col' }, kbtn('web', 'Existing File or Web Page'), kbtn('place', 'Place in This Document'), kbtn('mail', 'E-mail Address')), right), ui.field('ScreenTi&p:', tip));
-    showKind();
-    ui.dialog({ title: cur ? 'Edit Hyperlink' : 'Insert Hyperlink', width: 520, body, buttons: [
-      ...(cur ? [{ label: '&Remove Link', onClick: () => tryRun(() => O.clear(s, [{ r1: sel.r, c1: sel.c, r2: sel.r, c2: sel.c }], 'hyperlinks')) }] : []),
-      { label: 'OK', primary: true, onClick: () => tryRun(() => {
+    const cell = s.get(sel.r, sel.c);
+    const shown = cur && cur.display != null ? cur.display : L.csv.cellText(s, sel.r, sel.c);
+    const loc = cur && cur.location ? String(cur.location) : '';
+    const named = loc && !/!/.test(loc) ? 'name:' + loc : null;
+    const places = [{ label: L.t('Cell Reference'), group: true }].concat(w.sheets.map((x) => ({ value: x.name, label: x.name })));
+    const names = w.names.filter((n) => !n.hidden && !/^_xlnm/.test(n.name));
+    if (names.length) places.push({ label: L.t('Defined Names'), group: true }, ...names.map((n) => ({ value: 'name:' + n.name, label: n.name })));
+    const sheetOf = loc && /!/.test(loc) ? loc.slice(0, loc.lastIndexOf('!')).replace(/^'|'$/g, '').replace(/''/g, "'") : s.name;
+    ui.hyperlinkDialog({
+      link: cur ? { url: cur.target, place: loc ? named || sheetOf : undefined, tip: cur.tooltip } : null,
+      text: shown, textLocked: !!(cell && cell.f != null), places, defaultPlace: s.name,
+      ref: { label: 'Type the cell refere&nce:', value: loc && /!/.test(loc) ? loc.slice(loc.lastIndexOf('!') + 1) : 'A1' },
+      remove: () => tryRun(() => O.clear(s, [{ r1: sel.r, c1: sel.c, r2: sel.r, c2: sel.c }], 'hyperlinks')),
+      apply: (r) => tryRun(() => {
         const l = { ref: { r1: sel.r, c1: sel.c, r2: sel.r, c2: sel.c } };
-        if (kind === 'web') { let t = addr.value.trim(); if (!t) return; if (!/^[a-z]+:/i.test(t) && /^www\.|\.[a-z]{2,}(\/|$)/i.test(t)) t = 'http://' + t; l.target = t; }
-        else if (kind === 'mail') { if (!mailTo.value.trim()) return; l.target = 'mailto:' + mailTo.value.trim() + (subj.value ? '?subject=' + encodeURIComponent(subj.value) : ''); }
-        else { const v = sheetSel.value; l.location = v.startsWith('name:') ? v.slice(5) : F.quoteSheet(v) + '!' + (cellRef.value.trim() || 'A1'); }
-        const disp = text.value || l.target || l.location;
-        l.display = disp;
-        if (tip.value) l.tooltip = tip.value;
+        if (r.kind === 'place') { const v = r.place != null ? String(r.place) : s.name; l.location = v.startsWith('name:') ? v.slice(5) : F.quoteSheet(v) + '!' + (r.ref || 'A1'); }
+        else l.target = r.url;
+        const changed = r.text != null && r.text !== shown;
+        l.display = (r.text != null ? r.text : shown) || l.target || l.location;
+        if (r.tip) l.tooltip = r.tip;
         O.tx(w, L.N('Hyperlink'), () => {
           O.setLinks(s, s.links.filter((x) => !M.rangeContains(x.ref, sel.r, sel.c)).concat([l]));
-          const cell = s.get(sel.r, sel.c);
-          if (!cell || cell.f == null) {
-            if (!cell || cell.v == null || String(cell.v) !== disp) O.setValue(s, sel.r, sel.c, disp, true);
+          const c0 = s.get(sel.r, sel.c);
+          if (!c0 || c0.f == null) {
+            if (!c0 || c0.v == null || changed) O.setValue(s, sel.r, sel.c, l.display, true);
             const c2 = s.get(sel.r, sel.c);
             const stl = w.cellStyles.find((x) => x.name === 'Hyperlink');
             const n = Object.assign({}, c2);
@@ -977,7 +940,8 @@
             O.put(s, sel.r, sel.c, n);
           }
         });
-      }) }, { label: 'Cancel' }] });
+      }),
+    });
   };
 
   /* ================================================================ misc */

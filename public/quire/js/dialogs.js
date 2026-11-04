@@ -47,74 +47,19 @@
     return s;
   };
   /** colour picker button. value: 'auto' | 'RRGGBB' | null(no colour) */
+  /** a colour button (common ui.colorButton): values 'auto', null (none) or 'RRGGBB' without '#', as Quire keeps them */
   G.color = function (value, o) {
     o = o || {};
-    let val = value;
-    const sw = h('span', { class: 'cpk-sw' });
-    const lbl = h('span', { class: 'cpk-l' });
-    const btn = h('button', { type: 'button', class: 'cpk', id: o.id || nid('col') }, sw, lbl, h('span', { class: 'dd-arrow' }));
-    const show = () => { sw.style.background = val && val !== 'auto' ? '#' + val : o.autoColor || (val === 'auto' ? '#000' : 'transparent'); lbl.textContent = val === 'auto' ? L.t(o.autoText || 'Automatic') : !val ? L.t(o.noneText || 'No Color') : L.t(ui.colorName('#' + val)); };
-    show();
-    btn.addEventListener('click', () => ui.colorMenu(btn, { mode: o.mode || 'font', automatic: o.automatic !== false }, (v) => {
-      if (v && v.auto) val = 'auto';
-      else if (v && v.none) val = null;
-      else if (typeof v === 'string') val = v.replace('#', '').toUpperCase();
-      show();
-      if (o.onChange) o.onChange(val);
-    }));
-    btn.get = () => val;
-    btn.set = (v) => { val = v; show(); };
+    const toUI = (v) => (v && v !== 'auto' ? '#' + v : v);
+    const fromUI = (v) => (v && v !== 'auto' ? String(v).replace('#', '').toUpperCase() : v);
+    const btn = ui.colorButton(toUI(value), Object.assign({}, o, { id: o.id || nid('col'), onChange: o.onChange ? (v) => o.onChange(fromUI(v)) : null }));
+    const get = btn.get, set = btn.set;
+    btn.get = () => fromUI(get());
+    btn.set = (v) => set(toUI(v));
     return btn;
   };
-  /** list box with optional text input on top (Word's font/size/style pickers); items: values or { value, label }.
-   *  Labels are shown in the UI's language; o.translate === 'no': the items are data (fonts, sizes, names), shown as
-   *  they are. Items are matched by value, never by the text shown. */
-  G.listBox = function (items, value, o) {
-    o = o || {};
-    const box = h('div', { class: 'listbox', style: o.height ? `height:${o.height}px` : '', translate: o.translate || null });
-    const val = (it) => (typeof it === 'object' ? it.value : it);
-    const shown = (it) => { const s = typeof it === 'object' ? it.label : String(it); return o.translate === 'no' ? s : L.t(s); };
-    let list = items.slice();
-    const label = (v) => { const it = list.find((x) => String(val(x)) === String(v)); return it ? shown(it) : v == null ? '' : String(v); };
-    const inp = o.input ? h('input', { type: 'text', class: 'listbox-in', id: o.id || nid('lb'), value: label(value), autocomplete: 'off', translate: o.translate || null }) : null;
-    let cur = value;
-    const render = () => {
-      L.clear(box);
-      for (const it of list) {
-        const v = val(it);
-        const el = h('div', { class: 'li' + (String(v) === String(cur) ? ' on' : '') });
-        el.textContent = shown(it);
-        el._v = v;
-        if (typeof it === 'object' && it.style) el.style.cssText += it.style;
-        if (typeof it === 'object' && it.group) { el.className = 'li-group'; box.appendChild(el); continue; }
-        el.addEventListener('click', () => { pick(v); });
-        el.addEventListener('dblclick', () => { pick(v); if (o.onDbl) o.onDbl(v); });
-        box.appendChild(el);
-      }
-      const on = box.querySelector('.li.on');
-      if (on) setTimeout(() => on.scrollIntoView({ block: 'nearest' }), 0);
-    };
-    const mark = (v) => { for (const el of box.querySelectorAll('.li')) el.classList.toggle('on', v !== undefined && String(el._v) === String(v)); };
-    const pick = (v, fromInput) => { cur = v; if (inp && !fromInput) inp.value = label(v); mark(v); if (o.onChange) o.onChange(v); };
-    if (inp) inp.addEventListener('input', () => {
-      const v = inp.value, lc = v.toLowerCase();
-      const hit = list.find((x) => shown(x).toLowerCase().startsWith(lc));
-      /* a label typed in the UI's language stands for its value */
-      const exact = list.find((x) => shown(x).toLowerCase() === lc);
-      cur = exact && shown(exact) !== String(val(exact)) ? val(exact) : v;
-      mark(hit ? val(hit) : undefined);
-      const on = box.querySelector('.li.on');
-      if (on) on.scrollIntoView({ block: 'nearest' });
-      if (o.onChange) o.onChange(cur);
-    });
-    render();
-    const wrap = h('div', { class: 'col', style: 'gap:2px' }, inp, box);
-    wrap.get = () => (inp ? (cur != null && label(cur) === inp.value ? String(cur) : inp.value) : cur);
-    wrap.set = (v) => { cur = v; if (inp) inp.value = label(v); render(); };
-    wrap.setItems = (it) => { list = it; render(); };
-    wrap.input = inp;
-    return wrap;
-  };
+  /** list box (common ui.listBox), with an optional text box on top (Word's font/size/style pickers) */
+  G.listBox = (items, value, o) => ui.listBox(items, value, o);
   /** text that is data (a sample, a name, the document's own text): shown as it is, never translated */
   const raw = (tag, attrs, text) => { const el = h(tag, Object.assign({ translate: 'no' }, attrs)); el.textContent = text; return el; };
   G.raw = raw;

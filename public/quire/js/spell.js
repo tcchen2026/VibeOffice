@@ -328,19 +328,17 @@
     if (!all.length) { ui.msg('The spelling and grammar check is complete.', { icon: 'info', title: 'Spelling and Grammar' }); return; }
     run(all, withGrammar);
   };
+  /** the findings in the common Spelling dialog (common/dialogs.js): Quire walks them, the dialog shows them */
   function run(issues, withGrammar) {
     let idx = -1;
     let cur = null;
-    const ctxBox = h('div', { class: 'sg-context', contenteditable: 'false', translate: 'no' });
-    const label = h('div', { class: 'cd-cap' });
-    const sugg = h('select', { size: 6, id: 'sg-sugg', style: 'width:100%' });
     const changes = new Map();
     const ignoreRules = new Set();
     let gram = withGrammar;
-    const next = () => {
+    const advance = () => {
       for (;;) {
         idx++;
-        if (idx >= issues.length) { dlg.close(0); SP.refreshSoon(0); ui.msg('The spelling and grammar check is complete.', { icon: 'info', title: 'Spelling and Grammar' }); return; }
+        if (idx >= issues.length) return null;
         cur = issues[idx];
         if (!D.info(doc(), cur.p)) continue;
         const t = D.ptext(cur.p);
@@ -350,33 +348,10 @@
           if (SP.okWord(cur.word, list)) continue;
           if (changes.has(cur.word)) { apply(changes.get(cur.word)); continue; }
           cur.suggestions = cur.suggestions || SP.suggest(cur.word, list, 8);
-        } else {
-          if (!gram || ignoreRules.has(cur.rule)) continue;
-        }
-        break;
+        } else if (!gram || ignoreRules.has(cur.rule)) continue;
+        return cur;
       }
-      show();
     };
-    const show = () => {
-      const t = D.ptext(cur.p);
-      label.textContent = L.t(cur.kind === 'spelling' ? 'Not in Dictionary:' : cur.kind === 'repeat' ? 'Repeated Word:' : RULE_CAP[cur.rule] || cur.rule + ':');
-      L.clear(ctxBox);
-      const s0 = Math.max(0, t.lastIndexOf('.', cur.a - 2) + 1), e0 = Math.min(t.length, (t.indexOf('.', cur.b) + 1) || t.length);
-      ctxBox.append(document.createTextNode(t.slice(s0, cur.a).replace(/^\s+/, '')), Object.assign(h('span', { class: cur.kind === 'spelling' ? 'sg-bad' : 'sg-gram' }), { textContent: t.slice(cur.a, cur.b) }), document.createTextNode(t.slice(cur.b, e0)));
-      L.clear(sugg);
-      const list = cur.suggestions || [];
-      if (!list.length) sugg.appendChild(h('option', { text: cur.kind === 'spelling' ? L.N('(No Spelling Suggestions)') : '(No Suggestions)', disabled: true }));
-      for (const s of list) sugg.appendChild(Object.assign(h('option', { value: s, translate: s === ' ' || s === 'Delete Repeated Word' ? null : 'no' }), { textContent: s === ' ' ? L.t('(single space)') : s === 'Delete Repeated Word' ? L.t(s) : s }));
-      sugg.selectedIndex = list.length ? 0 : -1;
-      L.app.gotoPos(D.pos(cur.p, cur.a), D.pos(cur.p, cur.b));
-      const isSp = cur.kind === 'spelling';
-      setLabel(btnIgnoreAll, isSp ? 'I&gnore All' : 'Ignore Rule');
-      setLabel(btnAdd, isSp ? '&Add to Dictionary' : '&Next Sentence');
-      btnChangeAll.disabled = !isSp;
-      btnAuto.disabled = !isSp || !list.length;
-      btnExplain.hidden = isSp;
-    };
-    const setLabel = (b, s) => { b.innerHTML = ''; b.appendChild(h('span', { html: ui.ampHTML(s) })); b._label = s; };
     const apply = (rep) => {
       const p = cur.p, a = cur.a, b = cur.b;
       if (cur.kind === 'repeat') {
@@ -389,24 +364,32 @@
       E.edit(cur.kind === 'spelling' ? N('Spelling') : N('Grammar'), () => { const it = D.itemAfter(p, a); O.deleteRange(D.pos(p, a), D.pos(p, b)); return O.insertText(D.pos(p, a), rep, it && it.rPr ? L.clone(it.rPr) : {}); });
       for (const x of issues.slice(idx + 1)) if (x.p === p && x.a >= b) { x.a += rep.length - (b - a); x.b += rep.length - (b - a); }
     };
-    const pick = () => (sugg.selectedIndex >= 0 && sugg.value ? sugg.value : null);
-    const btnIgnore = ui.button('&Ignore Once', () => { SP.ignoredOnce.add(cur.p.id + ':' + (cur.kind === 'spelling' ? '' : 'g:') + cur.word); next(); });
-    const btnIgnoreAll = ui.button('I&gnore All', () => { if (cur.kind === 'spelling') SP.ignoreAll(cur.word); else ignoreRules.add(cur.rule); next(); });
-    const btnAdd = ui.button('&Add to Dictionary', () => { if (cur.kind === 'spelling') SP.addWord(cur.word); else { const p = cur.p; while (idx + 1 < issues.length && issues[idx + 1].p === p) idx++; } next(); });
-    const btnChange = ui.button('&Change', () => { const v = pick(); if (v == null && cur.kind !== 'repeat') return; apply(v === 'Delete Repeated Word' ? '' : v); next(); });
-    const btnChangeAll = ui.button('Change A&ll', () => { const v = pick(); if (v == null) return; changes.set(cur.word, v); apply(v); next(); });
-    const btnAuto = ui.button('AutoCo&rrect', () => { const v = pick(); if (v == null) return; if (L.autocorrect) L.autocorrect.setEntry(cur.word, v); apply(v); next(); });
-    const btnExplain = ui.button('E&xplain...', () => ui.msg(L.t(cur.rule) + '\n\n' + L.t(cur.explain || ''), { icon: 'info', title: 'Grammar' }));
-    sugg.addEventListener('dblclick', () => btnChange.click());
-    const side = h('div', { class: 'col', style: 'width:140px' }, btnIgnore, btnIgnoreAll, btnAdd, h('div', { style: 'height:16px' }), btnChange, btnChangeAll, btnAuto, btnExplain);
-    for (const b of side.querySelectorAll('.btn')) b.style.width = '100%';
     const langName = (l) => (l === 'en_GB' ? 'English (U.K.)' : 'English (U.S.)');
-    const langLbl = h('span', { text: langName(SP.paraList(issues[0].p)) });
-    const chkG = ui.check('Check &grammar', gram, (v) => { gram = v; });
-    const left = h('div', { class: 'col', style: 'flex:1;min-width:0' }, label, ctxBox, h('label', { for: 'sg-sugg', text: 'Suggestions:' }), sugg, h('div', { class: 'field' }, h('label', { text: 'Dictionary language:' }), langLbl), chkG);
-    const dlg = ui.dialog({ title: L.t('Spelling and Grammar: {0}', L.t(langName(SP.paraList(issues[0].p)))), width: 540, body: h('div', { class: 'row', style: 'flex-wrap:nowrap' }, left, side), buttons: [{ label: '&Options...', onClick: () => { L.dlg.options('spelling'); return false; } }, { label: '&Undo', onClick: () => { if (D.canUndo()) { D.undo(); idx = Math.max(-1, idx - 2); next(); } return false; } }, { label: 'Cancel', cancel: true }], onClose: () => SP.refreshSoon(0) });
-    dlg.buttons[0].classList.add('left');
-    next();
+    /* the dialog's suggestions: a space and Delete Repeated Word as Word names them */
+    const items = (x) => (x.suggestions || []).map((v) => (v === ' ' ? { value: ' ', label: L.t('(single space)') } : v === 'Delete Repeated Word' ? { value: v, label: L.t(v) } : v));
+    ui.spellingDialog({
+      title: (lang) => L.t('Spelling and Grammar: {0}', L.t(lang)), language: () => langName(SP.paraList((cur || issues[0]).p)),
+      grammar: { on: gram, set: (v) => { gram = v; } },
+      end: 'The spelling and grammar check is complete.',
+      next: () => {
+        if (!advance()) return null;
+        const t = D.ptext(cur.p);
+        const s0 = Math.max(0, t.lastIndexOf('.', cur.a - 2) + 1), e0 = Math.min(t.length, (t.indexOf('.', cur.b) + 1) || t.length);
+        L.app.gotoPos(D.pos(cur.p, cur.a), D.pos(cur.p, cur.b));
+        return { kind: cur.kind, caption: RULE_CAP[cur.rule] || (cur.rule ? cur.rule + ':' : ''), before: t.slice(s0, cur.a).replace(/^\s+/, ''), word: t.slice(cur.a, cur.b), after: t.slice(cur.b, e0), suggestions: items(cur) };
+      },
+      ignoreOnce: () => { SP.ignoredOnce.add(cur.p.id + ':' + (cur.kind === 'spelling' ? '' : 'g:') + cur.word); },
+      ignoreAll: () => { if (cur.kind === 'grammar') ignoreRules.add(cur.rule); else SP.ignoreAll(cur.word); },
+      add: () => SP.addWord(cur.word),
+      nextSentence: () => { const p = cur.p; while (idx + 1 < issues.length && issues[idx + 1].p === p) idx++; },
+      change: (v) => { if (!v && cur.kind !== 'repeat') return false; apply(v === 'Delete Repeated Word' ? '' : v); },
+      changeAll: (v) => { if (!v) return false; changes.set(cur.word, v); apply(v); },
+      autocorrect: L.autocorrect ? (v) => { L.autocorrect.setEntry(cur.word, v); apply(v); } : null,
+      explain: () => L.t(cur.rule) + '\n\n' + L.t(cur.explain || ''),
+      undo: () => { if (!D.canUndo()) return false; D.undo(); idx = Math.max(-1, idx - 2); },
+      options: () => L.dlg.options('spelling'),
+      onClose: () => SP.refreshSoon(0),
+    });
   }
 
   /* ================= readability statistics (shown after a full check when asked) ================= */

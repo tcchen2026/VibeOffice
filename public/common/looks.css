@@ -187,6 +187,7 @@
 :is([data-look="paper"], [data-look="paper2016"]) .dlg textarea, :is([data-look="paper"], [data-look="paper2016"]) .tp-body input[type=text], :is([data-look="paper"], [data-look="paper2016"]) .tp-body select { height: 26px; border-radius: 6px; padding: 1px 6px; }
 :is([data-look="paper"], [data-look="paper2016"]) .dlg textarea { height: auto; }
 :is([data-look="paper"], [data-look="paper2016"]) .dlg select[size] { height: auto; }
+:is([data-look="paper"], [data-look="paper2016"]) .dlg .cpk { height: 26px; border-radius: 6px; padding: 0 6px; }
 :is([data-look="paper"], [data-look="paper2016"]) .dlg fieldset, :is([data-look="paper"], [data-look="paper2016"]) .grp { border-radius: 10px; padding: 6px 10px 10px; }
 :is([data-look="paper"], [data-look="paper2016"]) .dlg legend, :is([data-look="paper"], [data-look="paper2016"]) .grp legend { color: var(--muted); font-weight: 600; }
 :is([data-look="paper"], [data-look="paper2016"]) .spin { height: 26px; border-radius: 6px; overflow: hidden; }

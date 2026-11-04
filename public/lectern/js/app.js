@@ -1276,12 +1276,7 @@ addEventListener('resize',fit);fit();show(0);`;
     hint: 'Click an object or select text to apply the formatting.',
     status: (t) => A.status(t),
   });
-  A.spelling = function () {
-    A.opts.spell = true;
-    A.saveOpts();
-    L.$$('[contenteditable="true"]').forEach((el) => { el.spellcheck = true; });
-    ui.msg('Spelling is checked as you type: misspelled words get a wavy red underline while you edit text.\nHold Shift and right-click a flagged word to see your browser\'s suggestions.', { title: 'Spelling', icon: 'info' });
-  };
+  A.spelling = () => L.dlg.spelling();
 
   /* ================= pictures ================= */
   A.insertPictureDialog = async function (phId) {

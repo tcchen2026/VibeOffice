@@ -438,9 +438,7 @@
     const st = { fill: p ? p.fill : d.kind === 'chart' && d.chart && d.chart.bg ? d.chart.bg.color : null, line: p ? p.line : null, lineW: p ? p.lineW : 0.75, w: curW, h: curH, editAs: (d.anchor && d.anchor.editAs) || 'twoCell', alt: d.descr || '', locked: !d.unlocked, print: !d.noPrint };
     const tabs = [];
     const swatch = (key, mode) => {
-      const b = h('button', { type: 'button', class: 'swatch-btn', style: `background:${st[key] || 'transparent'}` }, h('span', { class: 'dd-arrow' }));
-      b.addEventListener('click', () => ui.colorMenu(b, { mode, grid: true }, (c) => { if (c.none) st[key] = null; else if (c.auto) st[key] = mode === 'line' ? '#000000' : '#FFFFFF'; else if (typeof c === 'string') st[key] = c; b.style.background = st[key] || 'transparent'; }));
-      return b;
+      return ui.colorButton(st[key] || null, { mode, grid: true, onChange: (c) => { st[key] = c; } });
     };
     if (d.kind !== 'image') {
       const weight = ui.spin({ value: st.lineW, min: 0.25, max: 20, step: 0.25, unit: ' pt', onChange: (v) => { st.lineW = v; } });

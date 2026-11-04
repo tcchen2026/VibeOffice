@@ -68,6 +68,7 @@
     return out;
   }
   SP.findErrors = findErrors;
+  /** Tools ▸ Spelling (F7): the common Spelling dialog (common/dialogs.js) over the sheet's text cells */
   SP.check = async function () {
     const G = L.grid, A = L.app;
     const sh = G.sheet(), wb = G.wb;
@@ -82,76 +83,61 @@
     const cells = [];
     sh.rows.forEach((row, r) => { if (!row) return; row.cells.forEach((cell, c) => { if (!cell || typeof cell.v !== 'string' || cell.f != null || cell.am) return; if (!single && !G.ranges().some((x) => M.rangeContains(x, r, c))) return; cells.push({ r, c }); }); });
     if (single) { const k = cells.findIndex((x) => x.r > s0.r || (x.r === s0.r && x.c >= s0.c)); if (k > 0) cells.push(...cells.splice(0, k)); }
-    let ci = 0, hits = [], hi = 0, changes = 0;
+    let ci = 0, hits = [], hi = -1, cur = null;
     const changeAll = new Map();
-    const next = () => {
-      for (;;) {
-        if (hi < hits.length) return true;
-        if (ci >= cells.length) return false;
-        const it = cells[ci++];
-        const v = sh.val(it.r, it.c);
-        if (typeof v !== 'string') continue;
-        hits = findErrors(v, list).map((x) => Object.assign(x, it));
-        hi = 0;
-        /* Change All replacements apply silently */
-        hits = hits.filter((x) => { if (changeAll.has(x.word)) { replaceIn(x, changeAll.get(x.word)); return false; } return true; });
-      }
-    };
+    const scan = (it) => findErrors(sh.val(it.r, it.c), list).map((x) => Object.assign(x, { r: it.r, c: it.c }));
+    /** the word at its place in the cell, else its first appearance there */
     const replaceIn = (x, to) => {
       const v = sh.val(x.r, x.c);
       if (typeof v !== 'string') return;
-      const re = new RegExp('(^|[^\\p{L}])' + x.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^\\p{L}])', 'u');
-      const nv = v.replace(re, (m, pre) => pre + to);
-      if (nv !== v) { O.tx(wb, L.N('Spelling'), () => O.setValue(sh, x.r, x.c, nv)); changes++; }
+      let nv;
+      if (v.substr(x.index, x.word.length) === x.word) nv = v.slice(0, x.index) + to + v.slice(x.index + x.word.length);
+      else { const re = new RegExp('(^|[^\\p{L}])' + x.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^\\p{L}])', 'u'); nv = v.replace(re, (m, pre) => pre + to); }
+      if (nv !== v) O.tx(wb, L.N('Spelling'), () => O.setValue(sh, x.r, x.c, nv));
     };
-    if (!next()) { ui.msg(changes ? 'The spelling check is complete for the entire sheet.' : 'The spelling check is complete for the entire sheet.', { icon: 'info' }); return; }
-    const word = h('input', { type: 'text', style: 'width:100%' });
-    const ctx = h('div', { class: 'sp-ctx', translate: 'no' });
-    const sugg = h('select', { size: '6', style: 'width:100%' });
-    const btn = (label, fn) => ui.button(label, fn, { style: 'width:100%' });
-    let cur = null;
-    const show = () => {
-      cur = hits[hi];
-      G.select(cur.r, cur.c);
-      word.value = cur.word;
-      const v = sh.val(cur.r, cur.c);
-      ctx.textContent = '';
-      ctx.append(document.createTextNode(v.slice(Math.max(0, cur.index - 40), cur.index)), h('b', { style: 'color:#c00', translate: 'no', text: cur.word }), document.createTextNode(v.slice(cur.index + cur.word.length, cur.index + cur.word.length + 40)));
-      sugg.textContent = '';
-      const s = SP.suggest(cur.word, list, 8);
-      for (const x of s.length ? s : [L.t('(No Suggestions)')]) sugg.appendChild(h('option', { value: x, translate: 'no', text: x }));
-      sugg.selectedIndex = 0;
-      sugg.disabled = !s.length;
+    const advance = () => {
+      for (;;) {
+        if (++hi < hits.length) { cur = hits[hi]; return true; }
+        if (ci >= cells.length) return false;
+        const it = cells[ci++];
+        if (typeof sh.val(it.r, it.c) !== 'string') { hits = []; hi = -1; continue; }
+        /* Change All replacements apply silently */
+        hits = scan(it).filter((x) => { if (changeAll.has(x.word)) { replaceIn(x, changeAll.get(x.word)); return false; } return true; });
+        hi = -1;
+      }
     };
-    const advance = () => { hi++; if (!next()) { d.close(null); ui.msg('The spelling check is complete for the entire sheet.', { icon: 'info' }); G.paint(); return; } show(); };
-    const pick = () => (word.value !== cur.word ? word.value : sugg.disabled ? null : sugg.value);
+    /* after a change, the rest of the cell is checked again */
+    const rescan = (from) => { hits = scan(cur).filter((x) => x.index >= from); hi = -1; };
     const LANGS = [['en_US', 'English (U.S.)'], ['en_GB', 'English (U.K.)']];
     const langName = (k) => (LANGS.find((x) => x[0] === k) || LANGS[0])[1];
-    const langSel = ui.select(LANGS, list, async (v) => {
-      /* switch dictionaries: load the list, remember the choice, re-check the current cell */
-      ui.busy(true, 'Loading the dictionary...');
-      try { await LEX.load(v); } catch (e) { ui.busy(false); ui.msg(L.t('The spelling dictionary could not be loaded ({0}).', e.message || e), { icon: 'warn' }); langSel.value = list; return; }
-      ui.busy(false);
-      list = v;
-      if (A.opts) { A.opts.dictLang = v; if (A.saveOpts) A.saveOpts(); }
-      d.el.querySelector('.dlg-ttl').textContent = L.t('Spelling: {0}', L.t(langName(v)));
-      hits = findErrors(sh.val(cur.r, cur.c), list).map((x) => Object.assign(x, { r: cur.r, c: cur.c }));
-      hi = 0;
-      if (!hits.length) { hi = 1; advance(); } else show();
+    if (!advance()) { ui.msg('The spelling check is complete for the entire sheet.', { icon: 'info' }); return; }
+    hi--;   // the first finding again, for the dialog's first next()
+    ui.spellingDialog({
+      title: (lang) => L.t('Spelling: {0}', L.t(lang)), language: () => langName(list), languages: LANGS,
+      end: 'The spelling check is complete for the entire sheet.',
+      next: () => {
+        if (!advance()) { G.paint(); return null; }
+        G.select(cur.r, cur.c);
+        const v = sh.val(cur.r, cur.c);
+        return { kind: 'spelling', before: v.slice(Math.max(0, cur.index - 40), cur.index), word: cur.word, after: v.slice(cur.index + cur.word.length, cur.index + cur.word.length + 40), suggestions: SP.suggest(cur.word, list, 8) };
+      },
+      ignoreOnce: () => {},
+      ignoreAll: () => { SP.ignoreAll(cur.word); hits = hits.filter((x, k) => k <= hi || x.word.toLowerCase() !== cur.word.toLowerCase()); },
+      add: () => SP.addWord(cur.word),
+      change: (to) => { if (!to) return false; replaceIn(cur, to); rescan(cur.index + to.length); },
+      changeAll: (to) => { if (!to) return false; changeAll.set(cur.word, to); replaceIn(cur, to); rescan(cur.index + to.length); },
+      autocorrect: (to) => { L.autocorrect.setEntry(cur.word, to); replaceIn(cur, to); rescan(cur.index + to.length); },
+      /* another dictionary: the current cell is checked again with it */
+      setLanguage: async (v) => {
+        ui.busy(true, 'Loading the dictionary...');
+        try { await LEX.load(v); } catch (e) { ui.busy(false); ui.msg(L.t('The spelling dictionary could not be loaded ({0}).', e.message || e), { icon: 'warn' }); return false; }
+        ui.busy(false);
+        list = v;
+        if (A.opts) { A.opts.dictLang = v; if (A.saveOpts) A.saveOpts(); }
+        rescan(0);
+      },
+      options: () => L.dlg.options('Spelling'),
+      onClose: () => G.paint(),
     });
-    const d = ui.dialog({
-      title: L.t('Spelling: {0}', L.t(langName(list))), width: 520,
-      body: h('div', { class: 'sp-grid' },
-        h('div', { class: 'col' }, h('label', { text: 'Not in Dictionary:' }), ctx, word, h('label', { text: 'Suggestions:' }), sugg, ui.field('Dictionary &language:', langSel)),
-        h('div', { class: 'col sp-btns' },
-          btn('&Ignore Once', advance), btn('I&gnore All', () => { SP.ignoreAll(cur.word); hits = hits.filter((x, k) => k <= hi || x.word.toLowerCase() !== cur.word.toLowerCase()); advance(); }),
-          btn('&Add to Dictionary', () => { SP.addWord(cur.word); advance(); }),
-          btn('&Change', () => { const v = pick(); if (v != null) { replaceIn(cur, v); hits = findErrors(sh.val(cur.r, cur.c), list).map((x) => Object.assign(x, { r: cur.r, c: cur.c })).filter((x) => x.index > cur.index + v.length - cur.word.length - 1); hi = -1; } advance(); }),
-          btn('Change A&ll', () => { const v = pick(); if (v != null) { changeAll.set(cur.word, v); replaceIn(cur, v); } advance(); }),
-          btn('Auto&Correct', () => { const v = pick(); if (v == null) return; L.autocorrect.setEntry(cur.word, v); replaceIn(cur, v); advance(); }))),
-      buttons: [{ label: '&Options...', onClick: () => { L.dlg.options('Spelling'); return false; } }, { label: 'Cancel' }],
-    });
-    sugg.addEventListener('dblclick', () => { const v = pick(); if (v != null) { replaceIn(cur, v); } advance(); });
-    show();
   };
 })(typeof window !== 'undefined' ? window : globalThis);
