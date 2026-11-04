@@ -579,6 +579,41 @@ test('a table\'s column border: a drag sets the widths; a click or Esc leaves th
   assert.deepEqual(await undoLabels(u), ['Column Width']);
 }));
 
+test('a table\'s move handle: over the table; a click selects it, a drag floats it where it is dropped, Esc leaves it, a right-click opens its menu', () => inQuire(PARAS(['First paragraph of text.', 'Second paragraph.', 'Third paragraph, long enough to go on beside a narrow table that was moved over here by its handle.']) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];', async (u) => {
+  const tbl = () => u.el('#pages table.tbl');
+  const float = () => u.evaluate(`JSON.stringify(L.D.doc.main.blocks.find((b) => b.t === 'tbl').tblPr.float || null)`).then(JSON.parse);
+  let t0 = await tbl();
+  await u.move({ x: t0.l + 20, y: t0.t + 8 });
+  let h = await u.el('.tbl-move');
+  assert.ok(h && h.r <= t0.l + 1 && h.b <= t0.t + 1, 'the handle shows outside its top left corner');
+  await u.click({ x: h.x, y: h.y });
+  assert.equal(await u.evaluate(`L.ed.cellSel ? L.ed.cellSel.cells.length : 0`), 4, 'a click selects every cell');
+  assert.equal(await undoSteps(u), 0);
+  await u.press({ x: h.x, y: h.y }); await u.glide({ x: h.x, y: h.y }, { x: h.x + 120, y: h.y + 90 }); await u.esc(); await u.release({ x: h.x + 120, y: h.y + 90 });
+  assert.equal(await float(), null, 'Esc: still in the text');
+  assert.equal(await u.evaluate(`document.querySelectorAll('.tbl-ghost').length`), 0, 'no outline left');
+  assert.equal(await undoSteps(u), 0);
+  await u.move({ x: t0.l + 20, y: t0.t + 8 });
+  h = await u.el('.tbl-move');
+  await u.drag({ x: h.x, y: h.y }, { x: h.x + 150, y: h.y + 60 });
+  const f = await float();
+  assert.ok(f && f.vAnchor === 'text' && f.hAnchor === 'margin' && f.l === 9 && f.r === 9, `floating as Word makes it (${JSON.stringify(f)})`);
+  const t1 = await tbl();
+  assert.ok(Math.abs(t1.l - t0.l - 150) <= 2 && Math.abs(t1.t - t0.t - 60) <= 2, `where it was dropped (${t1.l - t0.l}, ${t1.t - t0.t})`);
+  assert.deepEqual(await undoLabels(u), ['Move Table']);
+  const xml = await u.evaluate(`(async () => { const pk = await L.opc.open(new Uint8Array(await (await L.docx.write(L.D.doc)).arrayBuffer())); return (pk.text('word/document.xml').match(/<w:tblpPr[^>]*>/) || [''])[0]; })()`);
+  assert.match(xml, /^<w:tblpPr w:leftFromText="180" w:rightFromText="180" w:vertAnchor="text" w:horzAnchor="margin" w:tblpX="\d+" w:tblpY="-?\d+"\/>$/, 'saved as Word writes a dragged table');
+  await u.move({ x: t1.l + 20, y: t1.t + 8 });
+  h = await u.el('.tbl-move');
+  await u.rightClick({ x: h.x, y: h.y });
+  assert.ok((await u.menuItems()).some((x) => /Table Properties/.test(x)), 'the table\'s menu');
+  await u.esc();
+  await u.key('z', { ctrl: true });
+  assert.equal(await float(), null, 'Undo: back in the text');
+  t0 = await tbl();
+  assert.ok(Math.abs(t0.l - (t1.l - 150)) <= 2, 'where it was');
+}));
+
 
 test('the toolbar\'s Insert Table grid: a move over 2 × 3 and a click insert that table', () => inQuire(PARAS(['First paragraph.', 'Second paragraph.']), async (u) => {
   await u.click(await u.el('.tb-drop[data-tip="Insert Table"]'));

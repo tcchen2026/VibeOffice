@@ -17,6 +17,11 @@ The metric-compatible fonts (see *Rendering notes*) are served with the site fro
 Zoom with the slider at the right of the status bar (with the view buttons), View › Zoom or Ctrl+wheel
 (docs/suite.md, The status bar). A hyperlink is never opened from the document: Ctrl+click and Open Hyperlink show its address to copy
 (docs/suite.md, Hyperlinks); `#bookmark` links go to the bookmark.
+A table shows Word's move handle at its top left while the pointer is over it (Print and Web Layout):
+a click selects the table, a right-click opens its menu, a drag moves it, making it a floating table
+where it is dropped (`w:tblpPr` as Word writes one after a drag: 0.125" from the text, from the margin
+and the paragraph there; one undo step; Esc cancels). Table Properties ▸ Text wrapping does the same
+(Around) or puts it back in the text (None).
 
 ## Proofing tools (offline)
 
@@ -64,6 +69,9 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   count, as before, 9 come closer to it and 8 move away (`tools/quire-pages.mjs`); Word 2016 PDFs of five
   of them and three of our own (2026-11-05) agree on the tables' positions. Of the 74 files with frames,
   only one, which also has a floating table, changes page count (`tests/quire/float-tables.test.mjs`).
+  Tables moved by the handle (an inline one, a floating one, a Word 2016 file's) and one floated by
+  Table Properties open in Word 2016 without repair, each saved with only `w:tblpPr` added or changed
+  against its unedited save, and Word draws them where Quire does (2026-11-05, 7 files).
 - Inline pictures wider than a column are clipped halfway across the gap to the next column,
   preserving their size and crop in the document. The outside page margins stay available to
   negative indents; floating pictures and inline AutoShapes can cross columns. Checked against

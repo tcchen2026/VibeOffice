@@ -656,6 +656,8 @@
     const indent = G.len(tp.ind || 0, { id: 'tp-ind' });
     const wrap = G.radios('tp-wr', [['none', '&None'], ['around', 'Aro&und']], t.tblPr.float ? 'around' : 'none');
     const mar = { t: G.len(tp.cellMar.t || 0, { id: 'tp-mt', min: 0 }), b: G.len(tp.cellMar.b || 0, { id: 'tp-mb', min: 0 }), l: G.len(tp.cellMar.l || 0, { id: 'tp-ml', min: 0 }), r: G.len(tp.cellMar.r || 0, { id: 'tp-mr', min: 0 }) };
+    /* (as the boxes show them, in the unit's precision: a margin changed is one that reads differently) */
+    const mar0 = { t: mar.t.get(), b: mar.b.get(), l: mar.l.get(), r: mar.r.get() };
     const spacing = G.len(t.tblPr.spacing || 0, { id: 'tp-sp', min: 0 });
     const autoResize = ui.check('Automatically resi&ze to fit contents', t.tblPr.layout !== 'fixed', null);
     const optsBtn = ui.button('&Options...', () => ui.dialog({ title: 'Table Options', width: 320, body: h('div', { class: 'col' }, ui.group('Default cell margins', G.row(G.f('&Top:', mar.t, 'narrow'), G.f('&Left:', mar.l, 'narrow')), G.row(G.f('&Bottom:', mar.b, 'narrow'), G.f('&Right:', mar.r, 'narrow'))), ui.group('Default cell spacing', G.f('Allow spacing between cells', spacing, 'wide')), ui.group('Options', autoResize)), buttons: [{ label: 'OK', primary: true }] }), { class: 'btn small' });
@@ -700,13 +702,15 @@
           if (!tpp.jc) delete tpp.jc;
           const ind = indent.get();
           if (align.get() === 'left' && ind) tpp.ind = ind; else delete tpp.ind;
-          tpp.cellMar = { t: mar.t.get(), b: mar.b.get(), l: mar.l.get(), r: mar.r.get() };
+          /* the default cell margins and the layout only when they changed: an untouched dialog writes nothing new */
+          const cm = { t: mar.t.get(), b: mar.b.get(), l: mar.l.get(), r: mar.r.get() };
+          if (['t', 'b', 'l', 'r'].some((k) => Math.abs(cm[k] - mar0[k]) > 0.001)) tpp.cellMar = cm;
           const sp = spacing.get(); if (sp) tpp.spacing = sp; else delete tpp.spacing;
           /* Text wrapping: Around makes it a floating table where it stands, as Word's (w:tblpPr: 0.125" from the text on
              either side, its top a twip below its paragraph's); None puts it back in the text */
           if (wrap.get() === 'none') delete tpp.float;
           else if (!tpp.float) tpp.float = { l: 9, r: 9, vAnchor: 'text', y: 0.05 };
-          tpp.layout = autoResize.input.checked ? 'autofit' : 'fixed';
+          if (autoResize.input.checked !== (t.tblPr.layout !== 'fixed')) tpp.layout = autoResize.input.checked ? 'autofit' : 'fixed';
           for (let r = rg.r0; r <= rg.r1; r++) {
             const tr = t.rows[r].trPr;
             if (rH.input.checked) { tr.h = rHv.get(); tr.hRule = rRule.value; } else { delete tr.h; delete tr.hRule; }

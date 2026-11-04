@@ -541,7 +541,8 @@
     /* the text goes beside it on the side with more room */
     const onRight = left + w / 2 > colW / 2;
     /* (a part continued from the page before starts at the top) */
-    const css = [`float:${onRight ? 'right' : 'left'}`, `clear:${onRight ? 'right' : 'left'}`, `width:${w}px`,
+    /* (above the paragraphs it stands among, whose boxes run under it: a click on it is a click in its cells) */
+    const css = ['position:relative', 'z-index:1', `float:${onRight ? 'right' : 'left'}`, `clear:${onRight ? 'right' : 'left'}`, `width:${w}px`,
       onRight ? `margin-right:${L.round(colW - left - w, 2)}px;margin-left:${sp.l}px` : `margin-left:${L.round(left, 2)}px;margin-right:${sp.r}px`,
       `margin-top:${sub ? 0 : L.round(px(f.y || 0), 2)}px`, `margin-bottom:${sp.b}px`];
     const box = el('div', 'tbl-float', css.join(';'));
