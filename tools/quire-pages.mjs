@@ -4,13 +4,12 @@
 //   node tools/quire-pages.mjs [SOURCE] OUT.jsonl [--jobs 4] [--list files.txt] [--limit N]
 //   node tools/quire-pages.mjs --compare BEFORE.jsonl AFTER.jsonl
 //
-// SOURCE defaults to ~/corpora/word. Each line of OUT: {file, word, quire, compat, ms} (quire is null and error set
+// SOURCE defaults to /work/corpora/word. Each line of OUT: {file, word, quire, compat, ms} (quire is null and error set
 // when the file didn't open). BASE (default http://127.0.0.1:8760) is the copy of the site to run, so an older one
 // served by tools/serve.py PORT FOLDER gives the "before"; CDP picks the Chromium (tools/ooxml/cdp.mjs). Word's stored
 // count is a coarse reference (errors can cancel out, some producers never update it): --compare lists every file
 // that moved away from it, to be looked at, rather than a score to chase.
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { ensureServer, openPage } from './ooxml/cdp.mjs';
@@ -33,7 +32,7 @@ if (args[0] === '--compare') {
 }
 
 const jobs = +opt('--jobs', 4), limit = +opt('--limit', 0), list = opt('--list', null);
-const [source, out] = args.length > 1 ? args : [path.join(os.homedir(), 'corpora/word'), args[0]];
+const [source, out] = args.length > 1 ? args : ['/work/corpora/word', args[0]];
 if (!out) { console.error('usage: node tools/quire-pages.mjs [SOURCE] OUT.jsonl [--jobs 4] [--list files.txt] [--limit N]'); process.exit(2); }
 let names = list ? fs.readFileSync(list, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean) : fs.readdirSync(source).filter((f) => /\.(docx|docm)$/i.test(f)).sort();
 const wordSaved = [];

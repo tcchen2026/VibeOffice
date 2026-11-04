@@ -4,11 +4,10 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const buttons = path.join(corpus, 'libreoffice__cebccf43c31e__activex_commandbutton.pptx');
 const legacy = path.join(corpus, 'poi__fe013ed48fe3__keyframes.pptx');
 let page, stop;

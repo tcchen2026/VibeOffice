@@ -17,7 +17,7 @@ import zipfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--api', default='http://127.0.0.1:18765')
-    parser.add_argument('--corpus', type=Path, default=Path('/home/john/corpora/poi/test-data'))
+    parser.add_argument('--corpus', type=Path, default=Path('/work/corpora/poi/test-data'))
     parser.add_argument('--repair-cases', type=Path, default=Path('tmp/lossless/office-batch-7-isolation-1'))
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--case', action='append', help='Only named cases (repeatable); default runs all ten')

@@ -414,7 +414,7 @@ groups identical messages and lists their places.
 An Office review batch contains at most 15 files and a checklist. Before handoff, compare the new save
 with the previous writer's save of the same input and explain each difference. Automated validators
 and LibreOffice do not establish Office acceptance. Keep run history outside the repository in
-`~/corpora/results/<run>/README.md`, and keep app docs focused on current behavior and measurements.
+`/work/corpora/results/<run>/README.md`, and keep app docs focused on current behavior and measurements.
 
 ## Recent Files and unsaved versions
 

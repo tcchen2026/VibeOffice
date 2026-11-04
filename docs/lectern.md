@@ -180,7 +180,7 @@ with **zero** page-count differences among pairs that render. Across **5,302** a
 **4,939** pass the paired render/count check, **71** fail and **292** are excluded. Failures include
 missing outputs, unrenderable originals and LibreOffice crashes; they remain recorded separately
 from package/SDK results. All 15 batch-4 samples and the batch-7 corrections passed PowerPoint,
-including the corrected fixture described below. Reports: `~/corpora/results/lossless-final-984eaf3/lectern/`.
+including the corrected fixture described below. Reports: `/work/corpora/results/lossless-final-984eaf3/lectern/`.
 
 Lectern regenerates slides and keeps package dependencies and unsupported properties beside the model.
 Save and drafts retain all six OOXML variants and encryption. The Compatibility Checker shows, before
@@ -237,7 +237,7 @@ Form-control or field markup that requires conversion is also reported. The full
 results are above. The **15 PowerPoint batch-4 samples rebuilt from `56de065`** pass package/SDK
 and LibreOffice with expected counts. Their previous-writer differences are reviewed, and the user
 accepted all 15 in PowerPoint. Fresh LibreOffice checks of those exact handed-off files also pass;
-hashes and results are in `~/corpora/results/office-accepted-2026-10-09/`. The accepted checklist is
+hashes and results are in `/work/corpora/results/office-accepted-2026-10-09/`. The accepted checklist is
 `tmp/lossless/office-batch-4/CHECKLIST.md`.
 
 The user accepted the PPTM video, VBA and authors/handout samples in Office batch 1. The slide-6
@@ -247,10 +247,10 @@ counts. Strict conversion passes **85 presentations / 340 emitted states** again
 package/SDK diagnostics; the Strict presentation sample passed Office batch 2. Rewritten parts now
 hoist fragment namespace declarations and `mc:Ignorable` to the root. The fresh namespace sample
 passes PowerPoint, package/SDK and LibreOffice with unchanged slide count. Opaque parts retain their
-bytes. Current full reports and exceptions are in `~/corpora/results/lossless-final-984eaf3/lectern/`.
+bytes. Current full reports and exceptions are in `/work/corpora/results/lossless-final-984eaf3/lectern/`.
 The convention scan has 163 signatures, with no additions; removing rotation/flip attributes from
 graphic-frame transforms removes three signatures from the preceding scan. Focused checks remain in
-`~/corpora/results/lectern-group-2026-10-09/` and `~/corpora/results/review-fixes-2026-10-09/`.
+`/work/corpora/results/lectern-group-2026-10-09/` and `/work/corpora/results/review-fixes-2026-10-09/`.
 
 ### Media: edit behavior
 
@@ -292,10 +292,10 @@ type passed PowerPoint with both decoration edits intact. The fixture now guards
 inside an unsupported compatibility choice with an empty fallback. Its actual writer output passes
 PowerPoint, package/SDK and LibreOffice; two movement scenarios retain save/undo/redo behavior.
 The checker rejects the unguarded test type, and its regression fails on the previous checker.
-No production writer changed for this fixture defect. Evidence: `~/corpora/results/office-batch-7-repair-2026-10-09/`.
+No production writer changed for this fixture defect. Evidence: `/work/corpora/results/office-batch-7-repair-2026-10-09/`.
 All 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/designs-*` and
-`~/corpora/results/review-fixes-2026-10-09/designs*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/designs-*` and
+`/work/corpora/results/review-fixes-2026-10-09/designs*`.
 
 ### Sections and custom shows: edit behavior
 
@@ -313,7 +313,7 @@ Large slide IDs and empty sections are covered by a public one-slide deck with t
 Two edited samples and four history states open in LibreOffice with the expected inserted/deleted
 slide counts. The browser edit driver and app load report no console errors.
 The full group measurement is above; all 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/membership-*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/membership-*`.
 
 ### Comments: edit behavior
 
@@ -336,8 +336,8 @@ only their own thread relationship, and re-anchored comments must match a declar
 Two earlier edited samples, four history states and the corrected text-anchor sample open in
 LibreOffice with expected slide counts.
 All 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/comments-*` and
-`~/corpora/results/review-fixes-2026-10-09/*comments*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/comments-*` and
+`/work/corpora/results/review-fixes-2026-10-09/*comments*`.
 
 ### Opaque frames: edit behavior
 
@@ -369,13 +369,13 @@ open in LibreOffice with unchanged slide counts. A scan finds seven illegal fram
 five preceding full-run saves and none in readable originals; the writer correction prevents them.
 These changes are measured in the `984eaf3` refresh. Office batch 7 files 09–12 and 14 passed;
 file 13's corrected master/layout fixture also passed, as described above. Evidence:
-`~/corpora/results/lossless-evening-review-2026-10-09/`.
+`/work/corpora/results/lossless-evening-review-2026-10-09/`.
 Of 959 diagram, embedding, ink and model dependency parts, 928 are byte-identical, ten are Strict
 conversions, three remove missing optional cache references, and 18 are unreferenced orphan parts
 in one damaged source. Five edited samples open in LibreOffice with expected slide counts.
 All four pages load without console errors.
 All 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/frames-*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/frames-*`.
 
 An object conversion/removal notice also accounts for its unreachable opaque dependency parts;
 these no longer add generic part-loss notices beside the specific explanation. The focused SmartArt,
@@ -408,7 +408,7 @@ states pass, including text edits, geometry, copies, deletion, detached clipboar
 Four edited samples open in LibreOffice with unchanged counts. UTF-16 package XML is decoded
 correctly, retaining a six-slide template previously read as empty; its save/edit/history states
 also pass SDK and LibreOffice. The corpus driver now compares original, opened and saved slide
-counts. Four pages load without console errors. All 15 batch-4 samples passed PowerPoint. Reports: `~/corpora/results/lectern-preservation-2026-10-09/properties-*`.
+counts. Four pages load without console errors. All 15 batch-4 samples passed PowerPoint. Reports: `/work/corpora/results/lectern-preservation-2026-10-09/properties-*`.
 
 ## Known limits
 

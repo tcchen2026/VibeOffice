@@ -156,7 +156,7 @@ with no new differences. Across **6,589** attempted states, **6,326** pass the p
 check, **246** fail and **17** are excluded. Failures include
 unrenderable originals, missing outputs, conversion errors/timeouts and count differences. This does
 not establish visual fidelity for every workbook. All five saved-render failures also fail or time
-out in their originals. Reports: `~/corpora/results/lossless-final-984eaf3/ledger/`. The layout
+out in their originals. Reports: `/work/corpora/results/lossless-final-984eaf3/ledger/`. The layout
 correction restores the original counts for `tdf66668` (two pages) and `pivottable_tabular_mode`
 (four). Signed drawing offsets are retained, and empty cells retain their original style identity
 even when it maps to the model's default style. These cells follow row shifts and undo; clearing
@@ -166,8 +166,8 @@ count corrections. Office batch 7 file 07 passed. File 08 and its untouched Exce
 repair; removing the source recovery flag does not resolve it. An Office-authored replacement with
 the same blank-cell style behavior (`tableStyle.xlsx`, B7/C7) passes Excel, package/SDK and LibreOffice.
 The source failure remains a documented exception. Focused evidence is in
-`~/corpora/results/ledger-layout-final-2026-10-09/`.
-The isolation and accepted replacement are recorded in `~/corpora/results/office-batch-7-repair-2026-10-09/`.
+`/work/corpora/results/ledger-layout-final-2026-10-09/`.
+The isolation and accepted replacement are recorded in `/work/corpora/results/office-batch-7-repair-2026-10-09/`.
 The remaining three count differences are `tdf118668` (invalid source sheet visibility),
 `Photo Formats - CGM-O12-XL-Pictures` (unresolved reflow despite retained picture formatting), and
 `clusterfuzz-testcase-minimized-POIXSSFFuzzer-5937385319563264` (a damaged source ZIP member).
@@ -187,7 +187,7 @@ attempts pass. Their 14 saved states pass the SDK independently with zero errors
 issues; comparisons against the unreadable originals remain failed. Both saves open in LibreOffice:
 the readable original keeps its one page, while the unreadable original has no comparable count.
 The pre-release conversion passed Excel in Office batch 7 files 03–04. Evidence:
-`~/corpora/results/ledger-preview-schema-2026-10-09/`. The automatic-height sample passed Excel in
+`/work/corpora/results/ledger-preview-schema-2026-10-09/`. The automatic-height sample passed Excel in
 Office batch 5.
 
 Ordinary pictures now retain image effects, recolouring, geometry, fills, borders, styles and
@@ -199,7 +199,7 @@ edits, copies, undo/redo and recovery. The picture-format workbook opens in Libr
 its separate 19→17-page layout difference. Invalid source sheet visibility, which accounts for another
 remaining count difference, now has an explicit conversion notice. These corrections are included in
 the `984eaf3` full refresh; Office batch 7 file 06 passed Excel. Focused evidence is in
-`~/corpora/results/lossless-evening-review-2026-10-09/`.
+`/work/corpora/results/lossless-evening-review-2026-10-09/`.
 
 Page setup now retains its original absence, per-property values and printer-setting relationships.
 Cell edits no longer introduce a portrait orientation into a sheet that omitted page setup. Seven
@@ -211,7 +211,7 @@ unchanged statuses and zero added diagnostics; independent cell comparisons are 
 Its full LibreOffice pass resolves 34 earlier count differences. Office batch 6 files 01–04 cover absence,
 paper/quality edits, copied printer relationships and scoped namespace directives; all four pass
 focused package/SDK and LibreOffice checks and are accepted in Excel. Evidence:
-`~/corpora/results/ledger-page-setup-2026-10-09/`, `ledger-final-3cb0cd2/` and
+`/work/corpora/results/ledger-page-setup-2026-10-09/`, `ledger-final-3cb0cd2/` and
 `office-final-corrections-2026-10-09/`.
 
 Ledger regenerates worksheets and keeps original package dependencies, workbook settings, style
@@ -271,10 +271,10 @@ hoist fragment declarations to their root; opaque dependencies remain byte-ident
 All 15 suite batch files open in LibreOffice with unchanged counts. Strict conversion passes
 all **23 Strict workbooks / 92 emitted states** against original package/SDK diagnostics and keeps
 its notice through draft recovery; the Strict Excel sample passed Office batch 2.
-Reports, failed attempts and historical measurements: `~/corpora/results/next-plan-head-2026-10-08/`
-and `~/corpora/results/strict-transitional-2026-10-08/`. Current full results:
-`~/corpora/results/lossless-final-984eaf3/ledger/`; feature edit checks are in
-`~/corpora/results/ledger-group-2026-10-09/` and `~/corpora/results/review-fixes-2026-10-09/`.
+Reports, failed attempts and historical measurements: `/work/corpora/results/next-plan-head-2026-10-08/`
+and `/work/corpora/results/strict-transitional-2026-10-08/`. Current full results:
+`/work/corpora/results/lossless-final-984eaf3/ledger/`; feature edit checks are in
+`/work/corpora/results/ledger-group-2026-10-09/` and `/work/corpora/results/review-fixes-2026-10-09/`.
 The convention scan has 192 signatures: three additions to the preceding writer retain a Strict
 picture's round-rectangle adjustment and duotone colour/order in Transitional vocabulary. The
 subtrees otherwise match the source and passed Excel in batch 7. Scoped
@@ -282,10 +282,10 @@ subtrees otherwise match the source and passed Excel in batch 7. Scoped
 original processing scope; the page-setup form passed Excel in batch 6. The rebuilt 15-file **Office batch 3**
 uses `56de065` and passes package/SDK and LibreOffice with expected counts, with explained changes
 against the previous handoff; **all 15 samples passed Excel**. File 04 also checks the root-comment
-edit correction measured in `~/corpora/results/thread-root-edit-2026-10-09/`; its updated sample keeps
+edit correction measured in `/work/corpora/results/thread-root-edit-2026-10-09/`; its updated sample keeps
 the reply and mention after editing, shifting and copying the thread. A fresh LibreOffice check
 of the exact accepted batch-3 and batch-5 files also passes with expected page counts; hashes and
-results are in `~/corpora/results/office-accepted-2026-10-09/`.
+results are in `/work/corpora/results/office-accepted-2026-10-09/`.
 
 ### Package, styles and strings: edit behavior
 
@@ -353,7 +353,7 @@ package/SDK diagnostics; unchanged definitions and records retain their bytes. T
 draft/recovery hooks keep a source-edit refresh request and its notice. Two samples open in
 LibreOffice with the same two-page counts. These are focused measurements, separate from the frozen
 full-corpus figures above; The batch-3 Excel samples are accepted. Reports:
-`~/corpora/results/review-fixes-2026-10-09/current-pivots/`.
+`/work/corpora/results/review-fixes-2026-10-09/current-pivots/`.
 
 ### Threaded comments: edit behavior
 
@@ -374,8 +374,8 @@ console errors. Two LibreOffice samples retain their one-page counts. The batch-
 and failed pre-fix SDK attempts are retained with the reports; mention coverage is not claimed from
 the public corpus. Two current browser draft/recovery states also pass package/SDK comparison;
 the root-edit Office sample opens in LibreOffice with the same one-page count.
-Reports: `~/corpora/results/review-fixes-2026-10-09/guid-threads/` and
-`~/corpora/results/thread-root-edit-2026-10-09/`.
+Reports: `/work/corpora/results/review-fixes-2026-10-09/guid-threads/` and
+`/work/corpora/results/thread-root-edit-2026-10-09/`.
 
 ### Controls, embedded objects and VML: edit behavior
 
@@ -399,8 +399,8 @@ one-page counts. Core checks pass and all four pages load without console errors
 font requests remain). The 40-workbook feature sweep keeps **396 dependent parts byte-identical**;
 13 ActiveX XML parts in a Strict input undergo the approved Transitional conversion. One unrelated
 unsupported drawing in `stress020.xlsx` remains reported. The batch-3 Excel samples are accepted.
-Current focused reports: `~/corpora/results/review-fixes-2026-10-09/current-objects/`;
-the broader sweep and browser reports remain in `~/corpora/results/ledger-preservation-2026-10-08/`.
+Current focused reports: `/work/corpora/results/review-fixes-2026-10-09/current-objects/`;
+the broader sweep and browser reports remain in `/work/corpora/results/ledger-preservation-2026-10-08/`.
 
 ### Slicers and timelines: edit behavior
 
@@ -421,7 +421,7 @@ states** after real copy/paste and undo/redo. The table-sheet copy and moved tim
 LibreOffice (4 and 3 pages respectively); timeline undo/redo also opens. Copies of copied views keep
 independent GUIDs, stable across repeated saves. The three supplemental inputs are pinned by hash and
 commit through `tools/corpora.sh DIR ledger-features`, separate from the 951-file main corpus.
-Current focused reports are in `~/corpora/results/review-fixes-2026-10-09/guid-slicers/` and
+Current focused reports are in `/work/corpora/results/review-fixes-2026-10-09/guid-slicers/` and
 `guid-browser/`. The batch-3 Excel samples are accepted.
 
 ### Worksheet extensions: edit behavior
@@ -442,8 +442,8 @@ with their original 3/5 page counts; history states also open. Copied rule GUIDs
 time and stay stable across repeated saves. The extension inventory records all 951 attempts, including 25 ZIP/XML failures.
 `empty_ext_defined_name.xlsx` remains an SDK failure because its original external-link content
 type is invalid; it is not counted as a passing comparison. Current focused reports are in
-`~/corpora/results/review-fixes-2026-10-09/guid-extensions/`; the broader inventory and browser reports
-remain in `~/corpora/results/ledger-preservation-2026-10-08/extension-*`. The batch-3 Excel samples are accepted.
+`/work/corpora/results/review-fixes-2026-10-09/guid-extensions/`; the broader inventory and browser reports
+remain in `/work/corpora/results/ledger-preservation-2026-10-08/extension-*`. The batch-3 Excel samples are accepted.
 
 Namespace declarations still move to the part root. A local `mc:Ignorable` list remains where
 `PreserveAttributes`, `PreserveElements` or `ProcessContent` requires it on the same element; the
@@ -467,8 +467,8 @@ draft/recovery states**. Edited and copied samples and three history states open
 with unchanged page counts. The ten-file query sweep has no new package issues; nine SDK
 comparisons pass and one original (`queryTableExport.xlsx`) has a missing dependency and cannot
 be validated. Ledger does not execute a query or enable refresh. Current focused reports:
-`~/corpora/results/review-fixes-2026-10-09/guid-queries/`; sweep and browser reports:
-`~/corpora/results/ledger-preservation-2026-10-08/query-*`.
+`/work/corpora/results/review-fixes-2026-10-09/guid-queries/`; sweep and browser reports:
+`/work/corpora/results/ledger-preservation-2026-10-08/query-*`.
 The full Ledger group measurement is reported above; the batch-3 Excel samples are accepted.
 
 ## Compatibility testing

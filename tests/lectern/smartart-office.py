@@ -34,7 +34,7 @@ def new_issues(orig, saved):
     return sum((issues(saved) - issues(orig)).values())
 rows = []
 flt = sys.argv[2] if len(sys.argv) > 2 else ''
-corpus = os.path.join(os.environ.get('VO_CORPORA', os.path.expanduser('~/corpora')), 'powerpoint')
+corpus = os.path.join(os.environ.get('VO_CORPORA', '/work/corpora'), 'powerpoint')
 for f in sorted(glob.glob(os.path.join(corpus, '*.pptx'))):
     name = os.path.basename(f)
     if flt not in name: continue

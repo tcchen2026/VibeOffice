@@ -4,11 +4,10 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const slides = path.join(corpus, 'openxml-sdk__88d7f7c81442__typical.pptx'); // slide 2 has notes
 const pictures = path.join(corpus, 'libreoffice__18fd956ba0f3__tdf164622.pptx'); // the first shape is an SVG picture with a PNG fallback
 let page, stop;

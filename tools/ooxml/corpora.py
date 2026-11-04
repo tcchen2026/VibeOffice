@@ -44,7 +44,7 @@ def git(folder, *args, check=True):
     return p.stdout.strip() if p.returncode == 0 else None
 
 def main():
-    root = Path(sys.argv[1] if len(sys.argv) > 1 else os.environ.get('CORPORA', str(Path.home() / 'corpora'))).expanduser().resolve()
+    root = Path(sys.argv[1] if len(sys.argv) > 1 else os.environ.get('CORPORA', '/work/corpora')).expanduser().resolve()
     repo = Path(__file__).resolve().parents[2]
     if root == repo or repo in root.parents:
         raise ValueError('Choose a corpus directory outside the repository')

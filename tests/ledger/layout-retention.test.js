@@ -1,12 +1,12 @@
 /* Real-file regressions: drawing coordinates and seemingly default source styles. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 require('../../public/ledger/js/layout.js');
 require('../../public/ledger/js/ops.js');
 const O = L.ops, output = process.env.LAYOUT_RESULTS, results = [];
-const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
+const corpus = process.env.VO_CORPORA || '/work/corpora';
 async function open(t, name) {
   const file = path.join(corpus, 'excel', name);
   if (!fs.existsSync(file)) { t.skip('Fetch pinned corpus: ' + file); return; }

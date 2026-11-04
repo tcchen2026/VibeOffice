@@ -1,5 +1,5 @@
 // Focused browser checks against authored Word controls, with edit/undo/copy/draft artifacts.
-// node tests/quire/controls.mjs ~/corpora/word /tmp/quire-controls-edits
+// node tests/quire/controls.mjs /work/corpora/word /tmp/quire-controls-edits
 import fs from 'node:fs';
 import path from 'node:path';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';

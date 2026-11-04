@@ -1,12 +1,12 @@
 /* Complete threads, their legacy links and persons survive edits and copies. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} };
 require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops;
-const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
+const corpus = process.env.VO_CORPORA || '/work/corpora';
 const file = path.join(corpus, 'excel/libreoffice__accaee5c7a5a__threadedComment.xlsx');
 const part = 'xl/threadedComments/threadedComment1.xml', person = 'xl/persons/person.xml';
 const rootId = '{FB8EA27E-C1B6-4481-B034-193455CC7425}';

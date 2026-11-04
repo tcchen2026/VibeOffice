@@ -1,10 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} }; require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops, output = process.env.SHEET_PROPERTY_RESULTS, results = [];
-const dir = process.env.EXCEL_CORPUS || path.join(os.homedir(), 'corpora', 'excel');
+const dir = process.env.EXCEL_CORPUS || '/work/corpora/excel';
 const files = { height: 'openxml-sdk__0e3494804149__Styles.xlsx',
   descent: 'libreoffice__55180c991855__tdf118668.xlsx', rtl: 'libreoffice__47ec633dafe5__tdf66668.xlsx',
   beta: 'poi__d6227fd3154b__sample-beta.xlsx', early: 'openxml-sdk__9f7806671fc8__ProjectStatusReport_TP10094814.xltx' };

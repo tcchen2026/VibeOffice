@@ -2,11 +2,10 @@
 // node tests/lectern/frames.mjs OUTPUT_DIR [SCENARIO_REGEX]
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 const [out, filter = ''] = process.argv.slice(2);
 if (!out) throw Error('Usage: frames.mjs OUTPUT_DIR [SCENARIO_REGEX]');
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const samples = [
   ['smartart', 'libreoffice__12c1c1d6e7c5__smartart-linear-rule-vert.pptx', ['geometry', 'copy', 'content', 'ungroup', 'paste', 'draft']],
   // animated by diagram parts: editing it must not leave animations aimed at a plain group

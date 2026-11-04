@@ -158,14 +158,14 @@ text isn't ours is compared without storing it):
 
 - a Word-saved 19-page walkthrough against Word's PDF of it (`tests/quire/lines/walkthrough-word.json`): pages start
   where Word's do, and two lines that follow each other in both are as far apart as in Word, within 0.75pt. The
-  document and the PDF stay out of git, in `~/corpora/word-ref/` (`fluent-walkthrough.docx`, `fluent-walkthrough.word.pdf`;
+  document and the PDF stay out of git, in `/work/corpora/word-ref/` (`fluent-walkthrough.docx`, `fluent-walkthrough.word.pdf`;
   or the folder named in `QUIRE_WORD_REF`); without them that part is skipped;
 - `tests/quire/lines/linecases.docx` (`python3 tools/linecases.py make`), one case per paragraph between marker lines,
   against LibreOffice's PDF of it (`soffice --headless --convert-to pdf`, then `python3 tools/linecases.py read PDF
   tests/quire/lines/linecases-lo.json`): the cases LibreOffice draws as Word does are asserted, the others recorded.
 
 Page counts across the corpus: `node tools/quire-pages.mjs OUT.jsonl [--jobs 4]` opens every Word-saved `.docx` in
-`~/corpora/word` (Microsoft Office Word with `<Pages>` in docProps/app.xml) and records Quire's page count beside
+`/work/corpora/word` (Microsoft Office Word with `<Pages>` in docProps/app.xml) and records Quire's page count beside
 Word's; `--compare BEFORE.jsonl AFTER.jsonl` lists what a change moved, and every file it moved away from Word's count.
 For the "before", serve the last commit's site on a port of its own (`git archive HEAD public | tar -x -C
 tmp/pages-before`, `python3 tools/serve.py 8771 tmp/pages-before/public`) and run with `BASE=http://127.0.0.1:8771`.
@@ -225,6 +225,10 @@ The engine and the file readers and writers load in Node through `load.js` (the 
 
 The compatibility numbers in each app's doc come from public test corpora (LibreOffice, Apache POI, Open XML SDK, XlsxWriter, ClosedXML and others; see the app docs for the list). They are not checked in; download them outside the repo and point the per-file scripts at the folder.
 
+The local corpus root is `/work/corpora`. The test and tool defaults use it; existing overrides
+(`VO_CORPORA`, `CORPORA`, `EXCEL_CORPUS`, `LEDGER_FEATURES`, `QUIRE_WORD_REF` and command-line paths)
+still take precedence.
+
 ## Lossless same-format save: reproducible baseline
 
 ### Office 2016 VM: HTTP open/repair and PDF checks
@@ -265,7 +269,7 @@ an idle queue and stop the task `VibeOffice Office 2016 Test API`; run `install.
 
 ### Corpus drivers
 
-`sh tools/corpora.sh ~/corpora` fetches the pinned LibreOffice, Apache POI and Open XML SDK revisions
+`sh tools/corpora.sh /work/corpora` fetches the pinned LibreOffice, Apache POI and Open XML SDK revisions
 listed in `tools/ooxml/corpora.py`. It resumes interrupted fetches, refuses dirty or unrelated checkouts,
 and never deletes an existing corpus. `manifest.json` records source, commit, original path, size and
 SHA-256. `word/`, `excel/` and `powerpoint/` contain collision-resistant symlinks. Fixtures stay outside
@@ -276,9 +280,9 @@ and an error/reason. Here, `ok` means the requested operation and reread complet
 the file was lossless. Independent comparisons and Office acceptance are separate checks.
 
 ```sh
-node tests/quire/corpus.mjs ~/corpora/word /tmp/quire.jsonl --save /tmp/lossless/quire
-node tests/ledger/corpus.js ~/corpora/excel /tmp/ledger.jsonl --save /tmp/lossless/ledger
-node tests/lectern/corpus.js ~/corpora/powerpoint /tmp/lectern.jsonl --lossless --save /tmp/lossless/lectern
+node tests/quire/corpus.mjs /work/corpora/word /tmp/quire.jsonl --save /tmp/lossless/quire
+node tests/ledger/corpus.js /work/corpora/excel /tmp/ledger.jsonl --save /tmp/lossless/ledger
+node tests/lectern/corpus.js /work/corpora/powerpoint /tmp/lectern.jsonl --lossless --save /tmp/lossless/lectern
 ```
 
 Default scenarios are `save` and `repeat` (save, reopen, save again). `--edit` selects separate text,
@@ -294,7 +298,7 @@ own tabs. Ledger uses isolated Node workers with a per-file timeout. The older L
 without these switches remains available and still requires Playwright.
 
 Quire history regressions run with `node --test tests/quire/history.test.js`. The real-file check
-`node tests/quire/history.mjs ~/corpora/word/libreoffice__9b899b6707be__chart-size.docx`
+`node tests/quire/history.mjs /work/corpora/word/libreoffice__9b899b6707be__chart-size.docx`
 checks original chart bytes after editing, undo, redo, copying and whole-document snapshot restore.
 
 `tools/ooxml/check.mjs FILE...` uses an independent strict Python XML/ZIP reader to check content types,
@@ -315,7 +319,7 @@ isolated previous writer to reproduce the same edits for the required save-to-sa
 Use an empty output directory. Original sources stay outside the batch. A generated batch is pending
 Office review even when SDK and LibreOffice checks pass.
 
-`python3 tools/ooxml/conventions.py ~/corpora/powerpoint SAVED_DIR [--out report.json]` lists markup our
+`python3 tools/ooxml/conventions.py /work/corpora/powerpoint SAVED_DIR [--out report.json]` lists markup our
 saved files contain that no Office-authored original in the corpus does: attributes, child elements,
 child order, enumerated values, preset adjustment sets, content-type forms, relationship types. Markup
 already in a file's own original is not counted. It finds Office-rejected output the SDK accepts (the
@@ -360,7 +364,7 @@ the frozen current and previous writers before handing these files to Office.
 The archive stays outside git; its SHA-256 is recorded in the generated file. Regenerate with:
 
 ```sh
-python3 tools/ooxml/schema-order.py ~/corpora/ecma-376/part4.zip public/common/opc-order.js ~/corpora/ecma-376/part1.zip
+python3 tools/ooxml/schema-order.py /work/corpora/ecma-376/part4.zip public/common/opc-order.js /work/corpora/ecma-376/part1.zip
 ```
 
 `tools/ooxml/compare.mjs ORIGINAL SAVED [--policy policy.json]` defaults to exact part-byte preservation.
@@ -390,7 +394,7 @@ embedded objects sharing one preview (`shared-vml-preview`), two spreadsheet VML
 graphic frame (`animation-part-target`). None occurs in the 4,697 pinned originals.
 
 Ledger's `pivots.test.js` and `threads.test.js` use the pinned public inputs (`VO_CORPORA` overrides
-`~/corpora`). `PIVOT_RESULTS=DIR` / `THREAD_RESULTS=DIR` retain the emitted edit/history states and
+`/work/corpora`). `PIVOT_RESULTS=DIR` / `THREAD_RESULTS=DIR` retain the emitted edit/history states and
 their source paths for package/SDK comparisons. Pivot source fixtures are generated automatically from
 the pinned input into `PIVOT_RESULTS/fixtures` (or a temporary directory); `PIVOT_FIXTURES` overrides
 that destination. They do not depend on an earlier results directory. The thread test also authors a mention/no-legacy-note
@@ -401,17 +405,17 @@ must survive, including edits around both ends of a mentioned name and later cli
 `objects.test.js` uses `OBJECT_RESULTS=DIR` to retain controls/OLE/VML edit states from the same corpus.
 `node tests/ledger/objects-ui.mjs INPUT.xlsx OUTPUT` checks object paste into another workbook,
 undo/redo and actual draft recovery, including the dependent payload bytes.
-`sh tools/corpora.sh ~/corpora ledger-features` fetches three supplemental slicer/timeline workbooks
+`sh tools/corpora.sh /work/corpora ledger-features` fetches three supplemental slicer/timeline workbooks
 at fixed commits and SHA-256 hashes without changing the main corpus manifest. `slicers.test.js`
 uses them (`LEDGER_FEATURES` overrides their directory); `SLICER_RESULTS=DIR` retains edit states.
 `node tests/ledger/slicers-ui.mjs INPUT.xlsx OUTPUT` exercises real drawing copy/paste, undo/redo
 and draft recovery. The supplemental sources and hashes are recorded in `ledger-features/manifest.json`.
 `extensions.test.js` uses `EXTENSION_RESULTS=DIR` for extended bars, validation, sparklines and unknown
-worksheet extension edit/history saves (`EXCEL_CORPUS` overrides `~/corpora/excel`).
+worksheet extension edit/history saves (`EXCEL_CORPUS` overrides `/work/corpora/excel`).
 `node tests/ledger/extensions-ui.mjs INPUT.xlsx OUTPUT` checks an extended bar through edits,
 sheet copy, undo/redo and actual draft recovery.
 `tables.test.js` uses `QUERY_RESULTS=DIR` for query-table edits, column identities, copies and
-history saves (`EXCEL_CORPUS` overrides `~/corpora/excel`).
+history saves (`EXCEL_CORPUS` overrides `/work/corpora/excel`).
 `node tests/ledger/tables-ui.mjs INPUT.xlsx OUTPUT` checks inserted query columns, sheet
 copy, scoped names, undo/redo and actual draft recovery.
 `recovery.test.js` covers readable cells in damaged packages and unchanged mixed date/text filters.
@@ -524,7 +528,7 @@ The scenario filter retains other recorded cases so corrections need not repeat 
 
 `node tests/lectern/membership.mjs OUTPUT_DIR` uses pinned presentation inputs for section and
 custom-show insertion, copy, move, deletion, large IDs, empty sections, undo/redo and actual suite
-draft recovery (`VO_CORPORA` overrides `~/corpora`). It retains every saved state and a draft screenshot.
+draft recovery (`VO_CORPORA` overrides `/work/corpora`). It retains every saved state and a draft screenshot.
 Use its `results.jsonl` with `tools/ooxml/validate.py` for package/SDK and LibreOffice comparison.
 
 `node tests/lectern/media.mjs FILE_OR_LIST OUTDIR` opens authored video/audio decks in Chromium.
@@ -561,7 +565,7 @@ inventory parses transition/run-effect elements and text as XML: namespace hoist
 properties and escaped apostrophes must not appear as feature or word loss. Edited SmartArt previews
 are intentional conversions and must be matched with their recorded loss entries.
 
-`python3 tests/ledger/pivot-fixtures.py ~/corpora/excel OUTDIR` authors the two pivot source kinds
+`python3 tests/ledger/pivot-fixtures.py /work/corpora/excel OUTDIR` authors the two pivot source kinds
 absent from the pinned inventory: a defined-name source and a two-area consolidation source. It keeps
 all unchanged package parts byte-identical, records source/output hashes and changed parts, and
 requires an empty destination. Consolidation input cells, cached records and displayed output agree.
@@ -572,22 +576,22 @@ edit behavior. Use them alongside the public range, table, external-source and s
 
 `node --test tests/quire/*.test.js` covers control boundaries and locks, independent property
 replacement, alternatives, range/object identity and history. `node tests/quire/controls.mjs
-~/corpora/word OUTDIR` edits authored bound-text, date and checkbox controls, emitting before/edit/undo/
-copy/draft/recovered files. `node tests/quire/objects.mjs ~/corpora/word OUTDIR` transfers authored
+/work/corpora/word OUTDIR` edits authored bound-text, date and checkbox controls, emitting before/edit/undo/
+copy/draft/recovered files. `node tests/quire/objects.mjs /work/corpora/word OUTDIR` transfers authored
 OLE/SmartArt objects between browser tabs, edits converted content, undoes it and recovers a draft.
-`node tests/quire/sections.mjs ~/corpora/word OUTDIR` checks section XML, absent defaults,
+`node tests/quire/sections.mjs /work/corpora/word OUTDIR` checks section XML, absent defaults,
 header relationships and alternatives through actual saves, margin edits, undo/redo and draft recovery.
 Its generated fixture also exercises the page-number dialog, section insertion, page setup/columns
 forward at new and existing boundaries, multi-column index insertion and merged letters. Add
 `--fixture` to run only these focused cases, including copied revision IDs through history and drafts.
 It writes the original and each saved state for package/SDK and external rendering comparisons.
 
-`node tests/quire/picture-bullets.mjs ~/corpora/word OUTDIR` exercises the public SDK picture-bullet
+`node tests/quire/picture-bullets.mjs /work/corpora/word OUTDIR` exercises the public SDK picture-bullet
 fixture through the list dialog, symbol conversion, undo/redo, actual draft recovery and an import
 with colliding source IDs. It compares retained definition XML and image bytes and checks unused
 definitions after all list references have been removed.
 
-`node tests/quire/numbering.mjs ~/corpora/word OUTDIR` exercises the public custom-format and
+`node tests/quire/numbering.mjs /work/corpora/word OUTDIR` exercises the public custom-format and
 style-linked numbering fixtures through list commands, independent copies, repeated imports,
 undo/redo and actual draft recovery. An optional final `custom` or `style` selects one fixture.
 The loss audit also inventories picture bullets, list identities/templates, legacy settings and
@@ -605,11 +609,11 @@ flips, single-member alternative orientation and comment-extension order. The br
 copying, deletion, history and recovery. The package checker additionally rejects orientation on
 PowerPoint graphic-frame transforms and inconsistent ActiveX worksheet/VML names.
 
-`node tests/quire/recovered-breaks.mjs ~/corpora/word OUTDIR` checks the public malformed-break
+`node tests/quire/recovered-breaks.mjs /work/corpora/word OUTDIR` checks the public malformed-break
 fixture through text edits, deletion, undo/redo and actual draft recovery. It verifies valid saved
 break placement and that the Compatibility Checker follows surviving recovered content.
 
-`node tests/quire/drawing-properties.mjs ~/corpora/word OUTDIR` checks authored picture/shape
+`node tests/quire/drawing-properties.mjs /work/corpora/word OUTDIR` checks authored picture/shape
 properties and watermarks, plus generated row/cell alternatives with populated and empty choices.
 It writes originals and every edit/history/draft state, checking that deletion cannot restore hidden
 table content and that original watermark elements remain byte-identical before editing.
@@ -618,12 +622,12 @@ The Office batch generator supports Quire edits `picture-properties`, `shape-sha
 and `watermark`, so review copies and previous-writer comparisons use the same scripted edits.
 
 Current results belong in the app docs. Preserve complete run commands, hashes, previous-writer
-comparisons, initial failures, corrections and historical tables in `~/corpora/results/<run>/README.md`.
+comparisons, initial failures, corrections and historical tables in `/work/corpora/results/<run>/README.md`.
 A full run should use a frozen writer revision, served on a separate port while development continues.
 The browser harness disables persistence in its own tabs, captures loss metadata after snapshot, and
 checks the recovered document. Locked content-control edits are explicit exclusions, not undo failures.
 
-`python3 tools/ooxml/samples.py ~/corpora /tmp/lossless tmp/lossless/baseline`
+`python3 tools/ooxml/samples.py /work/corpora /tmp/lossless tmp/lossless/baseline`
 selects small independently authored files for each carried-feature test, copies original/saved/edited
 variants where available, and writes a manifest. It refuses to replace differing handoff files.
 Use a new destination for each implementation stage. Record actual Word/Excel/PowerPoint repair

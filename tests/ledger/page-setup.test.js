@@ -1,10 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} }; require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops, output = process.env.PAGE_SETUP_RESULTS, results = [];
-const corpus = process.env.EXCEL_CORPUS || path.join(os.homedir(), 'corpora', 'excel');
+const corpus = process.env.EXCEL_CORPUS || '/work/corpora/excel';
 const files = { absent: 'poi__9b403550715d__testSharedFormulasRangeSetBlankBug.xlsx',
   properties: 'libreoffice__d5ec3c1759df__tdf55417.xlsx', printer: 'poi__b79382456457__1_NoIden.xlsx',
   chart: 'openxml-sdk__f73c5d3ccfd4__ChartSheet.xlsx' };

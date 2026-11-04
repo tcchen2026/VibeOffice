@@ -2,11 +2,10 @@
 // node tests/lectern/properties.mjs OUTPUT_DIR [SCENARIO_REGEX]
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 const [out, filter = ''] = process.argv.slice(2);
 if (!out) throw Error('Usage: properties.mjs OUTPUT_DIR [SCENARIO_REGEX]');
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const samples = [
  ['shape', 'libreoffice__1643483b371e__effectOrder.pptx', ['shadow', 'copy', 'delete', 'draft']],
  ['text', 'libreoffice__ccdcc5b34e6e__shape-text-glow-effect.pptx', ['bold', 'copy']],

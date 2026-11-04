@@ -1,9 +1,9 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} }; require('../../public/ledger/js/ops.js');
-const dir = process.env.EXCEL_CORPUS || path.join(os.homedir(), 'corpora/excel');
+const dir = process.env.EXCEL_CORPUS || '/work/corpora/excel';
 test('unreadable preservation metadata does not prevent recovery of readable workbook cells', async t => {
   const files = ['libreoffice__b3bd447d4d4b__tdf124525.xlsx', 'libreoffice__e2d45126d898__different-column-width-excel2010.xlsx',
     'poi__af72d5c76a83__clusterfuzz-testcase-minimized-POIXSSFFuzzer-5089447305609216.xlsx',

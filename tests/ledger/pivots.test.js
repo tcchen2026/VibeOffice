@@ -9,7 +9,7 @@ const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} };
 require('../../public/ledger/js/ops.js');
 const O = L.ops, K = L.opc;
-const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
+const corpus = process.env.VO_CORPORA || '/work/corpora';
 const rangeFile = path.join(corpus, 'excel/libreoffice__0bef51ea4c70__Pivot1_Row.xlsx');
 const output = process.env.PIVOT_RESULTS;
 const sources = process.env.PIVOT_FIXTURES || (output ? path.join(output, 'fixtures') : fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-pivot-fixtures-')));

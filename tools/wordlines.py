@@ -6,7 +6,7 @@ Each page's body (between the .docx's top and bottom margins) as rows: the words
 tops within 1pt), left to right, so a table's cells on one line make one row, as they do in Quire. A row is
 [hash, chars, top, bottom] in points from the top of the page: hash is FNV-1a (32 bit) of the row's last 16 non-blank
 characters after NFKC normalisation, chars how many non-blank characters it has. The reference for a document whose text
-can't be published (Word's PDF of the walkthrough in ~/corpora/word-ref) is compared without storing its text; --text
+can't be published (Word's PDF of the walkthrough in /work/corpora/word-ref) is compared without storing its text; --text
 also keeps each row's text, for documents of our own (tests/quire/lines/linecases.docx, made by tools/linecases.py).
 """
 import html, json, re, subprocess, sys, unicodedata, zipfile

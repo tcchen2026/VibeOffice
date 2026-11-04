@@ -80,7 +80,7 @@ The contracts are in [suite.md, Preservation](suite.md#preservation); the per-fe
     Page counts differ for 12 Word and 3 Excel files.
   - **Text:** Word keeps 776,207/776,869 words. PowerPoint keeps all 58,022 words.
   - **Cells:** Excel matches exactly in 883/889 saves.
-  - **Evidence:** `~/corpora/results/lossless-final-984eaf3/`.
+  - **Evidence:** `/work/corpora/results/lossless-final-984eaf3/`.
 
 ## Working rules
 
@@ -92,7 +92,7 @@ These are in addition to AGENTS.md.
   results and native DOCX/XLSX/PPTX PDFs; setup and endpoints are in [Testing](testing.md#office-2016-vm-http-openrepair-and-pdf-checks).
   Compare original and saved files. An inconclusive result is not a pass; a clean open/PDF does not replace
   the checklist's content and editability checks.
-- **Docs:** they describe the current state. Run details go in `~/corpora/results/<run>/README.md` and
+- **Docs:** they describe the current state. Run details go in `/work/corpora/results/<run>/README.md` and
   in commit bodies.
 - **Commit bodies:** what changed for the user, the measured numbers (and that the test fails on the
   previous commit), and what is pending.

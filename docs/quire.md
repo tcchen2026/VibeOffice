@@ -255,7 +255,7 @@ The user accepted the bound-text, formatted-effects, resized-SmartArt, pasted-OL
 samples in Office batch 1. All 15 batch 2 files open in LibreOffice with unchanged counts. Strict
 conversion passes **67 documents / 268 emitted states** against original package/SDK diagnostics and
 keeps its notice through draft recovery; its Office review is included in batch 2.
-Current full reports and exceptions: `~/corpora/results/quire-final-7c25bd7/`. Earlier focused
+Current full reports and exceptions: `/work/corpora/results/quire-final-7c25bd7/`. Earlier focused
 measurements and failed attempts remain in the report directories linked by its README. Section,
 numbering and picture-bullet corrections are included in the full run. Missing table grids and
 conflicting default styles have save notices; these recoveries can still change pagination.
@@ -263,7 +263,7 @@ Office batch 5 files 01–05 now cover picture bullets, custom formats, edited/c
 lists and section settings. All five add no package/SDK diagnostics and retain their LibreOffice
 page counts; their previous-writer differences are reviewed. The user accepted all five in Word.
 A fresh LibreOffice check of the exact accepted files also passes; hashes and results are in
-`~/corpora/results/office-accepted-2026-10-09/`.
+`/work/corpora/results/office-accepted-2026-10-09/`.
 The pinned inventory finds numbering parts in 810 inputs. The writer keeps their source level counts,
 including absent defaults, rather than serializing all nine levels used internally for layout.
 Independent list copies now also receive fresh eight-digit `nsid` identities. Two command fixtures
@@ -272,14 +272,14 @@ Multi-column index insertion keeps the original section start before the index a
 and remainder continuous; two fixtures pass 18 assertions and 14 package/SDK comparisons through
 undo/redo and draft recovery. All four selected saves open in LibreOffice with unchanged counts.
 These corrections passed Word in Office batch 7 files 01–02 and are included in the full refresh. Focused evidence:
-`~/corpora/results/lossless-evening-review-2026-10-09/`.
+`/work/corpora/results/lossless-evening-review-2026-10-09/`.
 The render review also found seven misplaced breaks in `tdf108714`, which the reader previously
 skipped. Recovering them in valid paragraphs/runs retains all four pages on save and text edit,
 with a recorded notice. The pinned scan finds one affected readable input and
 records 33 archive/XML read failures separately. Seven command states and seven corpus
 save/edit/history/draft states add no package/SDK diagnostics; 25 browser assertions and all 27
 Quire unit tests pass. All seven emitted corpus states retain four LibreOffice pages.
-Reports: `~/corpora/results/quire-break-recovery-2026-10-09/`.
+Reports: `/work/corpora/results/quire-break-recovery-2026-10-09/`.
 Office batch 6 file 05 checks that correction in Word; its package/SDK and four-page LibreOffice
 comparisons pass, and the user accepted it in Word.
 
@@ -288,13 +288,13 @@ also fails or times out in its original. With the break correction included, **1
 unedited pairs change page count. Across all **19,028** states, the paired render/count results are
 **18,000 OK, 429 failed and 599 excluded**. Missing outputs, unrenderable originals, saved conversion
 failures and count differences remain separate in the reports; these are not lossless-save percentages.
-The current run and explicit retry results are retained in `~/corpora/results/lossless-final-984eaf3/`.
+The current run and explicit retry results are retained in `/work/corpora/results/lossless-final-984eaf3/`.
 The twelve remaining pairs are listed in its `consolidated/render-exceptions.json`; known source defects and
 unresolved reflow are distinguished. Malformed extra-body/final-section notices cover two readable
 corpus inputs: six save/edit/draft attempts and 14 package/SDK states pass, as do all 29 Quire unit
 tests. All emitted package content matches the frozen saves except generated metadata timestamps,
 so the existing layout evidence applies. The scope scan retains 35 failed archive/main-XML reads
-separately. Evidence: `~/corpora/results/quire-structure-notices-2026-10-09/`.
+separately. Evidence: `/work/corpora/results/quire-structure-notices-2026-10-09/`.
 
 The issue #1 regressions pass all **4 browser checks**, each of which fails on the previous
 commit. The full save/reopen recheck completes **2,880/2,902 inputs**, with the same **22 failures**
@@ -302,7 +302,7 @@ reproduced on the previous commit. Nine independently authored page-field docume
 byte-identical package contents under both writers and add no package/SDK diagnostics.
 LibreOffice opens **8 original/saved pairs** with matching page counts; the remaining original
 fails to load. The generated carriage-return fixtures also pass package/SDK checks and retain
-their separate lines in LibreOffice. Reports: `~/corpora/results/issue-1-2026-10-11/`.
+their separate lines in LibreOffice. Reports: `/work/corpora/results/issue-1-2026-10-11/`.
 
 Review of that fix adds **5 edge-case regression groups**, all failing on the first fix and
 passing after correction: protected fill destinations, split CRLF pairs through formatting and
@@ -310,7 +310,7 @@ save/reopen, forced-line pagination, mark placement in rotated, RTL and vertical
 three zoom levels, and omission of all formatting symbols from print/PDF rendering.
 The original four groups still pass, as do **79 Ledger and 29 Quire unit
 tests**. Three split-CRLF packages pass package/SDK validation without diagnostics and retain
-their line count in LibreOffice. Reports: `~/corpora/results/issue-1-review-2026-10-11/`.
+their line count in LibreOffice. Reports: `/work/corpora/results/issue-1-review-2026-10-11/`.
 
 The convention scan has 193 signatures, unchanged from the preceding full writer. The earlier
 scoped MC rules and Strict list-alignment entries retain their reviewed source properties.

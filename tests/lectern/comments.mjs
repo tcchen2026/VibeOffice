@@ -2,11 +2,10 @@
 // node tests/lectern/comments.mjs OUTPUT_DIR FIXTURE_DIR
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 const [out, fixtures] = process.argv.slice(2);
 if (!out || !fixtures) throw Error('Usage: comments.mjs OUTPUT_DIR FIXTURE_DIR');
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const legacy = 'poi__788ee515a5cd__45545_Comment.pptx';
 const cases = [
   ...['copy', 'delete', 'paste', 'draft'].map(scenario => ({ file: legacy, scenario })),
