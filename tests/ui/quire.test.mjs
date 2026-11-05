@@ -694,6 +694,17 @@ test('the task pane follows the selection: a shape opens Drawing Tools though th
 }));
 
 
+test('editing the header opens the task pane on Header & Footer Tools, though it was closed; back in the body it closes again', () => inQuire(PARAS(['First paragraph of the body.', 'Second paragraph.']) + HEADER, async (u) => {
+  const pane = () => u.evaluate(`JSON.stringify({ open: !L.panes.task.el.hidden, current: L.panes.task.current, saved: L.app.opts.taskOpen })`).then(JSON.parse);
+  if ((await pane()).open) await u.click(await u.el('#taskpane [aria-label="Close task pane"]'));
+  await u.dblclick(await u.el('#pages .pg-hdr'));
+  assert.equal(await u.evaluate('!!L.layout.hfEdit'), true, 'setup: editing the header');
+  assert.deepEqual(await pane(), { open: true, current: 'tools-headerFooter', saved: false });
+  await u.dblclick(await atB(u, 0, 5));
+  assert.equal(await u.evaluate('!!L.layout.hfEdit'), false, 'setup: back in the body');
+  assert.equal((await pane()).open, false);
+}));
+
 test('text in a shape: a right-click on a handle offers Add Text, then typing goes in; typing on a selected shape adds to its text; a click in a box\'s empty space puts the caret in it', () => inQuire(PARAS(SHAPE_DOC) + SHAPE(1), async (u) => {
   const shapeText = () => u.evaluate(`(() => { const it = L.D.doc.main.blocks[1].runs.find((r) => r.t === 'shape'); return it.tb ? it.tb.blocks.map((p) => L.D.ptext(p)).join('/') : null; })()`);
   const inShape = () => u.evaluate(`(() => { const it = L.D.doc.main.blocks[1].runs.find((r) => r.t === 'shape'); return !!(it.tb && L.ed.sel && it.tb.blocks.includes(L.ed.sel.f.p)); })()`);
