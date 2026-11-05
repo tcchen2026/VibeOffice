@@ -43,6 +43,80 @@ def git(folder, *args, check=True):
     p = subprocess.run(['git', '-C', str(folder), *args], check=check, stdout=subprocess.PIPE, text=True)
     return p.stdout.strip() if p.returncode == 0 else None
 
+def legacy(root):
+    """Materialize only binary fixtures, without changing the existing sparse checkouts.
+
+    The Git tree at each existing pin is the inventory. Git's blob digest verifies
+    downloaded bytes; SHA-256 in the separate manifest makes later runs auditable.
+    Destination directories may be symlinks to a larger filesystem. No source code
+    from the LibreOffice checkout is opened.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+    from urllib.parse import quote
+    kinds = {'.doc': 'word', '.dot': 'word', '.xls': 'excel', '.xlt': 'excel',
+             '.ppt': 'powerpoint', '.pps': 'powerpoint', '.pot': 'powerpoint'}
+    entries = []
+    for name in ('poi', 'libreoffice'):
+        url, commit, folders = SOURCES[name]
+        folder = root / name
+        if git(folder, 'rev-parse', '--verify', 'HEAD') != commit:
+            raise ValueError(f'{name}: prepare the existing corpus at {commit} first')
+        if git(folder, 'remote', 'get-url', 'origin').removesuffix('.git').rstrip('/') != url:
+            raise ValueError(f'Unexpected remote in {folder}')
+        tree = subprocess.check_output(['git', '-C', str(folder), 'ls-tree', '-rz', commit, '--', *folders])
+        for line in tree.split(b'\0'):
+            if not line: continue
+            meta, path = line.split(b'\t', 1)
+            mode, kind, oid = meta.decode().split()
+            rel = path.decode('utf-8')
+            ext = Path(rel).suffix.lower()
+            if ext not in kinds or kind != 'blob' or mode not in ('100644', '100755'): continue
+            key = hashlib.sha256(path).hexdigest()[:12]
+            dest = f'legacy-{kinds[ext]}/{name}__{key}__{Path(rel).name}'
+            raw = url.replace('https://github.com/', 'https://raw.githubusercontent.com/')
+            entries.append(dict(source=name, commit=commit, path=rel, file=dest,
+                                format=kinds[ext], extension=ext, git_blob=oid,
+                                url=f'{raw}/{commit}/{quote(rel)}'))
+    for app in set(kinds.values()): (root / ('legacy-' + app)).mkdir(exist_ok=True)
+
+    def fetch(entry):
+        target = root / entry['file']
+        original = root / entry['source'] / entry['path']
+        if target.is_file(): data = target.read_bytes()
+        elif original.is_file(): data = original.read_bytes()
+        else:
+            for attempt in range(4):
+                try:
+                    with urllib.request.urlopen(entry['url'], timeout=90) as response:
+                        data = response.read(256 * 1024 * 1024 + 1)
+                    break
+                except Exception:
+                    if attempt == 3: raise
+                    time.sleep(2 ** attempt)
+        if len(data) > 256 * 1024 * 1024: raise ValueError(f'Fixture too large: {target}')
+        oid = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+        if oid != entry['git_blob']: raise ValueError(f'Git blob mismatch: {target}')
+        if not target.exists():
+            temp = target.with_name(target.name + '.part')
+            temp.write_bytes(data)
+            temp.replace(target)
+        return dict(entry, size=len(data), sha256=hashlib.sha256(data).hexdigest())
+
+    manifest = []
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        for entry in pool.map(fetch, sorted(entries, key=lambda e: e['file'])):
+            manifest.append(entry)
+            if len(manifest) % 100 == 0: print(f'legacy: {len(manifest)}/{len(entries)} verified', flush=True)
+    for dest, rows in [(root / 'legacy-manifest.json', manifest)] + [
+            (root / ('legacy-' + app) / 'manifest.json', [e for e in manifest if e['format'] == app])
+            for app in sorted(set(kinds.values()))]:
+        temp = dest.with_name(dest.name + '.tmp')
+        temp.write_text(json.dumps(rows, indent=2) + '\n')
+        temp.replace(dest)
+    for app in sorted(set(kinds.values())):
+        print(f'legacy-{app}: {sum(e["format"] == app for e in manifest)} files')
+
 def main():
     root = Path(sys.argv[1] if len(sys.argv) > 1 else os.environ.get('CORPORA', '/work/corpora')).expanduser().resolve()
     repo = Path(__file__).resolve().parents[2]
@@ -51,6 +125,9 @@ def main():
     selected = sys.argv[2:] or list(SOURCES)
     if selected == ['ledger-features']:
         ledger_features(root)
+        return
+    if selected == ['legacy']:
+        legacy(root)
         return
     if any(s not in SOURCES for s in selected):
         raise ValueError('Sources: ' + ', '.join(SOURCES))

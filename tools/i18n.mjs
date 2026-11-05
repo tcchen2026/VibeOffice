@@ -183,7 +183,7 @@ function scanJS(file, src, add, fragment, markedOnly) {
     if (top && top.kind === '{' && PROPS.has(top.key)) ui = true;
     if (top && top.kind === '(' && top.callee) {
       const name = top.callee.replace(/^(window|root)\./, '').replace(/^L\.ui\./, 'ui.');
-      if (CALLS[name] && CALLS[name].includes(top.arg)) ui = true;
+      if (Object.hasOwn(CALLS, name) && CALLS[name].includes(top.arg)) ui = true;   // own keys: a class's constructor() is no call of Object's
       if (H.has(name) && top.arg >= 2) ui = true;
     }
     /* [['id', 'Label'], …] in the first argument of ui.select */
@@ -231,7 +231,7 @@ function gather() {
     const rel = path.relative(PUB, abs);
     if (rel.startsWith('common/dict/')) continue;
     const src = fs.readFileSync(abs, 'utf8');
-    if (SKIP.has(rel)) { scanJS(rel, src, add, fragment, true); continue; }   // only what is marked: L.t, L.N, N
+    if (SKIP.has(rel) || rel.startsWith('common/legacy/')) { scanJS(rel, src, add, fragment, true); continue; }   // only what is marked: L.t, L.N, N (the Office 97-2003 importers are readers too)
     if (rel === 'ledger/js/fninfo.js') scanFninfo(rel, src, add);
     scanJS(rel, src, add, fragment);
   }

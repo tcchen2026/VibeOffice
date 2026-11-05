@@ -274,6 +274,10 @@ listed in `tools/ooxml/corpora.py`. It resumes interrupted fetches, refuses dirt
 and never deletes an existing corpus. `manifest.json` records source, commit, original path, size and
 SHA-256. `word/`, `excel/` and `powerpoint/` contain collision-resistant symlinks. Fixtures stay outside
 the repository. A source name after the directory selects just that source.
+`sh tools/corpora.sh /work/corpora legacy` adds the Office 97-2003 files (`.doc`, `.xls`, `.ppt` and their
+templates) from the same pinned POI and LibreOffice trees into `legacy-word/`, `legacy-excel/` and
+`legacy-powerpoint/`, each checked against its Git blob hash; `node tools/legacy/measure.mjs --out DIR
+[--hostile]` runs the legacy importers over them (and truncated and bit-flipped copies) in bounded workers.
 
 The corpus drivers record every file and scenario as `ok`, `failed` or `excluded`, with the input hash
 and an error/reason. Here, `ok` means the requested operation and reread completed; it does **not** mean
