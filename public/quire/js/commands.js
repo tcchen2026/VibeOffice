@@ -511,12 +511,15 @@
   C('sendBehindText', order('Send Behind T&ext', (it) => { it.float.behind = true; it.float.wrap = 'behind'; }));
   C('groupObj', { label: '&Group', icon: 'group', enabled: () => false, run: () => {} });
   C('ungroupObj', { label: '&Ungroup', icon: 'ungroup', enabled: () => canEdit() && selectedObjIs((it) => it.t === 'group'), run: () => A.ungroup() });
+  C('regroupObj', { label: 'Reg&roup', enabled: () => canEdit() && !!A.regroupable(), run: () => A.regroup() });
   for (const [k, dir, lbl] of [['nudgeUp', 'ArrowUp', '&Up'], ['nudgeDown', 'ArrowDown', '&Down'], ['nudgeLeft', 'ArrowLeft', '&Left'], ['nudgeRight', 'ArrowRight', '&Right']]) C(k, { label: lbl, enabled: () => canEdit() && floatSel(), run: () => L.drawing.nudge(dir, 1) });
   C('rotateLeft', { label: 'Rotate &Left 90°', icon: 'rotateL', enabled: () => canEdit() && objSel(), run: () => L.drawing.modifySelected(L.N('Rotate'), (it) => { it.rot = (((it.rot || 0) - 90) % 360 + 360) % 360 || undefined; }) });
   C('rotateRight', { label: 'Rotate &Right 90°', icon: 'rotateR', enabled: () => canEdit() && objSel(), run: () => L.drawing.modifySelected(L.N('Rotate'), (it) => { it.rot = ((it.rot || 0) + 90) % 360 || undefined; }) });
   C('flipH', { label: 'Flip &Horizontal', icon: 'flipH', enabled: () => canEdit() && selectedObjIs((it) => it.t === 'shape' || it.t === 'img'), run: () => L.drawing.modifySelected(L.N('Flip'), (it) => { it.flipH = !it.flipH || undefined; }) });
   C('flipV', { label: 'Flip &Vertical', icon: 'flipV', enabled: () => canEdit() && selectedObjIs((it) => it.t === 'shape' || it.t === 'img'), run: () => L.drawing.modifySelected(L.N('Flip'), (it) => { it.flipV = !it.flipV || undefined; }) });
   C('setDefaults', { label: 'Set AutoShape &Defaults', enabled: () => selectedObjIs((it) => it.t === 'shape'), run: () => { const it = L.drawing.selectedItem(); A.shapeDefaults = { fill: L.clone(it.fill), line: L.clone(it.line), shadow: it.shadow ? L.clone(it.shadow) : undefined }; A.status('New AutoShapes will use these settings.'); } });
+  /* Word's Add Text / Edit Text: the caret into the selected shape's text */
+  C('shapeText', { get label() { const it = L.drawing && L.drawing.selectedItem(); return it && it.tb ? 'Edit Te&xt' : 'Add Te&xt'; }, enabled: () => canEdit() && selectedObjIs((it) => L.drawing.takesText(it)), run: () => L.drawing.editText() });
   C('wordartEdit', { label: 'Edit Te&xt...', enabled: () => canEdit() && selectedObjIs((it) => !!it.wordart), run: () => L.dlg.wordart(true) });
   C('wordartGallery', { label: 'LettersArt Gallery', icon: 'waGallery', enabled: () => canEdit() && selectedObjIs((it) => !!it.wordart), run: () => L.dlg.wordart('gallery') });
 
@@ -650,9 +653,43 @@
         return c;
       });
       os.p.runs.splice(i, 1, ...kids);
+      A.lastUngroup = { doc: D.doc, p: os.p, group: it, kids };
       return D.pos(os.p, os.o);
     });
     E.clearObjSel();
+  };
+  /** the shapes ungrouped last, while one of them is selected and all are still there, placed as Ungroup left them
+      (anchored in the same paragraph, positioned from the group's own reference) */
+  A.regroupable = function () {
+    const g = A.lastUngroup, it = L.drawing && L.drawing.selectedItem();
+    if (!g || g.doc !== D.doc || !it || !g.kids.includes(it)) return null;
+    const same = (a, b) => !!a && !!b && a.rel === b.rel;
+    return g.kids.every((k) => g.p.runs.includes(k) && k.float && same(k.float.posH, g.group.float && g.group.float.posH) && same(k.float.posV, g.group.float && g.group.float.posV)) ? g : null;
+  };
+  /** Word's Regroup: the shapes ungrouped last back in one group, around where they are now */
+  A.regroup = function () {
+    const g = A.regroupable();
+    if (!g) return;
+    let o = 0;
+    E.edit(L.N('Regroup'), () => {
+      D.touch(g.p);
+      const x0 = Math.min(...g.kids.map((k) => k.float.posH.off)), y0 = Math.min(...g.kids.map((k) => k.float.posV.off));
+      const x1 = Math.max(...g.kids.map((k) => k.float.posH.off + k.w)), y1 = Math.max(...g.kids.map((k) => k.float.posV.off + k.h));
+      const grp = Object.assign(L.clone(Object.assign({}, g.group, { kids: [] })), { w: L.round(x1 - x0, 2), h: L.round(y1 - y0, 2) });
+      grp.float.posH = Object.assign({}, grp.float.posH, { off: L.round(x0, 2) });
+      grp.float.posV = Object.assign({}, grp.float.posV, { off: L.round(y0, 2) });
+      grp.kids = g.kids.map((k) => { const c = L.clone(k); delete c.float; c.x = L.round(k.float.posH.off - x0, 2); c.y = L.round(k.float.posV.off - y0, 2); return c; });
+      const i = Math.min(...g.kids.map((k) => g.p.runs.indexOf(k)));
+      g.p.runs = g.p.runs.filter((r) => !g.kids.includes(r));
+      g.p.runs.splice(i, 0, grp);
+      for (let j = 0; j < i; j++) o += D.ilen(g.p.runs[j]);
+      return D.pos(g.p, o);
+    });
+    A.lastUngroup = null;
+    setTimeout(() => {
+      const wrap = Array.from(LY.root.querySelectorAll('.flt')).find((x) => +x.dataset.pid === g.p.id && +x.dataset.o === o);
+      if (wrap) L.drawing.select(wrap, { p: g.p, o });
+    }, 30);
   };
   A.insertFileDialog = async function () {
     const files = await L.pickFiles('.docx,.docm,.dotx,.txt,.htm,.html');

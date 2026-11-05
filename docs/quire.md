@@ -25,6 +25,16 @@ columns by the width it is given, the rows by the height (each then at least its
 them). Table Properties ▸ Text wrapping does the same (Around) or puts it back in the text (None).
 With a whole table selected (its handle, Table ▸ Select ▸ Table), Ctrl+X cuts the table and Backspace
 deletes it, while Delete empties its cells, as in Word; with Track Changes on, both empty the cells.
+A shape takes text as in Word: right-click ▸ Add Text (Edit Text once it has some), or select it and type,
+and the typing goes to the end of its text; a shape's first text is centred both ways, as Word starts it,
+and it is saved as a shape with text (`wps:cNvSpPr` without `txBox`, which marks text boxes only; Quire
+used to write every shape it had edited as a text box). A click in the empty part of a shape's or text
+box's text area puts the caret in its nearest line. The right-click menu of a selected object is Word's:
+Add Text, Grouping (Regroup puts back the shapes ungrouped last; Group needs several objects selected,
+which Quire doesn't do), Order, Text Wrapping, Set AutoShape Defaults, Caption, Format AutoShape / Picture
+/ Text Box, Hyperlink; it opens on the object's handles too. On text it adds Synonyms (the thesaurus' words
+for the one at the caret) and New Comment; in a table, Text Direction, AutoFit and Caption. Word's Select
+Text with Similar Formatting needs a selection of several separate pieces, which Quire doesn't have.
 
 ## Proofing tools (offline)
 

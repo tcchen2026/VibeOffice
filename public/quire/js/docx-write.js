@@ -594,7 +594,7 @@
     }
     const shapeFill = isWA ? '<a:noFill/>' : isLine ? '<a:noFill/>' : fillXML(it.fill || { t: 'none' }, ctx);
     const shapeLine = isWA ? '<a:ln><a:noFill/></a:ln>' : lineXML(it.line || { t: 'none' });
-    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb ? 'Text Box ' : isWA ? 'LettersArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${it.tb || it.tbLink || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${it.autofit && !isWA ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
+    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb && it.txBox !== false ? 'Text Box ' : isWA ? 'LettersArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${((it.tb || it.tbLink) && it.txBox !== false) || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${it.autofit && !isWA ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
   }
   function groupXML(g, ctx, x, y, id, nested) {
     let kids = '';
@@ -637,7 +637,7 @@
     const ins = k.ins || { l: 7.2, t: 3.6, r: 7.2, b: 3.6 };
     const isLine = k.geom === 'line' || L.geom.isLine(k.geom);
     const text = k.tb && k.tb.blocks ? `<a:txSp><a:txBody><a:bodyPr wrap="square" lIns="${emu(ins.l)}" tIns="${emu(ins.t)}" rIns="${emu(ins.r)}" bIns="${emu(ins.b)}" anchor="${k.anchor || 't'}"/><a:lstStyle/>${dmlParasXML(k.tb.blocks)}</a:txBody><a:useSpRect/></a:txSp>` : '';
-    return `<a:sp><a:nvSpPr><a:cNvPr id="${id}" name="${X(k.name || 'Shape ' + id)}"/><a:cNvSpPr${k.tb ? ' txBox="1"' : ''}/></a:nvSpPr><a:spPr>${xfrmXML(k, k.x, k.y)}${geomXML(k)}${isLine ? '<a:noFill/>' : fillXML(k.fill || { t: 'none' }, ctx)}${lineXML(k.line || { t: 'none' })}</a:spPr>${text}</a:sp>`;
+    return `<a:sp><a:nvSpPr><a:cNvPr id="${id}" name="${X(k.name || 'Shape ' + id)}"/><a:cNvSpPr${k.tb && k.txBox !== false ? ' txBox="1"' : ''}/></a:nvSpPr><a:spPr>${xfrmXML(k, k.x, k.y)}${geomXML(k)}${isLine ? '<a:noFill/>' : fillXML(k.fill || { t: 'none' }, ctx)}${lineXML(k.line || { t: 'none' })}</a:spPr>${text}</a:sp>`;
   }
   function lockedCanvasXML(it, ctx) {
     const kids = it.t === 'group' ? (it.kids || []).map((k) => canvasKidXML(k, ctx, ctx.docPrId())).join('') : canvasKidXML(Object.assign({}, it, { x: 0, y: 0 }), ctx, ctx.docPrId());

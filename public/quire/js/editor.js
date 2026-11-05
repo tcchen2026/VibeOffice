@@ -217,8 +217,10 @@
     /* a selection being dragged stays in the story it started in (body, a header, a text box…) */
     const anchor = !s.isCollapsed && isEditableNode(s.anchorNode) ? LY.domToPos(s.anchorNode, s.anchorOffset) : null;
     const story = anchor ? D.storyOf(doc(), anchor.p) : null;
+    /* in a text box's (or a shape's) text area, away from its lines: the nearest of its own */
+    const under = !story && document.elementFromPoint(pt.x, pt.y), tbx = under && under.closest && under.closest('.tbx');
     let frag = null, bd = Infinity, below = false, level = false, box = null;
-    for (const f of LY.root.querySelectorAll(story ? '.p' : '.pg-body .p, .pg-hdr .p, .pg-ftr .p')) {
+    for (const f of (tbx || LY.root).querySelectorAll(story || tbx ? '.p' : '.pg-body .p, .pg-hdr .p, .pg-ftr .p')) {
       if (story) { const q = D.byId(doc(), +f.dataset.pid); if (!q || D.storyOf(doc(), q) !== story) continue; }
       const fr = f.getBoundingClientRect();
       if (!fr.height) continue;
@@ -842,8 +844,8 @@
     if (alt && shift && (k === 'ArrowLeft' || k === 'ArrowRight')) { e.preventDefault(); L.ui.exec(k === 'ArrowLeft' ? 'promote' : 'demote'); return; }
     /* objects: arrow keys nudge floating objects */
     if (E.objSel && E.objSel.float && /^Arrow/.test(k) && L.drawing) { e.preventDefault(); L.drawing.nudge(k, ctrl ? 1 : 7.2); return; }
-    /* typing over a selected floating object does nothing */
-    if (k.length === 1 && !ctrl && !alt && E.objSel && E.objSel.float) { e.preventDefault(); return; }
+    /* typing on a selected floating shape goes into its text (Word); over another floating object it does nothing */
+    if (k.length === 1 && !ctrl && !alt && E.objSel && E.objSel.float) { e.preventDefault(); const c = L.ui.cmds.shapeText; if (c && c.enabled()) L.drawing.editText(k); return; }
   }
 
   /* ---------- clipboard ---------- */
@@ -1133,6 +1135,8 @@
     const sc = LY.scroller;
     const box = document.createElement('div');
     box.className = 'obj-handles';
+    /* a right-click on a handle: the object's menu, as anywhere else on it */
+    box.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); if (L.app && L.app.contextMenu) L.app.contextMenu(ev); });
     const place = () => {
       const r = target.getBoundingClientRect(), sr = sc.getBoundingClientRect();
       box.style.left = r.left - sr.left + sc.scrollLeft + 'px';

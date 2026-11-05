@@ -305,7 +305,8 @@
  "&AutoFit": {
   "where": [
    "ledger/js/commands.js:132",
-   "quire/js/app.js:87"
+   "quire/js/app.js:87",
+   "quire/js/app.js:1159"
   ]
  },
  "&AutoFit Selection": {
@@ -1114,7 +1115,7 @@
   "where": [
    "lectern/js/commands.js:188",
    "ledger/js/commands.js:57",
-   "quire/js/commands.js:514"
+   "quire/js/commands.js:515"
   ]
  },
  "&Down, then over": {
@@ -1157,7 +1158,7 @@
  },
  "&Edit Comment": {
   "where": [
-   "quire/js/app.js:1138"
+   "quire/js/app.js:1166"
   ]
  },
  "&Edit Field...": {
@@ -1169,7 +1170,7 @@
   "where": [
    "lectern/js/app.js:1772",
    "ledger/js/app.js:866",
-   "quire/js/app.js:1130"
+   "quire/js/app.js:1158"
   ]
  },
  "&Edit Text": {
@@ -2029,7 +2030,7 @@
    "lectern/js/commands.js:189",
    "ledger/js/commands.js:60",
    "ledger/js/xchart.js:365",
-   "quire/js/commands.js:514"
+   "quire/js/commands.js:515"
   ]
  },
  "&Left Align": {
@@ -2560,7 +2561,7 @@
  "&Open Hyperlink": {
   "where": [
    "ledger/js/app.js:866",
-   "quire/js/app.js:1130"
+   "quire/js/app.js:1158"
   ]
  },
  "&Open...": {
@@ -2592,7 +2593,8 @@
   "where": [
    "lectern/js/app.js:157",
    "lectern/js/app.js:1768",
-   "quire/js/app.js:400"
+   "quire/js/app.js:400",
+   "quire/js/app.js:1130"
   ]
  },
  "&Ordinals (1st) with superscript": {
@@ -3000,7 +3002,7 @@
   "where": [
    "lectern/js/commands.js:94",
    "ledger/js/commands.js:127",
-   "quire/js/app.js:1130",
+   "quire/js/app.js:1158",
    "quire/js/commands.js:309"
   ]
  },
@@ -3104,7 +3106,7 @@
    "lectern/js/commands.js:190",
    "ledger/js/commands.js:58",
    "ledger/js/xchart.js:365",
-   "quire/js/commands.js:514"
+   "quire/js/commands.js:515"
   ]
  },
  "&Right Align": {
@@ -3882,7 +3884,7 @@
   "where": [
    "lectern/js/commands.js:187",
    "ledger/js/commands.js:59",
-   "quire/js/commands.js:514"
+   "quire/js/commands.js:515"
   ]
  },
  "&Update Field": {
@@ -4186,6 +4188,11 @@
    "ledger/js/filter.js:260"
   ]
  },
+ "(No Suggestions)": {
+  "where": [
+   "quire/js/app.js:1143"
+  ]
+ },
  "(No Theme)": {
   "where": [
    "quire/js/dialogs.js:837",
@@ -4219,7 +4226,7 @@
  },
  "(This page intentionally left blank by a section break)": {
   "where": [
-   "quire/js/app.js:1388"
+   "quire/js/app.js:1416"
   ]
  },
  "(Top 10...)": {
@@ -4742,7 +4749,7 @@
  },
  "A small table": {
   "where": [
-   "quire/js/app.js:1359"
+   "quire/js/app.js:1387"
   ]
  },
  "A source column used by the pivot table was deleted. Its remaining result cells are kept.": {
@@ -5143,9 +5150,15 @@
    "lectern/js/diagram.js:631"
   ]
  },
+ "Add Te&xt": {
+  "where": [
+   "quire/js/commands.js:522"
+  ]
+ },
  "Add Text": {
   "where": [
-   "lectern/js/textedit.js:339"
+   "lectern/js/textedit.js:339",
+   "quire/js/drawing.js:707"
   ]
  },
  "Add at least one picture.": {
@@ -6527,7 +6540,7 @@
  },
  "Behind Text": {
   "where": [
-   "quire/js/drawing.js:669"
+   "quire/js/drawing.js:687"
   ]
  },
  "Below selected item": {
@@ -7010,52 +7023,52 @@
  },
  "Browse by Comment": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Edits": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Endnote": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Field": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Footnote": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Graphic": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Heading": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Page": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Section": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse by Table": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Browse...": {
@@ -7629,7 +7642,7 @@
  },
  "Cell Alignment": {
   "where": [
-   "quire/js/app.js:1131",
+   "quire/js/app.js:1159",
    "quire/js/tables.js:573"
   ]
  },
@@ -7788,7 +7801,7 @@
    "lectern/js/dialogs.js:188",
    "lectern/js/dialogs.js:192",
    "quire/js/commands.js:321",
-   "quire/js/commands.js:594"
+   "quire/js/commands.js:597"
   ]
  },
  "Change Chart Type": {
@@ -7866,12 +7879,12 @@
  },
  "Chapter One": {
   "where": [
-   "quire/js/app.js:1368"
+   "quire/js/app.js:1396"
   ]
  },
  "Chapter Two": {
   "where": [
-   "quire/js/app.js:1369"
+   "quire/js/app.js:1397"
   ]
  },
  "Chapter starts with style:": {
@@ -8028,7 +8041,7 @@
  },
  "Check Box": {
   "where": [
-   "quire/js/editor.js:1077"
+   "quire/js/editor.js:1079"
   ]
  },
  "Check for updates": {
@@ -8551,12 +8564,12 @@
  },
  "Close Full Screen": {
   "where": [
-   "quire/js/commands.js:583"
+   "quire/js/commands.js:586"
   ]
  },
  "Close Header and Footer": {
   "where": [
-   "quire/js/commands.js:550",
+   "quire/js/commands.js:553",
    "quire/js/ribbon.js:118"
   ]
  },
@@ -8694,7 +8707,7 @@
  },
  "Collapse": {
   "where": [
-   "quire/js/commands.js:532"
+   "quire/js/commands.js:535"
   ]
  },
  "Collapse the Ribbon (Ctrl+F1)": {
@@ -8834,7 +8847,7 @@
  },
  "Column Break": {
   "where": [
-   "quire/js/editor.js:379",
+   "quire/js/editor.js:381",
    "quire/js/find.js:391",
    "quire/js/find.js:393",
    "quire/js/render.js:553"
@@ -9197,7 +9210,7 @@
  },
  "Content Control &Value...": {
   "where": [
-   "quire/js/app.js:1135"
+   "quire/js/app.js:1163"
   ]
  },
  "Content Layouts": {
@@ -9515,7 +9528,7 @@
  },
  "Copy Styles": {
   "where": [
-   "quire/js/commands.js:687"
+   "quire/js/commands.js:724"
   ]
  },
  "Copy Value from Above": {
@@ -10294,7 +10307,7 @@
  "Cut": {
   "where": [
    "quire/js/commands.js:245",
-   "quire/js/editor.js:862"
+   "quire/js/editor.js:864"
   ]
  },
  "Cut Through Black": {
@@ -10857,7 +10870,7 @@
  "Delete Co&mment": {
   "where": [
    "ledger/js/commands.js:118",
-   "quire/js/app.js:1138"
+   "quire/js/app.js:1166"
   ]
  },
  "Delete Column": {
@@ -10990,7 +11003,7 @@
    "lectern/js/app.js:1234",
    "lectern/js/diagram.js:419",
    "lectern/js/diagram.js:633",
-   "quire/js/commands.js:527"
+   "quire/js/commands.js:530"
   ]
  },
  "Demote / Promote; next object": {
@@ -11000,7 +11013,7 @@
  },
  "Demote to Body Text": {
   "where": [
-   "quire/js/commands.js:528",
+   "quire/js/commands.js:531",
    "quire/js/outline.js:61"
   ]
  },
@@ -11702,7 +11715,7 @@
  },
  "Drag and Drop": {
   "where": [
-   "quire/js/editor.js:923"
+   "quire/js/editor.js:925"
   ]
  },
  "Drag in the worksheet to insert the AutoShape. Press Esc to cancel.": {
@@ -11813,7 +11826,7 @@
  },
  "Drop a document to open it, or pictures to insert them": {
   "where": [
-   "quire/js/app.js:1257"
+   "quire/js/app.js:1285"
   ]
  },
  "Drop a workbook to open it, or pictures to insert them": {
@@ -12032,13 +12045,14 @@
  },
  "Edit Te&xt": {
   "where": [
-   "ledger/js/drawing.js:423"
+   "ledger/js/drawing.js:423",
+   "quire/js/commands.js:522"
   ]
  },
  "Edit Te&xt...": {
   "where": [
    "lectern/js/commands.js:227",
-   "quire/js/commands.js:520"
+   "quire/js/commands.js:523"
   ]
  },
  "Edit Text": {
@@ -12775,7 +12789,7 @@
   "where": [
    "lectern/js/panes.js:730",
    "lectern/js/slideshow.js:20",
-   "quire/js/commands.js:531"
+   "quire/js/commands.js:534"
   ]
  },
  "Expand All": {
@@ -12832,7 +12846,7 @@
  },
  "Extend Selection": {
   "where": [
-   "quire/js/commands.js:572"
+   "quire/js/commands.js:575"
   ]
  },
  "Extend data range &formats and formulas": {
@@ -13386,7 +13400,7 @@
  "Find and Replace": {
   "where": [
    "ledger/js/dialogs.js:514",
-   "quire/js/app.js:1361",
+   "quire/js/app.js:1389",
    "quire/js/find.js:364"
   ]
  },
@@ -13412,7 +13426,7 @@
  },
  "Find...": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Find:": {
@@ -13493,7 +13507,7 @@
  },
  "First Record": {
   "where": [
-   "quire/js/commands.js:562"
+   "quire/js/commands.js:565"
   ]
  },
  "First Slide": {
@@ -13570,20 +13584,20 @@
  "Flip": {
   "where": [
    "lectern/js/app.js:1118",
-   "quire/js/commands.js:517",
-   "quire/js/commands.js:518"
+   "quire/js/commands.js:518",
+   "quire/js/commands.js:519"
   ]
  },
  "Flip &Horizontal": {
   "where": [
    "lectern/js/commands.js:185",
-   "quire/js/commands.js:517"
+   "quire/js/commands.js:518"
   ]
  },
  "Flip &Vertical": {
   "where": [
    "lectern/js/commands.js:186",
-   "quire/js/commands.js:518"
+   "quire/js/commands.js:519"
   ]
  },
  "Flowchart": {
@@ -13990,6 +14004,21 @@
    "lectern/js/ribbon.js:122"
   ]
  },
+ "Format &Object...": {
+  "where": [
+   "quire/js/app.js:1126"
+  ]
+ },
+ "Format &Picture...": {
+  "where": [
+   "quire/js/app.js:1126"
+  ]
+ },
+ "Format AutoSha&pe...": {
+  "where": [
+   "quire/js/app.js:1126"
+  ]
+ },
  "Format AutoShape": {
   "where": [
    "lectern/js/dialogs.js:386",
@@ -14020,6 +14049,11 @@
    "ledger/js/drawing.js:461"
   ]
  },
+ "Format Letters&Art...": {
+  "where": [
+   "quire/js/app.js:1126"
+  ]
+ },
  "Format LettersArt": {
   "where": [
    "lectern/js/dialogs.js:386",
@@ -14034,7 +14068,7 @@
  },
  "Format Page Number": {
   "where": [
-   "quire/js/commands.js:542"
+   "quire/js/commands.js:545"
   ]
  },
  "Format Painter": {
@@ -14078,6 +14112,11 @@
   "where": [
    "lectern/js/app.js:1505",
    "lectern/js/dialogs.js:386"
+  ]
+ },
+ "Format Te&xt Box...": {
+  "where": [
+   "quire/js/app.js:1126"
   ]
  },
  "Format Text Box": {
@@ -14598,7 +14637,7 @@
  },
  "Getting around": {
   "where": [
-   "quire/js/app.js:1354"
+   "quire/js/app.js:1382"
   ]
  },
  "Globe": {
@@ -14627,7 +14666,7 @@
  },
  "Go Back": {
   "where": [
-   "quire/js/commands.js:573"
+   "quire/js/commands.js:576"
   ]
  },
  "Go To": {
@@ -14648,7 +14687,7 @@
  },
  "Go To...": {
   "where": [
-   "quire/js/app.js:1146"
+   "quire/js/app.js:1174"
   ]
  },
  "Go back to previous edit": {
@@ -14668,7 +14707,7 @@
  },
  "Go to TOC": {
   "where": [
-   "quire/js/commands.js:536"
+   "quire/js/commands.js:539"
   ]
  },
  "Go to slide {0}": {
@@ -14848,6 +14887,11 @@
  "Gridlines|chart": {
   "where": [
    "ledger/js/xchart.js:367"
+  ]
+ },
+ "Gro&uping": {
+  "where": [
+   "quire/js/app.js:1130"
   ]
  },
  "Group": {
@@ -15211,7 +15255,7 @@
  "Highlight": {
   "where": [
    "quire/js/app.js:202",
-   "quire/js/app.js:1339",
+   "quire/js/app.js:1367",
    "quire/js/commands.js:353",
    "quire/js/find.js:376"
   ]
@@ -15493,12 +15537,12 @@
  },
  "In Front of Text": {
   "where": [
-   "quire/js/drawing.js:669"
+   "quire/js/drawing.js:687"
   ]
  },
  "In Line with Text": {
   "where": [
-   "quire/js/drawing.js:669"
+   "quire/js/drawing.js:687"
   ]
  },
  "In l&ine with text": {
@@ -15640,8 +15684,8 @@
  },
  "Indent": {
   "where": [
-   "quire/js/editor.js:426",
-   "quire/js/editor.js:533",
+   "quire/js/editor.js:428",
+   "quire/js/editor.js:535",
    "quire/js/panes.js:381"
   ]
  },
@@ -15732,7 +15776,7 @@
  },
  "Insert Address Block": {
   "where": [
-   "quire/js/commands.js:558",
+   "quire/js/commands.js:561",
    "quire/js/mailmerge.js:162"
   ]
  },
@@ -15823,7 +15867,7 @@
    "lectern/js/app.js:1252",
    "ledger/js/commands.js:255",
    "quire/js/commands.js:380",
-   "quire/js/commands.js:543"
+   "quire/js/commands.js:546"
   ]
  },
  "Insert Date and Time": {
@@ -15862,7 +15906,7 @@
  },
  "Insert File": {
   "where": [
-   "quire/js/commands.js:672"
+   "quire/js/commands.js:709"
   ]
  },
  "Insert Footnote": {
@@ -15882,7 +15926,7 @@
  },
  "Insert Greeting Line": {
   "where": [
-   "quire/js/commands.js:559",
+   "quire/js/commands.js:562",
    "quire/js/mailmerge.js:148"
   ]
  },
@@ -15935,7 +15979,7 @@
  },
  "Insert Merge Fields": {
   "where": [
-   "quire/js/commands.js:560"
+   "quire/js/commands.js:563"
   ]
  },
  "Insert New &Title Master": {
@@ -15945,7 +15989,7 @@
  },
  "Insert Number of Pages": {
   "where": [
-   "quire/js/commands.js:541"
+   "quire/js/commands.js:544"
   ]
  },
  "Insert Object": {
@@ -15961,7 +16005,7 @@
  "Insert Page Number": {
   "where": [
    "quire/js/commands.js:382",
-   "quire/js/commands.js:540"
+   "quire/js/commands.js:543"
   ]
  },
  "Insert Picture": {
@@ -16056,7 +16100,7 @@
   "where": [
    "ledger/js/commands.js:256",
    "quire/js/commands.js:381",
-   "quire/js/commands.js:544"
+   "quire/js/commands.js:547"
   ]
  },
  "Insert Title Master": {
@@ -16092,7 +16136,7 @@
  },
  "Insert footnote": {
   "where": [
-   "quire/js/app.js:1361"
+   "quire/js/app.js:1389"
   ]
  },
  "Insert hyperlinks": {
@@ -16147,7 +16191,7 @@
  },
  "Insert ▸ Reference": {
   "where": [
-   "quire/js/app.js:1361"
+   "quire/js/app.js:1389"
   ]
  },
  "Insert ▸ Reference ▸ Footnote (Ctrl+Alt+F footnote, Ctrl+Alt+D endnote), Caption, Cross-reference and Index and Tables (table of contents, figures, index). Right-click a field and choose Update Field, or press F9. Alt+F9 shows field codes.": {
@@ -16623,7 +16667,7 @@
  },
  "Last Record": {
   "where": [
-   "quire/js/commands.js:565"
+   "quire/js/commands.js:568"
   ]
  },
  "Last Slide": {
@@ -17078,7 +17122,7 @@
   "where": [
    "lectern/js/commands.js:228",
    "lectern/js/dialogs.js:1014",
-   "quire/js/commands.js:521",
+   "quire/js/commands.js:524",
    "quire/js/dialogs2.js:539"
   ]
  },
@@ -17264,7 +17308,7 @@
  },
  "Line Break": {
   "where": [
-   "quire/js/editor.js:377"
+   "quire/js/editor.js:379"
   ]
  },
  "Line Color": {
@@ -17370,8 +17414,8 @@
  },
  "Link to Previous": {
   "where": [
-   "quire/js/commands.js:546",
-   "quire/js/commands.js:812"
+   "quire/js/commands.js:549",
+   "quire/js/commands.js:849"
   ]
  },
  "Link to:": {
@@ -17755,7 +17799,7 @@
  },
  "Mail Merge Recipients": {
   "where": [
-   "quire/js/commands.js:557",
+   "quire/js/commands.js:560",
    "quire/js/mailmerge.js:108"
   ]
  },
@@ -17801,7 +17845,7 @@
  },
  "Main document setup": {
   "where": [
-   "quire/js/commands.js:555"
+   "quire/js/commands.js:558"
   ]
  },
  "Major gridlines": {
@@ -18090,12 +18134,12 @@
  },
  "Merge to New Document": {
   "where": [
-   "quire/js/commands.js:566"
+   "quire/js/commands.js:569"
   ]
  },
  "Merge to Printer": {
   "where": [
-   "quire/js/commands.js:567"
+   "quire/js/commands.js:570"
   ]
  },
  "Merged {0} record into a new document.": {
@@ -18354,7 +18398,7 @@
  "Move": {
   "where": [
    "ledger/js/clipboard.js:422",
-   "quire/js/editor.js:923"
+   "quire/js/editor.js:925"
   ]
  },
  "Move &but don't size with cells": {
@@ -18372,7 +18416,7 @@
    "lectern/js/commands.js:126",
    "lectern/js/diagram.js:419",
    "lectern/js/diagram.js:635",
-   "quire/js/commands.js:530"
+   "quire/js/commands.js:533"
   ]
  },
  "Move Object": {
@@ -18380,7 +18424,7 @@
    "lectern/js/editor.js:579",
    "ledger/js/drawing.js:226",
    "ledger/js/drawing.js:303",
-   "quire/js/drawing.js:577"
+   "quire/js/drawing.js:595"
   ]
  },
  "Move Page Break": {
@@ -18423,7 +18467,7 @@
    "lectern/js/commands.js:125",
    "lectern/js/diagram.js:419",
    "lectern/js/diagram.js:634",
-   "quire/js/commands.js:529"
+   "quire/js/commands.js:532"
   ]
  },
  "Move down": {
@@ -18640,7 +18684,7 @@
  },
  "New AutoShapes will use these settings.": {
   "where": [
-   "quire/js/commands.js:519"
+   "quire/js/commands.js:520"
   ]
  },
  "New Blank Document": {
@@ -18651,6 +18695,11 @@
  "New Blank Workbook": {
   "where": [
    "ledger/js/commands.js:27"
+  ]
+ },
+ "New Co&mment": {
+  "where": [
+   "quire/js/app.js:1167"
   ]
  },
  "New Comment": {
@@ -18823,7 +18872,7 @@
    "lectern/js/slideshow.js:368",
    "lectern/js/slideshow.js:971",
    "quire/js/commands.js:479",
-   "quire/js/commands.js:571"
+   "quire/js/commands.js:574"
   ]
  },
  "Next / previous cell; list level": {
@@ -18833,12 +18882,12 @@
  },
  "Next Page": {
   "where": [
-   "quire/js/commands.js:571"
+   "quire/js/commands.js:574"
   ]
  },
  "Next Record": {
   "where": [
-   "quire/js/commands.js:564"
+   "quire/js/commands.js:567"
   ]
  },
  "Next Sheet": {
@@ -19290,7 +19339,7 @@
  "Nudge": {
   "where": [
    "lectern/js/app.js:1129",
-   "quire/js/drawing.js:591"
+   "quire/js/drawing.js:609"
   ]
  },
  "Nudge (Ctrl for fine nudge)": {
@@ -19619,7 +19668,7 @@
  },
  "Only comments can be added to this protected document.": {
   "where": [
-   "quire/js/editor.js:297"
+   "quire/js/editor.js:299"
   ]
  },
  "Only for comments/formatting": {
@@ -19657,7 +19706,7 @@
  },
  "Open Data Source": {
   "where": [
-   "quire/js/commands.js:556"
+   "quire/js/commands.js:559"
   ]
  },
  "Open File…": {
@@ -20154,7 +20203,7 @@
  },
  "Page Break": {
   "where": [
-   "quire/js/editor.js:378",
+   "quire/js/editor.js:380",
    "quire/js/render.js:553"
   ]
  },
@@ -20390,7 +20439,7 @@
  },
  "Paragraph Formatting": {
   "where": [
-   "quire/js/editor.js:611"
+   "quire/js/editor.js:613"
   ]
  },
  "Paragraph Mark": {
@@ -21188,7 +21237,7 @@
   "where": [
    "lectern/js/slideshow.js:365",
    "quire/js/commands.js:478",
-   "quire/js/commands.js:570"
+   "quire/js/commands.js:573"
   ]
  },
  "Previous / next sheet": {
@@ -21208,12 +21257,12 @@
  },
  "Previous Page": {
   "where": [
-   "quire/js/commands.js:570"
+   "quire/js/commands.js:573"
   ]
  },
  "Previous Record": {
   "where": [
-   "quire/js/commands.js:563"
+   "quire/js/commands.js:566"
   ]
  },
  "Previous Sheet": {
@@ -21414,7 +21463,7 @@
    "lectern/js/app.js:1234",
    "lectern/js/diagram.js:419",
    "lectern/js/diagram.js:632",
-   "quire/js/commands.js:526"
+   "quire/js/commands.js:529"
   ]
  },
  "Promote / demote": {
@@ -21424,7 +21473,7 @@
  },
  "Promote to Heading 1": {
   "where": [
-   "quire/js/commands.js:525"
+   "quire/js/commands.js:528"
   ]
  },
  "Proofing": {
@@ -21965,7 +22014,7 @@
  },
  "Recovered the unsaved changes. Save the document to keep them.": {
   "where": [
-   "quire/js/app.js:1428"
+   "quire/js/app.js:1456"
   ]
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
@@ -22084,9 +22133,19 @@
    "ledger/js/ribbon.js:64"
   ]
  },
+ "Reg&roup": {
+  "where": [
+   "quire/js/commands.js:514"
+  ]
+ },
  "Registered": {
   "where": [
    "common/dialogs.js:16"
+  ]
+ },
+ "Regroup": {
+  "where": [
+   "quire/js/commands.js:674"
   ]
  },
  "Regular": {
@@ -22204,7 +22263,7 @@
   "where": [
    "lectern/js/dialogs.js:788",
    "lectern/js/dialogs.js:789",
-   "quire/js/commands.js:607"
+   "quire/js/commands.js:610"
   ]
  },
  "Remove Numbering": {
@@ -22484,12 +22543,12 @@
  "Resize Object": {
   "where": [
    "ledger/js/drawing.js:303",
-   "quire/js/drawing.js:618"
+   "quire/js/drawing.js:636"
   ]
  },
  "Resize Picture": {
   "where": [
-   "quire/js/editor.js:1185"
+   "quire/js/editor.js:1189"
   ]
  },
  "Resize Table": {
@@ -24370,19 +24429,19 @@
    "lectern/js/app.js:1117",
    "lectern/js/editor.js:632",
    "quire/js/commands.js:495",
-   "quire/js/commands.js:515"
+   "quire/js/commands.js:516"
   ]
  },
  "Rotate &Left 90°": {
   "where": [
    "lectern/js/commands.js:183",
-   "quire/js/commands.js:515"
+   "quire/js/commands.js:516"
   ]
  },
  "Rotate &Right 90°": {
   "where": [
    "lectern/js/commands.js:184",
-   "quire/js/commands.js:516"
+   "quire/js/commands.js:517"
   ]
  },
  "Rotate Left 90°": {
@@ -24642,6 +24701,11 @@
    "quire/js/dialogs2.js:201"
   ]
  },
+ "S&ynonyms": {
+  "where": [
+   "quire/js/app.js:1167"
+  ]
+ },
  "SCRL": {
   "where": [
    "ledger/js/app.js:651"
@@ -24659,7 +24723,7 @@
  },
  "Same as Previous": {
   "where": [
-   "quire/js/app.js:1388"
+   "quire/js/app.js:1416"
   ]
  },
  "Same as the whole &table": {
@@ -24687,7 +24751,7 @@
  },
  "Sample document": {
   "where": [
-   "quire/js/app.js:1375"
+   "quire/js/app.js:1403"
   ]
  },
  "Sample:": {
@@ -25040,7 +25104,7 @@
  },
  "Second pane": {
   "where": [
-   "quire/js/commands.js:717"
+   "quire/js/commands.js:754"
   ]
  },
  "Section": {
@@ -25073,7 +25137,7 @@
  },
  "Section Break (Next Page)": {
   "where": [
-   "quire/js/app.js:1389",
+   "quire/js/app.js:1417",
    "quire/js/render.js:370"
   ]
  },
@@ -25312,7 +25376,7 @@
  },
  "Select text to highlight. Press Esc to stop.": {
   "where": [
-   "quire/js/app.js:1340"
+   "quire/js/app.js:1368"
   ]
  },
  "Select text, then use the Formatting toolbar or Format ▸ Font. Bullets and numbering live under Format ▸ Bullets and Numbering. Press Tab at the start of a bullet to demote it.": {
@@ -25347,7 +25411,7 @@
  },
  "Select the text to apply the formatting to.": {
   "where": [
-   "quire/js/app.js:1335"
+   "quire/js/app.js:1363"
   ]
  },
  "Select the text you want to store as AutoText first.": {
@@ -25462,7 +25526,7 @@
  "Set AutoShape &Defaults": {
   "where": [
    "lectern/js/commands.js:191",
-   "quire/js/commands.js:519"
+   "quire/js/commands.js:520"
   ]
  },
  "Set Hyperlink ScreenTip": {
@@ -25817,7 +25881,7 @@
  },
  "Show First Line Only": {
   "where": [
-   "quire/js/commands.js:533"
+   "quire/js/commands.js:536"
   ]
  },
  "Show Formatting": {
@@ -25842,12 +25906,12 @@
  },
  "Show Next": {
   "where": [
-   "quire/js/commands.js:549"
+   "quire/js/commands.js:552"
   ]
  },
  "Show Previous": {
   "where": [
-   "quire/js/commands.js:548"
+   "quire/js/commands.js:551"
   ]
  },
  "Show Scenario": {
@@ -25867,7 +25931,7 @@
  },
  "Show Text Formatting": {
   "where": [
-   "quire/js/commands.js:534"
+   "quire/js/commands.js:537"
   ]
  },
  "Show all formatting marks": {
@@ -25952,7 +26016,7 @@
  },
  "Show/Hide Document Text": {
   "where": [
-   "quire/js/commands.js:545"
+   "quire/js/commands.js:548"
   ]
  },
  "Show/Hide Drawing Guides": {
@@ -26926,7 +26990,7 @@
  },
  "Square": {
   "where": [
-   "quire/js/drawing.js:669"
+   "quire/js/drawing.js:687"
   ]
  },
  "Square Dot": {
@@ -27500,7 +27564,7 @@
  },
  "Switch Between Header and Footer": {
   "where": [
-   "quire/js/commands.js:547"
+   "quire/js/commands.js:550"
   ]
  },
  "Symbol": {
@@ -27517,6 +27581,11 @@
    "lectern/js/ribbon.js:43",
    "ledger/js/ribbon.js:49",
    "quire/js/ribbon.js:38"
+  ]
+ },
+ "Synonym": {
+  "where": [
+   "quire/js/app.js:1143"
   ]
  },
  "Syntax Error": {
@@ -27809,7 +27878,7 @@
  },
  "Tabs, leaders and fields": {
   "where": [
-   "quire/js/app.js:1367"
+   "quire/js/app.js:1395"
   ]
  },
  "Tab|key": {
@@ -28103,7 +28172,7 @@
  },
  "Text W&rapping": {
   "where": [
-   "quire/js/app.js:1128"
+   "quire/js/app.js:1131"
   ]
  },
  "Text Width": {
@@ -28448,7 +28517,7 @@
  },
  "The file could not be inserted. {0}": {
   "where": [
-   "quire/js/commands.js:682"
+   "quire/js/commands.js:719"
   ]
  },
  "The file could not be saved: {0}": {
@@ -29154,7 +29223,7 @@
  },
  "This document is read-only.": {
   "where": [
-   "quire/js/editor.js:293"
+   "quire/js/editor.js:295"
   ]
  },
  "This effect has no direction settings.": {
@@ -29229,7 +29298,7 @@
  },
  "This modification is not allowed because the selection is locked.": {
   "where": [
-   "quire/js/editor.js:296"
+   "quire/js/editor.js:298"
   ]
  },
  "This operation requires the merged cells to be identically sized.": {
@@ -29332,7 +29401,7 @@
  },
  "Through": {
   "where": [
-   "quire/js/drawing.js:669"
+   "quire/js/drawing.js:687"
   ]
  },
  "Thu&mbnails": {
@@ -29352,7 +29421,7 @@
  },
  "Tight": {
   "where": [
-   "quire/js/drawing.js:669"
+   "quire/js/drawing.js:687"
   ]
  },
  "Time": {
@@ -29675,7 +29744,7 @@
  },
  "Top and Bottom": {
   "where": [
-   "quire/js/drawing.js:669"
+   "quire/js/drawing.js:687"
   ]
  },
  "Top and Bottom Border": {
@@ -29763,7 +29832,7 @@
  },
  "Track changes": {
   "where": [
-   "quire/js/app.js:1361",
+   "quire/js/app.js:1389",
    "quire/js/panes.js:107"
   ]
  },
@@ -30302,7 +30371,7 @@
  },
  "Update TOC": {
   "where": [
-   "quire/js/commands.js:535"
+   "quire/js/commands.js:538"
   ]
  },
  "Update VibeOffice": {
@@ -30689,7 +30758,7 @@
  },
  "View Merged Data": {
   "where": [
-   "quire/js/commands.js:561"
+   "quire/js/commands.js:564"
   ]
  },
  "View Ruler": {
@@ -30852,8 +30921,8 @@
  },
  "Welcome to Quire": {
   "where": [
-   "quire/js/app.js:1350",
-   "quire/js/app.js:1352"
+   "quire/js/app.js:1378",
+   "quire/js/app.js:1380"
   ]
  },
  "Welcome to VibeOffice.work.": {
@@ -31521,7 +31590,7 @@
  },
  "[object]": {
   "where": [
-   "quire/js/app.js:1389",
+   "quire/js/app.js:1417",
    "quire/js/panes.js:181",
    "quire/js/review.js:38"
   ]

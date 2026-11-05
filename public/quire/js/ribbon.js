@@ -44,7 +44,7 @@
       { id: 'layout', label: 'Layout', groups: [
         { label: 'Page Setup', launcher: 'pageSetup', items: [{ cmd: 'pageSetup', size: 'large', label: 'Margins' }, { drop: 'Columns', icon: 'columns', size: 'large', menu: (r) => A().menus.columns(r, ['-', 'columnsDlg']) }, 'insertBreak', 'hyphenation', 'textDirection'] },
         { label: 'Paragraph', icon: 'paragraph', launcher: 'paragraphDlg', items: ['incIndent', 'decIndent', 'tabsDlg'] },
-        { label: 'Arrange', items: ['bringFront', 'sendBack', { drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, 'groupObj', 'ungroupObj', 'rotateRight'] },
+        { label: 'Arrange', items: ['bringFront', 'sendBack', { drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, { drop: 'Group', icon: 'group', menu: open(['groupObj', 'regroupObj', 'ungroupObj']) }, 'rotateRight'] },
       ] },
       { id: 'references', label: 'Refe&rences', groups: [
         { label: 'Table of Contents', items: [{ cmd: 'indexTables', size: 'large', label: 'Table of Contents' }, 'updateTOC'] },
@@ -106,7 +106,7 @@
           { label: 'Insert Shapes', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => A().openAutoShapes(r) }, 'textBox'] },
           { label: 'Shape Styles', launcher: 'formatObject', items: [{ split: 'fillColor', menu: (r, b) => A().objColorMenu(b, 'fill') }, { split: 'lineColor', menu: (r, b) => A().objColorMenu(b, 'line') }, { drop: 'Shadow', icon: 'shadowStyle', menu: (r) => A().objShadowMenu(r) }] },
           { label: 'LettersArt Styles', items: [{ cmd: 'wordartGallery', size: 'large', label: 'LettersArt Styles' }, 'wordartEdit'] },
-          { label: 'Arrange', items: [{ drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, 'bringFront', 'sendBack', 'groupObj', 'ungroupObj', 'rotateRight'] },
+          { label: 'Arrange', items: [{ drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, 'bringFront', 'sendBack', { drop: 'Group', icon: 'group', menu: open(['groupObj', 'regroupObj', 'ungroupObj']) }, 'rotateRight'] },
         ] },
       ] },
       { id: 'headerFooter', set: 'Header & Footer Tools', open: true, when: ctx('headerFooter'), tabs: [

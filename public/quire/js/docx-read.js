@@ -1424,6 +1424,9 @@
       if (tx) { it.tb = textBoxBlocks(tx, ctx); if (at(tx, 'id') != null) it.tbId = at(tx, 'id'); }
       const ltx = kid(wsp, 'linkedTxbx');
       if (ltx && !tx) it.tbLink = { id: at(ltx, 'id'), seq: +at(ltx, 'seq') || 1 };
+      /* text in a shape that isn't a text box (an AutoShape with text: wps:cNvSpPr without txBox) */
+      const nv = kid(wsp, 'cNvSpPr');
+      if ((tx || ltx) && !(nv && X.bool(at(nv, 'txBox')))) it.txBox = false;
       const bp = kid(wsp, 'bodyPr');
       if (bp) {
         it.ins = { l: at(bp, 'lIns') != null ? emu(at(bp, 'lIns')) : 7.2, t: at(bp, 'tIns') != null ? emu(at(bp, 'tIns')) : 3.6, r: at(bp, 'rIns') != null ? emu(at(bp, 'rIns')) : 7.2, b: at(bp, 'bIns') != null ? emu(at(bp, 'bIns')) : 3.6 };
@@ -1737,6 +1740,7 @@
         }
         if (tb) {
           it.tb = textBoxBlocks(tb, ctx);
+          if (spt !== '202' && !/_t202$/.test(at(s, 'type') || '')) it.txBox = false;   // an AutoShape with text, not a text box
           const ins = at(tb, 'inset');
           if (ins) { const v = ins.split(',').map((x) => (x && x.trim() ? cssLen(x) : null)); it.ins = { l: v[0] != null ? v[0] : 7.2, t: v[1] != null ? v[1] : 3.6, r: v[2] != null ? v[2] : 7.2, b: v[3] != null ? v[3] : 3.6 }; }
           else it.ins = { l: 7.2, t: 3.6, r: 7.2, b: 3.6 };

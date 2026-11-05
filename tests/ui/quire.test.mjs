@@ -310,19 +310,19 @@ test('Q9 a right-click in a table cell, the caret outside the table: the first m
 }));
 
 const PIC = ['First paragraph of text.', 'Picture here and text after it.', 'Third paragraph with words.'];
-test('Q10 a right-click on a picture, selected or not, selects it (handles shown) and offers Picture…', () => inQuire(PARAS(PIC) + PICTURE(1, 5), async (u) => {
+test('Q10 a right-click on a picture, selected or not, selects it (handles shown) and offers Format Picture…', () => inQuire(PARAS(PIC) + PICTURE(1, 5), async (u) => {
   const handles = () => u.evaluate(`document.querySelectorAll('.obj-handles').length`);
   const pic = await u.el('#pages .img');
   await u.click(pic);
   assert.equal(await handles(), 1, 'a click selects the picture');
   await u.rightClick(pic);
   assert.equal(await handles(), 1, 'a selected picture keeps its handles');
-  assert.ok((await u.menuItems()).includes('Picture...'), 'the menu has Picture...');
+  assert.ok((await u.menuItems()).includes('Format Picture...'), 'the menu has Format Picture...');
   await u.esc();
   await u.click(await atB(u, 0, 3));
   await u.rightClick(pic);
   assert.equal(await handles(), 1, 'an unselected picture is selected by the right-click');
-  assert.ok((await u.menuItems()).includes('Picture...'), 'the menu has Picture...');
+  assert.ok((await u.menuItems()).includes('Format Picture...'), 'the menu has Format Picture...');
   await u.esc();
 }));
 
@@ -693,6 +693,32 @@ test('the task pane follows the selection: a shape opens Drawing Tools though th
   assert.equal((await pane()).open, false, 'with the option off, the pane stays closed');
 }));
 
+
+test('text in a shape: a right-click on a handle offers Add Text, then typing goes in; typing on a selected shape adds to its text; a click in a box\'s empty space puts the caret in it', () => inQuire(PARAS(SHAPE_DOC) + SHAPE(1), async (u) => {
+  const shapeText = () => u.evaluate(`(() => { const it = L.D.doc.main.blocks[1].runs.find((r) => r.t === 'shape'); return it.tb ? it.tb.blocks.map((p) => L.D.ptext(p)).join('/') : null; })()`);
+  const inShape = () => u.evaluate(`(() => { const it = L.D.doc.main.blocks[1].runs.find((r) => r.t === 'shape'); return !!(it.tb && L.ed.sel && it.tb.blocks.includes(L.ed.sel.f.p)); })()`);
+  let sh = await u.el('#pages .flt');
+  await u.click({ x: sh.x, y: sh.y });
+  const h = await u.el('.obj-handles .oh-se');
+  await u.rightClick({ x: h.x, y: h.y });
+  assert.ok((await u.menuItems()).includes('Add Text'), 'the shape\'s menu, on its handle');
+  await u.pick('Add Text');
+  await u.key('H'); await u.key('i');
+  assert.equal(await shapeText(), 'Hi');
+  assert.equal(await inShape(), true, 'the caret in its text');
+  await u.click(await atB(u, 0, 5));
+  sh = await u.el('#pages .flt');
+  await u.click({ x: sh.l + 2, y: sh.y });   // its border selects it
+  assert.equal(await u.evaluate('!!L.ed.objSel'), true, 'setup: the shape is selected');
+  await u.key('!'); await u.key('?');
+  assert.equal(await shapeText(), 'Hi!?', 'typing on the selected shape goes to the end of its text');
+  assert.deepEqual(await body(u), SHAPE_DOC.map((s, i) => (i === 1 ? '\ufffc' : '') + s), 'nothing typed into the page');
+  await u.click(await atB(u, 0, 5));
+  const area = await u.el('#pages .flt .tbx');
+  await u.click({ x: area.x, y: area.b - 3 });   // its text area, below the line
+  assert.equal(await inShape(), true, 'a click in the empty part of its text area puts the caret in its text');
+  assert.deepEqual(await undoLabels(u), ['Add Text', 'Typing', 'Typing'], 'one step for each run of typing');
+}));
 
 test('the toolbar\'s Insert Table grid: a move over 2 × 3 and a click insert that table', () => inQuire(PARAS(['First paragraph.', 'Second paragraph.']), async (u) => {
   await u.click(await u.el('.tb-drop[data-tip="Insert Table"]'));

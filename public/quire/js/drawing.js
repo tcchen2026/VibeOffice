@@ -492,7 +492,23 @@
     const wrap = objEl.closest('.flt');
     /* presses anywhere in a text box's text area (on the text or the space around it) edit the text: the
        caret goes there and a drag selects; the box's border and margins move it */
-    if (e.target.closest && e.target.closest('.tbx')) { DR.clearSelection(); return false; }
+    const tbx = e.target.closest && e.target.closest('.tbx');
+    if (tbx) {
+      DR.clearSelection();
+      /* in the box's empty space (above or below its lines) the browser doesn't put the caret in the box: its
+         nearest line takes it */
+      if (e.button === 0 && !e.shiftKey && !e.target.closest('.p') && document.caretRangeFromPoint) {
+        const b = (tbx.firstElementChild || tbx).getBoundingClientRect();
+        const r = document.caretRangeFromPoint(L.clamp(e.clientX, b.left + 1, b.right - 1), L.clamp(e.clientY, b.top + 1, b.bottom - 1));
+        if (r && tbx.contains(r.startContainer)) {
+          e.preventDefault();
+          L.layout.root.focus({ preventScroll: true });
+          window.getSelection().setBaseAndExtent(r.startContainer, r.startOffset, r.startContainer, r.startOffset);
+          L.ed.syncSel();
+        }
+      }
+      return false;
+    }
     if (!wrap) {
       /* inline shape or chart: select as an inline object */
       if (objEl.classList.contains('shp') && objEl.closest('.p') && !objEl.closest('.flt')) {
@@ -538,6 +554,8 @@
     }
     const it = target._item;
     if (it && it.t === 'shape') { const rh = el('div', 'oh oh-rot'); rh.addEventListener('pointerdown', (ev) => startRotate(ev, target)); box.appendChild(rh); }
+    /* a right-click on a handle: the object's menu, as anywhere else on it */
+    box.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); if (L.app && L.app.contextMenu) L.app.contextMenu(ev); });
     sc.appendChild(box);
     handles = box;
     box._place = place;
@@ -675,6 +693,34 @@
     }
     it.float.wrap = wrap;
     it.float.behind = wrap === 'behind';
+  };
+  /** a shape that can hold text: AutoShapes and text boxes (not lines, LettersArt, the boxes of a linked story) */
+  DR.takesText = (it) => !!it && it.t === 'shape' && !it.wordart && !it.tbLink && it.geom !== 'line' && !L.geom.isLine(it.geom);
+  /** Word's Add Text / Edit Text on the selected shape: a caret at the end of its text, typing `text` there if given;
+      a shape without text first gets a paragraph centred in it, as Word starts one (an undo step of its own) */
+  DR.editText = function (text) {
+    const E = L.ed, os = E.objSel, it = DR.selectedItem();
+    if (!os || !DR.takesText(it)) return false;
+    const end = () => { const p = D.lastPara(it.tb.blocks); return D.pos(p, D.plen(p)); };
+    let pos = null;
+    if (!it.tb || text) {
+      E.edit(it.tb ? L.N('Typing') : L.N('Add Text'), () => {
+        if (!it.tb) {
+          D.touch(os.p);
+          it.tb = { kind: 'tb', blocks: [D.para([], { jc: 'center' })] };
+          it.txBox = false;
+          if (!it.anchor) it.anchor = 'ctr';
+          if (!it.ins) it.ins = { l: 7.2, t: 3.6, r: 7.2, b: 3.6 };
+          D.reindex(D.doc);
+        }
+        pos = text ? L.O.insertText(end(), text) : end();
+        return pos;
+      }, it.tb ? { merge: 'type' } : undefined);
+    }
+    /* the caret in its text ends the object selection (so the next keys type there) */
+    E.setSel(pos || end());
+    E.focus();
+    return true;
   };
   /** default AutoShape / text box item */
   DR.newShape = function (geom, w, h, opts) {

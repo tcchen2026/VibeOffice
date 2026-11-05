@@ -397,7 +397,7 @@
 
   /* ---------- drawing toolbar helpers ---------- */
   A.drawMenu = function (r) {
-    ui.openMenu(['groupObj', 'ungroupObj', '-', { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward', 'bringFrontText', 'sendBehindText'] },
+    ui.openMenu(['groupObj', 'ungroupObj', 'regroupObj', '-', { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward', 'bringFrontText', 'sendBehindText'] },
       { label: '&Grid...', run: () => L.dlg.drawingGrid && L.dlg.drawingGrid() }, { label: 'Nud&ge', sub: ['nudgeUp', 'nudgeDown', 'nudgeLeft', 'nudgeRight'] },
       { label: 'Rotate or Fl&ip', sub: ['rotateLeft', 'rotateRight', '-', 'flipH', 'flipV'] }, { label: '&Text Wrapping', sub: () => A.wrapItems() }, '-', 'setDefaults'], r);
   };
@@ -1120,15 +1120,43 @@
     const p = D.firstPara(st.blocks);
     if (p) A.gotoPos(D.pos(p, D.plen(p)));
   };
+  /** Word's menu for a selected object: its text, grouping and order, wrapping, caption, Format…, hyperlink */
+  A.objectMenu = function (it) {
+    const fl = !!(E.objSel && E.objSel.float);
+    const format = it.t === 'img' ? 'Format &Picture...' : it.wordart ? 'Format Letters&Art...' : it.tb && it.txBox !== false ? 'Format Te&xt Box...' : it.t === 'shape' ? 'Format AutoSha&pe...' : 'Format &Object...';
+    const items = ['cut', 'copy', 'paste', '-'];
+    if (L.drawing.takesText(it)) items.push('shapeText', '-');
+    else if (it.wordart) items.push('wordartEdit', '-');
+    if (fl) items.push({ label: 'Gro&uping', sub: ['groupObj', 'ungroupObj', 'regroupObj'] }, { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward', '-', 'bringFrontText', 'sendBehindText'] }, '-');
+    items.push({ label: 'Text W&rapping', sub: () => A.wrapItems() });
+    if (it.t === 'shape' && !it.wordart) items.push('setDefaults');
+    items.push('insertCaption', { cmd: 'formatObject', label: format }, '-', 'hyperlink');
+    return items;
+  };
+  /** Word's Synonyms submenu: the thesaurus' words for the one at the caret (a click puts it there), and Thesaurus… */
+  A.synonymItems = function () {
+    const r = E.sel && (E.collapsed() ? O.wordAt(E.sel.f) : E.range());
+    const word = r ? O.textRange(r[0], r[1]).trim() : '';
+    const TH = L.thesaurus, e = TH && TH.data && /^[\p{L}'’-]+$/u.test(word) ? TH.lookup(word) : null;
+    const cap = (s) => (/^\p{Lu}/u.test(word) ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+    const syns = e ? [...new Set(e.senses.flatMap((s) => s.syns))].slice(0, 10).map(cap) : [];
+    return (syns.length ? syns.map((s) => ({ label: s, raw: true, run: () => { E.setSel(r[0], r[1]); E.insertTextAt(s, L.N('Synonym')); } })) : [{ label: '(No Suggestions)', disabled: true }]).concat(['-', 'thesaurus']);
+  };
   A.contextMenu = function (e) {
     e.preventDefault();
+    /* a right-click away from the selected object (or in its text) selects there first, as in Word */
+    const onObj = E.objSel && e.target.closest && !e.target.closest('.tbx') && ((E.objSel.el && E.objSel.el.contains(e.target)) || e.target.closest('.obj-handles'));
+    if (E.objSel && !onObj) E.clearObjSel();
     if (!E.objSel) E.syncSel();   /* the press moved the caret, but 'selectionchange' comes after this */
+    /* a selected object: its own menu, without the text's */
+    const obj = onObj && L.drawing && L.drawing.selectedItem();
+    if (obj) { ui.openMenu(A.objectMenu(obj), { x: e.clientX, y: e.clientY }); return; }
+    if (L.thesaurus) L.thesaurus.load().catch(() => {});
     const inTable = L.tables && L.tables.inTable();
     const items = ['cut', 'copy', 'paste', '-'];
-    if (E.objSel) items.push({ label: 'Text W&rapping', sub: () => A.wrapItems() }, 'formatObject', '-');
     const ln = e.target.closest && e.target.closest('[data-link]');
     if (ln) items.push({ label: '&Edit Hyperlink...', cmd: 'hyperlink' }, { label: '&Open Hyperlink', run: () => L.ed.followLink(ln.dataset.link) }, { label: '&Remove Hyperlink', run: () => ui.exec('removeHyperlink') }, '-');
-    if (inTable) items.push({ label: '&Insert', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', 'insertCells'] }, { label: '&Delete', sub: ['deleteTable', 'deleteCols', 'deleteRows', 'deleteCells'] }, 'mergeCells', 'splitCells', '-', 'distRows', 'distCols', '-', 'bordersDlg', { label: 'Cell Alignment', sub: ['cellTop', 'cellMiddle', 'cellBottom'] }, 'tableAutoFormat', 'tableProps', '-');
+    if (inTable) items.push({ label: '&Insert', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', 'insertCells'] }, { label: '&Delete', sub: ['deleteTable', 'deleteCols', 'deleteRows', 'deleteCells'] }, 'mergeCells', 'splitCells', '-', 'distRows', 'distCols', '-', 'bordersDlg', 'textDirection', { label: 'Cell Alignment', sub: ['cellTop', 'cellMiddle', 'cellBottom'] }, { label: '&AutoFit', sub: ['autofitContents', 'autofitWindow', 'fixedWidth', '-', 'distRows', 'distCols'] }, '-', 'insertCaption', 'tableAutoFormat', 'tableProps', '-');
     const f = L.fields && L.fields.at(E.sel && E.sel.f);
     if (f) items.push('updateField', 'editField', 'toggleCodes', '-');
     const control = L.preserve.controlAt(E.sel && E.sel.f);
@@ -1136,7 +1164,7 @@
     if (L.review && L.review.revisionAt && L.review.revisionAt()) items.push('acceptChange', 'rejectChange', '-');
     const cm = L.review && L.review.commentAt && L.review.commentAt();
     if (cm) items.push({ label: '&Edit Comment', run: () => L.review.editComment(cm) }, { label: 'Delete Co&mment', run: () => L.review.deleteComment(cm) }, '-');
-    items.push('fontDlg', 'paragraphDlg', 'bulletsDlg', '-', ...(ln ? [] : ['hyperlink']), 'research');
+    items.push('fontDlg', 'paragraphDlg', 'bulletsDlg', '-', ...(ln ? [] : ['hyperlink']), 'research', { label: 'S&ynonyms', sub: () => A.synonymItems() }, '-', { cmd: 'insertComment', label: 'New Co&mment' });
     /* on a misspelled word or a grammar problem Word shows only the proofing menu */
     if (!E.objSel && L.spell && L.spell.suggestionsAt) { const s = L.spell.suggestionsAt(e); if (s && s.length) { ui.openMenu(s.concat(['-', 'cut', 'copy', 'paste']), { x: e.clientX, y: e.clientY }); return; } }
     ui.openMenu(items, { x: e.clientX, y: e.clientY });
