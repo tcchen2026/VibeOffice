@@ -227,6 +227,9 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .sb-zoom .zs-track:hover .zs-thumb, .sb-zoom.dragging .zs-thumb { background: var(--sel); }
 .sb-zoom .zs-pct { min-width: 42px; height: 18px; padding: 0 4px; border: 1px solid transparent; border-radius: var(--ctl-radius); background: none; color: inherit; font: inherit; text-align: right; }
 .sb-zoom .tb-btn { height: 18px; min-width: 20px; margin-left: 2px; }
+/* the task pane's way in and out, at the status bar's right end (ui.paneToggle) */
+.statusbar .sb-pane { width: 18px; height: 18px; padding: 0; border: 1px solid transparent; border-radius: var(--ctl-radius); background: none; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
+.statusbar .sb-pane:hover { background: var(--menu-hot); border-color: var(--hot-border); }
 .sb-zoom.dis { color: var(--dis-ink); }
 .sb-zoom.dis .zs-thumb { background: var(--dis-ink); }
 .sb-zoom.dis .zs-step, .sb-zoom.dis .zs-pct, .sb-zoom.dis .zs-track { pointer-events: none; }

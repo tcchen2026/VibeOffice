@@ -463,6 +463,26 @@
     }
     return g;
   };
+  /** The status bar's last button: the task pane in and out (cmd: the app's Task Pane command), a chevron pointing the
+   * way the pane goes: ‹ brings it out at the right, › puts it away. Like a toolbar button it leaves the keyboard with
+   * the document. */
+  ui.paneToggle = function (cmd) {
+    const b = h('button', { class: 'sb-pane', type: 'button' });
+    b.addEventListener('pointerdown', (e) => e.preventDefault());
+    b.addEventListener('click', () => ui.exec(cmd));
+    let was = null;
+    const show = () => {
+      const c = ui.cmds[cmd], on = !!(c && c.checked && c.checked());
+      if (on === was) return;
+      was = on;
+      b.innerHTML = `<svg width="8" height="10" viewBox="0 0 8 10" aria-hidden="true"><path d="${on ? 'M2 1l4 4-4 4' : 'M6 1L2 5l4 4'}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+      const tip = L.t(on ? 'Hide the Task Pane' : 'Show the Task Pane');   // (no shortcut: Ctrl+F1 is the ribbon's in Paper 2016)
+      b.setAttribute('aria-label', tip); b.dataset.tip = tip;
+    };
+    show();
+    L.bus.on('ui-refresh', show);
+    return b;
+  };
   /** The zoom slider: −, a track with 100 % at its centre (min…100 % on the left half, 100 %…max on the right, as in
    * Office), +, and the percentage, which opens the Zoom dialog. o = { min, max, value: () => percent,
    * set(percent, final): final is false while the thumb is dragged, true when it is let go and for −/+;

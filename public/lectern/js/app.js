@@ -281,7 +281,7 @@
     // greyed out in Slide Sorter, Notes Page and Print Preview
     const zoom = ui.zoomSlider({ min: 10, max: 400, value: () => E.zoomPct(), set: (p) => E.setZoom(p / 100), dialog: 'zoomDlg', fit: 'zoomFit',
       enabled: () => A.view === 'normal' || A.view === 'master' });
-    sb.append(A.sbSlide, A.sbDesign, A.sbMsg, A.sbLang, h('div', { class: 'sb-right' }, ui.statusGroup(['viewNormal', 'viewSorter', 'showFromCurrent']), zoom));
+    sb.append(A.sbSlide, A.sbDesign, A.sbMsg, A.sbLang, h('div', { class: 'sb-right' }, ui.statusGroup(['viewNormal', 'viewSorter', 'showFromCurrent']), zoom, ui.paneToggle('taskPane')));
     L.bus.on('zoom', () => ui.refresh());
   }
   A.status = (msg) => { if (!A.sbMsg) return; A.sbMsg.textContent = L.t(msg); clearTimeout(statusTimer); statusTimer = setTimeout(() => { A.sbMsg.textContent = ''; }, 3000); };

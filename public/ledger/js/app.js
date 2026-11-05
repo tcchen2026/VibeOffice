@@ -653,7 +653,7 @@
     for (const k of [L.N('CAPS'), L.N('NUM'), L.N('SCRL'), L.N('END')]) { sbInd[k] = h('div', { class: 'sb-cell ind off opt', text: k }); sb.appendChild(sbInd[k]); }
     // the right end, as in the other apps (ui.js): view buttons and the zoom slider of the active sheet
     sb.appendChild(h('div', { class: 'sb-right' }, ui.statusGroup(['viewNormal', 'viewPageBreak']),
-      ui.zoomSlider({ min: 10, max: 400, value: () => sh().view.zoom || 100, set: (p) => G().setZoom(p), dialog: 'zoomDlg' })));
+      ui.zoomSlider({ min: 10, max: 400, value: () => sh().view.zoom || 100, set: (p) => G().setZoom(p), dialog: 'zoomDlg' }), ui.paneToggle('taskPane')));
     document.addEventListener('keydown', (e) => { if (e.getModifierState) { sbInd.CAPS.classList.toggle('off', !e.getModifierState('CapsLock')); sbInd.NUM.classList.toggle('off', !e.getModifierState('NumLock')); sbInd.SCRL.classList.toggle('off', !e.getModifierState('ScrollLock')); G().scrollLock = e.getModifierState('ScrollLock'); } }, true);
   }
   function calcMenu(e) {

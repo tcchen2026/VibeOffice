@@ -86,7 +86,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `looks.css` | the looks: every chrome colour, font and shadow as a named setting, one block per look (see Looks) | all, and the Start Center |
 | `ui.css` | the chrome: layout of menus, toolbars, task panes, dialogs, controls, status bar, from the look's settings; each app's CSS follows and wins | all |
 | `core.js` | DOM helpers, colours, units, events, storage, file saving (`L.saveFile`, which tells `vo-saved`), PDF writer, media store, fonts and substitutes, symbol bullets, platform (`L.isMac`, `L.isMobile`: iOS or Android) | all |
-| `ui.js` | commands, menus, toolbars (with Toolbar Options »), Tools ▸ Customize (`ui.customize`, `ui.toolbarPrefs`), the status bar's right end (`ui.statusGroup`, `ui.zoomSlider`), the Undo/Redo list (`ui.historyMenu`), combo boxes, dialogs (with their access keys), colour menus, password and prompt boxes, drags and brushes (`ui.drag`, `ui.brush`, below); the events `vo-command`, `vo-busy`, `vo-message` (what the user does, followed by the assistant) | all |
+| `ui.js` | commands, menus, toolbars (with Toolbar Options »), Tools ▸ Customize (`ui.customize`, `ui.toolbarPrefs`), the status bar's right end (`ui.statusGroup`, `ui.zoomSlider`, `ui.paneToggle`), the Undo/Redo list (`ui.historyMenu`), combo boxes, dialogs (with their access keys), colour menus, password and prompt boxes, drags and brushes (`ui.drag`, `ui.brush`, below); the events `vo-command`, `vo-busy`, `vo-message` (what the user does, followed by the assistant) | all |
 | `search.js` | Search commands, the box at the top right of every app (see Search commands) | all |
 | `ribbon.js` | the ribbon of the Paper 2016 look, drawn from each app's `js/ribbon.js` (see The ribbon) | all |
 | `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |
@@ -219,7 +219,8 @@ In the Paper 2016 look each app shows a ribbon in place of the menu bar, toolbar
 Every app's status bar ends the same way, in every look: the view buttons (Quire also has its browse buttons
 there), then the zoom slider: −, a track with 100 % at its centre tick (the minimum to 100 % on the left half, 100 %
 to the maximum on the right, as in Office), +, and the percentage, which opens the Zoom dialog; Lectern adds Fit to
-Window. It is chrome like a toolbar button: pressing it leaves the keyboard, the selection and the shortcuts with the
+Window. Last comes the task pane's way in and out (`ui.paneToggle`, the app's Task Pane command): ‹ brings the pane
+out at the right, › puts it away, so a closed pane is never only behind View ▸ Task Pane. It is chrome like a toolbar button: pressing it leaves the keyboard, the selection and the shortcuts with the
 document, and Esc during a drag puts the zoom back. Its colours are the look's. The information cells come first and
 give way when the window is narrow: below 960 px the cells an app marks `opt` (Quire's section, position and REC/TRK/
 EXT/OVR, Ledger's key indicators, Lectern's design name) drop out. The ribbon's View › Zoom group has Office 2016's

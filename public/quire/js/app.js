@@ -464,14 +464,14 @@
     L.bus.on('doc-loaded', spellIcon);
     spellIcon();
     A.sb.page.addEventListener('dblclick', () => ui.exec('goTo'));
-    // the right end, as in the other apps (ui.js): browse buttons, view buttons, the zoom slider
+    // the right end, as in the other apps (ui.js): browse buttons, view buttons, the zoom slider, the task pane's toggle
     const zoom = ui.zoomSlider({ min: 10, max: 500, value: () => Math.round(LY.zoom * 100), dialog: 'zoomDlg',
       set: (p, final) => (final ? A.zoomTo(p + '%', { focus: false }) : A.zoomLive(p)) });
     const browse = ui.statusGroup(['browsePrev', ui.tbDrop('', 'browseObj', (r) => A.browseMenu(r), 'Select Browse Object'), 'browseNext']);
     browse.classList.add('sb-browse');
     const views = ui.statusGroup(['viewNormal', 'viewWeb', 'viewPrint', 'viewOutline', 'viewReading']);
     views.classList.add('sb-views');
-    sb.append(A.sb.page, A.sb.sec, A.sb.pages, A.sb.at, A.sb.ln, A.sb.col, A.sb.rec, A.sb.trk, A.sb.ext, A.sb.ovr, A.sb.lang, A.sb.spell, A.sb.msg, h('div', { class: 'sb-right' }, browse, views, zoom));
+    sb.append(A.sb.page, A.sb.sec, A.sb.pages, A.sb.at, A.sb.ln, A.sb.col, A.sb.rec, A.sb.trk, A.sb.ext, A.sb.ovr, A.sb.lang, A.sb.spell, A.sb.msg, h('div', { class: 'sb-right' }, browse, views, zoom, ui.paneToggle('taskPane')));
   }
   A.status = (msg, ms) => { if (!A.sb) return; A.sb.msg.textContent = L.t(msg); clearTimeout(statusTimer); statusTimer = setTimeout(() => { A.sb.msg.textContent = ''; }, ms || 4000); };
   A.updateStatus = L.debounce(function () {
