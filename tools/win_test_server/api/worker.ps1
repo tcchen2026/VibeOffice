@@ -70,8 +70,10 @@ try {
         '.docx' { $document.ExportAsFixedFormat($outputFile, 17) } # wdExportFormatPDF
         '.xlsx' { $document.ExportAsFixedFormat(0, $outputFile, 0, $true, $false) } # all printable sheets, respect print areas
         '.pptx' {
-            # PDF, print intent, slides (not handouts), include hidden slides, all slides.
-            $range = $document.PrintOptions.Ranges.Add(1, $document.Slides.Count)
+            # PDF, print intent, slides (not handouts), include hidden slides, all slides. A range is in slide
+            # numbers, which start at the deck's first slide number (5 for a deck numbered from 5), not at 1.
+            $first = $document.PageSetup.FirstSlideNumber
+            $range = $document.PrintOptions.Ranges.Add($first, $first + $document.Slides.Count - 1)
             $document.ExportAsFixedFormat($outputFile, 2, 2, 0, 1, 1, -1, $range, 1, '', $true, $true, $true, $true, $false)
         }
     }
