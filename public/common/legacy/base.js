@@ -2,17 +2,18 @@
  * Formats: Microsoft Open Specifications MS-CFB, MS-OLEPS and ECMA-376. No DOM is needed. */
 (function (root) {
   'use strict';
+  const N = s => s; // UI refusal text, translated where it is shown.
   const L = root.L || (root.L = {}), B = L.legacy || (L.legacy = {});
   B.limits = Object.freeze({ bytes: 256 * 1024 * 1024, text: 32 * 1024 * 1024, records: 2000000, depth: 128, cells: 2000000 });
   B.fail = function (code, message, where) { const e = new Error(message); e.name = 'LegacyError'; e.code = code; if (where != null) e.where = where; throw e; };
   B.Reader = class {
     constructor(bytes, label = 'stream') {
-      if (!(bytes instanceof Uint8Array)) B.fail('INVALID_BYTES', 'Expected a byte array', label);
-      if (bytes.length > B.limits.bytes) B.fail('SIZE_LIMIT', 'The file is too large to import', label);
+      if (!(bytes instanceof Uint8Array)) B.fail('INVALID_BYTES', N('Expected a byte array'), label);
+      if (bytes.length > B.limits.bytes) B.fail('SIZE_LIMIT', N('The file is too large to import'), label);
       this.bytes = bytes; this.length = bytes.length; this.label = label;
       this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     }
-    check(p, n) { if (!Number.isSafeInteger(p) || !Number.isSafeInteger(n) || p < 0 || n < 0 || p > this.length - n) B.fail('TRUNCATED', 'The file contains an invalid offset or length', this.label + ':' + p); return p; }
+    check(p, n) { if (!Number.isSafeInteger(p) || !Number.isSafeInteger(n) || p < 0 || n < 0 || p > this.length - n) B.fail('TRUNCATED', N('The file contains an invalid offset or length'), this.label + ':' + p); return p; }
     u8(p) { return this.view.getUint8(this.check(p, 1)); }
     u16(p) { return this.view.getUint16(this.check(p, 2), true); }
     i16(p) { return this.view.getInt16(this.check(p, 2), true); }
@@ -35,8 +36,8 @@
       return out;
     }
     const label = labels[codepage] || (codepage >= 1250 && codepage <= 1258 ? 'windows-' + codepage : null);
-    if (!label) B.fail('CODEPAGE_UNSUPPORTED', 'This file uses an unsupported text encoding: ' + codepage);
-    if (!decoders.has(label)) { try { decoders.set(label, new TextDecoder(label)); } catch { B.fail('CODEPAGE_UNSUPPORTED', 'This browser cannot decode ' + label); } }
+    if (!label) B.fail('CODEPAGE_UNSUPPORTED', N('This file uses an unsupported text encoding'), codepage);
+    if (!decoders.has(label)) { try { decoders.set(label, new TextDecoder(label)); } catch { B.fail('CODEPAGE_UNSUPPORTED', N('This browser cannot decode the file text encoding'), label); } }
     return decoders.get(label).decode(bytes);
   };
   // BIFF8 compressed Unicode stores low UTF-16 bytes, not Windows-1252.
@@ -49,7 +50,7 @@
   B.xstring = value => B.xml(String(value).replace(/_x[0-9a-fA-F]{4}_/g, s => '_x005F_' + s.slice(1))
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\r]/g, c => '_x' + c.charCodeAt(0).toString(16).padStart(4, '0').toUpperCase() + '_'));
   B.cfb = bytes => {
-    if (!L.officeCrypto?.cfb) B.fail('DEPENDENCY', 'Load common/crypto.js before the legacy importers');
+    if (!L.officeCrypto?.cfb) B.fail('DEPENDENCY', N('Load common/crypto.js before the legacy importers'));
     return L.officeCrypto.cfb(bytes, { maxBytes: B.limits.bytes });
   };
   // Notification is a host/converter decision: opt in only for lost content or functionality.

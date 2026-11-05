@@ -224,6 +224,17 @@ test('a preset shape lists all of its adjustment values or none', async () => {
   assert.equal(run('check', await pkg('adj-none', { 'slide.xml': slide(sp('')) })).status, 'ok');
 });
 
+test('a cell\'s text is at most 32,767 characters, as Excel opens it: runs joined, phonetic text not counted', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const sst = (...items) => ({ 'xl/sharedStrings.xml': `<sst xmlns="${S}">${items.map((i) => `<si>${i}</si>`).join('')}</sst>` });
+  const t = (n, ch = 'a') => `<t>${ch.repeat(n)}</t>`;
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  assert.ok((await codes('cell-text-over', sst(t(32768)))).includes('cell-text-too-long'));
+  assert.ok((await codes('cell-text-runs', sst(`<r>${t(20000)}</r><r>${t(12768)}</r>`))).includes('cell-text-too-long'));
+  assert.ok((await codes('cell-text-cached', { 'xl/worksheets/sheet1.xml': `<worksheet xmlns="${S}"><sheetData><row r="1"><c r="A1" t="str"><f>REPT("a",32768)</f><v>${'a'.repeat(32768)}</v></c></row></sheetData></worksheet>` })).includes('cell-text-too-long'));
+  assert.ok(!(await codes('cell-text-limit', sst(t(32767), t(32766) + '<rPh sb="0" eb="1"><t>ア</t></rPh>', t(32763) + '<t>_x000D_</t>'))).includes('cell-text-too-long'));
+});
+
 test('WordArt fill belongs to textFill/textOutline and insertion encloses deletion', async () => {
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', W14 = 'http://schemas.microsoft.com/office/word/2010/wordml';
   const doc = content => `<w:document xmlns:w="${W}" xmlns:w14="${W14}"><w:body><w:p>${content}</w:p></w:body></w:document>`;

@@ -4,6 +4,7 @@
  * Each property is bounded by the next offset; a damaged optional value cannot hide its siblings. */
 (function (root) {
   'use strict';
+  const N = s => s; // UI refusal text, translated where it is shown.
   const B = root.L.legacy;
   const guid = (r, p) => {
     const hex = (v, n) => v.toString(16).padStart(n, '0');
@@ -14,8 +15,8 @@
   B.properties = function (bytes, options = {}) {
     if (!bytes) return [];
     const r = new B.Reader(bytes, 'OLE properties');
-    if (r.u16(0) !== 0xfffe) B.fail('PROPERTIES_ENDIAN', 'Unsupported property-set byte order');
-    const count = r.u32(24); if (count > 16) B.fail('PROPERTIES_LIMIT', 'Too many property sets');
+    if (r.u16(0) !== 0xfffe) B.fail('PROPERTIES_ENDIAN', N('Unsupported property-set byte order'));
+    const count = r.u32(24); if (count > 16) B.fail('PROPERTIES_LIMIT', N('Too many property sets'));
     r.check(28, count * 20);
     const sets = [];
     for (let i = 0; i < count; i++) {
@@ -23,7 +24,7 @@
       const set = { fmtid, codepage: 1252, values, dictionary, issues }; sets.push(set);
       try {
         const base = r.u32(44 + i * 20), size = r.u32(base), s = r.reader(base, size), n = s.u32(4);
-        if (n > 100000) B.fail('PROPERTIES_LIMIT', 'Too many properties'); s.check(8, n * 8);
+        if (n > 100000) B.fail('PROPERTIES_LIMIT', N('Too many properties')); s.check(8, n * 8);
         const offsets = new Map(), boundaries = new Set([size]);
         for (let j = 0; j < n; j++) {
           const id = s.u32(8 + j * 8), at = s.u32(12 + j * 8);
@@ -43,10 +44,10 @@
           const pad = p => { const end = Math.ceil(p / 4) * 4; while (p < end && p < v.length && v.u8(p) === 0) p++; return p; };
           let budget = 100000;
           const read = (at, forced, depth = 0) => {
-            if (--budget < 0 || depth > 16) B.fail('PROPERTIES_LIMIT', 'Property vector is too large or nested');
+            if (--budget < 0 || depth > 16) B.fail('PROPERTIES_LIMIT', N('Property vector is too large or nested'));
             const type = forced ?? v.u16(at); let p = at + (forced == null ? 4 : 0), value, ticks, children;
             if (type & 0x1000) {
-              const len = v.u32(p); p += 4; if (len > budget) B.fail('PROPERTIES_LIMIT', 'Property vector is too large');
+              const len = v.u32(p); p += 4; if (len > budget) B.fail('PROPERTIES_LIMIT', N('Property vector is too large'));
               children = []; value = [];
               for (let k = 0; k < len; k++) { const c = read(p, (type & 0xfff) === 12 ? undefined : type & 0xfff, depth + 1); children.push(c); value.push(c.value); p = c.end; }
             } else switch (type) {
@@ -68,7 +69,7 @@
               case 7: { const days = v.f64(p); p += 8; value = date(Date.UTC(1899, 11, 30) + (Math.trunc(days) + Math.abs(days % 1)) * 86400000); break; }
               case 8: case 30: case 31: {
                 const len = v.u32(p); p += 4; const bytes = len * (type === 31 ? 2 : 1);
-                if (bytes > B.limits.text) B.fail('PROPERTIES_LIMIT', 'Property string is too large');
+                if (bytes > B.limits.text) B.fail('PROPERTIES_LIMIT', N('Property string is too large'));
                 value = v.text(p, bytes, type === 31 ? 1200 : set.codepage).replace(/\0+$/, ''); p += bytes;
                 if (!(unaligned && type === 30)) p = pad(p); break;
               }
@@ -80,14 +81,14 @@
                 const len = v.u32(p); p += 4; value = [...v.sub(p, len)]; p = pad(p + len); break;
               }
               case 72: value = guid(v, p); p += 16; break;
-              default: B.fail('PROPERTY_TYPE', 'Unsupported property type ' + type);
+              default: B.fail('PROPERTY_TYPE', N('This document property has an unsupported type'), type);
             }
             if (forced == null && !(unaligned && type === 30)) p = pad(p);
             return { type, value, end: p, ...(ticks == null ? {} : { ticks }), ...(children ? { children } : {}) };
           };
           try {
             if (id === 0) {
-              const len = v.u32(0); if (len > 100000) B.fail('PROPERTIES_LIMIT', 'Property dictionary is too large');
+              const len = v.u32(0); if (len > 100000) B.fail('PROPERTIES_LIMIT', N('Property dictionary is too large'));
               let p = 4;
               for (let k = 0; k < len; k++) {
                 const key = v.u32(p), chars = v.u32(p + 4), width = set.codepage === 1200 ? 2 : 1; p += 8;

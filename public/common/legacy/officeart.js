@@ -5,6 +5,7 @@
  * Kept independent of the document host and of DOM/rendering. */
 (function (root) {
   'use strict';
+  const N = s => s; // UI refusal text, translated where it is shown.
   const B = root.L.legacy, A = B.officeart = {};
   A.record = function (bytes, at = 0) {
     const r = bytes instanceof B.Reader ? bytes : new B.Reader(bytes, 'OfficeArt');
@@ -13,9 +14,9 @@
   };
   A.records = function (bytes, visit, depth = 0, budget = { left: B.limits.records }) {
     const r = bytes instanceof B.Reader ? bytes : new B.Reader(bytes, 'OfficeArt'), records = [];
-    if (depth >= B.limits.depth) B.fail('OFFICEART_DEPTH', 'OfficeArt nesting is too deep');
+    if (depth >= B.limits.depth) B.fail('OFFICEART_DEPTH', N('OfficeArt nesting is too deep'));
     for (let p = 0; p < r.length;) {
-      if (--budget.left < 0) B.fail('OFFICEART_LIMIT', 'Too many OfficeArt records');
+      if (--budget.left < 0) B.fail('OFFICEART_LIMIT', N('Too many OfficeArt records'));
       const rec = A.record(r, p); p = rec.end; records.push(rec); if (visit) visit(rec, depth);
       if (rec.version === 15) rec.children = A.records(rec.r, visit, depth + 1, budget);
     }
@@ -41,7 +42,7 @@
   A.array = function (prop) {
     if (!prop?.data?.length) return [];
     const r = new B.Reader(prop.data, 'OfficeArt array'), count = r.u16(0), storedSize = r.i16(4), size = storedSize < 0 ? -storedSize >>> 2 : storedSize;
-    if (!size && count) B.fail('OFFICEART_ARRAY', 'Invalid OfficeArt array element size');
+    if (!size && count) B.fail('OFFICEART_ARRAY', N('Invalid OfficeArt array element size'));
     r.check(6, count * size); return Array.from({ length: count }, (_, i) => r.reader(6 + i * size, size));
   };
   A.blip = async function (record) {
@@ -49,15 +50,15 @@
     if ([0xf01a, 0xf01b, 0xf01c].includes(type)) {
       const expected = r.u32(p), bounds = [r.i32(p + 4), r.i32(p + 8), r.i32(p + 12), r.i32(p + 16)], width = r.i32(p + 20), height = r.i32(p + 24), size = r.u32(p + 28), compression = r.u8(p + 32); p += 34;
       const compressed = r.sub(p, size);
-      if (![0, 0xfe].includes(compression)) B.fail('BLIP_COMPRESSION', 'Unsupported metafile compression');
+      if (![0, 0xfe].includes(compression)) B.fail('BLIP_COMPRESSION', N('Unsupported metafile compression'));
       const bytes = compression === 0 ? await B.images.inflate(compressed, expected) : compressed;
-      if (bytes.length > 64 * 1024 * 1024) B.fail('IMAGE_LIMIT', 'The metafile is too large');
+      if (bytes.length > 64 * 1024 * 1024) B.fail('IMAGE_LIMIT', N('The metafile is too large'));
       const ext = type === 0xf01a ? 'emf' : type === 0xf01b ? 'wmf' : 'pict';
-      if (ext === 'pict') B.fail('BLIP_FORMAT', 'PICT pictures cannot be converted yet');
+      if (ext === 'pict') B.fail('BLIP_FORMAT', N('PICT pictures cannot be converted yet'));
       return { bytes, ext, mime: 'image/x-' + ext, bounds, width, height };
     }
     const types = { 0xf01d: ['jpeg', 'image/jpeg'], 0xf01e: ['png', 'image/png'], 0xf01f: ['dib', 'image/bmp'], 0xf029: ['tif', 'image/tiff'], 0xf02a: ['jpeg', 'image/jpeg'] };
-    if (!types[type]) B.fail('BLIP_FORMAT', 'Unsupported OfficeArt picture type: ' + type);
+    if (!types[type]) B.fail('BLIP_FORMAT', N('This picture uses an unsupported format'), type);
     p++; const bytes = r.sub(p, r.length - p), [ext, mime] = types[type];
     return ext === 'dib' ? B.images.dib(bytes) : { bytes, ext, mime };
   };
@@ -66,7 +67,7 @@
     const add = rec => {
       if (rec.type === 0xf001) {
         for (const entry of rec.children || A.records(rec.r)) {
-          if (entry.type !== 0xf007) B.fail('BLIP_STORE', 'Invalid picture-store entry');
+          if (entry.type !== 0xf007) B.fail('BLIP_STORE', N('Invalid picture-store entry'));
           const r = entry.r, size = r.u32(20), references = r.u32(24), offset = r.u32(28), nameLength = r.u8(33);
           const index = entries.length + 1; let promise;
           entries.push({ index, references, size, offset, read: () => promise || (promise = (async () => {
@@ -79,7 +80,7 @@
               catch (e) { if (e.name !== 'LegacyError') throw e; last = e; }
             }
             if (last) throw last;
-            B.fail('BLIP_MISSING', 'The picture data is missing', index);
+            B.fail('BLIP_MISSING', N('The picture data is missing'), index);
           })()) });
         }
       } else for (const child of rec.children || []) add(child);

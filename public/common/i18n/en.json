@@ -4657,6 +4657,36 @@
    "ledger/js/dialogs3.js:444"
   ]
  },
+ "A cell contains an invalid error value": {
+  "where": [
+   "common/legacy/xls-write.js:52"
+  ]
+ },
+ "A cell contains an invalid numeric value": {
+  "where": [
+   "common/legacy/xls-write.js:50"
+  ]
+ },
+ "A cell format extension is damaged": {
+  "where": [
+   "common/legacy/xls-style-ext.js:41"
+  ]
+ },
+ "A cell gradient has too many stops": {
+  "where": [
+   "common/legacy/xls-style-ext.js:51"
+  ]
+ },
+ "A cell gradient is damaged": {
+  "where": [
+   "common/legacy/xls-style-ext.js:50"
+  ]
+ },
+ "A cell gradient stop is damaged": {
+  "where": [
+   "common/legacy/xls-style-ext.js:52"
+  ]
+ },
  "A cell reference is not valid.": {
   "where": [
    "ledger/js/dialogs3.js:329"
@@ -4727,9 +4757,24 @@
    "lectern/js/dialogs.js:1127"
   ]
  },
+ "A presentation object is missing": {
+  "where": [
+   "common/legacy/ppt-read.js:52"
+  ]
+ },
+ "A presentation record extends beyond its container": {
+  "where": [
+   "common/legacy/ppt-read.js:10"
+  ]
+ },
  "A reference to an IntelliArt drawing cache missing from the original file was removed; its data and layout are retained.": {
   "where": [
    "lectern/js/frames.js:317"
+  ]
+ },
+ "A shared string ends inside a character": {
+  "where": [
+   "common/legacy/xls-read.js:61"
   ]
  },
  "A sheet name cannot begin or end with an apostrophe.": {
@@ -4800,6 +4845,21 @@
  "A workbook must contain at least one visible worksheet.\n\nTo hide, delete, or move the selected sheet(s), you must first insert a new sheet or unhide a sheet that is already hidden.": {
   "where": [
    "ledger/js/app.js:521"
+  ]
+ },
+ "A worksheet has an invalid or repeated stream offset": {
+  "where": [
+   "common/legacy/xls-read.js:97"
+  ]
+ },
+ "A worksheet has an invalid stream offset": {
+  "where": [
+   "common/legacy/xls-read.js:96"
+  ]
+ },
+ "A worksheet stream is incomplete": {
+  "where": [
+   "common/legacy/xls-read.js:132"
   ]
  },
  "A&dd": {
@@ -5591,9 +5651,50 @@
    "lectern/js/diagram.js:29"
   ]
  },
+ "An embedded XML part contains invalid text": {
+  "where": [
+   "common/legacy/xml-check.js:9"
+  ]
+ },
+ "An embedded XML part is damaged": {
+  "where": [
+   "common/legacy/xml-check.js:10"
+  ]
+ },
+ "An embedded XML part is too complex": {
+  "where": [
+   "common/legacy/xml-check.js:34"
+  ]
+ },
  "An embedded object or control you edited will be saved as a picture and will no longer work.": {
   "where": [
    "ledger/js/objects.js:127"
+  ]
+ },
+ "An embedded part could not be decompressed": {
+  "where": [
+   "common/legacy/xml-check.js:50"
+  ]
+ },
+ "An embedded part exceeds its declared size": {
+  "where": [
+   "common/legacy/xml-check.js:49"
+  ]
+ },
+ "An embedded part is damaged": {
+  "where": [
+   "common/legacy/xml-check.js:43",
+   "common/legacy/xml-check.js:53"
+  ]
+ },
+ "An embedded part is too large": {
+  "where": [
+   "common/legacy/xml-check.js:42"
+  ]
+ },
+ "An embedded part uses unsupported compression": {
+  "where": [
+   "common/legacy/xml-check.js:52"
   ]
  },
  "An object on this sheet couldn't be kept and will be removed.": {
@@ -6135,6 +6236,11 @@
    "ledger/js/grid.js:1051"
   ]
  },
+ "AutoFilter settings were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:84"
+  ]
+ },
  "AutoFit": {
   "where": [
    "ledger/js/app.js:1300",
@@ -6593,6 +6699,11 @@
  "Bitmap Image": {
   "where": [
    "quire/js/dialogs2.js:456"
+  ]
+ },
+ "Bitmap pixels overlap its header": {
+  "where": [
+   "common/legacy/images.js:77"
   ]
  },
  "Black": {
@@ -7679,9 +7790,19 @@
    "ledger/js/dialogs2.js:420"
   ]
  },
+ "Cell comments were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:79"
+  ]
+ },
  "Cell editor": {
   "where": [
    "ledger/js/grid.js:44"
+  ]
+ },
+ "Cell hyperlinks were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:81"
   ]
  },
  "Cell margins": {
@@ -7697,6 +7818,11 @@
  "Cell must contain a value.": {
   "where": [
    "ledger/js/dialogs2.js:636"
+  ]
+ },
+ "Cell pronunciation text was not kept": {
+  "where": [
+   "common/legacy/xls-write.js:29"
   ]
  },
  "Cell shading": {
@@ -9169,6 +9295,11 @@
    "ledger/js/panes.js:94"
   ]
  },
+ "Conditional formatting rules were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:83"
+  ]
+ },
  "Confidential, &D, Page &P": {
   "where": [
    "ledger/js/dialogs3.js:370"
@@ -9192,6 +9323,11 @@
    "lectern/js/dialogs.js:913",
    "ledger/js/dialogs.js:663",
    "ledger/js/dialogs.js:888"
+  ]
+ },
+ "Conflicting media content types": {
+  "where": [
+   "common/legacy/package.js:68"
   ]
  },
  "Consolidate": {
@@ -10280,6 +10416,11 @@
    "quire/js/dialogs.js:664"
   ]
  },
+ "Custom-shape path runs beyond its vertices": {
+  "where": [
+   "common/legacy/shape-path.js:47"
+  ]
+ },
  "Customi&ze...": {
   "where": [
    "quire/js/dialogs.js:465"
@@ -10347,6 +10488,21 @@
  "Cycle Diagram": {
   "where": [
    "quire/js/dialogs2.js:479"
+  ]
+ },
+ "Cyclic PowerPoint edit history": {
+  "where": [
+   "common/legacy/ppt-read.js:39"
+  ]
+ },
+ "Cyclic or excessive custom-shape guide evaluation": {
+  "where": [
+   "common/legacy/shape-path.js:29"
+  ]
+ },
+ "Cyclic shape colour reference": {
+  "where": [
+   "common/legacy/shapes.js:17"
   ]
  },
  "Cyrillic": {
@@ -10578,6 +10734,11 @@
    "quire/js/mailmerge.js:108"
   ]
  },
+ "Data validation rules were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:82"
+  ]
+ },
  "Data ▸ List ▸ Create List (Ctrl+L) turns a range into a list with a header row, AutoFilter and an optional Total Row. Formulas can refer to it by name: =SUM(Table1[Amount]).": {
   "where": [
    "ledger/js/panes.js:93"
@@ -10807,6 +10968,11 @@
   "where": [
    "ledger/js/dialogs.js:923",
    "ledger/js/ribbon.js:59"
+  ]
+ },
+ "Defined names were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:90"
   ]
  },
  "Defined names:": {
@@ -11815,6 +11981,11 @@
    "quire/js/ribbon.js:104"
   ]
  },
+ "Drawing objects were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:80"
+  ]
+ },
  "Drop Cap": {
   "where": [
    "quire/js/dialogs.js:758",
@@ -12177,6 +12348,11 @@
    "common/dialogs.js:16"
   ]
  },
+ "Elliptical quadrant has no starting point": {
+  "where": [
+   "common/legacy/shape-path.js:95"
+  ]
+ },
  "Em Dash": {
   "where": [
    "common/dialogs.js:14",
@@ -12243,6 +12419,11 @@
  "Enclosures:": {
   "where": [
    "quire/js/dialogs3.js:485"
+  ]
+ },
+ "Encrypted binary workbooks cannot be opened yet": {
+  "where": [
+   "common/legacy/xls-write.js:37"
   ]
  },
  "End Show": {
@@ -12771,6 +12952,11 @@
    "ledger/js/app.js:257"
   ]
  },
+ "Excel dialog sheets cannot be converted yet": {
+  "where": [
+   "common/legacy/xls-write.js:65"
+  ]
+ },
  "Exciting": {
   "where": [
    "lectern/js/panes.js:732"
@@ -12812,6 +12998,11 @@
  "Expands an array to the specified dimensions.": {
   "where": [
    "ledger/js/fninfo.js:328"
+  ]
+ },
+ "Expected a byte array": {
+  "where": [
+   "common/legacy/base.js:11"
   ]
  },
  "Expedition": {
@@ -14319,6 +14510,11 @@
    "ledger/js/dialogs.js:957"
   ]
  },
+ "Formulas were replaced with their saved results": {
+  "where": [
+   "common/legacy/xls-write.js:78"
+  ]
+ },
  "Formulas:": {
   "where": [
    "ledger/js/dialogs.js:690"
@@ -15035,7 +15231,7 @@
  "Harbor & Pine — 2027 Expansion (sample)": {
   "where": [
    "lectern/js/app.js:992",
-   "lectern/js/app.js:2218"
+   "lectern/js/app.js:2219"
   ]
  },
  "He&ader:": {
@@ -16367,6 +16563,11 @@
    "quire/js/dialogs3.js:102"
   ]
  },
+ "Invalid BIFF cell address": {
+  "where": [
+   "common/legacy/xls-read.js:106"
+  ]
+ },
  "Invalid Cell Reference Error": {
   "where": [
    "ledger/js/dialogs3.js:328"
@@ -16375,6 +16576,156 @@
  "Invalid Name Error": {
   "where": [
    "ledger/js/dialogs3.js:328"
+  ]
+ },
+ "Invalid OfficeArt array element size": {
+  "where": [
+   "common/legacy/officeart.js:45"
+  ]
+ },
+ "Invalid Word binary header": {
+  "where": [
+   "common/legacy/doc-read.js:10"
+  ]
+ },
+ "Invalid Word character positions": {
+  "where": [
+   "common/legacy/doc-read.js:68"
+  ]
+ },
+ "Invalid Word character-property table": {
+  "where": [
+   "common/legacy/doc-read.js:29"
+  ]
+ },
+ "Invalid Word text piece table size": {
+  "where": [
+   "common/legacy/doc-read.js:63"
+  ]
+ },
+ "Invalid Word text range": {
+  "where": [
+   "common/legacy/doc-read.js:76"
+  ]
+ },
+ "Invalid XML attribute": {
+  "where": [
+   "common/legacy/package.js:23"
+  ]
+ },
+ "Invalid XML name": {
+  "where": [
+   "common/legacy/package.js:20"
+  ]
+ },
+ "Invalid angle-ellipse vertex count": {
+  "where": [
+   "common/legacy/shape-path.js:91"
+  ]
+ },
+ "Invalid arc vertex count": {
+  "where": [
+   "common/legacy/shape-path.js:83"
+  ]
+ },
+ "Invalid bitmap RLE delta": {
+  "where": [
+   "common/legacy/images.js:92"
+  ]
+ },
+ "Invalid bitmap palette": {
+  "where": [
+   "common/legacy/images.js:72"
+  ]
+ },
+ "Invalid bitmap pixel or palette index": {
+  "where": [
+   "common/legacy/images.js:79"
+  ]
+ },
+ "Invalid custom-shape coordinate system": {
+  "where": [
+   "common/legacy/shape-path.js:17"
+  ]
+ },
+ "Invalid custom-shape guide result": {
+  "where": [
+   "common/legacy/shape-path.js:43"
+  ]
+ },
+ "Invalid elliptical arc": {
+  "where": [
+   "common/legacy/shape-path.js:51"
+  ]
+ },
+ "Invalid formula result type": {
+  "where": [
+   "common/legacy/xls-read.js:122"
+  ]
+ },
+ "Invalid multiple-cell record": {
+  "where": [
+   "common/legacy/xls-read.js:128"
+  ]
+ },
+ "Invalid or duplicate relationship ID": {
+  "where": [
+   "common/legacy/package.js:55"
+  ]
+ },
+ "Invalid or oversized bitmap dimensions": {
+  "where": [
+   "common/legacy/images.js:57"
+  ]
+ },
+ "Invalid package data": {
+  "where": [
+   "common/legacy/package.js:46"
+  ]
+ },
+ "Invalid package part name": {
+  "where": [
+   "common/legacy/package.js:38"
+  ]
+ },
+ "Invalid picture dimensions": {
+  "where": [
+   "common/legacy/images.js:42"
+  ]
+ },
+ "Invalid picture-store entry": {
+  "where": [
+   "common/legacy/officeart.js:70"
+  ]
+ },
+ "Invalid presentation edit record": {
+  "where": [
+   "common/legacy/ppt-read.js:41"
+  ]
+ },
+ "Invalid presentation persist directory": {
+  "where": [
+   "common/legacy/ppt-read.js:43"
+  ]
+ },
+ "Invalid presentation persist range": {
+  "where": [
+   "common/legacy/ppt-read.js:47"
+  ]
+ },
+ "Invalid relationship target": {
+  "where": [
+   "common/legacy/package.js:56"
+  ]
+ },
+ "Invalid shared string count": {
+  "where": [
+   "common/legacy/xls-read.js:51"
+  ]
+ },
+ "Invalid shared string index": {
+  "where": [
+   "common/legacy/xls-read.js:114"
   ]
  },
  "Invalid value.": {
@@ -17525,6 +17876,11 @@
    "common/core.js:709"
   ]
  },
+ "Load common/crypto.js before the legacy importers": {
+  "where": [
+   "common/legacy/base.js:53"
+  ]
+ },
  "Load fonts on this computer": {
   "where": [
    "start.js:261",
@@ -17777,6 +18133,11 @@
  "Macros are not run in Quire. VBA projects in .docm files are kept when the document is saved as .docm by Word, but Quire saves the document text only.": {
   "where": [
    "quire/js/dialogs3.js:513"
+  ]
+ },
+ "Macros were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:89"
   ]
  },
  "Made possible by open source software: {0}.": {
@@ -18250,6 +18611,16 @@
  "Miscellaneous Technical": {
   "where": [
    "common/dialogs.js:21"
+  ]
+ },
+ "Missing document colour palette": {
+  "where": [
+   "common/legacy/shapes.js:19"
+  ]
+ },
+ "Missing document colour scheme": {
+  "where": [
+   "common/legacy/shapes.js:18"
   ]
  },
  "Mo&vies and Sounds": {
@@ -19607,6 +19978,11 @@
    "index.html:241"
   ]
  },
+ "OfficeArt nesting is too deep": {
+  "where": [
+   "common/legacy/officeart.js:17"
+  ]
+ },
  "Offset:": {
   "where": [
    "lectern/js/dialogs.js:90"
@@ -20143,6 +20519,11 @@
  "PDF, one slide per page (*.pdf)": {
   "where": [
    "lectern/js/app.js:444"
+  ]
+ },
+ "PICT pictures cannot be converted yet": {
+  "where": [
+   "common/legacy/officeart.js:57"
   ]
  },
  "PNG Graphics Format, current slide (*.png)": {
@@ -20951,6 +21332,11 @@
    "ledger/js/dialogs2.js:830"
   ]
  },
+ "PivotTables were replaced with their saved cells": {
+  "where": [
+   "common/legacy/xls-write.js:85"
+  ]
+ },
  "Pixel Mosaic": {
   "where": [
    "lectern/js/model.js:199"
@@ -21154,6 +21540,16 @@
  "Presentation Views": {
   "where": [
    "lectern/js/ribbon.js:66"
+  ]
+ },
+ "Presentation record nesting exceeds the limit": {
+  "where": [
+   "common/legacy/ppt-read.js:23"
+  ]
+ },
+ "Presentation text is too large": {
+  "where": [
+   "common/legacy/ppt-read.js:59"
   ]
  },
  "Presentation title": {
@@ -21513,6 +21909,26 @@
  "Properties:": {
   "where": [
    "common/dialogs.js:459"
+  ]
+ },
+ "Property dictionary is too large": {
+  "where": [
+   "common/legacy/properties.js:91"
+  ]
+ },
+ "Property string is too large": {
+  "where": [
+   "common/legacy/properties.js:72"
+  ]
+ },
+ "Property vector is too large": {
+  "where": [
+   "common/legacy/properties.js:50"
+  ]
+ },
+ "Property vector is too large or nested": {
+  "where": [
+   "common/legacy/properties.js:47"
   ]
  },
  "Protect": {
@@ -22031,7 +22447,7 @@
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
   "where": [
-   "lectern/js/app.js:2234"
+   "lectern/js/app.js:2235"
   ]
  },
  "Recovered the unsaved changes. Save the workbook to keep them.": {
@@ -26630,6 +27046,22 @@
    "common/ui.js:788"
   ]
  },
+ "Some print settings were not kept": {
+  "where": [
+   "common/legacy/xls-write.js:87"
+  ]
+ },
+ "Some workbook formatting could not be read": {
+  "where": [
+   "common/legacy/xls-style-ext.js:57",
+   "common/legacy/xls-style.js:15"
+  ]
+ },
+ "Some worksheet layout or view settings could not be read": {
+  "where": [
+   "common/legacy/xls-sheet.js:24"
+  ]
+ },
  "Sort": {
   "where": [
    "ledger/js/dialogs.js:872",
@@ -28229,6 +28661,11 @@
    "lectern/js/model.js:297"
   ]
  },
+ "Text beyond the 32,767-character cell limit was not kept": {
+  "where": [
+   "common/legacy/xls-write.js:14"
+  ]
+ },
  "Text control": {
   "where": [
    "ledger/js/dialogs.js:173"
@@ -28350,6 +28787,11 @@
    "ledger/js/dialogs2.js:824"
   ]
  },
+ "The PowerPoint Document stream is missing": {
+  "where": [
+   "common/legacy/ppt-read.js:32"
+  ]
+ },
  "The Text Wizard has determined that your data is Delimited.": {
   "where": [
    "ledger/js/csv.js:308"
@@ -28358,6 +28800,26 @@
  "The Text Wizard has determined that your data is Fixed Width.": {
   "where": [
    "ledger/js/csv.js:308"
+  ]
+ },
+ "The Word document has too much text": {
+  "where": [
+   "common/legacy/doc-read.js:70"
+  ]
+ },
+ "The Word text piece table is missing": {
+  "where": [
+   "common/legacy/doc-read.js:61"
+  ]
+ },
+ "The Word text table is missing": {
+  "where": [
+   "common/legacy/doc-read.js:55"
+  ]
+ },
+ "The WordDocument stream is missing": {
+  "where": [
+   "common/legacy/doc-read.js:52"
   ]
  },
  "The active cell does not contain a formula that refers to a valid reference.": {
@@ -28375,6 +28837,11 @@
    "ledger/js/app.js:1379"
   ]
  },
+ "The bitmap RLE stream is truncated": {
+  "where": [
+   "common/legacy/images.js:99"
+  ]
+ },
  "The cache has no remaining pivot tables.": {
   "where": [
    "ledger/js/pivots.js:243"
@@ -28388,6 +28855,21 @@
  "The cell or chart you are trying to change is protected and therefore read-only.\n\nTo modify a protected cell or chart, first remove protection using the Unprotect Sheet command (Tools menu, Protection submenu). You may be prompted for a password.": {
   "where": [
    "ledger/js/grid.js:967"
+  ]
+ },
+ "The cell pronunciation text could not be read": {
+  "where": [
+   "common/legacy/xls-write.js:24"
+  ]
+ },
+ "The cell pronunciation text has an invalid length": {
+  "where": [
+   "common/legacy/xls-write.js:25"
+  ]
+ },
+ "The cell pronunciation text has an invalid range": {
+  "where": [
+   "common/legacy/xls-write.js:27"
   ]
  },
  "The chart has no data. Select a range with numbers first.": {
@@ -28420,14 +28902,35 @@
    "ledger/js/pivots.js:202"
   ]
  },
+ "The converted file contains a duplicate part": {
+  "where": [
+   "common/legacy/package.js:45"
+  ]
+ },
+ "The converted package is too large": {
+  "where": [
+   "common/legacy/package.js:48",
+   "common/legacy/package.js:76"
+  ]
+ },
  "The criteria range is not valid.": {
   "where": [
    "ledger/js/dialogs2.js:302"
   ]
  },
+ "The current presentation document is missing": {
+  "where": [
+   "common/legacy/ppt-read.js:53"
+  ]
+ },
  "The current time": {
   "where": [
    "quire/js/dialogs2.js:137"
+  ]
+ },
+ "The custom shape has no vertices": {
+  "where": [
+   "common/legacy/shape-path.js:15"
   ]
  },
  "The damaged VML drawing could not be merged; its readable notes were rebuilt.": {
@@ -28458,6 +28961,21 @@
  "The date the document was last saved": {
   "where": [
    "quire/js/dialogs2.js:137"
+  ]
+ },
+ "The decompressed picture exceeds its declared size": {
+  "where": [
+   "common/legacy/images.js:16"
+  ]
+ },
+ "The decompressed picture has the wrong size": {
+  "where": [
+   "common/legacy/images.js:19"
+  ]
+ },
+ "The decompressed picture is too large": {
+  "where": [
+   "common/legacy/images.js:10"
   ]
  },
  "The dictionary could not be loaded ({0}). Quire needs to be served from a web server, not opened as a local file, for spelling to work.": {
@@ -28532,6 +29050,11 @@
    "ledger/js/dialogs2.js:304"
   ]
  },
+ "The file contains an invalid offset or length": {
+  "where": [
+   "common/legacy/base.js:16"
+  ]
+ },
  "The file could not be inserted. {0}": {
   "where": [
    "quire/js/commands.js:719"
@@ -28541,6 +29064,16 @@
   "where": [
    "lectern/js/app.js:494",
    "quire/js/app.js:934"
+  ]
+ },
+ "The file is too large to import": {
+  "where": [
+   "common/legacy/base.js:12"
+  ]
+ },
+ "The first worksheet was made visible": {
+  "where": [
+   "common/legacy/xls-write.js:61"
   ]
  },
  "The fonts on this computer could not be listed: permission was not given.": {
@@ -28585,6 +29118,16 @@
    "ledger/js/editor.js:256"
   ]
  },
+ "The generated XML is too deeply nested": {
+  "where": [
+   "common/legacy/package.js:31"
+  ]
+ },
+ "The generated XML is too large": {
+  "where": [
+   "common/legacy/package.js:30"
+  ]
+ },
  "The intersection of two areas is empty.": {
   "where": [
    "ledger/js/dialogs3.js:329"
@@ -28603,6 +29146,11 @@
  "The merge could not be printed. {0}": {
   "where": [
    "quire/js/mailmerge.js:264"
+  ]
+ },
+ "The metafile is too large": {
+  "where": [
+   "common/legacy/officeart.js:55"
   ]
  },
  "The name is too long.": {
@@ -28706,6 +29254,21 @@
    "ledger/js/xlsx-read.js:1181"
   ]
  },
+ "The picture contains invalid compressed data": {
+  "where": [
+   "common/legacy/images.js:17"
+  ]
+ },
+ "The picture data is missing": {
+  "where": [
+   "common/legacy/officeart.js:83"
+  ]
+ },
+ "The picture is too large": {
+  "where": [
+   "common/legacy/images.js:22"
+  ]
+ },
  "The pivot source changed. Excel will refresh its cached result when the file opens.": {
   "where": [
    "ledger/js/pivots.js:256"
@@ -28754,6 +29317,32 @@
  "The selection contains multiple data values. Merging into one cell will keep the upper-left most data only.": {
   "where": [
    "ledger/js/app.js:1050"
+  ]
+ },
+ "The shape fill picture is missing": {
+  "where": [
+   "common/legacy/shapes.js:67",
+   "common/legacy/shapes.js:122"
+  ]
+ },
+ "The shape geometry has a missing guide": {
+  "where": [
+   "common/legacy/shape-path.js:30"
+  ]
+ },
+ "The shape has no usable anchor": {
+  "where": [
+   "common/legacy/shapes.js:44"
+  ]
+ },
+ "The shared string extension is too large": {
+  "where": [
+   "common/legacy/xls-read.js:67"
+  ]
+ },
+ "The shared string table is too large": {
+  "where": [
+   "common/legacy/xls-read.js:55"
   ]
  },
  "The slicer/timeline source or all its views were deleted.": {
@@ -28872,9 +29461,29 @@
    "quire/js/spell.js:69"
   ]
  },
+ "The workbook contains an invalid or duplicate sheet name": {
+  "where": [
+   "common/legacy/xls-write.js:40"
+  ]
+ },
+ "The workbook has no BIFF header": {
+  "where": [
+   "common/legacy/xls-read.js:26"
+  ]
+ },
+ "The workbook has no worksheets": {
+  "where": [
+   "common/legacy/xls-write.js:39"
+  ]
+ },
  "The workbook is encrypted with AES-256 the next time you save it as an Excel workbook, the way Excel 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
   "where": [
    "ledger/js/dialogs.js:798"
+  ]
+ },
+ "The workbook palette is too large": {
+  "where": [
+   "common/legacy/xls-style.js:38"
   ]
  },
  "The workbook part is damaged.": {
@@ -28882,9 +29491,44 @@
    "ledger/js/xlsx-read.js:1199"
   ]
  },
+ "The workbook stream is empty": {
+  "where": [
+   "common/legacy/xls-read.js:23"
+  ]
+ },
+ "The workbook theme contains linked parts": {
+  "where": [
+   "common/legacy/xls-style-ext.js:20"
+  ]
+ },
+ "The workbook theme could not be read": {
+  "where": [
+   "common/legacy/xls-style-ext.js:19"
+  ]
+ },
+ "The workbook theme is too large": {
+  "where": [
+   "common/legacy/xls-style-ext.js:14"
+  ]
+ },
+ "The workbook theme was not kept": {
+  "where": [
+   "common/legacy/xls-style-ext.js:22"
+  ]
+ },
  "The worksheet containing the pivot table was deleted.": {
   "where": [
    "ledger/js/pivots.js:116"
+  ]
+ },
+ "The worksheet contains overlapping merged cells": {
+  "where": [
+   "common/legacy/xls-sheet.js:29"
+  ]
+ },
+ "The worksheet streams overlap": {
+  "where": [
+   "common/legacy/xls-read.js:100"
   ]
  },
  "Theme": {
@@ -28959,6 +29603,11 @@
  "There are no tracked changes or comments in this document.": {
   "where": [
    "quire/js/review.js:404"
+  ]
+ },
+ "There are too many overlapping merged-cell ranges": {
+  "where": [
+   "common/legacy/xls-sheet.js:29"
   ]
  },
  "There is more than one space between these words.": {
@@ -29138,6 +29787,11 @@
    "lectern/js/frames.js:158"
   ]
  },
+ "This Excel file format is not supported yet": {
+  "where": [
+   "common/legacy/xls-write.js:34"
+  ]
+ },
  "This IntelliArt now uses Lectern's {0} layout, so it can be edited here.": {
   "where": [
    "lectern/js/diagram.js:232"
@@ -29161,6 +29815,16 @@
  "This browser blocked the page image.": {
   "where": [
    "quire/js/app.js:987"
+  ]
+ },
+ "This browser cannot decode the file text encoding": {
+  "where": [
+   "common/legacy/base.js:40"
+  ]
+ },
+ "This browser cannot decompress metafiles": {
+  "where": [
+   "common/legacy/images.js:11"
   ]
  },
  "This chart will be saved as ordinary shapes, because it was edited here.": {
@@ -29243,6 +29907,11 @@
    "quire/js/editor.js:295"
   ]
  },
+ "This document property has an unsupported type": {
+  "where": [
+   "common/legacy/properties.js:84"
+  ]
+ },
  "This effect has no direction settings.": {
   "where": [
    "lectern/js/dialogs.js:1093"
@@ -29263,6 +29932,11 @@
    "lectern/js/pptx-read.js:852"
   ]
  },
+ "This file has no Excel workbook stream": {
+  "where": [
+   "common/legacy/xls-write.js:35"
+  ]
+ },
  "This file is not an Excel workbook.": {
   "where": [
    "ledger/js/xlsx-read.js:1197"
@@ -29271,6 +29945,11 @@
  "This file is not an XML Spreadsheet 2003 workbook.": {
   "where": [
    "ledger/js/xmlss.js:148"
+  ]
+ },
+ "This file uses an unsupported text encoding": {
+  "where": [
+   "common/legacy/base.js:39"
   ]
  },
  "This file was damaged; Ledger repaired what it could.": {
@@ -29308,6 +29987,11 @@
    "common/dialogs.js:386"
   ]
  },
+ "This legacy shape needs a VML preset definition": {
+  "where": [
+   "common/legacy/shapes.js:115"
+  ]
+ },
  "This link goes to:": {
   "where": [
    "common/ui.js:715"
@@ -29318,6 +30002,11 @@
    "quire/js/editor.js:298"
   ]
  },
+ "This older Excel file format is not supported yet": {
+  "where": [
+   "common/legacy/xls-write.js:38"
+  ]
+ },
  "This operation requires the merged cells to be identically sized.": {
   "where": [
    "ledger/js/ops.js:1117"
@@ -29326,6 +30015,11 @@
  "This picture cannot be edited.": {
   "where": [
    "lectern/js/app.js:1346"
+  ]
+ },
+ "This picture uses an unsupported format": {
+  "where": [
+   "common/legacy/officeart.js:61"
   ]
  },
  "This pivot table will be saved as plain cells, because a column it uses was deleted from its source data.": {
@@ -29386,6 +30080,27 @@
    "quire/js/dialogs.js:361"
   ]
  },
+ "This shape uses an unsupported fill": {
+  "where": [
+   "common/legacy/shapes.js:81",
+   "common/legacy/shapes.js:129"
+  ]
+ },
+ "This shape uses an unsupported geometry operation": {
+  "where": [
+   "common/legacy/shape-path.js:41"
+  ]
+ },
+ "This shape uses an unsupported geometry parameter": {
+  "where": [
+   "common/legacy/shape-path.js:25"
+  ]
+ },
+ "This shape uses an unsupported path command": {
+  "where": [
+   "common/legacy/shape-path.js:100"
+  ]
+ },
  "This site isn't served over HTTPS.": {
   "where": [
    "index.html:271"
@@ -29401,6 +30116,11 @@
    "lectern/js/preserve.js:330"
   ]
  },
+ "This workbook contains a sheet type that cannot be converted yet": {
+  "where": [
+   "common/legacy/xls-write.js:40"
+  ]
+ },
  "This workbook contains macros. Ledger keeps them when you save as .xlsm, but cannot run them.": {
   "where": [
    "ledger/js/commands.js:213"
@@ -29409,6 +30129,11 @@
  "This workbook is encrypted with a method Ledger does not support (only the AES encryption Excel 2007 and later use is supported).": {
   "where": [
    "ledger/js/xlsx-read.js:1181"
+  ]
+ },
+ "This workbook needs a password": {
+  "where": [
+   "common/legacy/xls-write.js:37"
   ]
  },
  "This worksheet contains more than 255 invalid cells. Only 255 cells will be marked.": {
@@ -29684,6 +30409,51 @@
    "lectern/js/panes.js:564"
   ]
  },
+ "Too many BIFF records": {
+  "where": [
+   "common/legacy/xls-read.js:16"
+  ]
+ },
+ "Too many OfficeArt records": {
+  "where": [
+   "common/legacy/officeart.js:19"
+  ]
+ },
+ "Too many Word text pieces": {
+  "where": [
+   "common/legacy/doc-read.js:65"
+  ]
+ },
+ "Too many cells": {
+  "where": [
+   "common/legacy/xls-read.js:105"
+  ]
+ },
+ "Too many custom-shape commands": {
+  "where": [
+   "common/legacy/shape-path.js:48"
+  ]
+ },
+ "Too many presentation edits": {
+  "where": [
+   "common/legacy/ppt-read.js:40"
+  ]
+ },
+ "Too many presentation records": {
+  "where": [
+   "common/legacy/ppt-read.js:16"
+  ]
+ },
+ "Too many properties": {
+  "where": [
+   "common/legacy/properties.js:27"
+  ]
+ },
+ "Too many property sets": {
+  "where": [
+   "common/legacy/properties.js:19"
+  ]
+ },
  "Too&ls": {
   "where": [
    "ledger/js/dialogs.js:668"
@@ -29787,6 +30557,11 @@
  "Top of the Document": {
   "where": [
    "quire/js/dialogs2.js:418"
+  ]
+ },
+ "Top-down RLE bitmaps are not supported": {
+  "where": [
+   "common/legacy/images.js:83"
   ]
  },
  "Top:": {
@@ -29962,6 +30737,16 @@
    "common/clipart.js:11"
   ]
  },
+ "Truncated shared string table": {
+  "where": [
+   "common/legacy/xls-read.js:45"
+  ]
+ },
+ "Truncated string": {
+  "where": [
+   "common/legacy/xls-read.js:58"
+  ]
+ },
  "Turquoise": {
   "where": [
    "common/ui.js:1155",
@@ -30083,6 +30868,16 @@
  "Un&protect Sheet...": {
   "where": [
    "ledger/js/commands.js:195"
+  ]
+ },
+ "Unbalanced XML writer": {
+  "where": [
+   "common/legacy/package.js:34"
+  ]
+ },
+ "Unclosed XML element": {
+  "where": [
+   "common/legacy/package.js:35"
   ]
  },
  "Uncover Down": {
@@ -30235,6 +31030,11 @@
    "ledger/js/dialogs2.js:298"
   ]
  },
+ "Unknown PowerPoint Current User header": {
+  "where": [
+   "common/legacy/ppt-read.js:36"
+  ]
+ },
  "Unlink Fields": {
   "where": [
    "quire/js/commands.js:397",
@@ -30302,6 +31102,51 @@
  "Unsaved changes from {0} (never saved)": {
   "where": [
    "common/suite.js:817"
+  ]
+ },
+ "Unsupported bitmap encoding": {
+  "where": [
+   "common/legacy/images.js:58"
+  ]
+ },
+ "Unsupported bitmap header": {
+  "where": [
+   "common/legacy/images.js:53"
+  ]
+ },
+ "Unsupported executable link target": {
+  "where": [
+   "common/legacy/package.js:57"
+  ]
+ },
+ "Unsupported metafile compression": {
+  "where": [
+   "common/legacy/officeart.js:53"
+  ]
+ },
+ "Unsupported noncontiguous bitmap channel": {
+  "where": [
+   "common/legacy/images.js:68"
+  ]
+ },
+ "Unsupported perspective shape shadow": {
+  "where": [
+   "common/legacy/shapes.js:96"
+  ]
+ },
+ "Unsupported property-set byte order": {
+  "where": [
+   "common/legacy/properties.js:18"
+  ]
+ },
+ "Unsupported shape path type": {
+  "where": [
+   "common/legacy/shape-path.js:101"
+  ]
+ },
+ "Unsupported system colour reference": {
+  "where": [
+   "common/legacy/shapes.js:24"
   ]
  },
  "Untitled": {
@@ -31238,6 +32083,11 @@
    "index.html:249"
   ]
  },
+ "Word story lengths exceed the text piece table": {
+  "where": [
+   "common/legacy/doc-read.js:82"
+  ]
+ },
  "Words": {
   "where": [
    "quire/js/dialogs3.js:321"
@@ -31279,6 +32129,11 @@
    "ledger/js/dialogs.js:770"
   ]
  },
+ "Workbook protection was not kept": {
+  "where": [
+   "common/legacy/xls-write.js:91"
+  ]
+ },
  "Workbooks saved with a password are encrypted (AES-256) and open in Excel 2010 and later.": {
   "where": [
    "ledger/js/dialogs.js:660"
@@ -31304,6 +32159,16 @@
  "Worksheet grid": {
   "where": [
    "ledger/index.html:27"
+  ]
+ },
+ "Worksheet protection was not kept": {
+  "where": [
+   "common/legacy/xls-write.js:86"
+  ]
+ },
+ "Worksheet records are nested too deeply": {
+  "where": [
+   "common/legacy/xls-read.js:103"
   ]
  },
  "Worksheets": {

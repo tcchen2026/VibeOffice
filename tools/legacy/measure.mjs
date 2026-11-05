@@ -17,23 +17,26 @@ if (!isMainThread) {
       const seed = parseInt(workerData.sha256.slice(0, 8), 16); bytes[seed % bytes.length] ^= 1 << (seed % 8);
     }
     if (workerData.mutation === 'header' && bytes.length > 76) bytes.fill(255, 44, 76);
-    sniff = B.sniff(bytes); if (workerData.shared) shared = await auditShared(B, bytes, sniff); info = B.inspect(bytes);
-    if (workerData.reference) fs.writeFileSync(workerData.reference, JSON.stringify(info));
+    sniff = B.sniff(bytes); if (workerData.shared) shared = await auditShared(B, bytes, sniff);
     const converter = B[sniff.format]?.convert;
+    // An inspection retains a second complete cell/text tree. A/B references are
+    // reusable; converter phases measure the converter itself unless requested.
+    if(!converter||workerData.inspect){info=B.inspect(bytes);if(workerData.reference)fs.writeFileSync(workerData.reference,JSON.stringify(info));}
     if (!converter) B.fail('CONVERTER_UNAVAILABLE', 'Conversion for this format has not been implemented');
     const result = await converter(bytes, {});
     if (!(result.pkg instanceof Uint8Array) || result.pkg.length > B.limits.bytes || !/^(?:doc|xls|ppt|dot|xlt|pot|pps)[xm]$/.test(result.type)) throw new Error('Invalid converter result');
-    parentPort.postMessage({ status: 'converted', sniff, shared, features: info.features, ms: performance.now() - start, losses: result.losses, type: result.type, pkg: result.pkg }, [result.pkg.buffer]);
+    parentPort.postMessage({ status: 'converted', sniff, shared, features: info?.features, stats:result.stats, ms: performance.now() - start, losses: result.losses, type: result.type, pkg: result.pkg }, [result.pkg.buffer]);
   } catch (e) { parentPort.postMessage({ status: refusal(e) ? 'refused' : 'crashed', sniff, shared, features: info?.features, code: e.code, reason: e.message, where: e.where, stack: refusal(e) ? undefined : e.stack, ms: performance.now() - start }); }
 } else {
   const args = process.argv.slice(2), opt = (name, fallback) => { const i = args.indexOf(name); return i < 0 ? fallback : args[i + 1]; };
   const corpus = path.resolve(opt('--corpus', '/work/corpora')), out = path.resolve(opt('--out', 'tmp/legacy/artifacts/measure'));
   const manifest = JSON.parse(fs.readFileSync(path.join(corpus, 'legacy-manifest.json'), 'utf8'));
-  const selected = manifest.filter(e => !opt('--format', '') || e.format === opt('--format', '')).slice(0, +opt('--limit', Infinity));
+  const files=opt('--files','')?new Set(JSON.parse(fs.readFileSync(opt('--files',''),'utf8'))):null;
+  const selected = manifest.filter(e => (!files||files.has(e.file))&&(!opt('--format', '') || e.format === opt('--format', ''))&&(!opt('--match','')||e.file.includes(opt('--match','')))).slice(0, +opt('--limit', Infinity));
   fs.mkdirSync(path.join(out, 'references'), { recursive: true }); fs.mkdirSync(path.join(out, 'packages'), { recursive: true });
   const run = (item, mutation) => new Promise(resolve => {
-    const worker = new Worker(new URL(import.meta.url), { workerData: { file: path.join(corpus, item.file), sha256: item.sha256, mutation, shared: args.includes('--shared'),
-      reference: mutation ? null : path.join(out, 'references', item.sha256 + '.json') }, resourceLimits: { maxOldGenerationSizeMb: 512, stackSizeMb: 8 } });
+    const worker = new Worker(new URL(import.meta.url), { workerData: { file: path.join(corpus, item.file), sha256: item.sha256, mutation, shared: args.includes('--shared'),inspect:args.includes('--inspect'),
+      reference: mutation ? null : path.join(out, 'references', item.sha256 + '.json') }, resourceLimits: { maxOldGenerationSizeMb: +opt('--memory',512), stackSizeMb: 8 } });
     let done = false;
     const finish = result => { if (done) return; done = true; clearTimeout(timer); worker.terminate(); resolve({ file: item.file, sha256: item.sha256, size: item.size, mutation, ...result }); };
     const timer = setTimeout(() => finish({ status: 'crashed', code: 'TIMEOUT', reason: 'Worker deadline exceeded' }), +opt('--timeout', 30000));

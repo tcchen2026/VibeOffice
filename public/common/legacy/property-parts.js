@@ -6,6 +6,7 @@
   const ns = 'http://schemas.openxmlformats.org/officeDocument/2006/';
   const vt = ns + 'docPropsVTypes';
   const text = (name, value, attrs) => value == null ? '' : el(name, attrs, B.xml(value));
+  const coreDate = value => typeof value === 'string' ? value.replace(/\.\d+Z$/, 'Z') : value;
   const names = { 2: 'title', 3: 'subject', 4: 'author', 5: 'keywords', 6: 'description', 7: 'template', 8: 'last author', 9: 'revision', 10: 'editing time', 11: 'last printed', 12: 'creation date', 13: 'modification date' };
   function variant(prop) {
     if (!prop || prop.unsupported) return null;
@@ -32,8 +33,8 @@
     const value = (obj, id) => obj[id]?.unsupported ? null : obj[id]?.value;
     const safe = (obj, id) => { const v = value(obj, id); return typeof v === 'number' ? Number.isFinite(v) ? v : null : v; };
     let core = '';
-    for (const [id, tag] of [[2, 'dc:title'], [3, 'dc:subject'], [4, 'dc:creator'], [5, 'cp:keywords'], [6, 'dc:description'], [8, 'cp:lastModifiedBy'], [9, 'cp:revision'], [11, 'cp:lastPrinted']]) core += text(tag, safe(sv, id));
-    for (const [id, tag] of [[12, 'dcterms:created'], [13, 'dcterms:modified']]) core += text(tag, value(sv, id), { 'xsi:type': 'dcterms:W3CDTF' });
+    for (const [id, tag] of [[2, 'dc:title'], [3, 'dc:subject'], [4, 'dc:creator'], [5, 'cp:keywords'], [6, 'dc:description'], [8, 'cp:lastModifiedBy'], [9, 'cp:revision'], [11, 'cp:lastPrinted']]) core += text(tag, id === 11 ? coreDate(safe(sv, id)) : safe(sv, id));
+    for (const [id, tag] of [[12, 'dcterms:created'], [13, 'dcterms:modified']]) core += text(tag, coreDate(value(sv, id)), { 'xsi:type': 'dcterms:W3CDTF' });
     core += text('cp:category', value(dv, 2)) + text('cp:contentType', value(dv, 26)) + text('cp:contentStatus', value(dv, 27)) + text('dc:language', value(dv, 28)) + text('cp:version', value(dv, 29));
     parts.push({ name: 'docProps/core.xml', type: 'application/vnd.openxmlformats-package.core-properties+xml', relation: 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties', data: B.xmlDeclaration + el('cp:coreProperties', {
       'xmlns:cp': 'http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'xmlns:dc': 'http://purl.org/dc/elements/1.1/',

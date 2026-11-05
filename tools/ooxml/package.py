@@ -231,6 +231,17 @@ class Package:
                 # default, even if every table names an embedded style explicitly.
                 if ns in A and tag == 'tblStyleLst' and 'def' not in el.attrib:
                     self.issue('table-style-default', part, 'Table style list needs its default style ID (a built-in style need not be embedded).', path)
+                # Excel 2016 refuses a cell's text of more than 32,767 characters (32,768 refused, 32,767
+                # opens; I24 C1): a shared or inline string with its runs joined, phonetic text not
+                # counted, _xHHHH_ decoded once, in UTF-16 units as Excel counts; a formula's cached string too
+                if ns in S and (tag in ('si', 'is') or (tag == 'v' and parent is not None and split(parent.tag)[1] == 'c' and at(parent, 't') == 'str')):
+                    if tag == 'v':
+                        text = el.text or ''
+                    else:
+                        text = ''.join(t.text or '' for t in el.iter() if split(t.tag)[1] == 't' and split(parents.get(t).tag)[1] != 'rPh')
+                    units = len(re.sub(r'_x([0-9A-Fa-f]{4})_', lambda m: chr(int(m.group(1), 16)), text).encode('utf-16-le', 'surrogatepass')) // 2
+                    if units > 32767:
+                        self.issue('cell-text-too-long', part, f'{units} characters (Excel opens at most 32,767)', path)
                 if ns in A and tag == 'graphicData' and el.get('uri') == 'urn:vibeoffice:test:unread':
                     # Batch 7: our unguarded synthetic frame repairs in Office,
                     # even in its original fixture. Do not reject unfamiliar
