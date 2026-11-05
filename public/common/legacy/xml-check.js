@@ -5,7 +5,7 @@
   'use strict';
   const B=root.L.legacy,N=s=>s;
   const valid=s=>!/[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(s);
-  B.checkXml=function(text){
+  B.checkXml=function(text,visit){
     if(text.length>B.limits.text||!valid(text))B.fail('XML_TEXT',N('An embedded XML part contains invalid text'));
     const bad=()=>B.fail('XML_SYNTAX',N('An embedded XML part is damaged'));
     const decode=s=>s.replace(/&([^;]*);|&/g,(whole,entity)=>{
@@ -32,6 +32,7 @@
       const expanded=new Set();for(const key of Object.keys(attrs)){if(key==='xmlns'||key.startsWith('xmlns:'))continue;const parts=key.split(':'),full=(parts.length===2?ns[parts[0]]:'')+'|'+parts.at(-1);if(expanded.has(full))bad();expanded.add(full);}
       const node={name:tag,attrs,ns};if(!parent){if(tree)bad();tree=node;}
       if(++count>B.limits.records||stack.length>=B.limits.depth)B.fail('XML_LIMIT',N('An embedded XML part is too complex'));
+      if(visit)visit(node,stack.length);
       if(!empty)stack.push(node);
     }
     if(stack.length||!tree)bad();return tree;

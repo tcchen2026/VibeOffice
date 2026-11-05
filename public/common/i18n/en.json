@@ -4712,6 +4712,11 @@
    "ledger/js/threads.js:138"
   ]
  },
+ "A damaged master relationship was not kept": {
+  "where": [
+   "common/legacy/ppt-structure.js:69"
+  ]
+ },
  "A defined name was not kept": {
   "where": [
    "common/legacy/xls-formula-book.js:79",
@@ -4758,6 +4763,11 @@
    "quire/js/app.js:794"
   ]
  },
+ "A presentation color mapping could not be read": {
+  "where": [
+   "common/legacy/ppt-theme.js:45"
+  ]
+ },
  "A presentation editor that runs entirely in your browser. Presentations are read and written as Office Open XML (.pptx, .pptm); nothing is uploaded.": {
   "where": [
    "lectern/js/dialogs.js:1127"
@@ -4765,7 +4775,7 @@
  },
  "A presentation object is missing": {
   "where": [
-   "common/legacy/ppt-read.js:52"
+   "common/legacy/ppt-read.js:59"
   ]
  },
  "A presentation record extends beyond its container": {
@@ -4816,6 +4826,11 @@
  "A spreadsheet that runs entirely in your browser. Workbooks are read and written as Office Open XML (.xlsx, .xlsm), CSV and text; nothing is uploaded.": {
   "where": [
    "ledger/js/dialogs.js:962"
+  ]
+ },
+ "A stored presentation design could not be kept": {
+  "where": [
+   "common/legacy/ppt-theme.js:52"
   ]
  },
  "A style named {0} already exists.": {
@@ -5679,28 +5694,44 @@
  },
  "An embedded part could not be decompressed": {
   "where": [
-   "common/legacy/xml-check.js:50"
+   "common/legacy/xml-check.js:51"
   ]
  },
  "An embedded part exceeds its declared size": {
   "where": [
-   "common/legacy/xml-check.js:49"
+   "common/legacy/xml-check.js:50"
   ]
  },
  "An embedded part is damaged": {
   "where": [
-   "common/legacy/xml-check.js:43",
-   "common/legacy/xml-check.js:53"
+   "common/legacy/xml-check.js:44",
+   "common/legacy/xml-check.js:54"
   ]
  },
  "An embedded part is too large": {
   "where": [
-   "common/legacy/xml-check.js:42"
+   "common/legacy/xml-check.js:43"
   ]
  },
  "An embedded part uses unsupported compression": {
   "where": [
-   "common/legacy/xml-check.js:52"
+   "common/legacy/xml-check.js:53"
+  ]
+ },
+ "An embedded presentation design contains linked parts": {
+  "where": [
+   "common/legacy/ppt-theme.js:35"
+  ]
+ },
+ "An embedded presentation design could not be read": {
+  "where": [
+   "common/legacy/ppt-theme.js:24",
+   "common/legacy/ppt-theme.js:31"
+  ]
+ },
+ "An embedded presentation design is too large": {
+  "where": [
+   "common/legacy/ppt-theme.js:22"
   ]
  },
  "An object on this sheet couldn't be kept and will be removed.": {
@@ -5755,6 +5786,11 @@
  "Animations": {
   "where": [
    "lectern/js/ribbon.js:54"
+  ]
+ },
+ "Animations were not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:83"
   ]
  },
  "Animations:": {
@@ -10493,7 +10529,7 @@
  },
  "Cyclic PowerPoint edit history": {
   "where": [
-   "common/legacy/ppt-read.js:39"
+   "common/legacy/ppt-read.js:44"
   ]
  },
  "Cyclic or excessive custom-shape guide evaluation": {
@@ -10561,6 +10597,16 @@
  "Da&te and Time...": {
   "where": [
    "lectern/js/commands.js:80"
+  ]
+ },
+ "Damaged macros were not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:90"
+  ]
+ },
+ "Damaged presentation content could not be read": {
+  "where": [
+   "common/legacy/ppt-structure.js:11"
   ]
  },
  "Danish": {
@@ -11979,6 +12025,7 @@
  },
  "Drawing objects were not kept": {
   "where": [
+   "common/legacy/ppt-write.js:78",
    "common/legacy/xls-write.js:85"
   ]
  },
@@ -12372,6 +12419,11 @@
    "quire/js/render.js:378"
   ]
  },
+ "Embedded fonts were not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:88"
+  ]
+ },
  "Embedded object": {
   "where": [
    "lectern/js/frames.js:19",
@@ -12415,6 +12467,11 @@
  "Enclosures:": {
   "where": [
    "quire/js/dialogs3.js:485"
+  ]
+ },
+ "Encrypted binary presentations cannot be opened yet": {
+  "where": [
+   "common/legacy/ppt-write.js:97"
   ]
  },
  "Encrypted binary workbooks cannot be opened yet": {
@@ -15595,6 +15652,11 @@
    "lectern/js/dialogs.js:810"
   ]
  },
+ "Hyperlinks were not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:84"
+  ]
+ },
  "Hyphenate words in &CAPS": {
   "where": [
    "quire/js/dialogs3.js:391"
@@ -16661,17 +16723,17 @@
  },
  "Invalid presentation edit record": {
   "where": [
-   "common/legacy/ppt-read.js:41"
+   "common/legacy/ppt-read.js:46"
   ]
  },
  "Invalid presentation persist directory": {
   "where": [
-   "common/legacy/ppt-read.js:43"
+   "common/legacy/ppt-read.js:48"
   ]
  },
  "Invalid presentation persist range": {
   "where": [
-   "common/legacy/ppt-read.js:47"
+   "common/legacy/ppt-read.js:52"
   ]
  },
  "Invalid shared string count": {
@@ -18088,6 +18150,7 @@
  },
  "Macros were not kept": {
   "where": [
+   "common/legacy/ppt-write.js:90",
    "common/legacy/xls-write.js:94"
   ]
  },
@@ -19613,6 +19676,11 @@
  "Notes can only be inserted in the main document.": {
   "where": [
    "quire/js/fields.js:771"
+  ]
+ },
+ "Notes without a matching slide were not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:86"
   ]
  },
  "Notes:": {
@@ -21441,6 +21509,11 @@
    "quire/js/spell.js:299"
   ]
  },
+ "PowerPoint 95 presentations cannot be opened yet": {
+  "where": [
+   "common/legacy/ppt-write.js:95"
+  ]
+ },
  "PowerPoint Presentation (*.pptx)": {
   "where": [
    "lectern/js/app.js:441"
@@ -21495,12 +21568,18 @@
  },
  "Presentation record nesting exceeds the limit": {
   "where": [
-   "common/legacy/ppt-read.js:23"
+   "common/legacy/ppt-read.js:28"
   ]
  },
  "Presentation text is too large": {
   "where": [
-   "common/legacy/ppt-read.js:59"
+   "common/legacy/ppt-read.js:66",
+   "common/legacy/ppt-structure.js:30"
+  ]
+ },
+ "Presentation text was not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:77"
   ]
  },
  "Presentation title": {
@@ -26823,6 +26902,11 @@
    "lectern/js/dialogs.js:1128"
   ]
  },
+ "Slide transitions and automatic advance settings were not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:85"
+  ]
+ },
  "Slide {0}": {
   "where": [
    "lectern/js/dialogs.js:801",
@@ -28745,7 +28829,7 @@
  },
  "The PowerPoint Document stream is missing": {
   "where": [
-   "common/legacy/ppt-read.js:32"
+   "common/legacy/ppt-read.js:37"
   ]
  },
  "The Text Wizard has determined that your data is Delimited.": {
@@ -28871,7 +28955,7 @@
  },
  "The current presentation document is missing": {
   "where": [
-   "common/legacy/ppt-read.js:53"
+   "common/legacy/ppt-read.js:60"
   ]
  },
  "The current time": {
@@ -29225,6 +29309,16 @@
    "ledger/js/pivots.js:113"
   ]
  },
+ "The presentation has too many master layouts": {
+  "where": [
+   "common/legacy/ppt-theme.js:60"
+  ]
+ },
+ "The presentation has too many slides and masters": {
+  "where": [
+   "common/legacy/ppt-structure.js:22"
+  ]
+ },
  "The presentation is encrypted (AES-256) the next time you save it as a PowerPoint file, the way PowerPoint 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
   "where": [
    "lectern/js/dialogs.js:905"
@@ -29233,6 +29327,16 @@
  "The presentation is not in English, so it was not checked.": {
   "where": [
    "lectern/js/dialogs.js:651"
+  ]
+ },
+ "The presentation page size is outside the supported range": {
+  "where": [
+   "common/legacy/ppt-structure.js:17"
+  ]
+ },
+ "The presentation size and settings are missing": {
+  "where": [
+   "common/legacy/ppt-structure.js:15"
   ]
  },
  "The pronoun \"I\" is always capitalized.": {
@@ -29299,6 +29403,11 @@
  "The slicer/timeline views on this worksheet were deleted.": {
   "where": [
    "ledger/js/slicers.js:168"
+  ]
+ },
+ "The slide background was replaced with its color-scheme background": {
+  "where": [
+   "common/legacy/ppt-write.js:82"
   ]
  },
  "The slide containing these comments was deleted.": {
@@ -29989,6 +30098,11 @@
    "lectern/js/pptx-read.js:766"
   ]
  },
+ "This presentation needs a password": {
+  "where": [
+   "common/legacy/ppt-write.js:97"
+  ]
+ },
  "This punctuation mark is repeated.": {
   "where": [
    "quire/js/spell.js:120"
@@ -30382,12 +30496,13 @@
  },
  "Too many presentation edits": {
   "where": [
-   "common/legacy/ppt-read.js:40"
+   "common/legacy/ppt-read.js:45"
   ]
  },
  "Too many presentation records": {
   "where": [
-   "common/legacy/ppt-read.js:16"
+   "common/legacy/ppt-read.js:17",
+   "common/legacy/ppt-structure.js:28"
   ]
  },
  "Too many properties": {
@@ -30968,7 +31083,7 @@
  },
  "Unknown PowerPoint Current User header": {
   "where": [
-   "common/legacy/ppt-read.js:36"
+   "common/legacy/ppt-read.js:41"
   ]
  },
  "Unlink Fields": {

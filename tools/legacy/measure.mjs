@@ -23,7 +23,7 @@ if (!isMainThread) {
     // reusable; converter phases measure the converter itself unless requested.
     if(!converter||workerData.inspect){info=B.inspect(bytes);if(workerData.reference)fs.writeFileSync(workerData.reference,JSON.stringify(info));}
     if (!converter) B.fail('CONVERTER_UNAVAILABLE', 'Conversion for this format has not been implemented');
-    const result = await converter(bytes, {});
+    const result = await converter(bytes, {extension:path.extname(workerData.file)});
     if (!(result.pkg instanceof Uint8Array) || result.pkg.length > B.limits.bytes || !/^(?:doc|xls|ppt|dot|xlt|pot|pps)[xm]$/.test(result.type)) throw new Error('Invalid converter result');
     parentPort.postMessage({ status: 'converted', sniff, shared, features: info?.features, stats:result.stats, ms: performance.now() - start, losses: result.losses, type: result.type, pkg: result.pkg }, [result.pkg.buffer]);
   } catch (e) { parentPort.postMessage({ status: refusal(e) ? 'refused' : 'crashed', sniff, shared, features: info?.features, code: e.code, reason: e.message, where: e.where, stack: refusal(e) ? undefined : e.stack, ms: performance.now() - start }); }
