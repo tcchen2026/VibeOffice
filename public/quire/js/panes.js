@@ -26,7 +26,7 @@
     TP.fwd.addEventListener('click', () => TP.go(TP.pos + 1));
     TP.home.addEventListener('click', () => TP.show('getting-started'));
     close.addEventListener('click', () => A().toggleTask(false));
-    const openList = () => { const r = TP.title.getBoundingClientRect(); ui.openMenu(Object.values(TP.registry).filter((p) => !p.hidden).map((p) => ({ label: p.title, run: () => TP.show(p.id), checked: () => TP.current === p.id })), { left: r.left, bottom: r.bottom }); };
+    const openList = () => ui.paneList(TP);
     TP.title.addEventListener('click', openList);
     TP.title.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openList(); } });
     L.bus.on('sel', L.debounce(() => TP.refresh('sel'), 150));

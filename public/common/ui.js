@@ -246,6 +246,14 @@
     return true; /* swallow keys while a menu is open */
   };
 
+  /** the task pane's list of panes, under its title (as Office's): every pane registered but those marked hidden,
+      the panels of a group (the tool sets', common/ribbon.js) after a line, each greyed while p.enabled() is false */
+  ui.paneList = function (TP) {
+    const r = TP.title.getBoundingClientRect(), all = Object.values(TP.registry).filter((p) => !p.hidden);
+    const item = (p) => ({ label: p.title, run: () => TP.show(p.id), checked: () => TP.current === p.id, enabled: p.enabled });
+    const tools = all.filter((p) => p.group).map(item);
+    ui.openMenu([...all.filter((p) => !p.group).map(item), ...(tools.length ? ['-'] : []), ...tools], { left: r.left, bottom: r.bottom });
+  };
   /* the keyboard of another command-bar layout (the ribbon, common/ribbon.js) while it is shown instead of the menus:
      { active(), byKey(ch) → handled, index(i) } */
   ui.barKeys = null;

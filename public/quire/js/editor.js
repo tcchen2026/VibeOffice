@@ -326,8 +326,8 @@
   }
   /* every cell of a table selected: the table itself goes (tracked, its cells are emptied as before) */
   function removeTable() {
-    const cs = E.cellSel, t = cs && cs.tbl;
-    if (!t || cs.r0 !== 0 || cs.c0 !== 0 || cs.r1 < t.rows.length - 1 || cs.c1 < t.grid.length - 1) return null;
+    const t = E.cellSel && E.cellSel.tbl;
+    if (!t || !L.tables.wholeSelected()) return null;
     E.cellSel = null;
     return O.removeBlock(t);
   }

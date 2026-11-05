@@ -469,7 +469,7 @@
  },
  "&Blue:": {
   "where": [
-   "common/ui.js:1162"
+   "common/ui.js:1170"
   ]
  },
  "&Bold": {
@@ -749,7 +749,7 @@
  },
  "&Commands": {
   "where": [
-   "common/ui.js:1072"
+   "common/ui.js:1080"
   ]
  },
  "&Commas": {
@@ -774,7 +774,7 @@
  },
  "&Continue": {
   "where": [
-   "common/ui.js:763"
+   "common/ui.js:771"
   ]
  },
  "&Continue Numbering": {
@@ -802,7 +802,7 @@
  },
  "&Copy Address": {
   "where": [
-   "common/ui.js:696"
+   "common/ui.js:704"
   ]
  },
  "&Count": {
@@ -1621,7 +1621,7 @@
  },
  "&Green:": {
   "where": [
-   "common/ui.js:1162"
+   "common/ui.js:1170"
   ]
  },
  "&Grid...": {
@@ -2572,7 +2572,7 @@
  },
  "&Options": {
   "where": [
-   "common/ui.js:1073"
+   "common/ui.js:1081"
   ]
  },
  "&Options...": {
@@ -2924,7 +2924,7 @@
  },
  "&Red:": {
   "where": [
-   "common/ui.js:1162"
+   "common/ui.js:1170"
   ]
  },
  "&Redo": {
@@ -4162,7 +4162,7 @@
  },
  "'{0}' is protected.": {
   "where": [
-   "common/ui.js:771"
+   "common/ui.js:779"
   ]
  },
  "'{0}' is protected.\n\nPassword:": {
@@ -4845,7 +4845,7 @@
  },
  "About {0}": {
   "where": [
-   "common/ui.js:734"
+   "common/ui.js:742"
   ]
  },
  "About {0} MB, kept by VibeOffice on this computer.": {
@@ -5180,7 +5180,7 @@
  },
  "Address": {
   "where": [
-   "common/ui.js:684"
+   "common/ui.js:692"
   ]
  },
  "Address Line 1": {
@@ -5827,7 +5827,7 @@
  },
  "Aqua": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Arc": {
@@ -6025,7 +6025,7 @@
  },
  "Auto (as the browser)": {
   "where": [
-   "common/ui.js:997",
+   "common/ui.js:1005",
    "start.js:285"
   ]
  },
@@ -6231,8 +6231,8 @@
  },
  "Automatic": {
   "where": [
-   "common/ui.js:944",
-   "common/ui.js:1094",
+   "common/ui.js:952",
+   "common/ui.js:1102",
    "lectern/js/dialogs.js:430",
    "quire/js/dialogs3.js:85"
   ]
@@ -6577,7 +6577,7 @@
  },
  "Black": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:187"
   ]
@@ -6681,7 +6681,7 @@
  },
  "Blue": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
@@ -6694,7 +6694,7 @@
  },
  "Blue-Gray": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Blueprint": {
@@ -6965,7 +6965,7 @@
  },
  "Bright Green": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:186"
   ]
  },
@@ -7005,7 +7005,7 @@
  },
  "Brown": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Browse by Comment": {
@@ -7630,7 +7630,7 @@
  "Cell Alignment": {
   "where": [
    "quire/js/app.js:1131",
-   "quire/js/tables.js:568"
+   "quire/js/tables.js:573"
   ]
  },
  "Cell Options": {
@@ -8401,7 +8401,7 @@
  },
  "Click Continue to save anyway, or Cancel to go back to your document without saving.": {
   "where": [
-   "common/ui.js:761"
+   "common/ui.js:769"
   ]
  },
  "Click a button to apply borders:": {
@@ -8544,9 +8544,9 @@
  "Close": {
   "where": [
    "common/core.js:325",
-   "common/ui.js:570",
-   "common/ui.js:696",
-   "common/ui.js:1074"
+   "common/ui.js:578",
+   "common/ui.js:704",
+   "common/ui.js:1082"
   ]
  },
  "Close Full Screen": {
@@ -8788,7 +8788,7 @@
  },
  "Colors": {
   "where": [
-   "common/ui.js:1167",
+   "common/ui.js:1175",
    "lectern/js/diagram.js:552",
    "lectern/js/dialogs.js:336",
    "quire/js/dialogs3.js:158"
@@ -8804,7 +8804,7 @@
  },
  "Colors:": {
   "where": [
-   "common/ui.js:1163"
+   "common/ui.js:1171"
   ]
  },
  "Colu&mn:": {
@@ -8845,7 +8845,7 @@
    "ledger/js/dialogs.js:347",
    "ledger/js/ops.js:509",
    "quire/js/rulers.js:269",
-   "quire/js/tables.js:1173"
+   "quire/js/tables.js:1178"
   ]
  },
  "Column break": {
@@ -8945,13 +8945,13 @@
  },
  "Command": {
   "where": [
-   "common/ui.js:1045"
+   "common/ui.js:1053"
   ]
  },
  "Commands": {
   "where": [
    "common/search.js:238",
-   "common/ui.js:1055"
+   "common/ui.js:1063"
   ]
  },
  "Commas": {
@@ -9071,7 +9071,7 @@
  },
  "Compatibility Checker": {
   "where": [
-   "common/ui.js:762"
+   "common/ui.js:770"
   ]
  },
  "Complete the merge": {
@@ -9270,7 +9270,7 @@
  "Convert Table to Text": {
   "where": [
    "quire/js/dialogs2.js:794",
-   "quire/js/tables.js:997"
+   "quire/js/tables.js:1002"
   ]
  },
  "Convert Text to Columns Wizard": {
@@ -9281,7 +9281,7 @@
  "Convert Text to Table": {
   "where": [
    "quire/js/dialogs2.js:789",
-   "quire/js/tables.js:978"
+   "quire/js/tables.js:983"
   ]
  },
  "Convert all &endnotes to footnotes": {
@@ -9485,7 +9485,7 @@
  },
  "Copied.": {
   "where": [
-   "common/ui.js:693"
+   "common/ui.js:701"
   ]
  },
  "Copy &to:": {
@@ -10162,7 +10162,7 @@
  },
  "Current": {
   "where": [
-   "common/ui.js:1164"
+   "common/ui.js:1172"
   ]
  },
  "Current &array": {
@@ -10220,7 +10220,7 @@
  "Custom": {
   "where": [
    "common/dialogs.js:457",
-   "common/ui.js:1163",
+   "common/ui.js:1171",
    "lectern/js/model.js:515",
    "ledger/js/dialogs2.js:94"
   ]
@@ -10267,7 +10267,7 @@
  },
  "Customize": {
   "where": [
-   "common/ui.js:1070",
+   "common/ui.js:1078",
    "lectern/js/ribbon.js:48"
   ]
  },
@@ -10403,29 +10403,29 @@
  },
  "Dark Blue": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:186"
   ]
  },
  "Dark Green": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Dark Red": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:187"
   ]
  },
  "Dark Teal": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Dark Yellow": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:187"
   ]
  },
@@ -10692,7 +10692,7 @@
  },
  "Decrease": {
   "where": [
-   "common/ui.js:818",
+   "common/ui.js:826",
    "quire/js/dialogs.js:30"
   ]
  },
@@ -10851,7 +10851,7 @@
   "where": [
    "ledger/js/ops.js:894",
    "quire/js/dialogs2.js:595",
-   "quire/js/tables.js:342"
+   "quire/js/tables.js:347"
   ]
  },
  "Delete Co&mment": {
@@ -10870,7 +10870,7 @@
   "where": [
    "ledger/js/app.js:1004",
    "ledger/js/ops.js:784",
-   "quire/js/tables.js:265"
+   "quire/js/tables.js:270"
   ]
  },
  "Delete Comment": {
@@ -10904,7 +10904,7 @@
   "where": [
    "ledger/js/app.js:1004",
    "ledger/js/ops.js:784",
-   "quire/js/tables.js:184"
+   "quire/js/tables.js:189"
   ]
  },
  "Delete Shape": {
@@ -10936,7 +10936,7 @@
  },
  "Delete Table": {
   "where": [
-   "quire/js/tables.js:293"
+   "quire/js/tables.js:298"
   ]
  },
  "Delete Title Master": {
@@ -11314,7 +11314,7 @@
   "where": [
    "lectern/js/commands.js:222",
    "quire/js/commands.js:446",
-   "quire/js/tables.js:721"
+   "quire/js/tables.js:726"
   ]
  },
  "Distribute Rows Evenl&y": {
@@ -11326,7 +11326,7 @@
   "where": [
    "lectern/js/commands.js:221",
    "quire/js/commands.js:445",
-   "quire/js/tables.js:721"
+   "quire/js/tables.js:726"
   ]
  },
  "Distributed": {
@@ -11643,7 +11643,7 @@
  },
  "Double-click a command to run it.": {
   "where": [
-   "common/ui.js:1072"
+   "common/ui.js:1080"
   ]
  },
  "Double|line spacing": {
@@ -11766,8 +11766,8 @@
   "where": [
    "quire/js/commands.js:422",
    "quire/js/ribbon.js:89",
-   "quire/js/tables.js:1238",
-   "quire/js/tables.js:1243"
+   "quire/js/tables.js:1243",
+   "quire/js/tables.js:1248"
   ]
  },
  "Draw shapes": {
@@ -12411,7 +12411,7 @@
  },
  "Enter password to open file": {
   "where": [
-   "common/ui.js:771"
+   "common/ui.js:779"
   ]
  },
  "Enter section number:": {
@@ -13236,7 +13236,7 @@
  },
  "Fill Effects...": {
   "where": [
-   "common/ui.js:1120"
+   "common/ui.js:1128"
   ]
  },
  "Fill Left": {
@@ -13836,7 +13836,7 @@
  },
  "Font names are used solely to identify the fonts specified in documents and to maintain interoperability with Office Open XML files and the applications that create them; such names may be trademarks of their respective owners. VibeOffice renders text with the fonts installed on your computer. Where a specified font is not installed, VibeOffice substitutes an open-source font supplied with it or another font available on your computer, and the document may therefore appear differently than in other applications. VibeOffice does not include or distribute any commercial font software.": {
   "where": [
-   "common/ui.js:733",
+   "common/ui.js:741",
    "index.html:352"
   ]
  },
@@ -14699,7 +14699,7 @@
  },
  "Gold": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "lectern/js/dialogs.js:235",
    "lectern/js/slideshow.js:891",
    "quire/js/dialogs3.js:147"
@@ -14772,24 +14772,24 @@
  },
  "Gray-25%": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:187"
   ]
  },
  "Gray-40%": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Gray-50%": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:187"
   ]
  },
  "Gray-80%": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Grayscale": {
@@ -14807,7 +14807,7 @@
  },
  "Green": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:187",
    "quire/js/dialogs3.js:570"
@@ -14984,7 +14984,7 @@
  "Harbor & Pine — 2027 Expansion (sample)": {
   "where": [
    "lectern/js/app.js:992",
-   "lectern/js/app.js:2215"
+   "lectern/js/app.js:2218"
   ]
  },
  "He&ader:": {
@@ -14994,7 +14994,7 @@
  },
  "He&x:": {
   "where": [
-   "common/ui.js:1162"
+   "common/ui.js:1170"
   ]
  },
  "Header": {
@@ -15087,7 +15087,7 @@
  },
  "Heading Rows Repeat": {
   "where": [
-   "quire/js/tables.js:575"
+   "quire/js/tables.js:580"
   ]
  },
  "Heading number": {
@@ -15130,7 +15130,7 @@
  },
  "Help": {
   "where": [
-   "common/ui.js:569",
+   "common/ui.js:577",
    "ledger/js/panes.js:137",
    "quire/js/commands.js:464",
    "quire/js/panes.js:107"
@@ -15351,7 +15351,7 @@
  },
  "Hyperlink": {
   "where": [
-   "common/ui.js:696",
+   "common/ui.js:704",
    "lectern/js/dialogs.js:808",
    "lectern/js/dialogs.js:809",
    "lectern/js/dialogs.js:810"
@@ -15589,7 +15589,7 @@
  },
  "Increase": {
   "where": [
-   "common/ui.js:817",
+   "common/ui.js:825",
    "quire/js/dialogs.js:29"
   ]
  },
@@ -15668,7 +15668,7 @@
  },
  "Indigo": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Industrial": {
@@ -15757,7 +15757,7 @@
   "where": [
    "ledger/js/ops.js:894",
    "quire/js/dialogs2.js:591",
-   "quire/js/tables.js:302"
+   "quire/js/tables.js:307"
   ]
  },
  "Insert Chart": {
@@ -15798,12 +15798,12 @@
  },
  "Insert Columns to the Left": {
   "where": [
-   "quire/js/tables.js:227"
+   "quire/js/tables.js:232"
   ]
  },
  "Insert Columns to the Right": {
   "where": [
-   "quire/js/tables.js:227"
+   "quire/js/tables.js:232"
   ]
  },
  "Insert Comment": {
@@ -15995,12 +15995,12 @@
  },
  "Insert Rows Above": {
   "where": [
-   "quire/js/tables.js:154"
+   "quire/js/tables.js:159"
   ]
  },
  "Insert Rows Below": {
   "where": [
-   "quire/js/tables.js:154"
+   "quire/js/tables.js:159"
   ]
  },
  "Insert Shapes": {
@@ -16507,7 +16507,7 @@
  },
  "L&anguage:": {
   "where": [
-   "common/ui.js:997"
+   "common/ui.js:1005"
   ]
  },
  "L&etters and Mailings": {
@@ -16696,7 +16696,7 @@
  },
  "Lavender": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Layered Glass": {
@@ -17160,27 +17160,27 @@
  },
  "Light Blue": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Light Green": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Light Orange": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Light Turquoise": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Light Yellow": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Light and calm: warm paper tones, one teal accent, rounded shapes.": {
@@ -17220,7 +17220,7 @@
  },
  "Lime": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Limit formatting to a selection of styles": {
@@ -17398,7 +17398,7 @@
  },
  "Links in documents can lead to harmful sites. If you trust this one, copy its address and paste it into your browser's address bar.": {
   "where": [
-   "common/ui.js:689"
+   "common/ui.js:697"
   ]
  },
  "List": {
@@ -17725,7 +17725,7 @@
  },
  "Made possible by open source software: {0}.": {
   "where": [
-   "common/ui.js:730",
+   "common/ui.js:738",
    "start.js:189"
   ]
  },
@@ -18079,7 +18079,7 @@
   "where": [
    "ledger/js/ops.js:472",
    "quire/js/commands.js:438",
-   "quire/js/tables.js:388"
+   "quire/js/tables.js:393"
   ]
  },
  "Merge and Center": {
@@ -18283,7 +18283,7 @@
  },
  "More Colors...": {
   "where": [
-   "common/ui.js:1119"
+   "common/ui.js:1127"
   ]
  },
  "More Contrast": {
@@ -18294,7 +18294,7 @@
  },
  "More Fill Colors...": {
   "where": [
-   "common/ui.js:1119"
+   "common/ui.js:1127"
   ]
  },
  "More Layouts...": {
@@ -18304,7 +18304,7 @@
  },
  "More Line Colors...": {
   "where": [
-   "common/ui.js:1119"
+   "common/ui.js:1127"
   ]
  },
  "More Lines...": {
@@ -18320,7 +18320,7 @@
  },
  "More options": {
   "where": [
-   "common/ui.js:301"
+   "common/ui.js:309"
   ]
  },
  "More...": {
@@ -18410,7 +18410,7 @@
  },
  "Move Table": {
   "where": [
-   "quire/js/tables.js:1467"
+   "quire/js/tables.js:1472"
   ]
  },
  "Move Table Column": {
@@ -18808,7 +18808,7 @@
  },
  "New|color": {
   "where": [
-   "common/ui.js:1164"
+   "common/ui.js:1172"
   ]
  },
  "Nex&t": {
@@ -18898,8 +18898,8 @@
  },
  "No Color": {
   "where": [
-   "common/ui.js:944",
-   "common/ui.js:949",
+   "common/ui.js:952",
+   "common/ui.js:957",
    "ledger/js/dialogs.js:257",
    "ledger/js/dialogs.js:455"
   ]
@@ -18911,8 +18911,8 @@
  },
  "No Fill": {
   "where": [
-   "common/ui.js:944",
-   "common/ui.js:1093",
+   "common/ui.js:952",
+   "common/ui.js:1101",
    "lectern/js/dialogs.js:29",
    "quire/js/dialogs.js:366"
   ]
@@ -18924,8 +18924,8 @@
  },
  "No Line": {
   "where": [
-   "common/ui.js:944",
-   "common/ui.js:1093",
+   "common/ui.js:952",
+   "common/ui.js:1101",
    "lectern/js/dialogs.js:29",
    "quire/js/dialogs3.js:31"
   ]
@@ -19553,7 +19553,7 @@
  },
  "Olive Green": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Omit background &graphics from master": {
@@ -19667,18 +19667,18 @@
  },
  "Open list": {
   "where": [
-   "common/ui.js:323"
+   "common/ui.js:331"
   ]
  },
  "Open source licenses": {
   "where": [
-   "common/ui.js:731",
+   "common/ui.js:739",
    "start.js:189"
   ]
  },
  "Open source under the Apache License 2.0, provided as is, without warranty. VibeOffice.work is an independent project. Product names in its documentation are trademarks of their owners; VibeOffice.work is not affiliated with them.": {
   "where": [
-   "common/ui.js:732",
+   "common/ui.js:740",
    "index.html:351"
   ]
  },
@@ -19778,7 +19778,7 @@
  },
  "Orange": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Order": {
@@ -20337,7 +20337,7 @@
  },
  "Pale Blue": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Pape&r size:": {
@@ -20470,7 +20470,7 @@
  },
  "Password": {
   "where": [
-   "common/ui.js:771",
+   "common/ui.js:779",
    "ledger/js/app.js:179"
   ]
  },
@@ -20628,7 +20628,7 @@
  },
  "Patterned Lines...": {
   "where": [
-   "common/ui.js:1120"
+   "common/ui.js:1128"
   ]
  },
  "Patterns": {
@@ -20775,7 +20775,7 @@
  },
  "Pick:": {
   "where": [
-   "common/ui.js:1161"
+   "common/ui.js:1169"
   ]
  },
  "Picture": {
@@ -20870,7 +20870,7 @@
  },
  "Pink": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:186"
   ]
  },
@@ -20948,7 +20948,7 @@
  },
  "Plum": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Plus": {
@@ -21965,17 +21965,17 @@
  },
  "Recovered the unsaved changes. Save the document to keep them.": {
   "where": [
-   "quire/js/app.js:1425"
+   "quire/js/app.js:1428"
   ]
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
   "where": [
-   "lectern/js/app.js:2231"
+   "lectern/js/app.js:2234"
   ]
  },
  "Recovered the unsaved changes. Save the workbook to keep them.": {
   "where": [
-   "ledger/js/app.js:1528"
+   "ledger/js/app.js:1531"
   ]
  },
  "Rectangle": {
@@ -21998,7 +21998,7 @@
  },
  "Red": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "lectern/js/slideshow.js:891",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
@@ -22011,12 +22011,12 @@
  },
  "Redo {0} Action": {
   "where": [
-   "common/ui.js:434"
+   "common/ui.js:442"
   ]
  },
  "Redo {0} Actions": {
   "where": [
-   "common/ui.js:434"
+   "common/ui.js:442"
   ]
  },
  "Reduce Hanging Indent": {
@@ -22494,7 +22494,7 @@
  },
  "Resize Table": {
   "where": [
-   "quire/js/tables.js:1408"
+   "quire/js/tables.js:1413"
   ]
  },
  "Respectfully yours,": {
@@ -24357,7 +24357,7 @@
  },
  "Rose": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Rota&tion:": {
@@ -24523,7 +24523,7 @@
   "where": [
    "ledger/js/dialogs.js:341",
    "ledger/js/ops.js:519",
-   "quire/js/tables.js:1188"
+   "quire/js/tables.js:1193"
   ]
  },
  "Row and colu&mn headings": {
@@ -24941,7 +24941,7 @@
  },
  "Sea Green": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Search": {
@@ -25527,8 +25527,8 @@
  "Shading": {
   "where": [
    "lectern/js/ribbon.js:111",
-   "quire/js/tables.js:578",
-   "quire/js/tables.js:579"
+   "quire/js/tables.js:583",
+   "quire/js/tables.js:584"
   ]
  },
  "Shading Color": {
@@ -25743,7 +25743,7 @@
  },
  "Shortcut keys": {
   "where": [
-   "common/ui.js:1045"
+   "common/ui.js:1053"
   ]
  },
  "Shortcut menu": {
@@ -25857,12 +25857,12 @@
  },
  "Show Screen&Tips on toolbars": {
   "where": [
-   "common/ui.js:1068"
+   "common/ui.js:1076"
   ]
  },
  "Show Standard and Formatting toolbars on t&wo rows": {
   "where": [
-   "common/ui.js:1067"
+   "common/ui.js:1075"
   ]
  },
  "Show Text Formatting": {
@@ -25912,7 +25912,7 @@
  },
  "Show shortcut &keys in ScreenTips": {
   "where": [
-   "common/ui.js:1064"
+   "common/ui.js:1072"
   ]
  },
  "Show slides": {
@@ -26158,7 +26158,7 @@
  },
  "Sky Blue": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Slant Down": {
@@ -26546,7 +26546,7 @@
  },
  "Some of this file can't be saved exactly as it was:": {
   "where": [
-   "common/ui.js:760"
+   "common/ui.js:768"
   ]
  },
  "Sort": {
@@ -26593,7 +26593,7 @@
  "Sort Text": {
   "where": [
    "quire/js/dialogs2.js:751",
-   "quire/js/tables.js:789"
+   "quire/js/tables.js:794"
   ]
  },
  "Sort by": {
@@ -26865,7 +26865,7 @@
   "where": [
    "quire/js/commands.js:439",
    "quire/js/dialogs2.js:600",
-   "quire/js/tables.js:427"
+   "quire/js/tables.js:432"
   ]
  },
  "Split Horizontal In": {
@@ -26880,7 +26880,7 @@
  },
  "Split Table": {
   "where": [
-   "quire/js/tables.js:545"
+   "quire/js/tables.js:550"
   ]
  },
  "Split Vertical In": {
@@ -26988,7 +26988,7 @@
  },
  "Standard": {
   "where": [
-   "common/ui.js:1163",
+   "common/ui.js:1171",
    "lectern/js/app.js:198",
    "ledger/js/app.js:596",
    "quire/js/app.js:284"
@@ -27522,9 +27522,9 @@
  "Syntax Error": {
   "where": [
    "quire/js/fields.js:286",
-   "quire/js/tables.js:888",
-   "quire/js/tables.js:894",
-   "quire/js/tables.js:895"
+   "quire/js/tables.js:893",
+   "quire/js/tables.js:899",
+   "quire/js/tables.js:900"
   ]
  },
  "T&able": {
@@ -27544,7 +27544,7 @@
  },
  "T&heme:": {
   "where": [
-   "common/ui.js:994"
+   "common/ui.js:1002"
   ]
  },
  "T&o:": {
@@ -27666,7 +27666,7 @@
   "where": [
    "quire/js/commands.js:441",
    "quire/js/dialogs2.js:639",
-   "quire/js/tables.js:1091"
+   "quire/js/tables.js:1096"
   ]
  },
  "Table Grid": {
@@ -27791,7 +27791,7 @@
  },
  "Tables with vertically merged cells cannot be sorted.": {
   "where": [
-   "quire/js/tables.js:769"
+   "quire/js/tables.js:774"
   ]
  },
  "Tabloid": {
@@ -27824,7 +27824,7 @@
  },
  "Tan": {
   "where": [
-   "common/ui.js:1127"
+   "common/ui.js:1135"
   ]
  },
  "Target": {
@@ -27917,7 +27917,7 @@
  },
  "Teal": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:186"
   ]
  },
@@ -28062,7 +28062,7 @@
    "lectern/js/app.js:208",
    "lectern/js/ribbon.js:118",
    "quire/js/dialogs.js:870",
-   "quire/js/tables.js:569"
+   "quire/js/tables.js:574"
   ]
  },
  "Text Direction - Text Box": {
@@ -28541,7 +28541,7 @@
  },
  "The new language is used in the windows you open from now on.": {
   "where": [
-   "common/ui.js:1002"
+   "common/ui.js:1010"
   ]
  },
  "The number in this cell is formatted as text or preceded by an apostrophe.": {
@@ -28596,7 +28596,7 @@
  },
  "The password is incorrect. Try again.": {
   "where": [
-   "common/ui.js:771"
+   "common/ui.js:779"
   ]
  },
  "The password is incorrect. {0} cannot open the document.": {
@@ -29224,7 +29224,7 @@
  },
  "This link goes to:": {
   "where": [
-   "common/ui.js:687"
+   "common/ui.js:695"
   ]
  },
  "This modification is not allowed because the selection is locked.": {
@@ -29558,7 +29558,7 @@
  },
  "To write to this address, copy it and paste it into your e-mail program.": {
   "where": [
-   "common/ui.js:688"
+   "common/ui.js:696"
   ]
  },
  "To&p": {
@@ -29605,17 +29605,17 @@
  },
  "Tool&bars": {
   "where": [
-   "common/ui.js:1071"
+   "common/ui.js:1079"
   ]
  },
  "Toolbar Options": {
   "where": [
-   "common/ui.js:382"
+   "common/ui.js:390"
   ]
  },
  "Toolbars:": {
   "where": [
-   "common/ui.js:1071"
+   "common/ui.js:1079"
   ]
  },
  "Tools": {
@@ -29878,7 +29878,7 @@
  },
  "Turquoise": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:186"
   ]
  },
@@ -30082,12 +30082,12 @@
  },
  "Undo {0} Action": {
   "where": [
-   "common/ui.js:434"
+   "common/ui.js:442"
   ]
  },
  "Undo {0} Actions": {
   "where": [
-   "common/ui.js:434"
+   "common/ui.js:442"
   ]
  },
  "Unformatted Text": {
@@ -30562,7 +30562,7 @@
  },
  "Version {0}": {
   "where": [
-   "common/ui.js:728",
+   "common/ui.js:736",
    "start.js:187"
   ]
  },
@@ -30715,7 +30715,7 @@
  },
  "Violet": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:187"
   ]
  },
@@ -30970,7 +30970,7 @@
  },
  "White": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "lectern/js/slideshow.js:891"
   ]
  },
@@ -31200,8 +31200,8 @@
  },
  "Working...": {
   "where": [
-   "common/ui.js:1339",
-   "common/ui.js:1340"
+   "common/ui.js:1347",
+   "common/ui.js:1348"
   ]
  },
  "Works offline.": {
@@ -31282,7 +31282,7 @@
  },
  "Yellow": {
   "where": [
-   "common/ui.js:1127",
+   "common/ui.js:1135",
    "quire/js/app.js:186"
   ]
  },
@@ -31439,7 +31439,7 @@
  },
  "Zoom": {
   "where": [
-   "common/ui.js:480",
+   "common/ui.js:488",
    "lectern/js/app.js:185",
    "lectern/js/dialogs.js:973",
    "lectern/js/panes.js:730"
@@ -31447,19 +31447,19 @@
  },
  "Zoom In": {
   "where": [
-   "common/ui.js:478",
+   "common/ui.js:486",
    "ledger/js/commands.js:89"
   ]
  },
  "Zoom Out": {
   "where": [
-   "common/ui.js:477",
+   "common/ui.js:485",
    "ledger/js/commands.js:90"
   ]
  },
  "Zoom level": {
   "where": [
-   "common/ui.js:481"
+   "common/ui.js:489"
   ]
  },
  "Zoom so a whole page fits in the window": {
@@ -32048,7 +32048,7 @@
  },
  "{0} and {1} more": {
   "where": [
-   "common/ui.js:758"
+   "common/ui.js:766"
   ]
  },
  "{0} can't open {1}. {2}": {

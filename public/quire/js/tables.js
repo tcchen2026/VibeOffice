@@ -123,6 +123,11 @@
     const f = D.firstPara(cell.blocks), l = D.lastPara(cell.blocks);
     E.setSel(D.pos(f, 0), D.pos(l, D.plen(l)));
   };
+  /** the whole of a table is selected (its move handle, Table ▸ Select ▸ Table) */
+  T.wholeSelected = function () {
+    const cs = E.cellSel, t = cs && cs.tbl;
+    return !!(t && cs.r0 === 0 && cs.c0 === 0 && cs.r1 >= t.rows.length - 1 && cs.c1 >= t.grid.length - 1);
+  };
   T.select = function (kind) {
     const rg = T.range();
     if (!rg) return;

@@ -132,6 +132,9 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .splitter.h { height: 5px; cursor: row-resize; background: linear-gradient(var(--tb-a), var(--tb-c)); border-top: 1px solid var(--chrome-line); }
 
 .taskpane { flex: none; width: 262px; display: flex; flex-direction: column; background: linear-gradient(var(--pane-a), var(--pane-b)); border-left: 1px solid var(--chrome-line); min-height: 0; }
+/* opened by a selected object (RB.follow, common/ribbon.js): over the document's right edge, beside its scroll bar */
+.taskpane.over { position: absolute; top: 0; bottom: 0; z-index: 45; box-shadow: -3px 0 8px var(--tip-shadow-c); }
+:has(> .taskpane.over) { position: relative; }
 .tp-head { flex: none; display: flex; align-items: center; gap: 2px; padding: 3px 4px; background: linear-gradient(var(--tb-a), var(--tb-b) 50%, var(--tb-c)); border-bottom: 1px solid var(--tb-border); }
 .tp-nav { width: 18px; height: 18px; border: 1px solid transparent; background: none; padding: 0; display: flex; align-items: center; justify-content: center; }
 .tp-nav:not(:disabled):hover { background: var(--menu-hot); border-color: var(--hot-border); }

@@ -54,7 +54,7 @@ extends the last one; F4 to cycle `$`), colour-coded reference highlights,
 AutoComplete from the column, AutoCorrect, AutoFill by dragging the fill handle (numbers, dates,
 weekdays, months, quarters, custom lists), Ctrl+Enter and Alt+Enter.
 
-**View.** Normal and Page Break Preview (drag the blue page breaks), the task pane (while open it shows
+**View.** Normal and Page Break Preview (drag the blue page breaks), the task pane (it shows
 Chart, Picture or Drawing Tools for a selected object; docs/suite.md), the eight
 toolbars (Standard, Formatting, Borders, Chart, Drawing, Formula Auditing, Reviewing, List), formula
 bar, status bar, Header and Footer, Comments, Full Screen and Zoom (10–400 %, Zoom to Selection; Normal, Page

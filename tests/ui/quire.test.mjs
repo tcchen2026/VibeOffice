@@ -668,6 +668,31 @@ test('a whole table selected by its handle: Ctrl+X cuts the table and Ctrl+V put
   });
 });
 
+test('the task pane follows the selection: a shape opens Drawing Tools though the pane was closed, the text closes it again, a whole table shows Table Tools; its menu lists every tool panel', () => inQuire(PARAS(SHAPE_DOC) + SHAPE(1) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];', async (u) => {
+  const pane = () => u.evaluate(`JSON.stringify({ open: !L.panes.task.el.hidden, current: L.panes.task.current, saved: L.app.opts.taskOpen })`).then(JSON.parse);
+  if ((await pane()).open) await u.click(await u.el('#taskpane [aria-label="Close task pane"]'));
+  const text = await atB(u, 0, 5);
+  const shape = await u.el('#pages .flt');
+  await u.click({ x: shape.x, y: shape.y });
+  assert.deepEqual(await pane(), { open: true, current: 'tools-drawing', saved: false }, 'a shape: Drawing Tools, the pane left closed for next time');
+  await u.click(text);
+  assert.equal((await pane()).open, false, 'the text: closed again');
+  const t = await u.el('#pages table.tbl');
+  await u.move({ x: t.l + 20, y: t.t + 8 });
+  const h = await u.el('.tbl-move');
+  await u.click({ x: h.x, y: h.y });
+  assert.deepEqual(await pane(), { open: true, current: 'tools-table', saved: false }, 'the whole table: Table Tools');
+  await u.click(await u.el('#taskpane .tp-title'));
+  const rows = await u.evaluate(`[...document.querySelectorAll('.menu .m-item')].map((r) => r.querySelector('.m-lbl').textContent + (r.classList.contains('dis') ? ' (greyed)' : ''))`);
+  for (const x of ['Getting Started', 'Styles and Formatting', 'Table Tools', 'Picture Tools (greyed)', 'Drawing Tools (greyed)']) assert.ok(rows.includes(x), `the menu lists ${x}: ${rows.join(', ')}`);
+  await u.esc();
+  await u.click(text);
+  assert.equal((await pane()).open, false);
+  await u.evaluate('L.app.opts.paneFollows = false');
+  await u.click({ x: shape.x, y: shape.y });
+  assert.equal((await pane()).open, false, 'with the option off, the pane stays closed');
+}));
+
 
 test('the toolbar\'s Insert Table grid: a move over 2 × 3 and a click insert that table', () => inQuire(PARAS(['First paragraph.', 'Second paragraph.']), async (u) => {
   await u.click(await u.el('.tb-drop[data-tip="Insert Table"]'));

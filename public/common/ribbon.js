@@ -307,8 +307,9 @@
     }, true);
   }
   /* ---------------------------------------------------------------- tool panels in the task pane
-     The contextual sets about a selected object (Picture Tools, Drawing Tools, …) are also task-pane panels, in
-     every look: the same commands, group by group, in one column. */
+     Every contextual set (Picture Tools, Drawing Tools, …) is also a task-pane panel, in every look: the same
+     commands, group by group, in one column, listed in the pane's menu (group 'tools', greyed while the set's
+     condition doesn't hold). A set the app maps to a pane of its own (Lectern's IntelliArt text) has no panel. */
   const specNow = () => spec || (spec = L.ribbonSpec());
   RB.toolsPanel = function (set) {
     const box = h('div', { class: 'tp-tools-panel' });
@@ -325,38 +326,73 @@
     }
     return box;
   };
-  /** the open task pane follows the selection: to the panel of the selected object's tool set, and back to the
-      pane it showed before when the object is no longer selected. It never opens the task pane itself (a pane
-      opened by its object, as IntelliArt's text pane, closes again with it), nor switches it when off (o.on) or
-      while the pane covers the document (narrow windows).
-      o = { task: the app's task pane, sets: { setId: true (a tools panel) | paneId (a pane of the app) },
-            on: () => bool, close: () => void (hides the task pane) } */
+  /** the task pane follows the selection: selecting an object shows the panel of its tool set, opening the pane if
+      it was closed; when the object is no longer selected the pane goes back to what it showed before, or closes
+      again if the object opened it. Not when off (o.on), nor in narrow windows (the pane would cover the
+      document), nor in the middle of a press: the pane opens on the release. A pane its object opens floats over
+      the document's right edge, beside the scroll bar, so nothing on the page moves from under the pointer; it
+      takes its place beside the document as usual where it would cover the object, and once it shows a pane of
+      the app's own.
+      o = { task: the app's task pane, sets: the sets followed, { setId: true (its tools panel) | paneId (a pane of the app) |
+            { when } (a tools panel, while when() rather than the set's own condition: Quire's tables, selected
+            whole) }, on: () => bool, open: () => void and close: () => void (show and hide the task pane),
+            pref: { get, set } (the app's "task pane open" setting, which a pane opened by its object leaves as it was),
+            room: () => x (where the document's area ends on the right, left of its scroll bar, client px),
+            target: () => DOMRect | null (the selected object's box) } */
   RB.follow = function (o) {
     const TP = o.task, sets = o.sets;
     if (!L.ribbonSpec || !TP) return;
-    const pane = (c) => (sets[c.id] === true ? 'tools-' + c.id : sets[c.id]);
-    for (const c of specNow().contextual || []) if (sets[c.id] === true) TP.register({ id: pane(c), title: c.set, hidden: true, render(b) { b.append(RB.toolsPanel(c)); } });
+    const pane = (c) => (typeof sets[c.id] === 'string' ? sets[c.id] : 'tools-' + c.id);
+    const when = (c) => (typeof sets[c.id] === 'object' && sets[c.id].when ? sets[c.id].when() : c.when());
+    for (const c of specNow().contextual || []) if (typeof sets[c.id] !== 'string') TP.register({ id: pane(c), title: c.set, group: 'tools', enabled: () => !!c.when(), render(b) { b.append(RB.toolsPanel(c)); } });
     const ours = new Set((specNow().contextual || []).filter((c) => sets[c.id]).map(pane));
-    let shown = '', before = null;
+    let shown = '', before = null, waiting = false, home = '', kept = null;
+    const floating = () => !!TP.el && TP.el.classList.contains('over');
+    const dock = () => { TP.el.classList.remove('over'); TP.el.style.right = ''; };
+    /* the right edge the floating pane stands at, or 0 where it would cover the selected object */
+    const edge = () => {
+      const right = o.room ? o.room() : 0, t = o.target && o.target();
+      return right && !(t && t.right > right - (parseFloat(getComputedStyle(TP.el).width) || 262)) ? right : 0;
+    };
+    if (TP.el) new MutationObserver(() => { if (TP.el.hidden && floating()) dock(); }).observe(TP.el, { attributes: true, attributeFilter: ['hidden'] });
+    const open = () => {
+      kept = o.pref ? o.pref.get() : null;
+      const right = edge();
+      if (right) { TP.el.style.right = Math.max(0, TP.el.parentNode.getBoundingClientRect().right - right) + 'px'; TP.el.classList.add('over'); }
+      o.open();
+      if (o.pref) o.pref.set(kept);
+    };
+    const close = () => { o.close(); if (o.pref && kept != null) o.pref.set(kept); kept = null; };
     const follow = (id) => {
-      if ((o.on && !o.on()) || !TP.el || TP.el.hidden || window.innerWidth < 820) return;
+      if ((o.on && !o.on()) || !TP.el || window.innerWidth < 820) return;
       if (id) {
-        if (TP.current === id) return;
-        if (!ours.has(TP.current)) before = { pane: TP.current, hidden: false };   // a pane chosen since the last refresh
+        if (TP.current === id && !TP.el.hidden) return;
+        if (TP.el.hidden) { if (!o.open) return; before = { pane: before && before.pane, hidden: true }; open(); }
+        else if (!ours.has(TP.current)) before = { pane: TP.current, hidden: false };   // a pane chosen since the last refresh
+        else if (floating() && !edge()) dock();   // another object, under the floating pane
         TP.show(id);
         return;
       }
-      if (!ours.has(TP.current) || !before) return;
-      if (before.hidden && o.close) o.close();
-      else if (before.pane && TP.registry[before.pane] && !ours.has(before.pane)) TP.show(before.pane);
+      if (!ours.has(TP.current) || !before || TP.el.hidden) return;
+      /* back to the pane it showed (or the last one of the app's own), so a pane opened later isn't an object's */
+      const back = before.pane && !ours.has(before.pane) ? before.pane : home;
+      if (back && TP.registry[back]) TP.show(back);
+      if (before.hidden && o.close) close();
     };
-    L.bus.on('ui-refresh', () => {
-      const c = (specNow().contextual || []).find((x) => sets[x.id] && x.when());
+    const check = () => {
+      /* (a button held: the press may become a drag; look again once it is let go) */
+      if (ui.dragging && ui.dragging()) {
+        if (!waiting) { waiting = true; window.addEventListener('pointerup', () => { waiting = false; setTimeout(check, 0); }, { once: true, capture: true }); }
+        return;
+      }
+      if (TP.current && !ours.has(TP.current)) { home = TP.current; if (floating()) dock(); }
+      const c = (specNow().contextual || []).find((x) => sets[x.id] && when(x));
       const id = c ? pane(c) : '';
       if (id !== shown) { shown = id; follow(id); }
       /* the task pane as it is while no object is selected: where to go back to */
       if (!id) before = { pane: TP.current, hidden: !TP.el || TP.el.hidden };
-    });
+    };
+    L.bus.on('ui-refresh', check);
   };
   /** after the app's toolbars exist; the ribbon is built the first time a ribbon look is in use */
   RB.init = function () {

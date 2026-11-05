@@ -2195,8 +2195,11 @@ addEventListener('resize',fit);fit();show(0);`;
     L.panes.left.mount(L.$('#leftpane'));
     L.panes.notes.mount(L.$('#notes'));
     L.panes.task.mount(L.$('#taskpane'));
-    /* the open task pane follows the selected object to its tool set (common/ribbon.js) */
-    L.ribbonUI.follow({ task: L.panes.task, sets: { smartart: 'diagramText', picture: true, drawing: true, table: true, wordart: true }, on: () => A.opts.paneFollows !== false, close: () => A.toggleTask(false) });
+    /* the task pane follows the selected object to its tool set, opening and closing itself (common/ribbon.js) */
+    const taskPref = { get: () => A.opts.taskOpen, set: (v) => { A.opts.taskOpen = v; A.saveOpts(); } };
+    L.ribbonUI.follow({ task: L.panes.task, sets: { smartart: 'diagramText', picture: true, drawing: true, table: true, wordart: true }, on: () => A.opts.paneFollows !== false, open: () => A.toggleTask(true), close: () => A.toggleTask(false), pref: taskPref,
+      room: () => { const s = E.scroller; return s ? s.getBoundingClientRect().left + s.clientLeft + s.clientWidth : 0; },
+      target: () => { const r = E.sel.map(E.elOf).filter(Boolean).map((el) => el.getBoundingClientRect()); return r.length ? { right: Math.max(...r.map((x) => x.right)) } : null; } });
     E.mount(L.$('#editorwrap'));
     A.altView = h('div', { id: 'altview', style: 'flex:1;min-width:0;position:relative', hidden: true });
     L.$('#main').insertBefore(A.altView, L.$('#taskpane'));

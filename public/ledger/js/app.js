@@ -1502,8 +1502,11 @@
     buildTabNav();
     buildNameBox();
     if (L.panes) L.panes.task.mount(L.$('#taskpane'));
-    /* the open task pane follows the selected object to its tool set (common/ribbon.js) */
-    if (L.panes) L.ribbonUI.follow({ task: L.panes.task, sets: { chart: true, picture: true, drawing: true }, on: () => A.opts.paneFollows !== false });
+    /* the task pane follows the selected object to its tool set, opening and closing itself (common/ribbon.js) */
+    const taskPref = { get: () => A.opts.taskOpen, set: (v) => { A.opts.taskOpen = v; A.saveOpts(); } };
+    if (L.panes) L.ribbonUI.follow({ task: L.panes.task, sets: { chart: true, picture: true, drawing: true }, on: () => A.opts.paneFollows !== false, open: () => A.toggleTask(true), close: () => A.toggleTask(false), pref: taskPref,
+      room: () => L.$('#vscroll').getBoundingClientRect().left,
+      target: () => { const el = L.$('.gobj.sel'); return el ? el.getBoundingClientRect() : null; } });
     A.addBook(w, (tpl ? tpl.name.replace(/\s+/g, '') : 'Book') + untitled, { type: 'xlsx', untitled: true });
     setupDrop();
     L.bus.on('selection', () => { updateStatus(); ui.refresh(); A.updateToolbars(); });

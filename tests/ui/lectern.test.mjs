@@ -396,8 +396,9 @@ test('P11 Editing text, a click on the hatched border selects the box as an obje
 async function zoomAndScroll(u) {
   await u.click(await u.el('#tb-zoom'));
   await u.type('200'); await u.key('Enter');
-  const sb = await u.evaluate(`(() => { const s = L.ed.scroller, r = s.getBoundingClientRect(); return { x: r.right - (s.offsetWidth - s.clientWidth) / 2, y: r.top + 40 }; })()`);
+  /* the scroll bar where it is at the drag (a selected object's task pane may have opened beside it) */
   return async () => {
+    const sb = await u.evaluate(`(() => { const s = L.ed.scroller, r = s.getBoundingClientRect(); return { x: r.right - (s.offsetWidth - s.clientWidth) / 2, y: r.top + 40 }; })()`);
     await u.press(sb); await u.glide(sb, { x: sb.x, y: sb.y + 120 }, 8); await u.release({ x: sb.x, y: sb.y + 120 });
     assert.ok(await u.evaluate('L.ed.scroller.scrollTop') > 0, 'setup: the slide area scrolled');
   };
