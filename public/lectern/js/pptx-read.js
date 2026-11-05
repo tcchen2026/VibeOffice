@@ -1889,7 +1889,14 @@
       const mRel = Object.values(presRels).find((r) => r.type === 'slideMaster');
       const master = lay ? lay.master : mRel ? await loadMaster(mRel.target) : null;
       if (!master) throw new Error('slide has no master');
-      const design = master.design;
+      /* a slide with colours of its own (a theme override, as PowerPoint writes for a slide whose colour scheme
+         differs from its master's, and for every such slide of a 97-2003 file it converts) */
+      let themeOverride = null;
+      const tovRel = Object.values(sr).find((r) => r.type === 'themeOverride' && !r.external);
+      if (tovRel) {
+        try { const tx = await xml(tovRel.target); if (tx && desc(tx, 'clrScheme')) themeOverride = (await loadTheme(tovRel.target)).colors; } catch (e) { /* the master's colours */ }
+      }
+      const design = themeOverride ? Object.assign({}, master.design, { colors: Object.assign({}, master.design.colors, themeOverride) }) : master.design;
       const ctx = mkCtx(sp, sr, design, master.theme);
       ctx.layout = lay;
       const ovr = path(sx, 'clrMapOvr', 'overrideClrMapping');
@@ -1900,6 +1907,7 @@
         id: L.uid('sl'), layout: 'blank', design: design.id, shapes: [], notes: '',
         trans: { type: 'none', spd: 'fast', click: true, after: null }, anims: [], hidden: at(sx, 'show') === '0',
       };
+      if (themeOverride) slide.themeOverride = themeOverride;
       if (lay) {
         slide.layout = LAYOUT_MAP[lay.type] || (lay.phs.some((x) => x.ph.type === 'ctrTitle') ? 'title' : lay.phs.some((x) => x.ph.type === 'title') ? (lay.phs.length > 1 ? 'text' : 'titleOnly') : 'blank');
         if (lay.lkey) slide.lkey = lay.lkey;

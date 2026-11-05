@@ -550,7 +550,11 @@
     L.preserve?.joinSection(pres, pres.slides, at, slides);
     pres.slides.splice(at, 0, ...slides);
   };
-  M.design = (pres, slide) => (slide && pres.designs[slide.design]) || Object.values(pres.designs)[0];
+  /** a slide's design: its master's, with the slide's own colours over it where it has some (a theme override) */
+  M.design = (pres, slide) => {
+    const d = (slide && pres.designs[slide.design]) || Object.values(pres.designs)[0];
+    return d && slide && slide.themeOverride ? Object.assign({}, d, { colors: Object.assign({}, d.colors, slide.themeOverride) }) : d;
+  };
 
   /** Re-apply a layout: keep existing content, move it into the new frames, add/remove empty placeholders. */
   M.applyLayout = function (pres, slide, key) {
