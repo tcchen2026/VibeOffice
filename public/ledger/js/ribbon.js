@@ -42,7 +42,7 @@
       ] },
       { id: 'insert', label: '&Insert', groups: [
         { label: 'Tables', items: [{ cmd: 'pivotTable', size: 'large', label: 'PivotTable' }, { cmd: 'createList', size: 'large', label: 'Table' }] },
-        { label: 'Illustrations', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', { cmd: 'insertShape', label: 'Shapes', icon: 'autoshapes' }] },
+        { label: 'Illustrations', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', { drop: 'Shapes', icon: 'autoshapes', menu: (r) => L.drawing.autoShapesMenu(r) }] },
         { label: 'Charts', items: [{ cmd: 'insertChart', size: 'large', label: 'Chart' }, 'newSheetChart'] },
         { label: 'Links', items: [{ cmd: 'hyperlink', size: 'large', label: 'Hyperlink' }] },
         { label: 'Text', items: [{ cmd: 'insertTextBox', size: 'large', label: 'Text Box' }, { cmd: 'headerFooter', size: 'large', label: 'Header & Footer' }] },
@@ -93,7 +93,7 @@
       ] },
       { id: 'drawing', set: 'Drawing Tools', when: ctx('shape'), tabs: [
         { id: 'drawingFormat', label: 'Format', groups: [
-          { label: 'Insert Shapes', items: [{ cmd: 'insertShape', size: 'large', label: 'Shapes', icon: 'autoshapes' }, 'insertTextBox'] },
+          { label: 'Insert Shapes', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => L.drawing.autoShapesMenu(r) }, 'insertTextBox'] },
           { label: 'Shape Styles', launcher: 'formatObject', items: [{ cmd: 'fillColorApply', size: 'large', label: 'Shape Fill' }] },
           { label: 'Arrange', items: [{ drop: 'Arrange', icon: 'bringFront', size: 'large', menu: (r) => A().menus.draw(r) }] },
         ] },

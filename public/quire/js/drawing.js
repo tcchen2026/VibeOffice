@@ -69,24 +69,7 @@
   }
   DR.DASH = { solid: null, sysDot: [1, 1], sysDash: [3, 1], dot: [1, 2], dash: [4, 3], dashDot: [4, 3, 1, 3], lgDash: [8, 3], lgDashDot: [8, 3, 1, 3], lgDashDotDot: [8, 3, 1, 3, 1, 3], sysDashDot: [3, 1, 1, 1], sysDashDotDot: [3, 1, 1, 1, 1, 1] };
   const dashArray = (dash, w) => { const d = DR.DASH[dash]; return d ? d.map((v) => L.round(v * Math.max(w, 0.75), 2)).join(' ') : null; };
-  function marker(defs, end, color, lw, isHead) {
-    if (!end || !end.type || end.type === 'none') return null;
-    const id = nid('mk');
-    const sz = { sm: 2, med: 3, lg: 5 };
-    const k = Math.max(lw || 0.75, 2) / Math.max(lw || 0.75, 0.1);
-    const m = s('marker', { id, viewBox: '0 0 10 10', refX: end.type === 'arrow' ? 9 : end.type === 'oval' || end.type === 'diamond' ? 5 : 8, refY: 5, markerWidth: (sz[end.len || 'med'] || 3) * k, markerHeight: (sz[end.w || 'med'] || 3) * k, orient: isHead ? 'auto-start-reverse' : 'auto', markerUnits: 'strokeWidth' });
-    let shape;
-    switch (end.type) {
-      case 'stealth': shape = s('path', { d: 'M0,0 L10,5 L0,10 L3,5 Z', fill: color }); break;
-      case 'diamond': shape = s('path', { d: 'M0,5 L5,0 L10,5 L5,10 Z', fill: color }); break;
-      case 'oval': shape = s('circle', { cx: 5, cy: 5, r: 4.5, fill: color }); break;
-      case 'arrow': shape = s('path', { d: 'M1,1 L9,5 L1,9', fill: 'none', stroke: color, 'stroke-width': 1.6 }); break;
-      default: shape = s('path', { d: 'M0,0 L10,5 L0,10 Z', fill: color });
-    }
-    m.appendChild(shape);
-    defs.appendChild(m);
-    return `url(#${id})`;
-  }
+  const marker = (defs, end, color, lw, isHead) => L.geom.marker(defs, end, color, lw, isHead);   // common/geometry.js
   const shadowCSS = (sh) => (sh ? `drop-shadow(${L.round(sh.dx == null ? 3 : sh.dx, 2)}px ${L.round(sh.dy == null ? 3 : sh.dy, 2)}px ${L.round(sh.blur || 0, 2)}px ${L.color.rgba(col(sh.c || '#000000'), sh.a == null ? 0.5 : sh.a)})` : '');
 
   /* ---------- shape geometry → SVG (in points, scaled by the caller) ---------- */

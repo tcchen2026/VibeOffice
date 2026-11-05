@@ -62,7 +62,18 @@ Break Preview and the zoom slider are also at the right of the status bar, docs/
 
 **Insert.** Cells, Rows, Columns, Worksheet, Chart (the four-step Chart Wizard), Symbol, Page Break,
 Function (Insert Function and Function Arguments with live results and help for every function),
-Name (Define, Paste, Create, Apply), Comment, Picture (Clip Art from the suite's own clips in the task pane, or from a file), AutoShapes, Text Box, Hyperlink. Open
+Name (Define, Paste, Create, Apply), Comment, Picture (Clip Art from the suite's own clips in the task pane, or from a file), AutoShapes (the
+AutoShapes menu: lines and arrows, basic shapes, block arrows, flowchart, stars and banners, callouts, action buttons),
+Text Box, Hyperlink. The Drawing toolbar has Excel 2003's AutoShapes, Line, Arrow, Rectangle and Oval; a line or an
+arrow keeps the direction it is dragged in (Shift: level, upright or at 45°) and is saved with it (`flipH`/`flipV`), an
+arrow with its head (`tailEnd`), and a new shape is named as Excel names it ("5-Point Star 4"). Arrowheads in files are
+drawn. A shape from the file that Ledger writes itself after an edit (Format AutoShape, its text typed) keeps what
+the edit didn't touch: its rotation (a quarter-turned shape with its size the other way round, as Office stores it),
+flips, arrowheads, adjustments, a freeform's geometry (it was written as `prst="custom"`), its style and the fill,
+line and effects it came with unless one is set, its text body and runs while its text is the same; a group stays
+whole (Format sets its size and properties, not colours; it was written as one shape, losing the others). Excel 2016
+opens all 7 files of the check round without a repair prompt, and edited copies of three corpus workbooks (a group of
+freeforms, rotated lines and text boxes, adjusted presets) print pixel-identical to their unedited saves. Open
 Hyperlink goes to a reference in the workbook; a web, mail or file address is shown to copy, never opened
 (docs/suite.md, Hyperlinks).
 

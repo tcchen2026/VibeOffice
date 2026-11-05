@@ -34,8 +34,8 @@ const enter = async (u, ref, s) => { await u.click(await pt(u, ref)); await u.ty
 /** the first drawn object on screen: its box, whether it shows as selected, its text */
 const shape = (u) => u.evaluate(`(() => { const e = document.querySelector('#glayer .gobj'); if (!e) return null; const r = e.getBoundingClientRect(), t = e.querySelector('.gobj-t');
   return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), l: Math.round(r.left), t: Math.round(r.top), selected: e.classList.contains('sel'), text: t ? t.textContent : '' }; })()`);
-/** draw a rectangle from one cell to another with the AutoShapes tool; it comes out selected */
-const drawRect = async (u, from, to) => { await u.evaluate(`L.ui.exec('insertShape')`); await u.drag(await pt(u, from), await pt(u, to), 6); };
+/** draw a rectangle from one cell to another with the Rectangle tool; it comes out selected */
+const drawRect = async (u, from, to) => { await u.evaluate(`L.ui.exec('drawRect')`); await u.drag(await pt(u, from), await pt(u, to), 6); };
 /** the fill handle of the selected cell */
 const fillHandle = async (u, ref) => { const p = await pt(u, ref); return { x: Math.round(p.r - 1), y: Math.round(p.b - 1) }; };
 /** a point on a container that is not on any control in it (the container itself is hit there) */
@@ -268,10 +268,31 @@ test('Dropping a cell onto empty cells moves it without asking', async () => {
   } finally { await u.close(); }
 });
 
+test('the Drawing toolbar\'s Line and Arrow draw in the drag\'s direction, the arrow with its head; AutoShapes offers every shape', async () => {
+  const u = await ledger();
+  try {
+    await u.click(await u.button('drawLine'));
+    await u.drag(await pt(u, 'C10'), await pt(u, 'F4'), 6);   // up and to the right
+    await u.click(await u.button('drawArrow'));
+    await u.drag(await pt(u, 'J4'), await pt(u, 'H9'), 6);    // down and to the left
+    const ds = await u.evaluate(`JSON.stringify(L.grid.sheet().drawings.map((d) => [d.name, d.geom, !!d.flipH, !!d.flipV, d.tail ? d.tail.type : null]))`);
+    assert.deepEqual(JSON.parse(ds), [['Line 2', 'line', false, true, null], ['Line 3', 'line', true, false, 'triangle']]);
+    assert.equal(await u.evaluate(`document.querySelectorAll('#glayer marker').length`), 1, 'the arrowhead is drawn');
+    await u.click(await u.el('[data-as]'));
+    assert.deepEqual((await u.menuItems()).slice(0, 2), ['Lines', 'Basic Shapes']);
+    await u.pick('Stars and Banners');
+    const star = await u.evaluate(`(() => { const b = [...document.querySelectorAll('.menu .shape-grid button')].find((x) => x.getAttribute('aria-label') === '5-Point Star'); const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+    await u.click(star);
+    await u.drag(await pt(u, 'C14'), await pt(u, 'E20'), 6);
+    assert.equal(await u.evaluate(`L.grid.sheet().drawings[2].geom + ' / ' + L.grid.sheet().drawings[2].name`), 'star5 / 5-Point Star 4', 'named as Excel names it');
+    u.clean();
+  } finally { await u.close(); }
+});
+
 test('Esc while an AutoShape is dragged out draws nothing and ends the tool; the next drag selects cells', async () => {
   const u = await ledger();
   try {
-    await u.evaluate(`L.ui.exec('insertShape')`);
+    await u.evaluate(`L.ui.exec('drawRect')`);
     const a = await pt(u, 'C3'), b = await pt(u, 'E8');
     await u.press(a); await u.glide(a, b, 6); await u.esc(); await u.release(b);
     assert.equal(await u.evaluate('L.grid.sheet().drawings.length'), 0, 'no shape');

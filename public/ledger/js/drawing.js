@@ -30,10 +30,14 @@
   }
 
   /* ------------------------------------------------------------ shape properties */
+  /** what a shape from the file keeps once Ledger writes it itself (an edit): its adjustments, rotation, flips, line ends
+      and its text body's settings (the writer keeps its style, fill, line, effects and runs: xlsx-write.js) */
+  const kept = (p) => ({ adj: p.adj, rot: p.rot || undefined, flipH: p.flipH || undefined, flipV: p.flipV || undefined, head: p.head || undefined, tail: p.tail || undefined,
+    upright: p.upright || undefined, vert: p.vert, ins: p.ins, vAlign: p.vAlign, align: p.align });
   /** fill / line / geometry / text of a shape, from our own properties or its DrawingML */
   function shapeProps(d) {
     if (d._props && d._props.src === d.xml) return d._props;
-    const p = { src: d.xml, geom: d.geom || 'rect', fill: d.fill === undefined ? '#FFFFFF' : d.fill, line: d.line === undefined ? '#000000' : d.line, lineW: d.lineW || 0.75, text: d.text || '', font: d.font || {}, align: d.align || 'l', vAlign: d.vAlign || 't', paras: null };
+    const p = { src: d.xml, geom: d.geom || 'rect', fill: d.fill === undefined ? '#FFFFFF' : d.fill, line: d.line === undefined ? '#000000' : d.line, lineW: d.lineW || 0.75, text: d.text || '', font: d.font || {}, align: d.align || 'l', vAlign: d.vAlign || 't', paras: d.paras || null, upright: !!d.upright, vert: d.vert, ins: d.ins, adj: d.adj, rot: d.rot || 0, flipH: !!d.flipH, flipV: !!d.flipV, head: d.head || null, tail: d.tail || null };
     if (d.xml && !d.dirty && L.dml) {
       try {
         const el = L.xml.parse(d.xml);
@@ -48,14 +52,24 @@
           if (f) p.fill = f.t === 'none' ? null : f.t === 'solid' ? f.c : f.t === 'grad' ? f.stops[0].c : '#FFFFFF';
           else if (style) { const fr = X.kid(style, 'fillRef'); const c = fr ? X.colorOf(fr, tctx) : null; p.fill = c ? c.c : '#4F81BD'; }
           const ln = X.kid(spPr, 'ln');
-          if (ln) { const lf = X.fillIn(ln, tctx); p.line = lf ? (lf.t === 'none' ? null : lf.c || '#000000') : p.line; p.lineW = X.num(ln, 'w', 9525) / 12700; }
+          if (ln) {
+            const lf = X.fillIn(ln, tctx); p.line = lf ? (lf.t === 'none' ? null : lf.c || '#000000') : p.line; p.lineW = X.num(ln, 'w', 9525) / 12700;
+            const ends = X.line(ln, tctx); p.head = (ends && ends.head) || null; p.tail = (ends && ends.tail) || null;
+          }
           else if (style) { const lr = X.kid(style, 'lnRef'); const c = lr ? X.colorOf(lr, tctx) : null; p.line = c ? c.c : '#385D8A'; }
           const xf = X.kid(spPr, 'xfrm'); if (xf) { p.rot = X.num(xf, 'rot', 0) / 60000; p.flipH = X.at(xf, 'flipH') === '1'; p.flipV = X.at(xf, 'flipV') === '1'; }
         }
         const tb = X.desc(el, 'txBody');
         if (tb) {
           const bp = X.kid(tb, 'bodyPr');
-          if (bp) { const an = X.at(bp, 'anchor'); p.vAlign = an === 'ctr' ? 'ctr' : an === 'b' ? 'b' : 't'; }
+          if (bp) {
+            const an = X.at(bp, 'anchor'); p.vAlign = an === 'ctr' ? 'ctr' : an === 'b' ? 'b' : 't';
+            /* what the text body keeps through an edit: text kept upright in a rotated shape, its direction, insets */
+            p.upright = X.at(bp, 'upright') === '1';
+            if (X.at(bp, 'vert') && X.at(bp, 'vert') !== 'horz') p.vert = X.at(bp, 'vert');
+            const ins = ['lIns', 'tIns', 'rIns', 'bIns'].map((k) => X.at(bp, k));
+            if (ins.some((x) => x != null)) p.ins = ins.map((x) => (x == null ? null : +x));
+          }
           p.paras = X.kids(tb, 'p').map((pe) => {
             const ppr = X.kid(pe, 'pPr');
             const runs = X.kids(pe).filter((r) => r.localName === 'r' || r.localName === 'fld' || r.localName === 'br').map((r) => {
@@ -63,6 +77,7 @@
               const rp = X.kid(r, 'rPr');
               const run = { t: (X.kid(r, 't') || { textContent: '' }).textContent };
               if (rp) {
+                if (X.at(rp, 'lang')) run.lang = X.at(rp, 'lang');
                 if (X.at(rp, 'sz')) run.sz = +X.at(rp, 'sz') / 100;
                 if (X.at(rp, 'b') === '1') run.b = true;
                 if (X.at(rp, 'i') === '1') run.i = true;
@@ -75,6 +90,7 @@
             return { algn: (ppr && X.at(ppr, 'algn')) || 'l', runs };
           });
           if (!d.text) p.text = p.paras.map((q) => q.runs.map((r) => r.t).join('')).join('\n');
+          if (p.paras.length) p.align = p.paras[0].algn;
         }
       } catch (e) { /* draw as a plain rectangle */ }
     }
@@ -135,7 +151,7 @@
       }
     } else {
       const p = shapeProps(d);
-      const key = `s${w}x${hh}@${z}:${d.xml ? d.xml.length : ''}:${JSON.stringify([p.geom, p.fill, p.line, p.lineW, d.text, p.text, d.font, d.align])}`;
+      const key = `s${w}x${hh}@${z}:${d.xml ? d.xml.length : ''}:${JSON.stringify([p.geom, p.fill, p.line, p.lineW, d.text, p.text, d.font, d.align, p.flipH, p.flipV, p.head, p.tail])}`;
       if (el._key !== key && !el.classList.contains('editing')) {
         el._key = key;
         content.textContent = '';
@@ -163,6 +179,12 @@
       const path = document.createElementNS(SVGNS, 'path');
       path.setAttribute('d', L.geom.linePath(geomSh));
       path.setAttribute('stroke', p.line || '#000'); path.setAttribute('stroke-width', lw || 1); path.setAttribute('fill', 'none');
+      /* arrowheads (DrawingML's headEnd / tailEnd) */
+      const defs = document.createElementNS(SVGNS, 'defs');
+      const mh = L.geom.marker(defs, p.head, p.line || '#000', p.lineW, true), mt = L.geom.marker(defs, p.tail, p.line || '#000', p.lineW, false);
+      if (mh) path.setAttribute('marker-start', mh);
+      if (mt) path.setAttribute('marker-end', mt);
+      if (mh || mt) svg.appendChild(defs);
       svg.appendChild(path);
       return svg;
     }
@@ -183,7 +205,7 @@
     return svg;
   }
   function textBox(d, p, z) {
-    const text = d.dirty || !p.paras ? (d.text != null ? d.text : p.text) : null;
+    const text = (d.dirty && !d.paras) || !p.paras ? (d.text != null ? d.text : p.text) : null;
     if (!text && !(p.paras && p.paras.some((q) => q.runs.length))) return null;
     const box = h('div', { class: 'gobj-t v-' + (p.vAlign || 't'), translate: 'no' });
     const f = d.font || {};
@@ -340,7 +362,7 @@
   /** edit a shape's text: firstKey replaces it (typing on the selected shape); at { x, y, word }: the caret goes to
       that point (and its word is selected), else to the end */
   DR.editText = function (d, firstKey, at) {
-    if (guard()) return;
+    if (guard() || d.tag === 'grpSp') return;   // a group's text is its shapes', kept as they came
     const el = Array.from(L.$('#glayer').children).find((x) => x._d === d);
     if (!el) return;
     const p = shapeProps(d);
@@ -365,7 +387,7 @@
       const text = box.innerText.replace(/\n$/, '');
       /* Esc leaves the shape selected; a press elsewhere (a cell, which has already deselected it) doesn't select it again */
       const select = G().selectedObject() === d;
-      if (text !== (p.text || '')) replace(d, { text, dirty: true, geom: p.geom, fill: p.fill, line: p.line, lineW: p.lineW, font: d.font || { name: 'Arial', sz: 10 } }, L.N('Typing'), { select });
+      if (text !== (p.text || '')) replace(d, { text, dirty: true, geom: p.geom, ...kept(p), paras: undefined, fill: p.fill, line: p.line, lineW: p.lineW, font: d.font || { name: 'Arial', sz: 10 } }, L.N('Typing'), { select });
       else { el._key = null; G().syncObjects(); }
       G().focus();
     };
@@ -440,7 +462,9 @@
     const swatch = (key, mode) => {
       return ui.colorButton(st[key] || null, { mode, grid: true, onChange: (c) => { st[key] = c; } });
     };
-    if (d.kind !== 'image') {
+    /* a group keeps its shapes as they came: its size, place and properties change, not its colours */
+    const group = d.tag === 'grpSp';
+    if (d.kind !== 'image' && !group) {
       const weight = ui.spin({ value: st.lineW, min: 0.25, max: 20, step: 0.25, unit: ' pt', onChange: (v) => { st.lineW = v; } });
       tabs.push({ label: 'Colors and Lines', body: h('div', { class: 'col' }, ui.group('Fill', ui.field('&Color:', swatch('fill', 'fill'))), d.kind === 'shape' ? ui.group('Line', ui.field('C&olor:', swatch('line', 'line')), ui.field('&Weight:', weight)) : h('span')) });
     }
@@ -461,7 +485,9 @@
     const title = d.kind === 'image' ? 'Format Picture' : d.kind === 'chart' ? 'Format Chart Area' : d.txBox ? 'Format Text Box' : 'Format AutoShape';
     const dlg = ui.dialog({ title, body: ui.tabs(tabs), width: 420, buttons: [{ label: 'OK', primary: true, onClick: () => {
       const patch = { descr: alt.value || undefined, unlocked: st.locked ? undefined : true, noPrint: st.print ? undefined : true };
-      if (d.kind === 'shape') Object.assign(patch, { fill: st.fill, line: st.line, lineW: st.lineW, geom: p.geom, text: d.text != null ? d.text : p.text, dirty: true, font: d.font || { name: 'Arial', sz: 10 } });
+      /* a fill or line the user set (else the file's own, with its theme colours and effects, is written as it came) */
+      if (d.kind === 'shape' && !group) Object.assign(patch, { ownFill: d.ownFill || st.fill !== p.fill || undefined, ownLine: d.ownLine || st.line !== p.line || st.lineW !== p.lineW || undefined });
+      if (d.kind === 'shape' && !group) Object.assign(patch, { fill: st.fill, line: st.line, lineW: st.lineW, geom: p.geom, ...kept(p), paras: d.dirty ? d.paras : p.paras || undefined, text: !d.dirty && p.paras ? p.paras.map((q) => q.runs.map((r) => r.t).join('')).join('\n') : d.text != null ? d.text : p.text, dirty: true, font: d.font || { name: 'Arial', sz: 10 } });
       if (d.kind === 'chart' && d.chart && st.fill !== (d.chart.bg && d.chart.bg.color)) patch.chart = Object.assign({}, d.chart, { bg: st.fill ? { t: 'solid', color: st.fill } : { t: 'none' }, dirty: true });
       const a = JSON.parse(JSON.stringify(d.anchor));
       if (Math.abs(st.w - curW) > 0.5 || Math.abs(st.h - curH) > 0.5) {
@@ -494,17 +520,35 @@
       const r = wrap.getBoundingClientRect();
       const x0 = e.clientX - r.left, y0 = e.clientY - r.top;
       const band = h('div', { class: 'gobj-ghost' });
+      /* a line or an arrow: the line itself from where the drag started, in the drag's direction */
+      const isLine = tool.kind === 'line' || tool.kind === 'arrow';
+      let ghost = null;
+      if (isLine) {
+        Object.assign(band.style, { border: 'none', background: 'none' });
+        const svg = document.createElementNS(SVGNS, 'svg');
+        svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); svg.style.overflow = 'visible';
+        ghost = document.createElementNS(SVGNS, 'line');
+        ghost.setAttribute('stroke', '#000'); ghost.setAttribute('stroke-dasharray', '3 2');
+        svg.appendChild(ghost); band.appendChild(svg);
+      }
       ov.appendChild(band);
-      let cur = { x: x0, y: y0, w: 0, h: 0 };
+      let cur = { x: x0, y: y0, w: 0, h: 0 }, dir = { flipH: false, flipV: false };
       /* the release inserts the shape (a click: at its default size); a cancel inserts nothing (Esc also ends the tool) */
       ui.drag(e, {
         capture: ov,
         threshold: 0,
         move(ev) {
-          const x1 = ev.clientX - r.left, y1 = ev.clientY - r.top;
+          let x1 = ev.clientX - r.left, y1 = ev.clientY - r.top;
+          /* Shift: a line level, upright or at 45°; a shape as wide as it is high */
+          if (isLine && ev.shiftKey) {
+            const dx = x1 - x0, dy = y1 - y0, m = Math.max(Math.abs(dx), Math.abs(dy));
+            if (Math.abs(dx) > 2 * Math.abs(dy)) y1 = y0; else if (Math.abs(dy) > 2 * Math.abs(dx)) x1 = x0; else { x1 = x0 + Math.sign(dx) * m; y1 = y0 + Math.sign(dy) * m; }
+          }
           cur = { x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) };
-          if (ev.shiftKey) { const m = Math.max(cur.w, cur.h); cur.w = cur.h = m; }
+          if (!isLine && ev.shiftKey) { const m = Math.max(cur.w, cur.h); cur.w = cur.h = m; }
+          dir = { flipH: x1 < x0, flipV: y1 < y0 };
           Object.assign(band.style, { left: cur.x + 'px', top: cur.y + 'px', width: cur.w + 'px', height: cur.h + 'px' });
+          if (ghost) { ghost.setAttribute('x1', dir.flipH ? cur.w : 0); ghost.setAttribute('y1', dir.flipV ? cur.h : 0); ghost.setAttribute('x2', dir.flipH ? 0 : cur.w); ghost.setAttribute('y2', dir.flipV ? 0 : cur.h); }
         },
         up() {
           if (!tool) return;
@@ -512,7 +556,7 @@
           DR.cancelTool();
           const z = (sh().view.zoom || 100) / 100;
           if (cur.w < 6 && cur.h < 6) { cur.w = (k === 'textbox' ? 96 : 72) * z * (96 / 72); cur.h = (k === 'textbox' ? 48 : 72) * z * (96 / 72); }
-          DR.insertShape(k, cur);
+          DR.insertShape(k, cur, dir);
         },
         cancel(d, why) { band.remove(); if (why === 'esc') DR.cancelTool(); },   /* Esc ends the tool; other cancels keep it */
       });
@@ -526,13 +570,19 @@
     L.app.status('');
     G().focus();
   };
-  DR.insertShape = function (kind, rect) {
+  /** a new AutoShape, text box, line or arrow in `rect` (client px from the grid's corner); dir: a line's direction
+      (flipH: drawn leftwards, flipV: upwards), as DrawingML keeps it */
+  DR.insertShape = function (kind, rect, dir) {
     const s = sh();
     const fr = G().frame();
     rect.x = Math.max(fr.hdrW, rect.x); rect.y = Math.max(fr.hdrH, rect.y);
     const id = Math.max(1, ...s.drawings.map((x) => x.id || 0)) + 1;
     const isText = kind === 'textbox';
-    const d = { kind: 'shape', id, name: (isText ? 'Text Box ' : (kind === 'ellipse' ? 'Oval ' : kind === 'line' || kind === 'arrow' ? 'Line ' : 'Rectangle ')) + id, geom: isText ? 'rect' : kind === 'arrow' ? 'straightConnector1' : kind === 'line' ? 'line' : kind, txBox: isText, fill: kind === 'line' || kind === 'arrow' ? null : '#FFFFFF', line: '#000000', lineW: 0.75, text: '', font: { name: 'Arial', sz: 10 }, dirty: true };
+    const isLine = kind === 'line' || kind === 'arrow', g = !isText && !isLine && L.geom && L.geom.get(kind);
+    /* named as Excel names them: after the shape's type ("Rounded Rectangle 3", "Cross 4"); a line or an arrow "Line 5" */
+    const d = { kind: 'shape', id, name: (isText ? 'Text Box' : isLine ? 'Line' : (g && g.label) || 'Rectangle') + ' ' + id, geom: isText ? 'rect' : isLine ? 'line' : kind, txBox: isText, fill: isLine ? null : '#FFFFFF', line: '#000000', lineW: 0.75, text: '', font: { name: 'Arial', sz: 10 }, dirty: true };
+    if (isLine && dir) { if (dir.flipH) d.flipH = true; if (dir.flipV) d.flipV = true; }
+    if (kind === 'arrow') d.tail = { type: 'triangle', w: 'med', len: 'med' };
     d.anchor = G().rectToAnchor(s, rect.x, rect.y, rect.w, rect.h, { editAs: 'twoCell' });
     O.tx(wb(), isText ? 'Insert Text Box' : 'Insert AutoShape', () => O.setDrawings(s, s.drawings.concat([d])));
     G().selectObject(d);
@@ -540,10 +590,13 @@
     if (isText) setTimeout(() => DR.editText(d), 0);
     return d;
   };
-  /** AutoShapes menu (Drawing toolbar) */
+  /** AutoShapes menu (the Drawing toolbar's, Insert ▸ Picture, the ribbon's Shapes); at: where (under the Drawing
+      toolbar's AutoShapes button when not given) */
   DR.autoShapesMenu = function (at) {
     const groups = L.geom ? L.geom.MENU : { 'Basic Shapes': ['rect', 'ellipse'] };
-    ui.openMenu([{ label: '&Lines', sub: [{ label: 'Line', run: () => DR.startTool('line') }, { label: 'Arrow', run: () => DR.startTool('arrow') }] }].concat(Object.keys(groups).map((g) => ({ label: g, sub: [{ custom: (close) => {
+    const btn = !at && L.$('[data-as]'), r = btn && btn.getBoundingClientRect().width ? btn.getBoundingClientRect() : null;
+    if (!at) at = r ? { left: r.left, bottom: r.bottom } : { left: 100, bottom: 100 };
+    ui.openMenu([{ label: '&Lines', icon: 'line', sub: ['drawLine', 'drawArrow'] }].concat(Object.keys(groups).map((g) => ({ label: g, sub: [{ custom: (close) => {
       const grid = h('div', { class: 'shape-grid' });
       for (const k of groups[g]) { const nm = (L.geom && L.geom.get(k) && L.geom.get(k).label) || k; const b = h('button', { type: 'button', html: L.geom ? L.geom.preview(k, 20) : k, 'data-tip': nm, 'aria-label': nm }); b.addEventListener('click', () => { close(); DR.startTool(k); }); grid.appendChild(b); }
       return grid;

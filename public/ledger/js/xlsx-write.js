@@ -646,15 +646,48 @@
     return { w: Math.max(1, x2 - x1), h: Math.max(1, y2 - y1) };
   }
   function shapeXml(d, id, sz) {
-    const fill = d.fill === null || d.fill === 'none' ? '<a:noFill/>' : `<a:solidFill><a:srgbClr val="${String(d.fill || '#FFFFFF').replace('#', '').toUpperCase()}"/></a:solidFill>`;
-    const ln = d.line === null || d.line === 'none' ? '<a:ln><a:noFill/></a:ln>' : `<a:ln w="${Math.round((d.lineW || 0.75) * EMU)}"><a:solidFill><a:srgbClr val="${String(d.line || '#000000').replace('#', '').toUpperCase()}"/></a:solidFill></a:ln>`;
+    /* the file's own spPr: its fill and line while the user set none (theme colours, gradients, a line's shade), and
+       its effects (Ledger edits none) */
+    const orig = d.xml && d.tag !== 'grpSp' ? (d.xml.match(/<xdr:spPr\b[^>]*>([\s\S]*?)<\/xdr:spPr>/) || [])[1] : null;
+    const pick = (re) => (orig && (orig.match(re) || [])[0]) || '';
+    const oXfrm = pick(/<a:xfrm\b[^>]*\/>|<a:xfrm\b[\s\S]*?<\/a:xfrm>/), oGeom = pick(/<a:(?:prstGeom|custGeom)\b[\s\S]*?<\/a:(?:prstGeom|custGeom)>|<a:prstGeom\b[^>]*\/>/);
+    const oLn = pick(/<a:ln\b[^>]*\/>|<a:ln\b[\s\S]*?<\/a:ln>/);
+    const oFill = orig ? ((orig.split(/<a:ln\b/)[0].match(/<a:(noFill|solidFill|gradFill|blipFill|pattFill|grpFill)\b(?:[^>]*\/>|[\s\S]*?<\/a:\1>)/) || [])[0] || '') : '';
+    const oRest = orig ? [oXfrm, oGeom, oFill, oLn].reduce((s, x) => (x ? s.replace(x, '') : s), orig) : '';
+    const fill0 = d.fill === null || d.fill === 'none' ? '<a:noFill/>' : `<a:solidFill><a:srgbClr val="${String(d.fill || '#FFFFFF').replace('#', '').toUpperCase()}"/></a:solidFill>`;
+    /* arrowheads after the fill, as CT_LineProperties orders them */
+    const end = (tag, e) => (e && e.type && e.type !== 'none' ? `<a:${tag} type="${esc(e.type)}"${e.w && e.w !== 'med' ? ` w="${esc(e.w)}"` : ''}${e.len && e.len !== 'med' ? ` len="${esc(e.len)}"` : ''}/>` : '');
+    const ln0 = d.line === null || d.line === 'none' ? '<a:ln><a:noFill/></a:ln>' : `<a:ln w="${Math.round((d.lineW || 0.75) * EMU)}"><a:solidFill><a:srgbClr val="${String(d.line || '#000000').replace('#', '').toUpperCase()}"/></a:solidFill>${end('headEnd', d.head)}${end('tailEnd', d.tail)}</a:ln>`;
+    const fill = orig && !d.ownFill ? oFill : fill0, ln = orig && !d.ownLine ? oLn : ln0;
+    /* a preset with its adjustments; a freeform keeps the geometry it came with (there is no "custom" preset) */
+    const cust = d.geom === 'custom' && d.xml ? (d.xml.match(/<a:custGeom\b[\s\S]*?<\/a:custGeom>/) || [])[0] : null;
+    const gds = Object.entries(d.adj || {}).map(([k, v]) => `<a:gd name="${esc(k)}" fmla="val ${Math.round(v)}"/>`).join('');
+    const geom = cust || `<a:prstGeom prst="${esc(d.geom && d.geom !== 'custom' ? d.geom : 'rect')}">${gds ? `<a:avLst>${gds}</a:avLst>` : '<a:avLst/>'}</a:prstGeom>`;
     const paras = String(d.text || '').split('\n');
     const f = d.font || {};
-    const rpr = `<a:rPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"${f.b ? ' b="1"' : ''}${f.i ? ' i="1"' : ''}>${f.color ? `<a:solidFill><a:srgbClr val="${String(f.color).replace('#', '').toUpperCase()}"/></a:solidFill>` : '<a:solidFill><a:srgbClr val="000000"/></a:solidFill>'}<a:latin typeface="${esc(f.name || 'Arial')}"/></a:rPr>`;
-    const body = d.text != null && d.text !== '' ? `<xdr:txBody><a:bodyPr vertOverflow="clip" wrap="square" rtlCol="0" anchor="${d.vAlign || 't'}"/><a:lstStyle/>` + paras.map((p) => `<a:p><a:pPr algn="${d.align || 'l'}"/>${p ? `<a:r>${rpr}<a:t>${escT(p)}</a:t></a:r>` : `<a:endParaRPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"/>`}</a:p>`).join('') + '</xdr:txBody>'
-      : '<xdr:txBody><a:bodyPr vertOverflow="clip" wrap="square" rtlCol="0" anchor="t"/><a:lstStyle/><a:p><a:endParaRPr lang="en-US" sz="1100"/></a:p></xdr:txBody>';
+    /* a run's own properties (a kept run inherits the rest from the shape's style, as it did); typed text: the shape's font */
+    const rprOf = (r) => {
+      const kids = (r.color ? `<a:solidFill><a:srgbClr val="${String(r.color).replace('#', '').toUpperCase()}"/></a:solidFill>` : '') + (r.font ? `<a:latin typeface="${esc(r.font)}"/>` : '');
+      const head = `<a:rPr lang="${esc(r.lang || 'en-US')}"${r.sz ? ` sz="${Math.round(r.sz * 100)}"` : ''}${r.b ? ' b="1"' : ''}${r.i ? ' i="1"' : ''}${r.u ? ' u="sng"' : ''}`;
+      return kids ? `${head}>${kids}</a:rPr>` : `${head}/>`;
+    };
+    const rpr = rprOf({ sz: f.sz || 10, b: f.b, i: f.i, color: f.color || '#000000', font: f.name || 'Arial' });
+    /* the text body as it came (kept upright in a rotated shape, its direction and insets) */
+    const ins = (d.ins || []).map((v, i) => (v == null ? '' : ` ${['lIns', 'tIns', 'rIns', 'bIns'][i]}="${Math.round(v)}"`)).join('');
+    const own = d.xml && d.tag !== 'grpSp' && (d.xml.match(/<a:bodyPr\b[^>]*\/>|<a:bodyPr\b[^>]*>[\s\S]*?<\/a:bodyPr>/) || [])[0];   // Ledger edits none of it
+    const bodyPr = (anchor) => own || `<a:bodyPr vertOverflow="clip"${d.vert ? ` vert="${esc(d.vert)}"` : ''} wrap="square"${ins} rtlCol="0" anchor="${anchor}"${d.upright ? ' upright="1"' : ''}/>`;
+    /* its paragraphs and runs while the text is the one it came with; typed text takes the shape's one font */
+    const kept = d.paras && d.paras.map((q) => q.runs.map((r) => r.t).join('')).join('\n') === String(d.text || '');
+    const body = kept ? `<xdr:txBody>${bodyPr(d.vAlign || 't')}<a:lstStyle/>` + d.paras.map((q) => `<a:p><a:pPr algn="${esc(q.algn || 'l')}"/>${q.runs.filter((r) => r.t).map((r) => (r.t === '\n' ? `<a:br>${rprOf(r)}</a:br>` : `<a:r>${rprOf(r)}<a:t>${escT(r.t)}</a:t></a:r>`)).join('') || `<a:endParaRPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"/>`}</a:p>`).join('') + '</xdr:txBody>'
+      : d.text != null && d.text !== '' ? `<xdr:txBody>${bodyPr(d.vAlign || 't')}<a:lstStyle/>` + paras.map((p) => `<a:p><a:pPr algn="${d.align || 'l'}"/>${p ? `<a:r>${rpr}<a:t>${escT(p)}</a:t></a:r>` : `<a:endParaRPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"/>`}</a:p>`).join('') + '</xdr:txBody>'
+      : `<xdr:txBody>${bodyPr('t')}<a:lstStyle/><a:p><a:endParaRPr lang="en-US" sz="1100"/></a:p></xdr:txBody>`;
+    /* the shape's style (theme colours its text and anything it doesn't set itself take) */
+    const style = (d.xml && d.tag !== 'grpSp' && (d.xml.match(/<xdr:style>[\s\S]*?<\/xdr:style>/) || [])[0]) || '';
+    /* a shape turned a quarter (45°–135°, 225°–315°): its anchor holds it turned, its own size is the other way round */
+    const turn = (((d.rot || 0) % 360) + 360) % 360, quarter = (turn >= 45 && turn < 135) || (turn >= 225 && turn < 315);
+    const ew = quarter ? sz.h : sz.w, eh = quarter ? sz.w : sz.h;
     return `<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="${id}" name="${esc(d.name || 'Shape ' + id)}"/><xdr:cNvSpPr${d.txBox ? ' txBox="1"' : ''}/></xdr:nvSpPr>` +
-      `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}><a:off x="0" y="0"/><a:ext cx="${emu(sz.w)}" cy="${emu(sz.h)}"/></a:xfrm><a:prstGeom prst="${esc(d.geom || 'rect')}"><a:avLst/></a:prstGeom>${fill}${ln}</xdr:spPr>${body}</xdr:sp>`;
+      `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}${d.flipH ? ' flipH="1"' : ''}${d.flipV ? ' flipV="1"' : ''}><a:off x="0" y="0"/><a:ext cx="${emu(ew)}" cy="${emu(eh)}"/></a:xfrm>${geom}${fill}${ln}${oRest}</xdr:spPr>${style}${body}</xdr:sp>`;
   }
   /** the chart part for a chart drawing */
   function chartPartXml(d, wb) {

@@ -121,7 +121,12 @@
   cmd('growFont', { label: 'Increase Font Size', icon: 'growFont', run: run(() => A().stepFont(1)) });
   cmd('shrinkFont', { label: 'Decrease Font Size', icon: 'shrinkFont', run: run(() => A().stepFont(-1)) });
   cmd('insertClipArt', { label: '&Clip Art...', icon: 'clipart', run: run(() => L.panes.task.show('clipart')) });
-  cmd('insertShape', { label: '&AutoShapes', icon: 'autoshapes', run: run(() => L.drawing.startTool('rect')) });
+  cmd('insertShape', { label: '&AutoShapes', icon: 'autoshapes', run: run(() => L.drawing.autoShapesMenu()) });
+  /* the Drawing toolbar's tools, as Excel 2003's: a drag draws the object */
+  cmd('drawLine', { label: '&Line', icon: 'line', tip: 'Line', run: run(() => L.drawing.startTool('line')) });
+  cmd('drawArrow', { label: '&Arrow', icon: 'arrowTool', tip: 'Arrow', run: run(() => L.drawing.startTool('arrow')) });
+  cmd('drawRect', { label: '&Rectangle', icon: 'rect', tip: 'Rectangle', run: run(() => L.drawing.startTool('rect')) });
+  cmd('drawOval', { label: '&Oval', icon: 'oval', tip: 'Oval', run: run(() => L.drawing.startTool('ellipse')) });
   cmd('insertTextBox', { label: 'Te&xt Box', icon: 'textbox', run: run(() => L.drawing.startTool('textbox')) });
   cmd('hyperlink', { label: 'Hyperl&ink...', icon: 'hyperlink', key: 'Ctrl+K', run: run(() => D().hyperlink()) });
   cmd('removeHyperlink', { label: '&Remove Hyperlink', enabled: () => { const s = sel(); return sh().links.some((l) => M.rangeContains(l.ref, s.r, s.c)); }, run: run(() => O.clear(sh(), rgs(), 'hyperlinks')) });

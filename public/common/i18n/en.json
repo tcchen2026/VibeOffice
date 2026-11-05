@@ -16,7 +16,7 @@
  },
  "\"No\" Symbol": {
   "where": [
-   "common/geometry.js:213"
+   "common/geometry.js:214"
   ]
  },
  "\"Straight &quotes\" with “smart quotes”": {
@@ -62,7 +62,7 @@
  },
  "&About Ledger": {
   "where": [
-   "ledger/js/commands.js:249"
+   "ledger/js/commands.js:254"
   ]
  },
  "&About Quire": {
@@ -147,7 +147,7 @@
  },
  "&Advanced Filter...": {
   "where": [
-   "ledger/js/commands.js:217"
+   "ledger/js/commands.js:222"
   ]
  },
  "&Align or Distribute": {
@@ -239,12 +239,13 @@
  },
  "&Arrange...": {
   "where": [
-   "ledger/js/commands.js:242"
+   "ledger/js/commands.js:247"
   ]
  },
  "&Arrow": {
   "where": [
    "lectern/js/slideshow.js:887",
+   "ledger/js/commands.js:127",
    "quire/js/commands.js:499"
   ]
  },
@@ -281,7 +282,7 @@
  },
  "&Auto Outline": {
   "where": [
-   "ledger/js/commands.js:228"
+   "ledger/js/commands.js:233"
   ]
  },
  "&AutoCorrect": {
@@ -292,7 +293,7 @@
  "&AutoCorrect Options...": {
   "where": [
    "lectern/js/commands.js:137",
-   "ledger/js/commands.js:206",
+   "ledger/js/commands.js:211",
    "ledger/js/dialogs.js:791",
    "quire/js/commands.js:417"
   ]
@@ -304,14 +305,14 @@
  },
  "&AutoFit": {
   "where": [
-   "ledger/js/commands.js:132",
+   "ledger/js/commands.js:137",
    "quire/js/app.js:87",
    "quire/js/app.js:1159"
   ]
  },
  "&AutoFit Selection": {
   "where": [
-   "ledger/js/commands.js:136"
+   "ledger/js/commands.js:141"
   ]
  },
  "&AutoFormat now": {
@@ -321,7 +322,7 @@
  },
  "&AutoFormat...": {
   "where": [
-   "ledger/js/commands.js:145",
+   "ledger/js/commands.js:150",
    "quire/js/commands.js:324",
    "quire/js/dialogs2.js:577"
   ]
@@ -329,6 +330,7 @@
  "&AutoShapes": {
   "where": [
    "lectern/js/app.js:75",
+   "ledger/js/app.js:547",
    "ledger/js/commands.js:124",
    "quire/js/app.js:72"
   ]
@@ -364,7 +366,7 @@
  "&Average": {
   "where": [
    "ledger/js/app.js:581",
-   "ledger/js/app.js:658"
+   "ledger/js/app.js:660"
   ]
  },
  "&Background": {
@@ -379,7 +381,7 @@
  },
  "&Background...": {
   "where": [
-   "ledger/js/commands.js:143"
+   "ledger/js/commands.js:148"
   ]
  },
  "&Background:": {
@@ -475,7 +477,7 @@
  },
  "&Bold": {
   "where": [
-   "ledger/js/commands.js:151",
+   "ledger/js/commands.js:156",
    "quire/js/dialogs2.js:348",
    "quire/js/dialogs2.js:557"
   ]
@@ -601,7 +603,7 @@
   "where": [
    "lectern/js/app.js:212",
    "lectern/js/commands.js:108",
-   "ledger/js/commands.js:157",
+   "ledger/js/commands.js:162",
    "quire/js/dialogs.js:265"
   ]
  },
@@ -627,12 +629,12 @@
  },
  "&Chart Options...": {
   "where": [
-   "ledger/js/drawing.js:422"
+   "ledger/js/drawing.js:444"
   ]
  },
  "&Circle Invalid Data": {
   "where": [
-   "ledger/js/commands.js:199"
+   "ledger/js/commands.js:204"
   ]
  },
  "&Clear": {
@@ -652,7 +654,7 @@
  },
  "&Clear Outline": {
   "where": [
-   "ledger/js/commands.js:229"
+   "ledger/js/commands.js:234"
   ]
  },
  "&Clear Print Area": {
@@ -809,7 +811,7 @@
  "&Count": {
   "where": [
    "ledger/js/app.js:581",
-   "ledger/js/app.js:658"
+   "ledger/js/app.js:660"
   ]
  },
  "&Create": {
@@ -820,7 +822,7 @@
  },
  "&Create List...": {
   "where": [
-   "ledger/js/commands.js:231"
+   "ledger/js/commands.js:236"
   ]
  },
  "&Create New": {
@@ -855,7 +857,7 @@
  },
  "&Currency Style": {
   "where": [
-   "ledger/js/commands.js:165"
+   "ledger/js/commands.js:170"
   ]
  },
  "&Current page": {
@@ -958,7 +960,7 @@
  },
  "&Decrease Decimal": {
   "where": [
-   "ledger/js/commands.js:169"
+   "ledger/js/commands.js:174"
   ]
  },
  "&Default...": {
@@ -1014,7 +1016,7 @@
  },
  "&Delete...": {
   "where": [
-   "ledger/js/app.js:864",
+   "ledger/js/app.js:866",
    "ledger/js/commands.js:69",
    "ledger/js/dialogs2.js:445",
    "quire/js/panes.js:413"
@@ -1103,7 +1105,7 @@
  },
  "&Don't move or size with cells": {
   "where": [
-   "ledger/js/drawing.js:454"
+   "ledger/js/drawing.js:478"
   ]
  },
  "&Double Arrow": {
@@ -1169,7 +1171,7 @@
  "&Edit Hyperlink...": {
   "where": [
    "lectern/js/app.js:1772",
-   "ledger/js/app.js:866",
+   "ledger/js/app.js:868",
    "quire/js/app.js:1158"
   ]
  },
@@ -1268,7 +1270,7 @@
  },
  "&Error Checking...": {
   "where": [
-   "ledger/js/commands.js:189"
+   "ledger/js/commands.js:194"
   ]
  },
  "&Error message:": {
@@ -1510,7 +1512,7 @@
  },
  "&Freeze Panes": {
   "where": [
-   "ledger/js/commands.js:239"
+   "ledger/js/commands.js:244"
   ]
  },
  "&From File...": {
@@ -1548,7 +1550,7 @@
  },
  "&Functions Reference": {
   "where": [
-   "ledger/js/commands.js:248"
+   "ledger/js/commands.js:253"
   ]
  },
  "&General": {
@@ -1565,7 +1567,7 @@
  "&Getting Started": {
   "where": [
    "lectern/js/commands.js:156",
-   "ledger/js/commands.js:246",
+   "ledger/js/commands.js:251",
    "quire/js/commands.js:465"
   ]
  },
@@ -1598,7 +1600,7 @@
  },
  "&Goal Seek...": {
   "where": [
-   "ledger/js/commands.js:193"
+   "ledger/js/commands.js:198"
   ]
  },
  "&Gradient": {
@@ -1656,7 +1658,7 @@
  },
  "&Group...": {
   "where": [
-   "ledger/js/commands.js:224"
+   "ledger/js/commands.js:229"
   ]
  },
  "&Grouping": {
@@ -1736,14 +1738,14 @@
  "&Hide": {
   "where": [
    "common/scout/assistant.js:74",
-   "ledger/js/commands.js:133",
-   "ledger/js/commands.js:137",
-   "ledger/js/commands.js:141"
+   "ledger/js/commands.js:138",
+   "ledger/js/commands.js:142",
+   "ledger/js/commands.js:146"
   ]
  },
  "&Hide Detail": {
   "where": [
-   "ledger/js/commands.js:226"
+   "ledger/js/commands.js:231"
   ]
  },
  "&Hide Slide": {
@@ -1850,7 +1852,7 @@
  },
  "&Increase Decimal": {
   "where": [
-   "ledger/js/commands.js:168"
+   "ledger/js/commands.js:173"
   ]
  },
  "&Indent at:": {
@@ -1899,7 +1901,7 @@
  "&Insert...": {
   "where": [
    "ledger/js/app.js:448",
-   "ledger/js/app.js:864"
+   "ledger/js/app.js:866"
   ]
  },
  "&Insertions and Deletions": {
@@ -1924,7 +1926,7 @@
  },
  "&Italic": {
   "where": [
-   "ledger/js/commands.js:152",
+   "ledger/js/commands.js:157",
    "quire/js/dialogs2.js:348",
    "quire/js/dialogs2.js:557"
   ]
@@ -1968,7 +1970,7 @@
  "&Keyboard Shortcuts": {
   "where": [
    "lectern/js/commands.js:157",
-   "ledger/js/commands.js:247",
+   "ledger/js/commands.js:252",
    "quire/js/commands.js:466"
   ]
  },
@@ -2095,6 +2097,7 @@
  },
  "&Line": {
   "where": [
+   "ledger/js/commands.js:126",
    "quire/js/commands.js:498"
   ]
  },
@@ -2106,7 +2109,7 @@
  "&Lines": {
   "where": [
    "lectern/js/app.js:107",
-   "ledger/js/drawing.js:546",
+   "ledger/js/drawing.js:599",
    "quire/js/app.js:262"
   ]
  },
@@ -2119,7 +2122,7 @@
   "where": [
    "ledger/js/app.js:561",
    "ledger/js/app.js:601",
-   "ledger/js/app.js:865",
+   "ledger/js/app.js:867",
    "ledger/js/commands.js:96"
   ]
  },
@@ -2147,7 +2150,7 @@
  "&Locked": {
   "where": [
    "ledger/js/dialogs.js:280",
-   "ledger/js/drawing.js:455"
+   "ledger/js/drawing.js:479"
   ]
  },
  "&Look Up": {
@@ -2183,7 +2186,7 @@
  },
  "&Macros...": {
   "where": [
-   "ledger/js/commands.js:208",
+   "ledger/js/commands.js:213",
    "quire/js/commands.js:415"
   ]
  },
@@ -2256,7 +2259,7 @@
  "&Max": {
   "where": [
    "ledger/js/app.js:581",
-   "ledger/js/app.js:658"
+   "ledger/js/app.js:660"
   ]
  },
  "&Maximum number of undos:": {
@@ -2276,7 +2279,7 @@
  },
  "&Merge and Center": {
   "where": [
-   "ledger/js/commands.js:159"
+   "ledger/js/commands.js:164"
   ]
  },
  "&Merge cells": {
@@ -2335,7 +2338,7 @@
  },
  "&Move and size with cells": {
   "where": [
-   "ledger/js/drawing.js:452"
+   "ledger/js/drawing.js:476"
   ]
  },
  "&Move object with text": {
@@ -2414,7 +2417,7 @@
  },
  "&New Window": {
   "where": [
-   "ledger/js/commands.js:241",
+   "ledger/js/commands.js:246",
    "quire/js/commands.js:461"
   ]
  },
@@ -2458,7 +2461,7 @@
    "lectern/js/app.js:362",
    "lectern/js/slideshow.js:753",
    "ledger/js/app.js:113",
-   "ledger/js/app.js:1142"
+   "ledger/js/app.js:1144"
   ]
  },
  "&No Fill": {
@@ -2469,7 +2472,7 @@
  "&None": {
   "where": [
    "lectern/js/dialogs.js:837",
-   "ledger/js/app.js:658",
+   "ledger/js/app.js:660",
    "ledger/js/dialogs.js:761",
    "quire/js/dialogs.js:753"
   ]
@@ -2560,7 +2563,7 @@
  },
  "&Open Hyperlink": {
   "where": [
-   "ledger/js/app.js:866",
+   "ledger/js/app.js:868",
    "quire/js/app.js:1158"
   ]
  },
@@ -2581,7 +2584,7 @@
    "common/dialogs.js:270",
    "common/dialogs.js:390",
    "lectern/js/commands.js:139",
-   "ledger/js/commands.js:207"
+   "ledger/js/commands.js:212"
   ]
  },
  "&Or": {
@@ -2657,6 +2660,7 @@
  },
  "&Oval": {
   "where": [
+   "ledger/js/commands.js:129",
    "quire/js/commands.js:502"
   ]
  },
@@ -2771,7 +2775,7 @@
  },
  "&Percent Style": {
   "where": [
-   "ledger/js/commands.js:166"
+   "ledger/js/commands.js:171"
   ]
  },
  "&Percent of original:": {
@@ -2804,7 +2808,7 @@
  },
  "&PivotTable and PivotChart Report...": {
   "where": [
-   "ledger/js/commands.js:235"
+   "ledger/js/commands.js:240"
   ]
  },
  "&Popup menu on right mouse click": {
@@ -2863,7 +2867,7 @@
  },
  "&Print object": {
   "where": [
-   "ledger/js/drawing.js:455"
+   "ledger/js/drawing.js:479"
   ]
  },
  "&Print...": {
@@ -2881,7 +2885,7 @@
  },
  "&Protect Sheet...": {
   "where": [
-   "ledger/js/commands.js:190"
+   "ledger/js/commands.js:195"
   ]
  },
  "&Protect worksheet and contents of locked cells": {
@@ -2921,6 +2925,7 @@
  },
  "&Rectangle": {
   "where": [
+   "ledger/js/commands.js:128",
    "quire/js/commands.js:501"
   ]
  },
@@ -2970,7 +2975,7 @@
  },
  "&Refresh Data": {
   "where": [
-   "ledger/js/commands.js:236"
+   "ledger/js/commands.js:241"
   ]
  },
  "&Rehearse Timings": {
@@ -3001,7 +3006,7 @@
  "&Remove Hyperlink": {
   "where": [
    "lectern/js/commands.js:94",
-   "ledger/js/commands.js:127",
+   "ledger/js/commands.js:132",
    "quire/js/app.js:1158",
    "quire/js/commands.js:309"
   ]
@@ -3019,7 +3024,7 @@
  "&Rename": {
   "where": [
    "ledger/js/app.js:450",
-   "ledger/js/commands.js:140"
+   "ledger/js/commands.js:145"
   ]
  },
  "&Rename...": {
@@ -3295,12 +3300,12 @@
  },
  "&Show All": {
   "where": [
-   "ledger/js/commands.js:216"
+   "ledger/js/commands.js:221"
   ]
  },
  "&Show Detail": {
   "where": [
-   "ledger/js/commands.js:227"
+   "ledger/js/commands.js:232"
   ]
  },
  "&Show error alert after invalid data is entered": {
@@ -3385,7 +3390,7 @@
  },
  "&Sort...": {
   "where": [
-   "ledger/js/commands.js:212",
+   "ledger/js/commands.js:217",
    "quire/js/commands.js:450"
   ]
  },
@@ -3428,13 +3433,13 @@
  "&Spelling...": {
   "where": [
    "lectern/js/commands.js:136",
-   "ledger/js/commands.js:188",
+   "ledger/js/commands.js:193",
    "quire/js/spell.js:288"
   ]
  },
  "&Split": {
   "where": [
-   "ledger/js/commands.js:240",
+   "ledger/js/commands.js:245",
    "quire/js/commands.js:463"
   ]
  },
@@ -3456,7 +3461,7 @@
  },
  "&Standard Width...": {
   "where": [
-   "ledger/js/commands.js:139"
+   "ledger/js/commands.js:144"
   ]
  },
  "&Standard column width:": {
@@ -3525,7 +3530,7 @@
  },
  "&Style...": {
   "where": [
-   "ledger/js/commands.js:147",
+   "ledger/js/commands.js:152",
    "quire/js/find.js:383"
   ]
  },
@@ -3563,7 +3568,7 @@
  "&Sum": {
   "where": [
    "ledger/js/app.js:581",
-   "ledger/js/app.js:658"
+   "ledger/js/app.js:660"
   ]
  },
  "&Summary below data": {
@@ -3603,7 +3608,7 @@
  "&Tab Color...": {
   "where": [
    "ledger/js/app.js:454",
-   "ledger/js/commands.js:144"
+   "ledger/js/commands.js:149"
   ]
  },
  "&Tab stop position:": {
@@ -3626,7 +3631,7 @@
  },
  "&Table...|what-if": {
   "where": [
-   "ledger/js/commands.js:221"
+   "ledger/js/commands.js:226"
   ]
  },
  "&Tables": {
@@ -3775,7 +3780,7 @@
  },
  "&Total Row": {
   "where": [
-   "ledger/js/commands.js:232"
+   "ledger/js/commands.js:237"
   ]
  },
  "&Track Changes": {
@@ -3820,7 +3825,7 @@
  "&Underline": {
   "where": [
    "lectern/js/dialogs.js:80",
-   "ledger/js/commands.js:153"
+   "ledger/js/commands.js:158"
   ]
  },
  "&Underline style:": {
@@ -3861,13 +3866,13 @@
  },
  "&Ungroup...": {
   "where": [
-   "ledger/js/commands.js:225"
+   "ledger/js/commands.js:230"
   ]
  },
  "&Unhide": {
   "where": [
-   "ledger/js/commands.js:134",
-   "ledger/js/commands.js:138"
+   "ledger/js/commands.js:139",
+   "ledger/js/commands.js:143"
   ]
  },
  "&Unhide sheet:": {
@@ -3877,7 +3882,7 @@
  },
  "&Unhide...": {
   "where": [
-   "ledger/js/commands.js:142"
+   "ledger/js/commands.js:147"
   ]
  },
  "&Up": {
@@ -4040,7 +4045,7 @@
  "&Weight:": {
   "where": [
    "lectern/js/dialogs.js:404",
-   "ledger/js/drawing.js:445",
+   "ledger/js/drawing.js:469",
    "quire/js/dialogs3.js:97"
   ]
  },
@@ -4107,7 +4112,7 @@
  },
  "&Wrap Text": {
   "where": [
-   "ledger/js/commands.js:172"
+   "ledger/js/commands.js:177"
   ]
  },
  "&Wrap text": {
@@ -4126,7 +4131,7 @@
    "lectern/js/app.js:362",
    "lectern/js/slideshow.js:753",
    "ledger/js/app.js:113",
-   "ledger/js/app.js:1142"
+   "ledger/js/app.js:1144"
   ]
  },
  "&Zero values": {
@@ -4261,7 +4266,7 @@
  },
  "(no names)": {
   "where": [
-   "ledger/js/app.js:764"
+   "ledger/js/app.js:766"
   ]
  },
  "(no spelling suggestions)": {
@@ -4407,7 +4412,7 @@
  },
  "10-Point Star": {
   "where": [
-   "common/geometry.js:549"
+   "common/geometry.js:550"
   ]
  },
  "100 words or less": {
@@ -4433,7 +4438,7 @@
  },
  "12-Point Star": {
   "where": [
-   "common/geometry.js:550"
+   "common/geometry.js:551"
   ]
  },
  "12.5% Gray": {
@@ -4443,7 +4448,7 @@
  },
  "16-Point Star": {
   "where": [
-   "common/geometry.js:342"
+   "common/geometry.js:343"
   ]
  },
  "1st, 2nd, 3rd ...": {
@@ -4488,7 +4493,7 @@
  },
  "24-Point Star": {
   "where": [
-   "common/geometry.js:343"
+   "common/geometry.js:344"
   ]
  },
  "25% Gray": {
@@ -4513,7 +4518,7 @@
  },
  "3-D model": {
   "where": [
-   "lectern/js/render.js:602"
+   "lectern/js/render.js:582"
   ]
  },
  "3. Start enforcement": {
@@ -4523,7 +4528,7 @@
  },
  "32-Point Star": {
   "where": [
-   "common/geometry.js:344"
+   "common/geometry.js:345"
   ]
  },
  "35mm Slides": {
@@ -4558,12 +4563,12 @@
  },
  "4-Point Star": {
   "where": [
-   "common/geometry.js:338"
+   "common/geometry.js:339"
   ]
  },
  "5-Point Star": {
   "where": [
-   "common/geometry.js:339"
+   "common/geometry.js:340"
   ]
  },
  "50% Gray": {
@@ -4578,7 +4583,7 @@
  },
  "6-Point Star": {
   "where": [
-   "common/geometry.js:340"
+   "common/geometry.js:341"
   ]
  },
  "6.25% Gray": {
@@ -4588,7 +4593,7 @@
  },
  "7-Point Star": {
   "where": [
-   "common/geometry.js:548"
+   "common/geometry.js:549"
   ]
  },
  "75% Gray": {
@@ -4603,7 +4608,7 @@
  },
  "8-Point Star": {
   "where": [
-   "common/geometry.js:341"
+   "common/geometry.js:342"
   ]
  },
  ": (colon)": {
@@ -4816,6 +4821,7 @@
  "A&utoShapes": {
   "where": [
    "lectern/js/app.js:228",
+   "ledger/js/app.js:603",
    "quire/js/app.js:313"
   ]
  },
@@ -4979,67 +4985,67 @@
  },
  "Action Button: Back or Previous": {
   "where": [
-   "common/geometry.js:438"
+   "common/geometry.js:439"
   ]
  },
  "Action Button: Beginning": {
   "where": [
-   "common/geometry.js:439"
+   "common/geometry.js:440"
   ]
  },
  "Action Button: Custom": {
   "where": [
-   "common/geometry.js:437"
+   "common/geometry.js:438"
   ]
  },
  "Action Button: Document": {
   "where": [
-   "common/geometry.js:440"
+   "common/geometry.js:441"
   ]
  },
  "Action Button: End": {
   "where": [
-   "common/geometry.js:440"
+   "common/geometry.js:441"
   ]
  },
  "Action Button: Forward or Next": {
   "where": [
-   "common/geometry.js:439"
+   "common/geometry.js:440"
   ]
  },
  "Action Button: Help": {
   "where": [
-   "common/geometry.js:437"
+   "common/geometry.js:438"
   ]
  },
  "Action Button: Home": {
   "where": [
-   "common/geometry.js:437"
+   "common/geometry.js:438"
   ]
  },
  "Action Button: Information": {
   "where": [
-   "common/geometry.js:438"
+   "common/geometry.js:439"
   ]
  },
  "Action Button: Movie": {
   "where": [
-   "common/geometry.js:441"
+   "common/geometry.js:442"
   ]
  },
  "Action Button: Return": {
   "where": [
-   "common/geometry.js:440"
+   "common/geometry.js:441"
   ]
  },
  "Action Button: Sound": {
   "where": [
-   "common/geometry.js:441"
+   "common/geometry.js:442"
   ]
  },
  "Action Buttons": {
   "where": [
-   "common/geometry.js:715",
+   "common/geometry.js:734",
    "lectern/js/app.js:82",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161"
@@ -5083,7 +5089,7 @@
  },
  "Add &Watch": {
   "where": [
-   "ledger/js/commands.js:203"
+   "ledger/js/commands.js:208"
   ]
  },
  "Add &line numbering": {
@@ -5158,7 +5164,7 @@
  "Add Text": {
   "where": [
    "lectern/js/textedit.js:339",
-   "quire/js/drawing.js:707"
+   "quire/js/drawing.js:690"
   ]
  },
  "Add at least one picture.": {
@@ -5178,7 +5184,7 @@
  },
  "Add-&Ins...": {
   "where": [
-   "ledger/js/commands.js:209"
+   "ledger/js/commands.js:214"
   ]
  },
  "Add/remove 12 pt space before": {
@@ -5328,7 +5334,7 @@
    "lectern/js/app.js:1090",
    "lectern/js/ribbon.js:90",
    "lectern/js/ribbon.js:98",
-   "ledger/js/commands.js:155"
+   "ledger/js/commands.js:160"
   ]
  },
  "Align &Bottom": {
@@ -5345,7 +5351,7 @@
   "where": [
    "lectern/js/commands.js:107",
    "lectern/js/commands.js:178",
-   "ledger/js/commands.js:156"
+   "ledger/js/commands.js:161"
   ]
  },
  "Align &Middle": {
@@ -5357,7 +5363,7 @@
   "where": [
    "lectern/js/commands.js:109",
    "lectern/js/commands.js:178",
-   "ledger/js/commands.js:158"
+   "ledger/js/commands.js:163"
   ]
  },
  "Align &Top": {
@@ -5423,7 +5429,7 @@
  "All Borders": {
   "where": [
    "lectern/js/app.js:190",
-   "ledger/js/app.js:616",
+   "ledger/js/app.js:618",
    "quire/js/app.js:212"
   ]
  },
@@ -5495,7 +5501,7 @@
  },
  "Allow Users to Edit Ra&nges...": {
   "where": [
-   "ledger/js/commands.js:192"
+   "ledger/js/commands.js:197"
   ]
  },
  "Allow all users of this worksheet to:": {
@@ -5566,7 +5572,7 @@
  "Alternative text:": {
   "where": [
    "lectern/js/dialogs.js:456",
-   "ledger/js/drawing.js:459"
+   "ledger/js/drawing.js:483"
   ]
  },
  "Alt|key": {
@@ -5597,7 +5603,7 @@
  },
  "Analysis ToolPak functions (engineering, financial, date) are built in.": {
   "where": [
-   "ledger/js/commands.js:209"
+   "ledger/js/commands.js:214"
   ]
  },
  "Animate your slides": {
@@ -5845,19 +5851,19 @@
  },
  "Arc": {
   "where": [
-   "common/geometry.js:250"
+   "common/geometry.js:251"
   ]
  },
  "Arch Down": {
   "where": [
-   "lectern/js/render.js:534",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:514",
+   "quire/js/drawing.js:125"
   ]
  },
  "Arch Up": {
   "where": [
-   "lectern/js/render.js:534",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:514",
+   "quire/js/drawing.js:125"
   ]
  },
  "Are you ready to apply these settings? (You can turn them off later)": {
@@ -5876,7 +5882,7 @@
    "common/core.js:697",
    "lectern/js/dialogs.js:999",
    "lectern/js/dialogs.js:1018",
-   "lectern/js/render.js:567"
+   "lectern/js/render.js:547"
   ]
  },
  "Aro&und": {
@@ -5896,7 +5902,7 @@
   "where": [
    "lectern/js/commands.js:162",
    "lectern/js/dialogs.js:55",
-   "ledger/js/drawing.js:546",
+   "ledger/js/commands.js:127",
    "quire/js/commands.js:499"
   ]
  },
@@ -5979,7 +5985,7 @@
  },
  "Assign Macro...": {
   "where": [
-   "ledger/js/drawing.js:424"
+   "ledger/js/drawing.js:446"
   ]
  },
  "Assigns calculated values to names which allow storing intermediate calculation results.": {
@@ -6044,7 +6050,7 @@
  },
  "Auto Outline": {
   "where": [
-   "ledger/js/app.js:1198"
+   "ledger/js/app.js:1200"
   ]
  },
  "Auto&Fill": {
@@ -6054,7 +6060,7 @@
  },
  "Auto&Filter": {
   "where": [
-   "ledger/js/commands.js:215"
+   "ledger/js/commands.js:220"
   ]
  },
  "Auto&Fit to contents": {
@@ -6131,8 +6137,8 @@
  },
  "AutoFit": {
   "where": [
-   "ledger/js/app.js:1298",
-   "ledger/js/commands.js:172",
+   "ledger/js/app.js:1300",
+   "ledger/js/commands.js:177",
    "ledger/js/ops.js:570",
    "ledger/js/ops.js:609"
   ]
@@ -6213,13 +6219,14 @@
  "AutoShapes": {
   "where": [
    "lectern/js/app.js:228",
+   "ledger/js/app.js:603",
    "quire/js/app.js:313"
   ]
  },
  "AutoSum": {
   "where": [
-   "ledger/js/app.js:1093",
-   "ledger/js/commands.js:254",
+   "ledger/js/app.js:1095",
+   "ledger/js/commands.js:259",
    "ledger/js/panes.js:132",
    "ledger/js/ribbon.js:37"
   ]
@@ -6314,7 +6321,7 @@
  },
  "Average={0}": {
   "where": [
-   "ledger/js/app.js:712"
+   "ledger/js/app.js:714"
   ]
  },
  "Averages the values in a column in a list or database that match conditions you specify.": {
@@ -6411,7 +6418,7 @@
    "lectern/js/dialogs.js:539",
    "lectern/js/dialogs.js:546",
    "lectern/js/model.js:297",
-   "ledger/js/app.js:1355"
+   "ledger/js/app.js:1357"
   ]
  },
  "Background fill": {
@@ -6492,7 +6499,7 @@
  },
  "Basic Shapes": {
   "where": [
-   "common/geometry.js:710",
+   "common/geometry.js:729",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -6540,7 +6547,7 @@
  },
  "Behind Text": {
   "where": [
-   "quire/js/drawing.js:687"
+   "quire/js/drawing.js:670"
   ]
  },
  "Below selected item": {
@@ -6555,12 +6562,12 @@
  },
  "Bent Arrow": {
   "where": [
-   "common/geometry.js:311"
+   "common/geometry.js:312"
   ]
  },
  "Bent-Up Arrow": {
   "where": [
-   "common/geometry.js:522"
+   "common/geometry.js:523"
   ]
  },
  "Berry": {
@@ -6580,7 +6587,7 @@
  },
  "Bevel": {
   "where": [
-   "common/geometry.js:179"
+   "common/geometry.js:180"
   ]
  },
  "Bitmap Image": {
@@ -6671,12 +6678,12 @@
  },
  "Block Arc": {
   "where": [
-   "common/geometry.js:507"
+   "common/geometry.js:508"
   ]
  },
  "Block Arrows": {
   "where": [
-   "common/geometry.js:711",
+   "common/geometry.js:730",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -6878,7 +6885,7 @@
  "Bottom Border": {
   "where": [
    "lectern/js/app.js:190",
-   "ledger/js/app.js:614",
+   "ledger/js/app.js:616",
    "quire/js/app.js:212",
    "quire/js/dialogs.js:313"
   ]
@@ -6890,7 +6897,7 @@
  },
  "Bottom Double Border": {
   "where": [
-   "ledger/js/app.js:615"
+   "ledger/js/app.js:617"
   ]
  },
  "Bottom of page": {
@@ -6991,7 +6998,7 @@
  "Bring &Forward": {
   "where": [
    "lectern/js/commands.js:176",
-   "ledger/js/drawing.js:424",
+   "ledger/js/drawing.js:446",
    "quire/js/commands.js:508"
   ]
  },
@@ -7007,7 +7014,7 @@
  },
  "Bring to Fr&ont": {
   "where": [
-   "ledger/js/drawing.js:424"
+   "ledger/js/drawing.js:446"
   ]
  },
  "Bring to Fro&nt": {
@@ -7205,7 +7212,7 @@
  },
  "C&ells...": {
   "where": [
-   "ledger/js/commands.js:130",
+   "ledger/js/commands.js:135",
    "quire/js/commands.js:429",
    "quire/js/commands.js:433"
   ]
@@ -7233,14 +7240,14 @@
  },
  "C&lear Validation Circles": {
   "where": [
-   "ledger/js/commands.js:200"
+   "ledger/js/commands.js:205"
   ]
  },
  "C&olor:": {
   "where": [
    "lectern/js/dialogs.js:402",
    "lectern/js/dialogs.js:403",
-   "ledger/js/drawing.js:445",
+   "ledger/js/drawing.js:469",
    "quire/js/dialogs3.js:97"
   ]
  },
@@ -7281,7 +7288,7 @@
  },
  "C&ount Nums": {
   "where": [
-   "ledger/js/app.js:658"
+   "ledger/js/app.js:660"
   ]
  },
  "C&ustom": {
@@ -7306,7 +7313,7 @@
  },
  "CAPS": {
   "where": [
-   "ledger/js/app.js:651"
+   "ledger/js/app.js:653"
   ]
  },
  "CSV (Comma delimited) (*.csv)": {
@@ -7331,12 +7338,12 @@
  },
  "Calculate": {
   "where": [
-   "ledger/js/app.js:686"
+   "ledger/js/app.js:688"
   ]
  },
  "Calculate &Now": {
   "where": [
-   "ledger/js/commands.js:204"
+   "ledger/js/commands.js:209"
   ]
  },
  "Calculate Now": {
@@ -7346,7 +7353,7 @@
  },
  "Calculate Sheet": {
   "where": [
-   "ledger/js/commands.js:205"
+   "ledger/js/commands.js:210"
   ]
  },
  "Calculate now": {
@@ -7441,7 +7448,7 @@
  },
  "Callouts": {
   "where": [
-   "common/geometry.js:714",
+   "common/geometry.js:733",
    "lectern/js/app.js:161"
   ]
  },
@@ -7452,13 +7459,13 @@
  },
  "Can": {
   "where": [
-   "common/geometry.js:158"
+   "common/geometry.js:159"
   ]
  },
  "Can Up": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:515",
+   "quire/js/drawing.js:125"
   ]
  },
  "Can't &Repeat": {
@@ -7500,7 +7507,7 @@
  },
  "Cannot justify cells that contain numbers or formulas.": {
   "where": [
-   "ledger/js/app.js:941"
+   "ledger/js/app.js:943"
   ]
  },
  "Cannot rename a sheet to the same name as another sheet, a referenced object library or a workbook referenced by Visual Basic.": {
@@ -7939,13 +7946,13 @@
  },
  "Chart &Options...": {
   "where": [
-   "ledger/js/drawing.js:460"
+   "ledger/js/drawing.js:484"
   ]
  },
  "Chart &Type...": {
   "where": [
-   "ledger/js/drawing.js:422",
-   "ledger/js/drawing.js:460"
+   "ledger/js/drawing.js:444",
+   "ledger/js/drawing.js:484"
   ]
  },
  "Chart &title:": {
@@ -8005,7 +8012,7 @@
  },
  "Chart on new sheet": {
   "where": [
-   "ledger/js/commands.js:265"
+   "ledger/js/commands.js:270"
   ]
  },
  "Chart sub-type:": {
@@ -8193,13 +8200,13 @@
  },
  "Chevron": {
   "where": [
-   "common/geometry.js:307"
+   "common/geometry.js:308"
   ]
  },
  "Chevron Up": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:515",
+   "quire/js/drawing.js:125"
   ]
  },
  "Chinese (Simp.)": {
@@ -8269,7 +8276,7 @@
  },
  "Chord": {
   "where": [
-   "common/geometry.js:506"
+   "common/geometry.js:507"
   ]
  },
  "Chrome": {
@@ -8279,7 +8286,7 @@
  },
  "Circle": {
   "where": [
-   "lectern/js/render.js:534",
+   "lectern/js/render.js:514",
    "lectern/js/slideshow.js:17",
    "lectern/js/slideshow.js:24",
    "lectern/js/slideshow.js:29"
@@ -8287,12 +8294,12 @@
  },
  "Circular Arrow": {
   "where": [
-   "common/geometry.js:322"
+   "common/geometry.js:323"
   ]
  },
  "Circular: {0}": {
   "where": [
-   "ledger/js/app.js:674"
+   "ledger/js/app.js:676"
   ]
  },
  "Cl&ear": {
@@ -8360,9 +8367,9 @@
  },
  "Clear Co&ntents": {
   "where": [
-   "ledger/js/app.js:859",
-   "ledger/js/app.js:860",
-   "ledger/js/app.js:864"
+   "ledger/js/app.js:861",
+   "ledger/js/app.js:862",
+   "ledger/js/app.js:866"
   ]
  },
  "Clear Comments": {
@@ -8393,12 +8400,12 @@
  },
  "Clear Outline": {
   "where": [
-   "ledger/js/app.js:1207"
+   "ledger/js/app.js:1209"
   ]
  },
  "Clear Print Area": {
   "where": [
-   "ledger/js/app.js:1266"
+   "ledger/js/app.js:1268"
   ]
  },
  "Clear Recent Documents": {
@@ -8469,7 +8476,7 @@
  },
  "Click on the cells to apply formatting": {
   "where": [
-   "ledger/js/app.js:686"
+   "ledger/js/app.js:688"
   ]
  },
  "Click the color in the picture you want to make transparent.": {
@@ -8500,7 +8507,7 @@
  "Click to add text": {
   "where": [
    "lectern/js/model.js:485",
-   "lectern/js/render.js:666"
+   "lectern/js/render.js:646"
   ]
  },
  "Click to add title": {
@@ -8609,12 +8616,12 @@
  "Cloud": {
   "where": [
    "common/clipart.js:30",
-   "common/geometry.js:426"
+   "common/geometry.js:427"
   ]
  },
  "Cloud Callout": {
   "where": [
-   "common/geometry.js:412"
+   "common/geometry.js:413"
   ]
  },
  "Clustered Bar": {
@@ -8642,7 +8649,7 @@
  },
  "Co&mma Style": {
   "where": [
-   "ledger/js/commands.js:167"
+   "ledger/js/commands.js:172"
   ]
  },
  "Co&mment": {
@@ -8675,7 +8682,7 @@
  },
  "Co&nsolidate...": {
   "where": [
-   "ledger/js/commands.js:223"
+   "ledger/js/commands.js:228"
   ]
  },
  "Co&ntrast:": {
@@ -8812,7 +8819,7 @@
    "lectern/js/app.js:128",
    "lectern/js/app.js:138",
    "lectern/js/dialogs.js:457",
-   "ledger/js/drawing.js:445"
+   "ledger/js/drawing.js:469"
   ]
  },
  "Colors:": {
@@ -8948,7 +8955,7 @@
  },
  "Comma Style": {
   "where": [
-   "ledger/js/commands.js:167"
+   "ledger/js/commands.js:172"
   ]
  },
  "Comma [0]": {
@@ -9105,7 +9112,7 @@
  },
  "Con&ditional Formatting...": {
   "where": [
-   "ledger/js/commands.js:146"
+   "ledger/js/commands.js:151"
   ]
  },
  "Con&tinuous": {
@@ -9120,7 +9127,7 @@
  },
  "Con&vert to Range": {
   "where": [
-   "ledger/js/commands.js:233"
+   "ledger/js/commands.js:238"
   ]
  },
  "Concatenates a list or range of text strings using a delimiter.": {
@@ -9315,7 +9322,7 @@
  },
  "Convert to Range": {
   "where": [
-   "ledger/js/app.js:1145",
+   "ledger/js/app.js:1147",
    "ledger/js/ribbon.js:103"
   ]
  },
@@ -9513,7 +9520,7 @@
  },
  "Copy Formula from Above": {
   "where": [
-   "ledger/js/commands.js:257"
+   "ledger/js/commands.js:262"
   ]
  },
  "Copy Sheet": {
@@ -9533,7 +9540,7 @@
  },
  "Copy Value from Above": {
   "where": [
-   "ledger/js/commands.js:258"
+   "ledger/js/commands.js:263"
   ]
  },
  "Copy formula / value from the cell above": {
@@ -9593,12 +9600,12 @@
  },
  "Count Nums={0}": {
   "where": [
-   "ledger/js/app.js:714"
+   "ledger/js/app.js:716"
   ]
  },
  "Count={0}": {
   "where": [
-   "ledger/js/app.js:713"
+   "ledger/js/app.js:715"
   ]
  },
  "Counts nonblank cells in the field (column) of records in the database that match the conditions you specify.": {
@@ -9829,8 +9836,8 @@
  },
  "Cross": {
   "where": [
-   "common/geometry.js:154",
-   "common/geometry.js:654"
+   "common/geometry.js:155",
+   "common/geometry.js:655"
   ]
  },
  "Cross-&reference...": {
@@ -10133,7 +10140,7 @@
  },
  "Cube": {
   "where": [
-   "common/geometry.js:168",
+   "common/geometry.js:169",
    "ledger/js/fninfo.js:536"
   ]
  },
@@ -10149,13 +10156,13 @@
  },
  "Currency": {
   "where": [
-   "ledger/js/commands.js:179",
+   "ledger/js/commands.js:184",
    "ledger/js/dialogs.js:30"
   ]
  },
  "Currency Style": {
   "where": [
-   "ledger/js/commands.js:165"
+   "ledger/js/commands.js:170"
   ]
  },
  "Currency Symbols": {
@@ -10220,8 +10227,8 @@
  },
  "Curved Connector": {
   "where": [
-   "common/geometry.js:449",
    "common/geometry.js:450",
+   "common/geometry.js:451",
    "lectern/js/commands.js:170"
   ]
  },
@@ -10375,7 +10382,7 @@
  "D&raw": {
   "where": [
    "lectern/js/app.js:230",
-   "ledger/js/app.js:603",
+   "ledger/js/app.js:605",
    "quire/js/app.js:315"
   ]
  },
@@ -10444,22 +10451,22 @@
  },
  "Dark downward diagonal": {
   "where": [
-   "common/geometry.js:656"
+   "common/geometry.js:657"
   ]
  },
  "Dark horizontal": {
   "where": [
-   "common/geometry.js:653"
+   "common/geometry.js:654"
   ]
  },
  "Dark upward diagonal": {
   "where": [
-   "common/geometry.js:656"
+   "common/geometry.js:657"
   ]
  },
  "Dark vertical": {
   "where": [
-   "common/geometry.js:653"
+   "common/geometry.js:654"
   ]
  },
  "Dash": {
@@ -10506,22 +10513,22 @@
  },
  "Dashed downward diagonal": {
   "where": [
-   "common/geometry.js:657"
+   "common/geometry.js:658"
   ]
  },
  "Dashed horizontal": {
   "where": [
-   "common/geometry.js:654"
+   "common/geometry.js:655"
   ]
  },
  "Dashed upward diagonal": {
   "where": [
-   "common/geometry.js:657"
+   "common/geometry.js:658"
   ]
  },
  "Dashed vertical": {
   "where": [
-   "common/geometry.js:654"
+   "common/geometry.js:655"
   ]
  },
  "Data": {
@@ -10594,7 +10601,7 @@
  "Date": {
   "where": [
    "common/dialogs.js:408",
-   "ledger/js/commands.js:181",
+   "ledger/js/commands.js:186",
    "ledger/js/dialogs.js:30",
    "ledger/js/dialogs2.js:94"
   ]
@@ -10689,7 +10696,7 @@
  },
  "Decagon": {
   "where": [
-   "common/geometry.js:546"
+   "common/geometry.js:547"
   ]
  },
  "Decimal": {
@@ -10711,7 +10718,7 @@
  },
  "Decrease Decimal": {
   "where": [
-   "ledger/js/commands.js:169"
+   "ledger/js/commands.js:174"
   ]
  },
  "Decrease Font Size": {
@@ -10723,13 +10730,13 @@
  },
  "Decrease In&dent": {
   "where": [
-   "ledger/js/commands.js:171"
+   "ledger/js/commands.js:176"
   ]
  },
  "Decrease Indent": {
   "where": [
    "lectern/js/commands.js:123",
-   "ledger/js/commands.js:171",
+   "ledger/js/commands.js:176",
    "quire/js/commands.js:165",
    "quire/js/commands.js:367"
   ]
@@ -10815,7 +10822,7 @@
  "Delete": {
   "where": [
    "lectern/js/ribbon.js:115",
-   "ledger/js/app.js:1343",
+   "ledger/js/app.js:1345",
    "ledger/js/dialogs.js:370",
    "ledger/js/ribbon.js:34"
   ]
@@ -10847,12 +10854,12 @@
  },
  "Delete Bac&kground": {
   "where": [
-   "ledger/js/commands.js:143"
+   "ledger/js/commands.js:148"
   ]
  },
  "Delete Background": {
   "where": [
-   "ledger/js/app.js:1348"
+   "ledger/js/app.js:1350"
   ]
  },
  "Delete Bookmark": {
@@ -10881,7 +10888,7 @@
  },
  "Delete Columns": {
   "where": [
-   "ledger/js/app.js:1004",
+   "ledger/js/app.js:1006",
    "ledger/js/ops.js:784",
    "quire/js/tables.js:270"
   ]
@@ -10915,7 +10922,7 @@
  },
  "Delete Rows": {
   "where": [
-   "ledger/js/app.js:1004",
+   "ledger/js/app.js:1006",
    "ledger/js/ops.js:784",
    "quire/js/tables.js:189"
   ]
@@ -11113,7 +11120,7 @@
  },
  "Diagonal Stripe": {
   "where": [
-   "common/geometry.js:520",
+   "common/geometry.js:521",
    "ledger/js/dialogs.js:263"
   ]
  },
@@ -11129,12 +11136,12 @@
  },
  "Diagonal brick": {
   "where": [
-   "common/geometry.js:659"
+   "common/geometry.js:660"
   ]
  },
  "Diagonal cross": {
   "where": [
-   "common/geometry.js:657"
+   "common/geometry.js:658"
   ]
  },
  "Diagonal down": {
@@ -11150,7 +11157,7 @@
  "Diagram": {
   "where": [
    "lectern/js/app.js:221",
-   "lectern/js/render.js:602"
+   "lectern/js/render.js:582"
   ]
  },
  "Diagram Gallery": {
@@ -11160,7 +11167,7 @@
  },
  "Diamond": {
   "where": [
-   "common/geometry.js:144",
+   "common/geometry.js:145",
    "lectern/js/panes.js:735",
    "lectern/js/slideshow.js:18",
    "lectern/js/slideshow.js:25"
@@ -11362,12 +11369,12 @@
  },
  "Division": {
   "where": [
-   "common/geometry.js:559"
+   "common/geometry.js:560"
   ]
  },
  "Divot": {
   "where": [
-   "common/geometry.js:660"
+   "common/geometry.js:661"
   ]
  },
  "Dk Dwn Diagonal": {
@@ -11423,7 +11430,7 @@
  },
  "Do you want to convert the list to a normal range?": {
   "where": [
-   "ledger/js/app.js:1142"
+   "ledger/js/app.js:1144"
   ]
  },
  "Do you want to delete style {0}?": {
@@ -11528,7 +11535,7 @@
  },
  "Dodecagon": {
   "where": [
-   "common/geometry.js:547"
+   "common/geometry.js:548"
   ]
  },
  "Don't capitalize after:": {
@@ -11543,7 +11550,7 @@
  },
  "Donut": {
   "where": [
-   "common/geometry.js:206"
+   "common/geometry.js:207"
   ]
  },
  "Dot": {
@@ -11572,12 +11579,12 @@
  },
  "Dotted diamond": {
   "where": [
-   "common/geometry.js:660"
+   "common/geometry.js:661"
   ]
  },
  "Dotted grid": {
   "where": [
-   "common/geometry.js:658"
+   "common/geometry.js:659"
   ]
  },
  "Double": {
@@ -11605,12 +11612,12 @@
  },
  "Double Brace": {
   "where": [
-   "common/geometry.js:434"
+   "common/geometry.js:435"
   ]
  },
  "Double Bracket": {
   "where": [
-   "common/geometry.js:433"
+   "common/geometry.js:434"
   ]
  },
  "Double Closing Quote": {
@@ -11680,7 +11687,7 @@
  },
  "Down Arrow": {
   "where": [
-   "common/geometry.js:274"
+   "common/geometry.js:275"
   ]
  },
  "Download": {
@@ -11695,7 +11702,7 @@
  },
  "Downward diagonal": {
   "where": [
-   "common/geometry.js:655"
+   "common/geometry.js:656"
   ]
  },
  "Dra&w Table": {
@@ -11720,12 +11727,12 @@
  },
  "Drag in the worksheet to insert the AutoShape. Press Esc to cancel.": {
   "where": [
-   "ledger/js/drawing.js:486"
+   "ledger/js/drawing.js:512"
   ]
  },
  "Drag in the worksheet to insert the text box. Press Esc to cancel.": {
   "where": [
-   "ledger/js/drawing.js:486"
+   "ledger/js/drawing.js:512"
   ]
  },
  "Drag the fill handle (the square at the bottom-right of the selection) to copy cells or extend a series: 1, 2 → 3, 4…; Mon → Tue; Jan → Feb; Q1 → Q2; dates by day, weekday, month or year. Double-click the handle to fill down beside your data. Edit ▸ Fill ▸ Series gives full control; Ctrl+D and Ctrl+R fill down and right.": {
@@ -11740,7 +11747,7 @@
  },
  "Drag to draw": {
   "where": [
-   "ledger/js/drawing.js:483"
+   "ledger/js/drawing.js:509"
   ]
  },
  "Drag to draw a text box. Press Esc to cancel.": {
@@ -11772,7 +11779,7 @@
  },
  "Draw Borders...": {
   "where": [
-   "ledger/js/app.js:621"
+   "ledger/js/app.js:623"
   ]
  },
  "Draw Table": {
@@ -11792,7 +11799,7 @@
   "where": [
    "lectern/js/app.js:230",
    "lectern/js/ribbon.js:28",
-   "ledger/js/app.js:603",
+   "ledger/js/app.js:605",
    "quire/js/app.js:315"
   ]
  },
@@ -11831,7 +11838,7 @@
  },
  "Drop a workbook to open it, or pictures to insert them": {
   "where": [
-   "ledger/js/app.js:1446"
+   "ledger/js/app.js:1448"
   ]
  },
  "Drop to open": {
@@ -11932,7 +11939,7 @@
  },
  "END": {
   "where": [
-   "ledger/js/app.js:651"
+   "ledger/js/app.js:653"
   ]
  },
  "EXT": {
@@ -12045,7 +12052,7 @@
  },
  "Edit Te&xt": {
   "where": [
-   "ledger/js/drawing.js:423",
+   "ledger/js/drawing.js:445",
    "quire/js/commands.js:522"
   ]
  },
@@ -12122,7 +12129,7 @@
  },
  "Edit|mode": {
   "where": [
-   "ledger/js/app.js:685"
+   "ledger/js/app.js:687"
   ]
  },
  "Effect": {
@@ -12154,9 +12161,9 @@
  },
  "Elbow Connector": {
   "where": [
-   "common/geometry.js:446",
    "common/geometry.js:447",
    "common/geometry.js:448",
+   "common/geometry.js:449",
    "lectern/js/commands.js:169"
   ]
  },
@@ -12196,7 +12203,7 @@
  "Embedded object": {
   "where": [
    "lectern/js/frames.js:19",
-   "lectern/js/render.js:602",
+   "lectern/js/render.js:582",
    "quire/js/render.js:378"
   ]
  },
@@ -12460,7 +12467,7 @@
  },
  "Enter|mode": {
   "where": [
-   "ledger/js/app.js:685"
+   "ledger/js/app.js:687"
   ]
  },
  "Entire &column": {
@@ -12534,7 +12541,7 @@
  },
  "Equal": {
   "where": [
-   "common/geometry.js:556"
+   "common/geometry.js:557"
   ]
  },
  "Equation": {
@@ -12664,7 +12671,7 @@
  },
  "Evaluate &Formula": {
   "where": [
-   "ledger/js/commands.js:201"
+   "ledger/js/commands.js:206"
   ]
  },
  "Evaluate Formula": {
@@ -12819,12 +12826,12 @@
  },
  "Explosion 1": {
   "where": [
-   "common/geometry.js:345"
+   "common/geometry.js:346"
   ]
  },
  "Explosion 2": {
   "where": [
-   "common/geometry.js:346"
+   "common/geometry.js:347"
   ]
  },
  "Export to &PDF...": {
@@ -12902,7 +12909,7 @@
  },
  "F&orm...": {
   "where": [
-   "ledger/js/commands.js:218"
+   "ledger/js/commands.js:223"
   ]
  },
  "F&ormat": {
@@ -12914,22 +12921,22 @@
  },
  "F&ormat AutoShape...": {
   "where": [
-   "ledger/js/drawing.js:425"
+   "ledger/js/drawing.js:447"
   ]
  },
  "F&ormat Chart Area...": {
   "where": [
-   "ledger/js/drawing.js:425"
+   "ledger/js/drawing.js:447"
   ]
  },
  "F&ormat Picture...": {
   "where": [
-   "ledger/js/drawing.js:425"
+   "ledger/js/drawing.js:447"
   ]
  },
  "F&ormat Text Box...": {
   "where": [
-   "ledger/js/drawing.js:425"
+   "ledger/js/drawing.js:447"
   ]
  },
  "F&ormat ▾": {
@@ -13239,7 +13246,7 @@
  },
  "Fill Down": {
   "where": [
-   "ledger/js/app.js:928"
+   "ledger/js/app.js:930"
   ]
  },
  "Fill Effects": {
@@ -13255,17 +13262,17 @@
  },
  "Fill Left": {
   "where": [
-   "ledger/js/app.js:928"
+   "ledger/js/app.js:930"
   ]
  },
  "Fill Right": {
   "where": [
-   "ledger/js/app.js:928"
+   "ledger/js/app.js:930"
   ]
  },
  "Fill Up": {
   "where": [
-   "ledger/js/app.js:928"
+   "ledger/js/app.js:930"
   ]
  },
  "Fill down / right": {
@@ -13602,148 +13609,148 @@
  },
  "Flowchart": {
   "where": [
-   "common/geometry.js:712",
+   "common/geometry.js:731",
    "lectern/js/app.js:161"
   ]
  },
  "Flowchart: Alternate Process": {
   "where": [
-   "common/geometry.js:372"
+   "common/geometry.js:373"
   ]
  },
  "Flowchart: Card": {
   "where": [
-   "common/geometry.js:389"
+   "common/geometry.js:390"
   ]
  },
  "Flowchart: Collate": {
   "where": [
-   "common/geometry.js:393"
+   "common/geometry.js:394"
   ]
  },
  "Flowchart: Connector": {
   "where": [
-   "common/geometry.js:387"
+   "common/geometry.js:388"
   ]
  },
  "Flowchart: Data": {
   "where": [
-   "common/geometry.js:374"
+   "common/geometry.js:375"
   ]
  },
  "Flowchart: Decision": {
   "where": [
-   "common/geometry.js:373"
+   "common/geometry.js:374"
   ]
  },
  "Flowchart: Delay": {
   "where": [
-   "common/geometry.js:397"
+   "common/geometry.js:398"
   ]
  },
  "Flowchart: Display": {
   "where": [
-   "common/geometry.js:399"
+   "common/geometry.js:400"
   ]
  },
  "Flowchart: Document": {
   "where": [
-   "common/geometry.js:377"
+   "common/geometry.js:378"
   ]
  },
  "Flowchart: Extract": {
   "where": [
-   "common/geometry.js:395"
+   "common/geometry.js:396"
   ]
  },
  "Flowchart: Internal Storage": {
   "where": [
-   "common/geometry.js:376"
+   "common/geometry.js:377"
   ]
  },
  "Flowchart: Magnetic Disk": {
   "where": [
-   "common/geometry.js:398"
+   "common/geometry.js:399"
   ]
  },
  "Flowchart: Manual Input": {
   "where": [
-   "common/geometry.js:385"
+   "common/geometry.js:386"
   ]
  },
  "Flowchart: Manual Operation": {
   "where": [
-   "common/geometry.js:386"
+   "common/geometry.js:387"
   ]
  },
  "Flowchart: Merge": {
   "where": [
-   "common/geometry.js:396"
+   "common/geometry.js:397"
   ]
  },
  "Flowchart: Multidocument": {
   "where": [
-   "common/geometry.js:378"
+   "common/geometry.js:379"
   ]
  },
  "Flowchart: Off-page Connector": {
   "where": [
-   "common/geometry.js:388"
+   "common/geometry.js:389"
   ]
  },
  "Flowchart: Offline Storage": {
   "where": [
-   "common/geometry.js:552"
+   "common/geometry.js:553"
   ]
  },
  "Flowchart: Or": {
   "where": [
-   "common/geometry.js:392"
+   "common/geometry.js:393"
   ]
  },
  "Flowchart: Predefined Process": {
   "where": [
-   "common/geometry.js:375"
+   "common/geometry.js:376"
   ]
  },
  "Flowchart: Preparation": {
   "where": [
-   "common/geometry.js:384"
+   "common/geometry.js:385"
   ]
  },
  "Flowchart: Process": {
   "where": [
-   "common/geometry.js:371"
+   "common/geometry.js:372"
   ]
  },
  "Flowchart: Punched Tape": {
   "where": [
-   "common/geometry.js:390"
+   "common/geometry.js:391"
   ]
  },
  "Flowchart: Sequential Access Storage": {
   "where": [
-   "common/geometry.js:553"
+   "common/geometry.js:554"
   ]
  },
  "Flowchart: Sort": {
   "where": [
-   "common/geometry.js:394"
+   "common/geometry.js:395"
   ]
  },
  "Flowchart: Stored Data": {
   "where": [
-   "common/geometry.js:551"
+   "common/geometry.js:552"
   ]
  },
  "Flowchart: Summing Junction": {
   "where": [
-   "common/geometry.js:391"
+   "common/geometry.js:392"
   ]
  },
  "Flowchart: Terminator": {
   "where": [
-   "common/geometry.js:383"
+   "common/geometry.js:384"
   ]
  },
  "Fly In": {
@@ -13778,7 +13785,7 @@
  },
  "Folded Corner": {
   "where": [
-   "common/geometry.js:192"
+   "common/geometry.js:193"
   ]
  },
  "Follow number with:": {
@@ -13808,8 +13815,8 @@
   "where": [
    "lectern/js/app.js:1192",
    "lectern/js/commands.js:127",
-   "ledger/js/app.js:1029",
-   "ledger/js/commands.js:174"
+   "ledger/js/app.js:1031",
+   "ledger/js/commands.js:179"
   ]
  },
  "Font Size": {
@@ -13817,7 +13824,7 @@
    "lectern/js/app.js:184",
    "lectern/js/app.js:1195",
    "ledger/js/app.js:576",
-   "ledger/js/app.js:1297"
+   "ledger/js/app.js:1299"
   ]
  },
  "Font color": {
@@ -14022,7 +14029,7 @@
  "Format AutoShape": {
   "where": [
    "lectern/js/dialogs.js:386",
-   "ledger/js/drawing.js:461",
+   "ledger/js/drawing.js:485",
    "quire/js/dialogs3.js:24"
   ]
  },
@@ -14046,7 +14053,7 @@
  },
  "Format Chart Area": {
   "where": [
-   "ledger/js/drawing.js:461"
+   "ledger/js/drawing.js:485"
   ]
  },
  "Format Letters&Art...": {
@@ -14076,7 +14083,7 @@
    "lectern/js/commands.js:130",
    "lectern/js/editor.js:1055",
    "lectern/js/editor.js:1064",
-   "ledger/js/commands.js:176"
+   "ledger/js/commands.js:181"
   ]
  },
  "Format Paragraph": {
@@ -14088,7 +14095,7 @@
  "Format Picture": {
   "where": [
    "lectern/js/dialogs.js:386",
-   "ledger/js/drawing.js:461",
+   "ledger/js/drawing.js:485",
    "ledger/js/ribbon.js:92",
    "quire/js/dialogs3.js:24"
   ]
@@ -14122,7 +14129,7 @@
  "Format Text Box": {
   "where": [
    "lectern/js/dialogs.js:386",
-   "ledger/js/drawing.js:461",
+   "ledger/js/drawing.js:485",
    "quire/js/dialogs3.js:24"
   ]
  },
@@ -14346,7 +14353,7 @@
  },
  "Frame": {
   "where": [
-   "common/geometry.js:199"
+   "common/geometry.js:200"
   ]
  },
  "Frame s&hape:": {
@@ -14377,7 +14384,7 @@
  },
  "Freeze Panes": {
   "where": [
-   "ledger/js/app.js:1232",
+   "ledger/js/app.js:1234",
    "ledger/js/ops.js:457",
    "ledger/js/ribbon.js:79"
   ]
@@ -14598,7 +14605,7 @@
  },
  "General|number format": {
   "where": [
-   "ledger/js/commands.js:178",
+   "ledger/js/commands.js:183",
    "ledger/js/csv.js:287",
    "ledger/js/dialogs.js:30"
   ]
@@ -14897,7 +14904,7 @@
  "Group": {
   "where": [
    "lectern/js/app.js:1030",
-   "ledger/js/app.js:1169",
+   "ledger/js/app.js:1171",
    "ledger/js/dialogs.js:378",
    "ledger/js/ribbon.js:68"
   ]
@@ -14950,14 +14957,14 @@
  },
  "H&eight...": {
   "where": [
-   "ledger/js/commands.js:131"
+   "ledger/js/commands.js:136"
   ]
  },
  "H&eight:": {
   "where": [
    "lectern/js/dialogs.js:416",
    "lectern/js/dialogs.js:560",
-   "ledger/js/drawing.js:450",
+   "ledger/js/drawing.js:474",
    "quire/js/dialogs.js:689"
   ]
  },
@@ -14998,7 +15005,7 @@
  },
  "Half Frame": {
   "where": [
-   "common/geometry.js:519"
+   "common/geometry.js:520"
   ]
  },
  "Handouts": {
@@ -15159,7 +15166,7 @@
  },
  "Heart": {
   "where": [
-   "common/geometry.js:230"
+   "common/geometry.js:231"
   ]
  },
  "Heavy wave": {
@@ -15187,12 +15194,12 @@
  },
  "Heptagon": {
   "where": [
-   "common/geometry.js:545"
+   "common/geometry.js:546"
   ]
  },
  "Hexagon": {
   "where": [
-   "common/geometry.js:146"
+   "common/geometry.js:147"
   ]
  },
  "Hidden": {
@@ -15227,7 +15234,7 @@
  },
  "Hide Detail": {
   "where": [
-   "ledger/js/app.js:1189"
+   "ledger/js/app.js:1191"
   ]
  },
  "Hide Sheet": {
@@ -15325,7 +15332,7 @@
  },
  "Horizontal": {
   "where": [
-   "common/geometry.js:653",
+   "common/geometry.js:654",
    "lectern/js/slideshow.js:10",
    "quire/js/dialogs3.js:73"
   ]
@@ -15358,7 +15365,7 @@
  },
  "Horizontal Scroll": {
   "where": [
-   "common/geometry.js:362"
+   "common/geometry.js:363"
   ]
  },
  "Horizontal Stripe": {
@@ -15373,7 +15380,7 @@
  },
  "Horizontal brick": {
   "where": [
-   "common/geometry.js:659"
+   "common/geometry.js:660"
   ]
  },
  "House": {
@@ -15389,7 +15396,7 @@
  "Hyperl&ink...": {
   "where": [
    "lectern/js/commands.js:95",
-   "ledger/js/commands.js:126",
+   "ledger/js/commands.js:131",
    "quire/js/commands.js:308"
   ]
  },
@@ -15512,7 +15519,7 @@
  },
  "Import &Text File...": {
   "where": [
-   "ledger/js/commands.js:234"
+   "ledger/js/commands.js:239"
   ]
  },
  "Import External &Data": {
@@ -15537,12 +15544,12 @@
  },
  "In Front of Text": {
   "where": [
-   "quire/js/drawing.js:687"
+   "quire/js/drawing.js:670"
   ]
  },
  "In Line with Text": {
   "where": [
-   "quire/js/drawing.js:687"
+   "quire/js/drawing.js:670"
   ]
  },
  "In l&ine with text": {
@@ -15639,7 +15646,7 @@
  },
  "Increase Decimal": {
   "where": [
-   "ledger/js/commands.js:168"
+   "ledger/js/commands.js:173"
   ]
  },
  "Increase Font Size": {
@@ -15651,13 +15658,13 @@
  },
  "Increase I&ndent": {
   "where": [
-   "ledger/js/commands.js:170"
+   "ledger/js/commands.js:175"
   ]
  },
  "Increase Indent": {
   "where": [
    "lectern/js/commands.js:124",
-   "ledger/js/commands.js:170",
+   "ledger/js/commands.js:175",
    "quire/js/commands.js:165",
    "quire/js/commands.js:366"
   ]
@@ -15728,7 +15735,7 @@
  },
  "Ink": {
   "where": [
-   "lectern/js/render.js:602"
+   "lectern/js/render.js:582"
   ]
  },
  "Ink &Color": {
@@ -15782,7 +15789,7 @@
  },
  "Insert AutoShape": {
   "where": [
-   "ledger/js/drawing.js:537",
+   "ledger/js/drawing.js:587",
    "quire/js/drawtool.js:80"
   ]
  },
@@ -15808,14 +15815,14 @@
   "where": [
    "lectern/js/app.js:1514",
    "lectern/js/commands.js:91",
-   "lectern/js/render.js:604",
+   "lectern/js/render.js:584",
    "ledger/js/xchart.js:408"
   ]
  },
  "Insert Clip Art": {
   "where": [
    "lectern/js/commands.js:84",
-   "lectern/js/render.js:604",
+   "lectern/js/render.js:584",
    "quire/js/commands.js:297",
    "quire/js/panes.js:172"
   ]
@@ -15865,7 +15872,7 @@
  "Insert Date": {
   "where": [
    "lectern/js/app.js:1252",
-   "ledger/js/commands.js:255",
+   "ledger/js/commands.js:260",
    "quire/js/commands.js:380",
    "quire/js/commands.js:546"
   ]
@@ -15883,7 +15890,7 @@
  },
  "Insert Diagram or Organization Chart": {
   "where": [
-   "lectern/js/render.js:604",
+   "lectern/js/render.js:584",
    "quire/js/commands.js:303"
   ]
  },
@@ -15968,7 +15975,7 @@
  },
  "Insert Media Clip": {
   "where": [
-   "lectern/js/render.js:604"
+   "lectern/js/render.js:584"
   ]
  },
  "Insert Merge Field": {
@@ -15999,7 +16006,7 @@
  },
  "Insert Page Break": {
   "where": [
-   "ledger/js/app.js:1278"
+   "ledger/js/app.js:1280"
   ]
  },
  "Insert Page Number": {
@@ -16012,8 +16019,8 @@
   "where": [
    "lectern/js/app.js:1292",
    "lectern/js/commands.js:85",
-   "lectern/js/render.js:604",
-   "ledger/js/app.js:1338"
+   "lectern/js/render.js:584",
+   "ledger/js/app.js:1340"
   ]
  },
  "Insert Row": {
@@ -16081,7 +16088,7 @@
    "lectern/js/app.js:1364",
    "lectern/js/commands.js:92",
    "lectern/js/dialogs.js:772",
-   "lectern/js/render.js:604"
+   "lectern/js/render.js:584"
   ]
  },
  "Insert Table of Contents": {
@@ -16092,13 +16099,13 @@
  "Insert Text Box": {
   "where": [
    "lectern/js/app.js:1262",
-   "ledger/js/drawing.js:537",
+   "ledger/js/drawing.js:587",
    "quire/js/drawtool.js:80"
   ]
  },
  "Insert Time": {
   "where": [
-   "ledger/js/commands.js:256",
+   "ledger/js/commands.js:261",
    "quire/js/commands.js:381",
    "quire/js/commands.js:547"
   ]
@@ -16311,9 +16318,9 @@
  "IntelliArt": {
   "where": [
    "lectern/js/diagram.js:589",
-   "lectern/js/render.js:602",
+   "lectern/js/render.js:582",
    "lectern/js/ribbon.js:40",
-   "ledger/js/drawing.js:134"
+   "ledger/js/drawing.js:150"
   ]
  },
  "IntelliArt SmartArt organization chart org": {
@@ -16382,7 +16389,7 @@
  },
  "Isosceles Triangle": {
   "where": [
-   "common/geometry.js:131"
+   "common/geometry.js:132"
   ]
  },
  "Italian (Italy)": {
@@ -16482,7 +16489,7 @@
  },
  "Justify": {
   "where": [
-   "ledger/js/app.js:947",
+   "ledger/js/app.js:949",
    "ledger/js/dialogs.js:153",
    "ledger/js/dialogs.js:154",
    "ledger/js/dialogs2.js:548"
@@ -16561,7 +16568,7 @@
  },
  "L-Shape": {
   "where": [
-   "common/geometry.js:518"
+   "common/geometry.js:519"
   ]
  },
  "La&bels": {
@@ -16635,17 +16642,17 @@
  },
  "Large checker board": {
   "where": [
-   "common/geometry.js:658"
+   "common/geometry.js:659"
   ]
  },
  "Large confetti": {
   "where": [
-   "common/geometry.js:659"
+   "common/geometry.js:660"
   ]
  },
  "Large grid": {
   "where": [
-   "common/geometry.js:658"
+   "common/geometry.js:659"
   ]
  },
  "Las Vegas Lights": {
@@ -16829,7 +16836,7 @@
  },
  "Ledger &Help": {
   "where": [
-   "ledger/js/commands.js:245"
+   "ledger/js/commands.js:250"
   ]
  },
  "Ledger Help": {
@@ -16850,7 +16857,7 @@
  },
  "Ledger cannot calculate a formula. Cell references in the formula refer to the formula's result, creating a circular reference.\n\nTo fix it, remove or change the reference, or turn on iterative calculation (Tools ▸ Options ▸ Calculation).": {
   "where": [
-   "ledger/js/app.js:680"
+   "ledger/js/app.js:682"
   ]
  },
  "Ledger cannot determine which row in your list or selection contains column labels, which are required for this command.": {
@@ -16860,7 +16867,7 @@
  },
  "Ledger cannot find any dependent cells.": {
   "where": [
-   "ledger/js/app.js:1383"
+   "ledger/js/app.js:1385"
   ]
  },
  "Ledger cannot find the data you're searching for.": {
@@ -16870,7 +16877,7 @@
  },
  "Ledger cannot read this picture.": {
   "where": [
-   "ledger/js/app.js:1329"
+   "ledger/js/app.js:1331"
   ]
  },
  "Ledger did not find anything to print.": {
@@ -16881,7 +16888,7 @@
  },
  "Ledger does not run macros. Workbooks with macros (.xlsm) open and save with their macros intact.": {
   "where": [
-   "ledger/js/commands.js:208"
+   "ledger/js/commands.js:213"
   ]
  },
  "Ledger found an error in the formula you entered. Do you want to accept the correction proposed below?\n\n={0}\n\n• To accept the correction, click Yes.\n• To close this message and correct the formula yourself, click No.": {
@@ -16906,7 +16913,7 @@
  },
  "Ledger shows one window per workbook. Use the Window menu to switch between open workbooks.": {
   "where": [
-   "ledger/js/commands.js:241"
+   "ledger/js/commands.js:246"
   ]
  },
  "Ledger spreadsheet": {
@@ -16930,25 +16937,25 @@
  },
  "Left Arrow": {
   "where": [
-   "common/geometry.js:266"
+   "common/geometry.js:267"
   ]
  },
  "Left Border": {
   "where": [
    "lectern/js/app.js:190",
-   "ledger/js/app.js:614",
+   "ledger/js/app.js:616",
    "quire/js/app.js:213",
    "quire/js/dialogs.js:313"
   ]
  },
  "Left Brace": {
   "where": [
-   "common/geometry.js:431"
+   "common/geometry.js:432"
   ]
  },
  "Left Bracket": {
   "where": [
-   "common/geometry.js:429"
+   "common/geometry.js:430"
   ]
  },
  "Left Down": {
@@ -16980,12 +16987,12 @@
  },
  "Left-Right Arrow": {
   "where": [
-   "common/geometry.js:278"
+   "common/geometry.js:279"
   ]
  },
  "Left-Up Arrow": {
   "where": [
-   "common/geometry.js:527"
+   "common/geometry.js:528"
   ]
  },
  "Left-to-Right": {
@@ -17099,7 +17106,7 @@
   "where": [
    "lectern/js/app.js:209",
    "lectern/js/dialogs.js:1008",
-   "lectern/js/render.js:559",
+   "lectern/js/render.js:539",
    "lectern/js/ribbon.js:42"
   ]
  },
@@ -17239,27 +17246,27 @@
  },
  "Light downward diagonal": {
   "where": [
-   "common/geometry.js:655"
+   "common/geometry.js:656"
   ]
  },
  "Light horizontal": {
   "where": [
-   "common/geometry.js:653"
+   "common/geometry.js:654"
   ]
  },
  "Light upward diagonal": {
   "where": [
-   "common/geometry.js:655"
+   "common/geometry.js:656"
   ]
  },
  "Light vertical": {
   "where": [
-   "common/geometry.js:653"
+   "common/geometry.js:654"
   ]
  },
  "Lightning Bolt": {
   "where": [
-   "common/geometry.js:231"
+   "common/geometry.js:232"
   ]
  },
  "Lime": {
@@ -17285,10 +17292,10 @@
  },
  "Line": {
   "where": [
-   "common/geometry.js:444",
+   "common/geometry.js:445",
    "lectern/js/commands.js:161",
    "lectern/js/dialogs.js:404",
-   "ledger/js/dialogs.js:248"
+   "ledger/js/commands.js:126"
   ]
  },
  "Line &Numbers...": {
@@ -17425,7 +17432,7 @@
  },
  "Linked picture: {0}": {
   "where": [
-   "lectern/js/render.js:603"
+   "lectern/js/render.js:583"
   ]
  },
  "Links": {
@@ -17540,7 +17547,7 @@
  "Lock &aspect ratio": {
   "where": [
    "lectern/js/dialogs.js:411",
-   "ledger/js/drawing.js:449",
+   "ledger/js/drawing.js:473",
    "quire/js/dialogs3.js:44"
   ]
  },
@@ -17661,7 +17668,7 @@
  "M&in": {
   "where": [
    "ledger/js/app.js:581",
-   "ledger/js/app.js:658"
+   "ledger/js/app.js:660"
   ]
  },
  "M&ultiply": {
@@ -18027,7 +18034,7 @@
  },
  "Max={0}": {
   "where": [
-   "ledger/js/app.js:715"
+   "ledger/js/app.js:717"
   ]
  },
  "Maximum &change:": {
@@ -18128,7 +18135,7 @@
  },
  "Merge and Center": {
   "where": [
-   "ledger/js/commands.js:159",
+   "ledger/js/commands.js:164",
    "ledger/js/ops.js:472"
   ]
  },
@@ -18217,12 +18224,12 @@
  },
  "Min={0}": {
   "where": [
-   "ledger/js/app.js:716"
+   "ledger/js/app.js:718"
   ]
  },
  "Minus": {
   "where": [
-   "common/geometry.js:555"
+   "common/geometry.js:556"
   ]
  },
  "Mirror margins": {
@@ -18306,7 +18313,7 @@
  },
  "Moon": {
   "where": [
-   "common/geometry.js:246"
+   "common/geometry.js:247"
   ]
  },
  "More &Functions...": {
@@ -18403,7 +18410,7 @@
  },
  "Move &but don't size with cells": {
   "where": [
-   "ledger/js/drawing.js:453"
+   "ledger/js/drawing.js:477"
   ]
  },
  "Move Column": {
@@ -18422,9 +18429,9 @@
  "Move Object": {
   "where": [
    "lectern/js/editor.js:579",
-   "ledger/js/drawing.js:226",
-   "ledger/js/drawing.js:303",
-   "quire/js/drawing.js:595"
+   "ledger/js/drawing.js:248",
+   "ledger/js/drawing.js:325",
+   "quire/js/drawing.js:578"
   ]
  },
  "Move Page Break": {
@@ -18542,7 +18549,7 @@
  },
  "Multiply": {
   "where": [
-   "common/geometry.js:558"
+   "common/geometry.js:559"
   ]
  },
  "My data range has": {
@@ -18583,7 +18590,7 @@
  },
  "NUM": {
   "where": [
-   "ledger/js/app.js:651"
+   "ledger/js/app.js:653"
   ]
  },
  "Name": {
@@ -18624,12 +18631,12 @@
  },
  "Narrow horizontal": {
   "where": [
-   "common/geometry.js:654"
+   "common/geometry.js:655"
   ]
  },
  "Narrow vertical": {
   "where": [
-   "common/geometry.js:654"
+   "common/geometry.js:655"
   ]
  },
  "Navigation": {
@@ -18789,7 +18796,7 @@
  "New chart": {
   "where": [
    "lectern/js/frames.js:22",
-   "lectern/js/render.js:602"
+   "lectern/js/render.js:582"
   ]
  },
  "New column": {
@@ -18892,7 +18899,7 @@
  },
  "Next Sheet": {
   "where": [
-   "ledger/js/commands.js:252"
+   "ledger/js/commands.js:257"
   ]
  },
  "Next Slide": {
@@ -18935,7 +18942,7 @@
  "No Border": {
   "where": [
    "lectern/js/app.js:190",
-   "ledger/js/app.js:614",
+   "ledger/js/app.js:616",
    "quire/js/app.js:214",
    "quire/js/app.js:429"
   ]
@@ -19055,7 +19062,7 @@
  },
  "No invalid data on this sheet.": {
   "where": [
-   "ledger/js/app.js:1406"
+   "ledger/js/app.js:1408"
   ]
  },
  "No limit": {
@@ -19243,7 +19250,7 @@
  },
  "Notched Right Arrow": {
   "where": [
-   "common/geometry.js:295"
+   "common/geometry.js:296"
   ]
  },
  "Note Options": {
@@ -19339,7 +19346,7 @@
  "Nudge": {
   "where": [
    "lectern/js/app.js:1129",
-   "quire/js/drawing.js:609"
+   "quire/js/drawing.js:592"
   ]
  },
  "Nudge (Ctrl for fine nudge)": {
@@ -19360,7 +19367,7 @@
  "Number": {
   "where": [
    "common/dialogs.js:408",
-   "ledger/js/commands.js:183",
+   "ledger/js/commands.js:188",
    "ledger/js/dialogs.js:30",
    "ledger/js/dialogs2.js:577"
   ]
@@ -19482,7 +19489,7 @@
  },
  "O&rder": {
   "where": [
-   "ledger/js/drawing.js:424"
+   "ledger/js/drawing.js:446"
   ]
  },
  "O&ther:": {
@@ -19525,14 +19532,14 @@
  },
  "Object": {
   "where": [
-   "ledger/js/app.js:729",
-   "ledger/js/drawing.js:134",
+   "ledger/js/app.js:731",
+   "ledger/js/drawing.js:150",
    "quire/js/dialogs2.js:458"
   ]
  },
  "Object positioning": {
   "where": [
-   "ledger/js/drawing.js:451"
+   "ledger/js/drawing.js:475"
   ]
  },
  "Object type:": {
@@ -19554,7 +19561,7 @@
  },
  "Octagon": {
   "where": [
-   "common/geometry.js:150"
+   "common/geometry.js:151"
   ]
  },
  "Odd Page Footer": {
@@ -19748,7 +19755,7 @@
  },
  "Open workbooks are listed at the bottom of the Window menu.": {
   "where": [
-   "ledger/js/commands.js:242"
+   "ledger/js/commands.js:247"
   ]
  },
  "Opened a template. Save keeps its template format.": {
@@ -19833,7 +19840,7 @@
  "Order": {
   "where": [
    "lectern/js/app.js:1073",
-   "ledger/js/drawing.js:417"
+   "ledger/js/drawing.js:439"
   ]
  },
  "Organization Chart": {
@@ -19935,7 +19942,7 @@
  },
  "Outline Border": {
   "where": [
-   "ledger/js/commands.js:184"
+   "ledger/js/commands.js:189"
   ]
  },
  "Outline Card": {
@@ -19993,7 +20000,7 @@
  },
  "Outlined diamond": {
   "where": [
-   "common/geometry.js:659"
+   "common/geometry.js:660"
   ]
  },
  "Outline|border": {
@@ -20039,7 +20046,7 @@
  "Outside Borders": {
   "where": [
    "lectern/js/app.js:190",
-   "ledger/js/app.js:616"
+   "ledger/js/app.js:618"
   ]
  },
  "Outside:": {
@@ -20049,10 +20056,10 @@
  },
  "Oval": {
   "where": [
-   "common/geometry.js:130",
+   "common/geometry.js:131",
    "lectern/js/commands.js:165",
-   "quire/js/commands.js:502",
-   "quire/js/dialogs3.js:34"
+   "ledger/js/commands.js:129",
+   "quire/js/commands.js:502"
   ]
  },
  "Oval Arrow": {
@@ -20062,7 +20069,7 @@
  },
  "Oval Callout": {
   "where": [
-   "common/geometry.js:405"
+   "common/geometry.js:406"
   ]
  },
  "Overhead": {
@@ -20497,7 +20504,7 @@
  },
  "Parallelogram": {
   "where": [
-   "common/geometry.js:136"
+   "common/geometry.js:137"
   ]
  },
  "Parchment": {
@@ -20633,7 +20640,7 @@
  },
  "Paste as Hyperlink": {
   "where": [
-   "ledger/js/app.js:1363",
+   "ledger/js/app.js:1365",
    "quire/js/commands.js:250"
   ]
  },
@@ -20720,7 +20727,7 @@
  },
  "Pentagon": {
   "where": [
-   "common/geometry.js:303"
+   "common/geometry.js:304"
   ]
  },
  "People or units and who reports to whom, top down.": {
@@ -20746,7 +20753,7 @@
  },
  "Percent Style": {
   "where": [
-   "ledger/js/commands.js:166"
+   "ledger/js/commands.js:171"
   ]
  },
  "Percentage": {
@@ -20803,8 +20810,8 @@
  },
  "Pick From Drop-down &List...": {
   "where": [
-   "ledger/js/commands.js:261",
-   "ledger/js/commands.js:262"
+   "ledger/js/commands.js:266",
+   "ledger/js/commands.js:267"
   ]
  },
  "Pick a style in the Style box at the left of the Formatting toolbar, or open Format ▸ Styles and Formatting for the full list with Modify, New Style and Select All Instances. Type a new name into the Style box to create a style from the current paragraph.": {
@@ -20832,7 +20839,7 @@
    "lectern/js/app.js:201",
    "lectern/js/dialogs.js:22",
    "lectern/js/dialogs.js:458",
-   "lectern/js/render.js:462"
+   "lectern/js/render.js:442"
   ]
  },
  "Picture &Position": {
@@ -20842,7 +20849,7 @@
  },
  "Picture (.{0})": {
   "where": [
-   "lectern/js/render.js:462"
+   "lectern/js/render.js:442"
   ]
  },
  "Picture Border": {
@@ -20903,12 +20910,12 @@
  },
  "Pie": {
   "where": [
-   "common/geometry.js:504"
+   "common/geometry.js:505"
   ]
  },
  "Pie Wedge": {
   "where": [
-   "common/geometry.js:505"
+   "common/geometry.js:506"
   ]
  },
  "Pie|chart": {
@@ -20961,13 +20968,13 @@
  },
  "Plaid": {
   "where": [
-   "common/geometry.js:660"
+   "common/geometry.js:661"
   ]
  },
  "Plain Text": {
   "where": [
-   "lectern/js/render.js:534",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:514",
+   "quire/js/drawing.js:125"
   ]
  },
  "Plain Text (*.txt)": {
@@ -20977,7 +20984,7 @@
  },
  "Plaque": {
   "where": [
-   "common/geometry.js:521"
+   "common/geometry.js:522"
   ]
  },
  "Play animations": {
@@ -21002,7 +21009,7 @@
  },
  "Plus": {
   "where": [
-   "common/geometry.js:554",
+   "common/geometry.js:555",
    "lectern/js/panes.js:734",
    "lectern/js/slideshow.js:19",
    "lectern/js/slideshow.js:26"
@@ -21026,7 +21033,7 @@
  },
  "Point|mode": {
   "where": [
-   "ledger/js/app.js:685"
+   "ledger/js/app.js:687"
   ]
  },
  "Polish": {
@@ -21267,7 +21274,7 @@
  },
  "Previous Sheet": {
   "where": [
-   "ledger/js/commands.js:253"
+   "ledger/js/commands.js:258"
   ]
  },
  "Previous Slide": {
@@ -21494,7 +21501,7 @@
   "where": [
    "lectern/js/dialogs.js:949",
    "ledger/js/dialogs.js:699",
-   "ledger/js/drawing.js:456",
+   "ledger/js/drawing.js:480",
    "quire/js/dialogs.js:924"
   ]
  },
@@ -21510,7 +21517,7 @@
  },
  "Protect &Workbook...": {
   "where": [
-   "ledger/js/commands.js:191"
+   "ledger/js/commands.js:196"
   ]
  },
  "Protect Document": {
@@ -21624,7 +21631,7 @@
  },
  "Quad Arrow": {
   "where": [
-   "common/geometry.js:286"
+   "common/geometry.js:287"
   ]
  },
  "Quick Access Toolbar": {
@@ -21909,8 +21916,8 @@
  },
  "Ready": {
   "where": [
-   "ledger/js/app.js:645",
-   "ledger/js/app.js:685"
+   "ledger/js/app.js:647",
+   "ledger/js/app.js:687"
   ]
  },
  "Received from": {
@@ -22024,20 +22031,20 @@
  },
  "Recovered the unsaved changes. Save the workbook to keep them.": {
   "where": [
-   "ledger/js/app.js:1531"
+   "ledger/js/app.js:1533"
   ]
  },
  "Rectangle": {
   "where": [
-   "common/geometry.js:125",
+   "common/geometry.js:126",
    "lectern/js/commands.js:164",
    "lectern/js/dialogs.js:1040",
-   "quire/js/commands.js:501"
+   "ledger/js/commands.js:128"
   ]
  },
  "Rectangular Callout": {
   "where": [
-   "common/geometry.js:403"
+   "common/geometry.js:404"
   ]
  },
  "Recycled paper": {
@@ -22101,8 +22108,8 @@
  },
  "Reference is not valid.": {
   "where": [
-   "ledger/js/app.js:755",
-   "ledger/js/app.js:884",
+   "ledger/js/app.js:757",
+   "ledger/js/app.js:886",
    "ledger/js/dialogs.js:535",
    "ledger/js/dialogs2.js:367"
   ]
@@ -22158,7 +22165,7 @@
  },
  "Regular Pentagon": {
   "where": [
-   "common/geometry.js:145"
+   "common/geometry.js:146"
   ]
  },
  "Regular Text Sample — the quick brown fox jumps over the lazy dog.": {
@@ -22235,12 +22242,12 @@
  },
  "Remove &All Arrows": {
   "where": [
-   "ledger/js/commands.js:198"
+   "ledger/js/commands.js:203"
   ]
  },
  "Remove &Split": {
   "where": [
-   "ledger/js/commands.js:240"
+   "ledger/js/commands.js:245"
   ]
  },
  "Remove &extra empty paragraphs": {
@@ -22250,7 +22257,7 @@
  },
  "Remove Borders": {
   "where": [
-   "ledger/js/commands.js:185"
+   "ledger/js/commands.js:190"
   ]
  },
  "Remove Effect": {
@@ -22278,7 +22285,7 @@
  },
  "Remove Page Break": {
   "where": [
-   "ledger/js/app.js:1278"
+   "ledger/js/app.js:1280"
   ]
  },
  "Remove Subtotals": {
@@ -22344,7 +22351,7 @@
  "Repeat": {
   "where": [
    "lectern/js/slideshow.js:974",
-   "ledger/js/commands.js:263"
+   "ledger/js/commands.js:268"
   ]
  },
  "Repeat as &header row at the top of each page": {
@@ -22508,7 +22515,7 @@
  },
  "Reset Page Breaks": {
   "where": [
-   "ledger/js/app.js:1282"
+   "ledger/js/app.js:1284"
   ]
  },
  "Reset Paragraph": {
@@ -22542,8 +22549,8 @@
  },
  "Resize Object": {
   "where": [
-   "ledger/js/drawing.js:303",
-   "quire/js/drawing.js:636"
+   "ledger/js/drawing.js:325",
+   "quire/js/drawing.js:619"
   ]
  },
  "Resize Picture": {
@@ -24321,25 +24328,25 @@
  },
  "Right Arrow": {
   "where": [
-   "common/geometry.js:262"
+   "common/geometry.js:263"
   ]
  },
  "Right Border": {
   "where": [
    "lectern/js/app.js:190",
-   "ledger/js/app.js:614",
+   "ledger/js/app.js:616",
    "quire/js/app.js:213",
    "quire/js/dialogs.js:313"
   ]
  },
  "Right Brace": {
   "where": [
-   "common/geometry.js:432"
+   "common/geometry.js:433"
   ]
  },
  "Right Bracket": {
   "where": [
-   "common/geometry.js:430"
+   "common/geometry.js:431"
   ]
  },
  "Right Down": {
@@ -24361,7 +24368,7 @@
  },
  "Right Triangle": {
   "where": [
-   "common/geometry.js:135"
+   "common/geometry.js:136"
   ]
  },
  "Right Up": {
@@ -24371,7 +24378,7 @@
  },
  "Right-click to choose the AutoCalculate function": {
   "where": [
-   "ledger/js/app.js:647"
+   "ledger/js/app.js:649"
   ]
  },
  "Right-to-Left": {
@@ -24473,7 +24480,7 @@
  },
  "Round Diagonal Corner Rectangle": {
   "where": [
-   "common/geometry.js:544"
+   "common/geometry.js:545"
   ]
  },
  "Round Dot": {
@@ -24484,23 +24491,23 @@
  },
  "Round Same Side Corner Rectangle": {
   "where": [
-   "common/geometry.js:543"
+   "common/geometry.js:544"
   ]
  },
  "Round Single Corner Rectangle": {
   "where": [
-   "common/geometry.js:542"
+   "common/geometry.js:543"
   ]
  },
  "Rounded Rectangle": {
   "where": [
-   "common/geometry.js:126",
+   "common/geometry.js:127",
    "lectern/js/dialogs.js:1040"
   ]
  },
  "Rounded Rectangular Callout": {
   "where": [
-   "common/geometry.js:404"
+   "common/geometry.js:405"
   ]
  },
  "Rounds a number down to the nearest integer.": {
@@ -24658,7 +24665,7 @@
  },
  "S&ettings...": {
   "where": [
-   "ledger/js/commands.js:230"
+   "ledger/js/commands.js:235"
   ]
  },
  "S&hadow": {
@@ -24708,7 +24715,7 @@
  },
  "SCRL": {
   "where": [
-   "ledger/js/app.js:651"
+   "ledger/js/app.js:653"
   ]
  },
  "Sales Invoice": {
@@ -24890,7 +24897,7 @@
  },
  "Sc&enarios...": {
   "where": [
-   "ledger/js/commands.js:194"
+   "ledger/js/commands.js:199"
   ]
  },
  "Sc&enarios:": {
@@ -24957,7 +24964,7 @@
  },
  "Scientific": {
   "where": [
-   "ledger/js/commands.js:180",
+   "ledger/js/commands.js:185",
    "ledger/js/dialogs.js:30"
   ]
  },
@@ -25235,12 +25242,12 @@
  },
  "Select Current Array": {
   "where": [
-   "ledger/js/commands.js:260"
+   "ledger/js/commands.js:265"
   ]
  },
  "Select Current Region": {
   "where": [
-   "ledger/js/commands.js:259"
+   "ledger/js/commands.js:264"
   ]
  },
  "Select Objects": {
@@ -25426,7 +25433,7 @@
  },
  "Selected &Object...": {
   "where": [
-   "ledger/js/commands.js:148"
+   "ledger/js/commands.js:153"
   ]
  },
  "Selected text": {
@@ -25462,7 +25469,7 @@
  "Send &Backward": {
   "where": [
    "lectern/js/commands.js:177",
-   "ledger/js/drawing.js:424"
+   "ledger/js/drawing.js:446"
   ]
  },
  "Send Back&ward": {
@@ -25478,7 +25485,7 @@
  "Send to Bac&k": {
   "where": [
    "lectern/js/commands.js:175",
-   "ledger/js/drawing.js:424",
+   "ledger/js/drawing.js:446",
    "quire/js/commands.js:507"
   ]
  },
@@ -25536,7 +25543,7 @@
  },
  "Set Print Area": {
   "where": [
-   "ledger/js/app.js:1266"
+   "ledger/js/app.js:1268"
   ]
  },
  "Set Tab": {
@@ -25703,7 +25710,7 @@
  },
  "Sheet protection in Ledger follows each cell's Locked setting (Format ▸ Cells ▸ Protection). Unlock the cells people may edit, then protect the sheet.": {
   "where": [
-   "ledger/js/commands.js:192"
+   "ledger/js/commands.js:197"
   ]
  },
  "Sheets": {
@@ -25782,7 +25789,7 @@
  },
  "Shingle": {
   "where": [
-   "common/geometry.js:660"
+   "common/geometry.js:661"
   ]
  },
  "Shopping List": {
@@ -25802,7 +25809,7 @@
  },
  "Shortcut Menu": {
   "where": [
-   "ledger/js/commands.js:264"
+   "ledger/js/commands.js:269"
   ]
  },
  "Shortcut keys": {
@@ -25840,7 +25847,7 @@
  },
  "Show &Watch Window": {
   "where": [
-   "ledger/js/commands.js:202"
+   "ledger/js/commands.js:207"
   ]
  },
  "Show &levels:": {
@@ -25876,7 +25883,7 @@
  },
  "Show Detail": {
   "where": [
-   "ledger/js/app.js:1189"
+   "ledger/js/app.js:1191"
   ]
  },
  "Show First Line Only": {
@@ -26174,7 +26181,7 @@
   "where": [
    "lectern/js/dialogs.js:457",
    "lectern/js/ribbon.js:106",
-   "ledger/js/drawing.js:450",
+   "ledger/js/drawing.js:474",
    "quire/js/dialogs2.js:686"
   ]
  },
@@ -26186,7 +26193,7 @@
  "Size and rotate": {
   "where": [
    "lectern/js/dialogs.js:416",
-   "ledger/js/drawing.js:450",
+   "ledger/js/drawing.js:474",
    "quire/js/dialogs3.js:98"
   ]
  },
@@ -26227,14 +26234,14 @@
  },
  "Slant Down": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:515",
+   "quire/js/drawing.js:125"
   ]
  },
  "Slant Up": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:515",
+   "quire/js/drawing.js:125"
   ]
  },
  "Slanted dash dot": {
@@ -26519,12 +26526,12 @@
  },
  "Small checker board": {
   "where": [
-   "common/geometry.js:657"
+   "common/geometry.js:658"
   ]
  },
  "Small confetti": {
   "where": [
-   "common/geometry.js:658"
+   "common/geometry.js:659"
   ]
  },
  "Small dash": {
@@ -26534,12 +26541,12 @@
  },
  "Small grid": {
   "where": [
-   "common/geometry.js:658"
+   "common/geometry.js:659"
   ]
  },
  "Smiley Face": {
   "where": [
-   "common/geometry.js:219"
+   "common/geometry.js:220"
   ]
  },
  "Snap to": {
@@ -26549,22 +26556,22 @@
  },
  "Snip Diagonal Corner Rectangle": {
   "where": [
-   "common/geometry.js:540"
+   "common/geometry.js:541"
   ]
  },
  "Snip Same Side Corner Rectangle": {
   "where": [
-   "common/geometry.js:539"
+   "common/geometry.js:540"
   ]
  },
  "Snip Single Corner Rectangle": {
   "where": [
-   "common/geometry.js:538"
+   "common/geometry.js:539"
   ]
  },
  "Snip and Round Single Corner Rectangle": {
   "where": [
-   "common/geometry.js:541"
+   "common/geometry.js:542"
   ]
  },
  "Social Security Number": {
@@ -26595,7 +26602,7 @@
  },
  "Solid diamond": {
   "where": [
-   "common/geometry.js:659"
+   "common/geometry.js:660"
   ]
  },
  "Solid|pattern": {
@@ -26639,13 +26646,13 @@
  },
  "Sort Ascending": {
   "where": [
-   "ledger/js/commands.js:213",
+   "ledger/js/commands.js:218",
    "quire/js/commands.js:451"
   ]
  },
  "Sort Descending": {
   "where": [
-   "ledger/js/commands.js:214",
+   "ledger/js/commands.js:219",
    "quire/js/commands.js:452"
   ]
  },
@@ -26890,7 +26897,7 @@
  },
  "Sphere": {
   "where": [
-   "common/geometry.js:660"
+   "common/geometry.js:661"
   ]
  },
  "Spill Range Isn't Blank": {
@@ -26990,7 +26997,7 @@
  },
  "Square": {
   "where": [
-   "quire/js/drawing.js:687"
+   "quire/js/drawing.js:670"
   ]
  },
  "Square Dot": {
@@ -27076,7 +27083,7 @@
  },
  "Stars and Banners": {
   "where": [
-   "common/geometry.js:713",
+   "common/geometry.js:732",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -27293,13 +27300,13 @@
  },
  "Straight Connector": {
   "where": [
-   "common/geometry.js:445",
+   "common/geometry.js:446",
    "lectern/js/app.js:108"
   ]
  },
  "Stri&kethrough": {
   "where": [
-   "ledger/js/commands.js:154",
+   "ledger/js/commands.js:159",
    "ledger/js/dialogs.js:200",
    "ledger/js/dialogs2.js:476",
    "quire/js/dialogs.js:110"
@@ -27315,7 +27322,7 @@
  },
  "Striped Right Arrow": {
   "where": [
-   "common/geometry.js:299"
+   "common/geometry.js:300"
   ]
  },
  "Strips": {
@@ -27417,7 +27424,7 @@
  },
  "Su&btotals...": {
   "where": [
-   "ledger/js/commands.js:219"
+   "ledger/js/commands.js:224"
   ]
  },
  "Su&perscript": {
@@ -27490,7 +27497,7 @@
  },
  "Sum={0}": {
   "where": [
-   "ledger/js/app.js:711"
+   "ledger/js/app.js:713"
   ]
  },
  "Sumi Painting": {
@@ -27536,7 +27543,7 @@
  },
  "Sun": {
   "where": [
-   "common/geometry.js:232"
+   "common/geometry.js:233"
   ]
  },
  "Sunset": {
@@ -27603,7 +27610,7 @@
  },
  "T&ext to Columns...": {
   "where": [
-   "ledger/js/commands.js:222"
+   "ledger/js/commands.js:227"
   ]
  },
  "T&heme...": {
@@ -27944,7 +27951,7 @@
  "Te&xt Box": {
   "where": [
    "lectern/js/commands.js:89",
-   "ledger/js/commands.js:125",
+   "ledger/js/commands.js:130",
    "quire/js/commands.js:304"
   ]
  },
@@ -28002,7 +28009,7 @@
  },
  "Teardrop": {
   "where": [
-   "common/geometry.js:513"
+   "common/geometry.js:514"
   ]
  },
  "Teeter": {
@@ -28345,7 +28352,7 @@
  },
  "The active cell does not contain a formula that refers to a valid reference.": {
   "where": [
-   "ledger/js/app.js:1377"
+   "ledger/js/app.js:1379"
   ]
  },
  "The active cell does not contain a formula.": {
@@ -28355,7 +28362,7 @@
  },
  "The active cell does not contain an error value.": {
   "where": [
-   "ledger/js/app.js:1377"
+   "ledger/js/app.js:1379"
   ]
  },
  "The cache has no remaining pivot tables.": {
@@ -28620,7 +28627,7 @@
  },
  "The number must be between 1 and 409.": {
   "where": [
-   "ledger/js/app.js:1295"
+   "ledger/js/app.js:1297"
   ]
  },
  "The number of characters in the document": {
@@ -28736,7 +28743,7 @@
  },
  "The selection contains multiple data values. Merging into one cell will keep the upper-left most data only.": {
   "where": [
-   "ledger/js/app.js:1048"
+   "ledger/js/app.js:1050"
   ]
  },
  "The slicer/timeline source or all its views were deleted.": {
@@ -28998,12 +29005,12 @@
  },
  "Thick Bottom Border": {
   "where": [
-   "ledger/js/app.js:615"
+   "ledger/js/app.js:617"
   ]
  },
  "Thick Box Border": {
   "where": [
-   "ledger/js/app.js:616"
+   "ledger/js/app.js:618"
   ]
  },
  "Thick Diagonal Crosshatch": {
@@ -29386,7 +29393,7 @@
  },
  "This workbook contains macros. Ledger keeps them when you save as .xlsm, but cannot run them.": {
   "where": [
-   "ledger/js/commands.js:208"
+   "ledger/js/commands.js:213"
   ]
  },
  "This workbook is encrypted with a method Ledger does not support (only the AES encryption Excel 2007 and later use is supported).": {
@@ -29396,12 +29403,12 @@
  },
  "This worksheet contains more than 255 invalid cells. Only 255 cells will be marked.": {
   "where": [
-   "ledger/js/app.js:1405"
+   "ledger/js/app.js:1407"
   ]
  },
  "Through": {
   "where": [
-   "quire/js/drawing.js:687"
+   "quire/js/drawing.js:670"
   ]
  },
  "Thu&mbnails": {
@@ -29421,12 +29428,12 @@
  },
  "Tight": {
   "where": [
-   "quire/js/drawing.js:687"
+   "quire/js/drawing.js:670"
   ]
  },
  "Time": {
   "where": [
-   "ledger/js/commands.js:182",
+   "ledger/js/commands.js:187",
    "ledger/js/dialogs.js:30",
    "ledger/js/dialogs2.js:94",
    "ledger/js/dialogs3.js:444"
@@ -29744,22 +29751,22 @@
  },
  "Top and Bottom": {
   "where": [
-   "quire/js/drawing.js:687"
+   "quire/js/drawing.js:670"
   ]
  },
  "Top and Bottom Border": {
   "where": [
-   "ledger/js/app.js:615"
+   "ledger/js/app.js:617"
   ]
  },
  "Top and Double Bottom Border": {
   "where": [
-   "ledger/js/app.js:616"
+   "ledger/js/app.js:618"
   ]
  },
  "Top and Thick Bottom Border": {
   "where": [
-   "ledger/js/app.js:615"
+   "ledger/js/app.js:617"
   ]
  },
  "Top of page (Header)": {
@@ -29789,23 +29796,23 @@
  },
  "Total Row": {
   "where": [
-   "ledger/js/app.js:1124",
+   "ledger/js/app.js:1126",
    "ledger/js/ribbon.js:104"
   ]
  },
  "Trace &Dependents": {
   "where": [
-   "ledger/js/commands.js:196"
+   "ledger/js/commands.js:201"
   ]
  },
  "Trace &Error": {
   "where": [
-   "ledger/js/commands.js:197"
+   "ledger/js/commands.js:202"
   ]
  },
  "Trace &Precedents": {
   "where": [
-   "ledger/js/commands.js:195"
+   "ledger/js/commands.js:200"
   ]
  },
  "Track Changes": {
@@ -29901,7 +29908,7 @@
  },
  "Trapezoid": {
   "where": [
-   "common/geometry.js:140"
+   "common/geometry.js:141"
   ]
  },
  "Treat consecutive delimiters as &one": {
@@ -29920,7 +29927,7 @@
  },
  "Trellis": {
   "where": [
-   "common/geometry.js:661"
+   "common/geometry.js:662"
   ]
  },
  "Triangle": {
@@ -29930,8 +29937,8 @@
  },
  "Triangle Up": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:142"
+   "lectern/js/render.js:515",
+   "quire/js/drawing.js:125"
   ]
  },
  "Triple": {
@@ -30045,7 +30052,7 @@
  },
  "U-Turn Arrow": {
   "where": [
-   "common/geometry.js:316"
+   "common/geometry.js:317"
   ]
  },
  "UI size": {
@@ -30060,12 +30067,12 @@
  },
  "Un&freeze Panes": {
   "where": [
-   "ledger/js/commands.js:239"
+   "ledger/js/commands.js:244"
   ]
  },
  "Un&protect Sheet...": {
   "where": [
-   "ledger/js/commands.js:190"
+   "ledger/js/commands.js:195"
   ]
  },
  "Uncover Down": {
@@ -30171,13 +30178,13 @@
  },
  "Unfreeze Panes": {
   "where": [
-   "ledger/js/app.js:1218"
+   "ledger/js/app.js:1220"
   ]
  },
  "Ungroup": {
   "where": [
    "lectern/js/app.js:1046",
-   "ledger/js/app.js:1169",
+   "ledger/js/app.js:1171",
    "ledger/js/dialogs.js:378",
    "ledger/js/ribbon.js:68"
   ]
@@ -30247,7 +30254,7 @@
  },
  "Unprotect &Workbook...": {
   "where": [
-   "ledger/js/commands.js:191"
+   "ledger/js/commands.js:196"
   ]
  },
  "Unprotect Document": {
@@ -30301,12 +30308,12 @@
  },
  "Up Arrow": {
   "where": [
-   "common/geometry.js:270"
+   "common/geometry.js:271"
   ]
  },
  "Up Ribbon": {
   "where": [
-   "common/geometry.js:347"
+   "common/geometry.js:348"
   ]
  },
  "Up to one digit (1/4)": {
@@ -30326,7 +30333,7 @@
  },
  "Up-Down Arrow": {
   "where": [
-   "common/geometry.js:282"
+   "common/geometry.js:283"
   ]
  },
  "Update": {
@@ -30398,7 +30405,7 @@
  },
  "Upward diagonal": {
   "where": [
-   "common/geometry.js:655"
+   "common/geometry.js:656"
   ]
  },
  "Use \"a\" before a word that starts with a consonant sound.": {
@@ -30555,7 +30562,7 @@
  },
  "Va&lidation...": {
   "where": [
-   "ledger/js/commands.js:220"
+   "ledger/js/commands.js:225"
   ]
  },
  "Validatio&n": {
@@ -30642,7 +30649,7 @@
  },
  "Vertical": {
   "where": [
-   "common/geometry.js:653",
+   "common/geometry.js:654",
    "lectern/js/slideshow.js:10",
    "quire/js/dialogs3.js:73"
   ]
@@ -30684,7 +30691,7 @@
  },
  "Vertical Scroll": {
   "where": [
-   "common/geometry.js:355"
+   "common/geometry.js:356"
   ]
  },
  "Vertical Stripe": {
@@ -30800,7 +30807,7 @@
  },
  "W&idth...": {
   "where": [
-   "ledger/js/commands.js:135"
+   "ledger/js/commands.js:140"
   ]
  },
  "W&idth:": {
@@ -30848,9 +30855,9 @@
  },
  "Wave": {
   "where": [
-   "common/geometry.js:256",
-   "common/geometry.js:660",
-   "lectern/js/render.js:534",
+   "common/geometry.js:257",
+   "common/geometry.js:661",
+   "lectern/js/render.js:514",
    "quire/js/dialogs.js:89"
   ]
  },
@@ -30861,13 +30868,13 @@
  },
  "Weave": {
   "where": [
-   "common/geometry.js:660"
+   "common/geometry.js:661"
   ]
  },
  "Web": {
   "where": [
    "lectern/js/dialogs.js:460",
-   "ledger/js/drawing.js:459",
+   "ledger/js/drawing.js:483",
    "ledger/js/fninfo.js:536",
    "quire/js/dialogs3.js:103"
   ]
@@ -30916,7 +30923,7 @@
  },
  "Welcome to Page Break Preview\n\nYou can adjust where the page breaks are by clicking and dragging them with your mouse.": {
   "where": [
-   "ledger/js/app.js:1239"
+   "ledger/js/app.js:1241"
   ]
  },
  "Welcome to Quire": {
@@ -31086,18 +31093,18 @@
  "Wi&dth:": {
   "where": [
    "lectern/js/dialogs.js:416",
-   "ledger/js/drawing.js:450",
+   "ledger/js/drawing.js:474",
    "quire/js/dialogs3.js:98"
   ]
  },
  "Wide downward diagonal": {
   "where": [
-   "common/geometry.js:656"
+   "common/geometry.js:657"
   ]
  },
  "Wide upward diagonal": {
   "where": [
-   "common/geometry.js:656"
+   "common/geometry.js:657"
   ]
  },
  "Widescreen (16:9), 13.33 x 7.5 in": {
@@ -31301,7 +31308,7 @@
  },
  "Wrap Text": {
   "where": [
-   "ledger/js/commands.js:172",
+   "ledger/js/commands.js:177",
    "ledger/js/ribbon.js:27",
    "quire/js/ribbon.js:47",
    "quire/js/ribbon.js:100"
@@ -31493,7 +31500,7 @@
  },
  "Zig zag": {
   "where": [
-   "common/geometry.js:661"
+   "common/geometry.js:662"
   ]
  },
  "Zip Code": {
@@ -31580,7 +31587,7 @@
  "[Text]": {
   "where": [
    "lectern/js/diagram.js:540",
-   "lectern/js/render.js:666"
+   "lectern/js/render.js:646"
   ]
  },
  "[cells]": {
@@ -32011,17 +32018,17 @@
  },
  "{0}\n(IntelliArt is not displayed)": {
   "where": [
-   "ledger/js/drawing.js:134"
+   "ledger/js/drawing.js:150"
   ]
  },
  "{0}\n(this chart type is not displayed)": {
   "where": [
-   "ledger/js/drawing.js:126"
+   "ledger/js/drawing.js:142"
   ]
  },
  "{0}\n(this object is not displayed)": {
   "where": [
-   "ledger/js/drawing.js:134"
+   "ledger/js/drawing.js:150"
   ]
  },
  "{0} (Antonym)": {

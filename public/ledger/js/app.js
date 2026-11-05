@@ -544,7 +544,7 @@
       {
         label: '&Insert', items: () => ['insertCells', 'insertRows', 'insertCols', 'insertSheet', 'insertChart', 'insertSymbol', 'insertPageBreak', '-', 'insertFunction',
           { label: '&Name', sub: ['nameDefine', 'pasteName', 'nameCreate', 'nameApply'] }, 'insertComment', '-',
-          { label: '&Picture', icon: 'picture', sub: ['insertClipArt', 'insertPicture', '-', 'insertShape', 'insertTextBox'] }, 'hyperlink'],
+          { label: '&Picture', icon: 'picture', sub: ['insertClipArt', 'insertPicture', '-', { label: '&AutoShapes', icon: 'autoshapes', run: () => L.drawing.autoShapesMenu() }, 'insertTextBox'] }, 'hyperlink'],
       },
       {
         label: 'F&ormat', items: () => ['formatCells', { label: '&Row', sub: ['rowHeight', 'rowAutofit', 'rowHide', 'rowUnhide'] }, { label: '&Column', sub: ['colWidth', 'colAutofit', 'colHide', 'colUnhide', 'colStandard'] },
@@ -600,8 +600,10 @@
     TB.reviewing = ui.toolbar('reviewing', 'Reviewing', ['insertComment', 'showHideComment', 'deleteComment', '|', 'showComments']);
     TB.list = ui.toolbar('list', 'List', [ui.tbDrop('&List', null, (at) => ui.openMenu(['insertRows', 'insertCols', '-', 'sortDlg', 'autoFilter', '-', 'totalRow', 'convertToRange'], at)), 'totalRow']);
     TB.chart = ui.toolbar('chart', 'Chart', [ui.tbDrop('Chart Type', 'chart', (at) => L.chartWizard && L.chartWizard.typeMenu(at)), ui.tbButton('formatObject', { label: 'Format' })]);
-    TB.drawing = ui.toolbar('drawing', 'Drawing', [ui.tbDrop('D&raw', 'draw', A.menus.draw), '|',
-      ui.tbButton('insertShape', { icon: 'rect' }), ui.tbButton('insertTextBox'), ui.tbButton('insertPicture'), '|', ui.tbButton('fillColorApply')]);
+    const asBtn = ui.tbDrop('A&utoShapes', null, (r) => L.drawing.autoShapesMenu(r), 'AutoShapes');
+    asBtn.dataset.as = '';
+    TB.drawing = ui.toolbar('drawing', 'Drawing', [ui.tbDrop('D&raw', 'draw', A.menus.draw), '|', asBtn,
+      'drawLine', 'drawArrow', 'drawRect', 'drawOval', ui.tbButton('insertTextBox'), '|', 'insertClipArt', ui.tbButton('insertPicture'), '|', ui.tbButton('fillColorApply')]);
     const row1 = h('div', { class: 'tb-row' }, TB.standard), row2 = h('div', { class: 'tb-row' }, TB.formatting);
     const row3 = h('div', { class: 'tb-row' }, TB.borders, TB.auditing, TB.reviewing, TB.list, TB.chart);
     L.$('#drawrow').appendChild(TB.drawing);   /* docked above the status bar, as in Office 2003 */

@@ -120,6 +120,7 @@
 
   /* ---------- preset table ---------- */
   const G = {};
+  let markers = 0;
   const def = (name, label, fn, opts) => { G[name] = Object.assign({ name, label, fn }, opts || {}); };
 
   def('rect', 'Rectangle', (w, h) => one(P([[0, 0], [w, 0], [w, h], [0, h]])));
@@ -696,6 +697,24 @@
       if (sh.geom === 'curvedConnector2') return `M${n(x1)},${n(y1)} Q${n(x2)},${n(y1)} ${n(x2)},${n(y2)}`;
       if (sh.geom === 'curvedConnector3') { const mx = (x1 + x2) / 2; return `M${n(x1)},${n(y1)} C${n(mx)},${n(y1)} ${n(mx)},${n(y2)} ${n(x2)},${n(y2)}`; }
       return `M${n(x1)},${n(y1)} L${n(x2)},${n(y2)}`;
+    },
+    /** an SVG marker in `defs` for a line end ({ type, w, len }, DrawingML's headEnd / tailEnd), in the line's colour;
+        lw is the line's width (heads stay legible on hairlines, as Office sizes them for at least ~2 pt); its url(#id) */
+    marker(defs, end, color, lw, isHead) {
+      if (!end || !end.type || end.type === 'none') return null;
+      const svg = (tag, a) => { const e = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+      const id = 'lnEnd' + (++markers), sz = { sm: 2, med: 3, lg: 5 };
+      const k = Math.max(lw || 0.75, 2) / Math.max(lw || 0.75, 0.1);
+      const m = svg('marker', { id, viewBox: '0 0 10 10', refX: end.type === 'arrow' ? 9 : end.type === 'oval' || end.type === 'diamond' ? 5 : 8, refY: 5, markerWidth: (sz[end.len || 'med'] || 3) * k, markerHeight: (sz[end.w || 'med'] || 3) * k, orient: isHead ? 'auto-start-reverse' : 'auto', markerUnits: 'strokeWidth' });
+      switch (end.type) {
+        case 'stealth': m.appendChild(svg('path', { d: 'M0,0 L10,5 L0,10 L3,5 Z', fill: color })); break;
+        case 'diamond': m.appendChild(svg('path', { d: 'M0,5 L5,0 L10,5 L5,10 Z', fill: color })); break;
+        case 'oval': m.appendChild(svg('circle', { cx: 5, cy: 5, r: 4.5, fill: color })); break;
+        case 'arrow': m.appendChild(svg('path', { d: 'M1,1 L9,5 L1,9', fill: 'none', stroke: color, 'stroke-width': 1.6, 'stroke-linejoin': 'miter' })); break;
+        default: m.appendChild(svg('path', { d: 'M0,0 L10,5 L0,10 Z', fill: color }));
+      }
+      defs.appendChild(m);
+      return `url(#${id})`;
     },
     lineEnds(sh) {
       return [[sh.x + (sh.flipH ? sh.w : 0), sh.y + (sh.flipV ? sh.h : 0)], [sh.x + (sh.flipH ? 0 : sh.w), sh.y + (sh.flipV ? 0 : sh.h)]];

@@ -94,7 +94,7 @@ matrix('Ledger: moving a shape', {
   open: async (mode) => {
     const t = await open('ledger');
     if (mode) { await mode.on(t); await pause(300); }
-    await t.evaluate(`L.ui.exec('insertShape')`);
+    await t.evaluate(`L.ui.exec('drawRect')`);
     await t.drag(await cell(t, 4, 4), await cell(t, 9, 6), 6);
     return t;
   },
