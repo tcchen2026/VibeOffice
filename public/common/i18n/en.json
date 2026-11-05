@@ -8028,7 +8028,7 @@
  },
  "Check Box": {
   "where": [
-   "quire/js/editor.js:1068"
+   "quire/js/editor.js:1077"
   ]
  },
  "Check for updates": {
@@ -8834,7 +8834,7 @@
  },
  "Column Break": {
   "where": [
-   "quire/js/editor.js:370",
+   "quire/js/editor.js:379",
    "quire/js/find.js:391",
    "quire/js/find.js:393",
    "quire/js/render.js:553"
@@ -10294,7 +10294,7 @@
  "Cut": {
   "where": [
    "quire/js/commands.js:245",
-   "quire/js/editor.js:853"
+   "quire/js/editor.js:862"
   ]
  },
  "Cut Through Black": {
@@ -11702,7 +11702,7 @@
  },
  "Drag and Drop": {
   "where": [
-   "quire/js/editor.js:914"
+   "quire/js/editor.js:923"
   ]
  },
  "Drag in the worksheet to insert the AutoShape. Press Esc to cancel.": {
@@ -15640,8 +15640,8 @@
  },
  "Indent": {
   "where": [
-   "quire/js/editor.js:417",
-   "quire/js/editor.js:524",
+   "quire/js/editor.js:426",
+   "quire/js/editor.js:533",
    "quire/js/panes.js:381"
   ]
  },
@@ -17264,7 +17264,7 @@
  },
  "Line Break": {
   "where": [
-   "quire/js/editor.js:368"
+   "quire/js/editor.js:377"
   ]
  },
  "Line Color": {
@@ -18354,7 +18354,7 @@
  "Move": {
   "where": [
    "ledger/js/clipboard.js:422",
-   "quire/js/editor.js:914"
+   "quire/js/editor.js:923"
   ]
  },
  "Move &but don't size with cells": {
@@ -20154,7 +20154,7 @@
  },
  "Page Break": {
   "where": [
-   "quire/js/editor.js:369",
+   "quire/js/editor.js:378",
    "quire/js/render.js:553"
   ]
  },
@@ -20390,7 +20390,7 @@
  },
  "Paragraph Formatting": {
   "where": [
-   "quire/js/editor.js:602"
+   "quire/js/editor.js:611"
   ]
  },
  "Paragraph Mark": {
@@ -22489,7 +22489,7 @@
  },
  "Resize Picture": {
   "where": [
-   "quire/js/editor.js:1176"
+   "quire/js/editor.js:1185"
   ]
  },
  "Resize Table": {

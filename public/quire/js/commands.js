@@ -242,7 +242,7 @@
   /* ================= Edit ================= */
   C('undo', { get label() { return D.canUndo() ? L.t('&Undo {0}', L.t(D.undoLabel())) : "Can't &Undo"; }, tip: 'Undo', icon: 'undo', key: 'Ctrl+Z', enabled: () => D.canUndo() && !viewing(), run: () => { D.undo(); } });
   C('redo', { get label() { return D.canRedo() ? L.t('&Redo {0}', L.t(D.redoLabel())) : "Can't &Repeat"; }, tip: 'Redo', icon: 'redo', key: 'Ctrl+Y', enabled: () => D.canRedo() && !viewing(), run: () => { D.redo(); } });
-  C('cut', { label: 'Cu&t', icon: 'cut', key: 'Ctrl+X', enabled: () => canEdit() && (hasSel() || objSel()), run: () => { E.focus(); if (!clip()) { const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } } E.edit(L.N('Cut'), () => E.deleteSelection()); } });
+  C('cut', { label: 'Cu&t', icon: 'cut', key: 'Ctrl+X', enabled: () => canEdit() && (hasSel() || objSel()), run: () => { E.focus(); if (!clip()) { const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } } E.edit(L.N('Cut'), () => E.deleteSelection({ wholeTable: true })); } });
   C('copy', { label: '&Copy', icon: 'copy', key: 'Ctrl+C', enabled: () => hasSel() || objSel(), run: () => { E.focus(); const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } clip(); } });
   C('officeClipboard', { label: 'Office Clip&board...', icon: 'clipboard', run: pane('clipboard') });
   C('paste', { label: '&Paste', icon: 'paste', key: 'Ctrl+V', enabled: () => canEdit(), run: () => pasteCmd() });

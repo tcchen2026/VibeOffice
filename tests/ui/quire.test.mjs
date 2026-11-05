@@ -636,6 +636,38 @@ test('a table\'s resize square: a drag scales its columns and rows, one undo ste
   assert.deepEqual(await undoLabels(u), ['Resize Table']);
 }));
 
+test('a whole table selected by its handle: Ctrl+X cuts the table and Ctrl+V puts it back, Backspace deletes it, Delete empties its cells (Word)', async () => {
+  const doc = PARAS(['First paragraph.', 'Second paragraph.']) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];';
+  const select = async (u) => { const t = await u.el('#pages table.tbl'); await u.move({ x: t.l + 20, y: t.t + 8 }); const h = await u.el('.tbl-move'); await u.click({ x: h.x, y: h.y }); };
+  const FULL = [[['cell 00 text', 'cell 01 text'], ['cell 10 text', 'cell 11 text']]], EMPTY = [[['', ''], ['', '']]];
+  await inQuire(doc, async (u) => {
+    await select(u);
+    await u.key('x', { ctrl: true });
+    assert.deepEqual(await body(u), ['First paragraph.', 'Second paragraph.'], 'Ctrl+X: the table is gone');
+    assert.deepEqual(await undoLabels(u), ['Cut']);
+    await u.key('v', { ctrl: true });
+    assert.deepEqual((await body(u)).filter((b) => Array.isArray(b)), FULL, 'Ctrl+V: the table again, with its text');
+  });
+  await inQuire(doc, async (u) => {
+    await select(u);
+    await u.key('Backspace');
+    assert.deepEqual(await body(u), ['First paragraph.', 'Second paragraph.'], 'Backspace: the table is gone');
+    await u.key('z', { ctrl: true });
+    assert.deepEqual((await body(u))[1], FULL[0], 'Undo: back, with its text');
+  });
+  await inQuire(doc, async (u) => {
+    await select(u);
+    await u.key('Delete');
+    assert.deepEqual(await body(u), ['First paragraph.', EMPTY[0], 'Second paragraph.'], 'Delete: the cells are emptied, the table stays');
+  });
+  await inQuire(doc, async (u) => {
+    const a = await u.el('#pages td[data-cid]');
+    await u.drag({ x: a.l + 4, y: a.y }, { x: a.r - 4, y: a.y });
+    await u.key('x', { ctrl: true });
+    assert.equal((await body(u)).filter((b) => Array.isArray(b)).length, 1, 'part of it: the table stays');
+  });
+});
+
 
 test('the toolbar\'s Insert Table grid: a move over 2 × 3 and a click insert that table', () => inQuire(PARAS(['First paragraph.', 'Second paragraph.']), async (u) => {
   await u.click(await u.el('.tb-drop[data-tip="Insert Table"]'));

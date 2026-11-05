@@ -298,10 +298,12 @@
     }
     return false;
   };
-  /** delete the current selection (if any) and return the caret position */
-  E.deleteSelection = function () {
+  /** delete the current selection (if any) and return the caret position; o.wholeTable (Cut, Backspace): a whole
+   *  table selected goes, as in Word, where Delete empties its cells */
+  E.deleteSelection = function (o) {
     if (E.collapsed()) return E.sel.f;
     const [a, b] = E.range();
+    if (E.cellSel && o && o.wholeTable && !O.tracking()) { const r = removeTable(); if (r) return r; }
     if (E.cellSel) { const r = clearCells(); if (r) return r; }
     if (E.rowSel && !O.tracking()) return deleteRowSel(a, b);   /* tracked, the text is marked deleted as any (rows can't be) */
     const pos = O.deleteRange(a, b);
@@ -321,6 +323,13 @@
     d._idxDirty = true;
     O.repairFields(D.storyOf(d, pos.p));
     return pos;
+  }
+  /* every cell of a table selected: the table itself goes (tracked, its cells are emptied as before) */
+  function removeTable() {
+    const cs = E.cellSel, t = cs && cs.tbl;
+    if (!t || cs.r0 !== 0 || cs.c0 !== 0 || cs.r1 < t.rows.length - 1 || cs.c1 < t.grid.length - 1) return null;
+    E.cellSel = null;
+    return O.removeBlock(t);
   }
   function clearCells() {
     const cs = E.cellSel;
@@ -396,7 +405,7 @@
   E.backspace = function (word) {
     if (!E.sel) return;
     const d = doc();
-    if (!E.collapsed()) { E.edit(L.N('Delete'), () => E.deleteSelection()); return; }
+    if (!E.collapsed()) { E.edit(L.N('Delete'), () => E.deleteSelection({ wholeTable: true })); return; }
     const pos = E.sel.f;
     const p = pos.p;
     if (pos.o === 0) {
@@ -850,7 +859,7 @@
       e.clipboardData.setData('application/x-quire', JSON.stringify({ blocks: data.blocks, media: data.media, preserved: data.preserved }));
     } catch (err) { /* ignore */ }
     E.clip = data;
-    if (cut) E.edit(L.N('Cut'), () => E.deleteSelection());
+    if (cut) E.edit(L.N('Cut'), () => E.deleteSelection({ wholeTable: true }));
   }
   E.copyData = function () {
     if (!E.sel) return null;

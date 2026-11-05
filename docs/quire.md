@@ -23,6 +23,8 @@ where it is dropped (`w:tblpPr` as Word writes one after a drag: 0.125" from the
 and the paragraph there; one undo step; Esc cancels). The square at its bottom right resizes it: the
 columns by the width it is given, the rows by the height (each then at least its share, as Word sets
 them). Table Properties ▸ Text wrapping does the same (Around) or puts it back in the text (None).
+With a whole table selected (its handle, Table ▸ Select ▸ Table), Ctrl+X cuts the table and Backspace
+deletes it, while Delete empties its cells, as in Word; with Track Changes on, both empty the cells.
 
 ## Proofing tools (offline)
 
