@@ -28,7 +28,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | `js/editor.js` | Slide editing surface: select, move, resize, rotate, crop, draw, grid |
 | `js/textedit.js` | Rich text editing, bullets, levels, AutoCorrect, tables |
 | `js/dialogs.js` | Font, Bullets, Format AutoShape, Fill Effects, Header & Footer, Options (with Security), etc. |
-| `js/panes.js` | Slides/Outline tab, notes, sorter, notes page, print preview, task panes (the selected object's Picture, Drawing, Table or LettersArt Tools; docs/suite.md) |
+| `js/panes.js` | Slides/Outline tab, notes, sorter, notes page, print preview, task panes (the selected object's Picture, Table or LettersArt Tools; docs/suite.md) |
 | `js/slideshow.js` | Full-screen show, 58 transitions, 50+ entrance/emphasis/exit/motion-path effects, pen, rehearse timings; a hyperlink clicked in the show shows its address to copy, never opens (docs/suite.md, Hyperlinks) |
 | `js/preserve.js` | Package ownership and settings merges; model-attached media, playback, property invalidation and clipboard dependencies |
 | `js/comments.js` | Legacy/modern comment ownership, author dependencies, copied identities and anchors |
