@@ -12,7 +12,7 @@
   };
   P.themeXml=function(page,book){
     const font=book.fonts.get(0)||book.fonts.values().next().value||{name:'Arial',charset:0,pitchFamily:0};
-    const body=el('a:latin',{typeface:font.name,pitchFamily:font.pitchFamily,charset:font.charset})+el('a:ea',{typeface:''})+el('a:cs',{typeface:''});
+    const body=el('a:latin',{typeface:font.name,pitchFamily:font.pitchFamily>127?font.pitchFamily-256:font.pitchFamily,charset:font.charset>127?font.charset-256:font.charset})+el('a:ea',{typeface:''})+el('a:cs',{typeface:''});
     const solid=el('a:solidFill',{},el('a:schemeClr',{val:'phClr'}));
     const format=el('a:fmtScheme',{name:''},el('a:fillStyleLst',{},solid.repeat(3))+el('a:lnStyleLst',{},[9525,25400,38100].map(w=>el('a:ln',{w,cap:'flat',cmpd:'sng',algn:'ctr'},solid+el('a:prstDash',{val:'solid'})+el('a:miter',{lim:800000}))).join(''))+el('a:effectStyleLst',{},el('a:effectStyle',{},el('a:effectLst')).repeat(3))+el('a:bgFillStyleLst',{},solid.repeat(3)));
     const extra=page.schemeGallery?.length?el('a:extraClrSchemeLst',{},page.schemeGallery.map(s=>el('a:extraClrScheme',{},P.schemeXml(s)+el('a:clrMap',P.colorMap))).join('')):'';

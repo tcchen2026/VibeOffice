@@ -102,7 +102,9 @@
     const anchor = get(shape, 135), flow = get(shape, 136), attrs = {
       lIns: signed(shape, 129, 91440), tIns: signed(shape, 130, 45720), rIns: signed(shape, 131, 91440), bIns: signed(shape, 132, 45720),
       wrap: get(shape, 133) === 2 ? 'none' : 'square', anchor: ['t', 'ctr', 'b', 't', 'ctr', 'b'][anchor] || 't', anchorCtr: anchor >= 3 && anchor <= 5 ? 1 : null,
-      vert: ['horz', 'vert', 'vert270', 'wordArtVert', 'eaVert', 'mongolianVert'][flow] || 'horz'
+      // MS-ODRAW MSOTXFL: 0/4 are horizontal; 1/3/5 turn clockwise.
+      vert: ['horz', 'vert', 'vert270', 'vert', 'horz', 'vert'][flow] || 'horz',
+      rot: shape.properties.has(137) ? (((get(shape,137)%4)+4)%4===3?-5400000:((get(shape,137)%4)+4)%4*5400000) : null
     };
     return el('a:bodyPr', attrs, bool(shape, 191, 1, false) ? '<a:spAutoFit/>' : '<a:noAutofit/>');
   };

@@ -42,7 +42,11 @@
     }, core) });
     const app = {};
     for (const [id, tag] of [[7, 'Template'], [14, 'Pages'], [15, 'Words'], [16, 'Characters'], [18, 'Application'], [19, 'DocSecurity']]) if (safe(sv, id) != null) app[tag] = safe(sv, id);
-    if (sv[10]?.ticks != null) app.TotalTime = Number(BigInt(sv[10].ticks) / 600000000n);
+    if (sv[10]?.ticks != null) {
+      const minutes = BigInt(sv[10].ticks) / 600000000n;
+      if (minutes >= 0n && minutes <= 2147483647n) app.TotalTime = Number(minutes);
+      else losses.push(B.loss('legacy-property-value', 'An invalid editing-time property was not kept', 'SummaryInformation', 'drop', 'Document properties'));
+    }
     for (const [id, tag] of [[3, 'PresentationFormat'], [5, 'Lines'], [6, 'Paragraphs'], [7, 'Slides'], [8, 'Notes'], [9, 'HiddenSlides'], [10, 'MMClips'], [11, 'ScaleCrop'], [14, 'Manager'], [15, 'Company'], [16, 'LinksUpToDate'], [17, 'CharactersWithSpaces'], [19, 'SharedDoc'], [22, 'HyperlinksChanged']]) {
       let v = safe(dv, id); if (v != null) { if (id === 16) v = !v; app[tag] = v; }
     }

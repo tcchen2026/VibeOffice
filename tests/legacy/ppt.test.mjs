@@ -26,7 +26,7 @@ test('PowerPoint packages have disjoint master/layout IDs and reciprocal notes r
  assert.match(p['ppt/presentation.xml'],/sldId id="257"[^>]*\/\><p:sldId id="256"/);assert.match(p['ppt/presentation.xml'],/firstSlideNum="5"/);
  const ids=Object.entries(p).filter(([n])=>n==='ppt/presentation.xml'||/^ppt\/slideMasters\/[^/]+xml$/.test(n)).flatMap(([,x])=>[...x.matchAll(/<p:sld(?:Master|Layout)Id id="(\d+)"/g)].map(m=>m[1]));assert.equal(ids.length,new Set(ids).size);
  assert.match(p['ppt/notesSlides/_rels/notesSlide1.xml.rels'],/slides\/slide1.xml/);assert.match(p['ppt/slides/_rels/slide1.xml.rels'],/notesSlides\/notesSlide1.xml/);assert.match(p['ppt/notesMasters/notesMaster1.xml'],/p:notesStyle/);
- assert.ok(result.losses.some(l=>l.id==='legacy-slide-text'&&l.notify));assert.ok(!result.losses.some(l=>l.id.startsWith('legacy-propert')&&l.notify));
+ assert.ok(result.losses.some(l=>l.id==='legacy-presentation-text'&&l.notify));assert.ok(!result.losses.some(l=>l.id.startsWith('legacy-propert')&&l.notify));
  for(const [name,xml]of Object.entries(p))if(name.endsWith('.xml'))B.checkXml(xml);
 });
 test('PowerPoint shows and templates use an explicit extension hint',async()=>{

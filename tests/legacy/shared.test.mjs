@@ -6,6 +6,7 @@ import { load } from '../../tools/legacy/load.mjs';
 const B = load();
 if (process.env.BASE_SOURCE) vm.runInThisContext(fs.readFileSync(process.env.BASE_SOURCE, 'utf8'));
 if (process.env.PROPERTIES_SOURCE) vm.runInThisContext(fs.readFileSync(process.env.PROPERTIES_SOURCE, 'utf8'));
+if (process.env.PROPERTY_PARTS_SOURCE) vm.runInThisContext(fs.readFileSync(process.env.PROPERTY_PARTS_SOURCE, 'utf8'));
 const u32 = n => { const b = Buffer.alloc(4); b.writeUInt32LE(n); return b; };
 const typed = (t, ...data) => Buffer.concat([u32(t), ...data]);
 const str = s => { const b = Buffer.from(s + '\0'); return Buffer.concat([u32(b.length), b]); };
@@ -40,6 +41,12 @@ test('loss notification requires explicit content-loss opt-in', () => {
   assert.equal(B.loss('metadata', 'Document properties', 'docProps', 'drop').notify, false);
   assert.equal(B.loss('picture', 'A picture was dropped', 'slide1', 'drop', 'Slide 1', true).notify, true);
   assert.equal(B.loss('metadata', 'Document properties', 'docProps', 'drop', undefined, 'true').notify, false);
+});
+test('editing durations outside the OOXML integer range lose only that metadata', () => {
+  const ticks=Buffer.alloc(8);ticks.writeBigUInt64LE(2147483648n*600000000n);
+  const summary=properties([[10,typed(64,ticks)],[14,typed(3,u32(7))]]),result=B.propertyParts({stream:name=>name==='\x05SummaryInformation'?summary:null});
+  const app=result.parts.find(p=>p.name==='docProps/app.xml').data;
+  assert.doesNotMatch(app,/<TotalTime>/);assert.match(app,/<Pages>7<\/Pages>/);assert.ok(result.losses.some(l=>l.id==='legacy-property-value'&&!l.notify));
 });
 test('OEM codepages decode legacy characters and non-ASCII-compatible bytes', () => {
   assert.equal(B.decode(Uint8Array.of(0x80, 0xdb), 437), 'Ç█');

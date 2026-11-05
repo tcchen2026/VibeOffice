@@ -42,6 +42,19 @@ PRESET_ADJUST = {k: [n for n, _ in v] for k, v in json.loads(_ORDER[_ORDER.index
 _FUNCTIONS = (Path(__file__).resolve().parents[2] / 'public/common/legacy/xls-functions.js').read_text()
 FUNCTION_MIN = {name: low for name, low, _ in json.loads(_FUNCTIONS[_FUNCTIONS.index('freeze({') + 7:_FUNCTIONS.index('});', _FUNCTIONS.index('freeze({')) + 1]).values()}
 
+# DrawingML's automatic numbering schemes (ECMA-376 dml-main.xsd, ST_TextAutonumberScheme)
+AUTONUM = set('''alphaLcParenBoth alphaUcParenBoth alphaLcParenR alphaUcParenR alphaLcPeriod alphaUcPeriod arabicParenBoth
+arabicParenR arabicPeriod arabicPlain romanLcParenBoth romanUcParenBoth romanLcParenR romanUcParenR romanLcPeriod romanUcPeriod
+circleNumDbPlain circleNumWdBlackPlain circleNumWdWhitePlain arabicDbPeriod arabicDbPlain ea1ChsPeriod ea1ChsPlain ea1ChtPeriod
+ea1ChtPlain ea1JpnChsDbPeriod ea1JpnKorPlain ea1JpnKorPeriod arabic1Minus arabic2Minus hebrew2Minus thaiAlphaPeriod
+thaiAlphaParenR thaiAlphaParenBoth thaiNumPeriod thaiNumParenR thaiNumParenBoth hindiAlphaPeriod hindiNumPeriod
+hindiNumParenR hindiAlpha1Period'''.split())
+EXTENDED = {'http://schemas.openxmlformats.org/officeDocument/2006/extended-properties', 'http://purl.oclc.org/ooxml/officeDocument/extendedProperties'}
+
+
+def in_range(value, low, high):
+    return value is not None and re.fullmatch(r'[+-]?\d+', value.strip()) is not None and low <= int(value) <= high
+
 
 def short_calls(formula):
     """(name, operands, needed) for each call of a built-in with fewer operands than it needs: strings, quoted
@@ -305,6 +318,23 @@ class Package:
                 if ns in S and tag == 'definedName' and el.text and 'macroEnabled' not in (self.types.get(part) or '') \
                         and re.search(r'(?i)(?<![\w.])(?:_xlfn\.)?GET\.CELL\s*\(', el.text):
                     self.issue('xlm-name-in-plain-workbook', part, (at(el, 'name') or '') + ': GET.CELL', path)
+                # PowerPoint 2016 refuses (I24 D2, each with a control that opens): a DrawingML font's charset or
+                # pitchFamily outside a signed byte (binary Office's 128 is -128 here) ...
+                if ns in A and tag in ('latin', 'ea', 'cs', 'sym', 'buFont'):
+                    for name in ('charset', 'pitchFamily'):
+                        if el.get(name) is not None and not in_range(el.get(name), -128, 127):
+                            self.issue('drawingml-font-byte', part, f'{tag} {name}="{el.get(name)}"', path)
+                # ... a presentation transform's extent past a 32-bit integer ...
+                if ns in A and tag in ('ext', 'chExt') and part.startswith('ppt/') and parent is not None and split(parent.tag)[1] == 'xfrm':
+                    for name in ('cx', 'cy'):
+                        if not in_range(el.get(name), 0, 2147483647):
+                            self.issue('drawingml-transform-extent', part, f'{tag} {name}="{el.get(name)}"', path)
+                # ... an automatic numbering scheme DrawingML doesn't name (POI's arabicParenRight for arabicParenR) ...
+                if ns in A and tag == 'buAutoNum' and el.get('type') not in AUTONUM:
+                    self.issue('drawingml-numbering-scheme', part, f'type="{el.get("type")}"', path)
+                # ... and an editing time past the extended properties' integer
+                if ns in EXTENDED and tag == 'TotalTime' and not in_range(el.text, -2147483648, 2147483647):
+                    self.issue('extended-property-total-time', part, (el.text or '').strip(), path)
                 if ns in A and tag == 'graphicData' and el.get('uri') == 'urn:vibeoffice:test:unread':
                     # Batch 7: our unguarded synthetic frame repairs in Office,
                     # even in its original fixture. Do not reject unfamiliar

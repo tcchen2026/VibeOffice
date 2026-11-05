@@ -254,6 +254,23 @@ test('what Excel refuses in a converted workbook: an empty external cache set, a
   assert.ok(!(await codes('xlm-macro', { '[Content_Types].xml': types('sheet.macroEnabled'), 'xl/workbook.xml': book })).includes('xlm-name-in-plain-workbook'));
 });
 
+test('what PowerPoint refuses in a converted presentation: unsigned font bytes, huge transform extents, unknown numbering schemes, an overlong editing time', async () => {
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  const run1 = (rPr) => ({ 'ppt/slides/slide1.xml': slide(`<p:sp><p:txBody><a:p><a:pPr>${rPr.pPr || ''}</a:pPr><a:r><a:rPr>${rPr.r || ''}</a:rPr><a:t>x</a:t></a:r></a:p></p:txBody></p:sp>`) });
+  for (const [attr, bad] of [['charset', 128], ['pitchFamily', 192]]) {
+    assert.ok((await codes('font-' + attr, run1({ r: `<a:latin typeface="MS Gothic" ${attr}="${bad}"/>` }))).includes('drawingml-font-byte'), attr);
+    for (const ok of [127, -128, -64]) assert.ok(!(await codes('font-ok-' + attr + ok, run1({ r: `<a:ea typeface="MS Gothic" ${attr}="${ok}"/>` }))).includes('drawingml-font-byte'), attr + ok);
+  }
+  const xfrm = (cx) => ({ 'ppt/slides/slide1.xml': slide(`<p:grpSp><p:grpSpPr><a:xfrm><a:off x="-5" y="0"/><a:ext cx="${cx}" cy="10"/><a:chOff x="0" y="0"/><a:chExt cx="${cx}" cy="10"/></a:xfrm></p:grpSpPr></p:grpSp>`) });
+  assert.ok((await codes('extent-over', xfrm(2147483648))).includes('drawingml-transform-extent'));
+  assert.ok(!(await codes('extent-max', xfrm(2147483647))).includes('drawingml-transform-extent'), 'the largest, and a negative offset, open');
+  assert.ok((await codes('numbering-poi', run1({ pPr: '<a:buAutoNum type="arabicParenRight"/>' }))).includes('drawingml-numbering-scheme'));
+  assert.ok(!(await codes('numbering-ok', run1({ pPr: '<a:buAutoNum type="arabicParenR"/>' }))).includes('drawingml-numbering-scheme'));
+  const app = (t) => ({ 'docProps/app.xml': `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><TotalTime>${t}</TotalTime></Properties>` });
+  assert.ok((await codes('total-time-over', app(26185585450))).includes('extended-property-total-time'));
+  assert.ok(!(await codes('total-time-ok', app(2147483647))).includes('extended-property-total-time'));
+});
+
 test('WordArt fill belongs to textFill/textOutline and insertion encloses deletion', async () => {
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', W14 = 'http://schemas.microsoft.com/office/word/2010/wordml';
   const doc = content => `<w:document xmlns:w="${W}" xmlns:w14="${W14}"><w:body><w:p>${content}</w:p></w:body></w:document>`;

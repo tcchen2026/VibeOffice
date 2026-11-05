@@ -10,8 +10,8 @@ export function presentation(options={}){
  const pages=options.pages||{masters:[master],slides:[{id:257,ref:3,record:container(1006,[slideAtom(master.id,300),rec(4008,Buffer.from('First slide'))])},{id:256,ref:4,record:container(1006,[slideAtom(master.id,0,3,16)])}],notes:[{id:300,ref:5,record:container(1008,[rec(1009,Buffer.concat([u32(257),u16(7),u16(0)])),rec(4008,Buffer.from('Speaker notes'))])}]};
  const size=options.size||[5760,4320,4320,5760],da=Buffer.concat([...size.map(u32),u32(1),u32(1),u32(options.notesRef||0),u32(options.handoutRef||0),u16(5),u16(0),Buffer.from([0,0,1,1])]);
  const font=Buffer.alloc(68);font.write('Arial',0,'utf16le');font[64]=0;font[67]=34;
- const env=container(1010,[container(2005,[rec(4023,font),...(options.fontRecords||[])])]);
- const lists=['slides','masters','notes'].map((key,instance)=>container(4080,(pages[key]||[]).map(p=>rec(1011,Buffer.concat([u32(p.ref),u32(0),u32(0),u32(p.id),u32(0)]))),instance));
+ const env=container(1010,[container(2005,[rec(4023,font),...(options.fontRecords||[])]),...(options.environmentRecords||[])]);
+ const lists=['slides','masters','notes'].map((key,instance)=>container(4080,(pages[key]||[]).flatMap(p=>[rec(1011,Buffer.concat([u32(p.ref),u32(0),u32(0),u32(p.id),u32(0)])),...(p.textRecords||[])]),instance));
  const doc=container(1000,[rec(1001,da),env,...lists,...(options.documentRecords||[])]),objects=[{ref:1,record:doc},...Object.values(pages).flat(),...(options.extra||[])];
  let at=16;const entries=[];for(const o of objects){entries.push({ref:o.ref,offset:at});at+=o.record.length;}
  const ptrAt=at,ptr=rec(6002,Buffer.concat([...entries.map(e=>Buffer.concat([u32(0x100000|e.ref),u32(e.offset)])),...(options.stale?[Buffer.concat([u32(0x100000|900),u32(0xfffffff0)])]:[])]));at+=ptr.length;

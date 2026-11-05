@@ -4717,6 +4717,11 @@
    "common/legacy/ppt-structure.js:69"
   ]
  },
+ "A date field format could not be kept": {
+  "where": [
+   "common/legacy/ppt-text.js:9"
+  ]
+ },
  "A defined name was not kept": {
   "where": [
    "common/legacy/xls-formula-book.js:79",
@@ -4741,6 +4746,13 @@
  "A list cannot overlap another list.": {
   "where": [
    "ledger/js/dialogs2.js:360"
+  ]
+ },
+ "A master text style has too many levels": {
+  "where": [
+   "common/legacy/ppt-text-read.js:41",
+   "common/legacy/ppt-text-read.js:48",
+   "common/legacy/ppt-text-read.js:52"
   ]
  },
  "A newer version of VibeOffice is available. This one is {0}.": {
@@ -4836,6 +4848,12 @@
  "A style named {0} already exists.": {
   "where": [
    "quire/js/dialogs.js:929"
+  ]
+ },
+ "A text formatting run has an invalid length": {
+  "where": [
+   "common/legacy/ppt-text-read.js:60",
+   "common/legacy/ppt-text-read.js:63"
   ]
  },
  "A tree that grows from left to right.": {
@@ -5687,6 +5705,11 @@
    "common/legacy/xml-check.js:34"
   ]
  },
+ "An embedded notes style could not be read": {
+  "where": [
+   "common/legacy/ppt-text-design.js:22"
+  ]
+ },
  "An embedded object or control you edited will be saved as a picture and will no longer work.": {
   "where": [
    "ledger/js/objects.js:127"
@@ -5732,6 +5755,21 @@
  "An embedded presentation design is too large": {
   "where": [
    "common/legacy/ppt-theme.js:22"
+  ]
+ },
+ "An embedded text style contains unavailable content": {
+  "where": [
+   "common/legacy/ppt-text-design.js:21"
+  ]
+ },
+ "An embedded text style could not be read": {
+  "where": [
+   "common/legacy/ppt-text-design.js:14"
+  ]
+ },
+ "An embedded text style is too large": {
+  "where": [
+   "common/legacy/ppt-text-design.js:12"
   ]
  },
  "An object on this sheet couldn't be kept and will be removed.": {
@@ -5790,7 +5828,7 @@
  },
  "Animations were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:83"
+   "common/legacy/ppt-write.js:93"
   ]
  },
  "Animations:": {
@@ -10601,7 +10639,7 @@
  },
  "Damaged macros were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:90"
+   "common/legacy/ppt-write.js:101"
   ]
  },
  "Damaged presentation content could not be read": {
@@ -12025,7 +12063,7 @@
  },
  "Drawing objects were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:78",
+   "common/legacy/ppt-write.js:88",
    "common/legacy/xls-write.js:85"
   ]
  },
@@ -12190,7 +12228,7 @@
  "Edit": {
   "where": [
    "lectern/js/dialogs.js:903",
-   "lectern/js/model.js:761",
+   "lectern/js/model.js:765",
    "ledger/js/dialogs.js:800",
    "quire/js/dialogs3.js:578"
   ]
@@ -12421,7 +12459,7 @@
  },
  "Embedded fonts were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:88"
+   "common/legacy/ppt-write.js:99"
   ]
  },
  "Embedded object": {
@@ -12429,6 +12467,11 @@
    "lectern/js/frames.js:19",
    "lectern/js/render.js:582",
    "quire/js/render.js:378"
+  ]
+ },
+ "Embedded text styles are too large": {
+  "where": [
+   "common/legacy/ppt-text-design.js:16"
   ]
  },
  "Ember": {
@@ -12471,7 +12514,7 @@
  },
  "Encrypted binary presentations cannot be opened yet": {
   "where": [
-   "common/legacy/ppt-write.js:97"
+   "common/legacy/ppt-write.js:108"
   ]
  },
  "Encrypted binary workbooks cannot be opened yet": {
@@ -15654,7 +15697,7 @@
  },
  "Hyperlinks were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:84"
+   "common/legacy/ppt-write.js:94"
   ]
  },
  "Hyphenate words in &CAPS": {
@@ -18150,7 +18193,7 @@
  },
  "Macros were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:90",
+   "common/legacy/ppt-write.js:101",
    "common/legacy/xls-write.js:94"
   ]
  },
@@ -19680,7 +19723,7 @@
  },
  "Notes without a matching slide were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:86"
+   "common/legacy/ppt-write.js:97"
   ]
  },
  "Notes:": {
@@ -21280,6 +21323,11 @@
    "quire/js/ribbon.js:97"
   ]
  },
+ "Picture bullets were replaced with text bullets": {
+  "where": [
+   "common/legacy/ppt-text.js:9"
+  ]
+ },
  "Picture selected": {
   "where": [
    "quire/js/dialogs.js:808",
@@ -21511,7 +21559,7 @@
  },
  "PowerPoint 95 presentations cannot be opened yet": {
   "where": [
-   "common/legacy/ppt-write.js:95"
+   "common/legacy/ppt-write.js:106"
   ]
  },
  "PowerPoint Presentation (*.pptx)": {
@@ -21574,12 +21622,16 @@
  "Presentation text is too large": {
   "where": [
    "common/legacy/ppt-read.js:66",
-   "common/legacy/ppt-structure.js:30"
+   "common/legacy/ppt-structure.js:30",
+   "common/legacy/ppt-text.js:60"
   ]
  },
- "Presentation text was not kept": {
+ "Presentation text nesting exceeds the limit": {
   "where": [
-   "common/legacy/ppt-write.js:77"
+   "common/legacy/ppt-text-read.js:75",
+   "common/legacy/ppt-text-write.js:99",
+   "common/legacy/ppt-text.js:63",
+   "common/legacy/ppt-text.js:92"
   ]
  },
  "Presentation title": {
@@ -26904,7 +26956,7 @@
  },
  "Slide transitions and automatic advance settings were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:85"
+   "common/legacy/ppt-write.js:96"
   ]
  },
  "Slide {0}": {
@@ -27076,6 +27128,11 @@
    "common/legacy/xls-formula-book.js:155"
   ]
  },
+ "Some headers and footers were not kept": {
+  "where": [
+   "common/legacy/ppt-write.js:95"
+  ]
+ },
  "Some mentions could not be kept after the comment text was edited.": {
   "where": [
    "ledger/js/threads.js:125"
@@ -27086,9 +27143,24 @@
    "common/ui.js:788"
   ]
  },
+ "Some presentation text could not be kept": {
+  "where": [
+   "common/legacy/ppt-text.js:9"
+  ]
+ },
  "Some print settings were not kept": {
   "where": [
    "common/legacy/xls-write.js:92"
+  ]
+ },
+ "Some text formatting could not be kept": {
+  "where": [
+   "common/legacy/ppt-text.js:9"
+  ]
+ },
+ "Some text-box positioning could not be kept": {
+  "where": [
+   "common/legacy/ppt-text.js:9"
   ]
  },
  "Some workbook formatting could not be read": {
@@ -28721,6 +28793,11 @@
    "ledger/js/dialogs.js:122"
   ]
  },
+ "Text formatting ends before the text": {
+  "where": [
+   "common/legacy/ppt-text-read.js:60"
+  ]
+ },
  "Text length": {
   "where": [
    "ledger/js/dialogs2.js:94"
@@ -28740,6 +28817,11 @@
  "Text to Columns can convert only one column at a time.": {
   "where": [
    "ledger/js/dialogs2.js:224"
+  ]
+ },
+ "Text with a missing outline reference could not be kept": {
+  "where": [
+   "common/legacy/ppt-text.js:9"
   ]
  },
  "Text wrapping": {
@@ -29319,6 +29401,16 @@
    "common/legacy/ppt-structure.js:22"
   ]
  },
+ "The presentation has too many text records": {
+  "where": [
+   "common/legacy/ppt-text.js:36"
+  ]
+ },
+ "The presentation has too many text styles": {
+  "where": [
+   "common/legacy/ppt-text-read.js:36"
+  ]
+ },
  "The presentation is encrypted (AES-256) the next time you save it as a PowerPoint file, the way PowerPoint 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
   "where": [
    "lectern/js/dialogs.js:905"
@@ -29372,7 +29464,7 @@
  "The shape fill picture is missing": {
   "where": [
    "common/legacy/shapes.js:67",
-   "common/legacy/shapes.js:122"
+   "common/legacy/shapes.js:124"
   ]
  },
  "The shape geometry has a missing guide": {
@@ -29407,7 +29499,7 @@
  },
  "The slide background was replaced with its color-scheme background": {
   "where": [
-   "common/legacy/ppt-write.js:82"
+   "common/legacy/ppt-write.js:92"
   ]
  },
  "The slide containing these comments was deleted.": {
@@ -30044,7 +30136,7 @@
  },
  "This legacy shape needs a VML preset definition": {
   "where": [
-   "common/legacy/shapes.js:115"
+   "common/legacy/shapes.js:117"
   ]
  },
  "This link goes to:": {
@@ -30100,7 +30192,7 @@
  },
  "This presentation needs a password": {
   "where": [
-   "common/legacy/ppt-write.js:97"
+   "common/legacy/ppt-write.js:108"
   ]
  },
  "This punctuation mark is repeated.": {
@@ -30143,7 +30235,7 @@
  "This shape uses an unsupported fill": {
   "where": [
    "common/legacy/shapes.js:81",
-   "common/legacy/shapes.js:129"
+   "common/legacy/shapes.js:131"
   ]
  },
  "This shape uses an unsupported geometry operation": {
