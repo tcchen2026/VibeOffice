@@ -325,7 +325,9 @@
       case 'un': {
         if (n.op === '@') { const v = ev(n.a, ctx); return v instanceof Ref || v instanceof Arr ? C.scalar(v, ctx) : v; }
         const v = operand(ev(n.a, ctx), ctx);
-        return lift1(v, (x) => { const k = C.toNum(x, ctx); if (isErr(k)) return k; return n.op === '-' ? -k : k; });
+        /* + changes nothing (text stays text: =+A1 with "col" is "col"), only a blank becomes 0 */
+        if (n.op === '+') return lift1(v, (x) => (x == null || x === MISSING ? 0 : x));
+        return lift1(v, (x) => { const k = C.toNum(x, ctx); if (isErr(k)) return k; return -k; });
       }
       case 'pct': {
         const v = operand(ev(n.a, ctx), ctx);
@@ -499,18 +501,23 @@
     if (ctx.vars && n.sheet == null) {
       for (let s = ctx.vars; s; s = s.parent) if (s.map.has(key)) return s.map.get(key);
     }
-    let sheetIdx = ctx.wb.sheetIndex(ctx.sh);
-    if (n.sheet != null) { const sh = ctx.wb.sheetByName(n.sheet); if (!sh) return E.REF; sheetIdx = ctx.wb.sheetIndex(sh); }
     if (n.book != null) {
-      /* a name defined in another workbook: [1]!Name, using the values cached with this file */
+      /* a name defined in another workbook: [1]!Name, or one of its sheets' ('[1]Sheet'!Name), using the values
+         cached with this file */
       const ext = C.extBook(ctx.wb, n.book);
-      const d = ext && ext.names[n.name.toLowerCase()];
+      let d = null;
+      if (ext && n.sheet != null) {
+        const i = ext.sheetList.indexOf(ext.sheets[String(n.sheet).toLowerCase()]);
+        d = i >= 0 && ext.scoped && ext.scoped[i] ? ext.scoped[i][n.name.toLowerCase()] : null;
+      } else d = ext && ext.names[n.name.toLowerCase()];
       if (!d) return E.REF;
       let a;
       try { a = F.parse(d.ref); } catch (e) { return E.REF; }
       F.walk(a, (x) => { if ((x.t === 'ref' || x.t === 'area' || x.t === 'name') && x.book == null) x.book = n.book; });
       return ev(a, ctx);
     }
+    let sheetIdx = ctx.wb.sheetIndex(ctx.sh);
+    if (n.sheet != null) { const sh = ctx.wb.sheetByName(n.sheet); if (!sh) return E.REF; sheetIdx = ctx.wb.sheetIndex(sh); }
     const def = ctx.wb.findName(n.name, sheetIdx);
     if (!def) {
       const tbl = ctx.wb.findTable(n.name);

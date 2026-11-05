@@ -136,13 +136,13 @@
         if (sheetTxt != null && book == null) { const bm = /^(?:.*[\\/])?\[([^\]]+)\](.*)$/.exec(sheetTxt); if (bm) { book = bm[1]; sheetTxt = bm[2]; } }
         let sheet = sheetTxt, sheet2 = null;
         if (sheetTxt != null) { const k = splitSheet3D(sheetTxt); if (k) { sheet = k[0]; sheet2 = k[1]; } }
+        if (book != null && sheetTxt == null && src[j0] === '!') j0++;   // [1]!Name: a name of the other workbook itself
         const after = src.slice(j0);
         const tok = refToken(after, j0);
         if (tok) { tok.sheet = sheet; if (sheet2) tok.sheet2 = sheet2; if (book != null) tok.book = book; tok.pos = i; toks.push(tok); i = j0 + tok.len; continue; }
         if (after.toUpperCase().startsWith('#REF!')) { toks.push({ t: 'ref', kind: 'err', sheet, book, pos: i }); i = j0 + 5; continue; }
         const im = reIdent.exec(after);
         if (im) { toks.push({ t: 'name', v: im[0], sheet, book, pos: i }); i = j0 + im[0].length; continue; }
-        if (book != null && sheetTxt == null) { /* [1]!Name handled above; otherwise fall through */ }
         throw new ParseError('Invalid reference', i);
       }
       const rt = refToken(rest, i);

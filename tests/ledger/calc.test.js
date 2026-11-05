@@ -83,4 +83,6 @@ t('MAX(A1:A10)', 10); t('MIN(A1:A10,-1)', -1); t('MAXIFS(Data!C2:C6,Data!B2:B6,"
 t('ROMAN(1999)', 'MCMXCIX'); t('ARABIC("MCMXCIX")', 1999); t('BASE(255,16,4)', '00FF'); t('DECIMAL("FF",16)', 255); t('SUMSQ(3,4)', 25); t('SUMX2MY2({2,3},{1,1})', 11); t('MMULT({1,2;3,4},{5;6})', 17); t('MDETERM({1,2;3,4})', -2);
 t('1/0', '#DIV/0!'); t('SQRT(-1)', '#NUM!'); t('"a"+1', '#VALUE!'); t('NA()', '#N/A'); t('UNKNOWNFN(1)', '#NAME?'); t('A1:A3 B1:B3', '#NULL!');
 t('2^-1', 0.5); t('-2^2', 4); t('10%', 0.1); t('5&"%"', '5%'); t('1E+308*10', '#NUM!'); t('(1+2)*3', 9); t('3>2>1', true);
+/* as Excel: unary plus changes nothing (a blank is 0); an omitted logical operand is FALSE; a range that is an error is the result */
+t('+B1', 'apple'); t('+Z99', 0); t('AND(,TRUE)', false); t('OR(,FALSE)', false); t('XOR(,TRUE)', true); t('COUNTIF(#REF!,"A")', '#REF!'); t('COUNTIFS(#REF!,"A")', '#REF!'); t('SUMIF(#REF!,"A")', '#REF!'); t('AVERAGEIF(#REF!,"A")', '#REF!');
 console.log(n - fail + '/' + n);

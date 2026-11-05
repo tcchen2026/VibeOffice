@@ -38,7 +38,7 @@
       else if (typeof v === 'string') { if (!direct) return; b = C.toBool(v); if (isErr(b)) return b; }
       else return;
       n++; acc = step(acc, b);
-    });
+    }, { missingAsZero: true });   // an omitted operand is FALSE: AND(,TRUE) is FALSE
     if (err) return err;
     if (!n) return E.VALUE;
     return fin ? fin(acc) : acc;
@@ -263,6 +263,7 @@
     let R = -1, Cc = -1;
     for (let i = 0; i < list.length; i += 2) {
       const rg = list[i];
+      if (isErr(rg)) return rg;   // COUNTIF(#REF!,"A") is #REF!
       if (!(rg instanceof Ref) && !(rg instanceof Arr)) return E.VALUE;
       const rows = rg.rows, cols = rg.cols;
       if (R < 0) { R = rows; Cc = cols; } else if (rows !== R || cols !== Cc) return E.VALUE;
@@ -329,6 +330,7 @@
   /** SUMIF's sum_range takes the shape of the criteria range from its own top-left cell */
   const reshape = (sum, rg) => (sum instanceof Ref ? new Ref(sum.sheet, sum.r1, sum.c1, sum.r1 + rg.rows - 1, sum.c1 + rg.cols - 1) : sum);
   def('SUMIF', 2, 3, 'rvr', (ctx, rg, crit, sum) => {
+    if (isErr(rg)) return rg;
     if (!(rg instanceof Ref) && !(rg instanceof Arr)) return E.VALUE;
     const cs = condSet(ctx, [rg, crit]); if (isErr(cs)) return cs;
     const S = sum === MISSING ? rg : reshape(sum, rg);
@@ -345,9 +347,10 @@
     eachMatch(cs, (i, j) => { const v = valAt(S, i, j); if (typeof v === 'number') s += v; else if (isErr(v) && !err) err = v; });
     return err || s;
   }, 2), { list: true });
-  def('COUNTIF', 2, 2, 'rv', (ctx, rg, crit) => { if (!(rg instanceof Ref) && !(rg instanceof Arr)) return E.VALUE; const cs = condSet(ctx, [rg, crit]); if (isErr(cs)) return cs; let n = 0; eachMatch(cs, () => n++); return n; }, { errOk: true });
+  def('COUNTIF', 2, 2, 'rv', (ctx, rg, crit) => { if (isErr(rg)) return rg; if (!(rg instanceof Ref) && !(rg instanceof Arr)) return E.VALUE; const cs = condSet(ctx, [rg, crit]); if (isErr(cs)) return cs; let n = 0; eachMatch(cs, () => n++); return n; }, { errOk: true });
   def('COUNTIFS', 2, 254, 'r', critLift((ctx, args) => { if (args.length % 2) return E.VALUE; const cs = condSet(ctx, args); if (isErr(cs)) return cs; let n = 0; eachMatch(cs, () => n++); return n; }, 1), { list: true });
   def('AVERAGEIF', 2, 3, 'rvr', (ctx, rg, crit, avg) => {
+    if (isErr(rg)) return rg;
     if (!(rg instanceof Ref) && !(rg instanceof Arr)) return E.VALUE;
     const cs = condSet(ctx, [rg, crit]); if (isErr(cs)) return cs;
     const S = avg === MISSING ? rg : reshape(avg, rg);

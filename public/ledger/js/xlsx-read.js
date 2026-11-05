@@ -1348,7 +1348,13 @@
         }
       }
     }
-    for (const d of kids(kid(eb, 'definedNames'), 'definedName')) book.names[(at(d, 'name') || '').toLowerCase()] = { ref: (at(d, 'refersTo') || '').replace(/^=/, ''), sheetId: at(d, 'sheetId') };
+    /* its names: the workbook's own, and each sheet's (the same name may be defined on several sheets) */
+    book.scoped = {};
+    for (const d of kids(kid(eb, 'definedNames'), 'definedName')) {
+      const key = (at(d, 'name') || '').toLowerCase(), def = { ref: (at(d, 'refersTo') || '').replace(/^=/, ''), sheetId: at(d, 'sheetId') };
+      if (def.sheetId != null) (book.scoped[def.sheetId] = book.scoped[def.sheetId] || {})[key] = def;
+      if (def.sheetId == null || !book.names[key] || book.names[key].sheetId != null) book.names[key] = def;
+    }
     /* the book is addressed by its index ([1]) and by its file name */
     if (!wb.external) wb.external = {};
     wb.external[String(idx)] = book;
