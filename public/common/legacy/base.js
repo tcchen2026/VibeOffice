@@ -8,7 +8,7 @@
   B.fail = function (code, message, where) { const e = new Error(message); e.name = 'LegacyError'; e.code = code; if (where != null) e.where = where; throw e; };
   B.Reader = class {
     constructor(bytes, label = 'stream') {
-      if (!(bytes instanceof Uint8Array)) B.fail('INVALID_BYTES', N('Expected a byte array'), label);
+      if (!(bytes instanceof Uint8Array)) B.fail('INVALID_BYTES', 'Expected a byte array', label);
       if (bytes.length > B.limits.bytes) B.fail('SIZE_LIMIT', N('The file is too large to import'), label);
       this.bytes = bytes; this.length = bytes.length; this.label = label;
       this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -50,7 +50,7 @@
   B.xstring = value => B.xml(String(value).replace(/_x[0-9a-fA-F]{4}_/g, s => '_x005F_' + s.slice(1))
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\r]/g, c => '_x' + c.charCodeAt(0).toString(16).padStart(4, '0').toUpperCase() + '_'));
   B.cfb = bytes => {
-    if (!L.officeCrypto?.cfb) B.fail('DEPENDENCY', N('Load common/crypto.js before the legacy importers'));
+    if (!L.officeCrypto?.cfb) B.fail('DEPENDENCY', 'Load common/crypto.js before the legacy importers');
     return L.officeCrypto.cfb(bytes, { maxBytes: B.limits.bytes });
   };
   // Notification is a host/converter decision: opt in only for lost content or functionality.

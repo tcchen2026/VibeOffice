@@ -6,26 +6,7 @@ import {load} from '../../tools/legacy/load.mjs';
 const B=load(),X=B.xls;
 if(process.env.XLS_WRITE_SOURCE)vm.runInThisContext(fs.readFileSync(process.env.XLS_WRITE_SOURCE,'utf8'));
 if(process.env.XLS_BEFORE){for(const key of ['convert','styles','sheetMetadata','richText','theme','styleExtensions'])delete X[key];delete B.checkXml;delete B.zipPart;vm.runInThisContext(fs.readFileSync(process.env.XLS_BEFORE,'utf8'));}
-const words=(...values)=>{const b=Buffer.alloc(values.length*2);values.forEach((v,i)=>b.writeUInt16LE(v,i*2));return b;};
-const dword=n=>{const b=Buffer.alloc(4);b.writeUInt32LE(n);return b;};
-const rec=(id,b=Buffer.alloc(0))=>Buffer.concat([words(id,b.length),b]);
-const str=s=>Buffer.concat([words(s.length),Buffer.from([1]),Buffer.from(s,'utf16le')]);
-const bof=type=>rec(0x809,words(0x600,type,0,0,0,0,0,0));
-const bound=(name,offset,state=0)=>rec(0x85,Buffer.concat([dword(offset),Buffer.from([state,0,name.length,1]),Buffer.from(name,'utf16le')]));
-function workbook(globals,sheets){
-  const start=[bof(5),...globals,...sheets.map(s=>bound(s.name,0,s.state)),rec(10)].reduce((n,b)=>n+b.length,0);let at=start;
-  const bodies=sheets.map(s=>Buffer.concat([bof(16),...s.records,rec(10)]));
-  return Buffer.concat([bof(5),...globals,...sheets.map((s,i)=>{const b=bound(s.name,at,s.state);at+=bodies[i].length;return b;}),rec(10),...bodies]);
-}
-// Independent test-only CFB fixture, one regular stream; production has no CFB writer.
-function cfb(data){
-  const n=Math.ceil(Math.max(4096,data.length)/512),b=Buffer.alloc((n+3)*512),put=(p,v)=>b.writeUInt32LE(v>>>0,p);
-  assert.ok(n<126);b.set([0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1]);b.writeUInt16LE(3,26);b.writeUInt16LE(0xfffe,28);b.writeUInt16LE(9,30);b.writeUInt16LE(6,32);put(44,1);put(48,1);put(56,4096);put(60,0xfffffffe);put(68,0xfffffffe);
-  for(let i=0;i<109;i++)put(76+i*4,i?0xffffffff:0);for(let i=0;i<128;i++)put(512+i*4,0xffffffff);
-  put(512,0xfffffffd);put(516,0xfffffffe);for(let i=0;i<n;i++)put(512+(i+2)*4,i===n-1?0xfffffffe:i+3);
-  for(const [i,name,type]of [[0,'Root Entry',5],[1,'Workbook',2]]){const p=1024+i*128;b.write(name,p,'utf16le');b.writeUInt16LE((name.length+1)*2,p+64);b[p+66]=type;b[p+67]=1;put(p+68,0xffffffff);put(p+72,0xffffffff);put(p+76,i?0xffffffff:1);put(p+116,i?2:0xfffffffe);put(p+120,i?Math.max(4096,data.length):0);}
-  b.set(data,1536);return b;
-}
+import {words,dword,rec,str,bof,workbook,cfb} from './xls-fixtures.mjs';
 async function convert(globals,records){return X.convert(cfb(workbook(globals,[{name:'Data',records}])));}
 async function xmls(result){const z=await L.zip.read(result.pkg);return Object.fromEntries(await Promise.all([...z].filter(([n])=>n.endsWith('.xml')).map(async([n,e])=>[n,await e.text()])));}
 const cell=(row,col,xf=0)=>words(row,col,xf);
@@ -33,15 +14,15 @@ const number=(row,col,n)=>{const value=Buffer.alloc(8);value.writeDoubleLE(n);re
 const font=(name,weight=400)=>{const b=Buffer.alloc(14);b.writeUInt16LE(220);b.writeUInt16LE(0x7fff,4);b.writeUInt16LE(weight,6);return rec(0x31,Buffer.concat([b,Buffer.from([name.length,1]),Buffer.from(name,'utf16le')]));};
 const xf=(font=0,style=false)=>{const b=Buffer.alloc(20);b.writeUInt16LE(font);b.writeUInt16LE(style?5:1,4);b.writeUInt16LE(0x20,6);b.writeUInt16LE(0xfc00,8);return rec(0xe0,b);};
 
-test('XLS conversion keeps typed value records and formula caches with an explicit loss',async()=>{
+test('XLS conversion keeps typed value records and formula caches',async()=>{
   const formula=Buffer.alloc(25);cell(2,0).copy(formula);formula.writeDoubleLE(42,6);formula.writeUInt16LE(3,20);formula.set([0x1e,42,0],22);
   const result=await convert([rec(0x22,words(1)),rec(0x60),rec(0xfc,Buffer.concat([dword(1),dword(1),str('A\x07_x0041_')]))],[
     number(0,0,1.25),rec(0x27e,Buffer.concat([cell(0,1),dword((1234<<2)|3)])),rec(0xbd,Buffer.concat([words(0,2,0),dword((3<<2)|2),words(0),dword((4<<2)|2),words(3)])),
     rec(0xfd,Buffer.concat([cell(1,0),dword(0)])),rec(0x205,Buffer.concat([cell(1,1),Buffer.from([1,0])])),rec(0x205,Buffer.concat([cell(1,2),Buffer.from([7,1])])),rec(0x201,cell(1,3)),rec(0xbe,words(1,4,0,0,5)),rec(6,formula),rec(0x204,Buffer.concat([cell(3,0),str('中文')]))
   ]),xml=await xmls(result),sheet=xml['xl/worksheets/sheet1.xml'];
   assert.equal(result.type,'xltx');assert.equal(result.stats.cells,12);assert.match(sheet,/<c r="A1"><v>1.25<\/v><\/c>/);assert.match(sheet,/<c r="B1"><v>12.34<\/v>/);assert.match(sheet,/<c r="D1"><v>4<\/v>/);
-  assert.match(sheet,/<c r="B2" t="b"><v>1<\/v>/);assert.match(sheet,/<c r="C2" t="e"><v>#DIV\/0!<\/v>/);assert.match(sheet,/<c r="D2"\/>/);assert.match(sheet,/<c r="A3"><v>42<\/v>/);assert.doesNotMatch(sheet,/<f[ >]/);
-  assert.match(xml['xl/sharedStrings.xml'],/A_x0007__x005F_x0041_/);assert.match(xml['xl/sharedStrings.xml'],/中文/);assert.match(xml['xl/workbook.xml'],/date1904="1"/);assert.ok(result.losses.find(l=>l.id==='legacy-formulas'&&l.notify&&l.place==='Data'));
+  assert.match(sheet,/<c r="B2" t="b"><v>1<\/v>/);assert.match(sheet,/<c r="C2" t="e"><v>#DIV\/0!<\/v>/);assert.match(sheet,/<c r="D2"\/>/);assert.match(sheet,/<c r="A3"><f>42<\/f><v>42<\/v>/);
+  assert.match(xml['xl/sharedStrings.xml'],/A_x0007__x005F_x0041_/);assert.match(xml['xl/sharedStrings.xml'],/中文/);assert.match(xml['xl/workbook.xml'],/date1904="1"/);assert.ok(!result.losses.some(l=>l.id==='legacy-formulas'));assert.equal(result.stats.formulas.converted,1);
 });
 
 test('XLS styles preserve skipped font index 4, named styles, custom formats and palette colors',()=>{

@@ -37,6 +37,55 @@ MODERN_COMMENTS = '{http://schemas.microsoft.com/office/word/2012/wordml}comment
 # each preset shape's adjustment names, from the generated schema facts the apps use
 _ORDER = (Path(__file__).resolve().parents[2] / 'public/common/opc-order.js').read_text()
 PRESET_ADJUST = {k: [n for n, _ in v] for k, v in json.loads(_ORDER[_ORDER.index('= {') + 2:_ORDER.rindex('; })')]).get('presetAdjust', {}).items()}
+# each built-in worksheet function's fewest operands (Apache POI's table, as the Excel 97-2003 importer uses it); the
+# BIFF maxima don't bind OOXML
+_FUNCTIONS = (Path(__file__).resolve().parents[2] / 'public/common/legacy/xls-functions.js').read_text()
+FUNCTION_MIN = {name: low for name, low, _ in json.loads(_FUNCTIONS[_FUNCTIONS.index('freeze({') + 7:_FUNCTIONS.index('});', _FUNCTIONS.index('freeze({')) + 1]).values()}
+
+
+def short_calls(formula):
+    """(name, operands, needed) for each call of a built-in with fewer operands than it needs: strings, quoted
+    sheet names, array constants and structured references are skipped, so their commas don't count"""
+    out, frames, i, n = [], [], 0, len(formula)
+    while i < n:
+        ch = formula[i]
+        if ch in '"\'':
+            j = i + 1
+            while j < n and not (formula[j] == ch and (j + 1 >= n or formula[j + 1] != ch)):
+                j += 2 if formula[j] == ch else 1
+            if frames:
+                frames[-1][2] = True
+            i = j + 1
+            continue
+        if ch in '{[':
+            close, depth, j = '}' if ch == '{' else ']', 0, i
+            while j < n:
+                depth += formula[j] == ch
+                depth -= formula[j] == close
+                j += 1
+                if not depth:
+                    break
+            if frames:
+                frames[-1][2] = True
+            i = j
+            continue
+        if ch == '(':
+            m = re.search(r'([A-Za-z_][A-Za-z0-9_.]*)$', formula[:i])
+            name = re.sub(r'(?i)^_(?:xlfn|xll|xlws)\.', '', m.group(1)).upper() if m else None
+            frames.append([name, 0, False])
+        elif ch == ')' and frames:
+            name, commas, content = frames.pop()
+            operands = commas + 1 if commas or content else 0
+            if name in FUNCTION_MIN and operands < FUNCTION_MIN[name]:
+                out.append((name, operands, FUNCTION_MIN[name]))
+            if frames:
+                frames[-1][2] = True
+        elif ch == ',' and frames:
+            frames[-1][1] += 1
+        elif not ch.isspace() and frames:
+            frames[-1][2] = True
+        i += 1
+    return out
 
 def split(tag):
     if tag.startswith('{'):
@@ -242,6 +291,20 @@ class Package:
                     units = len(re.sub(r'_x([0-9A-Fa-f]{4})_', lambda m: chr(int(m.group(1), 16)), text).encode('utf-16-le', 'surrogatepass')) // 2
                     if units > 32767:
                         self.issue('cell-text-too-long', part, f'{units} characters (Excel opens at most 32,767)', path)
+                # Excel 2016 refuses an external link whose cache set holds no sheet (I24 C2: removing only the
+                # empty element opens the same file)
+                if ns in S and tag == 'sheetDataSet' and not any(split(c.tag)[1] == 'sheetData' for c in el):
+                    self.issue('external-empty-sheet-data-set', part, 'externalBook/sheetDataSet without sheetData', path)
+                # ... and a built-in called with fewer operands than it needs (I24 C2: SUMIF with one, in any case or
+                # prefix; the same call to an unknown name opens)
+                if ns in S and tag in ('f', 'definedName', 'formula', 'formula1', 'formula2') and el.text:
+                    for name, operands, needed in short_calls(el.text):
+                        self.issue('function-missing-operands', part, f'{name} with {operands} of its {needed} required operands', path)
+                # ... and an Excel 4 macro function (GET.CELL) in a defined name of a workbook that can't hold macros
+                # (I24 C2: removing only that name opens the file)
+                if ns in S and tag == 'definedName' and el.text and 'macroEnabled' not in (self.types.get(part) or '') \
+                        and re.search(r'(?i)(?<![\w.])(?:_xlfn\.)?GET\.CELL\s*\(', el.text):
+                    self.issue('xlm-name-in-plain-workbook', part, (at(el, 'name') or '') + ': GET.CELL', path)
                 if ns in A and tag == 'graphicData' and el.get('uri') == 'urn:vibeoffice:test:unread':
                     # Batch 7: our unguarded synthetic frame repairs in Office,
                     # even in its original fixture. Do not reject unfamiliar

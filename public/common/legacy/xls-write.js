@@ -1,7 +1,7 @@
-/* Binary Excel workbook -> SpreadsheetML. C1: cells, formatting and sheet views.
+/* Binary Excel workbook -> SpreadsheetML: cells, formatting, views and formulas.
  * Derived from Apache OpenOffice main/sc/source/filter/excel/ (Apache-2.0).
  * Derived from Apache POI hssf/record/common/{ExtRst,PhRun}.java (Apache-2.0).
- * Formula syntax, drawings/charts and later features are explicit losses until
+ * Drawings/charts and later features are explicit losses until
  * their converter phases are implemented. Documents stay entirely in memory. */
 (function(root){
   'use strict';
@@ -9,9 +9,12 @@
   const types={workbook:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml',template:'application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml',sheet:'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml',styles:'application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml',strings:'application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml'};
   const errors={0:'#NULL!',7:'#DIV/0!',15:'#VALUE!',23:'#REF!',29:'#NAME?',36:'#NUM!',42:'#N/A',43:'#GETTING_DATA'};
   const text=value=>el('t',/^\s|\s$/.test(value)?{'xml:space':'preserve'}:{},B.xstring(value));
-  X.richText=function(item,styles,losses,where){
-    let value=item.value||'';
+  X.cellText=function(value,losses,where){
     if(value.length>32767){value=value.slice(0,32767).replace(/[\ud800-\udbff]$/,'');losses.push(B.loss('legacy-cell-text-limit',N('Text beyond the 32,767-character cell limit was not kept'),where,'drop',where,true));}
+    return value;
+  };
+  X.richText=function(item,styles,losses,where){
+    const value=X.cellText(item.value||'',losses,where);
     const runs=(item.runs||[]).filter(r=>r.at>=0&&r.at<value.length).sort((a,b)=>a.at-b.at);let out='';
     if(!runs.length)out=text(value);
     else{
@@ -38,19 +41,21 @@
     if(!['BIFF8','BIFF5/7'].includes(book.version))B.fail('XLS_VERSION',N('This older Excel file format is not supported yet'),book.version);
     if(!book.sheets.length)B.fail('XLS_SHEETS',N('The workbook has no worksheets'));
     const names=new Set();for(const sheet of book.sheets){if(!sheet.name||sheet.name.length>31||/[\[\]:*?\\/\x00-\x1f]/.test(sheet.name)||names.has(sheet.name.toLowerCase()))B.fail('SHEET_NAME',N('The workbook contains an invalid or duplicate sheet name'),sheet.name);names.add(sheet.name.toLowerCase());if(sheet.kind!==0)B.fail('SHEET_KIND',N('This workbook contains a sheet type that cannot be converted yet'),sheet.name);}
+    const formulas=X.prepareFormulas(book,losses);
     book.theme=await X.theme(book,losses);
     const styles=X.styles(book,losses),pkg=new B.Package(),strings=[],stringMap=new Map();let stringUses=0,currentSheet='';
     const sstIndex=(item,where)=>{const xml=el('si',{},X.richText(item,styles,losses,where));if(!stringMap.has(xml)){stringMap.set(xml,strings.length);strings.push(xml);}stringUses++;return stringMap.get(xml);};
     const sourceSST=new Map();
     const cellXml=c=>{
-      const attrs={r:X.address(c.row,c.col),s:styles.xfMap.get(c.xf)||null};let value='';
-      if(c.type==='s'||c.type==='empty'){
+      const attrs={r:X.address(c.row,c.col),s:styles.xfMap.get(c.xf)||null},f=c.formulaOut;let value='';
+      if(f&&(c.type==='s'||c.type==='empty')){attrs.t='str';value=B.xstring(X.cellText(String(c.value??''),losses,currentSheet+'!'+attrs.r));}
+      else if(c.type==='s'||c.type==='empty'){
         const where=currentSheet+'!'+attrs.r;let index;if(c.sst!=null){if(!sourceSST.has(c.sst))sourceSST.set(c.sst,sstIndex(book.strings[c.sst],where));else stringUses++;index=sourceSST.get(c.sst);}
         else index=sstIndex(c.rich||{value:String(c.value??'')},where);attrs.t='s';value=String(index);
       }else if(c.type==='n'){if(!Number.isFinite(c.value))B.fail('CELL_NUMBER',N('A cell contains an invalid numeric value'),attrs.r);value=String(c.value);}
       else if(c.type==='b'){attrs.t='b';value=c.value?'1':'0';}
       else if(c.type==='e'){attrs.t='e';value=errors[c.value];if(!value)B.fail('CELL_ERROR',N('A cell contains an invalid error value'),attrs.r);}
-      return el('c',attrs,c.type==='blank'?undefined:el('v',{},B.xml(value)));
+      return el('c',attrs,c.type==='blank'?undefined:(f&&!f.member?el('f',f.attrs,B.xml(f.text)):'')+el('v',{},attrs.t==='str'?value:B.xml(value)));
     };
     const notice=(sheet,id,message,where=sheet.name)=>losses.push(B.loss(id,message,where,'drop',sheet.name,true));
     let active=0,first=0,windowAttrs={},date1904=false,template=false,totalCells=0;
@@ -75,7 +80,7 @@
       const dimension=cells.length?X.range(minRow,minCol,maxRow,maxCol):'A1';
       const xml=B.xmlDeclaration+el('worksheet',{xmlns:B.ns.s,'xmlns:r':B.ns.officeRel.slice(0,-1)},el('sheetPr',{},el('outlinePr',meta.outline))+el('dimension',{ref:dimension})+viewXml+el('sheetFormatPr',meta.format)+(cols.length?el('cols',{},cols.join('')):'')+el('sheetData',{},data.join(''))+(meta.merges.length?el('mergeCells',{count:meta.merges.length},meta.merges.map(m=>el('mergeCell',{ref:X.range(...m)})).join('')):''));
       const name='xl/worksheets/sheet'+(i+1)+'.xml';pkg.add(name,xml,types.sheet);const rid=pkg.rel('xl/workbook.xml','worksheet','worksheets/sheet'+(i+1)+'.xml');sheetList.push(el('sheet',{name:sheet.name,sheetId:i+1,'r:id':rid,state:sheet.state&2?'veryHidden':sheet.state&1?'hidden':null}));
-      const ids=new Set(meta.records.map(r=>r.id));if(cells.some(c=>c.formula))notice(sheet,'legacy-formulas',N('Formulas were replaced with their saved results'));
+      const ids=new Set(meta.records.map(r=>r.id));
       if(ids.has(0x1c))notice(sheet,'legacy-comments',N('Cell comments were not kept'));
       if(meta.records.some(r=>r.id===0x5d&&r.r.length>=6&&![0,19].includes(r.r.u16(4))))notice(sheet,'legacy-drawings',N('Drawing objects were not kept'));
       if(ids.has(0x1b8))notice(sheet,'legacy-hyperlinks',N('Cell hyperlinks were not kept'));
@@ -87,14 +92,13 @@
       if(ids.has(0xa1))losses.push(B.loss('legacy-print-settings',N('Some print settings were not kept'),sheet.name,'drop',sheet.name));
     }
     if(cfb.entries.some(e=>e.type===2&&/(?:^|\/)VBA\/(?:dir|_VBA_PROJECT)$/i.test(e.path)))losses.push(B.loss('legacy-macros',N('Macros were not kept'),'VBA','drop','Workbook',true));
-    if(book.globals.some(r=>r.id===0x18&&r.r.length>=2&&!(r.r.u16(0)&32)))losses.push(B.loss('legacy-names',N('Defined names were not kept'),'Workbook','drop','Workbook',true));
     if(book.globals.some(r=>[0x12,0x19].includes(r.id)&&r.r.length>=2&&r.r.u16(0)))losses.push(B.loss('legacy-workbook-protection',N('Workbook protection was not kept'),'Workbook','drop','Workbook',true));
     pkg.add('xl/styles.xml',styles.xml,types.styles);pkg.rel('xl/workbook.xml','styles','styles.xml');
     if(book.theme){pkg.add('xl/theme/theme1.xml',book.theme,'application/vnd.openxmlformats-officedocument.theme+xml');pkg.rel('xl/workbook.xml','theme','theme/theme1.xml');}
     if(strings.length){pkg.add('xl/sharedStrings.xml',B.xmlDeclaration+el('sst',{xmlns:B.ns.s,count:stringUses,uniqueCount:strings.length},strings.join('')),types.strings);pkg.rel('xl/workbook.xml','sharedStrings','sharedStrings.xml');}
-    const type=template?'xltx':'xlsx';
-    pkg.add('xl/workbook.xml',B.xmlDeclaration+el('workbook',{xmlns:B.ns.s,'xmlns:r':B.ns.officeRel.slice(0,-1)},el('workbookPr',{date1904:date1904?1:0})+el('bookViews',{},el('workbookView',{...windowAttrs,activeTab:active,firstSheet:first}))+el('sheets',{},sheetList.join(''))),template?types.template:types.workbook);
+    const type=template?'xltx':'xlsx',external=formulas.addExternalParts(pkg);
+    pkg.add('xl/workbook.xml',B.xmlDeclaration+el('workbook',{xmlns:B.ns.s,'xmlns:r':B.ns.officeRel.slice(0,-1)},el('workbookPr',{date1904:date1904?1:null})+el('bookViews',{},el('workbookView',{...windowAttrs,activeTab:active,firstSheet:first}))+el('sheets',{},sheetList.join(''))+external+formulas.defined+el('calcPr',formulas.calc)),template?types.template:types.workbook);
     pkg.rel('','officeDocument','xl/workbook.xml');losses.push(...B.addProperties(pkg,cfb));
-    return {pkg:await pkg.finish(),type,losses,stats:{sheets:book.sheets.length,cells:totalCells,strings:strings.length}};
+    return {pkg:await pkg.finish(),type,losses,stats:{sheets:book.sheets.length,cells:totalCells,strings:strings.length,formulas:formulas.stats}};
   };
 })(typeof window!=='undefined'?window:globalThis);

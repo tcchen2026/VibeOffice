@@ -4659,12 +4659,12 @@
  },
  "A cell contains an invalid error value": {
   "where": [
-   "common/legacy/xls-write.js:52"
+   "common/legacy/xls-write.js:57"
   ]
  },
  "A cell contains an invalid numeric value": {
   "where": [
-   "common/legacy/xls-write.js:50"
+   "common/legacy/xls-write.js:55"
   ]
  },
  "A cell format extension is damaged": {
@@ -4710,6 +4710,12 @@
  "A comment thread you edited will be saved as an ordinary note. Excel will show it as a note, not as a conversation.": {
   "where": [
    "ledger/js/threads.js:138"
+  ]
+ },
+ "A defined name was not kept": {
+  "where": [
+   "common/legacy/xls-formula-book.js:79",
+   "common/legacy/xls-formula-book.js:113"
   ]
  },
  "A formula or function contains invalid numeric values.": {
@@ -6238,7 +6244,7 @@
  },
  "AutoFilter settings were not kept": {
   "where": [
-   "common/legacy/xls-write.js:84"
+   "common/legacy/xls-write.js:89"
   ]
  },
  "AutoFit": {
@@ -7792,7 +7798,7 @@
  },
  "Cell comments were not kept": {
   "where": [
-   "common/legacy/xls-write.js:79"
+   "common/legacy/xls-write.js:84"
   ]
  },
  "Cell editor": {
@@ -7802,7 +7808,7 @@
  },
  "Cell hyperlinks were not kept": {
   "where": [
-   "common/legacy/xls-write.js:81"
+   "common/legacy/xls-write.js:86"
   ]
  },
  "Cell margins": {
@@ -7822,7 +7828,7 @@
  },
  "Cell pronunciation text was not kept": {
   "where": [
-   "common/legacy/xls-write.js:29"
+   "common/legacy/xls-write.js:32"
   ]
  },
  "Cell shading": {
@@ -9297,7 +9303,7 @@
  },
  "Conditional formatting rules were not kept": {
   "where": [
-   "common/legacy/xls-write.js:83"
+   "common/legacy/xls-write.js:88"
   ]
  },
  "Confidential, &D, Page &P": {
@@ -9323,11 +9329,6 @@
    "lectern/js/dialogs.js:913",
    "ledger/js/dialogs.js:663",
    "ledger/js/dialogs.js:888"
-  ]
- },
- "Conflicting media content types": {
-  "where": [
-   "common/legacy/package.js:68"
   ]
  },
  "Consolidate": {
@@ -10736,7 +10737,7 @@
  },
  "Data validation rules were not kept": {
   "where": [
-   "common/legacy/xls-write.js:82"
+   "common/legacy/xls-write.js:87"
   ]
  },
  "Data ▸ List ▸ Create List (Ctrl+L) turns a range into a list with a header row, AutoFilter and an optional Total Row. Formulas can refer to it by name: =SUM(Table1[Amount]).": {
@@ -10968,11 +10969,6 @@
   "where": [
    "ledger/js/dialogs.js:923",
    "ledger/js/ribbon.js:59"
-  ]
- },
- "Defined names were not kept": {
-  "where": [
-   "common/legacy/xls-write.js:90"
   ]
  },
  "Defined names:": {
@@ -11983,7 +11979,7 @@
  },
  "Drawing objects were not kept": {
   "where": [
-   "common/legacy/xls-write.js:80"
+   "common/legacy/xls-write.js:85"
   ]
  },
  "Drop Cap": {
@@ -12423,7 +12419,7 @@
  },
  "Encrypted binary workbooks cannot be opened yet": {
   "where": [
-   "common/legacy/xls-write.js:37"
+   "common/legacy/xls-write.js:40"
   ]
  },
  "End Show": {
@@ -12954,7 +12950,7 @@
  },
  "Excel dialog sheets cannot be converted yet": {
   "where": [
-   "common/legacy/xls-write.js:65"
+   "common/legacy/xls-write.js:70"
   ]
  },
  "Exciting": {
@@ -12998,11 +12994,6 @@
  "Expands an array to the specified dimensions.": {
   "where": [
    "ledger/js/fninfo.js:328"
-  ]
- },
- "Expected a byte array": {
-  "where": [
-   "common/legacy/base.js:11"
   ]
  },
  "Expedition": {
@@ -14508,11 +14499,6 @@
  "Formulas that refer to other workbooks use the values Excel saved with this file. Break Link replaces those formulas with their values.": {
   "where": [
    "ledger/js/dialogs.js:957"
-  ]
- },
- "Formulas were replaced with their saved results": {
-  "where": [
-   "common/legacy/xls-write.js:78"
   ]
  },
  "Formulas:": {
@@ -16608,16 +16594,6 @@
    "common/legacy/doc-read.js:76"
   ]
  },
- "Invalid XML attribute": {
-  "where": [
-   "common/legacy/package.js:23"
-  ]
- },
- "Invalid XML name": {
-  "where": [
-   "common/legacy/package.js:20"
-  ]
- },
  "Invalid angle-ellipse vertex count": {
   "where": [
    "common/legacy/shape-path.js:91"
@@ -16668,24 +16644,9 @@
    "common/legacy/xls-read.js:128"
   ]
  },
- "Invalid or duplicate relationship ID": {
-  "where": [
-   "common/legacy/package.js:55"
-  ]
- },
  "Invalid or oversized bitmap dimensions": {
   "where": [
    "common/legacy/images.js:57"
-  ]
- },
- "Invalid package data": {
-  "where": [
-   "common/legacy/package.js:46"
-  ]
- },
- "Invalid package part name": {
-  "where": [
-   "common/legacy/package.js:38"
   ]
  },
  "Invalid picture dimensions": {
@@ -16711,11 +16672,6 @@
  "Invalid presentation persist range": {
   "where": [
    "common/legacy/ppt-read.js:47"
-  ]
- },
- "Invalid relationship target": {
-  "where": [
-   "common/legacy/package.js:56"
   ]
  },
  "Invalid shared string count": {
@@ -17876,11 +17832,6 @@
    "common/core.js:709"
   ]
  },
- "Load common/crypto.js before the legacy importers": {
-  "where": [
-   "common/legacy/base.js:53"
-  ]
- },
  "Load fonts on this computer": {
   "where": [
    "start.js:261",
@@ -18137,7 +18088,7 @@
  },
  "Macros were not kept": {
   "where": [
-   "common/legacy/xls-write.js:89"
+   "common/legacy/xls-write.js:94"
   ]
  },
  "Made possible by open source software: {0}.": {
@@ -21334,7 +21285,7 @@
  },
  "PivotTables were replaced with their saved cells": {
   "where": [
-   "common/legacy/xls-write.js:85"
+   "common/legacy/xls-write.js:90"
   ]
  },
  "Pixel Mosaic": {
@@ -27036,6 +26987,11 @@
    "ledger/js/dialogs.js:263"
   ]
  },
+ "Some formulas were replaced with their saved results": {
+  "where": [
+   "common/legacy/xls-formula-book.js:155"
+  ]
+ },
  "Some mentions could not be kept after the comment text was edited.": {
   "where": [
    "ledger/js/threads.js:125"
@@ -27048,7 +27004,7 @@
  },
  "Some print settings were not kept": {
   "where": [
-   "common/legacy/xls-write.js:87"
+   "common/legacy/xls-write.js:92"
   ]
  },
  "Some workbook formatting could not be read": {
@@ -28663,7 +28619,7 @@
  },
  "Text beyond the 32,767-character cell limit was not kept": {
   "where": [
-   "common/legacy/xls-write.js:14"
+   "common/legacy/xls-write.js:13"
   ]
  },
  "Text control": {
@@ -28859,17 +28815,17 @@
  },
  "The cell pronunciation text could not be read": {
   "where": [
-   "common/legacy/xls-write.js:24"
+   "common/legacy/xls-write.js:27"
   ]
  },
  "The cell pronunciation text has an invalid length": {
   "where": [
-   "common/legacy/xls-write.js:25"
+   "common/legacy/xls-write.js:28"
   ]
  },
  "The cell pronunciation text has an invalid range": {
   "where": [
-   "common/legacy/xls-write.js:27"
+   "common/legacy/xls-write.js:30"
   ]
  },
  "The chart has no data. Select a range with numbers first.": {
@@ -28900,11 +28856,6 @@
  "The complete pivot table output was deleted.": {
   "where": [
    "ledger/js/pivots.js:202"
-  ]
- },
- "The converted file contains a duplicate part": {
-  "where": [
-   "common/legacy/package.js:45"
   ]
  },
  "The converted package is too large": {
@@ -29073,7 +29024,7 @@
  },
  "The first worksheet was made visible": {
   "where": [
-   "common/legacy/xls-write.js:61"
+   "common/legacy/xls-write.js:66"
   ]
  },
  "The fonts on this computer could not be listed: permission was not given.": {
@@ -29116,11 +29067,6 @@
  "The formula you typed contains an error.\n\n• To get assistance in entering a function, click OK, and then click Function on the Insert menu.\n• If you are not trying to enter a formula, avoid using an equal sign (=) or minus sign (-), or precede it with a single quotation mark (').": {
   "where": [
    "ledger/js/editor.js:256"
-  ]
- },
- "The generated XML is too deeply nested": {
-  "where": [
-   "common/legacy/package.js:31"
   ]
  },
  "The generated XML is too large": {
@@ -29463,7 +29409,7 @@
  },
  "The workbook contains an invalid or duplicate sheet name": {
   "where": [
-   "common/legacy/xls-write.js:40"
+   "common/legacy/xls-write.js:43"
   ]
  },
  "The workbook has no BIFF header": {
@@ -29473,7 +29419,7 @@
  },
  "The workbook has no worksheets": {
   "where": [
-   "common/legacy/xls-write.js:39"
+   "common/legacy/xls-write.js:42"
   ]
  },
  "The workbook is encrypted with AES-256 the next time you save it as an Excel workbook, the way Excel 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
@@ -29789,7 +29735,7 @@
  },
  "This Excel file format is not supported yet": {
   "where": [
-   "common/legacy/xls-write.js:34"
+   "common/legacy/xls-write.js:37"
   ]
  },
  "This IntelliArt now uses Lectern's {0} layout, so it can be edited here.": {
@@ -29934,7 +29880,7 @@
  },
  "This file has no Excel workbook stream": {
   "where": [
-   "common/legacy/xls-write.js:35"
+   "common/legacy/xls-write.js:38"
   ]
  },
  "This file is not an Excel workbook.": {
@@ -30004,7 +29950,7 @@
  },
  "This older Excel file format is not supported yet": {
   "where": [
-   "common/legacy/xls-write.js:38"
+   "common/legacy/xls-write.js:41"
   ]
  },
  "This operation requires the merged cells to be identically sized.": {
@@ -30118,7 +30064,7 @@
  },
  "This workbook contains a sheet type that cannot be converted yet": {
   "where": [
-   "common/legacy/xls-write.js:40"
+   "common/legacy/xls-write.js:43"
   ]
  },
  "This workbook contains macros. Ledger keeps them when you save as .xlsm, but cannot run them.": {
@@ -30133,7 +30079,7 @@
  },
  "This workbook needs a password": {
   "where": [
-   "common/legacy/xls-write.js:37"
+   "common/legacy/xls-write.js:40"
   ]
  },
  "This worksheet contains more than 255 invalid cells. Only 255 cells will be marked.": {
@@ -30870,16 +30816,6 @@
    "ledger/js/commands.js:195"
   ]
  },
- "Unbalanced XML writer": {
-  "where": [
-   "common/legacy/package.js:34"
-  ]
- },
- "Unclosed XML element": {
-  "where": [
-   "common/legacy/package.js:35"
-  ]
- },
  "Uncover Down": {
   "where": [
    "lectern/js/slideshow.js:121"
@@ -31112,11 +31048,6 @@
  "Unsupported bitmap header": {
   "where": [
    "common/legacy/images.js:53"
-  ]
- },
- "Unsupported executable link target": {
-  "where": [
-   "common/legacy/package.js:57"
   ]
  },
  "Unsupported metafile compression": {
@@ -32131,7 +32062,7 @@
  },
  "Workbook protection was not kept": {
   "where": [
-   "common/legacy/xls-write.js:91"
+   "common/legacy/xls-write.js:95"
   ]
  },
  "Workbooks saved with a password are encrypted (AES-256) and open in Excel 2010 and later.": {
@@ -32163,7 +32094,7 @@
  },
  "Worksheet protection was not kept": {
   "where": [
-   "common/legacy/xls-write.js:86"
+   "common/legacy/xls-write.js:91"
   ]
  },
  "Worksheet records are nested too deeply": {

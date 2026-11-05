@@ -235,6 +235,25 @@ test('a cell\'s text is at most 32,767 characters, as Excel opens it: runs joine
   assert.ok(!(await codes('cell-text-limit', sst(t(32767), t(32766) + '<rPh sb="0" eb="1"><t>ア</t></rPh>', t(32763) + '<t>_x000D_</t>'))).includes('cell-text-too-long'));
 });
 
+test('what Excel refuses in a converted workbook: an empty external cache set, a built-in short of operands, GET.CELL in a plain workbook\'s name', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  const link = (cache) => ({ 'xl/externalLinks/externalLink1.xml': `<externalLink xmlns="${S}"><externalBook><sheetNames><sheetName val="Data"/></sheetNames>${cache}</externalBook></externalLink>` });
+  assert.ok((await codes('ext-empty', link('<sheetDataSet/>'))).includes('external-empty-sheet-data-set'));
+  assert.ok(!(await codes('ext-cache', link('<sheetDataSet><sheetData sheetId="0"/></sheetDataSet>'))).includes('external-empty-sheet-data-set'));
+  assert.ok(!(await codes('ext-none', link(''))).includes('external-empty-sheet-data-set'));
+  const sheet = (f) => ({ 'xl/worksheets/sheet1.xml': `<worksheet xmlns="${S}"><sheetData><row r="1"><c r="A1"><f>${f}</f><v>0</v></c></row></sheetData></worksheet>` });
+  for (const f of ['sumif(D9:D42)', '_xlfn.SUMIF(D9:D42)', 'SUM(1,_xll.SUMIF(D9:D42))'])
+    assert.ok((await codes('short-' + f.length, sheet(f))).includes('function-missing-operands'), f);
+  for (const f of ['SUMIF(D9:D42,"a,b")', 'ABS("1")', 'SUMIF(D9:D42,)', 'CUSTOMFN(D9:D42)', 'SUM((A1,B1))', 'SUM(T[[#This Row],[a,b]])'])
+    assert.ok(!(await codes('enough-' + f.length, sheet(f))).includes('function-missing-operands'), f);
+  const book = `<workbook xmlns="${S}"><definedNames><definedName name="Zellfarbe">GET.CELL(63,'Ressourcen'!$2:$2)</definedName></definedNames></workbook>`;
+  const types = (type) => '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.ms-excel.${type}.main+xml"/></Types>`;
+  assert.ok((await codes('xlm-plain', { '[Content_Types].xml': types('sheet').replace('ms-excel.sheet', 'openxmlformats-officedocument.spreadsheetml.sheet'), 'xl/workbook.xml': book })).includes('xlm-name-in-plain-workbook'));
+  assert.ok(!(await codes('xlm-macro', { '[Content_Types].xml': types('sheet.macroEnabled'), 'xl/workbook.xml': book })).includes('xlm-name-in-plain-workbook'));
+});
+
 test('WordArt fill belongs to textFill/textOutline and insertion encloses deletion', async () => {
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', W14 = 'http://schemas.microsoft.com/office/word/2010/wordml';
   const doc = content => `<w:document xmlns:w="${W}" xmlns:w14="${W14}"><w:body><w:p>${content}</w:p></w:body></w:document>`;
