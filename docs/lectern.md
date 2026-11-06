@@ -177,6 +177,13 @@ run history, rather than presented as measurements of the current writer.
 The UI/password/chart harnesses remain in `tests/lectern/`. Commands, failure accounting and
 Office review batches are documented in [testing.md](testing.md).
 
+**PowerPoint 97-2003 presentations** (the converter's whole corpus, 2026-11-06, `tests/legacy/`): of 218 `.ppt`/`.pps`/`.pot`
+files, 171 convert and 47 are refused with a message saying why (PowerPoint 95 and older files, damaged files, unknown
+passwords); none fails otherwise. All 171 pass the Open XML SDK and the 18 tried in PowerPoint 2016 open without a
+repair prompt. Their slides' number, order and size agree with the original's in all 166 files with a reference, and
+the slides' text with LibreOffice's conversion in 907 of 956 slides compared. Animations, sounds and movies are not
+converted yet.
+
 ## What a save keeps, converts and drops
 
 The full LibreOffice pass on the versioned `984eaf3` artifacts renders **836/837 unedited saves**,

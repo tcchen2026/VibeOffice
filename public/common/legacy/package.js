@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   const N = s => s; // UI refusal text, translated where it is shown.
-  const L = root.L, B = L.legacy;
+  const L = root.L,
+    B = L.legacy;
   B.ns = Object.freeze({
     rel: 'http://schemas.openxmlformats.org/package/2006/relationships',
     officeRel: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/',
@@ -26,52 +27,126 @@
     return body == null ? out + '/>' : out + '>' + body + '</' + name + '>';
   };
   B.XML = class {
-    constructor() { this.parts = []; this.stack = []; this.length = 0; }
-    append(s) { this.length += s.length; if (this.length > B.limits.bytes) B.fail('XML_LIMIT', N('The generated XML is too large')); this.parts.push(s); return this; }
-    start(name, attrs) { if (this.stack.length >= B.limits.depth) B.fail('XML_LIMIT', 'The generated XML is too deeply nested'); this.append(B.el(name, attrs).slice(0, -2) + '>'); this.stack.push(name); return this; }
-    text(value) { return this.append(B.xml(value)); }
-    empty(name, attrs) { return this.append(B.el(name, attrs)); }
-    end() { const name = this.stack.pop(); if (!name) B.fail('XML_STRUCTURE', 'Unbalanced XML writer'); return this.append('</' + name + '>'); }
-    finish() { if (this.stack.length) B.fail('XML_STRUCTURE', 'Unclosed XML element'); return B.xmlDeclaration + this.parts.join(''); }
+    constructor() {
+      this.parts = [];
+      this.stack = [];
+      this.length = 0;
+    }
+    append(s) {
+      this.length += s.length;
+      if (this.length > B.limits.bytes) B.fail('XML_LIMIT', N('The generated XML is too large'));
+      this.parts.push(s);
+      return this;
+    }
+    start(name, attrs) {
+      if (this.stack.length >= B.limits.depth) B.fail('XML_LIMIT', 'The generated XML is too deeply nested');
+      this.append(B.el(name, attrs).slice(0, -2) + '>');
+      this.stack.push(name);
+      return this;
+    }
+    text(value) {
+      return this.append(B.xml(value));
+    }
+    empty(name, attrs) {
+      return this.append(B.el(name, attrs));
+    }
+    end() {
+      const name = this.stack.pop();
+      if (!name) B.fail('XML_STRUCTURE', 'Unbalanced XML writer');
+      return this.append('</' + name + '>');
+    }
+    finish() {
+      if (this.stack.length) B.fail('XML_STRUCTURE', 'Unclosed XML element');
+      return B.xmlDeclaration + this.parts.join('');
+    }
   };
   const partName = name => {
-    if (typeof name !== 'string' || !name || name.length > 1024 || name.startsWith('/') || /[\\\x00-\x20?#]/.test(name) || name.split('/').some(p => !p || p === '.' || p === '..')) B.fail('PART_NAME', 'Invalid package part name');
+    if (
+      typeof name !== 'string' ||
+      !name ||
+      name.length > 1024 ||
+      name.startsWith('/') ||
+      /[\\\x00-\x20?#]/.test(name) ||
+      name.split('/').some(p => !p || p === '.' || p === '..')
+    )
+      B.fail('PART_NAME', 'Invalid package part name');
     return name;
   };
   B.Package = class {
-    constructor() { this.parts = new Map(); this.types = new Map(); this.rels = new Map(); this.bytes = 0; }
+    constructor() {
+      this.parts = new Map();
+      this.types = new Map();
+      this.rels = new Map();
+      this.bytes = 0;
+    }
     add(name, data, type) {
       partName(name);
-      if (this.parts.has(name)) B.fail('PART_DUPLICATE', 'The converted file contains a duplicate part', name);
-      if (!(typeof data === 'string' || data instanceof Uint8Array)) B.fail('PART_DATA', 'Invalid package data');
+      if (this.parts.has(name))
+        B.fail('PART_DUPLICATE', 'The converted file contains a duplicate part', name);
+      if (!(typeof data === 'string' || data instanceof Uint8Array))
+        B.fail('PART_DATA', 'Invalid package data');
       const size = typeof data === 'string' ? L.zip.encode(data).length : data.length;
-      this.bytes += size; if (this.bytes > B.limits.bytes || this.parts.size >= 60000) B.fail('PACKAGE_LIMIT', N('The converted package is too large'));
-      this.parts.set(name, data); if (type) this.types.set(name, type); return name;
+      this.bytes += size;
+      if (this.bytes > B.limits.bytes || this.parts.size >= 60000)
+        B.fail('PACKAGE_LIMIT', N('The converted package is too large'));
+      this.parts.set(name, data);
+      if (type) this.types.set(name, type);
+      return name;
     }
     rel(from, type, target, options = {}) {
       if (from) partName(from);
-      const list = this.rels.get(from) || []; this.rels.set(from, list);
+      const list = this.rels.get(from) || [];
+      this.rels.set(from, list);
       const id = options.id || 'rId' + (list.length + 1);
-      if (!nameOK(id) || list.some(r => r.Id === id)) B.fail('REL_ID', 'Invalid or duplicate relationship ID');
-      if (typeof target !== 'string' || /[\x00-\x1f]/.test(target)) B.fail('REL_TARGET', 'Invalid relationship target');
-      if (options.external && /^(?:javascript|vbscript|data):/i.test(target.trim())) B.fail('REL_TARGET', 'Unsupported executable link target');
-      list.push({ Id: id, Type: type.includes('://') ? type : B.ns.officeRel + type, Target: target, ...(options.external ? { TargetMode: 'External' } : {}) }); return id;
+      if (!nameOK(id) || list.some(r => r.Id === id))
+        B.fail('REL_ID', 'Invalid or duplicate relationship ID');
+      if (typeof target !== 'string' || /[\x00-\x1f]/.test(target))
+        B.fail('REL_TARGET', 'Invalid relationship target');
+      if (options.external && /^(?:javascript|vbscript|data):/i.test(target.trim()))
+        B.fail('REL_TARGET', 'Unsupported executable link target');
+      list.push({
+        Id: id,
+        Type: type.includes('://') ? type : B.ns.officeRel + type,
+        Target: target,
+        ...(options.external ? { TargetMode: 'External' } : {})
+      });
+      return id;
     }
     async finish() {
       for (const [from, list] of this.rels) {
-        const slash = from.lastIndexOf('/'), name = from ? from.slice(0, slash + 1) + '_rels/' + from.slice(slash + 1) + '.rels' : '_rels/.rels';
-        this.add(name, B.xmlDeclaration + B.el('Relationships', { xmlns: B.ns.rel }, list.map(r => B.el('Relationship', r)).join('')));
+        const slash = from.lastIndexOf('/'),
+          name = from ? from.slice(0, slash + 1) + '_rels/' + from.slice(slash + 1) + '.rels' : '_rels/.rels';
+        this.add(
+          name,
+          B.xmlDeclaration +
+            B.el('Relationships', { xmlns: B.ns.rel }, list.map(r => B.el('Relationship', r)).join(''))
+        );
       }
-      const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
-      for (const [name, type] of this.types) if (/^(?:image|audio|video)\//.test(type) || type === 'application/vnd.openxmlformats-officedocument.vmlDrawing') {
-        const extension = name.split('/').at(-1).split('.').at(-1).toLowerCase();
-        if (!/^[a-z0-9]+$/.test(extension) || defaults.has(extension) && defaults.get(extension) !== type) B.fail('PART_CONTENT_TYPE', 'Conflicting media content types');
-        defaults.set(extension, type);
-      }
-      const declarations = [...defaults].map(([Extension, ContentType]) => B.el('Default', {Extension, ContentType})).join('');
-      const overrides = [...this.types].filter(([name, type]) => defaults.get(name.split('.').at(-1).toLowerCase()) !== type)
-        .map(([name, type]) => B.el('Override', { PartName: '/' + name, ContentType: type })).join('');
-      this.add('[Content_Types].xml', B.xmlDeclaration + B.el('Types', { xmlns: B.ns.content }, declarations + overrides));
+      const defaults = new Map([
+        ['rels', 'application/vnd.openxmlformats-package.relationships+xml'],
+        ['xml', 'application/xml']
+      ]);
+      for (const [name, type] of this.types)
+        if (
+          /^(?:image|audio|video)\//.test(type) ||
+          type === 'application/vnd.openxmlformats-officedocument.vmlDrawing'
+        ) {
+          const extension = name.split('/').at(-1).split('.').at(-1).toLowerCase();
+          if (!/^[a-z0-9]+$/.test(extension) || (defaults.has(extension) && defaults.get(extension) !== type))
+            B.fail('PART_CONTENT_TYPE', 'Conflicting media content types');
+          defaults.set(extension, type);
+        }
+      const declarations = [...defaults]
+        .map(([Extension, ContentType]) => B.el('Default', { Extension, ContentType }))
+        .join('');
+      const overrides = [...this.types]
+        .filter(([name, type]) => defaults.get(name.split('.').at(-1).toLowerCase()) !== type)
+        .map(([name, type]) => B.el('Override', { PartName: '/' + name, ContentType: type }))
+        .join('');
+      this.add(
+        '[Content_Types].xml',
+        B.xmlDeclaration + B.el('Types', { xmlns: B.ns.content }, declarations + overrides)
+      );
       const blob = await L.zip.write([...this.parts].map(([name, data]) => ({ name, data })));
       if (blob.size > B.limits.bytes) B.fail('PACKAGE_LIMIT', N('The converted package is too large'));
       return new Uint8Array(await blob.arrayBuffer());

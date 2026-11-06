@@ -64,10 +64,17 @@ def main():
         src = source.get(row['sha256'], {})
         counts['convertedFiles'] += 1
         counts['outputSlides'] += len(out['slides'])
-        counts['sourceSlides'] += len(src.get('slides', []))
-        counts['sourceCountMatches'] += len(out['slides']) == len(src.get('slides', []))
-        counts['sourceOrderMatches'] += out['ids'] == [str(s['id']) for s in src.get('slides', [])]
-        counts['sourceDimensionsMatch'] += all(str(v) == out['size'].get(k) for k, v in src.get('dimensions', {}).items())
+        # The early reference census could not inspect encrypted presentations.
+        # Missing references are not empty decks or successful dimension checks.
+        if 'slides' in src:
+            counts['sourceComparedFiles'] += 1
+            counts['sourceSlides'] += len(src['slides'])
+            counts['sourceCountMatches'] += len(out['slides']) == len(src['slides'])
+            counts['sourceOrderMatches'] += out['ids'] == [str(s['id']) for s in src['slides']]
+        if src.get('dimensions'):
+            counts['sourceDimensionsCompared'] += 1
+            counts['sourceDimensionsMatch'] += all(
+                str(v) == out['size'].get(k) for k, v in src['dimensions'].items())
         lo = json.load(open(BASE / 'references' / row['sha256'] / 'result.json'))['conversions']['pptx']
         detail = {'file': row['file'], 'sha256': row['sha256'], 'package': str(path), 'loStatus': lo['status'], 'differences': []}
         details.append(detail)

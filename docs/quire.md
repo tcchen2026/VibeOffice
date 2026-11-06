@@ -470,8 +470,14 @@ The reproducible OOXML run uses the pinned LibreOffice, Apache POI and Open XML 
 `tools/corpora.sh`. Quire runs in Chromium through CDP; independent package checks, SDK diagnostics
 and LibreOffice compare the saved file with its original. Page counts, Word's saved page-break markers
 and reference PDFs help diagnose layout. Missing fonts, tight wrapping around irregular pictures,
-vertical text and complex data bindings remain known differences. RC4-encrypted legacy binary files
-are outside the supported OOXML encryption path.
+vertical text and complex data bindings remain known differences.
+
+**Word 97-2003 documents** (the converter's whole corpus, 2026-11-06, `tests/legacy/`): of 524 `.doc`/`.dot` files, 409
+convert (one of them an Excel workbook named `.doc`, which Quire refuses and Ledger opens) and 115 are refused with a
+message saying why (Word 6.0/95 and older files, damaged files, unknown passwords); none fails otherwise. All 408
+converted documents pass the Open XML SDK and the 39 tried in Word 2016 open without a repair prompt. Their text
+agrees with the original's in 393 of 406 and with LibreOffice's conversion in 375 of 400; of the 266 with a page count
+Word stored, 236 show that count in Quire, and all open.
 
 In Word 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 2,310 distinct Word files (made at
 6e697db) **open without repair in 2,287**; 3 stop at a prompt Word shows for the original too (a mail merge's

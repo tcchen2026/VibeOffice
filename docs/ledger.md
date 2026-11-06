@@ -525,13 +525,22 @@ evidence are in `tests/from-issues/22/`.
 **Recalculation against the values Excel stored** (`tests/ledger/recalc1.js` over a corpus, 2026-11-06): in the
 744 workbooks of the OOXML corpus that Excel saved (the SDK's three Performance files, whose stored values were never
 computed, left out), Ledger's results agree with **44,159 of 44,493** formula cells (99.25%); in the 391 Excel 97-2003
-workbooks Excel saved, opened by conversion, with **58,185 of 59,758** (97.37%; 99.65% without one workbook whose
+workbooks Excel saved, opened by conversion, with **58,192 of 59,762** (97.37%; 99.65% without one workbook whose
 1,385 differences are `TODAY()` stamps and a French `CELL("adresse")`). What remains is mostly the clock, stale stored
 values, a German or French Excel's own number formats and function words, and legacy implicit intersection. Lookup
 functions (Excel's approximate search on unsorted data, `VLOOKUP`'s argument rules), `INDEX` over an array expression,
 `COUNTIF` criteria and the database functions' criteria follow the results Excel stored in POI's test workbooks; a
 computed criterion may name the database's fields (`=age<7`, as Excel's Advanced Filter takes column labels), which
 stand for each record's values while the criterion cell itself shows `#NAME?` (POI's `DGet.xls`: 163 of 163 formulas).
+
+**Excel 97-2003 workbooks** (the converter's whole corpus, 2026-11-06, `tests/legacy/`): of 764 `.xls`/`.xlt` files,
+702 convert (703 workbooks with one named `.doc`) and 62 are refused with a message saying why (older BIFF versions,
+damaged files, unknown passwords); none fails otherwise. All 703 converted workbooks pass the Open XML SDK and the 31
+tried in Excel 2016 open without a repair prompt; their cells agree with the stored values in 2,268,371 of 2,268,372
+and their formulas' cached results in 97,699 of 97,699. The 1,484 formulas still left as values (DDE links, links to
+files in a machine's XLSTART folder, Excel 4 macro names, broken arrays and a few ambiguous names) keep their results
+and are named in the message. A 14 MB workbook of 800,000 cells opens in 2.3 s with a peak of 744 MB in Chromium's
+renderer (3.0 s and 1.12 GB before the converter shared its byte windows).
 
 CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`. Current preservation does not imply exact print
 layout or support for every formula or external data source.
