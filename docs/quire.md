@@ -76,7 +76,9 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   paragraph keeps its lines together, or with no room for a line, takes its reference's line along. Quire moved the
   reference to the next page whenever its note didn't fit whole, and let a note longer than a page run off it. The line
   above the notes is the file's own separator paragraph, so it takes Word's room (Quire's was 7 pt shorter); two
-  corpus files now show Word 2016's page count (stress008, stress018).
+  corpus files now show Word 2016's page count (stress008, stress018). A note referenced in a table cell goes to the
+  page's notes as well, and on to the next page from its row as from a paragraph (Quire left such notes out, and let a
+  table run into the notes above it: POI's form_footnotes.docx now has Word's 3 pages).
 - A gutter at the top of the page (Page Setup's Gutter position: Top, `w:gutterAtTop`) adds to the top margin, as in
   Word (Quire added it on the left and Page Setup showed Left), and Strict files' "auto" line spacing given as a
   measure (`w:line="12.95pt"`, 259 twips) is read as lines (Quire read 12.95 twips, so the SDK's Strict01.docx had its

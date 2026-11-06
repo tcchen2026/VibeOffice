@@ -775,6 +775,8 @@
     const map = R.tblMap(t);
     const startRow = sub ? sub.r : 0;
     let cellStates = sub ? sub.cells : null;
+    /* (the page's notes: footnotes referenced in a table that stands in a column of the page) */
+    const notes = frame.kind === 'col' && !ctx.inCell ? frame.notes : null;
     frame.el.appendChild(shell.tbl);
     const nRows = t.rows.length;
     /* repeated header rows */
@@ -802,27 +804,40 @@
       const rr = renderRow(t, ri, map[ri], shell, ctx, firstOnFrame ? cellStates : null, null, firstOnFrame && ri > 0 && frame.kind === 'col' && sub, rowspanCut);
       shell.tb.appendChild(rr.tr);
       fillRow(rr.tr, t, ri, null);
-      if (lim === Infinity) { placedRows++; continue; }
+      /* footnotes referenced in the row's cells go to the page's notes, which take their room from the page */
+      const nh = notes ? notes.measure(rr.tr) : 0;
+      if (lim === Infinity) { if (notes) notes.commit(); placedRows++; continue; }
       const bt = bottomOf(rr.tr, frame.top, scale);
       /* rowspans extending below: measure the bottom of the whole group */
-      if (bt <= lim + 0.5) { placedRows++; continue; }
+      if (bt <= lim - nh + 0.5) { if (notes) notes.commit(); placedRows++; continue; }
+      /* a footnote of the row's that doesn't fit below it goes on to the next page, and the page ends after the row
+         (Word, as for a paragraph) */
+      if (notes && frame.lastCol && notes.lastPending() && bt <= lim - notes.height() + 0.5 && notes.split(lim - bt)) {
+        notes.commit();
+        placedRows++;
+        return ri + 1 < nRows ? { done: false, placed: true, sub: { r: ri + 1, cells: null } } : { done: true, placed: true, sub: null };
+      }
+      if (notes) notes.rollback();
       /* row does not fit */
       const trPr = t.rows[ri].trPr || {};
       const canSplit = !trPr.cantSplit && !trPr.header;
       const trTop = (rr.tr.getBoundingClientRect().top - frame.top) / scale;
       rr.tr.remove();
       if (canSplit && map[ri].every((m) => m.rowspan === 1)) {
-        const avail = lim - trTop - 1;
+        const avail = lim - (notes ? notes.height() : 0) - trTop - 1;
         if (avail > 8) {
           const r2 = renderRow(t, ri, map[ri], shell, ctx, firstOnFrame ? cellStates : null, avail, firstOnFrame && ri > 0, rowspanCut);
           shell.tb.appendChild(r2.tr);
           const f2 = fillRow(r2.tr, t, ri, avail);
+          const nh2 = notes ? notes.measure(r2.tr) : 0;
           const bt2 = bottomOf(r2.tr, frame.top, scale);
-          if (f2.anyContent && (bt2 <= lim + 2 || frame.empty && placedRows === 0)) {
+          if (f2.anyContent && (bt2 <= lim - nh2 + 2 || frame.empty && placedRows === 0)) {
+            if (notes) notes.commit();
             if (!f2.anyRemaining) { placedRows++; continue; }
             r2.tr.classList.add('split');
             return { done: false, placed: true, sub: { r: ri, cells: f2.rem } };
           }
+          if (notes) notes.rollback();
           r2.tr.remove();
         }
       }
@@ -831,6 +846,7 @@
         const r3 = renderRow(t, ri, map[ri], shell, ctx, cellStates, null, ri > 0 && !!sub, rowspanCut);
         shell.tb.appendChild(r3.tr);
         fillRow(r3.tr, t, ri, null);
+        if (notes) { notes.measure(r3.tr); notes.commit(); }
         placedRows++;
         if (ri + 1 < nRows) return { done: false, placed: true, sub: { r: ri + 1, cells: null } };
         continue;
@@ -840,6 +856,7 @@
       while (back > startRow && map[back].some((m) => m.cell.tcPr.vMerge === 'continue')) back--;
       if (back !== ri && back > startRow) {
         const trs = Array.from(shell.tb.children).filter((x) => +x.dataset.ri >= back && !x.classList.contains('rep'));
+        if (notes && trs.length) notes.removeFrom(trs[0]);
         for (const x of trs) x.remove();
         placedRows -= ri - back;
         ri = back;

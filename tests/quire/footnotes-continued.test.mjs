@@ -99,3 +99,18 @@ test('a note with no room for a line takes its reference to the next page; one l
   assert.match(huge[1].notes, /^Note line 47 .*line 69$/s);
   assert.deepEqual([huge[1].first, huge[1].last], ['After 0', 'After 25']);
 });
+
+// a one-column table, each row a paragraph, one row's paragraph referencing the note
+const table = (...rows) => '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w="4000"/></w:tblGrid>' +
+  rows.map((r) => '<w:tr><w:tc><w:tcPr><w:tcW w:w="4000" w:type="dxa"/></w:tcPr>' + r + '</w:tc></w:tr>').join('') + '</w:tbl>';
+
+test('a footnote referenced in a table cell is on the page, and goes on to the next one as from a paragraph', async () => {
+  // Word 2016: the note under the table on page 1 (Quire left notes referenced in cells out altogether)
+  const r = await pages(paras(30, 'Body') + table(para('Row 0'), refPara('Row 1 ref'), para('Row 2')) + paras(10, 'After'), noteLines(5));
+  assert.match(r[0].notes, /line 0 .*line 4$/s);
+  // Word 2016: Row 2 and note lines 0 to 2 on page 1, Row 3 and lines 3 and 4 on page 2
+  const tight = await pages(paras(40, 'Body') + table(para('Row 0'), para('Row 1'), refPara('Row 2 ref'), para('Row 3')) + paras(10, 'After'), noteLines(5));
+  assert.match(tight[0].notes, /line 0 .*line 2$/s);
+  assert.deepEqual([tight[0].last, tight[1].first], ['Row 2 ref1 end.', 'Row 3']);
+  assert.match(tight[1].notes, /^Note line 3 .*line 4$/s);
+});
