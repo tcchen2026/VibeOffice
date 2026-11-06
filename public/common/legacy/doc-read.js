@@ -5,6 +5,13 @@
   'use strict';
   const N = s => s; // UI refusal text, translated where it is shown.
   const B = root.L.legacy, D = B.doc || (B.doc = {});
+  // CPs address UTF-16 code units. TextDecoder consumes a BOM and replaces a
+  // lone surrogate at a piece boundary, although the following piece can hold
+  // its low half. Decode units first; XML escaping handles truly broken pairs.
+  D.unicode = function(r, offset, bytes) {
+    r.check(offset,bytes);if(bytes%2)B.fail('DOC_TEXT',N('A Unicode text piece has an incomplete character'));
+    let text='';for(let p=0;p<bytes;p+=8192){const n=Math.min(8192,bytes-p),units=[];for(let i=0;i<n;i+=2)units.push(r.u16(offset+p+i));text+=String.fromCharCode(...units);}return text;
+  };
   D.fib = function (bytes) {
     const r = new B.Reader(bytes, 'WordDocument');
     if (![0xa5ec, 0xa5dc].includes(r.u16(0))) B.fail('DOC_HEADER', N('Invalid Word binary header'));
@@ -51,7 +58,7 @@
   D.read = function (cfb) {
     const bytes = cfb.stream('WordDocument'); if (!bytes) B.fail('DOC_STREAM', N('The WordDocument stream is missing'));
     const fib = D.fib(bytes), result = { ...fib, pieces: [], text: '', storyText: {} };
-    if (fib.encrypted || fib.version === 'Word6/95') return result;
+    if (fib.encrypted || fib.version !== 'Word97+') return result;
     const tableBytes = cfb.stream(fib.table); if (!tableBytes) B.fail('DOC_TABLE', N('The Word text table is missing'));
     const table = new B.Reader(tableBytes, fib.table), clx = fib.pair(33), r = table.reader(clx.offset, clx.length, 'CLX');
     result.tableReader = table; result.prcs = [];
@@ -68,14 +75,14 @@
         if (end < start || (i === 0 && start !== 0)) B.fail('DOC_PIECES', N('Invalid Word character positions'));
         const offset = (fc & 0x3fffffff) / (compressed ? 2 : 1), chars = end - start;
         if ((total += chars) > B.limits.text) B.fail('TEXT_LIMIT', N('The Word document has too much text'));
-        const text = fib.r.text(offset, chars * (compressed ? 1 : 2), compressed ? 1252 : 1200);
+        const text = compressed ? fib.r.text(offset, chars, 1252) : D.unicode(fib.r,offset,chars*2);
         result.pieces.push({ start, end, offset, compressed, prm: plc.u16(at + 6), text });
       }
       result.text = result.pieces.map(x => x.text).join('');
     } else {
       const start = fib.r.u32(24), end = fib.r.u32(28); if (end < start) B.fail('DOC_TEXT', N('Invalid Word text range'));
       // Non-complex files can carry a contiguous text range instead of CLX.
-      const unicode = !!(fib.flags & 0x1000), text = fib.r.text(start, end - start, unicode ? 1200 : 1252);
+      const unicode = !!(fib.flags & 0x1000), text = unicode ? D.unicode(fib.r,start,end-start) : fib.r.text(start,end-start,1252);
       result.pieces.push({ start: 0, end: text.length, offset: start, compressed: !unicode, prm: 0, text }); result.text = text;
     }
     let pos = 0;

@@ -7,7 +7,7 @@
   const B=root.L.legacy,P=B.ppt,T=P.text,S=B.shapes,el=B.el,N=s=>s;
   const emu=v=>Math.round(v*1587.5),clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
   const numbering=['alphaLcPeriod','alphaUcPeriod','arabicParenR','arabicPeriod','romanLcParenBoth','romanLcParenR','romanLcPeriod','romanUcPeriod','alphaLcParenBoth','alphaLcParenR','alphaUcParenBoth','alphaUcParenR','arabicParenBoth','arabicPlain','romanUcParenBoth','romanUcParenR','ea1ChsPlain','ea1ChsPeriod','circleNumDbPlain','circleNumWdWhitePlain','circleNumWdBlackPlain','ea1ChtPeriod','ea1ChtPlain','arabic1Minus','arabic2Minus','hebrew2Minus','ea1JpnKorPlain','ea1JpnKorPeriod','arabicDbPlain','arabicDbPeriod','thaiAlphaPeriod','thaiAlphaParenR','thaiAlphaParenBoth','thaiNumPeriod','thaiNumParenR','thaiNumParenBoth','hindiAlphaPeriod','hindiNumPeriod','ea1JpnChsDbPeriod','hindiNumParenR','hindiAlpha1Period'];
-  const languages={1025:'ar-SA',1028:'zh-TW',1029:'cs-CZ',1030:'da-DK',1031:'de-DE',1032:'el-GR',1033:'en-US',1034:'es-ES',1035:'fi-FI',1036:'fr-FR',1037:'he-IL',1038:'hu-HU',1040:'it-IT',1041:'ja-JP',1042:'ko-KR',1043:'nl-NL',1044:'nb-NO',1045:'pl-PL',1046:'pt-BR',1048:'ro-RO',1049:'ru-RU',1050:'hr-HR',1051:'sk-SK',1053:'sv-SE',1054:'th-TH',1055:'tr-TR',1057:'id-ID',1058:'uk-UA',1060:'sl-SI',1061:'et-EE',1062:'lv-LV',1063:'lt-LT',1066:'vi-VN',1081:'hi-IN',2052:'zh-CN',2057:'en-GB',2070:'pt-PT',3076:'zh-HK',3082:'es-ES',4105:'en-CA',5129:'en-NZ'};
+  const languages=B.languageIds;
   const font=(book,index)=>book.fonts.get(index);
   const charset=n=>n>127?n-256:n;
   const fontXml=(tag,book,index,modern=false)=>{const f=modern?book.fonts10.get(index):font(book,index);return f?el(tag,{typeface:f.name,pitchFamily:charset(f.pitchFamily),charset:charset(f.charset)}):'';};

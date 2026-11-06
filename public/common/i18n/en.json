@@ -4518,7 +4518,7 @@
  },
  "3-D model": {
   "where": [
-   "lectern/js/render.js:582"
+   "lectern/js/render.js:583"
   ]
  },
  "3. Start enforcement": {
@@ -4657,6 +4657,11 @@
    "ledger/js/dialogs3.js:444"
   ]
  },
+ "A Unicode text piece has an incomplete character": {
+  "where": [
+   "common/legacy/doc-read.js:12"
+  ]
+ },
  "A cell contains an invalid error value": {
   "where": [
    "common/legacy/xls-write.js:57"
@@ -4717,15 +4722,45 @@
    "common/legacy/ppt-structure.js:69"
   ]
  },
+ "A damaged style was replaced with default formatting": {
+  "where": [
+   "common/legacy/doc-style.js:60"
+  ]
+ },
+ "A damaged text style was not kept": {
+  "where": [
+   "common/legacy/doc-style.js:28"
+  ]
+ },
  "A date field format could not be kept": {
   "where": [
    "common/legacy/ppt-text.js:9"
+  ]
+ },
+ "A decorative border was not kept": {
+  "where": [
+   "common/legacy/doc-xml.js:19"
   ]
  },
  "A defined name was not kept": {
   "where": [
    "common/legacy/xls-formula-book.js:79",
    "common/legacy/xls-formula-book.js:113"
+  ]
+ },
+ "A document position table is damaged": {
+  "where": [
+   "common/legacy/doc-structure.js:20"
+  ]
+ },
+ "A document position table is out of order": {
+  "where": [
+   "common/legacy/doc-structure.js:23"
+  ]
+ },
+ "A document position table is too large": {
+  "where": [
+   "common/legacy/doc-structure.js:22"
   ]
  },
  "A formula or function contains invalid numeric values.": {
@@ -4738,6 +4773,11 @@
    "index.html:283"
   ]
  },
+ "A header or footer with damaged text positions was not kept": {
+  "where": [
+   "common/legacy/doc-structure.js:101"
+  ]
+ },
  "A labelled box for each item, holding its sub-items.": {
   "where": [
    "common/smartart.js:337"
@@ -4748,6 +4788,11 @@
    "ledger/js/dialogs2.js:360"
   ]
  },
+ "A list override has too many levels": {
+  "where": [
+   "common/legacy/doc-lists.js:34"
+  ]
+ },
  "A master text style has too many levels": {
   "where": [
    "common/legacy/ppt-text-read.js:41",
@@ -4755,9 +4800,29 @@
    "common/legacy/ppt-text-read.js:52"
   ]
  },
+ "A missing text style was replaced with default formatting": {
+  "where": [
+   "common/legacy/doc-style.js:61"
+  ]
+ },
  "A newer version of VibeOffice is available. This one is {0}.": {
   "where": [
    "start.js:186"
+  ]
+ },
+ "A note reference without a matching note was not kept": {
+  "where": [
+   "common/legacy/doc-text.js:39"
+  ]
+ },
+ "A note with damaged text positions was not kept": {
+  "where": [
+   "common/legacy/doc-structure.js:92"
+  ]
+ },
+ "A numbering style was replaced with decimal numbers": {
+  "where": [
+   "common/legacy/doc-xml.js:103"
   ]
  },
  "A pasted slicer or timeline will be saved as a plain shape and won't filter anything, because its table or pivot table isn't in this workbook.": {
@@ -4767,7 +4832,7 @@
  },
  "A picture fill on a shape of this IntelliArt is saved as the diagram's colour.": {
   "where": [
-   "lectern/js/pptx-write.js:392"
+   "lectern/js/pptx-write.js:393"
   ]
  },
  "A picture is not in the .md file and shows as a box. Open a .zip holding the file and its pictures to see them.": {
@@ -4798,6 +4863,11 @@
  "A reference to an IntelliArt drawing cache missing from the original file was removed; its data and layout are retained.": {
   "where": [
    "lectern/js/frames.js:317"
+  ]
+ },
+ "A shading pattern was not kept; its background color was retained": {
+  "where": [
+   "common/legacy/doc-xml.js:22"
   ]
  },
  "A shared string ends inside a character": {
@@ -4850,10 +4920,25 @@
    "quire/js/dialogs.js:929"
   ]
  },
+ "A text formatting page is damaged": {
+  "where": [
+   "common/legacy/doc-structure.js:52"
+  ]
+ },
  "A text formatting run has an invalid length": {
   "where": [
    "common/legacy/ppt-text-read.js:60",
    "common/legacy/ppt-text-read.js:63"
+  ]
+ },
+ "A text piece refers to missing formatting": {
+  "where": [
+   "common/legacy/doc-sprm.js:30"
+  ]
+ },
+ "A text piece uses unsupported formatting": {
+  "where": [
+   "common/legacy/doc-sprm.js:31"
   ]
  },
  "A tree that grows from left to right.": {
@@ -5772,9 +5857,24 @@
    "common/legacy/ppt-text-design.js:12"
   ]
  },
+ "An invalid formatting value was replaced": {
+  "where": [
+   "common/legacy/doc-xml.js:11"
+  ]
+ },
  "An object on this sheet couldn't be kept and will be removed.": {
   "where": [
    "ledger/js/objects.js:304"
+  ]
+ },
+ "An underline style was not kept": {
+  "where": [
+   "common/legacy/doc-xml.js:44"
+  ]
+ },
+ "An unsupported text control was not kept": {
+  "where": [
+   "common/legacy/doc-text.js:46"
   ]
  },
  "Analysis ToolPak functions (engineering, financial, date) are built in.": {
@@ -6037,13 +6137,13 @@
  },
  "Arch Down": {
   "where": [
-   "lectern/js/render.js:514",
+   "lectern/js/render.js:515",
    "quire/js/drawing.js:125"
   ]
  },
  "Arch Up": {
   "where": [
-   "lectern/js/render.js:514",
+   "lectern/js/render.js:515",
    "quire/js/drawing.js:125"
   ]
  },
@@ -6063,7 +6163,7 @@
    "common/core.js:697",
    "lectern/js/dialogs.js:999",
    "lectern/js/dialogs.js:1018",
-   "lectern/js/render.js:547"
+   "lectern/js/render.js:548"
   ]
  },
  "Aro&und": {
@@ -7006,6 +7106,11 @@
    "quire/js/dialogs2.js:420"
   ]
  },
+ "Bookmarks were not kept": {
+  "where": [
+   "common/legacy/doc-write.js:18"
+  ]
+ },
  "Book|workbook": {
   "where": [
    "ledger/js/dialogs.js:498",
@@ -7655,7 +7760,7 @@
  },
  "Can Up": {
   "where": [
-   "lectern/js/render.js:515",
+   "lectern/js/render.js:516",
    "quire/js/drawing.js:125"
   ]
  },
@@ -8112,6 +8217,11 @@
    "quire/js/dialogs3.js:693"
   ]
  },
+ "Character formatting could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:113"
+  ]
+ },
  "Character in Range": {
   "where": [
    "quire/js/find.js:392"
@@ -8411,7 +8521,7 @@
  },
  "Chevron Up": {
   "where": [
-   "lectern/js/render.js:515",
+   "lectern/js/render.js:516",
    "quire/js/drawing.js:125"
   ]
  },
@@ -8492,7 +8602,7 @@
  },
  "Circle": {
   "where": [
-   "lectern/js/render.js:514",
+   "lectern/js/render.js:515",
    "lectern/js/slideshow.js:17",
    "lectern/js/slideshow.js:24",
    "lectern/js/slideshow.js:29"
@@ -8713,7 +8823,7 @@
  "Click to add text": {
   "where": [
    "lectern/js/model.js:485",
-   "lectern/js/render.js:646"
+   "lectern/js/render.js:647"
   ]
  },
  "Click to add title": {
@@ -9244,6 +9354,12 @@
  "Comments on this slide couldn't be kept and will be removed.": {
   "where": [
    "lectern/js/comments.js:180"
+  ]
+ },
+ "Comments were not kept": {
+  "where": [
+   "common/legacy/doc-text.js:41",
+   "common/legacy/doc-write.js:19"
   ]
  },
  "Commonly Confused Words": {
@@ -11403,7 +11519,7 @@
  "Diagram": {
   "where": [
    "lectern/js/app.js:221",
-   "lectern/js/render.js:582"
+   "lectern/js/render.js:583"
   ]
  },
  "Diagram Gallery": {
@@ -11746,6 +11862,11 @@
    "lectern/js/panes.js:528",
    "ledger/js/panes.js:61",
    "quire/js/panes.js:66"
+  ]
+ },
+ "Document editing restrictions were not kept": {
+  "where": [
+   "common/legacy/doc-write.js:22"
   ]
  },
  "Document number": {
@@ -12459,13 +12580,14 @@
  },
  "Embedded fonts were not kept": {
   "where": [
+   "common/legacy/doc-write.js:23",
    "common/legacy/ppt-write.js:99"
   ]
  },
  "Embedded object": {
   "where": [
    "lectern/js/frames.js:19",
-   "lectern/js/render.js:582",
+   "lectern/js/render.js:583",
    "quire/js/render.js:378"
   ]
  },
@@ -12510,6 +12632,11 @@
  "Enclosures:": {
   "where": [
    "quire/js/dialogs3.js:485"
+  ]
+ },
+ "Encrypted binary documents cannot be opened yet": {
+  "where": [
+   "common/legacy/doc-write.js:9"
   ]
  },
  "Encrypted binary presentations cannot be opened yet": {
@@ -12567,6 +12694,11 @@
  "Endnote number": {
   "where": [
    "quire/js/dialogs2.js:245"
+  ]
+ },
+ "Endnotes could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:118"
   ]
  },
  "End|key": {
@@ -13398,6 +13530,16 @@
  "Field {0}": {
   "where": [
    "quire/js/dialogs2.js:743"
+  ]
+ },
+ "Fields in this document are nested too deeply": {
+  "where": [
+   "common/legacy/doc-text.js:31"
+  ]
+ },
+ "Fields were replaced with their last displayed text": {
+  "where": [
+   "common/legacy/doc-text.js:31"
   ]
  },
  "Fields:": {
@@ -14233,6 +14375,11 @@
  "Footnotes": {
   "where": [
    "quire/js/ribbon.js:51"
+  ]
+ },
+ "Footnotes could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:117"
   ]
  },
  "For which item:": {
@@ -15374,6 +15521,11 @@
    "quire/js/dialogs.js:690"
   ]
  },
+ "Headers and footers could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:116"
+  ]
+ },
  "Headers, footers and page numbers": {
   "where": [
    "quire/js/panes.js:98"
@@ -16027,7 +16179,7 @@
  },
  "Ink": {
   "where": [
-   "lectern/js/render.js:582"
+   "lectern/js/render.js:583"
   ]
  },
  "Ink &Color": {
@@ -16107,14 +16259,14 @@
   "where": [
    "lectern/js/app.js:1514",
    "lectern/js/commands.js:91",
-   "lectern/js/render.js:584",
+   "lectern/js/render.js:585",
    "ledger/js/xchart.js:408"
   ]
  },
  "Insert Clip Art": {
   "where": [
    "lectern/js/commands.js:84",
-   "lectern/js/render.js:584",
+   "lectern/js/render.js:585",
    "quire/js/commands.js:297",
    "quire/js/panes.js:172"
   ]
@@ -16182,7 +16334,7 @@
  },
  "Insert Diagram or Organization Chart": {
   "where": [
-   "lectern/js/render.js:584",
+   "lectern/js/render.js:585",
    "quire/js/commands.js:303"
   ]
  },
@@ -16267,7 +16419,7 @@
  },
  "Insert Media Clip": {
   "where": [
-   "lectern/js/render.js:584"
+   "lectern/js/render.js:585"
   ]
  },
  "Insert Merge Field": {
@@ -16311,7 +16463,7 @@
   "where": [
    "lectern/js/app.js:1292",
    "lectern/js/commands.js:85",
-   "lectern/js/render.js:584",
+   "lectern/js/render.js:585",
    "ledger/js/app.js:1340"
   ]
  },
@@ -16380,7 +16532,7 @@
    "lectern/js/app.js:1364",
    "lectern/js/commands.js:92",
    "lectern/js/dialogs.js:772",
-   "lectern/js/render.js:584"
+   "lectern/js/render.js:585"
   ]
  },
  "Insert Table of Contents": {
@@ -16610,7 +16762,7 @@
  "IntelliArt": {
   "where": [
    "lectern/js/diagram.js:589",
-   "lectern/js/render.js:582",
+   "lectern/js/render.js:583",
    "lectern/js/ribbon.js:40",
    "ledger/js/drawing.js:150"
   ]
@@ -16676,27 +16828,27 @@
  },
  "Invalid Word binary header": {
   "where": [
-   "common/legacy/doc-read.js:10"
+   "common/legacy/doc-read.js:17"
   ]
  },
  "Invalid Word character positions": {
   "where": [
-   "common/legacy/doc-read.js:68"
+   "common/legacy/doc-read.js:75"
   ]
  },
  "Invalid Word character-property table": {
   "where": [
-   "common/legacy/doc-read.js:29"
+   "common/legacy/doc-read.js:36"
   ]
  },
  "Invalid Word text piece table size": {
   "where": [
-   "common/legacy/doc-read.js:63"
+   "common/legacy/doc-read.js:70"
   ]
  },
  "Invalid Word text range": {
   "where": [
-   "common/legacy/doc-read.js:76"
+   "common/legacy/doc-read.js:83"
   ]
  },
  "Invalid angle-ellipse vertex count": {
@@ -17240,7 +17392,7 @@
  },
  "Lectern presentation editor": {
   "where": [
-   "lectern/index.html:276"
+   "lectern/index.html:277"
   ]
  },
  "Ledger": {
@@ -17523,7 +17675,7 @@
   "where": [
    "lectern/js/app.js:209",
    "lectern/js/dialogs.js:1008",
-   "lectern/js/render.js:539",
+   "lectern/js/render.js:540",
    "lectern/js/ribbon.js:42"
   ]
  },
@@ -17849,7 +18001,7 @@
  },
  "Linked picture: {0}": {
   "where": [
-   "lectern/js/render.js:583"
+   "lectern/js/render.js:584"
   ]
  },
  "Links": {
@@ -17910,6 +18062,11 @@
  "List numbering": {
   "where": [
    "quire/js/dialogs.js:459"
+  ]
+ },
+ "List numbering could not be kept": {
+  "where": [
+   "common/legacy/doc-lists.js:48"
   ]
  },
  "List of markup": {
@@ -18193,6 +18350,7 @@
  },
  "Macros were not kept": {
   "where": [
+   "common/legacy/doc-write.js:24",
    "common/legacy/ppt-write.js:101",
    "common/legacy/xls-write.js:94"
   ]
@@ -19229,7 +19387,7 @@
  "New chart": {
   "where": [
    "lectern/js/frames.js:22",
-   "lectern/js/render.js:582"
+   "lectern/js/render.js:583"
   ]
  },
  "New column": {
@@ -20914,6 +21072,16 @@
    "quire/js/review.js:42"
   ]
  },
+ "Paragraph formatting contains a loop": {
+  "where": [
+   "common/legacy/doc-structure.js:38"
+  ]
+ },
+ "Paragraph formatting could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:114"
+  ]
+ },
  "Paragraph number": {
   "where": [
    "quire/js/dialogs2.js:245"
@@ -21287,7 +21455,7 @@
    "lectern/js/app.js:201",
    "lectern/js/dialogs.js:22",
    "lectern/js/dialogs.js:458",
-   "lectern/js/render.js:442"
+   "lectern/js/render.js:443"
   ]
  },
  "Picture &Position": {
@@ -21297,7 +21465,7 @@
  },
  "Picture (.{0})": {
   "where": [
-   "lectern/js/render.js:442"
+   "lectern/js/render.js:443"
   ]
  },
  "Picture Border": {
@@ -21344,6 +21512,12 @@
  "Pictures and drawing": {
   "where": [
    "quire/js/panes.js:97"
+  ]
+ },
+ "Pictures and drawing objects were not kept": {
+  "where": [
+   "common/legacy/doc-text.js:40",
+   "common/legacy/doc-write.js:21"
   ]
  },
  "Pictures in album:": {
@@ -21431,7 +21605,7 @@
  },
  "Plain Text": {
   "where": [
-   "lectern/js/render.js:514",
+   "lectern/js/render.js:515",
    "quire/js/drawing.js:125"
   ]
  },
@@ -24790,6 +24964,17 @@
    "quire/js/commands.js:477"
   ]
  },
+ "Revision history was not kept": {
+  "where": [
+   "common/legacy/doc-xml.js:25"
+  ]
+ },
+ "Revision history was not kept; the current text was retained": {
+  "where": [
+   "common/legacy/doc-text.js:35",
+   "common/legacy/doc-text.js:36"
+  ]
+ },
  "Revision number:": {
   "where": [
    "quire/js/dialogs3.js:632"
@@ -25664,6 +25849,11 @@
  "Section breaks can only be inserted in the main text, outside tables.": {
   "where": [
    "quire/js/dialogs2.js:29"
+  ]
+ },
+ "Section formatting could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:115"
   ]
  },
  "Section sta&rt:": {
@@ -26742,13 +26932,13 @@
  },
  "Slant Down": {
   "where": [
-   "lectern/js/render.js:515",
+   "lectern/js/render.js:516",
    "quire/js/drawing.js:125"
   ]
  },
  "Slant Up": {
   "where": [
-   "lectern/js/render.js:515",
+   "lectern/js/render.js:516",
    "quire/js/drawing.js:125"
   ]
  },
@@ -27123,6 +27313,21 @@
    "ledger/js/dialogs.js:263"
   ]
  },
+ "Some character style formatting could not be read": {
+  "where": [
+   "common/legacy/doc-style.js:53"
+  ]
+ },
+ "Some document layout settings could not be read": {
+  "where": [
+   "common/legacy/doc-settings.js:23"
+  ]
+ },
+ "Some font choices could not be read": {
+  "where": [
+   "common/legacy/doc-style.js:44"
+  ]
+ },
  "Some formulas were replaced with their saved results": {
   "where": [
    "common/legacy/xls-formula-book.js:155"
@@ -27131,6 +27336,11 @@
  "Some headers and footers were not kept": {
   "where": [
    "common/legacy/ppt-write.js:95"
+  ]
+ },
+ "Some list numbering could not be read": {
+  "where": [
+   "common/legacy/doc-lists.js:19"
   ]
  },
  "Some mentions could not be kept after the comment text was edited.": {
@@ -27143,6 +27353,16 @@
    "common/ui.js:788"
   ]
  },
+ "Some paragraph formatting could not be read": {
+  "where": [
+   "common/legacy/doc-text.js:13"
+  ]
+ },
+ "Some paragraph style formatting could not be read": {
+  "where": [
+   "common/legacy/doc-style.js:52"
+  ]
+ },
  "Some presentation text could not be kept": {
   "where": [
    "common/legacy/ppt-text.js:9"
@@ -27153,9 +27373,22 @@
    "common/legacy/xls-write.js:92"
   ]
  },
+ "Some section formatting could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:77"
+  ]
+ },
  "Some text formatting could not be kept": {
   "where": [
    "common/legacy/ppt-text.js:9"
+  ]
+ },
+ "Some text formatting could not be read": {
+  "where": [
+   "common/legacy/doc-structure.js:50",
+   "common/legacy/doc-structure.js:60",
+   "common/legacy/doc-style.js:66",
+   "common/legacy/doc-text.js:15"
   ]
  },
  "Some text-box positioning could not be kept": {
@@ -28419,6 +28652,11 @@
    "quire/js/dialogs2.js:307"
   ]
  },
+ "Tables were replaced with their cell text": {
+  "where": [
+   "common/legacy/doc-text.js:55"
+  ]
+ },
  "Tables with vertically merged cells cannot be sorted.": {
   "where": [
    "quire/js/tables.js:774"
@@ -28778,6 +29016,11 @@
    "common/legacy/xls-write.js:13"
   ]
  },
+ "Text boxes and their text were not kept": {
+  "where": [
+   "common/legacy/doc-write.js:20"
+  ]
+ },
  "Text control": {
   "where": [
    "ledger/js/dialogs.js:173"
@@ -28798,6 +29041,11 @@
    "common/legacy/ppt-text-read.js:60"
   ]
  },
+ "Text formatting positions are out of order": {
+  "where": [
+   "common/legacy/doc-structure.js:56"
+  ]
+ },
  "Text length": {
   "where": [
    "ledger/js/dialogs2.js:94"
@@ -28806,6 +29054,11 @@
  "Text position": {
   "where": [
    "quire/js/dialogs.js:563"
+  ]
+ },
+ "Text styles could not be read": {
+  "where": [
+   "common/legacy/doc-style.js:45"
   ]
  },
  "Text to Columns": {
@@ -28926,22 +29179,23 @@
  },
  "The Word document has too much text": {
   "where": [
-   "common/legacy/doc-read.js:70"
+   "common/legacy/doc-read.js:77"
   ]
  },
  "The Word text piece table is missing": {
   "where": [
-   "common/legacy/doc-read.js:61"
+   "common/legacy/doc-read.js:68"
   ]
  },
  "The Word text table is missing": {
   "where": [
-   "common/legacy/doc-read.js:55"
+   "common/legacy/doc-read.js:62"
   ]
  },
  "The WordDocument stream is missing": {
   "where": [
-   "common/legacy/doc-read.js:52"
+   "common/legacy/doc-read.js:59",
+   "common/legacy/doc-write.js:6"
   ]
  },
  "The active cell does not contain a formula that refers to a valid reference.": {
@@ -29100,6 +29354,31 @@
    "quire/js/spell.js:314"
   ]
  },
+ "The document contains too many formatting properties": {
+  "where": [
+   "common/legacy/doc-sprm.js:21"
+  ]
+ },
+ "The document contains too many list overrides": {
+  "where": [
+   "common/legacy/doc-lists.js:28"
+  ]
+ },
+ "The document contains too many lists": {
+  "where": [
+   "common/legacy/doc-lists.js:22"
+  ]
+ },
+ "The document has too many text formatting runs": {
+  "where": [
+   "common/legacy/doc-structure.js:66"
+  ]
+ },
+ "The document stylesheet is damaged": {
+  "where": [
+   "common/legacy/doc-style.js:23"
+  ]
+ },
  "The document was shrunk by one page.": {
   "where": [
    "quire/js/panes.js:683"
@@ -29169,7 +29448,7 @@
  },
  "The file contains an invalid offset or length": {
   "where": [
-   "common/legacy/base.js:16"
+   "common/legacy/base.js:18"
   ]
  },
  "The file could not be inserted. {0}": {
@@ -29185,7 +29464,7 @@
  },
  "The file is too large to import": {
   "where": [
-   "common/legacy/base.js:12"
+   "common/legacy/base.js:14"
   ]
  },
  "The first worksheet was made visible": {
@@ -29966,7 +30245,7 @@
  },
  "This browser cannot decode the file text encoding": {
   "where": [
-   "common/legacy/base.js:40"
+   "common/legacy/base.js:42"
   ]
  },
  "This browser cannot decompress metafiles": {
@@ -30054,6 +30333,11 @@
    "quire/js/editor.js:295"
   ]
  },
+ "This document needs a password": {
+  "where": [
+   "common/legacy/doc-write.js:9"
+  ]
+ },
  "This document property has an unsupported type": {
   "where": [
    "common/legacy/properties.js:84"
@@ -30096,7 +30380,7 @@
  },
  "This file uses an unsupported text encoding": {
   "where": [
-   "common/legacy/base.js:39"
+   "common/legacy/base.js:41"
   ]
  },
  "This file was damaged; Ledger repaired what it could.": {
@@ -30573,7 +30857,7 @@
  },
  "Too many Word text pieces": {
   "where": [
-   "common/legacy/doc-read.js:65"
+   "common/legacy/doc-read.js:72"
   ]
  },
  "Too many cells": {
@@ -30875,7 +31159,7 @@
  },
  "Triangle Up": {
   "where": [
-   "lectern/js/render.js:515",
+   "lectern/js/render.js:516",
    "quire/js/drawing.js:125"
   ]
  },
@@ -31850,7 +32134,7 @@
   "where": [
    "common/geometry.js:257",
    "common/geometry.js:661",
-   "lectern/js/render.js:514",
+   "lectern/js/render.js:515",
    "quire/js/dialogs.js:89"
   ]
  },
@@ -32184,6 +32468,11 @@
    "quire/js/dialogs3.js:585"
   ]
  },
+ "Word 6, Word 95 and earlier documents cannot be opened yet": {
+  "where": [
+   "common/legacy/doc-write.js:8"
+  ]
+ },
  "Word Count": {
   "where": [
    "quire/js/dialogs3.js:325"
@@ -32223,7 +32512,7 @@
  },
  "Word story lengths exceed the text piece table": {
   "where": [
-   "common/legacy/doc-read.js:82"
+   "common/legacy/doc-read.js:89"
   ]
  },
  "Words": {
@@ -32600,7 +32889,7 @@
  "[Text]": {
   "where": [
    "lectern/js/diagram.js:540",
-   "lectern/js/render.js:646"
+   "lectern/js/render.js:647"
   ]
  },
  "[cells]": {

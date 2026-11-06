@@ -4,6 +4,8 @@
   'use strict';
   const N = s => s; // UI refusal text, translated where it is shown.
   const L = root.L || (root.L = {}), B = L.legacy || (L.legacy = {});
+  // Windows LCIDs stored in binary Office character properties.
+  B.languageIds = Object.freeze({1025:'ar-SA',1028:'zh-TW',1029:'cs-CZ',1030:'da-DK',1031:'de-DE',1032:'el-GR',1033:'en-US',1034:'es-ES',1035:'fi-FI',1036:'fr-FR',1037:'he-IL',1038:'hu-HU',1040:'it-IT',1041:'ja-JP',1042:'ko-KR',1043:'nl-NL',1044:'nb-NO',1045:'pl-PL',1046:'pt-BR',1048:'ro-RO',1049:'ru-RU',1050:'hr-HR',1051:'sk-SK',1053:'sv-SE',1054:'th-TH',1055:'tr-TR',1057:'id-ID',1058:'uk-UA',1060:'sl-SI',1061:'et-EE',1062:'lv-LV',1063:'lt-LT',1066:'vi-VN',1081:'hi-IN',2052:'zh-CN',2057:'en-GB',2070:'pt-PT',3076:'zh-HK',3082:'es-ES',4105:'en-CA',5129:'en-NZ'});
   B.limits = Object.freeze({ bytes: 256 * 1024 * 1024, text: 32 * 1024 * 1024, records: 2000000, depth: 128, cells: 2000000 });
   B.fail = function (code, message, where) { const e = new Error(message); e.name = 'LegacyError'; e.code = code; if (where != null) e.where = where; throw e; };
   B.Reader = class {
