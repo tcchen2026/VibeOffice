@@ -571,7 +571,7 @@
     const s = A().curSect();
     const sect = s.sect;
     const cols = Object.assign({ n: 1, space: 36, eq: true, w: [], sep: false }, sect.cols || {});
-    const bodyW = sect.pgW - sect.ml - sect.mr - (sect.gutter || 0);
+    const bodyW = D.textWidth(doc(), sect);
     const n = G.num(cols.n, { min: 1, max: 13, id: 'cd-n', onChange: () => { cols.n = n.get(); build(); } });
     const eq = ui.check('&Equal column width', cols.eq !== false, (v) => { cols.eq = v; build(); });
     const sep = ui.check('Line &between', !!cols.sep, (v) => { cols.sep = v; drawPv(); });
@@ -654,7 +654,7 @@
     const sect = L.clone(s.sect);
     const mt = G.len(sect.mt, { id: 'ps-t', min: -1584 }), mb = G.len(sect.mb, { id: 'ps-b', min: -1584 }), ml = G.len(sect.ml, { id: 'ps-l', min: 0 }), mr = G.len(sect.mr, { id: 'ps-r', min: 0 });
     const gutter = G.len(sect.gutter || 0, { id: 'ps-g', min: 0 });
-    const gutPos = ui.select([['left', 'Left'], ['top', 'Top']], d.settings.gutterAtTop ? 'top' : 'left', null, { id: 'ps-gp' });
+    const gutPos = ui.select([['left', 'Left'], ['top', 'Top']], d.settings.gutterTop ? 'top' : 'left', null, { id: 'ps-gp' });
     let orient = sect.orient || (sect.pgW > sect.pgH ? 'landscape' : 'portrait');
     const orBtns = h('div', { class: 'preset-grid' });
     const orB = (k, l) => { const b = h('button', { type: 'button', class: orient === k ? 'on' : '' }, h('div', { class: 'ps-page', style: k === 'landscape' ? 'width:60px;height:46px' : 'width:46px;height:60px' }), h('span', { html: l })); b.addEventListener('click', () => { if (orient !== k) { orient = k; const w = pw.get(), hh = ph.get(); pw.set(Math.min(w, hh) === w && k === 'landscape' ? hh : w); ph.set(Math.min(w, hh) === w && k === 'landscape' ? w : hh); if (k === 'portrait' && w > hh) { pw.set(hh); ph.set(w); } } L.$$('button', orBtns).forEach((x) => x.classList.toggle('on', x === b)); drawPv(); }); return b; };
@@ -718,7 +718,7 @@
         d.settings.evenOdd = evenOdd.input.checked;
         d.settings.mirror = multi.value === 'mirror' || multi.value === 'bookFold';
         d.settings.bookFold = multi.value === 'bookFold' || undefined;
-        d.settings.gutterAtTop = gutPos.value === 'top' || undefined;
+        d.settings.gutterTop = gutPos.value === 'top' || undefined;
         const assign = (hd) => { D.touchKey(hd, 'sect'); const sc = hd === d ? d.sect : hd.sect; Object.assign(sc, v); };
         if (applyTo.value === 'all') for (const sc of D.sections(d)) assign(sc.endPara || d);
         else if (applyTo.value === 'forward') {

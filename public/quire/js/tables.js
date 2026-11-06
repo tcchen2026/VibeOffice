@@ -61,7 +61,7 @@
     }
     const s = D.sectFor(d, pos.p);
     const cols = s.cols || { n: 1 };
-    const body = s.pgW - s.ml - s.mr - (s.gutter || 0);
+    const body = D.textWidth(d, s);
     if ((cols.n || 1) > 1) return (body - (cols.space || 36) * (cols.n - 1)) / cols.n;
     return body;
   }
@@ -676,7 +676,7 @@
     const t = ci.tbl;
     const d = doc();
     const avail = availWidth(D.pos(D.firstPara(t.rows[0].cells[0].blocks) || E.sel.f.p, 0)) ;
-    const outer = (() => { const tb = D.tblInfo(d, t); if (!tb || !tb.parents.length) { const s = D.sectFor(d, E.sel.f.p); return s.pgW - s.ml - s.mr - (s.gutter || 0); } return avail; })();
+    const outer = (() => { const tb = D.tblInfo(d, t); if (!tb || !tb.parents.length) { const s = D.sectFor(d, E.sel.f.p); return D.textWidth(d, s); } return avail; })();
     E.edit(L.N('AutoFit'), () => {
       D.touchTbl(t);
       const { tp } = R.tblProps(d, t);

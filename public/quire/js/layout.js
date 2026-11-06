@@ -1100,8 +1100,8 @@
     pg.dataset.pg = pageIdx;
     const d = doc();
     if (d.bg && LY.opts.printBg !== false) pg.style.background = '#' + d.bg;
-    const mirror = d.settings.mirror && numVal % 2 === 0;
-    const ml = px(mirror ? sect.mr : sect.ml) + (mirror ? 0 : px(sect.gutter || 0)), mr = px(mirror ? sect.ml : sect.mr) + (mirror ? px(sect.gutter || 0) : 0);
+    const mirror = d.settings.mirror && numVal % 2 === 0, gut = px(D.sideGutter(d, sect));
+    const ml = px(mirror ? sect.mr : sect.ml) + (mirror ? 0 : gut), mr = px(mirror ? sect.ml : sect.mr) + (mirror ? gut : 0);
     const page = { el: pg, si, sect, idx: pageIdx, numVal, numFmt: (sect.pgNum && sect.pgNum.fmt) || 'decimal', W, H, bodyLeft: ml, bodyW: W - ml - mr, firstOfSection };
     page.type = pageType(sect, firstOfSection, numVal);
     /* header & footer */
@@ -1124,7 +1124,8 @@
     LY.root.insertBefore(pg, LY.insertAnchor && LY.insertAnchor.isConnected ? LY.insertAnchor : null);
     const hh = renderHF(hdr, hdrStory, ctx, page);
     const fh = renderHF(ftr, ftrStory, ctx, page);
-    let top = px(sect.mt), bottomGap = px(sect.mb);
+    /* (a gutter at the top of the page adds to the top margin, as in Word) */
+    let top = px(sect.mt) + (sect.mt >= 0 ? px((sect.gutter || 0) - D.sideGutter(d, sect)) : 0), bottomGap = px(sect.mb);
     if (sect.mt >= 0 && hh && px(sect.hdr) + hh > top) top = px(sect.hdr) + hh;
     if (sect.mb >= 0 && fh && px(sect.ftr) + fh > bottomGap) bottomGap = px(sect.ftr) + fh;
     top = Math.abs(top); bottomGap = Math.abs(bottomGap);
@@ -1526,7 +1527,7 @@
     LY.pages = [];
     const sect = d.sect;
     const box = el('div', 'flow ' + LY.view);
-    const w = LY.view === 'web' ? Math.max(200, (LY.scroller.clientWidth - 40) / LY.zoom) : px(sect.pgW - sect.ml - sect.mr - (sect.gutter || 0));
+    const w = LY.view === 'web' ? Math.max(200, (LY.scroller.clientWidth - 40) / LY.zoom) : px(D.textWidth(d, sect));
     box.style.width = w + 'px';
     if (LY.view === 'web' && d.bg) box.style.background = '#' + d.bg;
     LY.root.appendChild(box);

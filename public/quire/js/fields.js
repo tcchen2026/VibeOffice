@@ -477,7 +477,7 @@
 
   /* ================= tables of contents, figures, index ================= */
   /** text width of the main section for right-aligned tab stops */
-  const textWidth = () => { const s = doc().sect; return s.pgW - s.ml - s.mr - (s.gutter || 0); };
+  const textWidth = () => D.textWidth(doc(), doc().sect);
   const tocStyle = (lvl) => D.useStyle(doc(), 'TOC' + lvl);
   function pageText(p) {
     const pg = LY.pageOf(D.pos(p, 0));

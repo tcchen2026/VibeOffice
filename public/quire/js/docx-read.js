@@ -342,7 +342,8 @@
             if (at(c, 'line') != null) {
               const rule = at(c, 'lineRule') || 'auto';
               s.rule = rule;
-              s.line = rule === 'auto' ? num(c, 'line', 240) / 240 : tw(at(c, 'line'));
+              /* (Strict files give auto spacing as a measure too: line="12.95pt" is 259 twips, 1.08 lines) */
+              s.line = rule === 'auto' ? (at(c, 'line') == null ? 1 : tw(at(c, 'line')) * 20 / 240) : tw(at(c, 'line'));
             }
             p.sp = s;
             break;

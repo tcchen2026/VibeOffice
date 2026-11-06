@@ -1220,7 +1220,7 @@
       } catch (e) { /* keep default */ }
       /* fit to the text column */
       const s = A.curSect().sect;
-      const maxW = s.pgW - s.ml - s.mr - (s.gutter || 0);
+      const maxW = D.textWidth(doc(), s);
       if (w > maxW) { hh *= maxW / w; w = maxW; }
       items.push(D.item('img', { media: id, w: L.round(w, 2), h: L.round(hh, 2), name: f.name, alt: '' }));
     }

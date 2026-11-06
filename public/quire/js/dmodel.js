@@ -1074,6 +1074,10 @@
     return { sect: doc.sect };
   };
   /** section properties governing paragraph p (main story) */
+  /** the gutter beside the text (0 when the document puts it at the top of the page, w:gutterAtTop) */
+  D.sideGutter = (doc, s) => (doc && doc.settings && doc.settings.gutterTop ? 0 : s.gutter || 0);
+  /** the width between a section's margins */
+  D.textWidth = (doc, s) => s.pgW - s.ml - s.mr - D.sideGutter(doc, s);
   D.sectFor = function (doc, p) {
     const tb = D.topBlock(doc, p);
     if (!tb || tb.cont !== doc.main) return doc.sect;

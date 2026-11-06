@@ -77,6 +77,10 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   reference to the next page whenever its note didn't fit whole, and let a note longer than a page run off it. The line
   above the notes is the file's own separator paragraph, so it takes Word's room (Quire's was 7 pt shorter); two
   corpus files now show Word 2016's page count (stress008, stress018).
+- A gutter at the top of the page (Page Setup's Gutter position: Top, `w:gutterAtTop`) adds to the top margin, as in
+  Word (Quire added it on the left and Page Setup showed Left), and Strict files' "auto" line spacing given as a
+  measure (`w:line="12.95pt"`, 259 twips) is read as lines (Quire read 12.95 twips, so the SDK's Strict01.docx had its
+  lines on top of each other: 8 pages to Word 2016's 13; Quire 13 now).
 - Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
   and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
   bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and
