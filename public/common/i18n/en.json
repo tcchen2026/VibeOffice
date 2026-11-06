@@ -186,7 +186,7 @@
  },
  "&Allow Access...": {
   "where": [
-   "common/core.js:278"
+   "common/core.js:280"
   ]
  },
  "&Allow:": {
@@ -2558,7 +2558,7 @@
  },
  "&Open": {
   "where": [
-   "common/core.js:325"
+   "common/core.js:327"
   ]
  },
  "&Open Hyperlink": {
@@ -3051,7 +3051,7 @@
  },
  "&Replace It": {
   "where": [
-   "common/core.js:274"
+   "common/core.js:276"
   ]
  },
  "&Replace:": {
@@ -3195,10 +3195,10 @@
  },
  "&Save As...": {
   "where": [
-   "common/core.js:274",
-   "common/core.js:275",
    "common/core.js:276",
-   "common/core.js:278"
+   "common/core.js:277",
+   "common/core.js:278",
+   "common/core.js:280"
   ]
  },
  "&Screen": {
@@ -3796,7 +3796,7 @@
  },
  "&Try Again": {
   "where": [
-   "common/core.js:279"
+   "common/core.js:281"
   ]
  },
  "&Two colors": {
@@ -4725,7 +4725,7 @@
  },
  "A comment reference without a matching comment was not kept": {
   "where": [
-   "common/legacy/doc-text.js:43"
+   "common/legacy/doc-text.js:72"
   ]
  },
  "A comment thread you edited will be saved as an ordinary note. Excel will show it as a note, not as a conversation.": {
@@ -4801,7 +4801,12 @@
  },
  "A decorative border was not kept": {
   "where": [
-   "common/legacy/doc-xml.js:19"
+   "common/legacy/doc-xml.js:20"
+  ]
+ },
+ "A decorative picture border could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-write.js:186"
   ]
  },
  "A defined name was not kept": {
@@ -4823,6 +4828,36 @@
  "A document position table is too large": {
   "where": [
    "common/legacy/doc-structure.js:22"
+  ]
+ },
+ "A drawing anchor has no matching shape": {
+  "where": [
+   "common/legacy/doc-draw-read.js:124"
+  ]
+ },
+ "A drawing group has damaged bounds": {
+  "where": [
+   "common/legacy/doc-draw-write.js:213"
+  ]
+ },
+ "A drawing in a group could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-write.js:224"
+  ]
+ },
+ "A drawing in a group has no usable position": {
+  "where": [
+   "common/legacy/doc-draw-write.js:218"
+  ]
+ },
+ "A drawing with a damaged anchor could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-read.js:119"
+  ]
+ },
+ "A drawing with no matching shape could not be kept": {
+  "where": [
+   "common/legacy/doc-text.js:63"
   ]
  },
  "A duplicate comment on this cell was not kept": {
@@ -4848,6 +4883,12 @@
  "A header or footer with damaged text positions was not kept": {
   "where": [
    "common/legacy/doc-structure.js:106"
+  ]
+ },
+ "A hyperlink on a drawing could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-write.js:293",
+   "common/legacy/doc-draw-write.js:349"
   ]
  },
  "A labelled box for each item, holding its sub-items.": {
@@ -4884,7 +4925,7 @@
  },
  "A note reference without a matching note was not kept": {
   "where": [
-   "common/legacy/doc-text.js:41"
+   "common/legacy/doc-text.js:55"
   ]
  },
  "A note with damaged text positions was not kept": {
@@ -4894,12 +4935,17 @@
  },
  "A numbering style was replaced with decimal numbers": {
   "where": [
-   "common/legacy/doc-xml.js:103"
+   "common/legacy/doc-xml.js:120"
   ]
  },
  "A pasted slicer or timeline will be saved as a plain shape and won't filter anything, because its table or pivot table isn't in this workbook.": {
   "where": [
    "ledger/js/slicers.js:116"
+  ]
+ },
+ "A picture could not be read": {
+  "where": [
+   "common/legacy/doc-draw-read.js:304"
   ]
  },
  "A picture fill on a shape of this IntelliArt is saved as the diagram's colour.": {
@@ -4910,6 +4956,27 @@
  "A picture is not in the .md file and shows as a box. Open a .zip holding the file and its pictures to see them.": {
   "where": [
    "quire/js/app.js:794"
+  ]
+ },
+ "A picture lost its border or shadow formatting": {
+  "where": [
+   "common/legacy/doc-draw-write.js:384"
+  ]
+ },
+ "A picture or drawing object could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-read.js:73",
+   "common/legacy/doc-draw-write.js:480"
+  ]
+ },
+ "A picture or drawing outside the readable text could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-read.js:379"
+  ]
+ },
+ "A picture or picture fill is missing": {
+  "where": [
+   "common/legacy/doc-draw-read.js:240"
   ]
  },
  "A presentation color mapping could not be read": {
@@ -4939,7 +5006,7 @@
  },
  "A shading pattern was not kept; its background color was retained": {
   "where": [
-   "common/legacy/doc-xml.js:22"
+   "common/legacy/doc-xml.js:23"
   ]
  },
  "A shared string ends inside a character": {
@@ -5016,6 +5083,21 @@
  "A table was kept as separate drawing objects": {
   "where": [
    "common/legacy/ppt-shapes.js:13"
+  ]
+ },
+ "A text box has damaged text positions": {
+  "where": [
+   "common/legacy/doc-draw-read.js:365"
+  ]
+ },
+ "A text box lost its shape formatting; its text was kept": {
+  "where": [
+   "common/legacy/doc-draw-write.js:324"
+  ]
+ },
+ "A text box with no readable drawing could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-read.js:411"
   ]
  },
  "A text formatting page is damaged": {
@@ -5722,7 +5804,7 @@
  },
  "All Fonts": {
   "where": [
-   "common/core.js:717"
+   "common/core.js:719"
   ]
  },
  "All Reference Books": {
@@ -5875,7 +5957,7 @@
  },
  "An earlier field result was not kept; the current result was retained": {
   "where": [
-   "common/legacy/doc-xml.js:25"
+   "common/legacy/doc-xml.js:26"
   ]
  },
  "An earlier formatting change was not kept; the current formatting was retained": {
@@ -5918,6 +6000,11 @@
    "common/legacy/ppt-text-design.js:22"
   ]
  },
+ "An embedded object could not be kept": {
+  "where": [
+   "common/legacy/doc-text.js:68"
+  ]
+ },
  "An embedded object or control you edited will be saved as a picture and will no longer work.": {
   "where": [
    "ledger/js/objects.js:127"
@@ -5925,6 +6012,8 @@
  },
  "An embedded object was kept only as a picture": {
   "where": [
+   "common/legacy/doc-draw-read.js:406",
+   "common/legacy/doc-text.js:51",
    "common/legacy/ppt-shapes.js:13"
   ]
  },
@@ -5982,7 +6071,7 @@
  },
  "An invalid formatting value was replaced": {
   "where": [
-   "common/legacy/doc-xml.js:11"
+   "common/legacy/doc-xml.js:12"
   ]
  },
  "An object on this sheet couldn't be kept and will be removed.": {
@@ -5992,12 +6081,12 @@
  },
  "An underline style was not kept": {
   "where": [
-   "common/legacy/doc-xml.js:44"
+   "common/legacy/doc-xml.js:45"
   ]
  },
  "An unsupported text control was not kept": {
   "where": [
-   "common/legacy/doc-text.js:48"
+   "common/legacy/doc-text.js:77"
   ]
  },
  "Analysis ToolPak functions (engineering, financial, date) are built in.": {
@@ -6240,12 +6329,12 @@
  },
  "Aptos Display": {
   "where": [
-   "common/core.js:697"
+   "common/core.js:699"
   ]
  },
  "Aptos Narrow": {
   "where": [
-   "common/core.js:697"
+   "common/core.js:699"
   ]
  },
  "Aqua": {
@@ -6283,7 +6372,7 @@
  },
  "Arial Black": {
   "where": [
-   "common/core.js:697",
+   "common/core.js:699",
    "lectern/js/dialogs.js:999",
    "lectern/js/dialogs.js:1018",
    "lectern/js/render.js:548"
@@ -7852,7 +7941,7 @@
  },
  "Calibri Light": {
   "where": [
-   "common/core.js:697"
+   "common/core.js:699"
   ]
  },
  "Calibri, Carlito, sans-serif": {
@@ -8188,7 +8277,7 @@
  },
  "Century Gothic": {
   "where": [
-   "common/core.js:697",
+   "common/core.js:699",
    "lectern/js/model.js:110"
   ]
  },
@@ -8690,7 +8779,7 @@
  },
  "Choose the folder of “{0}” and click Open to let {1} save there.": {
   "where": [
-   "common/core.js:364"
+   "common/core.js:366"
   ]
  },
  "Chooses a value or action to perform from a list of values, based on an index number.": {
@@ -8987,7 +9076,7 @@
  },
  "Close": {
   "where": [
-   "common/core.js:325",
+   "common/core.js:327",
    "common/ui.js:598",
    "common/ui.js:724",
    "common/ui.js:1102"
@@ -9374,7 +9463,7 @@
  },
  "Comic Sans MS": {
   "where": [
-   "common/core.js:697"
+   "common/core.js:699"
   ]
  },
  "Comma Style": {
@@ -10079,7 +10168,7 @@
  },
  "Courier New": {
   "where": [
-   "common/core.js:698",
+   "common/core.js:700",
    "lectern/js/model.js:152",
    "quire/js/autocorrect.js:230",
    "quire/js/dialogs.js:424"
@@ -11490,7 +11579,7 @@
  },
  "DengXian Light": {
   "where": [
-   "common/core.js:594"
+   "common/core.js:596"
   ]
  },
  "Denim": {
@@ -11968,7 +12057,7 @@
  },
  "Document editing restrictions were not kept": {
   "where": [
-   "common/legacy/doc-write.js:21"
+   "common/legacy/doc-write.js:20"
   ]
  },
  "Document number": {
@@ -12284,6 +12373,17 @@
    "quire/js/ribbon.js:104"
   ]
  },
+ "Drawing objects are nested too deeply": {
+  "where": [
+   "common/legacy/doc-draw-read.js:232",
+   "common/legacy/doc-draw-write.js:206"
+  ]
+ },
+ "Drawing objects contain a loop": {
+  "where": [
+   "common/legacy/doc-draw-read.js:231"
+  ]
+ },
  "Drawing objects were not kept": {
   "where": [
    "common/legacy/ppt-write.js:92",
@@ -12434,7 +12534,7 @@
  },
  "Earlier versions of “{0}”, kept as saves replaced them:": {
   "where": [
-   "common/core.js:324"
+   "common/core.js:326"
   ]
  },
  "Early Sunset": {
@@ -12687,7 +12787,7 @@
  },
  "Embedded fonts were not kept": {
   "where": [
-   "common/legacy/doc-write.js:22",
+   "common/legacy/doc-write.js:21",
    "common/legacy/ppt-write.js:103"
   ]
  },
@@ -14429,7 +14529,7 @@
  },
  "Fonts on This Computer": {
   "where": [
-   "common/core.js:719"
+   "common/core.js:721"
   ]
  },
  "Fonts on this computer": {
@@ -15522,12 +15622,12 @@
  },
  "HG Gothic E": {
   "where": [
-   "common/core.js:591"
+   "common/core.js:593"
   ]
  },
  "HG Mincho E": {
   "where": [
-   "common/core.js:591"
+   "common/core.js:593"
   ]
  },
  "HTML Format": {
@@ -17031,7 +17131,7 @@
  },
  "Invalid picture-store entry": {
   "where": [
-   "common/legacy/officeart.js:70"
+   "common/legacy/officeart.js:88"
   ]
  },
  "Invalid presentation edit record": {
@@ -18209,7 +18309,7 @@
  },
  "Load all fonts on your computer...": {
   "where": [
-   "common/core.js:709"
+   "common/core.js:711"
   ]
  },
  "Load fonts on this computer": {
@@ -18396,27 +18496,27 @@
  },
  "MS Gothic": {
   "where": [
-   "common/core.js:589"
+   "common/core.js:591"
   ]
  },
  "MS Mincho": {
   "where": [
-   "common/core.js:589"
+   "common/core.js:591"
   ]
  },
  "MS PGothic": {
   "where": [
-   "common/core.js:589"
+   "common/core.js:591"
   ]
  },
  "MS PMincho": {
   "where": [
-   "common/core.js:589"
+   "common/core.js:591"
   ]
  },
  "MS UI Gothic": {
   "where": [
-   "common/core.js:590"
+   "common/core.js:592"
   ]
  },
  "MS-DOS (OEM 866)": {
@@ -18468,7 +18568,7 @@
  },
  "Macros were not kept": {
   "where": [
-   "common/legacy/doc-write.js:23",
+   "common/legacy/doc-write.js:22",
    "common/legacy/ppt-write.js:105",
    "common/legacy/xls-write.js:90"
   ]
@@ -18561,7 +18661,7 @@
  },
  "Malgun Gothic": {
   "where": [
-   "common/core.js:592"
+   "common/core.js:594"
   ]
  },
  "Manual Line Break": {
@@ -18796,7 +18896,7 @@
  },
  "Meiryo UI": {
   "where": [
-   "common/core.js:591"
+   "common/core.js:593"
   ]
  },
  "Memos": {
@@ -18860,7 +18960,7 @@
  },
  "Microsoft JhengHei": {
   "where": [
-   "common/core.js:599"
+   "common/core.js:601"
   ]
  },
  "Microsoft Word 2003": {
@@ -18890,7 +18990,7 @@
  },
  "Microsoft YaHei": {
   "where": [
-   "common/core.js:595"
+   "common/core.js:597"
   ]
  },
  "Middle": {
@@ -19944,12 +20044,12 @@
  },
  "Not installed": {
   "where": [
-   "common/core.js:654"
+   "common/core.js:656"
   ]
  },
  "Not installed; uses {0}": {
   "where": [
-   "common/core.js:654"
+   "common/core.js:656"
   ]
  },
  "Not {0}": {
@@ -20029,26 +20129,26 @@
  },
  "Noto Sans CJK SC": {
   "where": [
-   "common/core.js:598",
-   "common/core.js:701"
+   "common/core.js:600",
+   "common/core.js:703"
   ]
  },
  "Noto Sans SC": {
   "where": [
-   "common/core.js:598",
-   "common/core.js:701"
+   "common/core.js:600",
+   "common/core.js:703"
   ]
  },
  "Noto Serif CJK SC": {
   "where": [
-   "common/core.js:598",
-   "common/core.js:701"
+   "common/core.js:600",
+   "common/core.js:703"
   ]
  },
  "Noto Serif SC": {
   "where": [
-   "common/core.js:598",
-   "common/core.js:701"
+   "common/core.js:600",
+   "common/core.js:703"
   ]
  },
  "Nud&ge": {
@@ -20861,7 +20961,7 @@
  },
  "PICT pictures cannot be converted yet": {
   "where": [
-   "common/legacy/officeart.js:57"
+   "common/legacy/officeart.js:75"
   ]
  },
  "PNG Graphics Format, current slide (*.png)": {
@@ -21111,7 +21211,7 @@
  },
  "Palatino Linotype": {
   "where": [
-   "common/core.js:698",
+   "common/core.js:700",
    "quire/js/dialogs.js:841"
   ]
  },
@@ -21630,12 +21730,6 @@
  "Pictures and drawing": {
   "where": [
    "quire/js/panes.js:97"
-  ]
- },
- "Pictures and drawing objects were not kept": {
-  "where": [
-   "common/legacy/doc-text.js:42",
-   "common/legacy/doc-write.js:20"
   ]
  },
  "Pictures in album:": {
@@ -22763,7 +22857,7 @@
  },
  "Recently Used Fonts": {
   "where": [
-   "common/core.js:715"
+   "common/core.js:717"
   ]
  },
  "Recently used": {
@@ -23034,7 +23128,7 @@
  },
  "Reload fonts on your computer...": {
   "where": [
-   "common/core.js:709"
+   "common/core.js:711"
   ]
  },
  "Remember dime&nsions for new tables": {
@@ -25618,7 +25712,7 @@
  },
  "Save As": {
   "where": [
-   "common/core.js:301",
+   "common/core.js:303",
    "lectern/js/dialogs.js:964",
    "ledger/js/dialogs.js:667",
    "ledger/js/panes.js:129"
@@ -26004,7 +26098,7 @@
  },
  "Segoe UI": {
   "where": [
-   "common/core.js:698"
+   "common/core.js:700"
   ]
  },
  "Sele&ct": {
@@ -27487,14 +27581,29 @@
    "common/legacy/doc-settings.js:48"
   ]
  },
+ "Some drawing anchors could not be read": {
+  "where": [
+   "common/legacy/doc-draw-read.js:282"
+  ]
+ },
  "Some drawing formatting could not be kept": {
   "where": [
    "common/legacy/ppt-shapes.js:13"
   ]
  },
+ "Some drawing formatting could not be read": {
+  "where": [
+   "common/legacy/doc-draw-read.js:90"
+  ]
+ },
  "Some drawing objects could not be kept": {
   "where": [
    "common/legacy/ppt-shapes.js:13"
+  ]
+ },
+ "Some drawing objects could not be read": {
+  "where": [
+   "common/legacy/doc-draw-read.js:270"
   ]
  },
  "Some drop-down choices were shortened or not kept": {
@@ -27564,6 +27673,7 @@
  },
  "Some picture color adjustments could not be kept": {
   "where": [
+   "common/legacy/doc-draw-write.js:376",
    "common/legacy/ppt-shapes.js:13"
   ]
  },
@@ -27624,6 +27734,11 @@
  "Some text-box positioning could not be kept": {
   "where": [
    "common/legacy/ppt-text.js:9"
+  ]
+ },
+ "Some text-box positions could not be read": {
+  "where": [
+   "common/legacy/doc-draw-read.js:275"
   ]
  },
  "Some workbook formatting could not be read": {
@@ -27736,12 +27851,12 @@
  },
  "Source Han Sans SC": {
   "where": [
-   "common/core.js:597"
+   "common/core.js:599"
   ]
  },
  "Source Han Serif SC": {
   "where": [
-   "common/core.js:597"
+   "common/core.js:599"
   ]
  },
  "Source: (the Quire clipboard is empty — copy something first, or press Ctrl+V)": {
@@ -29256,9 +29371,14 @@
    "common/legacy/xls-write.js:13"
   ]
  },
- "Text boxes and their text were not kept": {
+ "Text boxes contain a loop": {
   "where": [
-   "common/legacy/doc-write.js:19"
+   "common/legacy/doc-draw-write.js:117"
+  ]
+ },
+ "Text boxes with missing text positions could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-read.js:388"
   ]
  },
  "Text control": {
@@ -29679,6 +29799,22 @@
    "quire/js/review.js:456"
   ]
  },
+ "The drawing has invalid dimensions": {
+  "where": [
+   "common/legacy/doc-draw-write.js:207",
+   "common/legacy/doc-draw-write.js:484"
+  ]
+ },
+ "The embedded object has no readable picture": {
+  "where": [
+   "common/legacy/doc-draw-read.js:198"
+  ]
+ },
+ "The embedded object picture is damaged": {
+  "where": [
+   "common/legacy/doc-draw-read.js:204"
+  ]
+ },
  "The error check of the entire sheet is complete.": {
   "where": [
    "ledger/js/dialogs3.js:344",
@@ -29735,12 +29871,12 @@
  },
  "The fonts on this computer could not be listed: permission was not given. You can allow it in the site settings of your browser.": {
   "where": [
-   "common/core.js:729"
+   "common/core.js:731"
   ]
  },
  "The fonts on this computer could not be listed: {0}": {
   "where": [
-   "common/core.js:729",
+   "common/core.js:731",
    "start.js:295"
   ]
  },
@@ -29808,7 +29944,7 @@
  },
  "The metafile is too large": {
   "where": [
-   "common/legacy/officeart.js:55"
+   "common/legacy/officeart.js:73"
   ]
  },
  "The name is too long.": {
@@ -29919,12 +30055,35 @@
  },
  "The picture data is missing": {
   "where": [
-   "common/legacy/officeart.js:86"
+   "common/legacy/doc-draw-write.js:344",
+   "common/legacy/officeart.js:110"
+  ]
+ },
+ "The picture has no readable image data": {
+  "where": [
+   "common/legacy/doc-draw-read.js:161"
+  ]
+ },
+ "The picture has no usable size": {
+  "where": [
+   "common/legacy/doc-draw-read.js:181",
+   "common/legacy/doc-draw-read.js:211",
+   "common/legacy/doc-draw-read.js:214"
+  ]
+ },
+ "The picture header is damaged": {
+  "where": [
+   "common/legacy/doc-draw-read.js:166"
   ]
  },
  "The picture is too large": {
   "where": [
    "common/legacy/images.js:22"
+  ]
+ },
+ "The picture shape is missing": {
+  "where": [
+   "common/legacy/doc-draw-read.js:172"
   ]
  },
  "The pivot source changed. Excel will refresh its cached result when the file opens.": {
@@ -30014,8 +30173,8 @@
  },
  "The shape fill picture is missing": {
   "where": [
-   "common/legacy/shapes.js:75",
-   "common/legacy/shapes.js:132"
+   "common/legacy/shapes.js:76",
+   "common/legacy/shapes.js:133"
   ]
  },
  "The shape geometry has a missing guide": {
@@ -30056,6 +30215,11 @@
  "The slide containing these comments was deleted.": {
   "where": [
    "lectern/js/comments.js:208"
+  ]
+ },
+ "The spacing around a picture border could not be kept": {
+  "where": [
+   "common/legacy/doc-draw-write.js:198"
   ]
  },
  "The speller and other proofing tools use the dictionaries of the selected language.": {
@@ -30242,7 +30406,7 @@
  },
  "Theme Fonts": {
   "where": [
-   "common/core.js:711"
+   "common/core.js:713"
   ]
  },
  "Themes": {
@@ -30336,7 +30500,7 @@
  },
  "There isn't enough space on the disk to save “{0}”. Your file hasn't changed.": {
   "where": [
-   "common/core.js:280"
+   "common/core.js:282"
   ]
  },
  "Thesaurus": {
@@ -30712,7 +30876,7 @@
  },
  "This legacy shape needs a VML preset definition": {
   "where": [
-   "common/legacy/shapes.js:125"
+   "common/legacy/shapes.js:126"
   ]
  },
  "This link goes to:": {
@@ -30740,9 +30904,14 @@
    "lectern/js/app.js:1349"
   ]
  },
+ "This picture format cannot be converted yet": {
+  "where": [
+   "common/legacy/doc-draw-read.js:167"
+  ]
+ },
  "This picture uses an unsupported format": {
   "where": [
-   "common/legacy/officeart.js:61"
+   "common/legacy/officeart.js:79"
   ]
  },
  "This pivot table will be saved as plain cells, because a column it uses was deleted from its source data.": {
@@ -30810,8 +30979,8 @@
  },
  "This shape uses an unsupported fill": {
   "where": [
-   "common/legacy/shapes.js:89",
-   "common/legacy/shapes.js:139"
+   "common/legacy/shapes.js:90",
+   "common/legacy/shapes.js:140"
   ]
  },
  "This shape uses an unsupported geometry operation": {
@@ -30924,7 +31093,7 @@
  },
  "Times New Roman": {
   "where": [
-   "common/core.js:698",
+   "common/core.js:700",
    "lectern/js/dialogs.js:999",
    "quire/js/dialogs.js:126",
    "quire/js/dialogs.js:173"
@@ -31438,7 +31607,7 @@
  },
  "Trebuchet MS": {
   "where": [
-   "common/core.js:698",
+   "common/core.js:700",
    "lectern/js/dialogs.js:999",
    "lectern/js/model.js:86",
    "lectern/js/model.js:163"
@@ -31840,7 +32009,7 @@
  },
  "Unsupported metafile compression": {
   "where": [
-   "common/legacy/officeart.js:53"
+   "common/legacy/officeart.js:71"
   ]
  },
  "Unsupported noncontiguous bitmap channel": {
@@ -31850,7 +32019,7 @@
  },
  "Unsupported perspective shape shadow": {
   "where": [
-   "common/legacy/shapes.js:104"
+   "common/legacy/shapes.js:105"
   ]
  },
  "Unsupported property-set byte order": {
@@ -32218,7 +32387,7 @@
  },
  "Versions": {
   "where": [
-   "common/core.js:324"
+   "common/core.js:326"
   ]
  },
  "Vertical": {
@@ -32513,7 +32682,7 @@
  },
  "WenQuanYi Micro Hei": {
   "where": [
-   "common/core.js:596"
+   "common/core.js:598"
   ]
  },
  "West": {
@@ -33068,22 +33237,22 @@
  },
  "Yu Gothic": {
   "where": [
-   "common/core.js:590"
+   "common/core.js:592"
   ]
  },
  "Yu Gothic Light": {
   "where": [
-   "common/core.js:590"
+   "common/core.js:592"
   ]
  },
  "Yu Gothic UI": {
   "where": [
-   "common/core.js:590"
+   "common/core.js:592"
   ]
  },
  "Yu Mincho": {
   "where": [
-   "common/core.js:590"
+   "common/core.js:592"
   ]
  },
  "ZIP Code": {
@@ -33637,7 +33806,7 @@
  },
  "{0} (Read-Only)": {
   "where": [
-   "common/core.js:292"
+   "common/core.js:294"
   ]
  },
  "{0} (hidden)": {
@@ -33692,7 +33861,7 @@
  },
  "{0} KB": {
   "where": [
-   "common/core.js:321",
+   "common/core.js:323",
    "start.js:113"
   ]
  },
@@ -33744,7 +33913,7 @@
  },
  "{0} doesn't save “{1}”.": {
   "where": [
-   "common/core.js:386"
+   "common/core.js:388"
   ]
  },
  "{0} entries marked.": {
@@ -33789,17 +33958,17 @@
  },
  "{0} hasn't kept any earlier versions of “{1}”. It keeps the version a save replaces, for 30 days.": {
   "where": [
-   "common/core.js:319"
+   "common/core.js:321"
   ]
  },
  "{0} is not installed on this computer, so its text is shown in a default font. The document keeps the font name {0} and shows in that font on computers that have it.": {
   "where": [
-   "common/core.js:655"
+   "common/core.js:657"
   ]
  },
  "{0} is not installed on this computer, so its text is shown in {1}. The document keeps the font name {0} and shows in that font on computers that have it.": {
   "where": [
-   "common/core.js:656"
+   "common/core.js:658"
   ]
  },
  "{0} is not installed on this computer; a default font is used on screen and in print.": {
@@ -33959,12 +34128,12 @@
  },
  "{1} can't save “{0}”: it is read-only, or you don't have permission to change it. Your file hasn't changed.": {
   "where": [
-   "common/core.js:276"
+   "common/core.js:278"
   ]
  },
  "{1} doesn't have permission to save “{0}” in its folder. Allow {1} into the folder, or save this version under another name? Your file hasn't changed.": {
   "where": [
-   "common/core.js:278"
+   "common/core.js:280"
   ]
  },
  "{none}": {
@@ -33985,22 +34154,22 @@
  },
  "“{0}” couldn't be saved: {1} Your file hasn't changed.": {
   "where": [
-   "common/core.js:354"
+   "common/core.js:356"
   ]
  },
  "“{0}” is no longer where it was: it was moved, renamed or deleted.": {
   "where": [
-   "common/core.js:275"
+   "common/core.js:277"
   ]
  },
  "“{0}” is open in another program, which is keeping it from being changed. Your file hasn't changed.": {
   "where": [
-   "common/core.js:279"
+   "common/core.js:281"
   ]
  },
  "“{0}” is open in another {1} window. Close it there, or choose another name.": {
   "where": [
-   "common/core.js:305"
+   "common/core.js:307"
   ]
  },
  "“{0}” is over 50 MB, so its changes aren't kept for recovery after a crash. Save it to keep them.": {
@@ -34010,7 +34179,7 @@
  },
  "“{0}” was changed by another program after you opened it. Replace it with this version, or save this version under another name?": {
   "where": [
-   "common/core.js:274"
+   "common/core.js:276"
   ]
  },
  "▶ Play": {

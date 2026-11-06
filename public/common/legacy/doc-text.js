@@ -36,10 +36,39 @@
           if(ch===20){flush();const f=fields.at(-1);if(f){if(f.keep&&!f.result)chunks.push(w('fldChar',{fldCharType:'separate'}));f.result=true;}continue;}
           if(ch===21){flush();const f=fields.pop();if(f?.keep)chunks.push(w('fldChar',{fldCharType:'end'}));continue;}
           if(fields.some(f=>!f.keep&&!f.result))continue;
+          // CFData in an instruction belongs to the field's metadata (REF,
+          // PAGEREF, PRIVATE and localized field names also use it). It is
+          // not an embedded object or a displayed picture.
+          if (ch === 1 && c.data && fields.at(-1)?.keep && !fields.at(-1).result && !c.ole && !c.object) {
+            flush();
+            continue;
+          }
+          const drawing = D.draw.at(book, i, options.part || 'word/document.xml', place);
+          if (drawing) {
+            flush();
+            chunks.push(drawing);
+            if (c.ole || c.object)
+              D.notice(book, 'legacy-word-object', N('An embedded object was kept only as a picture'), place, true);
+          }
           const note=options.main?book.noteAt.get(i):null;
           if(note){flush();chunks.push(w(note.kind+'Reference',{id:note.id,customMarkFollows:note.automatic?null:1}));if(note.automatic&&ch===2)continue;}
           if(ch===2){flush();if(options.note)chunks.push(w(options.note+'Ref'));else if(!note)D.notice(book,'legacy-word-note-reference',N('A note reference without a matching note was not kept'),where,true);continue;}
-          if(ch===1||ch===8){flush();if(ch===1&&fields.at(-1)?.node?.formMark===i)continue;D.notice(book,'legacy-word-picture',N('Pictures and drawing objects were not kept'),where,true);book.textStats.objects++;continue;}
+          if (ch === 1 || ch === 8) {
+            flush();
+            if (ch === 1 && fields.at(-1)?.node?.formMark === i) continue;
+            if (ch === 8 && !book.draw.at.has(i))
+              D.notice(
+                book,
+                'legacy-word-picture',
+                N('A drawing with no matching shape could not be kept'),
+                place,
+                true
+              );
+            if (ch === 1 && !drawing && !book.draw.handledMarkers.has(i))
+              D.notice(book, 'legacy-word-object', N('An embedded object could not be kept'), place, true);
+            book.textStats.objects++;
+            continue;
+          }
           if(ch===5){flush();if(options.comment)chunks.push(w('annotationRef'));else if(!book.commentAt.has(i))D.notice(book,'legacy-word-comments',N('A comment reference without a matching comment was not kept'),where,true);continue;}
           if(ch===9){flush();chunks.push(w('tab'));continue;}
           if(ch===11||ch===12||ch===14){flush();chunks.push(w('br',{type:ch===12?'page':ch===14?'column':null,clear:ch===11?['none','left','right','all'][c.breakClear]:null}));continue;}
@@ -54,6 +83,8 @@
         cp=stop;
       }
       xml.append(D.markup.at(book,range,end));if(z===range.end&&end!==z)xml.append(D.markup.at(book,range,z));
+      const drawing = D.draw.at(book, end, options.part || 'word/document.xml', place);
+      if (drawing) xml.append(w('r', {}, drawing));
       const note=options.main&&mark?book.noteAt.get(end):null;
       if(note)xml.append(w('r',{},w(note.kind+'Reference',{id:note.id,customMarkFollows:note.automatic?null:1})));
       xml.end();book.textStats.paragraphs++;
@@ -74,7 +105,7 @@
         const range=headers.get(6+i*6+slot);if(!range?.present)continue;
         const kind=[0,1,4].includes(slot)?'header':'footer',type=slot===0||slot===2?'even':slot>=4?'first':'default';
         const index=kind==='header'?++header:++footer,name=kind+index+'.xml',where=(kind==='header'?'Header':'Footer')+' '+index;
-        const content=D.storyXML(book,range,where);pkg.add('word/'+name,D.part(kind==='header'?'hdr':'ftr',content),ct+kind+'+xml');
+        const content=D.storyXML(book,range,where,{part:'word/'+name});pkg.add('word/'+name,D.part(kind==='header'?'hdr':'ftr',content),ct+kind+'+xml');
         section.references+=w(kind+'Reference',{type,'r:id':pkg.rel(main,kind,name)});
       }
     }
@@ -82,11 +113,11 @@
       if(!list.length)continue;let body='';
       for(let i=0;i<2;i++){
         const range=headers.get(base+i),type=i?'continuationSeparator':'separator';
-        const content=range?.present?D.storyXML(book,range,kind+' '+type,{separator:true}):w('p',{},w('r',{},w(type)));
+        const content=range?.present?D.storyXML(book,range,kind+' '+type,{separator:true,part:'word/'+kind+'s.xml'}):w('p',{},w('r',{},w(type)));
         body+=w(kind,{type,id:i-1},content);
       }
-      const notice=headers.get(base+2);if(notice?.present)body+=w(kind,{type:'continuationNotice',id:list.length+1},D.storyXML(book,notice,kind+' continuation notice',{separator:true}));
-      for(const note of list)body+=w(kind,{id:note.id},D.storyXML(book,note,note.where,{note:kind}));
+      const notice=headers.get(base+2);if(notice?.present)body+=w(kind,{type:'continuationNotice',id:list.length+1},D.storyXML(book,notice,kind+' continuation notice',{separator:true,part:'word/'+kind+'s.xml'}));
+      for(const note of list)body+=w(kind,{id:note.id},D.storyXML(book,note,note.where,{note:kind,part:'word/'+kind+'s.xml'}));
       pkg.add('word/'+kind+'s.xml',D.part(kind+'s',body),ct+kind+'s+xml');pkg.rel(main,kind+'s',kind+'s.xml');
     }
     book.textStats.headers=header;book.textStats.footers=footer;

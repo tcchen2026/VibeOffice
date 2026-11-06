@@ -11,7 +11,7 @@
     'xls-style-ext', 'xls-style', 'xls-sheet', 'xls-functions', 'xls-formula', 'xls-formula-book',
     'xls-misc', 'xls-dxf', 'xls-rules', 'xls-comments', 'xls-write',
     'doc-sprm', 'doc-structure', 'doc-style', 'doc-lists', 'doc-xml', 'doc-settings',
-    'doc-fields', 'doc-markup', 'doc-table-props', 'doc-tables', 'doc-text', 'doc-write',
+    'doc-fields', 'doc-markup', 'doc-table-props', 'doc-tables', 'doc-draw-read', 'doc-draw-write', 'doc-text', 'doc-write',
     'ppt-structure', 'ppt-package', 'ppt-theme', 'ppt-text-read', 'ppt-text', 'ppt-text-design', 'ppt-text-write',
     'ppt-shapes', 'ppt-tables', 'ppt-links', 'ppt-features', 'ppt-write'];
   const N = (s) => s;

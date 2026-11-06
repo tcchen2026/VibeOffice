@@ -112,7 +112,7 @@
     // OfficeArt frame/body properties inherit through hspMaster. A Boolean
     // property's upper half marks which lower bits override the master.
     const defaults=new Map(),shapes=new Map(),owners=new Map(),resolved=new Set(),active=new Set();
-    const merge=(into,from)=>{for(const [id,p]of from){const prior=into.get(id);if(prior&&!p.complex&&(id&63)===63){const used=p.value>>>16;into.set(id,{...p,value:(((prior.value>>>16)|used)<<16|((prior.value&~used)|(p.value&used))&65535)>>>0});}else into.set(id,p);}return into;};
+    const merge = A.mergeProperties;
     for(const dgg of book.documentRecords.filter(r=>r.type===1035))for(const root of P.children(dgg,e=>envReport('drawing',e)))if(root.type===0xf000)for(const rec of P.children(root,e=>envReport('drawing',e)))if([0xf00b,0xf122].includes(rec.type))try{merge(defaults,A.properties(rec));}catch(e){if(e.name!=='LegacyError')throw e;envReport('drawing',e);}
     const collect=(list,page)=>{for(const s of list){if(!shapes.has(s.id))shapes.set(s.id,s);owners.set(s,page);collect(s.children||[],page);}};for(const page of pages)collect(page.textShapes,page);
     const resolve=(s,depth=0)=>{if(resolved.has(s))return s.properties;if(active.has(s)||depth>B.limits.depth){owners.get(s).textReport('drawing','Cyclic master shape');return defaults;}active.add(s);const master=shapes.get(s.properties.get(769)?.value),props=new Map(master?resolve(master,depth+1):defaults);s.properties=merge(props,s.properties);active.delete(s);resolved.add(s);return s.properties;};

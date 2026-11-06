@@ -1,6 +1,7 @@
 /* WordprocessingML formatting, using the binary properties decoded by doc-sprm.
  * MS-DOC property definitions and ECMA-376 Part 1 §17.3/17.6/17.7/17.9.
  * XML ordering and defaults follow Office-authored WordprocessingML files.
+ * Derived from Apache OpenOffice sw/source/filter/ww8/ww8par6.cxx (Apache-2.0): paragraph frame anchors.
  * Derived from Open XML SDK data/schemas/schemas_openxmlformats_org_wordprocessingml_2006_main.json (MIT): property ordering. */
 (function(root){
   'use strict';
@@ -52,11 +53,27 @@
     if(options.style){const inherited=options.style.p;p={...p};for(const key of Object.keys(p))if(JSON.stringify(p[key])===JSON.stringify(inherited[key]))delete p[key];}
     let out='';if(options.style)out+=v('pStyle',options.style.id);
     out+=flag('keepNext',p.keepNext)+flag('keepLines',p.keepLines)+flag('pageBreakBefore',p.pageBreakBefore);
-    if(p.frameWidth!=null||p.frameX!=null||p.frameY!=null){
-      const vertical=(p.frameAnchor||0)&3,horizontal=((p.frameAnchor||0)>>>2)&3;
-      out+=w('framePr',{w:p.frameWidth,h:p.frameHeight==null?null:p.frameHeight&32767,hRule:p.frameHeight==null?null:p.frameHeight&32768?'exact':'atLeast',hSpace:p.frameHSpace,vSpace:p.frameVSpace,wrap:['auto','notBeside','around','tight','through','none'][p.frameWrap],vAnchor:['margin','page','text'][vertical],hAnchor:['text','margin','page'][horizontal],
-        x:p.frameX>=0?p.frameX:null,xAlign:p.frameX<0?({[-4]:'center',[-8]:'right',[-12]:'inside',[-16]:'outside',[-0]:'left'})[p.frameX]:null,
-        y:p.frameY>=0?p.frameY:null,yAlign:p.frameY<0?({[-4]:'top',[-8]:'center',[-12]:'bottom',[-16]:'inside',[-20]:'outside'})[p.frameY]:null});
+    if (p.frameWidth != null || p.frameX != null || p.frameY != null) {
+      const vertical = ((p.frameAnchor || 0) >>> 4) & 3,
+        horizontal = ((p.frameAnchor || 0) >>> 6) & 3;
+      const xa = { 0: 'left', [-4]: 'center', [-8]: 'right', [-12]: 'inside', [-16]: 'outside' }[p.frameX],
+        ya = { 0: 'inline', [-4]: 'top', [-8]: 'center', [-12]: 'bottom', [-16]: 'inside', [-20]: 'outside' }[
+          p.frameY
+        ];
+      out += w('framePr', {
+        w: p.frameWidth,
+        h: p.frameHeight == null ? null : p.frameHeight & 32767,
+        hRule: p.frameHeight == null ? null : p.frameHeight & 32768 ? 'exact' : 'atLeast',
+        hSpace: p.frameHSpace,
+        vSpace: p.frameVSpace,
+        wrap: ['auto', 'notBeside', 'around', 'none', 'tight', 'through'][p.frameWrap],
+        vAnchor: ['margin', 'page', 'text'][vertical],
+        hAnchor: ['text', 'margin', 'page'][horizontal],
+        x: p.frameX == null || xa ? null : p.frameX - 1,
+        xAlign: xa,
+        y: p.frameY == null || ya ? null : p.frameY - 1,
+        yAlign: ya
+      });
     }
     out+=flag('widowControl',p.widowControl);
     const list=options.noList?null:D.listFor(book,p,where);

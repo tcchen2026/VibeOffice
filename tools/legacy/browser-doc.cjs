@@ -13,6 +13,7 @@ const fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwr
    for(const [i,file] of (app==='quire'?files:files.slice(0,1)).entries()){
     const result=await page.evaluate(async({source,extension})=>{const r=await L.legacy.doc.convert(Uint8Array.from(atob(source),c=>c.charCodeAt(0)),{extension});window.__legacyConversion=r;return {type:r.type,stats:r.stats,bytes:r.pkg.length};},{source:fs.readFileSync('/work/corpora/'+file).toString('base64'),extension:path.extname(file)});
     if(app==='quire'){
+     fs.writeFileSync(path.join(out,'converted-'+i+'.docx'),Buffer.from(await page.evaluate(()=>Array.from(window.__legacyConversion.pkg))));
      await page.evaluate(async()=>{VO.opened=()=>{};const {doc}=await L.docx.read(window.__legacyConversion.pkg.buffer);L.app.loadDoc(doc,'Legacy Word',{saved:true});await document.fonts.ready;L.layout.render();});
      await page.waitForTimeout(900);
      const saved=await page.evaluate(async()=>{

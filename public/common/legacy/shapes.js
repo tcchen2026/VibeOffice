@@ -56,8 +56,9 @@
     return (angle > 45 && angle <= 135 || angle > 225 && angle <= 315) ?
       { ...rect, x: rect.x + (rect.cx - rect.cy) / 2, y: rect.y + (rect.cy - rect.cx) / 2, cx: rect.cy, cy: rect.cx } : rect;
   };
-  S.transform = function (shape, rect, group = false) {
+  S.transform = function (shape, rect, group = false, local = false) {
     rect = S.anchorRect(shape, rect);
+    if (local) rect = { ...rect, x: 0, y: 0 };
     const attrs = { rot: shape.properties.has(4) ? Math.round(signed(shape, 4) / 65536 * 60000) : null, flipH: shape.flags & 64 ? 1 : null, flipV: shape.flags & 128 ? 1 : null };
     let body = el('a:off', { x: Math.round(rect.x), y: Math.round(rect.y) }) + el('a:ext', { cx: Math.max(0, Math.round(rect.cx)), cy: Math.max(0, Math.round(rect.cy)) });
     if (group) { const c = shape.coord || { left: 0, top: 0, right: rect.cx, bottom: rect.cy }; body += el('a:chOff', { x: c.left, y: c.top }) + el('a:chExt', { cx: Math.max(1, c.right - c.left), cy: Math.max(1, c.bottom - c.top) }); }
@@ -124,7 +125,7 @@
     if (shape.properties.has(325) || !tag) { path = S.path(shape); tag = 'v:shape'; }
     if (!tag) B.fail('SHAPE_VML', N('This legacy shape needs a VML preset definition'));
     const style = 'position:absolute;margin-left:' + rect.x / 12700 + 'pt;margin-top:' + rect.y / 12700 + 'pt;width:' + rect.cx / 12700 + 'pt;height:' + rect.cy / 12700 + 'pt;rotation:' + signed(shape, 4) / 65536 + ((shape.flags & 192) ? ';flip:' + (shape.flags & 64 ? 'x' : '') + (shape.flags & 128 ? 'y' : '') : '');
-    const attrs = { id, 'o:spid': id, style, filled: bool(shape, 447, 4, ![20, 202].includes(shape.type)) ? 't' : 'f', stroked: bool(shape, 511, 3, ![75, 202].includes(shape.type)) ? 't' : 'f', fillcolor: '#' + S.color(get(shape, 385, 0xffffff), context, shape), strokecolor: '#' + S.color(get(shape, 448), context, shape), strokeweight: signed(shape, 459, 9525) / 12700 + 'pt' };
+    const attrs = { id, 'o:spid': id, style: context.style ?? style, filled: bool(shape, 447, 4, ![20, 202].includes(shape.type)) ? 't' : 'f', stroked: bool(shape, 511, 3, ![75, 202].includes(shape.type)) ? 't' : 'f', fillcolor: '#' + S.color(get(shape, 385, 0xffffff), context, shape), strokecolor: '#' + S.color(get(shape, 448), context, shape), strokeweight: signed(shape, 459, 9525) / 12700 + 'pt', ...context.attributes };
     if (path) { attrs.coordorigin = '0,0'; attrs.coordsize = path.width + ',' + path.height; attrs.path = path.paths.map(p => p.commands.map(c => ({ M: 'm', L: 'l', C: 'c', Q: 'qb', Z: 'x' })[c.op] + c.pts.flat().map(Math.round).join(',')).join('') + (p.fill ? '' : 'nf') + (p.stroke ? '' : 'ns') + 'e').join(''); }
     if (tag === 'v:line') { attrs.from = '0,0'; attrs.to = rect.cx / 12700 + 'pt,' + rect.cy / 12700 + 'pt'; }
     if (tag === 'v:roundrect') attrs.arcsize = signed(shape, 327, 5400) / 21600;
@@ -141,8 +142,9 @@
     const arrows = ['none', 'block', 'classic', 'diamond', 'oval', 'open'], sizes = ['narrow', 'medium', 'wide'], lengths = ['short', 'medium', 'long'];
     body += el('v:stroke', { opacity: get(shape, 449, 65536) / 65536, startarrow: arrows[get(shape, 464)] || 'none', endarrow: arrows[get(shape, 465)] || 'none', startarrowwidth: sizes[get(shape, 466, 1)], startarrowlength: lengths[get(shape, 467, 1)], endarrowwidth: sizes[get(shape, 468, 1)], endarrowlength: lengths[get(shape, 469, 1)], dashstyle: ['solid', 'shortdash', 'shortdot', 'shortdashdot', 'shortdashdotdot', 'dot', 'dash', 'longdash', 'dashdot', 'longdashdot', 'longdashdotdot'][get(shape, 462)] });
     if (bool(shape, 575, 1, false)) body += el('v:shadow', { on: 't', type: 'single', color: '#' + S.color(get(shape, 513, 0x808080), context, shape), opacity: get(shape, 516, 65536) / 65536, offset: signed(shape, 517, 25400) / 12700 + 'pt,' + signed(shape, 518, 25400) / 12700 + 'pt' });
-    if (context.imageRel) { const rid = context.imageRel(get(shape, 260)); if (rid) body += el('v:imagedata', { 'r:id': rid, 'o:title': '' }); }
-    if (context.text) body += el('v:textbox', { inset: [129, 130, 131, 132].map((id, i) => signed(shape, id, i % 2 ? 45720 : 91440) / 12700 + 'pt').join(',') }, context.text);
-    return el(tag, attrs, body);
+    if (context.imageRel) { const rid = context.imageRel(get(shape, 260)); if (rid) body += el('v:imagedata', { 'r:id': rid, 'o:title': '', ...context.imageAttributes }); }
+    const text = typeof context.text === 'function' ? context.text() : context.text;
+    if (text) body += el('v:textbox', { inset: [129, 130, 131, 132].map((id, i) => signed(shape, id, i % 2 ? 45720 : 91440) / 12700 + 'pt').join(','), ...context.textboxAttributes }, text);
+    return el(tag, attrs, body + (context.tail || ''));
   };
 })(typeof window !== 'undefined' ? window : globalThis);

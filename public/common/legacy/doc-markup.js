@@ -98,7 +98,7 @@
   M.writeComments=function(book,pkg){
     if(!book.comments.length)return;
     let body='';for(const c of book.comments){
-      body+=w('comment',{id:c.id,author:c.author.slice(0,255),initials:c.initials,date:c.date},D.storyXML(book,c.body,c.where,{comment:true}));book.markupStats.comments++;
+      body+=w('comment',{id:c.id,author:c.author.slice(0,255),initials:c.initials,date:c.date},D.storyXML(book,c.body,c.where,{comment:true,part:'word/comments.xml'}));book.markupStats.comments++;
     }
     pkg.add('word/comments.xml',D.part('comments',body),'application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml');pkg.rel('word/document.xml','comments','comments.xml');
   };

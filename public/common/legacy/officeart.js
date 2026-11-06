@@ -45,6 +45,24 @@
     if (!size && count) B.fail('OFFICEART_ARRAY', N('Invalid OfficeArt array element size'));
     r.check(6, count * size); return Array.from({ length: count }, (_, i) => r.reader(6 + i * size, size));
   };
+  // Boolean property groups inherit each flag independently; the high word
+  // says which low-word bits are explicitly set by this property block.
+  A.mergeProperties = function (into, from) {
+    for (const [id, p] of from) {
+      const prior = into.get(id);
+      if (prior && !p.complex && (id & 63) === 63) {
+        const used = p.value >>> 16;
+        into.set(id, {
+          ...p,
+          value:
+            ((((prior.value >>> 16) | used) << 16) |
+              (((prior.value & ~used) | (p.value & used)) & 65535)) >>>
+            0
+        });
+      } else into.set(id, p);
+    }
+    return into;
+  };
   A.blip = async function (record) {
     const r = record.r, type = record.type, secondUID = record.instance & 1; let p = secondUID ? 32 : 16; r.check(0, p);
     if ([0xf01a, 0xf01b, 0xf01c].includes(type)) {
@@ -78,10 +96,16 @@
             if (r.length >= inlineAt + 8) return A.blip(A.record(r, inlineAt));
             // Word permits a fallback stream for pictures; the host supplies it explicitly.
             const streams = Array.isArray(delayed) ? delayed : [delayed]; let last;
-            for (const bytes of streams) if (bytes) {
-              try { return await A.blip(A.record(bytes, offset)); }
-              catch (e) { if (e.name !== 'LegacyError') throw e; last = e; }
-            }
+            for (const source of streams)
+              if (source) {
+                try {
+                  const bytes = typeof source === 'function' ? source() : source;
+                  if (bytes) return await A.blip(A.record(bytes, offset));
+                } catch (e) {
+                  if (!['LegacyError', 'CFBError'].includes(e.name)) throw e;
+                  last = e;
+                }
+              }
             if (last) throw last;
             B.fail('BLIP_MISSING', N('The picture data is missing'), index);
           })()) });
