@@ -109,7 +109,8 @@
     const mods = [];
     for (const m of el.children) {
       const v = +X.at(m, 'val');
-      if (m.localName === 'alpha') alpha = v / 100000;
+      /* (Word 2010's w14 colours give a transparency where DrawingML gives an opacity) */
+      if (m.localName === 'alpha') alpha = ctx && ctx.alphaIsTransparency ? 1 - v / 100000 : v / 100000;
       else if (m.localName === 'alphaMod') alpha *= v / 100000;
       else if (m.localName === 'alphaOff') alpha += v / 100000;
       else mods.push({ name: m.localName, val: isNaN(v) ? 0 : v });

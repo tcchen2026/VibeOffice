@@ -90,6 +90,11 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
 - A font this computer lacks and the suite has no stand-in for is drawn with the font table's alternate name (`w:altName`), else
   a face of its kind (Times New Roman for `w:family="roman"`, Courier New for fixed pitch), as Word substitutes, not
   Arial (POI's bug59058.docx now shows Word's 52 pages).
+- Word 2010's text effects on text are drawn (`w14:textFill`, `textOutline`, `shadow`, `glow`): a solid fill with its
+  transparency (w14's alpha is a transparency, not DrawingML's opacity), a gradient through the letters, the outline
+  (behind the letters, a double or triple one as one thin line), shadow and glow; they are saved as they came, and a
+  colour set here replaces the fill, as in Word. Quire drew such text in its plain colour (a library calendar's cover
+  title, orange with a shadow in Word, was black). A reflection and 3-D effects are not drawn.
 - Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
   and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
   bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and

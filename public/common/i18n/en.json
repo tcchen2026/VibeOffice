@@ -9431,7 +9431,7 @@
    "quire/js/editor.js:381",
    "quire/js/find.js:391",
    "quire/js/find.js:393",
-   "quire/js/render.js:568"
+   "quire/js/render.js:605"
   ]
  },
  "Column Width": {
@@ -12857,7 +12857,7 @@
  },
  "Embedded content": {
   "where": [
-   "quire/js/render.js:390"
+   "quire/js/render.js:427"
   ]
  },
  "Embedded fonts were not kept": {
@@ -12870,7 +12870,7 @@
   "where": [
    "lectern/js/frames.js:19",
    "lectern/js/render.js:584",
-   "quire/js/render.js:390"
+   "quire/js/render.js:427"
   ]
  },
  "Embedded text styles are too large": {
@@ -13279,8 +13279,8 @@
  "Error! No text of specified style in document.": {
   "where": [
    "quire/js/fields.js:368",
-   "quire/js/layout.js:961",
-   "quire/js/layout.js:1000"
+   "quire/js/layout.js:1071",
+   "quire/js/layout.js:1110"
   ]
  },
  "Error! Not a valid footnote reference.": {
@@ -14682,7 +14682,7 @@
  },
  "Form control": {
   "where": [
-   "quire/js/render.js:390"
+   "quire/js/render.js:427"
   ]
  },
  "Forma&ts": {
@@ -21093,7 +21093,7 @@
  "Page Break": {
   "where": [
    "quire/js/editor.js:380",
-   "quire/js/render.js:568"
+   "quire/js/render.js:605"
   ]
  },
  "Page Break Pre&view": {
@@ -26088,28 +26088,28 @@
  },
  "Section Break (Continuous)": {
   "where": [
-   "quire/js/render.js:382"
+   "quire/js/render.js:419"
   ]
  },
  "Section Break (Even Page)": {
   "where": [
-   "quire/js/render.js:382"
+   "quire/js/render.js:419"
   ]
  },
  "Section Break (Next Column)": {
   "where": [
-   "quire/js/render.js:382"
+   "quire/js/render.js:419"
   ]
  },
  "Section Break (Next Page)": {
   "where": [
    "quire/js/app.js:1429",
-   "quire/js/render.js:382"
+   "quire/js/render.js:419"
   ]
  },
  "Section Break (Odd Page)": {
   "where": [
-   "quire/js/render.js:382"
+   "quire/js/render.js:419"
   ]
  },
  "Section break types": {

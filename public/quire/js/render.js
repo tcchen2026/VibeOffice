@@ -127,6 +127,36 @@
     return R.snapPx(L.round(drawn, 2)) - exact;
   };
 
+  /** Word 2010's text effects (w14) as CSS: a gradient fill painted through the letters, the outline as a stroke over
+      them, shadow and glow as text shadows; each only while the property it stands in place of is as it was read
+      (setting a colour drops the fill, as in Word) */
+  R.textEffectsCSS = function (r) {
+    const fx = r.fx, own = fx.own || {}, s = [];
+    const rgba = (c, a) => L.color.rgba(c, a);
+    if (fx.fill && (r.color || null) === (own.color || null)) {
+      const f = fx.fill;
+      if (f.t === 'none') s.push('color:transparent');
+      else if (f.t === 'solid') s.push(`color:${rgba(f.c, f.a)}`);
+      else if (f.t === 'grad' && f.stops && f.stops.length) {
+        s.push(`background-image:linear-gradient(${L.round((f.ang || 0) + 90, 2)}deg,${f.stops.map((g) => rgba(g.c, g.a) + ' ' + L.round(g.p * 100, 2) + '%').join(',')})`,
+          '-webkit-background-clip:text', 'background-clip:text', 'color:transparent');
+      }
+    }
+    if (fx.line && fx.line.t !== 'none' && !!r.outline === own.outline) {
+      /* (a gradient outline takes its first colour; a double or triple one is that many thin lines, drawn as one) */
+      const ln = fx.line, g = ln.grad && ln.grad.stops && ln.grad.stops.slice().sort((a, b) => a.p - b.p)[0];
+      const w = (ln.w || 0.75) / ({ dbl: 3, thickThin: 3, thinThick: 3, tri: 5 }[ln.cmpd] || 1);
+      s.push(`-webkit-text-stroke:${L.round(Math.max(0.25, w) * PX, 2)}px ${rgba(g ? g.c : ln.c || '#000000', g ? g.a : ln.a)}`, 'paint-order:stroke fill');
+    }
+    const shadows = [];
+    if (fx.shadow && !!r.shadow === own.shadow) {
+      const sh = fx.shadow, a = sh.dir * Math.PI / 180;
+      shadows.push(`${L.round(Math.cos(a) * sh.dist * PX, 2)}px ${L.round(Math.sin(a) * sh.dist * PX, 2)}px ${L.round(sh.blur * PX, 2)}px ${rgba(sh.c, sh.a)}`);
+    }
+    if (fx.glow && fx.glow.r) for (let i = 0; i < 2; i++) shadows.push(`0 0 ${L.round(fx.glow.r * PX, 2)}px ${rgba(fx.glow.c, fx.glow.a)}`);
+    if (shadows.length) s.push(`text-shadow:${shadows.join(',')}`);
+    return s;
+  };
   /* ---------- run CSS ---------- */
   const rcssCache = new Map();
   R.clearCaches = () => rcssCache.clear();
@@ -180,6 +210,7 @@
     if (r.shadow) s.push('text-shadow:1px 1px 0 #A0A0A0');
     if (r.emboss) s.push('text-shadow:-1px -1px 0 #FFFFFF,1px 1px 0 #808080', 'color:#D0D0D0');
     if (r.imprint) s.push('text-shadow:1px 1px 0 #FFFFFF,-1px -1px 0 #808080', 'color:#D0D0D0');
+    if (r.fx) s.push(...R.textEffectsCSS(r));
     if (r.border && R.hasBorder(r.border)) s.push(`border:${R.borderCSS(r.border)}`, 'padding:0 1px');
     if (r.kern === 0) s.push('font-kerning:none');
     if (r.w && r.w !== 100) s.push(`font-stretch:${L.clamp(r.w, 50, 200)}%`);

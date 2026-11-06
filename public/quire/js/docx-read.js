@@ -246,10 +246,29 @@
     }
 
     /* ---- run properties ---- */
+    /** Word 2010's text effects (w14): fill, outline, shadow and glow; own: the properties each stands in place of
+        (a saved w14 effect belongs to them, docs/LOSSLESS_SAVE.md), so an edit of the colour drops the fill */
+    const W14FX = 'http://schemas.microsoft.com/office/word/2010/wordml', fxCtx = { get theme() { return doc.theme; }, alphaIsTransparency: true };
+    const emuPt = (v) => (+v || 0) / 12700;
+    function textEffect(r, c) {
+      const fx = r.fx = r.fx || {};
+      switch (c.localName) {
+        case 'textFill': { const f = X.fillIn(c, fxCtx); if (f) fx.fill = f; break; }
+        case 'textOutline': { const ln = X.line(c, fxCtx); if (ln) { fx.line = ln; if (ln.t !== 'none' && X.fillIn(c, fxCtx) && X.fillIn(c, fxCtx).t === 'grad') fx.line.grad = X.fillIn(c, fxCtx); } break; }
+        case 'shadow': case 'glow': {
+          const col = X.colorOf(c, fxCtx);
+          if (col) fx[c.localName] = c.localName === 'glow' ? { r: emuPt(X.at(c, 'rad')), c: col.c, a: col.a }
+            : { blur: emuPt(X.at(c, 'blurRad')), dist: emuPt(X.at(c, 'dist')), dir: (+X.at(c, 'dir') || 0) / 60000, c: col.c, a: col.a };
+          break;
+        }
+        default: break;
+      }
+    }
     function rPr(el) {
       const r = {};
       if (!el) return r;
       for (const c of el.children) {
+        if (c.namespaceURI === W14FX) { textEffect(r, c); continue; }
         if (![L.opc.NS.w, 'http://purl.oclc.org/ooxml/wordprocessingml/main'].includes(c.namespaceURI)) continue;
         switch (c.localName) {
           case 'rStyle': r.style = at(c, 'val'); break;
@@ -303,6 +322,7 @@
           default: break;
         }
       }
+      if (r.fx) r.fx.own = { color: r.color || null, outline: !!r.outline, shadow: !!r.shadow };
       return L.preserve.properties(r, el, 'rPr', propertyContext(el));
     }
     /* a tracked move is a deletion (moveFrom) and an insertion (moveTo) to edit; the writer keeps it a move inside its ranges (preserve.js, prepareMoves) */
@@ -1470,10 +1490,11 @@
         const rPrEl = rEl && kid(rEl, 'rPr');
         const tf = rPrEl && kid(rPrEl, 'textFill');
         const to = rPrEl && kid(rPrEl, 'textOutline');
-        const tfill = tf ? X.fillIn(tf, mctx) : null;
+        const wctx = Object.assign({}, mctx, { alphaIsTransparency: true });   // (w14's alpha is a transparency)
+        const tfill = tf ? X.fillIn(tf, wctx) : null;
         it.wordart = { text, font: rp.font || 'Arial Black', sz: rp.sz || 36, b: rp.b || undefined, i: rp.i || undefined };
         it.fill = tfill || (rp.color && rp.color !== 'auto' ? { t: 'solid', c: '#' + rp.color, a: 1 } : { t: 'solid', c: '#000000', a: 1 });
-        if (to) { const ol = X.line(to, mctx); if (ol && ol.t !== 'none') it.line = ol; else it.line = { t: 'none' }; } else it.line = { t: 'none' };
+        if (to) { const ol = X.line(to, wctx); if (ol && ol.t !== 'none') it.line = ol; else it.line = { t: 'none' }; } else it.line = { t: 'none' };
         if (!it.warp) it.warp = 'textPlain';
         delete it.tb;
         delete it.ins;
