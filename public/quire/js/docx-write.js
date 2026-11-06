@@ -554,7 +554,7 @@
     let eff = '';
     if (it.gray) eff += '<a:grayscl/>';
     if (it.bw) eff += '<a:biLevel thresh="50000"/>';
-    const bright = it.washout ? 0.7 : it.bright, contrast = it.washout ? -0.75 : it.contrast;
+    const bright = it.washout ? 0.7 : it.bright, contrast = it.washout ? -0.7 : it.contrast;   // Word's Washout
     if (bright || contrast) eff += `<a:lum${bright ? ` bright="${Math.round(bright * 100000)}"` : ''}${contrast ? ` contrast="${Math.round(contrast * 100000)}"` : ''}/>`;
     if (it.alpha != null && it.alpha < 1) eff += `<a:alphaModFix amt="${Math.round(it.alpha * 100000)}"/>`;
     const blip = rid ? `<a:blip r:embed="${rid}"${eff ? `>${eff}</a:blip>` : '/>'}` : '<a:blip/>';

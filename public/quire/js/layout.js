@@ -401,8 +401,7 @@
     if (j === st.bi) j = st.bi + 1;
     /* frames placed relative to the page or margin (the default when no anchor is given), and frames
        with wrap="none" (text runs through them: page numbers in footers), sit outside the text flow */
-    /* (with no anchor the position counts from the page, but a frame with no vertical position at all stays in the text) */
-    const vPage = fp.vAnchor === 'page' || fp.vAnchor === 'margin' || (!fp.vAnchor && (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline')));
+    const vPage = frameOnPage(fp);
     if ((fp.wrap === 'none' || vPage) && frame.kind !== 'cell' && !ctx.inTextBox) return placeFrameAbs(frame, blocks, st, j, ctx, fp, fp.wrap !== 'none' && fp.wrap !== 'through' && frame.kind === 'col');
     const box = el('div', 'frm');
     const css = [];
@@ -567,7 +566,7 @@
     const xa = { left: 0, inside: 0, center: (aw - bw) / 2, right: aw - bw, outside: aw - bw };
     const x = ax0 + (fp.xAlign && xa[fp.xAlign] != null ? xa[fp.xAlign] : fp.x ? px(fp.x) : 0);
     let y;
-    if (pr && (fp.vAnchor === 'page' || fp.vAnchor === 'margin' || (!fp.vAnchor && (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline'))))) {
+    if (pr && frameOnPage(fp)) {
       const s = pg.sect || {};
       let ay0 = (pr.top - wr.top) / scale, ah = pg.H;
       if (fp.vAnchor === 'margin') { const mt = px(Math.abs(s.mt || 0)), mb = px(Math.abs(s.mb || 0)); ay0 += mt; ah = pg.H - mt - mb; }
@@ -577,6 +576,12 @@
     box.style.left = L.round(x, 2) + 'px';
     box.style.top = L.round(y, 2) + 'px';
   };
+  /* a frame placed on the page or margin, out of the text flow. With no anchor the position counts from the page,
+     but a frame with no vertical position at all stays in the text, whatever its anchor: a Word 97-2003 frame at
+     vertical position 0 ("in line"), saved without w:y, stands beside its own paragraph in Word (I24 E3); Word
+     writes w:y="1" when it means the top */
+  const frameOnPage = (fp) => (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline'))
+    ? fp.vAnchor !== 'text' : false;
   const fixAbsFrames = (root) => { for (const w of root.querySelectorAll('.frm-anchor')) LY.posAbsFrame(w); };
   /** move trailing keep-with-next paragraphs to the next frame along with the block that did not fit */
   function keepChainBreak(frame, st, ctx) {

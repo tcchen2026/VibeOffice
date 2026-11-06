@@ -453,9 +453,11 @@
       t.textContent = wm.text;
       box.appendChild(t);
     } else if (wm.type === 'picture' && wm.media) {
-      const im = el('img', null, `max-width:${page.bodyW}px;max-height:${page.H * 0.7}px;${wm.washout !== false ? 'filter:brightness(1.7) contrast(0.25);' : ''}`);
+      const im = el('img', null, `max-width:${page.bodyW}px;max-height:${page.H * 0.7}px`);
       im.src = L.media.url(wm.media);
       if (wm.scale) { im.style.width = px((wm.w || 200) * wm.scale) + 'px'; }
+      const lum = wm.washout !== false && L.lumFilter(0.7, -0.7);   // Word's Washout
+      if (lum) { im.style.filter = lum.css; box.appendChild(lum.defs); }
       box.appendChild(im);
     }
     page.el.insertBefore(box, page.el.firstChild);

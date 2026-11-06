@@ -1689,6 +1689,12 @@
       return t ? vmlTypes.get(t) || null : null;
     }
     /** fill of a VML element ({t:'none'} when unfilled) */
+    /* VML's Word border types (w10:bordertop type) by their WordprocessingML names */
+    const W10_BORDER = { dot: 'dotted', dash: 'dashed', dashDotDot: 'dotDotDash', hairline: 'single', dashedSmall: 'dashSmallGap',
+      thinThickSmall: 'thinThickSmallGap', thickThinSmall: 'thickThinSmallGap', thickBetweenThinSmall: 'thinThickThinSmallGap',
+      thinThick: 'thinThickMediumGap', thickThin: 'thickThinMediumGap', thickBetweenThin: 'thinThickThinMediumGap',
+      thinThickLarge: 'thinThickLargeGap', thickThinLarge: 'thickThinLargeGap', thickBetweenThinLarge: 'thinThickThinLargeGap',
+      HTMLOutset: 'outset', HTMLInset: 'inset' };
     function vmlFill(s, def) {
       const ty = vmlType(s);
       const filled = vBool(at(s, 'filled'), ty ? vBool(at(ty, 'filled'), def) : def);
@@ -1738,9 +1744,19 @@
         if (ct || cb || cl || cr) it.crop = { t: frac(ct), b: frac(cb), l: frac(cl), r: frac(cr) };
         if (X.bool(at(im, 'grayscale'))) it.gray = true;
         if (X.bool(at(im, 'bilevel'))) it.bw = true;
-        if (at(im, 'blacklevel')) it.bright = frac(at(im, 'blacklevel'));
-        if (at(im, 'gain')) it.contrast = frac(at(im, 'gain')) - 1;
+        // VML's blacklevel is half DrawingML's brightness and its gain is the contrast slope (L.lumFilter)
+        if (at(im, 'blacklevel')) it.bright = L.round(frac(at(im, 'blacklevel')) * 2, 5);
+        const gain = at(im, 'gain') ? frac(at(im, 'gain')) : 1;
+        if (gain !== 1 && gain > 0) it.contrast = L.round(gain >= 1 ? 1 - 1 / gain : gain - 1, 5);
         if (at(s, 'alt')) it.alt = at(s, 'alt');
+        // borders set per side in Word 97-2003 (w10:bordertop… with o:bordertopcolor; widths in eighth-points);
+        // shown, and kept in the file as they were
+        const sides = {};
+        for (const side of ['top', 'left', 'bottom', 'right']) {
+          const b = kid(s, 'border' + side), type = b && at(b, 'type');
+          if (type && type !== 'none') sides[side] = { val: W10_BORDER[type] || type, sz: (parseFloat(at(b, 'width')) || 4) / 8, color: (vColor(at(s, 'border' + side + 'color')) || '#000000').replace('#', '') };
+        }
+        if (Object.keys(sides).length) it.sides = sides;
       } else {
         let geom = { rect: 'rect', roundrect: 'roundRect', oval: 'ellipse', line: 'line', arc: 'arc' }[s.localName] || 'rect';
         if (s.localName === 'shape') geom = { 1: 'rect', 2: 'roundRect', 3: 'ellipse', 4: 'diamond', 5: 'triangle', 6: 'rtTriangle', 9: 'hexagon', 10: 'octagon', 13: 'rightArrow', 32: 'straightConnector1', 33: 'bentConnector2', 34: 'bentConnector3', 35: 'bentConnector4', 37: 'curvedConnector2', 38: 'curvedConnector3', 20: 'line', 66: 'leftArrow', 67: 'downArrow', 68: 'upArrow', 183: 'sun', 184: 'moon', 96: 'smileyFace', 74: 'heart', 12: 'star5' }[spt] || 'rect';

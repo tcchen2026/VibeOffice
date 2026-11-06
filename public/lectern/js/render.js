@@ -423,9 +423,9 @@
     const im = sh.img || {};
     if (im.mode === 'gray') f.push('grayscale(1)');
     if (im.mode === 'bw') f.push('grayscale(1) contrast(12)');
-    if (im.mode === 'wash') f.push('brightness(1.55) contrast(0.32)');
-    if (im.bright) f.push(`brightness(${L.round(1 + im.bright, 3)})`);
-    if (im.contrast) f.push(`contrast(${L.round(1 + im.contrast, 3)})`);
+    // brightness and contrast as PowerPoint draws them; Washout is bright 70%, contrast -70%
+    const lum = im.mode === 'wash' ? L.lumFilter(0.7, -0.7) : L.lumFilter(im.bright, im.contrast);
+    if (lum) f.push(lum.css);
     if (f.length) img.style.filter = f.join(' ');
     if (im.alpha != null && im.alpha < 1) img.style.opacity = im.alpha;
     if (sh.flipH || sh.flipV) img.style.transform = `scale(${sh.flipH ? -1 : 1},${sh.flipV ? -1 : 1})`;
@@ -443,6 +443,7 @@
         wrap.appendChild(h('div', { class: 'pic-missing', text: ext && ext !== 'png' ? L.t('Picture (.{0})', ext) : L.t('Picture') }));
       }, { once: true });
       wrap.appendChild(img);
+      if (lum) wrap.appendChild(lum.defs);
     }
     if (sh.geom && sh.geom !== 'rect') {
       const parts = L.geom.parts(sh, sh.w, sh.h).filter((p) => p.fill !== 'none');

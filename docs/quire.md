@@ -140,6 +140,13 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   original document has not been available to confirm that it uses the same encoding.
 - Equations (Office Math, `m:oMath`) are rendered as MathML: fractions, scripts, radicals, delimiters,
   n-ary operators, accents, matrices and equation arrays. They are kept unchanged when saving.
+- Text in the Symbol font shows its Greek letters and signs (`q` is θ), typed or in Word's private-use
+  form, with or without the font on your computer; so do Symbol bullets and the Symbol text in old
+  Equation Editor pictures. The file keeps the characters as they were.
+- A picture's brightness and contrast are drawn as Word draws them: measured in Word 2016 on a grey ramp
+  under 13 settings (VML and DrawingML, Washout among them), Quire's greys agree within 1 of 255. The
+  same holds for Lectern against PowerPoint 2016 (7 settings). A picture's borders set per side (Word
+  97-2003) are drawn, and a frame with no vertical position stands beside its own paragraph, as in Word.
 - Content controls bound to custom XML or to the document properties show the bound values, as Word
   does when it opens a file. Linked text boxes continue their story from one box to the next.
 - SmartArt is drawn from the picture Word stores with it; files saved without that picture (Word 2007

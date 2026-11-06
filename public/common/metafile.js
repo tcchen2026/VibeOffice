@@ -201,6 +201,8 @@
     const useCP = s.align & 1;
     const p = useCP ? this.pt(s.x, s.y) : this.pt(x, y);
     const face = f.face || 'Arial';
+    // the Symbol font's Greek letters and signs (Equation Editor's θ is q in Symbol), one character for one
+    if (/^symbol$/i.test(face) && L.mapSymbolChar) str = str.replace(/[\u0020-\u00ff\uf020-\uf0ff]/g, (c) => L.mapSymbolChar(c, 'Symbol'));
     this.withClip(() => {
       g.save();
       g.font = `${f.i ? 'italic ' : ''}${f.w >= 600 ? 'bold ' : ''}${size}px ${L.fontStack ? L.fontStack(face) : '"' + face + '", sans-serif'}`;

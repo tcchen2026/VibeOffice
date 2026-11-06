@@ -493,7 +493,7 @@
       if (it.t === 'text') {
         // Keep one DOM character per model character for caret/selection offsets.
         // Chromium ignores CR in a Text node; LF produces the intended line break.
-        const text = it.text.slice(a - s, b - s).replace(/\r/g, (_, at) => {
+        let text = it.text.slice(a - s, b - s).replace(/\r/g, (_, at) => {
           let next = it.text[a - s + at + 1];
           if (next == null) for (let j = idx + 1; j < items.length; j++) {
             const other = items[j];
@@ -503,6 +503,9 @@
           }
           return next === '\n' ? '\u200b' : '\n';
         });
+        /* text in the Symbol font shows its Greek letters and signs (q is θ), with the font on the computer or
+           without it; one character for one, so caret offsets hold */
+        if (r.font && /^symbol$/i.test(r.font)) text = text.replace(/[\u0020-\u00ff\uf020-\uf0ff]/g, (c) => L.mapSymbolChar(c, 'Symbol'));
         /* Word does not let a run of spaces in a larger font raise the line: draw it at the line's
            text size and keep its width with letter spacing */
         if (/^ +$/.test(text) && r.sz && !r.u && !r.highlight && !r.shd) {
@@ -738,11 +741,12 @@
       const f = [];
       if (it.gray) f.push('grayscale(1)');
       if (it.bw) f.push('grayscale(1) contrast(30)');
-      if (it.washout) f.push('brightness(1.7) contrast(0.25)');
-      if (it.bright) f.push(`brightness(${1 + it.bright})`);
-      if (it.contrast) f.push(`contrast(${1 + it.contrast})`);
+      // brightness and contrast as Word draws them; Washout is Word's bright 70%, contrast -70%
+      const lum = it.washout ? L.lumFilter(0.7, -0.7) : L.lumFilter(it.bright, it.contrast);
+      if (lum) f.push(lum.css);
       if (f.length) im.style.filter = f.join(' ');
       wrap.appendChild(im);
+      if (lum) wrap.appendChild(lum.defs);
     } else {
       wrap.classList.add('missing');
       wrap.textContent = it.alt || L.t('Picture');
@@ -750,6 +754,12 @@
     if (it.rot) wrap.style.transform = `rotate(${it.rot}deg)`;
     if (it.flipH || it.flipV) wrap.style.transform = (wrap.style.transform || '') + ` scale(${it.flipH ? -1 : 1},${it.flipV ? -1 : 1})`;
     if (it.border && R.hasBorder(it.border)) wrap.style.outline = R.borderCSS(it.border);
+    if (it.sides) {   // a border per side (Word 97-2003), drawn over the picture's edges as Word draws it
+      const frame = document.createElement('span');
+      frame.className = 'img-sides';
+      for (const side of ['top', 'left', 'bottom', 'right']) if (R.hasBorder(it.sides[side])) frame.style['border' + side[0].toUpperCase() + side.slice(1)] = R.borderCSS(it.sides[side]);
+      wrap.appendChild(frame);
+    }
     if (it.link) wrap.dataset.link = linkStr(it.link);
     return wrap;
   };

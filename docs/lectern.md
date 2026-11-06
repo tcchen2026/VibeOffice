@@ -48,6 +48,10 @@ File ▸ Open, drag a file onto the window, or *Open a presentation* in the Gett
 Strict inputs save as standard Transitional OOXML (recorded, not shown). Same-format
 saves retain the macro, template or slideshow variant and any opening password.
 
+A picture's brightness and contrast (and Washout) are drawn as PowerPoint draws them: on a grey ramp
+under 7 settings, Lectern's greys agree with PowerPoint 2016's within 1 of 255 (`L.lumFilter`, shared
+with Quire).
+
 East Asian text is drawn with the run's East Asian font (`a:ea`, or the theme's for the presentation's
 language), and a run's font change keeps its `a:ea`. A new presentation follows the UI's language: its
 text language and, in Japanese, Korean and Chinese, the theme's East Asian font ([i18n.md](i18n.md)).

@@ -123,8 +123,10 @@
       if (changed('crop')) for (const [side, key] of [['left', 'l'], ['right', 'r'], ['top', 't'], ['bottom', 'b']]) a['crop' + side] = object.crop?.[key] || null;
       if (changed('gray')) a.grayscale = object.gray ? 't' : null;
       if (changed('bw')) a.bilevel = object.bw ? 't' : null;
-      if (changed('bright') || changed('washout')) a.blacklevel = object.washout ? '22938f' : Math.round((object.bright || 0) * 65536) + 'f';
-      if (changed('contrast') || changed('washout')) a.gain = object.washout ? '19661f' : Math.round((1 + (object.contrast || 0)) * 65536) + 'f';
+      // VML's blacklevel is half DrawingML's brightness, and its gain the contrast slope (L.lumFilter)
+      const contrast = object.contrast || 0, slope = contrast >= 0 ? 1 / Math.max(1 - contrast, 0.001) : 1 + contrast;
+      if (changed('bright') || changed('washout')) a.blacklevel = object.washout ? '22938f' : Math.round((object.bright || 0) / 2 * 65536) + 'f';
+      if (changed('contrast') || changed('washout')) a.gain = object.washout ? '19661f' : Math.round(slope * 65536) + 'f';
       if (Object.keys(a).length) xml = vmlChild(xml, 'imagedata', K.attributes(raw(image), a));
     }
     return K.attributes(xml, attrs);

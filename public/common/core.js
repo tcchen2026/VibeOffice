@@ -770,6 +770,39 @@
     return ch;
   };
 
+  /* A picture's brightness and contrast as Office draws them, measured in Word 2016 on a grey ramp under 13 VML and
+     DrawingML settings: a slope s around mid-grey, with half the brightness added before it and half after,
+     v' = s·(v − ½ + b/2) + ½ + b/2, clamped; s = 1/(1 − c) for c ≥ 0 and 1 + c below, where b and c are DrawingML's
+     lum bright and contrast (−1…1; VML's gain is s and its blacklevel b/2). CSS filters can't add an offset, so this
+     is an SVG filter: { css, defs }, where defs is the element defining it, to be kept beside the picture so that a
+     copy of the picture (a page or slide rasterised for export) carries it. Null when there is nothing to do. */
+  L.lumFilter = function (bright, contrast) {
+    bright = +bright || 0; contrast = +contrast || 0;
+    if (!bright && !contrast) return null;
+    const s = contrast >= 0 ? 1 / Math.max(1 - contrast, 0.001) : 1 + contrast;
+    const intercept = 0.5 - s / 2 + (bright * (1 + s)) / 2;
+    const num = (v) => String(L.round(v, 4)).replace('-', 'm').replace('.', '_');
+    const id = `vo-lum-${num(s)}-${num(intercept)}`;
+    const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    const filter = document.createElementNS(NS, 'filter'), transfer = document.createElementNS(NS, 'feComponentTransfer');
+    filter.id = id;
+    filter.setAttribute('color-interpolation-filters', 'sRGB');
+    for (const c of 'RGB') {
+      const fn = document.createElementNS(NS, 'feFunc' + c);
+      fn.setAttribute('type', 'linear');
+      fn.setAttribute('slope', String(L.round(s, 4)));
+      fn.setAttribute('intercept', String(L.round(intercept, 4)));
+      transfer.appendChild(fn);
+    }
+    filter.appendChild(transfer);
+    svg.appendChild(filter);
+    return { css: `url(#${id})`, defs: svg };
+  };
+
   /* ---------- geometry helpers ---------- */
   L.rotPt = (x, y, cx, cy, deg) => {
     const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
