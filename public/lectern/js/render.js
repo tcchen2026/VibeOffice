@@ -159,10 +159,12 @@
     }
   }
   R.numberText = numberText;
-  function lineHeight(ps, scale) {
+  /* reduce: Shrink text on overflow's line spacing reduction, which PowerPoint takes off the percentage (90% less
+     20% is 70%, not 72%) */
+  function lineHeight(ps, scale, reduce) {
     const ls = ps.lnSpc || { pct: 100 };
     if (ls.pts != null) return { css: `${L.round(ls.pts * scale, 2)}px`, factor: null };
-    const f = Math.max(0.3, ((ls.pct == null ? 100 : ls.pct) / 100) * 1.2);
+    const f = Math.max(0.3, ((ls.pct == null ? 100 : ls.pct) / 100 - (reduce || 0)) * 1.2);
     return { css: String(L.round(f, 3)), factor: f };
   }
   function spacing(sp, sz) {
@@ -236,11 +238,17 @@
    */
   R.paragraphs = function (sh, tx, design, ctx, container, opts) {
     opts = opts || {};
-    const scale = (tx.fontScale || 1) * (opts.scale || 1);
+    /* Shrink text on overflow (normAutofit) scales the font sizes, which PowerPoint rounds to whole points (36 pt at
+       92.5% is drawn at 33 pt, 18 pt at 92.5% at 17), and reduces the line spacing; indents and spacing given in
+       points stay as they are (PowerPoint 2016, TextFittingComparisonWithMSO_3) */
+    const fit = tx.fontScale || 1, zoom = opts.scale || 1, scale = fit * zoom;
+    const size = (sz) => (fit < 1 ? Math.max(1, Math.round(sz * fit)) : sz) * zoom;
+    const space = (sp, fsz) => (sp && sp.pts != null ? sp.pts * zoom : spacing(sp, fsz));
     const lnRed = tx.lnSpcRed || 0;
     const counters = [];
     const prevNum = [];
     const paras = opts.promptParas || tx.ps;
+    let before = 0;   // the space after the paragraph before
     paras.forEach((p, pi) => {
       const ps = L.style.para(sh, p, design);
       const el = h('p', { class: 'pa' });
@@ -249,17 +257,19 @@
       if (p.pp && Object.keys(p.pp).length) el.dataset.pp = JSON.stringify(p.pp);
       const text = L.txt.paraText(p);
       const firstRun = p.rs[0] ? L.style.run(ps, p.rs[0]) : L.style.run(ps, p.end || {});
-      const fsz = (firstRun.sz || 18) * scale;
+      const fsz = size(firstRun.sz || 18);
       el.style.textAlign = ALIGN[ps.algn] || 'left';
-      el.style.paddingLeft = L.round((ps.marL || 0) * scale, 2) + 'px';
-      el.style.textIndent = L.round((ps.indent || 0) * scale, 2) + 'px';
+      el.style.paddingLeft = L.round((ps.marL || 0) * zoom, 2) + 'px';
+      el.style.textIndent = L.round((ps.indent || 0) * zoom, 2) + 'px';
       el.style.fontSize = L.round(fsz, 2) + 'px';
       el.style.fontFamily = L.fontStack(L.style.font(firstRun.font, design), L.style.fontEA(firstRun.fontEA, design));
-      const lh = lineHeight(ps, scale);
-      el.style.lineHeight = lh.factor ? String(L.round(lh.factor * (1 - lnRed), 3)) : lh.css;
-      if (pi > 0) el.style.marginTop = L.round(spacing(ps.spcBef, fsz / scale) * scale, 2) + 'px';
-      const after = spacing(ps.spcAft, fsz / scale) * scale;
-      if (after) el.style.marginBottom = L.round(after, 2) + 'px';
+      el.style.lineHeight = lineHeight(ps, scale, lnRed).css;
+      /* space after a paragraph and before the next add up, as PowerPoint spaces them (margins of blocks would
+         collapse to the larger): the next paragraph takes both */
+      const gap = (pi > 0 ? space(ps.spcBef, fsz) : 0) + before;
+      if (gap) el.style.marginTop = L.round(gap, 2) + 'px';
+      before = space(ps.spcAft, fsz);
+      if (before && pi === paras.length - 1) el.style.marginBottom = L.round(before, 2) + 'px';
       /* bullets & numbering */
       const lvl = p.lvl || 0;
       counters.length = Math.max(counters.length, lvl + 1);
@@ -279,7 +289,7 @@
         const bc = bu.c ? R.col(bu.c, design) : R.col(firstRun.color || 'tx1', design);
         el.style.setProperty('--bu-c', bc);
         el.style.setProperty('--bu-s', L.round(fsz * (bu.sz || 1), 2) + 'px');
-        el.style.setProperty('--bu-w', L.round(Math.max(-(ps.indent || 0) * scale, fsz * 0.55), 2) + 'px');
+        el.style.setProperty('--bu-w', L.round(Math.max(-(ps.indent || 0) * zoom, fsz * 0.55), 2) + 'px');
         if (bu.font && !/wingdings|symbol/i.test(bu.font)) el.style.setProperty('--bu-f', L.fontStack(bu.font));
       }
       if (!text.length) el.classList.add('empty');
@@ -294,7 +304,7 @@
           if (r.fld === 'math') own.keep = r.keep;
           if (Object.keys(own).length) sp.dataset.r = JSON.stringify(own);
           if (r.fld) { sp.dataset.fld = r.fld; sp.contentEditable = 'false'; }
-          R.runStyle(sp, rp, design, ctx, scale);
+          R.runStyle(sp, rp, design, ctx, size(rp.sz || 18) / (rp.sz || 18));
           if (r.link) sp.dataset.link = JSON.stringify(r.link);
           if (r.fld === 'math' && r.keep?.math) appendMath(sp, r.keep.math);
           else appendText(sp, r.fld ? fieldText(r, ctx) : r.t);

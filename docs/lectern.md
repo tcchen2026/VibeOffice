@@ -58,6 +58,18 @@ text language and, in Japanese, Korean and Chinese, the theme's East Asian font 
 
 **Password-protected presentations** ask for the password, as PowerPoint does, and say so when it is wrong. Decryption happens in the browser (Agile encryption from Office 2010 on, Standard encryption from Office 2007). A presentation opened with a password is saved with the same password; Tools ▸ Options ▸ Security sets, changes or removes it (AES-256 with SHA-512, the scheme PowerPoint 2013 and later use).
 
+## Text as PowerPoint draws it
+
+Measured against PowerPoint 2016's PDFs (`tools/lectern-pictures.mjs`, `tools/lectern-vs-powerpoint.py`;
+LibreOffice's TextFittingComparisonWithMSO decks, 2026-11-07, `tests/lectern/text-fitting.test.mjs`):
+the space after a paragraph and the space before the next add up; a bullet doesn't make its line taller.
+Shrink text on overflow (`normAutofit`) rounds the shrunk font sizes to whole points (36 pt at 92.5% is
+drawn at 33 pt), takes the line spacing reduction off the percentage (90% less 20% is 70%), and leaves
+spacing and indents given in points alone. Over the 134 slides of the 8 PowerPoint-made decks with shrunk
+text whose sizes fall between whole points, the difference from PowerPoint's pictures fell by 41% (no slide
+worse by more than 0.6 of a point of score); of 257 slides in 53 other PowerPoint-made decks, 19 came
+closer and none moved away.
+
 ## Charts
 
 Charts read from a file are drawn the way PowerPoint draws them:

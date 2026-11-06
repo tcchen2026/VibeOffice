@@ -221,7 +221,7 @@ The engine and the file readers and writers load in Node through `load.js` (the 
 
 ## Lectern: tests/lectern/
 
-`corpus.js` opens real decks in Chromium (open, render every slide, save, reopen, compare), `summarize.js` sums up its results, `ui-features.js` drives the password dialog, Tools ▸ Options ▸ Security and the chart dialog, `chartedit.js` writes every chart for validation, `decrypt.py` checks encrypted saves independently, `loss-audit.py` counts what a save loses (features and words, original against saved copy; standard-library Python), `viscompare.py` / `triptych.py` / `stack.py` compare renderings. They need Playwright; how to run them is in docs/lectern.md.
+`corpus.js` opens real decks in Chromium (open, render every slide, save, reopen, compare), `summarize.js` sums up its results, `ui-features.js` drives the password dialog, Tools ▸ Options ▸ Security and the chart dialog, `chartedit.js` writes every chart for validation, `decrypt.py` checks encrypted saves independently, `loss-audit.py` counts what a save loses (features and words, original against saved copy; standard-library Python), `viscompare.py` / `triptych.py` / `stack.py` compare renderings. Against PowerPoint: `node tools/lectern-pictures.mjs decks.json out/` takes a picture of each slide as Lectern draws it, and `python3 -I tools/lectern-vs-powerpoint.py officeDir out/ cmp/` scores each against PowerPoint 2016's PDF of the deck (from the Office test API) and writes the pairs side by side, worst first. They need Playwright; how to run them is in docs/lectern.md.
 
 ## Corpora
 

@@ -144,9 +144,9 @@
 .sl .txi.nowrap { white-space: pre; }
 /* a word Spelling found, shown selected while the keyboard is in its dialog (textedit.js, TE.mark) */
 ::highlight(lectern-mark) { background-color: Highlight; color: HighlightText; }
-.sl p.pa { margin: 0; padding: 0; min-height: 1em; }
-.sl p.pa[data-bu]::before { content: attr(data-bu); display: inline-block; min-width: var(--bu-w, .6em); text-indent: 0; color: var(--bu-c, inherit); font-size: var(--bu-s, inherit); font-family: var(--bu-f, inherit); font-weight: normal; font-style: normal; text-decoration: none; line-height: 1; }
-.sl p.pa.bu-img[data-bu]::before { background: var(--bu-img) left center / var(--bu-s, 1em) var(--bu-s, 1em) no-repeat; height: var(--bu-s, 1em); vertical-align: -0.1em; }
+.sl p.pa { margin: 0; padding: 0; min-height: 1lh; }
+.sl p.pa[data-bu]::before { content: attr(data-bu); display: inline-block; min-width: var(--bu-w, .6em); text-indent: 0; color: var(--bu-c, inherit); font-size: var(--bu-s, inherit); font-family: var(--bu-f, inherit); font-weight: normal; font-style: normal; text-decoration: none; line-height: 0; }
+.sl p.pa.bu-img[data-bu]::before { background: var(--bu-img) left center / var(--bu-s, 1em) var(--bu-s, 1em) no-repeat; height: var(--bu-s, 1em); vertical-align: -0.1em; line-height: 1; }
 .sl:not(.sl-edit) p.pa.empty::before, .sl .shp:not(.editing) p.pa.empty::before { visibility: hidden; }
 .sl .prompt { pointer-events: none !important; }
 .sl .shp.editing .prompt, .sl .shp.editing .ph-content { display: none; }
