@@ -40,8 +40,9 @@
     if(book.encrypted)B.fail(options.password?'ENCRYPTION_UNSUPPORTED':'PASSWORD_REQUIRED',options.password?N('Encrypted binary workbooks cannot be opened yet'):N('This workbook needs a password'));
     if(!['BIFF8','BIFF5/7'].includes(book.version))B.fail('XLS_VERSION',N('This older Excel file format is not supported yet'),book.version);
     if(!book.sheets.length)B.fail('XLS_SHEETS',N('The workbook has no worksheets'));
-    const names=new Set();for(const sheet of book.sheets){if(!sheet.name||sheet.name.length>31||/[\[\]:*?\\/\x00-\x1f]/.test(sheet.name)||names.has(sheet.name.toLowerCase()))B.fail('SHEET_NAME',N('The workbook contains an invalid or duplicate sheet name'),sheet.name);names.add(sheet.name.toLowerCase());if(sheet.kind!==0)B.fail('SHEET_KIND',N('This workbook contains a sheet type that cannot be converted yet'),sheet.name);}
+    const names=new Set();for(const sheet of book.sheets){if(!sheet.name||sheet.name.length>31||/[\[\]:*?\\/\x00-\x1f]/.test(sheet.name)||names.has(sheet.name.toLowerCase()))B.fail('SHEET_NAME',N('The workbook contains an invalid or duplicate sheet name'),sheet.name);names.add(sheet.name.toLowerCase());if(![0,2].includes(sheet.kind))B.fail('SHEET_KIND',N('This workbook contains a sheet type that cannot be converted yet'),sheet.name);}
     const formulas=X.prepareFormulas(book,losses);
+    X.prepareCharts(book, losses);
     book.theme=await X.theme(book,losses);
     const styles=X.styles(book,losses),pkg=new B.Package(),strings=[],stringMap=new Map();let stringUses=0,currentSheet='';
     const sstIndex=(item,where)=>{const xml=el('si',{},X.richText(item,styles,losses,where));if(!stringMap.has(xml)){stringMap.set(xml,strings.length);strings.push(xml);}stringUses++;return stringMap.get(xml);};
@@ -68,6 +69,25 @@
     const sheetList=[],features=[];
     for(let i=0;i<book.sheets.length;i++){
       const sheet=book.sheets[i],meta=X.sheetMetadata(sheet,losses);currentSheet=sheet.name;if(meta.dialog)B.fail('SHEET_KIND',N('Excel dialog sheets cannot be converted yet'),sheet.name);
+      if (sheet.kind === 2) {
+        const name = 'xl/chartsheets/sheet' + (i + 1) + '.xml';
+        const extra = X.sheetExtras(book, i, meta, formulas, pkg, name, losses);
+        const drawing = await X.sheetDrawings(book, i, meta, styles, pkg, name, losses, formulas);
+        const print = (extra.print.match(/<(pageMargins|pageSetup|headerFooter)\b[^>]*(?:\/>|>[\s\S]*?<\/\1>)/g) || [])
+          .map(xml => xml.startsWith('<pageSetup') ? xml.replace(/ (?:scale|fitToWidth|fitToHeight|pageOrder|cellComments|errors)="[^"]*"/g, '') : xml)
+          .join('');
+        const view = { workbookViewId: 0, tabSelected: i === active ? 1 : null,
+          zoomScale: meta.view.zoomScale || null, zoomToFit: meta.flags & 256 ? 1 : null };
+        pkg.add(name, B.xmlDeclaration + el('chartsheet', { xmlns: B.ns.s,
+          'xmlns:r': B.ns.officeRel.slice(0, -1) }, el('sheetPr') +
+          el('sheetViews', {}, el('sheetView', view)) + print + drawing.xml),
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml');
+        const rid = pkg.rel('xl/workbook.xml', 'chartsheet', 'chartsheets/sheet' + (i + 1) + '.xml');
+        sheetList.push(el('sheet', { name: sheet.name, sheetId: i + 1, 'r:id': rid,
+          state: sheet.state & 2 ? 'veryHidden' : sheet.state & 1 ? 'hidden' : null }));
+        features.push({ sheet: sheet.name, ...drawing.stats });
+        continue;
+      }
       const seenCells=new Map();for(const c of sheet.cells)seenCells.set(c.row*256+c.col,c);const cells=[...seenCells.values()].sort((a,b)=>a.row-b.row||a.col-b.col);totalCells+=cells.length;
       const rowNumbers=new Set(meta.rows.keys());for(const c of cells)rowNumbers.add(c.row);const rowList=[...rowNumbers].sort((a,b)=>a-b),data=[];let at=0;
       for(const row of rowList){const stored=meta.rows.get(row),attrs=stored?{...stored}:{r:row+1};if(attrs.sourceXF!=null){attrs.s=styles.xfMap.get(attrs.sourceXF)||0;attrs.customFormat=1;}if(attrs.defaultHeight||attrs.ht<=0)delete attrs.ht;delete attrs.sourceXF;delete attrs.defaultHeight;const body=[];while(at<cells.length&&cells[at].row===row)body.push(cellXml(cells[at++]));data.push(el('row',attrs,body.length?body.join(''):undefined));}
@@ -80,11 +100,11 @@
       const minRow=cells.length?cells[0].row:0,maxRow=cells.length?cells.at(-1).row:0,minCol=cells.reduce((n,c)=>Math.min(n,c.col),255),maxCol=cells.reduce((n,c)=>Math.max(n,c.col),0);
       const dimension=cells.length?X.range(minRow,minCol,maxRow,maxCol):'A1';
       const name='xl/worksheets/sheet'+(i+1)+'.xml',extra=X.sheetExtras(book,i,meta,formulas,pkg,name,losses),rules=X.sheetRules(book,i,meta,formulas,styles,losses),comments=X.sheetComments(book,i,meta,styles,pkg,name,losses);
-      features.push({sheet:sheet.name,...extra.stats,...rules.stats,...comments.stats});
-      const xml=B.xmlDeclaration+el('worksheet',{xmlns:B.ns.s,'xmlns:r':B.ns.officeRel.slice(0,-1)},el('sheetPr',extra.sheetPr,el('outlinePr',meta.outline)+extra.pagePr)+el('dimension',{ref:dimension})+viewXml+el('sheetFormatPr',meta.format)+(cols.length?el('cols',{},cols.join('')):'')+el('sheetData',{},data.join(''))+extra.protection+extra.autoFilter+(meta.merges.length?el('mergeCells',{count:meta.merges.length},meta.merges.map(m=>el('mergeCell',{ref:X.range(...m)})).join('')):'')+rules.conditional+rules.validation+extra.hyperlinks+extra.print+comments.xml);
+      const drawings = await X.sheetDrawings(book, i, meta, styles, pkg, name, losses, formulas);
+      features.push({sheet:sheet.name,...extra.stats,...rules.stats,...comments.stats,...drawings.stats});
+      const xml=B.xmlDeclaration+el('worksheet',{xmlns:B.ns.s,'xmlns:r':B.ns.officeRel.slice(0,-1)},el('sheetPr',extra.sheetPr,el('outlinePr',meta.outline)+extra.pagePr)+el('dimension',{ref:dimension})+viewXml+el('sheetFormatPr',meta.format)+(cols.length?el('cols',{},cols.join('')):'')+el('sheetData',{},data.join(''))+extra.protection+extra.autoFilter+(meta.merges.length?el('mergeCells',{count:meta.merges.length},meta.merges.map(m=>el('mergeCell',{ref:X.range(...m)})).join('')):'')+rules.conditional+rules.validation+extra.hyperlinks+extra.print+drawings.xml+comments.xml);
       pkg.add(name,xml,types.sheet);const rid=pkg.rel('xl/workbook.xml','worksheet','worksheets/sheet'+(i+1)+'.xml');sheetList.push(el('sheet',{name:sheet.name,sheetId:i+1,'r:id':rid,state:sheet.state&2?'veryHidden':sheet.state&1?'hidden':null}));
       const ids=new Set(meta.records.map(r=>r.id));
-      if(meta.records.some(r=>r.id===0x5d&&r.r.length>=6&&![0,19,25].includes(r.r.u16(4))))notice(sheet,'legacy-drawings',N('Drawing objects were not kept'));
       if(ids.has(0xb0))notice(sheet,'legacy-pivot-tables',N('PivotTables were replaced with their saved cells'));
     }
     if(cfb.entries.some(e=>e.type===2&&/(?:^|\/)VBA\/(?:dir|_VBA_PROJECT)$/i.test(e.path)))losses.push(B.loss('legacy-macros',N('Macros were not kept'),'VBA','drop','Workbook',true));

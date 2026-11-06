@@ -48,6 +48,27 @@
     }
     return el('a:prstGeom', { prst: presetName }, '<a:avLst/>');
   };
+  S.connectorGeometry = function (shape) {
+    // Office's connector presets use fractions of 21600; DrawingML uses 100000.
+    const firstAdjustment = 327;
+    const count = ({ 34: 1, 35: 2, 36: 3, 38: 1, 39: 2, 40: 3 })[shape.type] || 0;
+    const values = Array.from({ length: count }, (_, i) => get(shape, firstAdjustment + i, 10800) | 0);
+    const adjusted = values.some((v, i) => shape.properties.has(firstAdjustment + i));
+    return el('a:prstGeom', { prst: S.presets[shape.type] }, el('a:avLst', {}, adjusted ?
+      values.map((v, i) => el('a:gd', { name: 'adj' + (i + 1),
+        fmla: 'val ' + Math.round(v * 100000 / 21600) })).join('') : undefined));
+  };
+  S.connectionSite = function (shape, index) {
+    const P = { vertices: 325, firstAdjustment: 327, connectionSites: 337 };
+    const rectangle = [1, 2, 75, 202].includes(shape.type) || !!(shape.flags & 1);
+    const custom = shape.properties.has(P.vertices) || shape.properties.has(P.connectionSites) ||
+      Array.from({ length: 10 }, (_, i) => shape.properties.has(P.firstAdjustment + i)).some(Boolean) ||
+      !S.presets[shape.type];
+    const geometry = custom ? S.path(shape) : null;
+    if (geometry?.connections.length) return index < geometry.connections.length ? index : null;
+    if (rectangle) return index < 4 ? [0, 3, 2, 1][index] : null;
+    return !geometry && index < (B.nativeGeometry[shape.type]?.c?.length || 0) ? index : null;
+  };
   S.anchorRect = function (shape, rect) {
     if (!rect || ![rect.x, rect.y, rect.cx, rect.cy].every(Number.isFinite)) B.fail('SHAPE_ANCHOR', N('The shape has no usable anchor'));
     // Binary Office swaps the anchor extents around a quarter turn. AOO tests
@@ -74,7 +95,12 @@
       if (type === 0) fill = solid(front, get(shape, 386, 65536));
       else if ([1, 2, 3].includes(type)) {
         const id = context.imageRel?.(get(shape, 390)); if (!id) B.fail('SHAPE_FILL', N('The shape fill picture is missing'));
-        fill = el('a:blipFill', {}, el('a:blip', { 'r:embed': id }) + (type === 3 ? '<a:stretch><a:fillRect/></a:stretch>' : '<a:tile/>'));
+        // A monochrome OfficeArt pattern is a mask: set bits use the foreground,
+        // clear bits use the background. Texture and picture BLIPs keep their colours.
+        const recolor = type === 1 ? el('a:duotone', {}, colour(back, get(shape, 388, 65536)) +
+          colour(front, get(shape, 386, 65536))) : undefined;
+        fill = el('a:blipFill', {}, el('a:blip', { 'r:embed': id }, recolor) +
+          (type === 3 ? '<a:stretch><a:fillRect/></a:stretch>' : '<a:tile/>'));
       } else if ([4, 5, 6, 7].includes(type)) {
         let stops = A.array(shape.properties.get(407)).map(s => ({ value: s.u32(0), pos: Math.max(0, Math.min(100000, Math.round(s.u32(4) * 100000 / 65536))) }));
         if (!stops.length) stops = [{ value: back, pos: 0, opacity: get(shape,388,65536) }, { value: front, pos: 100000, opacity: get(shape,386,65536) }]; stops.sort((a, b) => a.pos - b.pos);

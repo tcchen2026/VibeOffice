@@ -100,7 +100,7 @@
         if(++work>records.length)B.fail('SHEET_OVERLAP',N('The worksheet streams overlap'));
         const rec = records[i], r = rec.r, id = rec.id;
         sheet.records.push(rec);
-        if (id === 0x809) { if(++depth>B.limits.depth)B.fail('RECORD_LIMIT',N('Worksheet records are nested too deeply'));continue; } if (id === 0xa && --depth === 0){ended=true;break;} if (depth !== 1) continue;
+        if (id === 0x809) { if(++depth>B.limits.depth)B.fail('RECORD_LIMIT',N('Worksheet records are nested too deeply'));continue; } if (id === 0xa && --depth === 0){ended=true;break;} if (depth !== 1 || sheet.kind !== 0) continue;
         const add = (row, col, xf, type, value, extra = {}) => {
           if (++count > B.limits.cells) B.fail('CELL_LIMIT', N('Too many cells'));
           if (row >= 65536 || col >= 256) B.fail('CELL_ADDRESS', N('Invalid BIFF cell address'));

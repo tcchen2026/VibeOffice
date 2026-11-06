@@ -8,6 +8,7 @@ const fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwr
   for(const app of ['quire','ledger','lectern']){
     const context=await browser.newContext({viewport:{width:1280,height:900}}),page=await context.newPage(),errors=[],external=[];
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url())&&!r.url().startsWith('http://127.0.0.1:8769/'))external.push(r.url());});
+    await context.route('**/common/i18n/**', route => route.abort());
     try{
       await page.goto('http://127.0.0.1:8769/'+app+'/');await page.waitForTimeout(600);
       await page.evaluate(()=>L.legacyImport.load());
@@ -20,10 +21,12 @@ const fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwr
         result.samples=[];
         for(let i=0;i<files.length;i++){
         if(i)await page.evaluate(async input=>{window.__legacyConversion=await L.legacy.xls.convert(Uint8Array.from(atob(input),c=>c.charCodeAt(0)));},fs.readFileSync('/work/corpora/'+files[i]).toString('base64'));
+        const converted = await page.evaluate(() => Array.from(window.__legacyConversion.pkg));
+        fs.writeFileSync(path.join(out, 'converted-' + i + '.xlsx'), Buffer.from(converted));
         await page.evaluate(async()=>{await L.app.openFile(new File([window.__legacyConversion.pkg],'legacy-browser.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));});
         await page.waitForTimeout(400);
         const saved=await page.evaluate(async()=>{
-          const snapshot=wb=>({sheets:wb.sheets.map(s=>({name:s.name,cells:s.rows.flatMap((row,r)=>(row?.cells||[]).flatMap((c,col)=>c?[{r,c:col,v:c.v,f:c.f,af:c.af,dt:c.dt}]:[])),view:s.view,merges:s.merges,comments:[...s.comments||[]].map(([key,c])=>[key,{text:c.text,author:c.author,runs:c.runs,visible:c.visible}]),links:s.links,dv:s.dv,cf:s.cf,autoFilter:s.autoFilter,print:s.print,protection:s.protection})),names:wb.names?.map(({_ast,_src,...name})=>name),external:wb.externalLinks?.map(e=>({xml:e.xml,relTarget:e.relTarget}))});
+          const snapshot=wb=>({sheets:wb.sheets.map(s=>({name:s.name,kind:s.kind,drawings:s.drawings.map(d=>({kind:d.kind,anchor:d.anchor,id:d.id,name:d.name,text:d.text,geom:d.geom,chart:d.chart})),cells:s.rows.flatMap((row,r)=>(row?.cells||[]).flatMap((c,col)=>c?[{r,c:col,v:c.v,f:c.f,af:c.af,dt:c.dt}]:[])),view:s.view,merges:s.merges,comments:[...s.comments||[]].map(([key,c])=>[key,{text:c.text,author:c.author,runs:c.runs,visible:c.visible}]),links:s.links,dv:s.dv,cf:s.cf,autoFilter:s.autoFilter,print:s.print,protection:s.protection})),names:wb.names?.map(({_ast,_src,...name})=>name),external:wb.externalLinks?.map(e=>({xml:e.xml,relTarget:e.relTarget}))});
           const before=snapshot(L.grid.wb),bytes=await L.xlsxWrite.bytes(L.grid.wb,{type:'xlsx'}),after=snapshot(await L.xlsxRead.read(bytes));
           return {bytes:Array.from(bytes),same:JSON.stringify(before)===JSON.stringify(after),before,after};
         });

@@ -155,7 +155,7 @@ printer itself.
 | XML Spreadsheet 2003 `.xml` | yes | yes |
 | Web Page `.htm` / `.html` | yes: each table on the page becomes a sheet | yes: one self-contained page per workbook, with its own security policy (no scripts) |
 | PDF | — | yes |
-| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks, comments, hyperlinks, data validation, conditional formatting, filters, print settings and protection; charts, drawings and pivot tables not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name | no |
+| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks, comments, hyperlinks, data validation, conditional formatting, filters, print settings and protection, pictures, AutoShapes, groups, text boxes and charts, chart sheets too; pivot tables not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name | no |
 
 Passwords are handled in the browser (WebCrypto plus Ledger's own AES and SHA code), so the page must
 be served over https or from localhost. A workbook opened with its password keeps it when saved.

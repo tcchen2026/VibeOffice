@@ -83,14 +83,7 @@
     book.drawingStats.wordArt++;book.textStats.textShapes++;book.textStats.textCharacters+=text.length;book.textStats.paragraphs+=paragraphs.length;s.textWritten=true;
     return el('p:txBody',{},el('a:bodyPr',{lIns:0,tIns:0,rIns:0,bIns:0,wrap:'none',anchor:'ctr',fromWordArt:1,vert:bits&8192?'vert':null},el('a:prstTxWarp',{prst:'textPlain'},el('a:avLst'))+el('a:noAutofit'))+el('a:lstStyle')+body);
   };
-  D.connectorGeometry=function(s){
-    // PowerPoint rejects custom geometry in p:cxnSp. These binary presets map
-    // directly to DrawingML: their meaningful adjustments are fractions of
-    // 21600, versus DrawingML's 100000. Other adjustment slots are unused.
-    const count=({34:1,35:2,36:3,38:1,39:2,40:3})[s.type]||0,values=Array.from({length:count},(_,i)=>get(s,327+i,10800)|0);
-    const adjusted=values.some((v,i)=>s.properties.has(327+i));
-    return el('a:prstGeom',{prst:S.presets[s.type]},el('a:avLst',{},adjusted?values.map((v,i)=>el('a:gd',{name:'adj'+(i+1),fmla:'val '+Math.round(v*100000/21600)})).join(''):undefined));
-  };
+  D.connectorGeometry = S.connectorGeometry;
   D.tree=function(book,page,{layout,shapes,usedIds=[],fragment=false}={}){
     if(!page)return P.emptyShapeTree();const source=shapes||(layout?layout.textPlaceholders:page.textShapes)||[],used=new Set([1,...usedIds]),reserved=new Set(),ids=new Map();let next=2;
     const collect=(list,depth=0)=>{if(depth>B.limits.depth)B.fail('PPT_DRAWING_LIMIT',N('Presentation drawing nesting exceeds the limit'));for(const s of list){if(s.id>1&&s.id<=0xffffffff)reserved.add(s.id);collect(s.children||[],depth+1);}};collect(source);
@@ -127,11 +120,10 @@
       let geometry;try{geometry=connector?D.connectorGeometry(s):S.geometry(s);}catch(e){if(e.name!=='LegacyError')throw e;D.report(book,page,'shape',s,e);if(!s.text&&!s.ph)return '';geometry=el('a:prstGeom',{prst:'rect'},el('a:avLst'));}
       const rule=page.connectorRules?.get(s.id);let cnx='';
       if(connector&&rule)for(const [tag,key,site]of[['a:stCxn','start','startSite'],['a:endCxn','end','endSite']]){const id=bySource.get(rule[key]);if(rule[key]&&rule[site]!==0xffffffff){const target=sourceShape.get(rule[key]);let idx=rule[site],valid=!!id&&!!D.rect(target,book,page)&&!target.headerHidden;
-        if(valid){const rectangle=[1,2,75,202].includes(target.type)||!!(target.flags&1);try{const geometry=target.properties.has(325)||target.properties.has(337)||Array.from({length:10},(_,i)=>target.properties.has(327+i)).some(Boolean)||!S.presets[target.type]?S.path(target):null;
-          if(geometry?.connections.length)valid=idx<geometry.connections.length;
-          else if(rectangle){valid=idx<4;idx=[0,3,2,1][idx];}
-          else valid=!geometry&&idx<(B.nativeGeometry[target.type]?.c?.length||0);
-        }catch(e){if(e.name!=='LegacyError')throw e;valid=false;}}
+        if (valid) {
+          try { idx = S.connectionSite(target, idx); valid = idx != null; }
+          catch (error) { if (error.name !== 'LegacyError') throw error; valid = false; }
+        }
         if(valid)cnx+=el(tag,{id,idx});else D.report(book,page,'connection',s,'Missing shape or connection site '+rule[key]+':'+rule[site]);
       }}
       const nv=connector?el('p:nvCxnSpPr',{},cNvPr(s)+el('p:cNvCxnSpPr',{},cnx)+nvPr(s)):el('p:nvSpPr',{},cNvPr(s)+el('p:cNvSpPr',{txBox:s.type===202?1:null},s.ph?el('a:spLocks',{noGrp:1}):'')+nvPr(s));

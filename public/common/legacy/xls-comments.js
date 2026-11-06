@@ -23,12 +23,6 @@
     }catch(e){if(e.name!=='LegacyError')throw e;formattingError=true;}
     return {value,runs,formattingError,next};
   };
-  const geometry=meta=>{
-    const widths=Array(256).fill(Math.floor((meta.format.defaultColWidth??(meta.format.baseColWidth??8)+.43)*7+5)),heights=new Float64Array(65536);heights.fill((meta.format.defaultRowHeight||12.75)*4/3);
-    for(const col of meta.cols)for(let i=col.min-1;i<col.max;i++)widths[i]=col.hidden?0:Math.floor(col.width*7+5);
-    for(const [row,attrs]of meta.rows)heights[row]=attrs.hidden?0:attrs.ht>0&&!attrs.defaultHeight?attrs.ht*4/3:heights[row];
-    const x=new Float64Array(257),y=new Float64Array(65537);for(let i=0;i<256;i++)x[i+1]=x[i]+widths[i];for(let i=0;i<65536;i++)y[i+1]=y[i]+heights[i];return {x,y,widths,heights};
-  };
   const vml=function(note,geo,styles,order,id){
     let a=note.shape?.anchor;
     if(!a||a.kind!=='cells'||a.col1>255||a.col2>255||a.row1>65535||a.row2>65535||a.col1>a.col2||a.row1>a.row2)a={flags:0,col1:Math.min(253,note.col+1),col2:Math.min(255,note.col+3),row1:Math.max(0,note.row-1),row2:Math.min(65535,Math.max(0,note.row-1)+4),dx1:240,dx2:496,dy1:30,dy2:196};
@@ -45,27 +39,9 @@
   };
   X.sheetComments=function(book,si,meta,styles,pkg,part,losses){
     const records=meta.records,sheet=book.sheets[si],notes=records.filter(r=>r.id===0x1c);if(!notes.length)return {xml:'',stats:{commentSource:0,comments:0}};
-    const issue=(what,e,where=sheet.name,notify=true)=>X.featureLoss(losses,'legacy-comments',what,where,e,notify),objects=new Map(),markers=[],chunks=[];let size=0,lastObject=null,inDrawing=false;
-    if(book.version==='BIFF8'){
-      for(let i=0;i<records.length;i++){
-        const rec=records[i],r=rec.r;
-        if(rec.id===0xec||rec.id===0x3c&&inDrawing){size+=r.length;if(size>B.limits.bytes)bad('Comment drawing data is too large');chunks.push(r.bytes);inDrawing=true;}
-        else if(rec.id===0x5d){
-          lastObject=null;
-          try{if(r.u16(0)!==0x15)continue;const obj={type:r.u16(4),id:r.u16(6)};objects.set(obj.id,obj);lastObject=obj;markers.push({kind:'obj',object:obj,end:size});}catch(e){if(e.name!=='LegacyError')throw e;lastObject=null;}
-        }else if(rec.id===0x1b6){
-          let text;
-          try{text=X.txo(records,i);i=text.next-1;}catch(e){if(e.name!=='LegacyError')throw e;while(records[i+1]?.id===0x3c)i++;}
-          markers.push({kind:'text',text,end:size});if(lastObject&&text)lastObject.text=text;
-        }else if(rec.id!==0x3c)inDrawing=false;
-      }
-      if(size)try{
-        const bytes=new Uint8Array(size);let p=0;for(const chunk of chunks){bytes.set(chunk,p);p+=chunk.length;}
-        const tree=A.records(bytes),byEnd=new Map(markers.map(m=>[m.end,m])),shapeByRecord=new Map();
-        const shapes=a=>{for(const s of a){shapeByRecord.set(s.record,s);shapes(s.children);}};shapes(A.shapes(tree,'xls'));
-        const walk=(list,base=0,owner=null)=>{for(const rec of list){const shape=shapeByRecord.get(rec)||owner,marker=byEnd.get(base+rec.end);if(rec.type===0xf011&&marker?.kind==='obj'&&shape){marker.object.shape=shape;shape.noteObject=marker.object;}else if(rec.type===0xf00d&&marker?.kind==='text'&&shape?.noteObject)shape.noteObject.text=marker.text;if(rec.children)walk(rec.children,base+rec.at+8,shape);}};walk(tree);
-      }catch(e){if(e.name!=='LegacyError')throw e;issue('Some comment box positions could not be read',e,sheet.name,false);}
-    }
+    const issue=(what,e,where=sheet.name,notify=true)=>X.featureLoss(losses,'legacy-comments',what,where,e,notify);
+    const drawing=X.readDrawingRecords(meta),objects=drawing.objects;
+    for(const error of drawing.errors)issue('Some comment box positions could not be read',error,sheet.name,false);
     const comments=new Map();let source=0;
     for(let i=0;i<records.length;i++){
       const rec=records[i];if(rec.id!==0x1c)continue;const r=rec.r;let ref=sheet.name;source++;
@@ -88,7 +64,7 @@
     const list=[...comments.values()].sort((a,b)=>a.row-b.row||a.col-b.col),authors=[...new Set(list.map(c=>c.author))],authorIds=new Map(authors.map((v,i)=>[v,i]));
     const xml=B.xmlDeclaration+el('comments',{xmlns:B.ns.s},el('authors',{},authors.map(a=>el('author',{},B.xstring(a))).join(''))+el('commentList',{},list.map(c=>el('comment',{ref:X.address(c.row,c.col),authorId:authorIds.get(c.author)},el('text',{},X.richText(c,styles,losses,sheet.name+'!'+X.address(c.row,c.col))))).join('')));
     const number=si+1;pkg.add('xl/comments'+number+'.xml',xml,'application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml');pkg.rel(part,'comments','../comments'+number+'.xml');
-    const geo=geometry(meta),ids=new Set(),shapeIds=list.map((c,i)=>{let id=c.shape?.id;if(!Number.isInteger(id)||id<1025||ids.has(id))id=1025+i;while(ids.has(id))id+=1024;ids.add(id);return id;});
+    const geo=X.drawingGrid(meta),ids=new Set(),shapeIds=list.map((c,i)=>{let id=c.shape?.id;if(!Number.isInteger(id)||id<1025||ids.has(id))id=1025+i;while(ids.has(id))id+=1024;ids.add(id);return id;});
     const layout=el('o:shapelayout',{'v:ext':'edit'},el('o:idmap',{'v:ext':'edit',data:[...new Set(shapeIds.map(id=>Math.floor(id/1024)))].join(',')}));
     const type=el('v:shapetype',{id:'_x0000_t202',coordsize:'21600,21600','o:spt':202,path:'m,l,21600r21600,l21600,xe'},el('v:stroke',{joinstyle:'miter'})+el('v:path',{gradientshapeok:'t','o:connecttype':'rect'}));
     pkg.add('xl/drawings/vmlDrawing'+number+'.vml',el('xml',{'xmlns:v':'urn:schemas-microsoft-com:vml','xmlns:o':'urn:schemas-microsoft-com:office:office','xmlns:x':'urn:schemas-microsoft-com:office:excel'},layout+type+list.map((c,i)=>vml(c,geo,styles,i+1,shapeIds[i])).join('')),'application/vnd.openxmlformats-officedocument.vmlDrawing');
