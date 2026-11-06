@@ -1093,6 +1093,15 @@
       if (ln && !kid(ln, 'noFill')) d.lineXml = XML.serialize(ln);
       const src = kid(kid(obj, 'blipFill'), 'srcRect');
       if (src) d.crop = { l: num(src, 'l', 0) / 1000, t: num(src, 't', 0) / 1000, r: num(src, 'r', 0) / 1000, b: num(src, 'b', 0) / 1000 };
+      /* its colour adjustments, shown as Excel draws them (the file keeps them as they were) */
+      const fx = {};
+      for (const e of blip ? blip.children : []) {
+        if (e.localName === 'grayscl') fx.gray = true;
+        else if (e.localName === 'biLevel') fx.bw = true;
+        else if (e.localName === 'lum') { fx.bright = num(e, 'bright', 0) / 100000; fx.contrast = num(e, 'contrast', 0) / 100000; }
+        else if (e.localName === 'alphaModFix') fx.alpha = num(e, 'amt', 100000) / 100000;
+      }
+      if (Object.keys(fx).length) d.fx = fx;
       const hl = kid(cNv, 'hlinkClick'); if (hl) { const hr = rels.get(rid(hl, 'id')); if (hr) d.link = hr.raw; }
       return d;
     }
@@ -1332,9 +1341,13 @@
     const names = kids(kid(eb, 'sheetNames'), 'sheetName').map((s) => at(s, 'val') || '');
     const book = { target, sheets: {}, sheetList: [], names: {} };
     names.forEach((n) => { const s = new M.Sheet(wb, n); s.external = true; book.sheets[n.toLowerCase()] = s; book.sheetList.push(s); });
+    /* a sheet Excel couldn't read (refreshError) or kept nothing of has no values to calculate with: formulas
+       that use it keep the results saved with the file, as Excel does when it can't update a link */
+    for (const s of book.sheetList) s.noCache = true;
     for (const sd of kids(kid(eb, 'sheetDataSet'), 'sheetData')) {
       const s = book.sheetList[num(sd, 'sheetId', 0)];
       if (!s) continue;
+      s.noCache = at(sd, 'refreshError') === '1' || at(sd, 'refreshError') === 'true';
       for (const row of kids(sd, 'row')) {
         for (const c of kids(row, 'cell')) {
           const p = F.parseCell(at(c, 'r') || '');

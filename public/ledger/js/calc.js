@@ -33,6 +33,9 @@
     static fill(r, c, v) { return new Arr(Array.from({ length: r }, () => new Array(c).fill(v))); }
   }
   const MISSING = (C.MISSING = { missing: true });
+  /* an optional argument left out altogether, for functions that tell it from one given empty (VLOOKUP(a,b,2)
+     is an approximate match, VLOOKUP(a,b,2,) an exact one): def flag `omitted` */
+  const OMITTED = (C.OMITTED = { missing: true, omitted: true });
   /** 3-D reference across sheets */
   class Ref3D { constructor(list) { this.list = list; } }
   C.Ref = Ref; C.RefList = RefList; C.Arr = Arr; C.Ref3D = Ref3D;
@@ -206,10 +209,13 @@
 
   /* ------------------------------------------------------------ criteria */
   const wildRe = (s) => new RegExp('^' + s.replace(/~([*?~])|([*?])|([.+^${}()|[\]\\])/g, (m, esc, wild, sp) => (esc ? '\\' + esc : wild === '*' ? '[\\s\\S]*' : wild === '?' ? '[\\s\\S]' : '\\' + sp)) + '$', 'i');
-  /** compile a COUNTIF-style criterion into a predicate(value) */
+  /** compile a COUNTIF-style criterion into a predicate(value). Excel's rules, from the results it stored in POI's
+      countifExamples: a blank criterion cell is 0; "" matches blank cells and empty text, "=" blank cells only,
+      "<>" anything but a blank cell; text criteria (wildcards too) match only text; <, >, <=, >= with TRUE or
+      FALSE compare only logical values (FALSE < TRUE) */
   C.criteria = function (crit, ctx) {
     if (crit instanceof Ref) crit = C.scalar(crit, ctx);
-    if (crit == null) crit = '';
+    if (crit == null) crit = 0;
     if (typeof crit === 'number') return (v) => (typeof v === 'number' ? C.numEq(v, crit) : typeof v === 'string' ? (() => { const n = C.parseNum(v, ctx.wb); return n != null && C.numEq(n, crit); })() : false);
     if (typeof crit === 'boolean') return (v) => v === crit;
     if (isErr(crit)) return (v) => v === crit;
@@ -218,8 +224,9 @@
     const op = m[1] || '=';
     const rhs = m[2];
     if (rhs === '') {
-      if (op === '=') return (v) => v == null || v === '';
-      if (op === '<>') return (v) => !(v == null || v === '');
+      if (!m[1]) return (v) => v == null || v === '';
+      if (op === '=') return (v) => v == null;
+      if (op === '<>') return (v) => v != null;
       return () => false;
     }
     const num = C.parseNum(rhs, ctx.wb);
@@ -228,6 +235,8 @@
       const b = upper === 'TRUE';
       if (op === '=') return (v) => v === b;
       if (op === '<>') return (v) => v !== b;
+      const k = +b;
+      return (v) => typeof v === 'boolean' && (op === '<' ? +v < k : op === '>' ? +v > k : op === '<=' ? +v <= k : +v >= k);
     }
     if (rhs[0] === '#') { const e = M.ERR[upper]; if (e) { if (op === '=') return (v) => v === e; if (op === '<>') return (v) => v !== e; } }
     if (num != null) {
@@ -250,7 +259,7 @@
       const wild = /[*?~]/.test(rhs);
       const re = wild ? wildRe(rhs) : null;
       const low = rhs.toLowerCase();
-      const eq = (v) => { if (typeof v !== 'string') { if (v == null) return false; v = C.toStr(v); if (typeof v !== 'string') return false; } return re ? re.test(v) : v.toLowerCase() === low; };
+      const eq = (v) => typeof v === 'string' && (re ? re.test(v) : v.toLowerCase() === low);
       return op === '=' ? eq : (v) => !eq(v);
     }
     return (v) => {
@@ -289,12 +298,14 @@
       case 'missing': return MISSING;
       case 'ref': {
         const sh = n.sheet != null || n.book != null ? sheetOf(n, ctx) : ctx.sh;
+        if (otherBook(n) && (!sh || isErr(sh) || sh.noCache)) ctx.flags.keep = true;   // no values of the other workbook: keep the saved result
         if (!sh || isErr(sh)) return sh || E.REF;
         if (n.sheet2) return ref3d(n, ctx, (s) => new Ref(s, n.r, n.c));
         return new Ref(sh, n.r, n.c);
       }
       case 'area': {
         const sh = n.sheet != null || n.book != null ? sheetOf(n, ctx) : ctx.sh;
+        if (otherBook(n) && (!sh || isErr(sh) || sh.noCache)) ctx.flags.keep = true;   // no values of the other workbook: keep the saved result
         if (!sh || isErr(sh)) return sh || E.REF;
         const r1 = Math.min(n.r1, n.r2), r2 = Math.max(n.r1, n.r2), c1 = Math.min(n.c1, n.c2), c2 = Math.max(n.c1, n.c2);
         if (n.sheet2) return ref3d(n, ctx, (s) => new Ref(s, r1, c1, r2, c2));
@@ -353,8 +364,11 @@
     for (const k in wb.external) if (k.toLowerCase() === f) return wb.external[k];
     return null;
   };
+  /* [0] is the workbook itself ([0]!Name, as Excel writes a name of its own workbook in a formula) */
+  const otherBook = (n) => n.book != null && String(n.book) !== '0';
+  C.otherBook = otherBook;
   function sheetOf(n, ctx) {
-    if (n.book != null) {
+    if (otherBook(n)) {
       const ext = C.extBook(ctx.wb, n.book);
       if (!ext) return E.REF;
       const sh = ext.sheets && ext.sheets[String(n.sheet).toLowerCase()];
@@ -507,7 +521,7 @@
     if (ctx.vars && n.sheet == null) {
       for (let s = ctx.vars; s; s = s.parent) if (s.map.has(key)) return s.map.get(key);
     }
-    if (n.book != null) {
+    if (otherBook(n)) {
       /* a name defined in another workbook: [1]!Name, or one of its sheets' ('[1]Sheet'!Name), using the values
          cached with this file */
       const ext = C.extBook(ctx.wb, n.book);
@@ -516,7 +530,7 @@
         const i = ext.sheetList.indexOf(ext.sheets[String(n.sheet).toLowerCase()]);
         d = i >= 0 && ext.scoped && ext.scoped[i] ? ext.scoped[i][n.name.toLowerCase()] : null;
       } else d = ext && ext.names[n.name.toLowerCase()];
-      if (!d) return E.REF;
+      if (!d || !d.ref) { ctx.flags.keep = true; return E.REF; }   // a name it kept no definition of: keep the saved result
       let a;
       try { a = F.parse(d.ref); } catch (e) { return E.REF; }
       F.walk(a, (x) => { if ((x.t === 'ref' || x.t === 'area' || x.t === 'name') && x.book == null) x.book = n.book; });
@@ -668,7 +682,7 @@
     }
   }
   function finish(def, args, ctx) {
-    if (!def.list && args.length < def.max && def.max <= 32) while (args.length < def.max) args.push(MISSING);
+    if (!def.list && args.length < def.max && def.max <= 32) while (args.length < def.max) args.push(def.omitted ? OMITTED : MISSING);
     for (let i = 0; i < args.length; i++) {
       const k = kindAt(def, i);
       if (k === 'n' || k === 's' || k === 'b') {
@@ -834,7 +848,7 @@
     F.walk(ast, (n) => {
       if (n.t === 'fn' && VOLATILE.has(n.name)) out.volatile = true;
       if (n.t === 'ref' || n.t === 'area') {
-        if (n.book != null) return;
+        if (otherBook(n)) return;
         const s = n.sheet != null ? wb.sheetByName(n.sheet) : sh;
         if (!s) return;
         const r1 = n.t === 'ref' ? n.r : Math.min(n.r1, n.r2), r2 = n.t === 'ref' ? n.r : Math.max(n.r1, n.r2);

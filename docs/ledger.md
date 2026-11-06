@@ -131,7 +131,8 @@ searchable topics, the keyboard-shortcut reference and a function reference for 
 - Pictures (PNG, JPEG, GIF, BMP, SVG and Windows metafiles — EMF and WMF are drawn by Ledger's own
   metafile player), AutoShapes and text boxes: move, resize, copy, order, Format Object; their text is edited in
   place (a click in a text box, or on the text of a selected AutoShape, puts the caret there; a text box moves by its
-  edge).
+  edge). A picture's grayscale, black and white, transparency, brightness and contrast show as Excel draws them
+  (the brightness and contrast curve measured in Word and PowerPoint 2016; docs/quire.md, Rendering notes).
 - Conditional formatting from newer files is shown too: data bars, colour scales and icon sets
   (including the Excel 2010 sets and custom icon combinations), and sparklines.
 
@@ -507,10 +508,17 @@ zoom, scrolling, frozen panes, hidden anchors and an XML Spreadsheet 2003 merge;
 workbooks fail before the fix, and the fifth fails with the new drawing alone. The fixtures and API
 evidence are in `tests/from-issues/22/`.
 
-Formula recalculation, CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`.
-Their earlier broad-corpus measurements are archived with the run history, rather than mixed into
-the current OOXML preservation figures. Current preservation does not imply exact print layout or
-support for every formula or external data source.
+**Recalculation against the values Excel stored** (`tests/ledger/recalc1.js` over a corpus, 2026-11-06): in the
+744 workbooks of the OOXML corpus that Excel saved (the SDK's three Performance files, whose stored values were never
+computed, left out), Ledger's results agree with **44,159 of 44,493** formula cells (99.25%); in the 391 Excel 97-2003
+workbooks Excel saved, opened by conversion, with **58,185 of 59,758** (97.37%; 99.65% without one workbook whose
+1,385 differences are `TODAY()` stamps and a French `CELL("adresse")`). What remains is mostly the clock, stale stored
+values, a German or French Excel's own number formats and function words, and legacy implicit intersection. Lookup
+functions (Excel's approximate search on unsorted data, `VLOOKUP`'s argument rules), `INDEX` over an array expression,
+`COUNTIF` criteria and the database functions' criteria follow the results Excel stored in POI's test workbooks.
+
+CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`. Current preservation does not imply exact print
+layout or support for every formula or external data source.
 
 ## Known limitations
 

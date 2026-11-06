@@ -291,12 +291,56 @@
   });
 
   /* --------------------------------------------------------------- database */
+  /* a database criterion as Excel tests it, not COUNTIF's rules. Derived from Apache POI
+     poi/src/main/java/org/apache/poi/ss/formula/functions/DStarRunner.java (testNormalCondition and its helpers;
+     Apache-2.0), checked against the results Excel stored in POI's DGet test workbook: text with no operator
+     matches values that start with it (numbers too, as text; with wildcards the whole value), "" any text;
+     "=" a blank cell, "=text" that whole text (wildcards too), "=number" that number; <, <=, >, >= compare
+     numbers only, and a bound that isn't a number makes the function #VALUE!; "<>" with a number compares
+     numbers, with text the text. ~ escapes only * and ? ("=cap~~" is two tildes). Where Excel's results
+     differ from POI: text never matches TRUE or FALSE ("=TRUE" finds no logical value), and a TRUE or FALSE
+     criterion matches that logical value. A number criterion matches that number, an error that error. */
+  const dbWild = (s) => new RegExp('^' + s.replace(/~([*?])|([*?])|([.+^${}()|[\]\\])/g, (m, esc, wild, sp) => (esc ? '\\' + esc : wild === '*' ? '[\\s\\S]*' : wild ? '[\\s\\S]' : '\\' + sp)) + '$', 'i');
+  const dbFail = { dbFail: true };
+  function dbCondition(cond, ctx) {
+    const asNum = (s) => { const n = C.parseNum(s.trim(), ctx.wb); if (n == null) throw dbFail; return n; };
+    const isNum = (s) => s.trim() !== '' && C.parseNum(s.trim(), ctx.wb) != null;
+    const text = (v) => (v == null ? '' : typeof v === 'string' ? v : typeof v === 'number' ? C.toStr(v) : null);
+    const num = (test) => (v) => typeof v === 'number' && test(v);
+    if (typeof cond === 'string') {
+      const op = /^(<=|>=|<>|<|>|=)?/.exec(cond)[1] || '', rest = cond.slice(op.length);
+      if (op === '<=') { const n = asNum(rest); return num((v) => v <= n); }
+      if (op === '<') { const n = asNum(rest); return num((v) => v < n); }
+      if (op === '>=') { const n = asNum(rest); return num((v) => v >= n); }
+      if (op === '>') { const n = asNum(rest); return num((v) => v > n); }
+      if (op === '<>') {
+        if (isNum(rest)) { const n = asNum(rest); return num((v) => v !== n); }
+        const low = rest.toLowerCase();
+        return (v) => { const t = text(v); return t == null || t.toLowerCase() !== low; };
+      }
+      if (op === '=') {
+        if (rest === '') return (v) => v == null;
+        if (isNum(rest)) { const n = asNum(rest); return num((v) => v === n); }
+        const re = dbWild(rest);
+        return (v) => { const t = text(v); return t != null && re.test(t); };
+      }
+      if (cond === '') return (v) => typeof v === 'string';
+      const re = /[*?]/.test(cond) ? dbWild(cond) : null, low = cond.replace(/~([*?])/g, '$1').toLowerCase();
+      return (v) => { const t = text(v); return t != null && (re ? re.test(t) : t.toLowerCase().startsWith(low)); };
+    }
+    if (typeof cond === 'number') return (v) => (typeof v === 'number' ? v === cond : typeof v === 'string' && isNum(v) && asNum(v) === cond);
+    if (isErr(cond)) return (v) => isErr(v) && v.e === cond.e;
+    if (typeof cond === 'boolean') return (v) => v === cond;
+    return () => false;
+  }
   /** records of a database range that satisfy a criteria range; returns {rows:[record row offsets], col} */
   function dbSelect(ctx, db, field, crit) {
     if (!(db instanceof Ref) || !(crit instanceof Ref)) return E.VALUE;
     const sh = db.sheet;
+    /* field names: as text, case aside; blank and error headers name nothing */
+    const name = (v) => (v == null || isErr(v) ? null : String(C.toStr(v)).toLowerCase());
     const headers = [];
-    for (let c = db.c1; c <= db.c2; c++) headers.push(C.toStr(C.cellValue(sh, db.r1, c)).toLowerCase());
+    for (let c = db.c1; c <= db.c2; c++) headers.push(name(C.cellValue(sh, db.r1, c)));
     let col = null;
     if (field !== MISSING && field !== undefined) {
       if (typeof field === 'number') { col = trunc(field) - 1; if (col < 0 || col >= headers.length) return E.VALUE; }
@@ -305,7 +349,7 @@
     /* criteria rows: OR across rows, AND across columns */
     const csh = crit.sheet;
     const cHead = [];
-    for (let c = crit.c1; c <= crit.c2; c++) cHead.push(C.toStr(C.cellValue(csh, crit.r1, c)).toLowerCase());
+    for (let c = crit.c1; c <= crit.c2; c++) cHead.push(C.cellValue(csh, crit.r1, c));
     const rules = [];
     for (let r = crit.r1 + 1; r <= crit.r2; r++) {
       const row = [];
@@ -313,18 +357,18 @@
         const cc = crit.c1 + k;
         const cell = csh.get(r, cc);
         const v = C.cellValue(csh, r, cc);
-        if (v == null || v === '') continue;
-        const ci = headers.indexOf(cHead[k]);
-        if (cell && cell.f != null && ci < 0) {
+        if (v == null) continue;   // an empty criterion: any value
+        /* a criterion under a blank or error heading, or an empty one under a heading that names no field */
+        const h = cHead[k];
+        if (h == null || isErr(h) || typeof h === 'boolean') return E.VALUE;
+        const ci = headers.indexOf(name(h));
+        if (ci < 0 && cell && cell.f != null && v !== '') {
           /* computed criterion: a formula written for the first record */
           row.push({ formula: cell, at: { r, c: cc } });
           continue;
         }
-        if (ci < 0) { row.push({ never: true }); continue; }
-        let pred;
-        if (typeof v === 'string' && !/^(<=|>=|<>|<|>|=)/.test(v)) pred = C.criteria(v + '*', ctx);
-        else pred = C.criteria(v, ctx);
-        row.push({ ci, pred });
+        if (ci < 0) { if (C.toStr(v) === '') return E.VALUE; row.push({ never: true }); continue; }
+        row.push({ ci, pred: dbCondition(v, ctx) });
       }
       rules.push(row);
     }
@@ -347,7 +391,8 @@
   }
   const dbFn = (name, f, needField) => def(name, 3, 3, 'rvr', (ctx, db, field, crit) => {
     if (isErr(field)) return field;
-    const s = dbSelect(ctx, db, field, crit);
+    let s;
+    try { s = dbSelect(ctx, db, field, crit); } catch (e) { if (e === dbFail) return E.VALUE; throw e; }
     if (isErr(s)) return s;
     if (needField !== false && s.col == null) return E.VALUE;
     const vals = s.rows.map((r) => (s.col == null ? null : C.cellValue(s.sh, r, s.db.c1 + s.col)));
@@ -361,7 +406,8 @@
   dbFn('DMAX', (v) => { const n = nm(v); return n.length ? Math.max(...n) : 0; });
   dbFn('DMIN', (v) => { const n = nm(v); return n.length ? Math.min(...n) : 0; });
   dbFn('DPRODUCT', (v) => { const n = nm(v); return n.length ? n.reduce((a, b) => a * b, 1) : 0; });
-  dbFn('DGET', (v) => (v.length === 0 ? E.VALUE : v.length > 1 ? E.NUM : v[0] == null ? 0 : v[0]));
+  /* DGET: the one value among the matching records, blank fields set aside: none is #VALUE!, two #NUM! (POI's DGet) */
+  dbFn('DGET', (v) => { const got = v.filter((x) => x != null); return got.length === 0 ? E.VALUE : got.length > 1 ? E.NUM : got[0]; });
   const dv = (pop, root) => (v) => { const n = nm(v); if (n.length < (pop ? 1 : 2)) return E.DIV0; const r = S.devsq(n) / (pop ? n.length : n.length - 1); return root ? Math.sqrt(r) : r; };
   dbFn('DSTDEV', dv(false, true)); dbFn('DSTDEVP', dv(true, true)); dbFn('DVAR', dv(false, false)); dbFn('DVARP', dv(true, false));
   C.dbSelect = dbSelect;

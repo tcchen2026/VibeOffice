@@ -51,6 +51,43 @@
     if (found >= 0) { const v = get(found); if (lkRank(v) !== lkRank(x)) return -1; }
     return found;
   }
+  /* Excel's approximate search for VLOOKUP, HLOOKUP and LOOKUP. Derived from Apache POI
+     poi/src/main/java/org/apache/poi/ss/formula/functions/LookupUtils.java (performBinarySearch,
+     handleMidValueTypeMismatch, findLastIndexInRunOfEqualValues; Apache-2.0), whose results POI checks against
+     Excel's: a binary search between indexes taken as too low (-1) and too high (n); a value of another type at
+     the middle (blank, error, other kind) steps the middle forward to the next comparable value, and a match
+     walks on to the last of a run of equal values. On unsorted data this picks Excel's row. Values past
+     `used` are blank. Returns the index, or -1. */
+  function xlSearch(get, n, used, x) {
+    const kind = (v) => (typeof v === 'number' ? 1 : typeof v === 'string' ? 2 : typeof v === 'boolean' ? 3 : 0);
+    const k = kind(x);
+    /* the lookup value against an item: <0, 0, >0, or null when they can't be compared */
+    const cmp = (i) => { if (i >= used) return null; const v = get(i); return isErr(v) || kind(v) !== k ? null : -C.compare(v, x); };
+    let lo = -1, hi = n;
+    for (;;) {
+      if (hi - lo < 2) return lo;
+      let mid = lo + Math.floor((hi - lo) / 2);
+      let c = cmp(mid);
+      if (c === null) {
+        let m = mid, found = -1;
+        for (;;) {
+          m++;
+          if (m === hi || m >= used) { hi = mid; break; }   // all from the middle up are of another type
+          const c2 = cmp(m);
+          if (c2 !== null && c2 < 0 && m === hi - 1) { hi = mid; break; }
+          if (c2 === null) continue;
+          if (c2 === 0) found = m;
+          else if (c2 < 0) hi = m;
+          else lo = m;
+          break;
+        }
+        if (found < 0) continue;
+        mid = found; c = 0;
+      }
+      if (c === 0) { let i = mid; while (i + 1 < hi && cmp(i + 1) === 0) i++; return i; }
+      if (c < 0) hi = mid; else lo = mid;
+    }
+  }
   /** exact match predicate (case-insensitive, optional wildcards for text) */
   function exactPred(x, wild) {
     if (typeof x === 'string') {
@@ -70,15 +107,21 @@
   }
   const lookupVal = (x, ctx) => { x = C.scalar(x, ctx); if (x === MISSING) x = null; return x; };
 
-  /* VLOOKUP / HLOOKUP */
+  /* VLOOKUP / HLOOKUP, with Excel's argument rules (POI's LookupUtils and the results Excel stored in POI's
+     LookupFunctionsTestCaseData and others): a blank lookup value is 0 in an approximate lookup and finds
+     nothing in an exact one (#N/A before the table is looked at); the column index is resolved after the lookup,
+     an error or text that isn't a whole number there is #REF!, under 1 #VALUE!; range_lookup left out is TRUE,
+     given empty or blank FALSE, any text #VALUE!; a single value as the table is a 1×1 table */
   function vhlookup(ctx, x, table, idx, approx, vertical) {
     if (isErr(x)) return x;
-    if (x == null) return E.NA; /* a blank lookup value finds nothing (checked before the column index) */
-    if (!(table instanceof Ref) && !(table instanceof Arr)) return isErr(table) ? table : E.VALUE;
-    idx = trunc(idx);
-    if (isErr(idx)) return idx;
-    approx = approx === MISSING ? true : C.toBool(approx);
     if (isErr(approx)) return approx;
+    if (approx === C.OMITTED) approx = true;
+    else if (approx === MISSING || approx == null) approx = false;
+    else if (typeof approx === 'string') return E.VALUE;
+    else approx = typeof approx === 'boolean' ? approx : approx !== 0;
+    if (x == null) { if (!approx) return E.NA; x = 0; }
+    if (isErr(table)) return table;
+    if (!(table instanceof Ref) && !(table instanceof Arr)) table = new Arr([[table === MISSING ? null : table]]);
     const len = vertical ? table.rows : table.cols;
     const width = vertical ? table.cols : table.rows;
     const sh = table instanceof Ref ? table.sheet : null;
@@ -87,18 +130,21 @@
       : (vertical ? (i) => table.d[i][0] : (i) => table.d[0][i]);
     const used = table instanceof Ref ? Math.max(0, vertical ? Math.min(table.r2, sh.maxR) - table.r1 + 1 : Math.min(table.c2, sh.maxC) - table.c1 + 1) : len;
     let i;
-    if (approx) i = bsearch(get, used, x, false);
+    if (approx) i = xlSearch(get, len, used, x);
     else i = linear(get, used, exactPred(x, true), 0, 1);
     if (i < 0) return E.NA;
-    /* the column index is checked after the lookup: a missing key gives #N/A first */
+    /* the column index is resolved after the lookup: a missing key gives #N/A first */
+    if (isErr(idx)) return E.REF;
+    if (typeof idx === 'string') { if (!/^\s*[+-]?\d+\s*$/.test(idx)) return E.REF; idx = +idx; }
+    idx = idx === MISSING || idx == null ? 0 : typeof idx === 'boolean' ? +idx : trunc(idx);
     if (idx < 1) return E.VALUE;
     if (idx > width) return E.REF;
     if (table instanceof Ref) return vertical ? C.cellValue(sh, table.r1 + i, table.c1 + idx - 1) : C.cellValue(sh, table.r1 + idx - 1, table.c1 + i);
     const v = vertical ? table.d[i][idx - 1] : table.d[idx - 1][i];
     return v == null ? 0 : v;
   }
-  def('VLOOKUP', 3, 4, 'vrnv', (ctx, x, t, i, a) => { const v = vhlookup(ctx, lookupVal(x, ctx), t, i, a, true); return v == null ? 0 : v; }, { errOk: true });
-  def('HLOOKUP', 3, 4, 'vrnv', (ctx, x, t, i, a) => { const v = vhlookup(ctx, lookupVal(x, ctx), t, i, a, false); return v == null ? 0 : v; }, { errOk: true });
+  def('VLOOKUP', 3, 4, 'vrvv', (ctx, x, t, i, a) => { const v = vhlookup(ctx, lookupVal(x, ctx), t, i, a, true); return v == null ? 0 : v; }, { errOk: true, omitted: true });
+  def('HLOOKUP', 3, 4, 'vrvv', (ctx, x, t, i, a) => { const v = vhlookup(ctx, lookupVal(x, ctx), t, i, a, false); return v == null ? 0 : v; }, { errOk: true, omitted: true });
 
   def('MATCH', 2, 3, 'van', (ctx, x, arr, type) => {
     x = lookupVal(x, ctx);
@@ -188,7 +234,7 @@
   def('LOOKUP', 2, 3, 'vrr', (ctx, x, arr, res) => {
     x = lookupVal(x, ctx);
     if (isErr(x)) return x;
-    if (x == null) return E.NA;
+    if (x == null) x = 0;   /* a blank lookup value is 0 (POI's LookupUtils) */
     let v = vec(arr), resV;
     if (res === MISSING || res === undefined) {
       /* array form */
@@ -198,13 +244,13 @@
       const n = wide ? A.cols : A.rows;
       const used = A instanceof Ref ? (wide ? Math.min(A.c2, A.sheet.maxC) - A.c1 + 1 : Math.min(A.r2, A.sheet.maxR) - A.r1 + 1) : n;
       const get = wide ? (i) => getA(0, i) : (i) => getA(i, 0);
-      const i = bsearch(get, Math.max(0, used), x, false);
+      const i = xlSearch(get, n, Math.max(0, used), x);
       if (i < 0) return E.NA;
       const r = wide ? getA(A.rows - 1, i) : getA(i, A.cols - 1);
       return r == null ? 0 : r;
     }
     if (!v) return E.NA;
-    const i = bsearch(v.get, v.used, x, false);
+    const i = xlSearch(v.get, v.n, v.used, x);
     if (i < 0) return E.NA;
     if (res instanceof Ref) {
       const r = res.cols === 1 || res.rows > 1 ? C.cellValue(res.sheet, res.r1 + i, res.c1) : C.cellValue(res.sheet, res.r1, res.c1 + i);
@@ -217,7 +263,8 @@
   }, { errOk: true });
 
   /* INDEX */
-  def('INDEX', 2, 4, 'rvvv', (ctx, a, r, c, area) => {
+  /* the array argument is evaluated as an array: MAX(INDEX((B2:B11=F2)*A2:A11,0)) needs no Ctrl+Shift+Enter in Excel */
+  def('INDEX', 2, 4, 'avvv', (ctx, a, r, c, area) => {
     if (isErr(a)) return a;
     let ref = a;
     if (a instanceof RefList) { const k = trunc(C.toNum(opt(area, 1))); if (isErr(k)) return k; if (k < 1 || k > a.list.length) return E.REF; ref = a.list[k - 1]; }
@@ -228,6 +275,7 @@
       if (isErr(ci)) return ci;
       ri = trunc(ri);
       if (ci != null) ci = trunc(ci);
+      if (ri < 0 || (ci != null && ci < 0)) return E.VALUE;   /* a negative index is #VALUE!, before any #REF! (Excel) */
       const rows = ref instanceof Ref || ref instanceof Arr ? ref.rows : 1, cols = ref instanceof Ref || ref instanceof Arr ? ref.cols : 1;
       /* a single row or column takes one index as the position along it */
       if (ci == null) { if (rows === 1 && cols > 1) { ci = ri; ri = 0; } else ci = 0; }

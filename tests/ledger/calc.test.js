@@ -16,6 +16,11 @@ put(sh, 'C2', '=C1*2');
 /* criteria block for D-functions */
 put(sh, 'H1', 'Dept'); put(sh, 'H2', 'West'); put(sh, 'I1', 'Sales'); put(sh, 'I2', '>200');
 put(sh, 'J1', 'Dept'); put(sh, 'J2', 'East'); put(sh, 'J3', 'North');
+/* unsorted keys, as in POI's LookupFunctionsTestCaseData ("tab 3"), whose results Excel stored */
+[33, 33, 33, 33, 33, 33, 5, 33, 100, 33].forEach((v, i) => { put(s2, 'F' + (i + 1), v); put(s2, 'G' + (i + 1), 'r' + i); });
+/* COUNTIF and database criteria cases from POI's countifExamples and DGet, as Excel answered them */
+put(s2, 'I1', '=""'); put(s2, 'I3', true); put(s2, 'I4', 'TA'); put(s2, 'I5', 12342);
+put(s2, 'K1', 'name'); put(s2, 'K2', '="=c?"'); put(s2, 'L1', 'Name'); put(s2, 'L2', 'C'); put(s2, 'M1', 'Name'); put(s2, 'M2', '<5');
 C.recalcAll(wb);
 let n = 0, fail = 0;
 const eq = (a, b, tol) => {
@@ -33,6 +38,14 @@ t('C1', 55); t('C2', 110);
 t('SUM(A1:A10)/COUNT(A1:A10)', 5.5); t('AVERAGE(A1:A10)', 5.5); t('MEDIAN(A1:A10)', 5.5); t('STDEV(A1:A10)', 3.0276503540974917);
 t('SUMPRODUCT((A1:A10>5)*A1:A10)', 40); t('SUMIF(A1:A10,">5")', 40); t('COUNTIF(B1:B5,"*e*")', 4); t('COUNTIFS(A1:A10,">2",A1:A10,"<8")', 5);
 t('AVERAGEIFS(Data!C2:C6,Data!B2:B6,"West")', 275); t('SUMIFS(Data!C2:C6,Data!B2:B6,"East",Data!C2:C6,">100")', 175);
+/* Excel's approximate search on unsorted keys, and its argument rules (POI's LookupFunctionsTestCaseData) */
+t('VLOOKUP(33,Data!F1:G10,2,TRUE)', 'r5'); t('VLOOKUP(33,Data!F1:G10,2)', 'r5'); t('VLOOKUP(33,Data!F1:G10,2,)', 'r0');
+t('VLOOKUP(5,Data!F1:G10,"2",FALSE)', 'r6'); t('VLOOKUP(5,Data!F1:G10,"0.9",FALSE)', '#REF!'); t('VLOOKUP(5,Data!F1:G10,"two",FALSE)', '#REF!');
+t('VLOOKUP(5,Data!F1:G10,NA(),FALSE)', '#REF!'); t('VLOOKUP(5,Data!F1:G10,FALSE,FALSE)', '#VALUE!'); t('VLOOKUP(5,Data!F1:G10,2,"FALSE")', '#VALUE!');
+t('VLOOKUP(Data!H1,Data!F1:G10,2,FALSE)', '#N/A'); t('VLOOKUP(1,PI(),1)', '#N/A'); t('LOOKUP(33,Data!F1:F10,Data!G1:G10)', 'r5');
+t('COUNTIF(Data!I1:I2,"=")', 1); t('COUNTIF(Data!I1:I2,"<>")', 1); t('COUNTIF(Data!I1:I2,"")', 2); t('COUNTIF(Data!I2,Data!I2)', 0);
+t('COUNTIF(Data!I3:I4,"<TRUE")', 0); t('COUNTIF(Data!I3:I4,">FALSE")', 1); t('COUNTIF(Data!I5,"1*2")', 0);
+t('DGET(Data!A1:D6,"SALES",Data!K1:K2)', 175); t('DGET(Data!A1:D6,"Sales",Data!L1:L2)', 175); t('DGET(Data!A1:D6,"Sales",Data!M1:M2)', '#VALUE!');
 t('VLOOKUP("Cy",Data!A1:D6,3,FALSE)', 175); t('VLOOKUP("Zed",Data!A1:D6,3,FALSE)', '#N/A'); t('HLOOKUP("Sales",Data!A1:D6,3,FALSE)', 250);
 t('INDEX(Data!A1:D6,MATCH("Di",Data!A1:A6,0),2)', 'North'); t('MATCH(7,A1:A10,1)', 7); t('MATCH(7.5,A1:A10)', 7); t('LOOKUP(6.5,A1:A10,A1:A10)', 6);
 t('XLOOKUP("Ed",Data!A2:A6,Data!C2:C6)', 300); t('XMATCH("cherry",B1:B5)', 3);
@@ -86,3 +99,4 @@ t('2^-1', 0.5); t('-2^2', 4); t('10%', 0.1); t('5&"%"', '5%'); t('1E+308*10', '#
 /* as Excel: unary plus changes nothing (a blank is 0); an omitted logical operand is FALSE; a range that is an error is the result */
 t('+B1', 'apple'); t('+Z99', 0); t('AND(,TRUE)', false); t('OR(,FALSE)', false); t('XOR(,TRUE)', true); t('COUNTIF(#REF!,"A")', '#REF!'); t('COUNTIFS(#REF!,"A")', '#REF!'); t('SUMIF(#REF!,"A")', '#REF!'); t('AVERAGEIF(#REF!,"A")', '#REF!');
 console.log(n - fail + '/' + n);
+if (fail) process.exitCode = 1;   // a FAIL line fails the test

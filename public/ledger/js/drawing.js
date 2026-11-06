@@ -119,7 +119,7 @@
     const w = Math.max(1, Math.round(rc.w)), hh = Math.max(1, Math.round(rc.h));
     if (d.kind === 'image') {
       const crop = d.crop;
-      const key = 'img' + d.media + (crop ? JSON.stringify(crop) : '');
+      const key = 'img' + d.media + (crop ? JSON.stringify(crop) : '') + (d.fx ? JSON.stringify(d.fx) : '');
       if (el._key !== key) {
         el._key = key;
         content.textContent = '';
@@ -130,7 +130,15 @@
             const sx = 1 / Math.max(0.01, 1 - crop.l / 100 - crop.r / 100), sy = 1 / Math.max(0.01, 1 - crop.t / 100 - crop.b / 100);
             Object.assign(img.style, { position: 'absolute', width: sx * 100 + '%', height: sy * 100 + '%', left: -crop.l / 100 * sx * 100 + '%', top: -crop.t / 100 * sy * 100 + '%', maxWidth: 'none' });
           }
+          /* grayscale, black and white, brightness and contrast (L.lumFilter, as Office draws them), transparency */
+          const fx = d.fx || {}, f = [], lum = L.lumFilter(fx.bright, fx.contrast);
+          if (fx.gray || fx.bw) f.push('grayscale(1)');
+          if (fx.bw) f.push('contrast(30)');
+          if (lum) f.push(lum.css);
+          if (f.length) img.style.filter = f.join(' ');
+          if (fx.alpha != null && fx.alpha < 1) img.style.opacity = fx.alpha;
           content.appendChild(img);
+          if (lum) content.appendChild(lum.defs);
         } else content.appendChild(h('div', { class: 'gobj-ph', translate: 'no', text: d.name || L.t('Picture') }));
       }
     } else if (d.kind === 'chart') {
