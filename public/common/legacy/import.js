@@ -13,6 +13,7 @@
     'ppt-structure', 'ppt-theme', 'ppt-text-read', 'ppt-text', 'ppt-text-design', 'ppt-text-write', 'ppt-write'];
   const N = (s) => s;
   const KIND = { doc: N('Word 97-2003 document'), xls: N('Excel 97-2003 workbook'), ppt: N('PowerPoint 97-2003 presentation') };
+  const OTHER = { doc: N('This is a Word 97-2003 document, which {0} does not open.'), xls: N('This is an Excel 97-2003 workbook, which {0} does not open.'), ppt: N('This is a PowerPoint 97-2003 presentation, which {0} does not open.') };
   const here = typeof document !== 'undefined' && document.currentScript ? new URL('.', document.currentScript.src).href : '';
   let loading = null;
   /** the converters, loaded once, one after another (each attaches to L.legacy) */
@@ -37,7 +38,7 @@
       let sniff;
       try { sniff = B.sniff(u8); } catch (e) { throw refuse(L.t('The file is damaged or is not an Office 97-2003 file.')); }
       if (sniff.format !== want) {
-        throw refuse(KIND[sniff.format] ? L.t('This is a {0}, which {1} does not open.', L.legacyImport.kindName(sniff.format), L.APP) : L.t('The file is damaged or is not an Office 97-2003 file.'));
+        throw refuse(OTHER[sniff.format] ? L.t(OTHER[sniff.format], L.APP) : L.t('The file is damaged or is not an Office 97-2003 file.'));
       }
       const extension = (/\.([a-z]+)$/i.exec(name || '') || [])[1];
       try {

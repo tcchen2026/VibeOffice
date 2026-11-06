@@ -55,5 +55,5 @@ test('Lectern opens a PowerPoint 97-2003 presentation', { skip: !fs.existsSync(p
 
 test('a file of another kind is refused with what it is', { skip: !fs.existsSync(xls) && 'no corpus' }, async () => {
   const r = await open('quire', xls, 'book.doc', `({ name: L.app.fileName })`);
-  assert.match(r.msgs.join('\n'), /Excel 97-2003 workbook, which Quire does not open/);
+  assert.match(r.msgs.join('\n'), /This is an Excel 97-2003 workbook, which Quire does not open/);
 });
