@@ -16,7 +16,7 @@
  },
  "\"No\" Symbol": {
   "where": [
-   "common/geometry.js:214"
+   "common/geometry.js:33"
   ]
  },
  "\"Straight &quotes\" with “smart quotes”": {
@@ -4407,7 +4407,7 @@
  },
  "10-Point Star": {
   "where": [
-   "common/geometry.js:664"
+   "common/geometry.js:139"
   ]
  },
  "100 words or less": {
@@ -4433,7 +4433,7 @@
  },
  "12-Point Star": {
   "where": [
-   "common/geometry.js:665"
+   "common/geometry.js:140"
   ]
  },
  "12.5% Gray": {
@@ -4443,7 +4443,7 @@
  },
  "16-Point Star": {
   "where": [
-   "common/geometry.js:343"
+   "common/geometry.js:61"
   ]
  },
  "1st, 2nd, 3rd ...": {
@@ -4488,7 +4488,7 @@
  },
  "24-Point Star": {
   "where": [
-   "common/geometry.js:344"
+   "common/geometry.js:62"
   ]
  },
  "25% Gray": {
@@ -4523,7 +4523,7 @@
  },
  "32-Point Star": {
   "where": [
-   "common/geometry.js:345"
+   "common/geometry.js:63"
   ]
  },
  "35mm Slides": {
@@ -4558,12 +4558,12 @@
  },
  "4-Point Star": {
   "where": [
-   "common/geometry.js:339"
+   "common/geometry.js:57"
   ]
  },
  "5-Point Star": {
   "where": [
-   "common/geometry.js:340"
+   "common/geometry.js:58"
   ]
  },
  "50% Gray": {
@@ -4578,7 +4578,7 @@
  },
  "6-Point Star": {
   "where": [
-   "common/geometry.js:341"
+   "common/geometry.js:59"
   ]
  },
  "6.25% Gray": {
@@ -4588,7 +4588,7 @@
  },
  "7-Point Star": {
   "where": [
-   "common/geometry.js:663"
+   "common/geometry.js:138"
   ]
  },
  "75% Gray": {
@@ -4603,7 +4603,7 @@
  },
  "8-Point Star": {
   "where": [
-   "common/geometry.js:342"
+   "common/geometry.js:60"
   ]
  },
  ": (colon)": {
@@ -5394,67 +5394,67 @@
  },
  "Action Button: Back or Previous": {
   "where": [
-   "common/geometry.js:439"
+   "common/geometry.js:154"
   ]
  },
  "Action Button: Beginning": {
   "where": [
-   "common/geometry.js:440"
+   "common/geometry.js:156"
   ]
  },
  "Action Button: Custom": {
   "where": [
-   "common/geometry.js:438"
+   "common/geometry.js:150"
   ]
  },
  "Action Button: Document": {
   "where": [
-   "common/geometry.js:441"
+   "common/geometry.js:159"
   ]
  },
  "Action Button: End": {
   "where": [
-   "common/geometry.js:441"
+   "common/geometry.js:157"
   ]
  },
  "Action Button: Forward or Next": {
   "where": [
-   "common/geometry.js:440"
+   "common/geometry.js:155"
   ]
  },
  "Action Button: Help": {
   "where": [
-   "common/geometry.js:438"
+   "common/geometry.js:152"
   ]
  },
  "Action Button: Home": {
   "where": [
-   "common/geometry.js:438"
+   "common/geometry.js:151"
   ]
  },
  "Action Button: Information": {
   "where": [
-   "common/geometry.js:439"
+   "common/geometry.js:153"
   ]
  },
  "Action Button: Movie": {
   "where": [
-   "common/geometry.js:442"
+   "common/geometry.js:161"
   ]
  },
  "Action Button: Return": {
   "where": [
-   "common/geometry.js:441"
+   "common/geometry.js:158"
   ]
  },
  "Action Button: Sound": {
   "where": [
-   "common/geometry.js:442"
+   "common/geometry.js:160"
   ]
  },
  "Action Buttons": {
   "where": [
-   "common/geometry.js:860",
+   "common/geometry.js:438",
    "lectern/js/app.js:82",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161"
@@ -6395,7 +6395,7 @@
  },
  "Arc": {
   "where": [
-   "common/geometry.js:251"
+   "common/geometry.js:39"
   ]
  },
  "Arch Down": {
@@ -7053,7 +7053,7 @@
  },
  "Basic Shapes": {
   "where": [
-   "common/geometry.js:855",
+   "common/geometry.js:433",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -7116,12 +7116,12 @@
  },
  "Bent Arrow": {
   "where": [
-   "common/geometry.js:312"
+   "common/geometry.js:53"
   ]
  },
  "Bent-Up Arrow": {
   "where": [
-   "common/geometry.js:637"
+   "common/geometry.js:126"
   ]
  },
  "Berry": {
@@ -7141,7 +7141,7 @@
  },
  "Bevel": {
   "where": [
-   "common/geometry.js:180"
+   "common/geometry.js:29"
   ]
  },
  "Bitmap Image": {
@@ -7237,12 +7237,12 @@
  },
  "Block Arc": {
   "where": [
-   "common/geometry.js:622"
+   "common/geometry.js:120"
   ]
  },
  "Block Arrows": {
   "where": [
-   "common/geometry.js:856",
+   "common/geometry.js:434",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -8007,7 +8007,7 @@
  },
  "Callouts": {
   "where": [
-   "common/geometry.js:859",
+   "common/geometry.js:437",
    "lectern/js/app.js:161"
   ]
  },
@@ -8018,7 +8018,7 @@
  },
  "Can": {
   "where": [
-   "common/geometry.js:159"
+   "common/geometry.js:27"
   ]
  },
  "Can Up": {
@@ -8774,7 +8774,7 @@
  },
  "Chevron": {
   "where": [
-   "common/geometry.js:308"
+   "common/geometry.js:52"
   ]
  },
  "Chevron Up": {
@@ -8850,7 +8850,7 @@
  },
  "Chord": {
   "where": [
-   "common/geometry.js:621"
+   "common/geometry.js:119"
   ]
  },
  "Chrome": {
@@ -8868,7 +8868,7 @@
  },
  "Circular Arrow": {
   "where": [
-   "common/geometry.js:323"
+   "common/geometry.js:55"
   ]
  },
  "Circular: {0}": {
@@ -9190,12 +9190,12 @@
  "Cloud": {
   "where": [
    "common/clipart.js:30",
-   "common/geometry.js:427"
+   "common/geometry.js:100"
   ]
  },
  "Cloud Callout": {
   "where": [
-   "common/geometry.js:413"
+   "common/geometry.js:99"
   ]
  },
  "Clustered Bar": {
@@ -10420,8 +10420,8 @@
  },
  "Cross": {
   "where": [
-   "common/geometry.js:155",
-   "common/geometry.js:769"
+   "common/geometry.js:26",
+   "common/geometry.js:352"
   ]
  },
  "Cross-&reference...": {
@@ -10724,7 +10724,7 @@
  },
  "Cube": {
   "where": [
-   "common/geometry.js:169",
+   "common/geometry.js:28",
    "ledger/js/fninfo.js:536"
   ]
  },
@@ -10811,8 +10811,8 @@
  },
  "Curved Connector": {
   "where": [
-   "common/geometry.js:450",
-   "common/geometry.js:451",
+   "common/geometry.js:114",
+   "common/geometry.js:115",
    "lectern/js/commands.js:170"
   ]
  },
@@ -11075,22 +11075,22 @@
  },
  "Dark downward diagonal": {
   "where": [
-   "common/geometry.js:771"
+   "common/geometry.js:354"
   ]
  },
  "Dark horizontal": {
   "where": [
-   "common/geometry.js:768"
+   "common/geometry.js:351"
   ]
  },
  "Dark upward diagonal": {
   "where": [
-   "common/geometry.js:771"
+   "common/geometry.js:354"
   ]
  },
  "Dark vertical": {
   "where": [
-   "common/geometry.js:768"
+   "common/geometry.js:351"
   ]
  },
  "Dash": {
@@ -11137,22 +11137,22 @@
  },
  "Dashed downward diagonal": {
   "where": [
-   "common/geometry.js:772"
+   "common/geometry.js:355"
   ]
  },
  "Dashed horizontal": {
   "where": [
-   "common/geometry.js:769"
+   "common/geometry.js:352"
   ]
  },
  "Dashed upward diagonal": {
   "where": [
-   "common/geometry.js:772"
+   "common/geometry.js:355"
   ]
  },
  "Dashed vertical": {
   "where": [
-   "common/geometry.js:769"
+   "common/geometry.js:352"
   ]
  },
  "Data": {
@@ -11320,7 +11320,7 @@
  },
  "Decagon": {
   "where": [
-   "common/geometry.js:661"
+   "common/geometry.js:136"
   ]
  },
  "Decimal": {
@@ -11744,7 +11744,7 @@
  },
  "Diagonal Stripe": {
   "where": [
-   "common/geometry.js:635",
+   "common/geometry.js:124",
    "ledger/js/dialogs.js:263"
   ]
  },
@@ -11760,12 +11760,12 @@
  },
  "Diagonal brick": {
   "where": [
-   "common/geometry.js:774"
+   "common/geometry.js:357"
   ]
  },
  "Diagonal cross": {
   "where": [
-   "common/geometry.js:772"
+   "common/geometry.js:355"
   ]
  },
  "Diagonal down": {
@@ -11791,7 +11791,7 @@
  },
  "Diamond": {
   "where": [
-   "common/geometry.js:145",
+   "common/geometry.js:22",
    "lectern/js/panes.js:735",
    "lectern/js/slideshow.js:18",
    "lectern/js/slideshow.js:25"
@@ -11993,12 +11993,12 @@
  },
  "Division": {
   "where": [
-   "common/geometry.js:674"
+   "common/geometry.js:148"
   ]
  },
  "Divot": {
   "where": [
-   "common/geometry.js:775"
+   "common/geometry.js:358"
   ]
  },
  "Dk Dwn Diagonal": {
@@ -12164,7 +12164,7 @@
  },
  "Dodecagon": {
   "where": [
-   "common/geometry.js:662"
+   "common/geometry.js:137"
   ]
  },
  "Don't capitalize after:": {
@@ -12179,7 +12179,7 @@
  },
  "Donut": {
   "where": [
-   "common/geometry.js:207"
+   "common/geometry.js:32"
   ]
  },
  "Dot": {
@@ -12208,12 +12208,12 @@
  },
  "Dotted diamond": {
   "where": [
-   "common/geometry.js:775"
+   "common/geometry.js:358"
   ]
  },
  "Dotted grid": {
   "where": [
-   "common/geometry.js:773"
+   "common/geometry.js:356"
   ]
  },
  "Double": {
@@ -12241,12 +12241,12 @@
  },
  "Double Brace": {
   "where": [
-   "common/geometry.js:435"
+   "common/geometry.js:107"
   ]
  },
  "Double Bracket": {
   "where": [
-   "common/geometry.js:434"
+   "common/geometry.js:106"
   ]
  },
  "Double Closing Quote": {
@@ -12316,7 +12316,7 @@
  },
  "Down Arrow": {
   "where": [
-   "common/geometry.js:275"
+   "common/geometry.js:45"
   ]
  },
  "Download": {
@@ -12331,7 +12331,7 @@
  },
  "Downward diagonal": {
   "where": [
-   "common/geometry.js:770"
+   "common/geometry.js:353"
   ]
  },
  "Dra&w Table": {
@@ -12816,9 +12816,9 @@
  },
  "Elbow Connector": {
   "where": [
-   "common/geometry.js:447",
-   "common/geometry.js:448",
-   "common/geometry.js:449",
+   "common/geometry.js:111",
+   "common/geometry.js:112",
+   "common/geometry.js:113",
    "lectern/js/commands.js:169"
   ]
  },
@@ -13217,7 +13217,7 @@
  },
  "Equal": {
   "where": [
-   "common/geometry.js:671"
+   "common/geometry.js:146"
   ]
  },
  "Equation": {
@@ -13512,12 +13512,12 @@
  },
  "Explosion 1": {
   "where": [
-   "common/geometry.js:346"
+   "common/geometry.js:64"
   ]
  },
  "Explosion 2": {
   "where": [
-   "common/geometry.js:347"
+   "common/geometry.js:65"
   ]
  },
  "Export to &PDF...": {
@@ -14301,148 +14301,148 @@
  },
  "Flowchart": {
   "where": [
-   "common/geometry.js:857",
+   "common/geometry.js:435",
    "lectern/js/app.js:161"
   ]
  },
  "Flowchart: Alternate Process": {
   "where": [
-   "common/geometry.js:373"
+   "common/geometry.js:71"
   ]
  },
  "Flowchart: Card": {
   "where": [
-   "common/geometry.js:390"
+   "common/geometry.js:84"
   ]
  },
  "Flowchart: Collate": {
   "where": [
-   "common/geometry.js:394"
+   "common/geometry.js:88"
   ]
  },
  "Flowchart: Connector": {
   "where": [
-   "common/geometry.js:388"
+   "common/geometry.js:82"
   ]
  },
  "Flowchart: Data": {
   "where": [
-   "common/geometry.js:375"
+   "common/geometry.js:73"
   ]
  },
  "Flowchart: Decision": {
   "where": [
-   "common/geometry.js:374"
+   "common/geometry.js:72"
   ]
  },
  "Flowchart: Delay": {
   "where": [
-   "common/geometry.js:398"
+   "common/geometry.js:92"
   ]
  },
  "Flowchart: Display": {
   "where": [
-   "common/geometry.js:400"
+   "common/geometry.js:94"
   ]
  },
  "Flowchart: Document": {
   "where": [
-   "common/geometry.js:378"
+   "common/geometry.js:76"
   ]
  },
  "Flowchart: Extract": {
   "where": [
-   "common/geometry.js:396"
+   "common/geometry.js:90"
   ]
  },
  "Flowchart: Internal Storage": {
   "where": [
-   "common/geometry.js:377"
+   "common/geometry.js:75"
   ]
  },
  "Flowchart: Magnetic Disk": {
   "where": [
-   "common/geometry.js:399"
+   "common/geometry.js:93"
   ]
  },
  "Flowchart: Manual Input": {
   "where": [
-   "common/geometry.js:386"
+   "common/geometry.js:80"
   ]
  },
  "Flowchart: Manual Operation": {
   "where": [
-   "common/geometry.js:387"
+   "common/geometry.js:81"
   ]
  },
  "Flowchart: Merge": {
   "where": [
-   "common/geometry.js:397"
+   "common/geometry.js:91"
   ]
  },
  "Flowchart: Multidocument": {
   "where": [
-   "common/geometry.js:379"
+   "common/geometry.js:77"
   ]
  },
  "Flowchart: Off-page Connector": {
   "where": [
-   "common/geometry.js:389"
+   "common/geometry.js:83"
   ]
  },
  "Flowchart: Offline Storage": {
   "where": [
-   "common/geometry.js:667"
+   "common/geometry.js:142"
   ]
  },
  "Flowchart: Or": {
   "where": [
-   "common/geometry.js:393"
+   "common/geometry.js:87"
   ]
  },
  "Flowchart: Predefined Process": {
   "where": [
-   "common/geometry.js:376"
+   "common/geometry.js:74"
   ]
  },
  "Flowchart: Preparation": {
   "where": [
-   "common/geometry.js:385"
+   "common/geometry.js:79"
   ]
  },
  "Flowchart: Process": {
   "where": [
-   "common/geometry.js:372"
+   "common/geometry.js:70"
   ]
  },
  "Flowchart: Punched Tape": {
   "where": [
-   "common/geometry.js:391"
+   "common/geometry.js:85"
   ]
  },
  "Flowchart: Sequential Access Storage": {
   "where": [
-   "common/geometry.js:668"
+   "common/geometry.js:143"
   ]
  },
  "Flowchart: Sort": {
   "where": [
-   "common/geometry.js:395"
+   "common/geometry.js:89"
   ]
  },
  "Flowchart: Stored Data": {
   "where": [
-   "common/geometry.js:666"
+   "common/geometry.js:141"
   ]
  },
  "Flowchart: Summing Junction": {
   "where": [
-   "common/geometry.js:392"
+   "common/geometry.js:86"
   ]
  },
  "Flowchart: Terminator": {
   "where": [
-   "common/geometry.js:384"
+   "common/geometry.js:78"
   ]
  },
  "Fly In": {
@@ -14477,7 +14477,7 @@
  },
  "Folded Corner": {
   "where": [
-   "common/geometry.js:193"
+   "common/geometry.js:30"
   ]
  },
  "Follow number with:": {
@@ -15050,7 +15050,7 @@
  },
  "Frame": {
   "where": [
-   "common/geometry.js:200"
+   "common/geometry.js:31"
   ]
  },
  "Frame s&hape:": {
@@ -15702,7 +15702,7 @@
  },
  "Half Frame": {
   "where": [
-   "common/geometry.js:634"
+   "common/geometry.js:123"
   ]
  },
  "Handouts": {
@@ -15878,7 +15878,7 @@
  },
  "Heart": {
   "where": [
-   "common/geometry.js:231"
+   "common/geometry.js:35"
   ]
  },
  "Heavy wave": {
@@ -15906,12 +15906,12 @@
  },
  "Heptagon": {
   "where": [
-   "common/geometry.js:660"
+   "common/geometry.js:135"
   ]
  },
  "Hexagon": {
   "where": [
-   "common/geometry.js:147"
+   "common/geometry.js:24"
   ]
  },
  "Hidden": {
@@ -16049,7 +16049,7 @@
  },
  "Horizontal": {
   "where": [
-   "common/geometry.js:768",
+   "common/geometry.js:351",
    "lectern/js/slideshow.js:10",
    "quire/js/dialogs3.js:73"
   ]
@@ -16082,7 +16082,7 @@
  },
  "Horizontal Scroll": {
   "where": [
-   "common/geometry.js:363"
+   "common/geometry.js:68"
   ]
  },
  "Horizontal Stripe": {
@@ -16097,7 +16097,7 @@
  },
  "Horizontal brick": {
   "where": [
-   "common/geometry.js:774"
+   "common/geometry.js:357"
   ]
  },
  "House": {
@@ -17236,7 +17236,7 @@
  },
  "Isosceles Triangle": {
   "where": [
-   "common/geometry.js:132"
+   "common/geometry.js:18"
   ]
  },
  "Italian (Italy)": {
@@ -17415,7 +17415,7 @@
  },
  "L-Shape": {
   "where": [
-   "common/geometry.js:633"
+   "common/geometry.js:122"
   ]
  },
  "La&bels": {
@@ -17489,17 +17489,17 @@
  },
  "Large checker board": {
   "where": [
-   "common/geometry.js:773"
+   "common/geometry.js:356"
   ]
  },
  "Large confetti": {
   "where": [
-   "common/geometry.js:774"
+   "common/geometry.js:357"
   ]
  },
  "Large grid": {
   "where": [
-   "common/geometry.js:773"
+   "common/geometry.js:356"
   ]
  },
  "Las Vegas Lights": {
@@ -17784,7 +17784,7 @@
  },
  "Left Arrow": {
   "where": [
-   "common/geometry.js:267"
+   "common/geometry.js:43"
   ]
  },
  "Left Border": {
@@ -17797,12 +17797,12 @@
  },
  "Left Brace": {
   "where": [
-   "common/geometry.js:432"
+   "common/geometry.js:104"
   ]
  },
  "Left Bracket": {
   "where": [
-   "common/geometry.js:430"
+   "common/geometry.js:102"
   ]
  },
  "Left Down": {
@@ -17834,12 +17834,12 @@
  },
  "Left-Right Arrow": {
   "where": [
-   "common/geometry.js:279"
+   "common/geometry.js:46"
   ]
  },
  "Left-Up Arrow": {
   "where": [
-   "common/geometry.js:642"
+   "common/geometry.js:127"
   ]
  },
  "Left-to-Right": {
@@ -18093,27 +18093,27 @@
  },
  "Light downward diagonal": {
   "where": [
-   "common/geometry.js:770"
+   "common/geometry.js:353"
   ]
  },
  "Light horizontal": {
   "where": [
-   "common/geometry.js:768"
+   "common/geometry.js:351"
   ]
  },
  "Light upward diagonal": {
   "where": [
-   "common/geometry.js:770"
+   "common/geometry.js:353"
   ]
  },
  "Light vertical": {
   "where": [
-   "common/geometry.js:768"
+   "common/geometry.js:351"
   ]
  },
  "Lightning Bolt": {
   "where": [
-   "common/geometry.js:232"
+   "common/geometry.js:36"
   ]
  },
  "Lime": {
@@ -18139,7 +18139,7 @@
  },
  "Line": {
   "where": [
-   "common/geometry.js:445",
+   "common/geometry.js:109",
    "lectern/js/commands.js:161",
    "lectern/js/dialogs.js:404",
    "ledger/js/commands.js:126"
@@ -19086,7 +19086,7 @@
  },
  "Minus": {
   "where": [
-   "common/geometry.js:670"
+   "common/geometry.js:145"
   ]
  },
  "Mirror margins": {
@@ -19180,7 +19180,7 @@
  },
  "Moon": {
   "where": [
-   "common/geometry.js:247"
+   "common/geometry.js:38"
   ]
  },
  "More &Functions...": {
@@ -19416,7 +19416,7 @@
  },
  "Multiply": {
   "where": [
-   "common/geometry.js:673"
+   "common/geometry.js:147"
   ]
  },
  "My data range has": {
@@ -19498,12 +19498,12 @@
  },
  "Narrow horizontal": {
   "where": [
-   "common/geometry.js:769"
+   "common/geometry.js:352"
   ]
  },
  "Narrow vertical": {
   "where": [
-   "common/geometry.js:769"
+   "common/geometry.js:352"
   ]
  },
  "Navigation": {
@@ -20117,7 +20117,7 @@
  },
  "Notched Right Arrow": {
   "where": [
-   "common/geometry.js:296"
+   "common/geometry.js:49"
   ]
  },
  "Note Options": {
@@ -20433,7 +20433,7 @@
  },
  "Octagon": {
   "where": [
-   "common/geometry.js:151"
+   "common/geometry.js:25"
   ]
  },
  "Odd Page Footer": {
@@ -20877,7 +20877,7 @@
  },
  "Outlined diamond": {
   "where": [
-   "common/geometry.js:774"
+   "common/geometry.js:357"
   ]
  },
  "Outline|border": {
@@ -20933,7 +20933,7 @@
  },
  "Oval": {
   "where": [
-   "common/geometry.js:131",
+   "common/geometry.js:17",
    "lectern/js/commands.js:165",
    "ledger/js/commands.js:129",
    "quire/js/commands.js:502"
@@ -20946,7 +20946,7 @@
  },
  "Oval Callout": {
   "where": [
-   "common/geometry.js:406"
+   "common/geometry.js:98"
   ]
  },
  "Overhead": {
@@ -21396,7 +21396,7 @@
  },
  "Parallelogram": {
   "where": [
-   "common/geometry.js:137"
+   "common/geometry.js:20"
   ]
  },
  "Parchment": {
@@ -21619,7 +21619,7 @@
  },
  "Pentagon": {
   "where": [
-   "common/geometry.js:304"
+   "common/geometry.js:51"
   ]
  },
  "People or units and who reports to whom, top down.": {
@@ -21807,12 +21807,12 @@
  },
  "Pie": {
   "where": [
-   "common/geometry.js:619"
+   "common/geometry.js:117"
   ]
  },
  "Pie Wedge": {
   "where": [
-   "common/geometry.js:620"
+   "common/geometry.js:118"
   ]
  },
  "Pie|chart": {
@@ -21870,7 +21870,7 @@
  },
  "Plaid": {
   "where": [
-   "common/geometry.js:775"
+   "common/geometry.js:358"
   ]
  },
  "Plain Text": {
@@ -21886,7 +21886,7 @@
  },
  "Plaque": {
   "where": [
-   "common/geometry.js:636"
+   "common/geometry.js:125"
   ]
  },
  "Play animations": {
@@ -21911,7 +21911,7 @@
  },
  "Plus": {
   "where": [
-   "common/geometry.js:669",
+   "common/geometry.js:144",
    "lectern/js/panes.js:734",
    "lectern/js/slideshow.js:19",
    "lectern/js/slideshow.js:26"
@@ -22590,7 +22590,7 @@
  },
  "Quad Arrow": {
   "where": [
-   "common/geometry.js:287"
+   "common/geometry.js:48"
   ]
  },
  "Quick Access Toolbar": {
@@ -22995,7 +22995,7 @@
  },
  "Rectangle": {
   "where": [
-   "common/geometry.js:126",
+   "common/geometry.js:15",
    "lectern/js/commands.js:164",
    "lectern/js/dialogs.js:1040",
    "ledger/js/commands.js:128"
@@ -23003,7 +23003,7 @@
  },
  "Rectangular Callout": {
   "where": [
-   "common/geometry.js:404"
+   "common/geometry.js:96"
   ]
  },
  "Recycled paper": {
@@ -23124,7 +23124,7 @@
  },
  "Regular Pentagon": {
   "where": [
-   "common/geometry.js:146"
+   "common/geometry.js:23"
   ]
  },
  "Regular Text Sample — the quick brown fox jumps over the lazy dog.": {
@@ -25287,7 +25287,7 @@
  },
  "Right Arrow": {
   "where": [
-   "common/geometry.js:263"
+   "common/geometry.js:42"
   ]
  },
  "Right Border": {
@@ -25300,12 +25300,12 @@
  },
  "Right Brace": {
   "where": [
-   "common/geometry.js:433"
+   "common/geometry.js:105"
   ]
  },
  "Right Bracket": {
   "where": [
-   "common/geometry.js:431"
+   "common/geometry.js:103"
   ]
  },
  "Right Down": {
@@ -25327,7 +25327,7 @@
  },
  "Right Triangle": {
   "where": [
-   "common/geometry.js:136"
+   "common/geometry.js:19"
   ]
  },
  "Right Up": {
@@ -25439,7 +25439,7 @@
  },
  "Round Diagonal Corner Rectangle": {
   "where": [
-   "common/geometry.js:659"
+   "common/geometry.js:134"
   ]
  },
  "Round Dot": {
@@ -25450,23 +25450,23 @@
  },
  "Round Same Side Corner Rectangle": {
   "where": [
-   "common/geometry.js:658"
+   "common/geometry.js:133"
   ]
  },
  "Round Single Corner Rectangle": {
   "where": [
-   "common/geometry.js:657"
+   "common/geometry.js:132"
   ]
  },
  "Rounded Rectangle": {
   "where": [
-   "common/geometry.js:127",
+   "common/geometry.js:16",
    "lectern/js/dialogs.js:1040"
   ]
  },
  "Rounded Rectangular Callout": {
   "where": [
-   "common/geometry.js:405"
+   "common/geometry.js:97"
   ]
  },
  "Rounds a number down to the nearest integer.": {
@@ -26753,7 +26753,7 @@
  },
  "Shingle": {
   "where": [
-   "common/geometry.js:775"
+   "common/geometry.js:358"
   ]
  },
  "Shopping List": {
@@ -27500,12 +27500,12 @@
  },
  "Small checker board": {
   "where": [
-   "common/geometry.js:772"
+   "common/geometry.js:355"
   ]
  },
  "Small confetti": {
   "where": [
-   "common/geometry.js:773"
+   "common/geometry.js:356"
   ]
  },
  "Small dash": {
@@ -27515,12 +27515,12 @@
  },
  "Small grid": {
   "where": [
-   "common/geometry.js:773"
+   "common/geometry.js:356"
   ]
  },
  "Smiley Face": {
   "where": [
-   "common/geometry.js:220"
+   "common/geometry.js:34"
   ]
  },
  "Snap to": {
@@ -27530,22 +27530,22 @@
  },
  "Snip Diagonal Corner Rectangle": {
   "where": [
-   "common/geometry.js:655"
+   "common/geometry.js:130"
   ]
  },
  "Snip Same Side Corner Rectangle": {
   "where": [
-   "common/geometry.js:654"
+   "common/geometry.js:129"
   ]
  },
  "Snip Single Corner Rectangle": {
   "where": [
-   "common/geometry.js:653"
+   "common/geometry.js:128"
   ]
  },
  "Snip and Round Single Corner Rectangle": {
   "where": [
-   "common/geometry.js:656"
+   "common/geometry.js:131"
   ]
  },
  "Social Security Number": {
@@ -27576,7 +27576,7 @@
  },
  "Solid diamond": {
   "where": [
-   "common/geometry.js:774"
+   "common/geometry.js:357"
   ]
  },
  "Solid|pattern": {
@@ -28123,7 +28123,7 @@
  },
  "Sphere": {
   "where": [
-   "common/geometry.js:775"
+   "common/geometry.js:358"
   ]
  },
  "Spill Range Isn't Blank": {
@@ -28309,7 +28309,7 @@
  },
  "Stars and Banners": {
   "where": [
-   "common/geometry.js:858",
+   "common/geometry.js:436",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -28526,7 +28526,7 @@
  },
  "Straight Connector": {
   "where": [
-   "common/geometry.js:446",
+   "common/geometry.js:110",
    "lectern/js/app.js:108"
   ]
  },
@@ -28548,7 +28548,7 @@
  },
  "Striped Right Arrow": {
   "where": [
-   "common/geometry.js:300"
+   "common/geometry.js:50"
   ]
  },
  "Strips": {
@@ -28769,7 +28769,7 @@
  },
  "Sun": {
   "where": [
-   "common/geometry.js:233"
+   "common/geometry.js:37"
   ]
  },
  "Sunset": {
@@ -29240,7 +29240,7 @@
  },
  "Teardrop": {
   "where": [
-   "common/geometry.js:628"
+   "common/geometry.js:121"
   ]
  },
  "Teeter": {
@@ -31744,7 +31744,7 @@
  },
  "Trapezoid": {
   "where": [
-   "common/geometry.js:141"
+   "common/geometry.js:21"
   ]
  },
  "Treat consecutive delimiters as &one": {
@@ -31763,7 +31763,7 @@
  },
  "Trellis": {
   "where": [
-   "common/geometry.js:776"
+   "common/geometry.js:359"
   ]
  },
  "Triangle": {
@@ -31898,7 +31898,7 @@
  },
  "U-Turn Arrow": {
   "where": [
-   "common/geometry.js:317"
+   "common/geometry.js:54"
   ]
  },
  "UI size": {
@@ -32199,12 +32199,12 @@
  },
  "Up Arrow": {
   "where": [
-   "common/geometry.js:271"
+   "common/geometry.js:44"
   ]
  },
  "Up Ribbon": {
   "where": [
-   "common/geometry.js:348"
+   "common/geometry.js:66"
   ]
  },
  "Up to one digit (1/4)": {
@@ -32224,7 +32224,7 @@
  },
  "Up-Down Arrow": {
   "where": [
-   "common/geometry.js:283"
+   "common/geometry.js:47"
   ]
  },
  "Update": {
@@ -32296,7 +32296,7 @@
  },
  "Upward diagonal": {
   "where": [
-   "common/geometry.js:770"
+   "common/geometry.js:353"
   ]
  },
  "Use \"a\" before a word that starts with a consonant sound.": {
@@ -32540,7 +32540,7 @@
  },
  "Vertical": {
   "where": [
-   "common/geometry.js:768",
+   "common/geometry.js:351",
    "lectern/js/slideshow.js:10",
    "quire/js/dialogs3.js:73"
   ]
@@ -32582,7 +32582,7 @@
  },
  "Vertical Scroll": {
   "where": [
-   "common/geometry.js:356"
+   "common/geometry.js:67"
   ]
  },
  "Vertical Stripe": {
@@ -32746,8 +32746,8 @@
  },
  "Wave": {
   "where": [
-   "common/geometry.js:257",
-   "common/geometry.js:775",
+   "common/geometry.js:40",
+   "common/geometry.js:358",
    "lectern/js/render.js:516",
    "quire/js/dialogs.js:89"
   ]
@@ -32759,7 +32759,7 @@
  },
  "Weave": {
   "where": [
-   "common/geometry.js:775"
+   "common/geometry.js:358"
   ]
  },
  "Web": {
@@ -32990,12 +32990,12 @@
  },
  "Wide downward diagonal": {
   "where": [
-   "common/geometry.js:771"
+   "common/geometry.js:354"
   ]
  },
  "Wide upward diagonal": {
   "where": [
-   "common/geometry.js:771"
+   "common/geometry.js:354"
   ]
  },
  "Widescreen (16:9), 13.33 x 7.5 in": {
@@ -33411,7 +33411,7 @@
  },
  "Zig zag": {
   "where": [
-   "common/geometry.js:776"
+   "common/geometry.js:359"
   ]
  },
  "Zip Code": {
