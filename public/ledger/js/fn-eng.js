@@ -321,6 +321,8 @@
       if (op === '=') {
         if (rest === '') return (v) => v == null;
         if (isNum(rest)) { const n = asNum(rest); return num((v) => v === n); }
+        /* "=TRUE" finds the logical value (Excel 2016 recalculating POI's DGet.xls, B18) */
+        if (/^(true|false)$/i.test(rest)) { const b = /^t/i.test(rest); return (v) => v === b; }
         const re = dbWild(rest);
         return (v) => { const t = text(v); return t != null && re.test(t); };
       }

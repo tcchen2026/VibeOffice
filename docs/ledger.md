@@ -525,13 +525,14 @@ evidence are in `tests/from-issues/22/`.
 **Recalculation against the values Excel stored** (`tests/ledger/recalc1.js` over a corpus, 2026-11-06): in the
 744 workbooks of the OOXML corpus that Excel saved (the SDK's three Performance files, whose stored values were never
 computed, left out), Ledger's results agree with **44,159 of 44,493** formula cells (99.25%); in the 391 Excel 97-2003
-workbooks Excel saved, opened by conversion, with **58,192 of 59,762** (97.37%; 99.65% without one workbook whose
+workbooks Excel saved, opened by conversion, with **58,191 of 59,762** (97.37%; 99.65% without one workbook whose
 1,385 differences are `TODAY()` stamps and a French `CELL("adresse")`). What remains is mostly the clock, stale stored
 values, a German or French Excel's own number formats and function words, and legacy implicit intersection. Lookup
 functions (Excel's approximate search on unsorted data, `VLOOKUP`'s argument rules), `INDEX` over an array expression,
 `COUNTIF` criteria and the database functions' criteria follow the results Excel stored in POI's test workbooks; a
 computed criterion may name the database's fields (`=age<7`, as Excel's Advanced Filter takes column labels), which
-stand for each record's values while the criterion cell itself shows `#NAME?` (POI's `DGet.xls`: 163 of 163 formulas).
+stand for each record's values while the criterion cell itself shows `#NAME?`, and `=TRUE` finds the logical value
+(POI's `DGet.xls`: its 163 formulas give what Excel 2016 gives when it recalculates them; one stored result is stale).
 
 **Excel 97-2003 workbooks** (the converter's whole corpus, 2026-11-06, `tests/legacy/`): of 764 `.xls`/`.xlt` files,
 702 convert (703 workbooks with one named `.doc`) and 62 are refused with a message saying why (older BIFF versions,
