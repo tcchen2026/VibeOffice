@@ -764,14 +764,14 @@
   };
   A.openDialog = async function () {
     if (window.VO && VO.oneDocument) return VO.openDialog();
-    const files = await L.pickFiles('.docx,.docm,.dotx,.dotm,.doc,.txt,.htm,.html,.rtf,.xml,.md,.markdown,.zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const files = await L.pickFiles('.docx,.docm,.dotx,.dotm,.doc,.dot,.txt,.htm,.html,.rtf,.xml,.md,.markdown,.zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     if (files[0]) A.openFile(files[0]);
   };
-  A.openFiles = (files) => { const f = files.find((x) => /\.(docx|docm|dotx|dotm|doc|txt|html?|rtf|md|markdown|zip)$/i.test(x.name)); if (f) A.openFile(f); };
+  A.openFiles = (files) => { const f = files.find((x) => /\.(docx|docm|dotx|dotm|doc|dot|txt|html?|rtf|md|markdown|zip)$/i.test(x.name)); if (f) A.openFile(f); };
   A.openFile = async function (file) {
     if (window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
     const reuse = pristine();
-    const name = file.name.replace(/\.(docx|docm|dotx|dotm|doc|txt|html?|rtf|xml|md|markdown|mdown|mkd|zip)$/i, '');
+    const name = file.name.replace(/\.(docx|docm|dotx|dotm|doc|dot|txt|html?|rtf|xml|md|markdown|mdown|mkd|zip)$/i, '');
     ui.busy(true, L.t('Opening {0}...', file.name));
     try {
       let d, warnings = [], type = 'docx';
@@ -785,7 +785,7 @@
         const res = await A.readDocx(buf, file.name);
         d = res.doc; warnings = res.warnings || []; type = d.ooxmlFormat || type;
       }
-      A.loadDoc(d, name, { saved: /\.(docx|docm|dotx|dotm)$/i.test(file.name) || type !== 'docx', type, newWindow: !reuse });
+      A.loadDoc(d, name, { saved: !d.converted && (/\.(docx|docm|dotx|dotm)$/i.test(file.name) || type !== 'docx'), type, newWindow: !reuse });   // a converted 97-2003 file: Save asks for a new name
       if (window.VO) VO.opened(file, doc());
       ui.busy(false);
       if (d.isTemplate) A.status('Opened a template. Save keeps its template format.');
@@ -803,7 +803,7 @@
   };
   /** read .docx bytes; a password-protected file asks for its password (or takes opts.password) */
   A.readDocx = async function (buf, displayName, opts) {
-    try { return await L.docx.read(buf); }
+    try { return await L.docx.read(buf, { name: displayName }); }
     catch (e) {
       if (!(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
       let pass = opts && opts.password != null ? opts.password : null;
@@ -828,7 +828,7 @@
   A.openBytes = async function (bytes, name, opts) {
     const buf = bytes instanceof ArrayBuffer ? bytes : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
     const res = await A.readDocx(buf, name, opts);
-    A.loadDoc(res.doc, String(name || 'Document').replace(/\.(docx|docm|dotx|dotm)$/i, ''), { saved: true, type: 'docx', newWindow: !pristine() });
+    A.loadDoc(res.doc, String(name || 'Document').replace(/\.(docx|docm|dotx|dotm|doc|dot)$/i, ''), { saved: !res.doc.converted, type: 'docx', newWindow: !pristine() });
     return res;
   };
   A.docFromText = function (text) {

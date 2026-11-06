@@ -136,7 +136,7 @@
   /* ------------------------------------------------------------ open */
   A.openDialog = async function (accept) {
     if (window.VO && VO.oneDocument) return VO.openDialog();
-    const files = await L.pickFiles(accept || '.xlsx,.xlsm,.xltx,.xltm,.csv,.txt,.tsv,.prn,.xml', true);
+    const files = await L.pickFiles(accept || '.xlsx,.xlsm,.xltx,.xltm,.xls,.xlt,.csv,.txt,.tsv,.prn,.xml', true);
     if (files.length) A.openFiles(files);
   };
   /** the type Ledger saves a file of these kinds as, where it is (A.openFile; a recovered draft, VO.attach's open) */
@@ -154,7 +154,7 @@
     ui.busy(true, L.t('Opening {0}...', name));
     try {
       const bytes = new Uint8Array(await L.readAsArrayBuffer(file));
-      let w, type = 'xlsx';
+      let w, type = 'xlsx', converted = null;
       if ((opts.wizard || /^(csv|txt|tsv|prn)$/.test(ext)) && !(bytes[0] === 0x50 && bytes[1] === 0x4b) && !(bytes[0] === 0xd0 && bytes[1] === 0xcf)) {
         ui.busy(false);
         const res = await L.csv.importDialog(bytes, name, { wizard: opts.wizard });
@@ -180,10 +180,11 @@
             if (pw == null) return;
             return A.openFile(file, pw, opts);
           }
-          if (e.code === 'xls') { ui.busy(false); if (L.xls && L.xls.read) { w = await L.xls.read(bytes); type = 'xls'; } else throw Object.assign(new Error(L.t("'{0}' is a binary Excel 97–2003 workbook (.xls). Ledger opens .xlsx, .xlsm, .csv and XML Spreadsheet 2003 files. Open it in Excel or LibreOffice and save it as .xlsx first.", name)), { code: 'xls' }); }
+          /* an Excel 97-2003 workbook: read as the .xlsx Excel would write for it (common/legacy/import.js) */
+          if (e.code === 'xls') { converted = await L.legacyImport.convert(bytes, name, 'xls'); w = await L.xlsxRead.read(converted.pkg); }
           else throw e;
         }
-        type = w.ooxmlFormat || (w.macroEnabled ? 'xlsm' : 'xlsx');
+        type = converted ? 'xls' : w.ooxmlFormat || (w.macroEnabled ? 'xlsm' : 'xlsx');   // a converted workbook's Save asks for an .xlsx name
         if (w.repaired) ui.toast('This file was damaged; Ledger repaired what it could.');
       }
       A.prepare(w);
@@ -191,6 +192,8 @@
       if (password) b.password = password;
       if (window.VO && file.name) VO.opened(file, b);
       updateTitle();
+      const note = converted && L.legacyImport.notice(converted, name);
+      if (note) { ui.busy(false); await ui.msg(note, { icon: 'warn' }); }
     } finally { ui.busy(false); }
   };
   /** after loading: dependency graph, values that were never calculated, row heights */
@@ -1453,7 +1456,7 @@
       const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
       if (!files.length) return;
       e.preventDefault();
-      const books = files.filter((f) => /\.(xlsx|xlsm|xltx|xltm|csv|txt|tsv|prn|xml|xls)$/i.test(f.name));
+      const books = files.filter((f) => /\.(xlsx|xlsm|xltx|xltm|csv|txt|tsv|prn|xml|xls|xlt)$/i.test(f.name));
       if (books.length) A.openFiles(books);
       const imgs = files.filter((f) => /^image\//.test(f.type));
       for (const f of imgs) A.insertPictureFile(f);

@@ -27,7 +27,15 @@
     let zip;
     try { zip = await L.zip.read(buffer); }
     catch (e) {
-      if (e.code === 'ole' && !e.encrypted && L.docbin) return L.docbin.read(e.bytes);
+      /* a Word 97-2003 document: read as the .docx Word would write for it (common/legacy/import.js) */
+      if (e.code === 'ole' && !e.encrypted && L.legacyImport && !opts.converted) {
+        const converted = await L.legacyImport.convert(e.bytes, opts.name, 'doc');
+        const res = await W.read(converted.pkg.buffer.slice(converted.pkg.byteOffset, converted.pkg.byteOffset + converted.pkg.byteLength), Object.assign({}, opts, { converted: true }));
+        const note = L.legacyImport.notice(converted, opts.name || '');
+        if (note) (res.warnings = res.warnings || []).push(note);
+        res.doc.converted = converted.format;
+        return res;
+      }
       throw e;
     }
     const warnings = [];

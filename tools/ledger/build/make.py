@@ -8,7 +8,7 @@ import os
 D = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.join(D, '..', '..', '..', 'public', 'ledger')
 # load order; 'common/x' is public/common/x.js, shared by the suite, anything else public/ledger/js/x.js
-SCRIPTS = ['common/core', 'common/i18n', 'common/locales', 'common/xml', 'common/opc', 'common/opc-order', 'xml', 'common/zip', 'common/sha', 'common/crypto', 'common/icons',
+SCRIPTS = ['common/core', 'common/i18n', 'common/locales', 'common/xml', 'common/opc', 'common/opc-order', 'xml', 'common/zip', 'common/sha', 'common/crypto', 'common/legacy/import', 'common/icons',
            'common/geometry', 'common/metafile', 'common/ui', 'common/dialogs', 'common/numfmt', 'formula', 'model', 'calc',
            'fn-core', 'fn-lookup', 'fn-stat', 'fn-fin', 'fn-eng', 'common/dml', 'common/charts', 'xchart',
            'pivots', 'threads', 'objects', 'slicers', 'extensions', 'tables', 'preserve', 'xlsx-read', 'xlsx-write', 'csv', 'xmlss', 'styles', 'cf', 'layout', 'render', 'ops', 'clipboard',

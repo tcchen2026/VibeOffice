@@ -43,7 +43,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 
 ## Opening
 
-File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible, and legacy binary `.ppt` files get a clear message.
+File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible. PowerPoint 97-2003 files (`.ppt`, `.pps`, `.pot`) are converted on opening to the `.pptx` PowerPoint would write (slides, masters and layouts, notes, colour schemes, text; pictures, shapes and tables not yet); a message names what wasn't converted, and Save asks for a `.pptx` name.
 
 Strict inputs save as standard Transitional OOXML (recorded, not shown). Same-format
 saves retain the macro, template or slideshow variant and any opening password.
@@ -414,7 +414,7 @@ counts. Four pages load without console errors. All 15 batch-4 samples passed Po
 
 * A picture bullet is drawn as its picture and saved as one; Format ▸ Bullets and Numbering offers only character and number bullets, so choosing one there replaces it.
 * A slide with colours of its own (a theme override: PowerPoint writes one for a slide whose colour scheme differs from its master's) is drawn and saved with them; applying a colour scheme to such a slide leaves its own colours in place.
-* Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
+* PowerPoint 97-2003 files are opened by conversion and saved as `.pptx`; password-protected ones aren't opened yet. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
 * SmartArt in a layout Lectern does not have is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped; PowerPoint SmartArt edited here takes our layout of the same name, so its look in PowerPoint changes to ours (*IntelliArt (SmartArt)*). When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
 * Embedded OLE objects and ActiveX controls import as their preview pictures and are kept on save; a control can be moved, resized or deleted. A copied, rotated, flipped or grouped control, or one whose picture was edited, is saved as its picture, and the save says so.

@@ -397,13 +397,12 @@
   };
   A.openDialog = async function () {
     if (window.VO && VO.oneDocument) return VO.openDialog();
-    const files = await L.pickFiles('.pptx,.ppsx,.potx,.pptm,.potm,.ppsm,.txt,application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    const files = await L.pickFiles('.pptx,.ppsx,.potx,.pptm,.potm,.ppsm,.ppt,.pps,.pot,.txt,application/vnd.openxmlformats-officedocument.presentationml.presentation');
     if (files[0]) A.openFile(files[0]);
   };
   A.openFile = async function (file) {
     if (window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
     if (/\.txt$/i.test(file.name)) { if (!(await confirmDiscard())) return; const text = await L.readAsText(file); const pres = M.newPresentation(Object.assign({ design: 'default', empty: true }, A.newSize())); A.loadPres(pres, file.name.replace(/\.txt$/i, '')); A.outlineToSlides(text, 0); return; }
-    if (/\.ppt$/i.test(file.name)) { ui.msg(L.t('{0} is in the older binary PowerPoint 97–2003 format. Open it in PowerPoint, Keynote, Google Slides or LibreOffice and save it as .pptx, then open the .pptx here.', file.name), { icon: 'warn' }); return; }
     if (!(await confirmDiscard())) return;
     ui.busy(true, L.t('Opening {0}...', file.name));
     try {
@@ -411,7 +410,7 @@
       const progress = (i, n) => ui.busy(true, L.t('Opening {0}... (slide {1} of {2})', file.name, i, n));
       let pres = null, password, wrong = false;
       for (;;) {
-        try { pres = await L.pptx.read(buf, { progress, password }); break; } catch (e) {
+        try { pres = await L.pptx.read(buf, { progress, password, name: file.name }); break; } catch (e) {
           if (!(e && (e.code === 'password' || e.code === 'badpassword'))) throw e;
           /* a password to open: ask for it, as PowerPoint does */
           ui.busy(false);
@@ -422,18 +421,22 @@
         }
       }
       if (!pres.slides.length) pres.slides.push(M.newSlide(pres, 'title', Object.keys(pres.designs)[0]));
-      A.loadPres(pres, file.name.replace(/\.(pptx|ppsx|potx|pptm|ppsm|potm)$/i, ''), { saved: true });
+      /* a converted 97-2003 file is saved under a new .pptx name, as PowerPoint converts it */
+      A.loadPres(pres, file.name.replace(/\.(pptx|ppsx|potx|pptm|ppsm|potm|ppt|pps|pot)$/i, ''), { saved: !pres.converted });
       A.fileType = pres.ooxmlFormat || 'pptx';
       if (window.VO) VO.opened(file, L.pres);
       ui.busy(false);
+      const note = pres.converted && L.legacyImport.notice(pres.converted, file.name);
+      if (note) await ui.msg(note, { icon: 'warn' });
       if (pres.repaired) {
         const lost = pres.repaired.parts.filter((p) => /slides\/slide\d+\.xml$/.test(p)).length;
         ui.msg(L.t('{0} found a problem with content in {1} and repaired the presentation.', L.APP, file.name) + '\n' + (lost > 1 ? L.t('{0} slides could not be recovered.', lost) : lost ? L.t('1 slide could not be recovered.') : L.t('Check the slides before you save over the original.')), { icon: 'warn' });
-      } else if (/\.pps[xm]$/i.test(file.name)) L.show.start({ from: 0 });
+      } else if (/\.pps[xm]?$/i.test(file.name)) L.show.start({ from: 0 });
     } catch (e) {
       ui.busy(false);
       console.error(e);
       if (e && e.code === 'ole') ui.msg(L.t(e.message), { icon: 'warn' });
+      else if (e && e.code === 'legacy') ui.msg(L.t("{0} can't open {1}. {2}", L.APP, file.name, e.message), { icon: 'error' });
       else ui.msg(L.t('{0} can\'t read {1}. {2}\nMake sure the file is a PowerPoint 2007 or later presentation (.pptx).', L.APP, file.name, e && e.message ? L.t(e.message) : ''), { icon: 'error' });
     }
   };
@@ -1914,7 +1917,7 @@ addEventListener('resize',fit);fit();show(0);`;
       const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
       if (!files.length) return;
       e.preventDefault();
-      const deck = files.find((f) => /\.(pptx|ppsx|potx|pptm|ppt)$/i.test(f.name));
+      const deck = files.find((f) => /\.(pptx|ppsx|potx|pptm|ppt|pps|pot)$/i.test(f.name));
       if (deck) { A.openFile(deck); return; }
       const imgs = files.filter((f) => /^image\//.test(f.type));
       if (imgs.length) A.insertPictureFiles(imgs);

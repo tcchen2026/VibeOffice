@@ -154,7 +154,7 @@ printer itself.
 | XML Spreadsheet 2003 `.xml` | yes | yes |
 | Web Page `.htm` / `.html` | yes: each table on the page becomes a sheet | yes: one self-contained page per workbook, with its own security policy (no scripts) |
 | PDF | — | yes |
-| Excel 97–2003 `.xls` | no — Ledger explains how to convert it | no |
+| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks; comments, charts and drawings not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name | no |
 
 Passwords are handled in the browser (WebCrypto plus Ledger's own AES and SHA code), so the page must
 be served over https or from localhost. A workbook opened with its password keeps it when saved.
@@ -522,7 +522,8 @@ support for every formula or external data source.
   execute them or maintain their query-specific edit semantics.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.
-- One window per workbook (Window ▸ New Window is not available); the binary `.xls` format is not read.
+- One window per workbook (Window ▸ New Window is not available).
+- Excel 97-2003 `.xls` files are opened by conversion and saved as `.xlsx`; password-protected ones aren't opened yet.
 - Saved as XML Spreadsheet 2003, a merged range whose top-left cell holds nothing (no value, no format)
   is not written: that format records a merge on its top-left cell.
 - Spelling is English only (U.S. and U.K.).
