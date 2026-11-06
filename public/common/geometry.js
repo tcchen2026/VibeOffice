@@ -333,7 +333,7 @@
     const hm = (rxo + rxi) / 2, hmy = (ryo + ryi) / 2;
     const h1 = pt(rxo + t * 0.5, ryo + t * 0.5, body), h2 = pt(rxi - t * 0.5, ryi - t * 0.5, body), tip = pt(hm, hmy, en);
     return one(`M${n(o1[0])},${n(o1[1])} A${n(rxo)},${n(ryo)} 0 ${large} 1 ${n(o2[0])},${n(o2[1])} L${n(h1[0])},${n(h1[1])} L${n(tip[0])},${n(tip[1])} L${n(h2[0])},${n(h2[1])} L${n(i2[0])},${n(i2[1])} A${n(rxi)},${n(ryi)} 0 ${large} 0 ${n(i1[0])},${n(i1[1])} Z`);
-  }, { adj: { adj1: 12500, adj2: 1142319, adj3: 20457681, adj4: 10800000, adj5: 0 } });
+  }, { adj: { adj1: 12500, adj2: 1142319, adj3: 20457681, adj4: 10800000, adj5: 12500 } });
 
   /* stars & banners */
   def('star4', '4-Point Star', (w, h, a) => one(star(w, h, 4, a.adj / 50000)), { adj: { adj: 12500 } });
@@ -461,6 +461,135 @@
       { pos: (w, h, a) => [w / 2 - (w * a.adj1) / 200000, h - (ss(w, h) * a.adj2) / 100000], set: (x, y, w, h) => ({ adj1: L.clamp(((w / 2 - x) * 200000) / w, 0, 100000), adj2: L.clamp(((h - y) / ss(w, h)) * 100000, 0, (h / ss(w, h)) * 100000) }) }];
   }
 
+  /* ---------- DrawingML's own preset definitions (common/presets.js), evaluated as Office does ---------- */
+  const ANG = Math.PI / 10800000;   // DrawingML angles are 60000ths of a degree
+  const FMLA = {
+    '*/': (x, y, z) => (x * y) / z, '+-': (x, y, z) => x + y - z, '+/': (x, y, z) => (x + y) / z, '?:': (x, y, z) => (x > 0 ? y : z),
+    abs: (x) => Math.abs(x), at2: (x, y) => Math.atan2(y, x) / ANG, cat2: (x, y, z) => x * Math.cos(Math.atan2(z, y)),
+    cos: (x, y) => x * Math.cos(y * ANG), max: (x, y) => Math.max(x, y), min: (x, y) => Math.min(x, y),
+    mod: (x, y, z) => Math.sqrt(x * x + y * y + z * z), pin: (x, y, z) => (y < x ? x : y > z ? z : y),
+    sat2: (x, y, z) => x * Math.sin(Math.atan2(z, y)), sin: (x, y) => x * Math.sin(y * ANG), sqrt: (x) => Math.sqrt(Math.max(0, x)),
+    tan: (x, y) => x * Math.tan(y * ANG), val: (x) => x,
+  };
+  const spec = (name) => (L.presetShapes && Object.prototype.hasOwnProperty.call(L.presetShapes, name) ? L.presetShapes[name] : null);
+  /** the guides of a preset in a w×h box: the shape's own adjust values (adj), else the preset's, then its formulas */
+  function guideValues(def, w, h, adj) {
+    const v = { w, h, l: 0, t: 0, r: w, b: h, hc: w / 2, vc: h / 2, ss: Math.min(w, h), ls: Math.max(w, h),
+      cd2: 10800000, cd4: 5400000, cd8: 2700000, '3cd4': 16200000, '3cd8': 8100000, '5cd8': 13500000, '7cd8': 18900000 };
+    const get = (a) => {
+      if (typeof a === 'number') return a;
+      if (a in v) return v[a];
+      const m = /^(w|h|ss)d(\d+)$/.exec(a);
+      return m ? v[m[1]] / +m[2] : 0;
+    };
+    const run = (g) => { v[g[0]] = FMLA[g[1]](get(g[2]), get(g[3]), get(g[4])); };
+    for (const g of def.av || []) { if (adj && adj[g[0]] != null && isFinite(adj[g[0]])) v[g[0]] = +adj[g[0]]; else run(g); }
+    for (const g of def.gd || []) run(g);
+    v.get = get;
+    return v;
+  }
+  /** an arc as DrawingML's arcTo draws it: from (x, y), on the wR×hR ellipse through that point, from visual angle
+      st sweeping sw (degrees, clockwise), scaled by sx, sy; SVG commands and the end point */
+  function arcTo(x, y, wR, hR, st, sw, sx, sy) {
+    const par = (deg) => { const t = deg * Math.PI / 180; return Math.atan2(wR * Math.sin(t), hR * Math.cos(t)); };
+    const p0 = par(st), cx = x - wR * Math.cos(p0), cy = y - hR * Math.sin(p0);
+    if (!(wR > 0 && hR > 0) || !sw) {
+      const e = par(st + sw);
+      return { d: `L${n((cx + wR * Math.cos(e)) * sx)},${n((cy + hR * Math.sin(e)) * sy)} `, x: cx + wR * Math.cos(e), y: cy + hR * Math.sin(e) };
+    }
+    /* in pieces of at most 90° so that whole turns draw too */
+    const k = Math.max(1, Math.ceil(Math.abs(sw) / 90 - 1e-9));
+    let d = '', ex = x, ey = y;
+    for (let i = 1; i <= k; i++) {
+      const e = par(st + (sw * i) / k);
+      ex = cx + wR * Math.cos(e); ey = cy + hR * Math.sin(e);
+      d += `A${n(wR * sx)},${n(hR * sy)} 0 0 ${sw > 0 ? 1 : 0} ${n(ex * sx)},${n(ey * sy)} `;
+    }
+    return { d, x: ex, y: ey };
+  }
+  /** a preset's paths in a w×h box, as drawing parts */
+  function specParts(def, w, h, adj) {
+    const v = guideValues(def, w, h, adj), get = v.get, out = [];
+    for (const p of def.path || []) {
+      const sx = p.w ? w / p.w : 1, sy = p.h ? h / p.h : 1;
+      let d = '', x = 0, y = 0, x0 = 0, y0 = 0, subs = 0;
+      const pt = (i, c) => `${n(get(c[i]) * sx)},${n(get(c[i + 1]) * sy)}`;
+      for (const c of p.c) {
+        switch (c[0]) {
+          case 'M': x = x0 = get(c[1]); y = y0 = get(c[2]); d += `M${pt(1, c)} `; subs++; break;
+          case 'L': x = get(c[1]); y = get(c[2]); d += `L${pt(1, c)} `; break;
+          case 'Q': d += `Q${pt(1, c)} ${pt(3, c)} `; x = get(c[3]); y = get(c[4]); break;
+          case 'C': d += `C${pt(1, c)} ${pt(3, c)} ${pt(5, c)} `; x = get(c[5]); y = get(c[6]); break;
+          case 'A': { const a = arcTo(x, y, get(c[1]), get(c[2]), get(c[3]) / 60000, get(c[4]) / 60000, sx, sy); d += a.d; x = a.x; y = a.y; break; }
+          case 'Z': d += 'Z '; x = x0; y = y0; break;
+          default: break;
+        }
+      }
+      const part = { d: d.trim(), fill: p.fill || 'norm', stroke: p.stroke !== 0 };
+      if (subs > 1 && part.fill !== 'none') part.rule = 'evenodd';
+      if (!/Z$/.test(part.d)) part.open = true;
+      out.push(part);
+    }
+    return out;
+  }
+  function specText(def, w, h, adj) {
+    if (!def.rect) return [0, 0, w, h];
+    const v = guideValues(def, w, h, adj);
+    return def.rect.map(v.get);
+  }
+  /** the value in [lo, hi] (from cur) where cost is least: sampled, then narrowed; ranges too wide to sample (callout
+      tails reach anywhere) are solved from the slope, the handles being linear in them */
+  function least(cost, lo, hi, cur, signed) {
+    if (hi < lo) [lo, hi] = [hi, lo];
+    if (hi - lo > 1e7 && signed) {
+      let p0 = L.clamp(cur, lo, hi), f0 = signed(p0);
+      for (let i = 0; i < 6 && Math.abs(f0) > 0.01; i++) {
+        const p1 = p0 + 1000, slope = (signed(p1) - f0) / 1000;
+        if (!slope) break;
+        p0 = L.clamp(p0 - f0 / slope, lo, hi); f0 = signed(p0);
+      }
+      return p0;
+    }
+    let best = L.clamp(cur, lo, hi), bc = cost(best);
+    const k = 72;
+    for (let i = 0; i <= k; i++) { const p = lo + ((hi - lo) * i) / k, c = cost(p); if (c < bc) { bc = c; best = p; } }
+    let a = Math.max(lo, best - (hi - lo) / k), b = Math.min(hi, best + (hi - lo) / k);
+    for (let i = 0; i < 40; i++) {
+      const m1 = a + (b - a) / 3, m2 = b - (b - a) / 3;
+      if (cost(m1) < cost(m2)) b = m2; else a = m1;
+    }
+    const p = (a + b) / 2;
+    return cost(p) < bc ? p : best;
+  }
+  /** a preset's adjust handles (ahXY, ahPolar): where each one is, and the adjust values that bring it under the pointer */
+  function specHandles(def) {
+    return (def.ah || []).map((ah) => {
+      const [kind, ref1, min1, max1, ref2, min2, max2, px, py] = ah;
+      const where = (w, h, adj) => { const v = guideValues(def, w, h, adj); return [v.get(px), v.get(py)]; };
+      return {
+        pos: where,
+        set(x, y, w, h, adj) {
+          const a = Object.assign({}, adj), v = guideValues(def, w, h, a), out = {};
+          const range = (lo, hi) => [v.get(lo), v.get(hi)];
+          const at = (ref, val) => where(w, h, Object.assign({}, a, { [ref]: val }));
+          const dist = (ref) => (val) => { const p = at(ref, val); return Math.hypot(p[0] - x, p[1] - y); };
+          if (kind === 'xy') {
+            if (ref1) { const [lo, hi] = range(min1, max1); a[ref1] = out[ref1] = least((val) => Math.abs(at(ref1, val)[0] - x), lo, hi, +v[ref1] || 0, (val) => at(ref1, val)[0] - x); }
+            if (ref2) { const [lo, hi] = range(min2, max2); a[ref2] = out[ref2] = least((val) => Math.abs(at(ref2, val)[1] - y), lo, hi, +v[ref2] || 0, (val) => at(ref2, val)[1] - y); }
+          } else {
+            /* polar: the angle first, then the radius, twice over */
+            for (let round = 0; round < 2; round++) {
+              if (ref2) { const [lo, hi] = range(min2, max2); a[ref2] = out[ref2] = least(dist(ref2), lo, hi, +a[ref2] || +v[ref2] || 0); }
+              if (ref1) { const [lo, hi] = range(min1, max1); a[ref1] = out[ref1] = least(dist(ref1), lo, hi, +a[ref1] || +v[ref1] || 0); }
+            }
+          }
+          return out;
+        },
+      };
+    });
+  }
+  const handleCache = new Map();
+
   /* ---------- custom geometry (freeforms, imported custGeom) ----------
    * path = { paths: [{ w, h, cmds: [['M',x,y], ['L',x,y], ['C',...6], ['Q',...4], ['A', wR, hR, stDeg, swDeg], ['Z']], fill, stroke }] }
    */
@@ -475,22 +604,7 @@
           case 'L': cx = c[1]; cy = c[2]; d += `L${n(cx * sx)},${n(cy * sy)} `; break;
           case 'C': d += `C${n(c[1] * sx)},${n(c[2] * sy)} ${n(c[3] * sx)},${n(c[4] * sy)} ${n(c[5] * sx)},${n(c[6] * sy)} `; cx = c[5]; cy = c[6]; break;
           case 'Q': d += `Q${n(c[1] * sx)},${n(c[2] * sy)} ${n(c[3] * sx)},${n(c[4] * sy)} `; cx = c[3]; cy = c[4]; break;
-          case 'A': {
-            /* OOXML arcTo: radii + start/sweep angle, starting at the current point */
-            const wR = c[1] * sx, hR = c[2] * sy;
-            const st = (c[3] * Math.PI) / 180, sw = (c[4] * Math.PI) / 180;
-            const pcx = cx * sx - wR * Math.cos(st), pcy = cy * sy - hR * Math.sin(st);
-            const segs = Math.max(1, Math.min(4, Math.ceil(Math.abs(sw) / Math.PI - 1e-6)));
-            let ex = cx * sx, ey = cy * sy;
-            for (let i = 1; i <= segs; i++) {
-              const tt = st + (sw * i) / segs;
-              ex = pcx + wR * Math.cos(tt); ey = pcy + hR * Math.sin(tt);
-              if (wR > 0 && hR > 0) d += `A${n(wR)},${n(hR)} 0 0 ${sw > 0 ? 1 : 0} ${n(ex)},${n(ey)} `;
-              else d += `L${n(ex)},${n(ey)} `;
-            }
-            cx = ex / (sx || 1); cy = ey / (sy || 1);
-            break;
-          }
+          case 'A': { const a = arcTo(cx, cy, c[1], c[2], c[3], c[4], sx, sy); d += a.d; cx = a.x; cy = a.y; break; }
           case 'Z': d += 'Z '; cx = sxp; cy = syp; break;
           default: break;
         }
@@ -674,21 +788,33 @@
     presets: G,
     get: (name) => G[name] || G.rect,
     isLine: (name) => !!(G[name] && G[name].isLine),
-    adj(sh) { const g = G[sh.geom] || G.rect; return Object.assign({}, g.adj || {}, sh.adj || {}); },
+    adj(sh) {
+      const sp = spec(sh.geom);
+      if (sp) return Object.assign(Object.fromEntries((sp.av || []).map((a) => [a[0], a[2]])), sh.adj || {});
+      const g = G[sh.geom] || G.rect; return Object.assign({}, g.adj || {}, sh.adj || {});
+    },
     parts(sh, w, h) {
       w = Math.max(w, 0.01); h = Math.max(h, 0.01);
       if (sh.geom === 'custom' && sh.path) return customParts(sh.path, w, h);
+      const sp = !(G[sh.geom] && G[sh.geom].isLine) && spec(sh.geom);
+      if (sp && sp.path) return specParts(sp, w, h, sh.adj);
       const g = G[sh.geom] || G.rect;
       if (!g.fn) return [];
       return g.fn(w, h, L.geom.adj(sh));
     },
     textRect(sh) {
       if (sh.txRect) return sh.txRect;   // its own text area, [l, t, r, b] in the shape (SmartArt's txXfrm)
+      const sp = spec(sh.geom);
+      if (sp) return specText(sp, sh.w, sh.h, sh.adj);
       const g = G[sh.geom];
       if (g && g.text) return g.text(sh.w, sh.h, L.geom.adj(sh));
       return [0, 0, sh.w, sh.h];
     },
-    handles(sh) { const g = G[sh.geom]; return (g && g.handles) || []; },
+    handles(sh) {
+      const sp = !(G[sh.geom] && G[sh.geom].isLine) && spec(sh.geom);
+      if (sp) { if (!handleCache.has(sh.geom)) handleCache.set(sh.geom, specHandles(sp)); return handleCache.get(sh.geom); }
+      const g = G[sh.geom]; return (g && g.handles) || [];
+    },
     linePath(sh) {
       const w = sh.w, h = sh.h;
       const x1 = sh.flipH ? w : 0, y1 = sh.flipV ? h : 0, x2 = sh.flipH ? 0 : w, y2 = sh.flipV ? 0 : h;

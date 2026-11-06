@@ -13,7 +13,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | `../common/sha.js`, `../common/crypto.js` | Password-protected presentations: ECMA-376 Agile and Standard encryption (AES, SHA-1/SHA-2), read and write |
 | `../common/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML preservation graph, identities, namespace capture and schema order |
-| `../common/geometry.js` | 92 AutoShape presets, adjust handles, text rectangles, connectors; the 54 preset pattern fills (shared with Quire) |
+| `../common/presets.js`, `../common/geometry.js` | AutoShapes: the 187 presets drawn from DrawingML's definitions, with their adjust handles and text rectangles; connectors; the 54 preset pattern fills (shared with Quire and Ledger) |
 | `js/designs.js` | Imported master/layout library, selective design changes and independent design copies |
 | `js/properties.js` | Shape/text properties, tags, actions and transitions retained until their owning property changes |
 | `js/model.js` | Presentation model, 15 design templates, 21 slide layouts, undo history |
