@@ -1945,7 +1945,15 @@
       for (const n of kids(x, tag)) {
         const ty = at(n, 'type');
         const id = at(n, 'id');
-        if (ty === 'separator' || ty === 'continuationSeparator' || ty === 'continuationNotice') continue;
+        if (ty === 'continuationNotice') continue;
+        /* the line above the notes, and the one above a note continued from the page before: their paragraphs set
+           how much room they take (saved from doc.keep.notes) */
+        if (ty === 'separator' || ty === 'continuationSeparator') {
+          const story = { kind, id, blocks: [] };
+          story.blocks = parseBlocks(n, Object.assign(storyCtx(rel.target, nr, story), { noteId: id }));
+          ((doc.noteSep = doc.noteSep || {})[kind] = doc.noteSep[kind] || {})[ty] = story;
+          continue;
+        }
         const story = { kind, id, blocks: [] };
         const ctx = storyCtx(rel.target, nr, story);
         ctx.noteId = id;

@@ -385,6 +385,19 @@
           st = cut >= n ? { bi: st.bi + 1, sub: null } : { bi: st.bi, sub: cut };
           break;
         }
+        /* a footnote referenced in the last line placed (or in the first, which may not stand alone at the foot of a
+           page) that doesn't fit below it goes on to the next page, and the page ends there (Word) */
+        if (frame.notes && nh > frame.limit - (ls - slackOf(lines[k - 1])) && frame.kind === 'col' && frame.lastCol && !ctx.inCell) {
+          const id = frame.notes.lastPending(), ref = id && frag.querySelector(`.nref[data-note="fn:${id}"]`);
+          const at = ref ? (ref.getBoundingClientRect().top + ref.getBoundingClientRect().bottom) / 2 : null;
+          const lineOf = (j) => lines[j] && at != null && (at - frame.top) / scale >= lines[j].top - 0.5 && (at - frame.top) / scale <= lines[j].bottom + 0.5;
+          if ((lineOf(k - 1) || (k === 2 && widow && lineOf(0))) && frame.notes.split(frame.limit - (ls - slackOf(lines[k - 1])))) {
+            frame.notes.commit(frag);
+            frame.empty = false;
+            frame.chain = [];
+            return { st: cut >= n ? { bi: st.bi + 1, sub: null } : { bi: st.bi, sub: cut }, stop: 'full' };
+          }
+        }
         dropFrag(frag);
         if (frame.notes) frame.notes.rollback();
         k--;
@@ -838,7 +851,7 @@
 
   /* ================= footnote areas ================= */
   /** per-page footnote collector: measures/commits notes referenced by fragments */
-  function noteArea(page, ctx) {
+  function noteArea(page, ctx, carry) {
     const area = el('div', 'pg-fn');
     area.style.cssText = `left:${page.bodyLeft}px;width:${page.bodyW}px;bottom:${page.bodyBottomGap}px`;
     page.el.appendChild(area);
@@ -846,7 +859,23 @@
     let pending = [];
     let committedH = 0;
     let pendingH = 0;
+    /* a note that goes on to the next page ({ id, st }: where its rest starts), as Word continues a footnote that
+       doesn't fit below its reference; carried in from the page before, it comes first, under a full-width line */
+    let carryOut = null, splitPending = false;
     const cache = new Map();
+    /** the line above the notes (cont: above a note continued from the page before), as the file's separator
+        paragraph draws it, so it takes as much room as in Word */
+    /* (the file's separator paragraph takes the room Word gives it; Quire's own line, a little more) */
+    const gap = ((doc().noteSep || {}).fn || {}).separator ? 0 : 6;
+    /* (to the fraction of a pixel: a rounded height decides whether a note's last line fits) */
+    const areaH = () => area.getBoundingClientRect().height / LY.scale();
+    const separator = (cont) => {
+      const story = ((doc().noteSep || {}).fn || {})[cont ? 'continuationSeparator' : 'separator'];
+      const box = el('div', story ? 'fnsep-box' : 'fnsep-line' + (cont ? ' cont' : ''));
+      box.contentEditable = 'false';
+      if (story) LY.flow({ el: box, limit: Infinity, top: 0, empty: true, kind: 'note' }, story.blocks, { bi: 0, sub: null }, story.blocks.length, Object.assign({}, ctx, { story, grid: 0 }));
+      return box;
+    };
     const renderNote = (id) => {
       const note = doc().fn[id];
       const box = el('div', 'fnote');
@@ -856,6 +885,32 @@
       LY.flow(fr, note.blocks, { bi: 0, sub: null }, note.blocks.length, Object.assign({}, ctx, { story: note, noteOwner: id, grid: 0 }));
       return box;
     };
+    /** part of a note from st, in at most limit px: { box, st, done }; laid out in a hidden box at the page's top (the
+        area grows upwards from the foot of the page, which would move the lines being measured) */
+    const renderPart = (id, st, limit) => {
+      const note = doc().fn[id];
+      const host = el('div', 'pg-fn');
+      host.style.cssText = `left:${page.bodyLeft}px;width:${page.bodyW}px;top:0;visibility:hidden`;
+      page.el.appendChild(host);
+      const box = el('div', 'fnote');
+      box.dataset.fn = id;
+      host.appendChild(box);
+      const fr = { el: box, limit, top: box.getBoundingClientRect().top, empty: true, kind: 'note' };
+      const res = LY.flow(fr, note.blocks, st, note.blocks.length, Object.assign({}, ctx, { story: note, noteOwner: id, grid: 0 }));
+      const h = box.getBoundingClientRect().height / LY.scale();
+      host.remove();
+      return { box, st: res.st, done: res.stop === 'done', h };
+    };
+    if (carry && doc().fn[carry.id]) {
+      area.appendChild(separator(true));
+      /* (a note longer than a page leaves room for a few lines of text) */
+      const part = renderPart(carry.id, carry.st, Math.max(48, page.bodyH - 48));
+      part.box.classList.add('cont');
+      area.appendChild(part.box);
+      committed.push({ id: carry.id, box: part.box, cont: true });
+      if (!part.done) carryOut = { id: carry.id, st: part.st };
+      committedH = areaH() + gap;
+    }
     const api = {
       area,
       /** height needed (px) if fragment's notes were added */
@@ -867,25 +922,54 @@
         for (const r of refs) {
           const id = r.dataset.note.slice(3);
           if (committed.some((c) => c.id === id) || pending.some((c) => c.id === id)) continue;
+          /* (no note goes below one that goes on to the next page) */
+          if (carryOut) return Infinity;
           let box = cache.get(id);
           if (!box) { box = renderNote(id); cache.set(id, box); }
-          if (!area.childNodes.length) { const sep = el('div', 'fnsep-line'); sep.contentEditable = 'false'; area.appendChild(sep); }
+          if (!area.childNodes.length) area.appendChild(separator(false));
           area.appendChild(box);
           pending.push({ id, box });
         }
-        pendingH = area.offsetHeight + 6;
+        pendingH = areaH() + gap;
         return pendingH;
       },
-      commit() { committed = committed.concat(pending); pending = []; committedH = committed.length ? area.offsetHeight + 6 : 0; },
-      rollback() { for (const pnd of pending) pnd.box.remove(); pending = []; if (!committed.length) area.textContent = ''; },
+      /** the note of the last reference measured goes on to the next page, so that the notes take at most avail px: as
+          Word does when it doesn't fit below its reference, if a line of it does and it may be split there */
+      split(avail) {
+        const last = pending[pending.length - 1], note = last && doc().fn[last.id];
+        if (!note || carryOut) return false;
+        last.box.remove();
+        const room = avail - (areaH() + gap);
+        const part = room > 8 ? renderPart(last.id, { bi: 0, sub: null }, room) : null;
+        const p0 = note.blocks[0];
+        if (!part || part.done || !part.box.firstChild || part.h > room + 0.5
+          || (part.st.bi === 0 && p0 && p0.t === 'p' && D.pProps(doc(), p0).keepLines)) { area.appendChild(last.box); return false; }
+        area.appendChild(part.box);
+        last.box = part.box;
+        carryOut = { id: last.id, st: part.st };
+        splitPending = true;
+        pendingH = areaH() + gap;
+        return true;
+      },
+      /** the note of the last reference measured */
+      lastPending: () => (pending.length ? pending[pending.length - 1].id : null),
+      /** the note going on to the next page, and where its rest starts */
+      carry: () => carryOut,
+      commit() { committed = committed.concat(pending); pending = []; splitPending = false; committedH = committed.length ? areaH() + gap : 0; },
+      rollback() {
+        for (const pnd of pending) pnd.box.remove();
+        pending = [];
+        if (splitPending) { carryOut = null; splitPending = false; }
+        if (!committed.length) area.textContent = '';
+      },
       removeFrom(fragEl) {
         /* drop notes referenced by fragments being moved off this page */
         const ids = new Set();
         let e = fragEl;
         while (e) { for (const r of e.querySelectorAll ? e.querySelectorAll('.nref[data-note^="fn:"]') : []) ids.add(r.dataset.note.slice(3)); e = e.nextElementSibling; }
-        committed = committed.filter((c) => { if (ids.has(c.id)) { c.box.remove(); return false; } return true; });
+        committed = committed.filter((c) => { if (ids.has(c.id) && !c.cont) { c.box.remove(); if (carryOut && carryOut.id === c.id) carryOut = null; return false; } return true; });
         if (!committed.length) area.textContent = '';
-        committedH = committed.length ? area.offsetHeight + 6 : 0;
+        committedH = committed.length ? areaH() + gap : 0;
       },
       height: () => committedH,
     };
@@ -1110,7 +1194,7 @@
   function frameFor(page, region, ci, ctx, natural) {
     const f = region.frames[ci];
     const sc = LY.scale();
-    const fr = { el: f.el, limit: page.bodyH - region.y, top: f.el.getBoundingClientRect().top, empty: !f.el.firstChild, natural, kind: 'col', page, width: f.w, notes: page.notes, follows: ci === 0 && region.y > 0 };
+    const fr = { el: f.el, limit: page.bodyH - region.y, top: f.el.getBoundingClientRect().top, empty: !f.el.firstChild, natural, kind: 'col', page, width: f.w, notes: page.notes, follows: ci === 0 && region.y > 0, lastCol: ci === region.frames.length - 1 };
     if (!fr.empty) fr.top = f.el.getBoundingClientRect().top;
     void sc;
     void ctx;
@@ -1185,10 +1269,12 @@
     else LY.insertAnchor = resyncCandidates.length ? resyncCandidates[0].el : null;
     LY.pages = keep;
     let page = null, region = null;
+    const carried = () => { const prev = LY.pages[LY.pages.length - 1]; return (prev && prev.notes && prev.notes.carry()) || null; };
     const startPage = (natural) => {
+      const noteCarry = carried();
       page = newPage(sections, si, pageIdx, numVal, firstOfSection, ctx);
-      page.start = { block: blocks[st.bi], sub: st.sub, si, numVal, firstOfSection };
-      page.notes = d.fn && Object.keys(d.fn).length ? noteArea(page, ctx) : null;
+      page.start = { block: blocks[st.bi], sub: st.sub, si, numVal, firstOfSection, noteCarry };
+      page.notes = d.fn && Object.keys(d.fn).length ? noteArea(page, ctx, noteCarry) : null;
       LY.pages.push(page);
       region = newRegion(page, sections[si].sect, 0);
       region.natural = natural;
@@ -1270,7 +1356,7 @@
       /* new page; try to resync with the previous layout */
       const nextStart = { block: blocks[st.bi], sub: st.sub };
       if (fromPage && LY.resyncOK) {
-        const old = resyncCandidates.find((op) => op.idx === pageIdx && op.start && op.start.block === nextStart.block && JSON.stringify(op.start.sub) === JSON.stringify(nextStart.sub) && op.start.si === si && op.start.numVal === numVal);
+        const old = resyncCandidates.find((op) => op.idx === pageIdx && op.start && op.start.block === nextStart.block && JSON.stringify(op.start.sub) === JSON.stringify(nextStart.sub) && op.start.si === si && op.start.numVal === numVal && JSON.stringify(op.start.noteCarry || null) === JSON.stringify(carried()));
         if (old && LY.resyncOK(old, blocks.indexOf(old.start.block))) {
           for (const op of resyncCandidates) { if (op.idx >= old.idx) LY.pages.push(op); else op.el.remove(); }
           resynced = true;
@@ -1282,6 +1368,8 @@
       startPage(res.stop === 'full' || !!res.pbb || (d.settings && d.settings.compat) >= 15);
     }
     if (!resynced) for (const op of resyncCandidates) op.el.remove();
+    /* a footnote still going on at the end of the text: its rest on pages of their own */
+    if (!resynced) { si = sections.length - 1; for (let k = 0; k < 200 && carried(); k++) startPage(false); }
     LY.insertAnchor = null;
     /* endnotes after the last block */
     if (!resynced && d.en && Object.keys(d.en).length) {

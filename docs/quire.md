@@ -70,6 +70,13 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   row keeps with the next paragraph (its first cell's first paragraph does, whatever the other cells say, as Word 2016
   prints it); a chain that starts at the top of a page is laid out from there. Quire ended every chain at a table, so a
   contract whose paragraphs all keep with the next took 181 pages to Word's 177 (180 now).
+- A footnote that doesn't fit below its reference goes on to the next page, as Word 2016 prints it: the reference's line
+  stays, the note fills the rest of the page (between its paragraphs or inside one) and goes on at the top of the next
+  page's notes under a full-width line, and the text after the reference waits for that page; a note whose first
+  paragraph keeps its lines together, or with no room for a line, takes its reference's line along. Quire moved the
+  reference to the next page whenever its note didn't fit whole, and let a note longer than a page run off it. The line
+  above the notes is the file's own separator paragraph, so it takes Word's room (Quire's was 7 pt shorter); two
+  corpus files now show Word 2016's page count (stress008, stress018).
 - Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
   and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
   bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and
