@@ -986,6 +986,12 @@
                 if (cb) { ff.type = 'checkbox'; ff.def = bool(kid(cb, 'default'), false); ff.checked = kid(cb, 'checked') ? bool(kid(cb, 'checked')) : ff.def; ff.size = kid(cb, 'size') ? num(kid(cb, 'size'), 'val', 20) / 2 : null; }
                 else if (ti) { ff.type = 'text'; ff.def = at(kid(ti, 'default'), 'val') || ''; ff.maxLength = num(kid(ti, 'maxLength'), 'val', 0); ff.format = at(kid(ti, 'format'), 'val') || ''; ff.textType = at(kid(ti, 'type'), 'val') || 'regular'; }
                 else if (dd) { ff.type = 'dropdown'; ff.entries = kids(dd, 'listEntry').map((e) => at(e, 'val')); ff.result = num(kid(dd, 'result'), 'val', 0); }
+                // the settings Quire doesn't edit, written back as they were
+                if (kid(ffd, 'label')) ff.label = num(kid(ffd, 'label'), 'val', 0);
+                if (kid(ffd, 'tabIndex')) ff.tabIndex = num(kid(ffd, 'tabIndex'), 'val', 0);
+                if (kid(ffd, 'enabled') && !bool(kid(ffd, 'enabled'), true)) ff.disabled = true;
+                if (kid(ffd, 'calcOnExit') && bool(kid(ffd, 'calcOnExit'), true)) ff.calcOnExit = true;
+                for (const k of ['entryMacro', 'exitMacro']) if (kid(ffd, k)) ff[k] = at(kid(ffd, k), 'val') || '';
                 if (kid(ffd, 'helpText')) ff.help = at(kid(ffd, 'helpText'), 'val');
                 if (kid(ffd, 'statusText')) ff.status = at(kid(ffd, 'statusText'), 'val');
                 item.ff = ff;

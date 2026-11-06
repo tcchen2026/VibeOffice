@@ -424,7 +424,9 @@
         let ff = '';
         if (it.ff) {
           const f = it.ff;
-          let inner = `<w:name w:val="${X(f.name || '')}"/><w:enabled/><w:calcOnExit w:val="0"/>`;
+          let inner = `<w:name w:val="${X(f.name || '')}"/>${f.label != null ? `<w:label w:val="${f.label}"/>` : ''}${f.tabIndex != null ? `<w:tabIndex w:val="${f.tabIndex}"/>` : ''}` +
+            `<w:enabled${f.disabled ? ' w:val="0"' : ''}/><w:calcOnExit w:val="${f.calcOnExit ? 1 : 0}"/>` +
+            (f.entryMacro != null ? `<w:entryMacro w:val="${X(f.entryMacro)}"/>` : '') + (f.exitMacro != null ? `<w:exitMacro w:val="${X(f.exitMacro)}"/>` : '');
           if (f.help) inner += `<w:helpText w:type="text" w:val="${X(f.help)}"/>`;
           if (f.status) inner += `<w:statusText w:type="text" w:val="${X(f.status)}"/>`;
           if (f.type === 'checkbox') inner += `<w:checkBox>${f.size ? `<w:size w:val="${hp(f.size)}"/>` : '<w:sizeAuto/>'}<w:default w:val="${f.def ? 1 : 0}"/>${f.checked !== f.def ? `<w:checked w:val="${f.checked ? 1 : 0}"/>` : ''}</w:checkBox>`;
