@@ -805,11 +805,23 @@
   A.readDocx = async function (buf, displayName, opts) {
     try { return await L.docx.read(buf, { name: displayName }); }
     catch (e) {
-      if (!(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
+      /* a Word 97-2003 document with a password to open (code 'password', from common/legacy/import.js) or an encrypted .docx */
+      const legacy = e && e.code === 'password';
+      if (!legacy && !(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
       let pass = opts && opts.password != null ? opts.password : null;
       if (pass == null) { ui.busy(false); pass = await ui.password(displayName || 'Document'); }
       if (pass == null) { const c = new Error('cancelled'); c.code = 'cancel'; throw c; }
       ui.busy(true, 'Opening...');
+      if (legacy) {
+        try { return await L.docx.read(buf, { name: displayName, password: pass }); }
+        catch (err) {
+          if (!(err && err.code === 'badpassword')) throw err;
+          const b = new Error(L.t('The password is incorrect. {0} cannot open the document.', L.APP));
+          b.code = 'ole';
+          b.badPassword = true;
+          throw b;
+        }
+      }
       let plain;
       try { plain = await L.officeCrypto.decrypt(e.bytes, pass); }
       catch (err) {

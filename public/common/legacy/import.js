@@ -35,23 +35,28 @@
     load,
     kindName: (format) => L.t(KIND[format] || format),
     /** bytes of an OLE compound file -> { pkg, type, losses, format }; want is the app's format ('doc', 'xls',
-        'ppt'). A refusal throws with code 'legacy' and a message for the user. */
-    async convert(bytes, name, want) {
+        'ppt'), opts.password the password to open, when the user gave one. A file with a password to open throws
+        with code 'password' (none given; Office's default password is tried first, as Office opens such files
+        without asking) or 'badpassword', as the apps' readers do for encrypted .docx/.xlsx/.pptx; a refusal throws
+        with code 'legacy' and a message for the user. The package returned is not encrypted. */
+    async convert(bytes, name, want, opts) {
       await load();
-      const B = L.legacy, refuse = (message) => { const e = new Error(message); e.code = 'legacy'; return e; };
+      const B = L.legacy, refuse = (message, code) => { const e = new Error(message); e.code = code || 'legacy'; return e; };
       const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
       let sniff;
       try { sniff = B.sniff(u8); } catch (e) { throw refuse(L.t('The file is damaged or is not an Office 97-2003 file.')); }
       if (sniff.format !== want) {
         throw refuse(OTHER[sniff.format] ? L.t(OTHER[sniff.format], L.APP) : L.t('The file is damaged or is not an Office 97-2003 file.'));
       }
-      const extension = (/\.([a-z]+)$/i.exec(name || '') || [])[1];
+      const extension = (/\.([a-z]+)$/i.exec(name || '') || [])[1], password = opts && opts.password;
       try {
-        const r = await B[want].convert(u8, { extension });
+        const r = await B[want].convert(u8, password == null ? { extension } : { extension, password });
         return Object.assign({ format: want }, r);
       } catch (e) {
         if (!e || !['LegacyError', 'CFBError'].includes(e.name)) throw e;
-        if (e.code === 'PASSWORD_REQUIRED' || e.code === 'ENCRYPTION_UNSUPPORTED') throw refuse(L.t('This {0} is protected with a password. {1} cannot open password-protected Office 97-2003 files yet.', L.legacyImport.kindName(want), L.APP));
+        if (e.code === 'PASSWORD_REQUIRED') throw refuse(L.N('This file is password-protected.'), 'password');
+        if (e.code === 'WRONG_PASSWORD') throw refuse(L.N('The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.'), 'badpassword');
+        if (e.code === 'ENCRYPTION_UNSUPPORTED') throw refuse(L.t('This {0} is protected with a kind of password {1} cannot open.', L.legacyImport.kindName(want), L.APP));
         throw refuse(L.t(e.message));
       }
     },

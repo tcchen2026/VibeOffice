@@ -21,6 +21,8 @@ put(sh, 'J1', 'Dept'); put(sh, 'J2', 'East'); put(sh, 'J3', 'North');
 /* COUNTIF and database criteria cases from POI's countifExamples and DGet, as Excel answered them */
 put(s2, 'I1', '=""'); put(s2, 'I3', true); put(s2, 'I4', 'TA'); put(s2, 'I5', 12342);
 put(s2, 'K1', 'name'); put(s2, 'K2', '="=c?"'); put(s2, 'L1', 'Name'); put(s2, 'L2', 'C'); put(s2, 'M1', 'Name'); put(s2, 'M2', '<5');
+/* computed criteria naming the database's fields, as POI's DGet (H47:J47) and Excel's Advanced Filter use them: the criterion cells show #NAME? */
+put(s2, 'N1', 'Big'); put(s2, 'N2', '=Sales>275'); put(s2, 'O1', 'Both'); put(s2, 'O2', '=AND(dept="East",Sales<150)');
 C.recalcAll(wb);
 let n = 0, fail = 0;
 const eq = (a, b, tol) => {
@@ -45,6 +47,7 @@ t('VLOOKUP(5,Data!F1:G10,NA(),FALSE)', '#REF!'); t('VLOOKUP(5,Data!F1:G10,FALSE,
 t('VLOOKUP(Data!H1,Data!F1:G10,2,FALSE)', '#N/A'); t('VLOOKUP(1,PI(),1)', '#N/A'); t('LOOKUP(33,Data!F1:F10,Data!G1:G10)', 'r5');
 t('COUNTIF(Data!I1:I2,"=")', 1); t('COUNTIF(Data!I1:I2,"<>")', 1); t('COUNTIF(Data!I1:I2,"")', 2); t('COUNTIF(Data!I2,Data!I2)', 0);
 t('COUNTIF(Data!I3:I4,"<TRUE")', 0); t('COUNTIF(Data!I3:I4,">FALSE")', 1); t('COUNTIF(Data!I5,"1*2")', 0);
+t('DGET(Data!A1:D6,"Name",Data!N1:N2)', 'Ed'); t('DGET(Data!A1:D6,"Name",Data!O1:O2)', 'Ann'); t('Data!N2', '#NAME?');
 t('DGET(Data!A1:D6,"SALES",Data!K1:K2)', 175); t('DGET(Data!A1:D6,"Sales",Data!L1:L2)', 175); t('DGET(Data!A1:D6,"Sales",Data!M1:M2)', '#VALUE!');
 t('VLOOKUP("Cy",Data!A1:D6,3,FALSE)', 175); t('VLOOKUP("Zed",Data!A1:D6,3,FALSE)', '#N/A'); t('HLOOKUP("Sales",Data!A1:D6,3,FALSE)', 250);
 t('INDEX(Data!A1:D6,MATCH("Di",Data!A1:A6,0),2)', 'North'); t('MATCH(7,A1:A10,1)', 7); t('MATCH(7.5,A1:A10)', 7); t('LOOKUP(6.5,A1:A10,A1:A10)', 6);

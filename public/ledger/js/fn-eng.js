@@ -372,6 +372,13 @@
       }
       rules.push(row);
     }
+    /* a field name in a computed criterion stands for the record's value in that field, unless a defined name has it
+       (as Excel filters with column labels in criteria formulas; the criterion cell itself shows #NAME?) */
+    let fields = null;
+    if (rules.some((row) => row.some((t) => t.formula))) {
+      const at = ctx.wb.sheetIndex(csh);
+      fields = headers.map((h, i) => (h && /^[a-z_\\][\w.]*$/i.test(h) && !ctx.wb.findName(h, at) ? [h.toUpperCase(), i] : null)).filter(Boolean);
+    }
     const out = [];
     for (let r = db.r1 + 1; r <= db.r2; r++) {
       if (r > sh.maxR) break;
@@ -380,7 +387,9 @@
         if (t.formula) {
           let ast;
           try { ast = F.shift(F.parse(t.formula.f), r - (db.r1 + 1), 0); } catch (e) { return false; }
-          const v = C.scalarOut(C.ev(ast, C.ctx(ctx.wb, csh, t.at.r, t.at.c)), ctx);
+          const fx = C.ctx(ctx.wb, csh, t.at.r, t.at.c);
+          if (fields.length) fx.vars = { map: new Map(fields.map(([k, i]) => [k, new Ref(sh, r, db.c1 + i)])), parent: null };
+          const v = C.scalarOut(C.ev(ast, fx), ctx);
           return C.toBool(v) === true;
         }
         return t.pred(C.cellValue(sh, r, db.c1 + t.ci));

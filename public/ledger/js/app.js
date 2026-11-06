@@ -147,7 +147,7 @@
     }
   };
   A.openFile = async function (file, password, opts) {
-    if (!password && window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
+    if (password == null && window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
     opts = opts || {};
     const name = file.name || 'Book.xlsx';
     const ext = (name.split('.').pop() || '').toLowerCase();
@@ -166,8 +166,15 @@
         w = await L.xmlss.read(bytes);
         type = 'xmlss';
       } else {
-        try { w = await L.xlsxRead.read(bytes, { password }); }
-        catch (e) {
+        try {
+          try { w = await L.xlsxRead.read(bytes, { password }); }
+          catch (e) {
+            /* an Excel 97-2003 workbook: read as the .xlsx Excel would write for it (common/legacy/import.js) */
+            if (e.code !== 'xls') throw e;
+            converted = await L.legacyImport.convert(bytes, name, 'xls', { password });
+            w = await L.xlsxRead.read(converted.pkg);
+          }
+        } catch (e) {
           if (e.code === 'badpassword') {
             /* as Excel: say so and cancel the open; File ▸ Open again to retry */
             ui.busy(false);
@@ -180,9 +187,7 @@
             if (pw == null) return;
             return A.openFile(file, pw, opts);
           }
-          /* an Excel 97-2003 workbook: read as the .xlsx Excel would write for it (common/legacy/import.js) */
-          if (e.code === 'xls') { converted = await L.legacyImport.convert(bytes, name, 'xls'); w = await L.xlsxRead.read(converted.pkg); }
-          else throw e;
+          throw e;
         }
         type = converted ? 'xls' : w.ooxmlFormat || (w.macroEnabled ? 'xlsm' : 'xlsx');   // a converted workbook's Save asks for an .xlsx name
         if (w.repaired) ui.toast('This file was damaged; Ledger repaired what it could.');

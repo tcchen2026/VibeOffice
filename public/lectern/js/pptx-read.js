@@ -442,9 +442,11 @@
     try { zip = await L.zip.read(buffer); } catch (e) {
       /* a PowerPoint 97-2003 presentation: read as the .pptx PowerPoint would write for it (common/legacy/import.js) */
       if (e && e.code === 'ole' && !e.encrypted && L.legacyImport && !opts.converted) {
-        const converted = await L.legacyImport.convert(e.bytes, opts.name, 'ppt');
+        const converted = await L.legacyImport.convert(e.bytes, opts.name, 'ppt', { password: opts.password });
         const pres = await read(converted.pkg.buffer.slice(converted.pkg.byteOffset, converted.pkg.byteOffset + converted.pkg.byteLength), Object.assign({}, opts, { converted: true }));
         pres.converted = converted;
+        /* a password to open (not Office's default one) stays with the presentation, as PowerPoint keeps it on Save As */
+        if (opts.password) pres.password = opts.password;
         return pres;
       }
       if (!(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;

@@ -162,7 +162,7 @@ printer itself.
 | XML Spreadsheet 2003 `.xml` | yes | yes |
 | Web Page `.htm` / `.html` | yes: each table on the page becomes a sheet | yes: one self-contained page per workbook, with its own security policy (no scripts) |
 | PDF | — | yes |
-| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks, comments, hyperlinks, data validation, conditional formatting, filters, print settings and protection, pictures, AutoShapes, groups, text boxes and charts, chart sheets too; pivot tables not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name | no |
+| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks, comments, hyperlinks, data validation, conditional formatting, filters, print settings and protection, pictures, AutoShapes, groups, text boxes and charts, chart sheets too; pivot tables not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name. A workbook with a password to open asks for it (XOR obfuscation, RC4 and RC4 CryptoAPI encryption) and is saved encrypted with it, as Excel keeps it on Save As; one encrypted with Excel's default password (a workbook protected only against changes) opens without asking and is saved without a password to open | no |
 
 Passwords are handled in the browser (WebCrypto plus Ledger's own AES and SHA code), so the page must
 be served over https or from localhost. A workbook opened with its password keeps it when saved.
@@ -529,7 +529,9 @@ workbooks Excel saved, opened by conversion, with **58,185 of 59,758** (97.37%; 
 1,385 differences are `TODAY()` stamps and a French `CELL("adresse")`). What remains is mostly the clock, stale stored
 values, a German or French Excel's own number formats and function words, and legacy implicit intersection. Lookup
 functions (Excel's approximate search on unsorted data, `VLOOKUP`'s argument rules), `INDEX` over an array expression,
-`COUNTIF` criteria and the database functions' criteria follow the results Excel stored in POI's test workbooks.
+`COUNTIF` criteria and the database functions' criteria follow the results Excel stored in POI's test workbooks; a
+computed criterion may name the database's fields (`=age<7`, as Excel's Advanced Filter takes column labels), which
+stand for each record's values while the criterion cell itself shows `#NAME?` (POI's `DGet.xls`: 163 of 163 formulas).
 
 CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`. Current preservation does not imply exact print
 layout or support for every formula or external data source.
@@ -545,7 +547,7 @@ layout or support for every formula or external data source.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.
 - One window per workbook (Window ▸ New Window is not available).
-- Excel 97-2003 `.xls` files are opened by conversion and saved as `.xlsx`; password-protected ones aren't opened yet.
+- Excel 97-2003 `.xls` files are opened by conversion and saved as `.xlsx`.
 - Saved as XML Spreadsheet 2003, a merged range whose top-left cell holds nothing (no value, no format)
   is not written: that format records a merge on its top-left cell.
 - Spelling is English only (U.S. and U.K.).
