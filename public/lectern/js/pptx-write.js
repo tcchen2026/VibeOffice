@@ -163,7 +163,7 @@
     const jump = { next: 'nextslide', prev: 'previousslide', first: 'firstslide', last: 'lastslide', lastViewed: 'lastslideviewed', end: 'endshow' }[link.action];
     return jump ? `<${tag} r:id="" action="ppaction://hlinkshowjump?jump=${jump}"/>` : '';
   }
-  function buXML(bu, design) {
+  function buXML(bu, design, ctx) {
     if (!bu) return '';
     let x = '';
     if (bu.c) x += `<a:buClr>${clr(bu.c, null, design)}</a:buClr>`;
@@ -171,6 +171,7 @@
     if (bu.t === 'none') return x + '<a:buNone/>';
     if (bu.t === 'num') return x + (bu.font ? `<a:buFont typeface="${X(bu.font)}"/>` : '<a:buFont typeface="+mj-lt"/>') + `<a:buAutoNum type="${bu.scheme || 'arabicPeriod'}"${bu.start && bu.start !== 1 ? ` startAt="${bu.start}"` : ''}/>`;
     if (bu.t === 'char') return x + `<a:buFont typeface="${X(bu.font || 'Arial')}"/><a:buChar char="${X(bu.ch || '•')}"/>`;
+    if (bu.t === 'blip') { const rid = ctx && ctx.media ? ctx.media(bu.media) : null; return x + (rid ? `<a:buBlip><a:blip r:embed="${rid}"/></a:buBlip>` : '<a:buFont typeface="Arial"/><a:buChar char="■"/>'); }
     return x;
   }
   const spc = (s, tag) => (s ? (s.pts != null ? `<${tag}><a:spcPts val="${Math.round(s.pts * 100)}"/></${tag}>` : `<${tag}><a:spcPct val="${pct(s.pct)}"/></${tag}>`) : '');
@@ -181,7 +182,7 @@
     if (lvl) a.push(`lvl="${lvl}"`);
     if (pp.indent != null) a.push(`indent="${emu(pp.indent)}"`);
     if (pp.algn) a.push(`algn="${pp.algn}"`);
-    let kids = spc(pp.lnSpc, 'a:lnSpc') + spc(pp.spcBef, 'a:spcBef') + spc(pp.spcAft, 'a:spcAft') + buXML(pp.bu, design);
+    let kids = spc(pp.lnSpc, 'a:lnSpc') + spc(pp.spcBef, 'a:spcBef') + spc(pp.spcAft, 'a:spcAft') + buXML(pp.bu, design, ctx);
     if (withDefRPr && pp.rPr && Object.keys(pp.rPr).length) kids += rPrXML(pp.rPr, 'a:defRPr', ctx, design);
     const xml = !a.length && !kids ? '' : kids ? `<${tag}${a.length ? ' ' + a.join(' ') : ''}>${kids}</${tag}>` : `<${tag} ${a.join(' ')}/>`;
     return L.properties.text(pp, ctx, xml, 'para', tag, lvl);
@@ -824,15 +825,21 @@
     /* media must be resolved synchronously during XML generation, so preload */
     const usedMedia = new Set();
     const scanFill = (f) => { if (f && f.t === 'img' && f.media) usedMedia.add(f.media); };
+    /* picture bullets, wherever text styles keep them (paragraphs, list styles, a master's text styles) */
+    const scanBullets = (o, depth = 0) => {
+      if (!o || typeof o !== 'object' || depth > 12) return;
+      if (o.t === 'blip' && o.media) { usedMedia.add(o.media); return; }
+      for (const k in o) if (k !== 'keep') scanBullets(o[k], depth + 1);
+    };
     const scanShape = (s) => {
       if (s.type === 'image' && s.media) usedMedia.add(s.media);
       if (s.type === 'image' && s.svgMedia) usedMedia.add(s.svgMedia);
-      scanFill(s.fill);
-      if (s.tbl) s.tbl.rows.forEach((r) => r.cells.forEach((c) => scanFill(c.fill)));
+      scanFill(s.fill); scanBullets(s.tx);
+      if (s.tbl) s.tbl.rows.forEach((r) => r.cells.forEach((c) => { scanFill(c.fill); scanBullets(c.tx); }));
       if (s.kids) s.kids.forEach(scanShape);
     };
     for (const s of allSlides) { scanFill(s.bg); s.shapes.forEach(scanShape); }
-    for (const id of designIds) { const d = pres.designs[id]; if (!d) continue; scanFill(d.bg); scanFill(d.titleBg); (d.deco || []).forEach(scanShape); (d.titleDeco || []).forEach(scanShape); if (d.layoutDecos) Object.values(d.layoutDecos).forEach((a) => a.forEach(scanShape)); if (d.layoutBgs) Object.values(d.layoutBgs).forEach(scanFill); }
+    for (const id of designIds) { const d = pres.designs[id]; if (!d) continue; scanBullets(d.tx); scanFill(d.bg); scanFill(d.titleBg); (d.deco || []).forEach(scanShape); (d.titleDeco || []).forEach(scanShape); if (d.layoutDecos) Object.values(d.layoutDecos).forEach((a) => a.forEach(scanShape)); if (d.layoutBgs) Object.values(d.layoutBgs).forEach(scanFill); }
     const preloaded = new Map();
     for (const id of usedMedia) preloaded.set(id, await mediaBytes(id));
     const mediaSync = (rels, owner = rels.base || 'ppt/slides/slide1.xml') => (id) => {

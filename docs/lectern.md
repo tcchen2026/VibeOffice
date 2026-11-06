@@ -412,6 +412,7 @@ counts. Four pages load without console errors. All 15 batch-4 samples passed Po
 
 ## Known limits
 
+* A picture bullet is drawn as its picture and saved as one; Format ▸ Bullets and Numbering offers only character and number bullets, so choosing one there replaces it.
 * A slide with colours of its own (a theme override: PowerPoint writes one for a slide whose colour scheme differs from its master's) is drawn and saved with them; applying a colour scheme to such a slide leaves its own colours in place.
 * Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
 * SmartArt in a layout Lectern does not have is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped; PowerPoint SmartArt edited here takes our layout of the same name, so its look in PowerPoint changes to ours (*IntelliArt (SmartArt)*). When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.

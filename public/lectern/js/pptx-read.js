@@ -242,7 +242,7 @@
         case 'buNone': bu = { t: 'none' }; break;
         case 'buChar': bu = { t: 'char', ch: at(c, 'char') || '•' }; break;
         case 'buAutoNum': bu = { t: 'num', scheme: at(c, 'type') || 'arabicPeriod', start: num(c, 'startAt', 1) }; break;
-        case 'buBlip': bu = { t: 'char', ch: '■' }; break;
+        case 'buBlip': { const b = kid(c, 'blip'), id = b ? ctx.media(rid(b, 'embed')) : null; bu = id ? { t: 'blip', media: id } : { t: 'char', ch: '■' }; break; }
         case 'buClr': { const v = colorOf(c, ctx); if (v) extra.c = v.c; break; }
         case 'buSzPct': extra.sz = num(c, 'val', 100000) / 100000; break;
         case 'buFont': extra.font = at(c, 'typeface'); break;

@@ -267,6 +267,7 @@
       const bu = ps.bu || { t: 'none' };
       let bullet = null;
       if (bu.t === 'char' && bu.ch) bullet = L.mapSymbolChar(bu.ch, bu.font);
+      if (bu.t === 'blip') { const u = bu.media && L.media.url(bu.media); bullet = u ? '\u00a0' : '\u25a0'; if (u) { el.classList.add('bu-img'); el.style.setProperty('--bu-img', 'url("' + u + '")'); } }
       if (bu.t === 'num') {
         const sch = bu.scheme || 'arabicPeriod';
         counters[lvl] = prevNum[lvl] === sch && counters[lvl] ? counters[lvl] + 1 : bu.start || 1;
