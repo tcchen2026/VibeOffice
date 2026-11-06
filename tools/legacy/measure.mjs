@@ -23,7 +23,7 @@ if (!isMainThread) {
     // reusable; converter phases measure the converter itself unless requested.
     if(!converter||workerData.inspect){info=B.inspect(bytes);if(workerData.reference)fs.writeFileSync(workerData.reference,JSON.stringify(info));}
     if (!converter) B.fail('CONVERTER_UNAVAILABLE', 'Conversion for this format has not been implemented');
-    const result = await converter(bytes, {extension:path.extname(workerData.file)});
+    const result = await converter(bytes, {extension:path.extname(workerData.file), password: workerData.password});
     if (!(result.pkg instanceof Uint8Array) || result.pkg.length > B.limits.bytes || !/^(?:doc|xls|ppt|dot|xlt|pot|pps)[xm]$/.test(result.type)) throw new Error('Invalid converter result');
     parentPort.postMessage({ status: 'converted', sniff, shared, features: info?.features, stats:result.stats, ms: performance.now() - start, losses: result.losses, type: result.type, pkg: result.pkg }, [result.pkg.buffer]);
   } catch (e) { parentPort.postMessage({ status: refusal(e) ? 'refused' : 'crashed', sniff, shared, features: info?.features, code: e.code, reason: e.message, where: e.where, stack: refusal(e) ? undefined : e.stack, ms: performance.now() - start }); }
@@ -31,11 +31,12 @@ if (!isMainThread) {
   const args = process.argv.slice(2), opt = (name, fallback) => { const i = args.indexOf(name); return i < 0 ? fallback : args[i + 1]; };
   const corpus = path.resolve(opt('--corpus', '/work/corpora')), out = path.resolve(opt('--out', 'tmp/legacy/artifacts/measure'));
   const manifest = JSON.parse(fs.readFileSync(path.join(corpus, 'legacy-manifest.json'), 'utf8'));
+  const passwords = opt('--passwords', '') ? JSON.parse(fs.readFileSync(opt('--passwords', ''), 'utf8')) : {};
   const files=opt('--files','')?new Set(JSON.parse(fs.readFileSync(opt('--files',''),'utf8'))):null;
   const selected = manifest.filter(e => (!files||files.has(e.file))&&(!opt('--format', '') || e.format === opt('--format', ''))&&(!opt('--match','')||e.file.includes(opt('--match','')))).slice(0, +opt('--limit', Infinity));
   fs.mkdirSync(path.join(out, 'references'), { recursive: true }); fs.mkdirSync(path.join(out, 'packages'), { recursive: true });
   const run = (item, mutation) => new Promise(resolve => {
-    const worker = new Worker(new URL(import.meta.url), { workerData: { file: path.join(corpus, item.file), sha256: item.sha256, mutation, shared: args.includes('--shared'),inspect:args.includes('--inspect'),
+    const worker = new Worker(new URL(import.meta.url), { workerData: { file: path.join(corpus, item.file), password: passwords[item.file], sha256: item.sha256, mutation, shared: args.includes('--shared'),inspect:args.includes('--inspect'),
       reference: mutation ? null : path.join(out, 'references', item.sha256 + '.json') }, resourceLimits: { maxOldGenerationSizeMb: +opt('--memory',512), stackSizeMb: 8 } });
     let done = false;
     const finish = result => { if (done) return; done = true; clearTimeout(timer); worker.terminate(); resolve({ file: item.file, sha256: item.sha256, size: item.size, mutation, ...result }); };

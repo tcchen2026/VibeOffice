@@ -3,10 +3,9 @@
   'use strict';
   const B=root.L.legacy,D=B.doc,N=s=>s;
   D.convert=async function(bytes,options={}){
-    const cfb=B.cfb(bytes),raw=cfb.stream('WordDocument');if(!raw)B.fail('DOC_STREAM',N('The WordDocument stream is missing'));
+    const cfb=D.decrypt(B.cfb(bytes),options),raw=cfb.stream('WordDocument');if(!raw)B.fail('DOC_STREAM',N('The WordDocument stream is missing'));
     const fib=D.fib(raw);
     if(fib.version!=='Word97+')B.fail('DOC_VERSION',N('Word 6, Word 95 and earlier documents cannot be opened yet'));
-    if(fib.encrypted)B.fail(options.password?'ENCRYPTION_UNSUPPORTED':'PASSWORD_REQUIRED',options.password?N('Encrypted binary documents cannot be opened yet'):N('This document needs a password'));
     const book=D.structure(D.read(cfb),cfb,[]),losses=book.losses,pkg=new B.Package(),main='word/document.xml',ct='application/vnd.openxmlformats-officedocument.wordprocessingml.';
     D.styles(book);D.lists(book);D.settings(book);D.fields.prepare(book);D.markup.prepare(book);book.textStats={paragraphs:0,runs:0,characters:0,deletedCharacters:0,instructionCharacters:0,objects:0};
     await D.draw.prepare(book,pkg);

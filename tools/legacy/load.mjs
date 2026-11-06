@@ -4,7 +4,7 @@ import path from 'node:path';
 export const root = path.resolve(import.meta.dirname, '../..');
 export function load() {
   const common = path.join(root, 'public/common');
-  const files = ['zip.js', 'crypto.js', 'xml.js', 'opc.js'];
+  const files = ['zip.js', 'sha.js', 'crypto.js', 'xml.js', 'opc.js'];
   for (const file of files) vm.runInThisContext(fs.readFileSync(path.join(common, file), 'utf8'), { filename: file });
   const source = fs.readFileSync(path.join(common, 'legacy/import.js'), 'utf8');
   const literal = /const FILES\s*=\s*(\[[\s\S]*?\]);/.exec(source)?.[1];

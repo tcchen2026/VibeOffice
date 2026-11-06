@@ -629,7 +629,7 @@
  },
  "&Chart Options...": {
   "where": [
-   "ledger/js/drawing.js:452"
+   "ledger/js/drawing.js:492"
   ]
  },
  "&Circle Invalid Data": {
@@ -1105,7 +1105,7 @@
  },
  "&Don't move or size with cells": {
   "where": [
-   "ledger/js/drawing.js:486"
+   "ledger/js/drawing.js:526"
   ]
  },
  "&Double Arrow": {
@@ -2109,7 +2109,7 @@
  "&Lines": {
   "where": [
    "lectern/js/app.js:107",
-   "ledger/js/drawing.js:607",
+   "ledger/js/drawing.js:647",
    "quire/js/app.js:262"
   ]
  },
@@ -2150,7 +2150,7 @@
  "&Locked": {
   "where": [
    "ledger/js/dialogs.js:280",
-   "ledger/js/drawing.js:487"
+   "ledger/js/drawing.js:527"
   ]
  },
  "&Look Up": {
@@ -2338,7 +2338,7 @@
  },
  "&Move and size with cells": {
   "where": [
-   "ledger/js/drawing.js:484"
+   "ledger/js/drawing.js:524"
   ]
  },
  "&Move object with text": {
@@ -2867,7 +2867,7 @@
  },
  "&Print object": {
   "where": [
-   "ledger/js/drawing.js:487"
+   "ledger/js/drawing.js:527"
   ]
  },
  "&Print...": {
@@ -4045,7 +4045,7 @@
  "&Weight:": {
   "where": [
    "lectern/js/dialogs.js:404",
-   "ledger/js/drawing.js:477",
+   "ledger/js/drawing.js:517",
    "quire/js/dialogs3.js:97"
   ]
  },
@@ -4669,12 +4669,12 @@
  },
  "A cell contains an invalid error value": {
   "where": [
-   "common/legacy/xls-write.js:58"
+   "common/legacy/xls-write.js:57"
   ]
  },
  "A cell contains an invalid numeric value": {
   "where": [
-   "common/legacy/xls-write.js:56"
+   "common/legacy/xls-write.js:55"
   ]
  },
  "A cell format extension is damaged": {
@@ -5031,7 +5031,7 @@
  },
  "A presentation object is missing": {
   "where": [
-   "common/legacy/ppt-read.js:59"
+   "common/legacy/ppt-read.js:67"
   ]
  },
  "A presentation record extends beyond its container": {
@@ -5503,7 +5503,7 @@
  },
  "Add Column": {
   "where": [
-   "common/charts.js:425"
+   "common/charts.js:427"
   ]
  },
  "Add Effect": {
@@ -5520,7 +5520,7 @@
  },
  "Add Row": {
   "where": [
-   "common/charts.js:427"
+   "common/charts.js:429"
   ]
  },
  "Add Scenario": {
@@ -5976,7 +5976,7 @@
  "Alternative text:": {
   "where": [
    "lectern/js/dialogs.js:456",
-   "ledger/js/drawing.js:491"
+   "ledger/js/drawing.js:531"
   ]
  },
  "Alt|key": {
@@ -6108,6 +6108,11 @@
  "An embedded text style is too large": {
   "where": [
    "common/legacy/ppt-text-design.js:12"
+  ]
+ },
+ "An encrypted picture is damaged": {
+  "where": [
+   "common/legacy/ppt-crypto.js:15"
   ]
  },
  "An invalid formatting value was replaced": {
@@ -6519,7 +6524,7 @@
  },
  "Assign Macro...": {
   "where": [
-   "ledger/js/drawing.js:454"
+   "ledger/js/drawing.js:494"
   ]
  },
  "Assigns calculated values to names which allow storing intermediate calculation results.": {
@@ -6906,6 +6911,11 @@
  "Avery L7160 (A4) – Address": {
   "where": [
    "quire/js/dialogs3.js:398"
+  ]
+ },
+ "Axis Title": {
+  "where": [
+   "common/chart-read.js:162"
   ]
  },
  "Azure Horizon": {
@@ -7420,7 +7430,7 @@
  },
  "Bottom": {
   "where": [
-   "common/charts.js:395",
+   "common/charts.js:397",
    "lectern/js/app.js:1506",
    "lectern/js/dialogs.js:445",
    "ledger/js/dialogs.js:154"
@@ -7542,7 +7552,7 @@
  "Bring &Forward": {
   "where": [
    "lectern/js/commands.js:176",
-   "ledger/js/drawing.js:454",
+   "ledger/js/drawing.js:494",
    "quire/js/commands.js:508"
   ]
  },
@@ -7558,7 +7568,7 @@
  },
  "Bring to Fr&ont": {
   "where": [
-   "ledger/js/drawing.js:454"
+   "ledger/js/drawing.js:494"
   ]
  },
  "Bring to Fro&nt": {
@@ -7791,7 +7801,7 @@
   "where": [
    "lectern/js/dialogs.js:402",
    "lectern/js/dialogs.js:403",
-   "ledger/js/drawing.js:477",
+   "ledger/js/drawing.js:517",
    "quire/js/dialogs3.js:97"
   ]
  },
@@ -8028,7 +8038,7 @@
  },
  "Cancel": {
   "where": [
-   "common/charts.js:438",
+   "common/charts.js:440",
    "common/dialogs.js:116",
    "common/dialogs.js:192",
    "common/dialogs.js:271"
@@ -8487,7 +8497,7 @@
  },
  "Chart": {
   "where": [
-   "common/charts.js:438",
+   "common/charts.js:440",
    "lectern/js/app.js:1523",
    "lectern/js/app.js:1525",
    "lectern/js/ribbon.js:40"
@@ -8500,13 +8510,13 @@
  },
  "Chart &Options...": {
   "where": [
-   "ledger/js/drawing.js:492"
+   "ledger/js/drawing.js:532"
   ]
  },
  "Chart &Type...": {
   "where": [
-   "ledger/js/drawing.js:452",
-   "ledger/js/drawing.js:492"
+   "ledger/js/drawing.js:492",
+   "ledger/js/drawing.js:532"
   ]
  },
  "Chart &title:": {
@@ -8538,6 +8548,11 @@
  "Chart Source Data": {
   "where": [
    "ledger/js/xchart.js:378"
+  ]
+ },
+ "Chart Title": {
+  "where": [
+   "common/chart-read.js:287"
   ]
  },
  "Chart Tools": {
@@ -8576,12 +8591,12 @@
  },
  "Chart title:": {
   "where": [
-   "common/charts.js:432"
+   "common/charts.js:434"
   ]
  },
  "Chart type:": {
   "where": [
-   "common/charts.js:431",
+   "common/charts.js:433",
    "ledger/js/xchart.js:347"
   ]
  },
@@ -9373,7 +9388,7 @@
    "lectern/js/app.js:128",
    "lectern/js/app.js:138",
    "lectern/js/dialogs.js:457",
-   "ledger/js/drawing.js:477"
+   "ledger/js/drawing.js:517"
   ]
  },
  "Colors:": {
@@ -9411,7 +9426,7 @@
    "quire/js/editor.js:381",
    "quire/js/find.js:391",
    "quire/js/find.js:393",
-   "quire/js/render.js:564"
+   "quire/js/render.js:568"
   ]
  },
  "Column Width": {
@@ -10920,7 +10935,7 @@
  },
  "Cyclic PowerPoint edit history": {
   "where": [
-   "common/legacy/ppt-read.js:44"
+   "common/legacy/ppt-read.js:39"
   ]
  },
  "Cyclic or excessive custom-shape guide evaluation": {
@@ -11189,7 +11204,7 @@
  },
  "Datasheet": {
   "where": [
-   "common/charts.js:435"
+   "common/charts.js:437"
   ]
  },
  "Date": {
@@ -11476,7 +11491,7 @@
  },
  "Delete Column": {
   "where": [
-   "common/charts.js:426",
+   "common/charts.js:428",
    "ledger/js/ops.js:784"
   ]
  },
@@ -11510,7 +11525,7 @@
  },
  "Delete Row": {
   "where": [
-   "common/charts.js:428",
+   "common/charts.js:430",
    "ledger/js/ops.js:784"
   ]
  },
@@ -12098,7 +12113,7 @@
  },
  "Document editing restrictions were not kept": {
   "where": [
-   "common/legacy/doc-write.js:20"
+   "common/legacy/doc-write.js:19"
   ]
  },
  "Document number": {
@@ -12326,12 +12341,12 @@
  },
  "Drag in the worksheet to insert the AutoShape. Press Esc to cancel.": {
   "where": [
-   "ledger/js/drawing.js:520"
+   "ledger/js/drawing.js:560"
   ]
  },
  "Drag in the worksheet to insert the text box. Press Esc to cancel.": {
   "where": [
-   "ledger/js/drawing.js:520"
+   "ledger/js/drawing.js:560"
   ]
  },
  "Drag the fill handle (the square at the bottom-right of the selection) to copy cells or extend a series: 1, 2 → 3, 4…; Mon → Tue; Jan → Feb; Q1 → Q2; dates by day, weekday, month or year. Double-click the handle to fill down beside your data. Edit ▸ Fill ▸ Series gives full control; Ctrl+D and Ctrl+R fill down and right.": {
@@ -12346,7 +12361,7 @@
  },
  "Drag to draw": {
   "where": [
-   "ledger/js/drawing.js:517"
+   "ledger/js/drawing.js:557"
   ]
  },
  "Drag to draw a text box. Press Esc to cancel.": {
@@ -12677,7 +12692,7 @@
  },
  "Edit Te&xt": {
   "where": [
-   "ledger/js/drawing.js:453",
+   "ledger/js/drawing.js:493",
    "quire/js/commands.js:522"
   ]
  },
@@ -12827,12 +12842,12 @@
  },
  "Embedded content": {
   "where": [
-   "quire/js/render.js:386"
+   "quire/js/render.js:390"
   ]
  },
  "Embedded fonts were not kept": {
   "where": [
-   "common/legacy/doc-write.js:21",
+   "common/legacy/doc-write.js:20",
    "common/legacy/ppt-write.js:103"
   ]
  },
@@ -12840,7 +12855,7 @@
   "where": [
    "lectern/js/frames.js:19",
    "lectern/js/render.js:584",
-   "quire/js/render.js:386"
+   "quire/js/render.js:390"
   ]
  },
  "Embedded text styles are too large": {
@@ -12884,21 +12899,6 @@
  "Enclosures:": {
   "where": [
    "quire/js/dialogs3.js:485"
-  ]
- },
- "Encrypted binary documents cannot be opened yet": {
-  "where": [
-   "common/legacy/doc-write.js:9"
-  ]
- },
- "Encrypted binary presentations cannot be opened yet": {
-  "where": [
-   "common/legacy/ppt-write.js:112"
-  ]
- },
- "Encrypted binary workbooks cannot be opened yet": {
-  "where": [
-   "common/legacy/xls-write.js:40"
   ]
  },
  "End Show": {
@@ -13424,7 +13424,7 @@
  },
  "Excel 97-2003 workbook": {
   "where": [
-   "common/legacy/import.js:19"
+   "common/legacy/import.js:20"
   ]
  },
  "Excel Macro-Enabled Workbook (*.xlsm)": {
@@ -13439,7 +13439,7 @@
  },
  "Excel dialog sheets cannot be converted yet": {
   "where": [
-   "common/legacy/xls-write.js:71"
+   "common/legacy/xls-write.js:70"
   ]
  },
  "Exciting": {
@@ -13592,22 +13592,22 @@
  },
  "F&ormat AutoShape...": {
   "where": [
-   "ledger/js/drawing.js:455"
+   "ledger/js/drawing.js:495"
   ]
  },
  "F&ormat Chart Area...": {
   "where": [
-   "ledger/js/drawing.js:455"
+   "ledger/js/drawing.js:495"
   ]
  },
  "F&ormat Picture...": {
   "where": [
-   "ledger/js/drawing.js:455"
+   "ledger/js/drawing.js:495"
   ]
  },
  "F&ormat Text Box...": {
   "where": [
-   "ledger/js/drawing.js:455"
+   "ledger/js/drawing.js:495"
   ]
  },
  "F&ormat ▾": {
@@ -14667,7 +14667,7 @@
  },
  "Form control": {
   "where": [
-   "quire/js/render.js:386"
+   "quire/js/render.js:390"
   ]
  },
  "Forma&ts": {
@@ -14711,7 +14711,7 @@
  "Format AutoShape": {
   "where": [
    "lectern/js/dialogs.js:386",
-   "ledger/js/drawing.js:493",
+   "ledger/js/drawing.js:533",
    "quire/js/dialogs3.js:24"
   ]
  },
@@ -14735,7 +14735,7 @@
  },
  "Format Chart Area": {
   "where": [
-   "ledger/js/drawing.js:493"
+   "ledger/js/drawing.js:533"
   ]
  },
  "Format Letters&Art...": {
@@ -14777,7 +14777,7 @@
  "Format Picture": {
   "where": [
    "lectern/js/dialogs.js:386",
-   "ledger/js/drawing.js:493",
+   "ledger/js/drawing.js:533",
    "ledger/js/ribbon.js:92",
    "quire/js/dialogs3.js:24"
   ]
@@ -14811,7 +14811,7 @@
  "Format Text Box": {
   "where": [
    "lectern/js/dialogs.js:386",
-   "ledger/js/drawing.js:493",
+   "ledger/js/drawing.js:533",
    "quire/js/dialogs3.js:24"
   ]
  },
@@ -15646,7 +15646,7 @@
   "where": [
    "lectern/js/dialogs.js:416",
    "lectern/js/dialogs.js:560",
-   "ledger/js/drawing.js:482",
+   "ledger/js/drawing.js:522",
    "quire/js/dialogs.js:689"
   ]
  },
@@ -16496,7 +16496,7 @@
  },
  "Insert AutoShape": {
   "where": [
-   "ledger/js/drawing.js:595",
+   "ledger/js/drawing.js:635",
    "quire/js/drawtool.js:80"
   ]
  },
@@ -16806,7 +16806,7 @@
  "Insert Text Box": {
   "where": [
    "lectern/js/app.js:1265",
-   "ledger/js/drawing.js:595",
+   "ledger/js/drawing.js:635",
    "quire/js/drawtool.js:80"
   ]
  },
@@ -17181,17 +17181,17 @@
  },
  "Invalid presentation edit record": {
   "where": [
-   "common/legacy/ppt-read.js:46"
+   "common/legacy/ppt-read.js:41"
   ]
  },
  "Invalid presentation persist directory": {
   "where": [
-   "common/legacy/ppt-read.js:48"
+   "common/legacy/ppt-read.js:44"
   ]
  },
  "Invalid presentation persist range": {
   "where": [
-   "common/legacy/ppt-read.js:52"
+   "common/legacy/ppt-read.js:48"
   ]
  },
  "Invalid shared string count": {
@@ -17755,7 +17755,7 @@
  },
  "Left": {
   "where": [
-   "common/charts.js:395",
+   "common/charts.js:397",
    "lectern/js/slideshow.js:29",
    "ledger/js/dialogs.js:246",
    "ledger/js/dialogs.js:771"
@@ -17865,7 +17865,7 @@
  },
  "Legend:": {
   "where": [
-   "common/charts.js:433"
+   "common/charts.js:435"
   ]
  },
  "Length of summary": {
@@ -18384,7 +18384,7 @@
  "Lock &aspect ratio": {
   "where": [
    "lectern/js/dialogs.js:411",
-   "ledger/js/drawing.js:481",
+   "ledger/js/drawing.js:521",
    "quire/js/dialogs3.js:44"
   ]
  },
@@ -18613,9 +18613,9 @@
  },
  "Macros were not kept": {
   "where": [
-   "common/legacy/doc-write.js:22",
+   "common/legacy/doc-write.js:21",
    "common/legacy/ppt-write.js:105",
-   "common/legacy/xls-write.js:110"
+   "common/legacy/xls-write.js:109"
   ]
  },
  "Made possible by open source software: {0}.": {
@@ -18701,7 +18701,7 @@
  },
  "Major gridlines": {
   "where": [
-   "common/charts.js:396"
+   "common/charts.js:398"
   ]
  },
  "Malgun Gothic": {
@@ -19264,7 +19264,7 @@
  },
  "Move &but don't size with cells": {
   "where": [
-   "ledger/js/drawing.js:485"
+   "ledger/js/drawing.js:525"
   ]
  },
  "Move Column": {
@@ -19283,8 +19283,8 @@
  "Move Object": {
   "where": [
    "lectern/js/editor.js:579",
-   "ledger/js/drawing.js:256",
-   "ledger/js/drawing.js:333",
+   "ledger/js/drawing.js:296",
+   "ledger/js/drawing.js:373",
    "quire/js/drawing.js:580"
   ]
  },
@@ -20021,7 +20021,7 @@
  },
  "None": {
   "where": [
-   "common/charts.js:395",
+   "common/charts.js:397",
    "lectern/js/dialogs.js:55",
    "lectern/js/dialogs.js:128",
    "ledger/js/dialogs.js:31"
@@ -20348,7 +20348,7 @@
  },
  "O&rder": {
   "where": [
-   "ledger/js/drawing.js:454"
+   "ledger/js/drawing.js:494"
   ]
  },
  "O&ther:": {
@@ -20368,7 +20368,7 @@
  },
  "OK": {
   "where": [
-   "common/charts.js:438",
+   "common/charts.js:440",
    "common/dialogs.js:107",
    "common/dialogs.js:186",
    "common/dialogs.js:392"
@@ -20398,7 +20398,7 @@
  },
  "Object positioning": {
   "where": [
-   "ledger/js/drawing.js:483"
+   "ledger/js/drawing.js:523"
   ]
  },
  "Object type:": {
@@ -20704,7 +20704,7 @@
  "Order": {
   "where": [
    "lectern/js/app.js:1076",
-   "ledger/js/drawing.js:447"
+   "ledger/js/drawing.js:487"
   ]
  },
  "Organization Chart": {
@@ -21080,7 +21080,7 @@
  "Page Break": {
   "where": [
    "quire/js/editor.js:380",
-   "quire/js/render.js:564"
+   "quire/js/render.js:568"
   ]
  },
  "Page Break Pre&view": {
@@ -21395,7 +21395,7 @@
  },
  "Part of this file couldn't be read. Anything in it that VibeOffice can't edit itself, such as macros or embedded objects, won't be saved.": {
   "where": [
-   "lectern/js/pptx-read.js:867"
+   "lectern/js/pptx-read.js:551"
   ]
  },
  "Part of this file is damaged. Whatever couldn't be read from it won't be saved.": {
@@ -21832,7 +21832,7 @@
  },
  "PivotTables were replaced with their saved cells": {
   "where": [
-   "common/legacy/xls-write.js:108"
+   "common/legacy/xls-write.js:107"
   ]
  },
  "Pixel Mosaic": {
@@ -21995,7 +21995,7 @@
  },
  "PowerPoint 97-2003 presentation": {
   "where": [
-   "common/legacy/import.js:19"
+   "common/legacy/import.js:20"
   ]
  },
  "PowerPoint Presentation (*.pptx)": {
@@ -22064,7 +22064,7 @@
  },
  "Presentation text is too large": {
   "where": [
-   "common/legacy/ppt-read.js:66",
+   "common/legacy/ppt-read.js:76",
    "common/legacy/ppt-structure.js:30",
    "common/legacy/ppt-text.js:60"
   ]
@@ -22128,7 +22128,7 @@
  },
  "Preview": {
   "where": [
-   "common/charts.js:436",
+   "common/charts.js:438",
    "ledger/js/dialogs.js:201",
    "quire/js/dialogs.js:155",
    "quire/js/dialogs.js:227"
@@ -22427,7 +22427,7 @@
   "where": [
    "lectern/js/dialogs.js:949",
    "ledger/js/dialogs.js:699",
-   "ledger/js/drawing.js:488",
+   "ledger/js/drawing.js:528",
    "quire/js/dialogs.js:924"
   ]
  },
@@ -23495,7 +23495,7 @@
  },
  "Resize Object": {
   "where": [
-   "ledger/js/drawing.js:333",
+   "ledger/js/drawing.js:373",
    "quire/js/drawing.js:621"
   ]
  },
@@ -25260,7 +25260,7 @@
  },
  "Right": {
   "where": [
-   "common/charts.js:395",
+   "common/charts.js:397",
    "lectern/js/slideshow.js:29",
    "ledger/js/dialogs.js:246",
    "ledger/js/dialogs.js:771"
@@ -26075,28 +26075,28 @@
  },
  "Section Break (Continuous)": {
   "where": [
-   "quire/js/render.js:378"
+   "quire/js/render.js:382"
   ]
  },
  "Section Break (Even Page)": {
   "where": [
-   "quire/js/render.js:378"
+   "quire/js/render.js:382"
   ]
  },
  "Section Break (Next Column)": {
   "where": [
-   "quire/js/render.js:378"
+   "quire/js/render.js:382"
   ]
  },
  "Section Break (Next Page)": {
   "where": [
    "quire/js/app.js:1417",
-   "quire/js/render.js:378"
+   "quire/js/render.js:382"
   ]
  },
  "Section Break (Odd Page)": {
   "where": [
-   "quire/js/render.js:378"
+   "quire/js/render.js:382"
   ]
  },
  "Section break types": {
@@ -26420,7 +26420,7 @@
  "Send &Backward": {
   "where": [
    "lectern/js/commands.js:177",
-   "ledger/js/drawing.js:454"
+   "ledger/js/drawing.js:494"
   ]
  },
  "Send Back&ward": {
@@ -26436,7 +26436,7 @@
  "Send to Bac&k": {
   "where": [
    "lectern/js/commands.js:175",
-   "ledger/js/drawing.js:454",
+   "ledger/js/drawing.js:494",
    "quire/js/commands.js:507"
   ]
  },
@@ -26959,7 +26959,7 @@
  },
  "Show values": {
   "where": [
-   "common/charts.js:397"
+   "common/charts.js:399"
   ]
  },
  "Show when inserting new slides": {
@@ -27137,7 +27137,7 @@
   "where": [
    "lectern/js/dialogs.js:457",
    "lectern/js/ribbon.js:106",
-   "ledger/js/drawing.js:482",
+   "ledger/js/drawing.js:522",
    "quire/js/dialogs2.js:686"
   ]
  },
@@ -27149,7 +27149,7 @@
  "Size and rotate": {
   "where": [
    "lectern/js/dialogs.js:416",
-   "ledger/js/drawing.js:482",
+   "ledger/js/drawing.js:522",
    "quire/js/dialogs3.js:98"
   ]
  },
@@ -29580,7 +29580,8 @@
  },
  "The PowerPoint Document stream is missing": {
   "where": [
-   "common/legacy/ppt-read.js:37"
+   "common/legacy/ppt-crypto.js:72",
+   "common/legacy/ppt-read.js:59"
   ]
  },
  "The Text Wizard has determined that your data is Delimited.": {
@@ -29605,11 +29606,13 @@
  },
  "The Word text table is missing": {
   "where": [
+   "common/legacy/doc-crypto.js:18",
    "common/legacy/doc-read.js:62"
   ]
  },
  "The WordDocument stream is missing": {
   "where": [
+   "common/legacy/doc-crypto.js:13",
    "common/legacy/doc-read.js:59",
    "common/legacy/doc-write.js:6"
   ]
@@ -29712,7 +29715,7 @@
  },
  "The converter for Office 97-2003 files could not be loaded.": {
   "where": [
-   "common/legacy/import.js:28"
+   "common/legacy/import.js:29"
   ]
  },
  "The criteria range is not valid.": {
@@ -29722,7 +29725,7 @@
  },
  "The current presentation document is missing": {
   "where": [
-   "common/legacy/ppt-read.js:60"
+   "common/legacy/ppt-read.js:70"
   ]
  },
  "The current time": {
@@ -29778,6 +29781,11 @@
  "The decompressed picture is too large": {
   "where": [
    "common/legacy/images.js:10"
+  ]
+ },
+ "The decrypted presentation is too large to import": {
+  "where": [
+   "common/legacy/ppt-crypto.js:101"
   ]
  },
  "The dictionary could not be loaded ({0}). Quire needs to be served from a web server, not opened as a local file, for spelling to work.": {
@@ -29876,6 +29884,11 @@
    "common/legacy/doc-draw-read.js:204"
   ]
  },
+ "The encrypted file properties are damaged": {
+  "where": [
+   "common/legacy/encryption.js:116"
+  ]
+ },
  "The error check of the entire sheet is complete.": {
   "where": [
    "ledger/js/dialogs3.js:344",
@@ -29909,10 +29922,15 @@
    "quire/js/app.js:934"
   ]
  },
+ "The file has a damaged password verifier": {
+  "where": [
+   "common/legacy/encryption.js:32"
+  ]
+ },
  "The file is damaged or is not an Office 97-2003 file.": {
   "where": [
-   "common/legacy/import.js:43",
-   "common/legacy/import.js:45"
+   "common/legacy/import.js:44",
+   "common/legacy/import.js:46"
   ]
  },
  "The file is too large to import": {
@@ -29922,7 +29940,7 @@
  },
  "The first worksheet was made visible": {
   "where": [
-   "common/legacy/xls-write.js:67"
+   "common/legacy/xls-write.js:66"
   ]
  },
  "The fonts on this computer could not be listed: permission was not given.": {
@@ -30083,6 +30101,11 @@
    "quire/js/panes.js:505"
   ]
  },
+ "The password is incorrect. Please try again.": {
+  "where": [
+   "common/legacy/encryption.js:83"
+  ]
+ },
  "The password is incorrect. Try again.": {
   "where": [
    "common/ui.js:799"
@@ -30106,7 +30129,7 @@
  "The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.": {
   "where": [
    "ledger/js/dialogs.js:866",
-   "ledger/js/xlsx-read.js:1190"
+   "ledger/js/xlsx-read.js:1206"
   ]
  },
  "The picture contains invalid compressed data": {
@@ -30190,6 +30213,16 @@
  "The presentation page size is outside the supported range": {
   "where": [
    "common/legacy/ppt-structure.js:17"
+  ]
+ },
+ "The presentation password information is damaged": {
+  "where": [
+   "common/legacy/ppt-crypto.js:87"
+  ]
+ },
+ "The presentation password information is missing": {
+  "where": [
+   "common/legacy/ppt-crypto.js:81"
   ]
  },
  "The presentation size and settings are missing": {
@@ -30391,7 +30424,7 @@
  },
  "The workbook contains an invalid or duplicate sheet name": {
   "where": [
-   "common/legacy/xls-write.js:43"
+   "common/legacy/xls-write.js:42"
   ]
  },
  "The workbook has no BIFF header": {
@@ -30401,7 +30434,7 @@
  },
  "The workbook has no worksheets": {
   "where": [
-   "common/legacy/xls-write.js:42"
+   "common/legacy/xls-write.js:41"
   ]
  },
  "The workbook is encrypted with AES-256 the next time you save it as an Excel workbook, the way Excel 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
@@ -30416,7 +30449,7 @@
  },
  "The workbook part is damaged.": {
   "where": [
-   "ledger/js/xlsx-read.js:1208"
+   "ledger/js/xlsx-read.js:1224"
   ]
  },
  "The workbook stream is empty": {
@@ -30845,11 +30878,6 @@
    "quire/js/editor.js:295"
   ]
  },
- "This document needs a password": {
-  "where": [
-   "common/legacy/doc-write.js:9"
-  ]
- },
  "This document property has an unsupported type": {
   "where": [
    "common/legacy/properties.js:84"
@@ -30872,22 +30900,33 @@
  },
  "This file does not contain a PowerPoint presentation.": {
   "where": [
-   "lectern/js/pptx-read.js:858"
+   "lectern/js/pptx-read.js:542"
   ]
  },
  "This file has no Excel workbook stream": {
   "where": [
-   "common/legacy/xls-write.js:38"
+   "common/legacy/xls-crypto.js:15"
   ]
  },
  "This file is not an Excel workbook.": {
   "where": [
-   "ledger/js/xlsx-read.js:1206"
+   "ledger/js/xlsx-read.js:1222"
   ]
  },
  "This file is not an XML Spreadsheet 2003 workbook.": {
   "where": [
    "ledger/js/xmlss.js:148"
+  ]
+ },
+ "This file needs a password": {
+  "where": [
+   "common/legacy/encryption.js:83"
+  ]
+ },
+ "This file uses an unsupported password protection method": {
+  "where": [
+   "common/legacy/encryption.js:22",
+   "common/legacy/encryption.js:29"
   ]
  },
  "This file uses an unsupported text encoding": {
@@ -30912,7 +30951,7 @@
  },
  "This is a PowerPoint 97-2003 presentation, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:20"
+   "common/legacy/import.js:21"
   ]
  },
  "This is a TrueType font. The same font will be used on both your printer and your screen.": {
@@ -30927,12 +30966,12 @@
  },
  "This is a Word 97-2003 document, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:20"
+   "common/legacy/import.js:21"
   ]
  },
  "This is an Excel 97-2003 workbook, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:20"
+   "common/legacy/import.js:21"
   ]
  },
  "This is not a valid print range.": {
@@ -30957,7 +30996,7 @@
  },
  "This older Excel file format is not supported yet": {
   "where": [
-   "common/legacy/xls-write.js:41"
+   "common/legacy/xls-write.js:40"
   ]
  },
  "This operation requires the merged cells to be identically sized.": {
@@ -30998,12 +31037,7 @@
  },
  "This presentation is encrypted with a method that is not supported (only the AES encryption of PowerPoint 2007 and later is).": {
   "where": [
-   "lectern/js/pptx-read.js:772"
-  ]
- },
- "This presentation needs a password": {
-  "where": [
-   "common/legacy/ppt-write.js:112"
+   "lectern/js/pptx-read.js:456"
   ]
  },
  "This punctuation mark is repeated.": {
@@ -31081,7 +31115,7 @@
  },
  "This workbook contains a sheet type that cannot be converted yet": {
   "where": [
-   "common/legacy/xls-write.js:43"
+   "common/legacy/xls-write.js:42"
   ]
  },
  "This workbook contains macros. Ledger keeps them when you save as .xlsm, but cannot run them.": {
@@ -31091,12 +31125,12 @@
  },
  "This workbook is encrypted with a method Ledger does not support (only the AES encryption Excel 2007 and later use is supported).": {
   "where": [
-   "ledger/js/xlsx-read.js:1190"
+   "ledger/js/xlsx-read.js:1206"
   ]
  },
- "This workbook needs a password": {
+ "This workbook uses an unsupported password protection method": {
   "where": [
-   "common/legacy/xls-write.js:40"
+   "common/legacy/xls-crypto.js:37"
   ]
  },
  "This worksheet contains more than 255 invalid cells. Only 255 cells will be marked.": {
@@ -31106,7 +31140,7 @@
  },
  "This {0} is protected with a password. {1} cannot open password-protected Office 97-2003 files yet.": {
   "where": [
-   "common/legacy/import.js:53"
+   "common/legacy/import.js:54"
   ]
  },
  "Through": {
@@ -31379,6 +31413,7 @@
  },
  "Too many BIFF records": {
   "where": [
+   "common/legacy/xls-crypto.js:19",
    "common/legacy/xls-read.js:16"
   ]
  },
@@ -31404,7 +31439,12 @@
  },
  "Too many presentation edits": {
   "where": [
-   "common/legacy/ppt-read.js:45"
+   "common/legacy/ppt-read.js:40"
+  ]
+ },
+ "Too many presentation pictures": {
+  "where": [
+   "common/legacy/ppt-crypto.js:20"
   ]
  },
  "Too many presentation records": {
@@ -31475,7 +31515,7 @@
  },
  "Top": {
   "where": [
-   "common/charts.js:395",
+   "common/charts.js:397",
    "lectern/js/app.js:1506",
    "lectern/js/dialogs.js:445",
    "ledger/js/dialogs.js:154"
@@ -31991,7 +32031,7 @@
  },
  "Unknown PowerPoint Current User header": {
   "where": [
-   "common/legacy/ppt-read.js:41"
+   "common/legacy/ppt-read.js:63"
   ]
  },
  "Unlink Fields": {
@@ -32683,7 +32723,7 @@
  "Web": {
   "where": [
    "lectern/js/dialogs.js:460",
-   "ledger/js/drawing.js:491",
+   "ledger/js/drawing.js:531",
    "ledger/js/fninfo.js:536",
    "quire/js/dialogs3.js:103"
   ]
@@ -32902,7 +32942,7 @@
  "Wi&dth:": {
   "where": [
    "lectern/js/dialogs.js:416",
-   "ledger/js/drawing.js:482",
+   "ledger/js/drawing.js:522",
    "quire/js/dialogs3.js:98"
   ]
  },
@@ -33007,7 +33047,7 @@
  },
  "Word 97-2003 document": {
   "where": [
-   "common/legacy/import.js:19"
+   "common/legacy/import.js:20"
   ]
  },
  "Word Count": {
@@ -33530,22 +33570,22 @@
  },
  "evenFooter": {
   "where": [
-   "ledger/js/xlsx-read.js:716"
+   "ledger/js/xlsx-read.js:557"
   ]
  },
  "evenHeader": {
   "where": [
-   "ledger/js/xlsx-read.js:716"
+   "ledger/js/xlsx-read.js:557"
   ]
  },
  "firstFooter": {
   "where": [
-   "ledger/js/xlsx-read.js:715"
+   "ledger/js/xlsx-read.js:556"
   ]
  },
  "firstHeader": {
   "where": [
-   "ledger/js/xlsx-read.js:715"
+   "ledger/js/xlsx-read.js:556"
   ]
  },
  "greater than": {
@@ -33764,12 +33804,12 @@
  },
  "oddFooter": {
   "where": [
-   "ledger/js/xlsx-read.js:714"
+   "ledger/js/xlsx-read.js:555"
   ]
  },
  "oddHeader": {
   "where": [
-   "ledger/js/xlsx-read.js:714"
+   "ledger/js/xlsx-read.js:555"
   ]
  },
  "page(s) wide by": {
@@ -34164,7 +34204,7 @@
  },
  "{0} was converted from the {1} format. Not converted:": {
   "where": [
-   "common/legacy/import.js:61"
+   "common/legacy/import.js:62"
   ]
  },
  "{0} x {1} Pages": {

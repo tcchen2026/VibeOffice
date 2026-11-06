@@ -45,8 +45,8 @@ test('PowerPoint damaged embedded designs are local losses, with independent nat
  const pages={masters:[{id:0x80000000,ref:2,record:container(1016,[slideAtom(),scheme(colors),rec(1038,Buffer.from('bad zip')),rec(1054,Buffer.from('bad zip'),1)])}],slides:[{id:256,ref:3,record:container(1006,[slideAtom(0x80000000)])}],notes:[]};
  const result=await P.convert(presentation({pages}).bytes),p=await parts(result.pkg);assert.match(p['ppt/theme/theme1.xml'],/val="313233"/);assert.equal(result.stats.slides,1);assert.equal(result.losses.filter(l=>l.id==='legacy-presentation-design').length,2);assert.equal(result.losses.filter(l=>l.id==='legacy-presentation-design'&&l.notify).length,1);
 });
-test('PowerPoint encryption and invalid dimensions produce typed refusals',async()=>{
- await assert.rejects(P.convert(presentation({encrypted:true}).bytes),{name:'LegacyError',code:'PASSWORD_REQUIRED'});await assert.rejects(P.convert(presentation({encrypted:true}).bytes,{password:'test'}),{code:'ENCRYPTION_UNSUPPORTED'});await assert.rejects(P.convert(presentation({size:[0,4320,4320,5760]}).bytes),{code:'PPT_SIZE'});
+test('PowerPoint tolerates a stale encrypted token on plain content and refuses invalid dimensions',async()=>{
+ assert.equal((await P.convert(presentation({encrypted:true}).bytes)).stats.slides,2);await assert.rejects(P.convert(presentation({size:[0,4320,4320,5760]}).bytes),{code:'PPT_SIZE'});
 });
 
 test('PowerPoint retains local color-map overrides nested inside clrMapOvr',async()=>{

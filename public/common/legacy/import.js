@@ -6,7 +6,8 @@
   'use strict';
   const L = root.L;
   /* the converters in load order (tools/legacy/load.mjs reads this list too) */
-  const FILES = ['base', 'codepages', 'properties', 'xls-read', 'doc-read', 'ppt-read', 'inspect',
+  const FILES = ['base', 'codepages', 'properties', 'encryption-crypto', 'encryption',
+    'xls-read', 'doc-read', 'ppt-read', 'xls-crypto', 'doc-crypto', 'ppt-crypto', 'inspect',
     'package', 'property-parts', 'images', 'officeart', 'native-geometry', 'shape-path', 'shapes', 'xml-check',
     'xls-style-ext', 'xls-style', 'xls-sheet', 'xls-functions', 'xls-formula', 'xls-formula-book',
     'xls-misc', 'xls-dxf', 'xls-rules', 'xls-draw-read', 'xls-comments', 'xls-draw-write',

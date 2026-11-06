@@ -32,19 +32,15 @@
       }
     }
   };
-  P.read = function (cfb, options = {}) {
-    const bytes = cfb.stream('PowerPoint Document'), userBytes = cfb.stream('Current User');
-    if (!bytes) B.fail('PPT_STREAM', N('The PowerPoint Document stream is missing'));
-    const r = new B.Reader(bytes, 'PowerPoint Document'), user = new B.Reader(userBytes || new Uint8Array(0), 'Current User');
-    const encrypted = user.u32(12) === 0xf3d1c4df;
-    if (encrypted) return { version: 'PowerPoint97+', encrypted, slides: [] };
-    if (user.u32(12) !== 0xe391c05f) B.fail('PPT_USER', N('Unknown PowerPoint Current User header'));
-    const persists = new Map(), edits = [], seen = new Set(); let at = user.u32(16), docRef;
+  P.directory = function (r, user) {
+    const persists = new Map(), edits = [], seen = new Set();
+    let at = user.u32(16), docRef, cryptRef;
     while (at) {
       if (seen.has(at)) B.fail('PPT_CYCLE', N('Cyclic PowerPoint edit history'));
       if (seen.size >= 65536) B.fail('PPT_LIMIT', N('Too many presentation edits')); seen.add(at);
       const edit = P.record(r, at); if (edit.type !== 4085) B.fail('PPT_EDIT', N('Invalid presentation edit record'));
       if (docRef == null) docRef = edit.r.u32(16);
+      if (cryptRef == null && edit.r.length >= 32 && edit.r.u32(28)) cryptRef = edit.r.u32(28);
       const ptr = P.record(r, edit.r.u32(12)); if (![6001, 6002].includes(ptr.type)) B.fail('PPT_PERSIST', N('Invalid presentation persist directory'));
       let p = 0;
       while (p < ptr.r.length) {
@@ -56,7 +52,21 @@
       }
       edits.push(at); at = edit.r.u32(8);
     }
-    const get = id => { const offset = persists.get(id); if (offset == null) B.fail('PPT_PERSIST', N('A presentation object is missing'), id); return P.record(r, offset); };
+    return { persists, edits, docRef, cryptRef };
+  };
+  P.read = function (cfb, options = {}) {
+    const bytes = cfb.stream('PowerPoint Document'), userBytes = cfb.stream('Current User');
+    if (!bytes) B.fail('PPT_STREAM', N('The PowerPoint Document stream is missing'));
+    const r = new B.Reader(bytes, 'PowerPoint Document'), user = new B.Reader(userBytes || new Uint8Array(0), 'Current User');
+    const encrypted = user.u32(12) === 0xf3d1c4df;
+    if (encrypted && !cfb.pptRecord) return { version: 'PowerPoint97+', encrypted, slides: [] };
+    if (!encrypted && user.u32(12) !== 0xe391c05f) B.fail('PPT_USER', N('Unknown PowerPoint Current User header'));
+    const { persists, edits, docRef } = cfb.pptDirectory || P.directory(r, user);
+    const get = id => {
+      const offset = persists.get(id);
+      if (offset == null) B.fail('PPT_PERSIST', N('A presentation object is missing'), id);
+      return cfb.pptRecord ? cfb.pptRecord(id, offset) : P.record(r, offset);
+    };
     const document = get(docRef); if (document.type !== 1000) B.fail('PPT_DOCUMENT', N('The current presentation document is missing'));
     const result = { version: 'PowerPoint97+', encrypted: false, r, user, persists, edits, document, get, slides: [], masters: [], notes: [], features: {}, issues: [] };
     const text = rec => { const parts = []; P.walk(rec, node => { result.features[node.type] = (result.features[node.type] || 0) + 1;

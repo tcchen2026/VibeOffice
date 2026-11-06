@@ -43,8 +43,8 @@ test('damaged optional formatting does not discard readable text; style cycles a
  const r=await convert(doc({text:'Readable\r',styles:[style('Normal',1,[],[],1,0),style('Loop',1,[],[],0)],mutate:(word,table,pairs)=>{const [offset]=pairs.get(12);table.writeUInt32LE(0x3fffff,offset+8);}}));
  assert.match(await r.xml('document'),/Readable/);assert.ok(r.losses.some(l=>l.id==='legacy-word-damaged'));assert.ok(r.pkg.length);
 });
-test('old and encrypted Word files produce typed version/password refusals',async()=>{
- await assert.rejects(D.convert(doc({version:0x65})),e=>e.code==='DOC_VERSION');await assert.rejects(D.convert(doc({encrypted:true})),e=>e.code==='PASSWORD_REQUIRED');await assert.rejects(D.convert(doc({encrypted:true}),{password:'x'}),e=>e.code==='ENCRYPTION_UNSUPPORTED');
+test('old Word versions and a missing encryption header produce typed refusals',async()=>{
+ await assert.rejects(D.convert(doc({version:0x65})),e=>e.code==='DOC_VERSION');await assert.rejects(D.convert(doc({encrypted:true})),e=>e.code==='TRUNCATED');await assert.rejects(D.convert(doc({encrypted:true}),{password:'x'}),e=>e.code==='TRUNCATED');
 });
 test('list LVLs outside lcbPlfLst and LFO start overrides retain editable numbering',async()=>{
  const lst=Buffer.alloc(30);lst.writeUInt16LE(1,0);lst.writeUInt32LE(0x12345678,2);lst[28]=1;for(let i=0;i<9;i++)lst.writeUInt16LE(4095,10+i*2);

@@ -106,10 +106,9 @@
     return {pkg:await pkg.finish(),type,losses,stats:{slides:book.slides.length,masters:book.outputMasters.length,sourceMasters:book.masters.length,layouts:book.outputLayouts.length,storedLayouts:book.outputLayouts.filter(l=>l.stored).length,notes:noteCount,handoutMasters:book.handoutMaster?1:0,fonts:book.fonts.size,themes:[...pkg.types.values()].filter(t=>t===ct+'theme+xml').length,themeOverrides:[...pkg.types.values()].filter(t=>t===ct+'themeOverride+xml').length,incrementalEdits:book.edits.length,sourceTextCharacters:textCharacters,...book.textStats,drawings:book.drawingStats}};
   };
   P.convert=async function(bytes,options={}){
-    const cfb=B.cfb(bytes),user=cfb.stream('Current User');
+    const cfb=P.decrypt(B.cfb(bytes),options),user=cfb.stream('Current User');
     if(cfb.entries.some(e=>e.name.toLowerCase()==='pp40')||user&&user.length<28)B.fail('PPT_VERSION',N('PowerPoint 95 presentations cannot be opened yet'));
     const book=P.structure(cfb,[]);
-    if(book.encrypted)B.fail(options.password?'ENCRYPTION_UNSUPPORTED':'PASSWORD_REQUIRED',options.password?N('Encrypted binary presentations cannot be opened yet'):N('This presentation needs a password'));
     return P.write(book,cfb,options);
   };
 })(typeof window!=='undefined'?window:globalThis);

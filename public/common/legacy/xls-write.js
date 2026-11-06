@@ -35,9 +35,8 @@
   };
   X.convert=async function(bytes,options={}){
     const header=new B.Reader(bytes,'Excel file');if(header.length>=2&&[9,0x209,0x409,0x809].includes(header.u16(0)))B.fail('XLS_VERSION',N('This Excel file format is not supported yet'));
-    const cfb=B.cfb(bytes),stream=cfb.stream('Workbook')||cfb.stream('Book');if(!stream)B.fail('XLS_STREAM',N('This file has no Excel workbook stream'));
-    const book=X.read(stream,{rich:true}),losses=[];
-    if(book.encrypted)B.fail(options.password?'ENCRYPTION_UNSUPPORTED':'PASSWORD_REQUIRED',options.password?N('Encrypted binary workbooks cannot be opened yet'):N('This workbook needs a password'));
+    const { cfb, stream, decrypted } = X.decrypt(B.cfb(bytes), options);
+    const book = X.read(stream, { rich: true, decrypted }), losses = [];
     if(!['BIFF8','BIFF5/7'].includes(book.version))B.fail('XLS_VERSION',N('This older Excel file format is not supported yet'),book.version);
     if(!book.sheets.length)B.fail('XLS_SHEETS',N('The workbook has no worksheets'));
     const names=new Set();for(const sheet of book.sheets){if(!sheet.name||sheet.name.length>31||/[\[\]:*?\\/\x00-\x1f]/.test(sheet.name)||names.has(sheet.name.toLowerCase()))B.fail('SHEET_NAME',N('The workbook contains an invalid or duplicate sheet name'),sheet.name);names.add(sheet.name.toLowerCase());if(![0,2].includes(sheet.kind))B.fail('SHEET_KIND',N('This workbook contains a sheet type that cannot be converted yet'),sheet.name);}

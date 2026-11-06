@@ -79,7 +79,7 @@
   };
   X.read = function (bytes, options = {}) {
     const records = X.records(bytes), version = X.version(records), b8 = version === 'BIFF8';
-    const result = { version, records, sheets: [], encrypted: records.some(x => x.id === 0x2f), features: {} };
+    const result = { version, records, sheets: [], encrypted: !options.decrypted && records.some(x => x.id === 0x2f), features: {} };
     for (const rec of records) result.features[rec.id] = (result.features[rec.id] || 0) + 1;
     if (result.encrypted) return result;
     let cp = 1252; for (const rec of records) if (rec.id === 0x42) { cp = rec.r.u16(0); break; }
