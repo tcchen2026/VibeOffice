@@ -1086,6 +1086,15 @@
         delete tx.warp;
         /* placeholder frames: title anchors default to the master */
         sh.tx = tx;
+        /* a SmartArt drawing's shape has a text box of its own (dsp:txXfrm, in the drawing's coordinates), turned by its
+           own rot on top of the shape's: rot 180 in a shape turned 180 is upright text */
+        const txf = ln === 'sp' && xfrmOf(kid(el, 'txXfrm'));
+        if (txf && txf.w > 0 && txf.h > 0) {
+          const r = map({ x: txf.x, y: txf.y, w: txf.w, h: txf.h });
+          const [cx, cy] = L.rotPt(r.x + r.w / 2, r.y + r.h / 2, sh.x + sh.w / 2, sh.y + sh.h / 2, -(sh.rot || 0));
+          sh.txRect = [cx - sh.x - r.w / 2, cy - sh.y - r.h / 2, cx - sh.x + r.w / 2, cy - sh.y + r.h / 2].map((v) => L.round(v, 3));
+          if (txf.rot) tx.rot = (tx.rot || 0) + txf.rot;
+        }
         if (warp && bp.fromWordArt !== false && tx.ps.length <= 3 && !ph) {
           /* WordArt */
           const r0 = (tx.ps[0] && tx.ps[0].rs[0]) || {};

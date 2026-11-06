@@ -710,6 +710,7 @@
     const sx = ob.w ? nb.w / ob.w : 1, sy = ob.h ? nb.h / ob.h : 1;
     const each = (k) => {
       k.x = nb.x + (k.x - ob.x) * sx; k.y = nb.y + (k.y - ob.y) * sy; k.w *= sx; k.h *= sy;
+      if (k.txRect) k.txRect = k.txRect.map((v, i) => v * (i % 2 ? sy : sx));
       if (k.type === 'group') for (const c of k.kids) each(c);
     };
     for (const k of g.kids) each(k);

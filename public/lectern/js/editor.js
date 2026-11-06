@@ -695,6 +695,7 @@
       const ob = { x: sh.x, y: sh.y, w: sh.w, h: sh.h };
       sh.x = L.round(ncx - w / 2, 3); sh.y = L.round(ncy - hh / 2, 3); sh.w = L.round(w, 3); sh.h = L.round(hh, 3);
       if (sh.type !== 'table' && sh.type !== 'group') { sh.flipH = flipX ? !orig.flipH : !!orig.flipH; sh.flipV = flipY ? !orig.flipV : !!orig.flipV; }
+      if (sh.txRect) sh.txRect = sh.txRect.map((v, i) => v * (i % 2 ? sh.h / ob.h : sh.w / ob.w));
       if (sh.type === 'group') { if (sh.sa) L.diagram.relayout(sh); else M.scaleGroup(sh, ob, sh); }
       if (sh.type === 'table') E.scaleTable(sh, orig);
       const sx = sh.w / orig.w, sy = sh.h / orig.h;

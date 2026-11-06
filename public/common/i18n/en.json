@@ -4639,12 +4639,12 @@
  },
  "<date/time>": {
   "where": [
-   "lectern/js/editor.js:1099"
+   "lectern/js/editor.js:1100"
   ]
  },
  "<footer>": {
   "where": [
-   "lectern/js/editor.js:1099"
+   "lectern/js/editor.js:1100"
   ]
  },
  "A (Font)": {
@@ -9070,7 +9070,7 @@
  },
  "Click to add points; double-click to finish": {
   "where": [
-   "lectern/js/editor.js:839"
+   "lectern/js/editor.js:840"
   ]
  },
  "Click to add subtitle": {
@@ -9091,18 +9091,18 @@
  },
  "Click to edit Master subtitle style": {
   "where": [
-   "lectern/js/editor.js:1093"
+   "lectern/js/editor.js:1094"
   ]
  },
  "Click to edit Master text styles": {
   "where": [
-   "lectern/js/editor.js:1096"
+   "lectern/js/editor.js:1097"
   ]
  },
  "Click to edit Master title style": {
   "where": [
-   "lectern/js/editor.js:1092",
-   "lectern/js/editor.js:1095"
+   "lectern/js/editor.js:1093",
+   "lectern/js/editor.js:1096"
   ]
  },
  "Click to place the insertion point and type. Double-click selects a word, triple-click a paragraph; click in the left margin to select a line, double-click there for a paragraph, Ctrl+click for the whole document. Ctrl+click in text selects a sentence. F8 extends the selection step by step (word, sentence, paragraph, document); Esc stops.": {
@@ -10409,7 +10409,7 @@
  },
  "Crop Picture": {
   "where": [
-   "lectern/js/editor.js:740"
+   "lectern/js/editor.js:741"
   ]
  },
  "Crop from": {
@@ -12391,7 +12391,7 @@
  },
  "Drag to draw; hold Shift to constrain": {
   "where": [
-   "lectern/js/editor.js:839"
+   "lectern/js/editor.js:840"
   ]
  },
  "Drag-and-&drop text editing": {
@@ -12631,7 +12631,7 @@
  "Edit": {
   "where": [
    "lectern/js/dialogs.js:903",
-   "lectern/js/model.js:765",
+   "lectern/js/model.js:766",
    "ledger/js/dialogs.js:802",
    "quire/js/dialogs3.js:578"
   ]
@@ -13817,7 +13817,7 @@
  },
  "Fifth level": {
   "where": [
-   "lectern/js/editor.js:1096"
+   "lectern/js/editor.js:1097"
   ]
  },
  "Fil&e...": {
@@ -14778,8 +14778,8 @@
  "Format Painter": {
   "where": [
    "lectern/js/commands.js:130",
-   "lectern/js/editor.js:1055",
-   "lectern/js/editor.js:1064",
+   "lectern/js/editor.js:1056",
+   "lectern/js/editor.js:1065",
    "ledger/js/commands.js:181"
   ]
  },
@@ -15035,7 +15035,7 @@
  },
  "Fourth level": {
   "where": [
-   "lectern/js/editor.js:1096"
+   "lectern/js/editor.js:1097"
   ]
  },
  "Fra&me slides": {
@@ -15076,7 +15076,7 @@
  "Freeform": {
   "where": [
    "lectern/js/commands.js:167",
-   "lectern/js/editor.js:1011"
+   "lectern/js/editor.js:1012"
   ]
  },
  "Freeze Panes": {
@@ -16723,7 +16723,7 @@
  },
  "Insert Object": {
   "where": [
-   "lectern/js/editor.js:883"
+   "lectern/js/editor.js:884"
   ]
  },
  "Insert Page Break": {
@@ -26060,7 +26060,7 @@
  },
  "Second level": {
   "where": [
-   "lectern/js/editor.js:1096"
+   "lectern/js/editor.js:1097"
   ]
  },
  "Second line": {
@@ -27178,7 +27178,7 @@
  },
  "Size: {0} × {1}": {
   "where": [
-   "lectern/js/editor.js:711"
+   "lectern/js/editor.js:712"
   ]
  },
  "Skip": {
@@ -30751,7 +30751,7 @@
  },
  "Third level": {
   "where": [
-   "lectern/js/editor.js:1096"
+   "lectern/js/editor.js:1097"
   ]
  },
  "This 3-D model will be saved as ordinary shapes, because it was edited here.": {
