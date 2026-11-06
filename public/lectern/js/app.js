@@ -527,7 +527,9 @@
   A.rasterize = async function (el, w, hh, scale, opts) {
     const map = (opts && opts.map) || await mediaDataMap();
     const xhtml = inlineMedia(new XMLSerializer().serializeToString(el), map);
-    const css = (opts && opts.css) || slideCSS(opts && opts.extraCSS);
+    let css = (opts && opts.css) || slideCSS(opts && opts.extraCSS);
+    const fonts = opts?.fonts ?? await L.embedFonts(xhtml + css + ' Arimo');
+    css = fonts + '\n' + css;
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${hh}px;font:11px Arial,Arimo,sans-serif"><style>${css.replace(/</g, '\\3c ')}</style>${xhtml}</div></foreignObject></svg>`;
     const img = await L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
     const c = document.createElement('canvas');
@@ -554,6 +556,7 @@
     if (source === 'preview') {
       const els = L.$$('.pv-page', L.panes.preview.scroll);
       const css = slideCSS(true);
+      const fonts = await L.embedFonts(els.map((p) => p.outerHTML).join('') + css + ' Arimo');
       let n = 0;
       for (const p of els) {
         ui.busy(true, L.t('Creating PDF... (page {0} of {1})', ++n, els.length));
@@ -562,15 +565,20 @@
         clone.style.margin = '0'; clone.style.boxShadow = 'none'; clone.style.position = 'relative';
         const portrait = hh > w;
         const pw = portrait ? 612 : 792, ph = portrait ? 792 : 612;
-        const c = await A.rasterize(clone, w, hh, (pw * 2.5) / w, { map, css });
+        const scale = L.pdfScale(w, hh, (pw / w) * L.PDF_DPI / 72);
+        const c = await A.rasterize(clone, w, hh, scale, { map, css, fonts });
         pages.push({ jpeg: await jpeg(c), iw: c.width, ih: c.height, pw, ph });
       }
     } else {
       const slides = L.pres.slides.filter((s) => !s.hidden);
+      const elements = slides.map((s) => L.render.slide(L.pres, s, { mode: 'thumb', index: L.pres.slides.indexOf(s) }));
+      const css = slideCSS();
+      const fonts = await L.embedFonts(elements.map((el) => el.outerHTML).join('') + css + ' Arimo');
+      const scale = L.pdfScale(L.pres.W, L.pres.H, L.PDF_DPI / 72);
       let n = 0;
-      for (const s of slides) {
+      for (const el of elements) {
         ui.busy(true, L.t('Creating PDF... (slide {0} of {1})', ++n, slides.length));
-        const c = await A.slideCanvas(s, Math.round(L.pres.W * 2.5), map);
+        const c = await A.rasterize(el, L.pres.W, L.pres.H, scale, { map, css, fonts });
         pages.push({ jpeg: await jpeg(c), iw: c.width, ih: c.height, pw: L.pres.W, ph: L.pres.H });
       }
     }

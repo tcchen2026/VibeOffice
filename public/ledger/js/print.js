@@ -175,6 +175,71 @@
     imgCache.set(src, pr);
     return pr;
   }
+  function drawingBox(d, g) {
+    const a = d.anchor;
+    const x = g.cols.pos(a.from.c) + (a.from.cOff || 0) / 0.75;
+    const y = g.rows.pos(a.from.r) + (a.from.rOff || 0) / 0.75;
+    const w = a.to ? g.cols.pos(a.to.c) + (a.to.cOff || 0) / 0.75 - x : (a.w || 72) / 0.75;
+    const h = a.to ? g.rows.pos(a.to.r) + (a.to.rOff || 0) / 0.75 - y : (a.h || 72) / 0.75;
+    return { x, y, w, h };
+  }
+  function drawingSVG(d, sh, w, h) {
+    if (d.kind === 'chart' && d.chart) return L.xchart.render(d.chart, sh.wb, sh, w, h, 1);
+    if (d.kind !== 'shape') return null;
+    const el = L.drawing.element(d, sh);
+    L.drawing.update(el, d, sh, { x: 0, y: 0, w, h }, false);
+    return el.querySelector('svg');
+  }
+  /** Font data is prepared once for the selected pages. SVG images live only for this export or preview. */
+  async function printPictures(items) {
+    const pictures = new Map();
+    const add = (d, sh, w, h) => {
+      if (pictures.has(d)) return;
+      try {
+        const svg = drawingSVG(d, sh, w, h);
+        if (svg) pictures.set(d, { svg });
+      } catch (e) { console.warn('print object', e); }
+    };
+    for (const item of items) {
+      const sh = item.sh;
+      if (item.chartsheet) {
+        const paper = P.paperSize({ ...sh.print, orientation: sh.print.orientation || 'landscape' });
+        const m = sh.print.margins;
+        const d = sh.drawings.find((x) => x.kind === 'chart' && x.chart);
+        if (d) add(d, sh, (paper.w - (m.l + m.r) * 72) / 0.75, (paper.h - (m.t + m.b) * 72) / 0.75);
+        continue;
+      }
+      const g = LY.geo(sh), pg = item.pg;
+      for (const d of sh.drawings) {
+        if (d.noPrint || d.hidden || !d.anchor || d.anchor.type === 'abs') continue;
+        if (d.kind !== 'chart' && d.kind !== 'shape') continue;
+        const b = drawingBox(d, g);
+        if (b.x + b.w <= g.cols.pos(pg.c1) || b.x >= g.cols.pos(pg.c2 + 1) ||
+            b.y + b.h <= g.rows.pos(pg.r1) || b.y >= g.rows.pos(pg.r2 + 1)) continue;
+        add(d, sh, b.w, b.h);
+      }
+    }
+    if (pictures.size) {
+      const xml = new XMLSerializer();
+      const fonts = await L.embedFonts([...pictures.values()].map((p) => xml.serializeToString(p.svg)).join(''));
+      for (const { svg } of pictures.values()) {
+        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+        style.textContent = fonts;
+        svg.prepend(style);
+      }
+    }
+    return pictures;
+  }
+  async function pictureImage(picture) {
+    if (!picture) return null;
+    if (!picture.image) {
+      const xml = new XMLSerializer().serializeToString(picture.svg);
+      // Do not put SVGs containing base64 fonts in the session's image cache.
+      picture.image = L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)).catch(() => null);
+    }
+    return picture.image;
+  }
   /** draw a block of cells with the grid renderer onto ctx at (x, y) */
   function drawCells(ctx, sh, rg, x, y, zoom, opts) {
     const g = LY.geo(sh);
@@ -192,7 +257,8 @@
   /** a page as a canvas (pxPerPt pixels per point) */
   P.renderPage = async function (sh, pg, info, pxPerPt) {
     const pag = info.pag;
-    const k = pxPerPt;
+    const k = L.pdfScale(pag.paper.w, pag.paper.h, pxPerPt);
+    const pictures = info.pictures || await printPictures([{ sh, pg, pag }]);
     const paper = pag.paper, m = pag.margins, p = sh.print;
     const cv = document.createElement('canvas');
     cv.width = Math.round(paper.w * k); cv.height = Math.round(paper.h * k);
@@ -218,10 +284,7 @@
     /* pictures and charts on this page */
     for (const d of sh.drawings) {
       if (d.noPrint || d.hidden || !d.anchor || d.anchor.type === 'abs') continue;
-      const a = d.anchor;
-      const ax = g.cols.pos(a.from.c) + (a.from.cOff || 0) / 0.75, ay = g.rows.pos(a.from.r) + (a.from.rOff || 0) / 0.75;
-      let aw, ah;
-      if (a.to) { aw = g.cols.pos(a.to.c) + (a.to.cOff || 0) / 0.75 - ax; ah = g.rows.pos(a.to.r) + (a.to.rOff || 0) / 0.75 - ay; } else { aw = (a.w || 72) / 0.75; ah = (a.h || 72) / 0.75; }
+      const { x: ax, y: ay, w: aw, h: ah } = drawingBox(d, g);
       const px0 = g.cols.pos(pg.c1), py0 = g.rows.pos(pg.r1), px1 = g.cols.pos(pg.c2 + 1), py1 = g.rows.pos(pg.r2 + 1);
       if (ax + aw <= px0 || ax >= px1 || ay + ah <= py0 || ay >= py1) continue;
       const dx = x0 + tW + (ax - px0) * zoom, dy = y0 + tH + (ay - py0) * zoom, dw = aw * zoom, dh = ah * zoom;
@@ -232,16 +295,11 @@
           const mm = sh.wb.media.get(d.media);
           if (mm && !/emf|wmf/i.test(mm.ext)) { const url = URL.createObjectURL(new Blob([mm.bytes], { type: mm.type || 'image/png' })); const im = await loadImg(url); if (im) ctx.drawImage(im, dx, dy, dw, dh); }
         } else if (d.kind === 'chart' && d.chart) {
-          const svg = L.xchart.render(d.chart, sh.wb, sh, aw, ah, 1);
-          svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-          const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
-          const im = await loadImg(url);
+          const im = await pictureImage(pictures.get(d));
           if (im) { ctx.drawImage(im, dx, dy, dw, dh); ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, zoom * 0.75); ctx.strokeRect(dx, dy, dw, dh); }
         } else if (d.kind === 'shape') {
-          const el = L.drawing.element(d, sh);
-          L.drawing.update(el, d, sh, { x: 0, y: 0, w: aw, h: ah }, false);
-          const svg = el.querySelector('svg');
-          if (svg) { svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); const im = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg))); if (im) ctx.drawImage(im, dx, dy, dw, dh); }
+          const im = await pictureImage(pictures.get(d));
+          if (im) ctx.drawImage(im, dx, dy, dw, dh);
           const t = d.text || (d._props && d._props.text);
           if (t) { ctx.fillStyle = '#000'; ctx.font = `${10 * zoom * 96 / 72}px Arial`; ctx.textBaseline = 'top'; String(t).split('\n').forEach((ln, i) => ctx.fillText(ln, dx + 4 * zoom, dy + 4 * zoom + i * 13 * zoom)); }
         }
@@ -295,10 +353,12 @@
     }
     return out;
   };
-  async function renderAny(item, i, n, k) {
+  async function renderAny(item, i, n, k, pictures) {
+    pictures ||= await printPictures([item]);
     if (item.chartsheet) {
       const sh = item.sh;
       const paper = P.paperSize(Object.assign({}, sh.print, { orientation: sh.print.orientation || 'landscape' }));
+      k = L.pdfScale(paper.w, paper.h, k);
       const cv = document.createElement('canvas');
       cv.width = Math.round(paper.w * k); cv.height = Math.round(paper.h * k);
       const ctx = cv.getContext('2d');
@@ -307,14 +367,12 @@
       if (d) {
         const m = sh.print.margins;
         const w = paper.w - (m.l + m.r) * 72, hh = paper.h - (m.t + m.b) * 72;
-        const svg = L.xchart.render(d.chart, sh.wb, sh, w / 0.75, hh / 0.75, 1);
-        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        const im = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg)));
+        const im = await pictureImage(pictures.get(d));
         if (im) ctx.drawImage(im, m.l * 72 * k, m.t * 72 * k, w * k, hh * k);
       }
       return { cv, w: paper.w, h: paper.h };
     }
-    const cv = await P.renderPage(item.sh, item.pg, { page: i + 1, pages: n, pag: item.pag }, k);
+    const cv = await P.renderPage(item.sh, item.pg, { page: i + 1, pages: n, pag: item.pag, pictures }, k);
     return { cv, w: item.pag.paper.w, h: item.pag.paper.h };
   }
 
@@ -333,8 +391,9 @@
     ui.busy(true, 'Preparing pages...');
     try {
       const pages = [];
+      const pictures = await printPictures(items.slice(from - 1, to));
       for (let i = from - 1; i < to; i++) {
-        const r = await renderAny(items[i], i, items.length, 2);
+        const r = await renderAny(items[i], i, items.length, L.PDF_DPI / 72, pictures);
         const blob = await new Promise((res) => r.cv.toBlob(res, 'image/jpeg', 0.92));
         pages.push({ jpeg: new Uint8Array(await blob.arrayBuffer()), iw: r.cv.width, ih: r.cv.height, pw: r.w, ph: r.h });
       }

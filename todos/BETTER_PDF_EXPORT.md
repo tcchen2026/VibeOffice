@@ -1,6 +1,7 @@
 # Better PDF export: a text layer in Quire, Ledger and Lectern PDFs
 
-Status: planned 2026-10-15, not started. Revised the same day: pages stay pictures, with an invisible text layer on
+Status: Phase 0 ready for Lead, 2026-11-07; Phases 1–5 pending.
+Planned 2026-10-15; design revised that day: pages stay pictures, with an invisible text layer on
 top; no font files read or embedded. Read first: this file, `public/common/core.js` (`L.buildPDF`, `L.embedFonts`),
 Quire `public/quire/js/app.js` (`A.rasterizePage`, `A.buildPDF`), Lectern `public/lectern/js/app.js` (`A.rasterize`,
 `A.buildPDF`), Ledger `public/ledger/js/print.js` (`P.renderPage`, `P.exportPDF`). Work the phases in order and mark
@@ -96,16 +97,16 @@ Only text a reader can see on the page:
 ## Tasks
 
 Phase 0: the page pictures (the right fonts, 300 dpi)
-- [ ] Add `L.embedFonts` rules (core.js:512; Lectern's HTML export already uses it, lectern app.js:556) to the CSS
+- [x] Add `L.embedFonts` rules (core.js:512; Lectern's HTML export already uses it, lectern app.js:556) to the CSS
       that Quire's `A.rasterizePage` and Lectern's `A.rasterize` put inside the SVG. Build it once per export from the
       fonts the pages name, not once per page.
-- [ ] Do the same for the chart and shape SVGs Ledger draws into its print canvas (print.js:244, print.js:313), as a
+- [x] Do the same for the chart and shape SVGs Ledger draws into its print canvas (print.js:244, print.js:313), as a
       `<style>` inside each SVG.
-- [ ] Check: Carlito text inside a picture differs from the fallback font (the probe from 2026-10-15: the same text
+- [x] Check: Carlito text inside a picture differs from the fallback font (the probe from 2026-10-15: the same text
       drawn through an SVG image in 'Carlito' and in a missing font must give different pixels). Export a Calibri
       document on a machine without Calibri and compare the PDF page with the screen.
-- [ ] Time a long document (181 pages) before and after; the base64 fonts are repeated in every page's SVG.
-- [ ] **300 dpi in all three apps**, a common printer's resolution. Text stays a picture, so its sharpness is the
+- [x] Time a long document (181 pages) before and after; the base64 fonts are repeated in every page's SVG.
+- [x] **300 dpi in all three apps**, a common printer's resolution. Text stays a picture, so its sharpness is the
       picture's; today it's 211 dpi in Quire, 180 in Lectern and 144 in Ledger.
   1. One constant where `L.buildPDF` lives (`PDF_DPI = 300`). Each app derives its scale from it:
      - Quire: `A.rasterizePage(p.el, 300 / 96)`, instead of 2.2;
@@ -119,6 +120,48 @@ Phase 0: the page pictures (the right fonts, 300 dpi)
      JPEG size grows with the pixels: about ×2 for Quire, ×2.8 for Lectern and ×4.3 for Ledger. If that's too much,
      lower the JPEG quality (0.92 now) for text-only pages before lowering the resolution. Compare a printed or
      zoomed page with today's.
+
+### Phase 0 report — 2026-11-07
+
+10 regression checks fail on 5422906 and pass now. All three apps export at 300 dpi;
+actual A0 exports stay under 40 MP; Quire's Recent thumbnail remains 400 × 518.
+The Calibri control (no Calibri installed) matches the screen's Carlito text pixels
+and line breaks; the old picture adds a line. Font CSS is prepared once per PDF;
+Ledger releases the SVG images afterward. JPEG quality stays 0.92; API/load order unchanged.
+
+| Controls | Pages | Seconds before → after | MB before → after |
+|---|---:|---:|---:|
+| Long Word control (formerly 181 pages) | 180 | 10.57 → 21.69 | 83.77 → 134.45 |
+| Five corpus decks | 15 | 0.95 → 2.87 | 1.62 → 3.13 |
+| Five corpus workbooks | 16 | 0.57 → 1.01 | 0.78 → 2.34 |
+
+12 of 13 originals open in Office 2016 without repair and in LibreOffice; the extra
+Divino_Revelado has a corrupt ZIP directory and both refuse it. 11 of the 12 accepted
+inputs match the suite's page count; bug65649 remains Quire 180 / Word 177 / LO 178.
+
+Limit: 180 repeated Calibri pages with all four faces take 112.67 s (was 6.90 s),
+59.09 MB (was 39.62 MB); 1.06 MB of font CSS is parsed/rasterized per image.
+Limit: the known Word pagination gap and Lectern rotated-table clipping remain.
+
+Final `tools/quick.mjs` summaries, with a private English gather and catalogs blocked:
+
+```text
+✖ Node tests: 190 passed, 1 failed (414 s)
+✔ tests/ui/smoke.test.mjs: 4 passed (18 s)
+✔ tests/ui/lectern.test.mjs: 39 passed (127 s)
+✖ tests/ui/ledger.test.mjs: 38 passed, 1 failed (124 s)
+✔ tests/ui/quire.test.mjs: 57 passed (206 s)
+2 of 5 failed.
+```
+
+The two failures reproduce before these changes: translated locale labels are
+unavailable under the no-catalog-access rule; the Ledger toolbar test clicks a
+hidden Drawing toolbar. They are recorded, not counted as passes.
+
+[Detailed report](../tmp/PDF-0-REPORT.md), [Lead findings](../tmp/PDF-LEAD-FINDINGS.md);
+evidence in `tmp/pdf/artifacts` on the share. No commits or edits to Lead's files.
+
+**PDF.0 READY FOR LEAD**
 
 Phase 1: the writer (`public/common/pdf.js`)
 - [ ] **Objects.**

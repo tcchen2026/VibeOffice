@@ -224,6 +224,14 @@
   if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('vo-look', () => { lookCache = {}; });
 
   /* ---------- file I/O ---------- */
+  L.PDF_DPI = 300;
+  const PDF_MAX_PIXELS = 40_000_000;
+  /** Pixels per page unit, capped before allocating a canvas (including rounded pixel dimensions). */
+  L.pdfScale = function (w, h, scale) {
+    if (Math.round(w * scale) * Math.round(h * scale) <= PDF_MAX_PIXELS) return scale;
+    const limit = Math.sqrt(PDF_MAX_PIXELS / (w * h));
+    return Math.min(scale, Math.floor(w * limit) / w, Math.floor(h * limit) / h);
+  };
   /**
    * Minimal PDF writer: one full-page JPEG per page.
    * pages: [{ jpeg: Uint8Array, iw, ih (pixels), pw, ph (points) }]
@@ -682,7 +690,7 @@
     const hash = script == null ? null : btoa(String.fromCharCode(...L.sha.sha256(new TextEncoder().encode(script))));
     return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; script-src ${hash ? `'sha256-${hash}'` : "'none'"}; base-uri 'none'; form-action 'none'">`;
   };
-  /** @font-face rules for a standalone export (an HTML page): the stand-ins from public/fonts/ that
+  /** @font-face rules for a standalone export (HTML or an SVG image): the stand-ins from public/fonts/ that
    * `markup` names, as data: URLs, with bold/italic faces only if the markup uses them. */
   L.embedFonts = async function (markup) {
     const base = (root.VO?.base || new URL('..', location.href).href) + 'fonts/';
