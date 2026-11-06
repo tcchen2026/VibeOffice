@@ -11,7 +11,8 @@
     'xls-style-ext', 'xls-style', 'xls-sheet', 'xls-functions', 'xls-formula', 'xls-formula-book',
     'xls-misc', 'xls-dxf', 'xls-rules', 'xls-comments', 'xls-write',
     'doc-sprm', 'doc-structure', 'doc-style', 'doc-lists', 'doc-xml', 'doc-settings', 'doc-text', 'doc-write',
-    'ppt-structure', 'ppt-theme', 'ppt-text-read', 'ppt-text', 'ppt-text-design', 'ppt-text-write', 'ppt-write'];
+    'ppt-structure', 'ppt-package', 'ppt-theme', 'ppt-text-read', 'ppt-text', 'ppt-text-design', 'ppt-text-write',
+    'ppt-shapes', 'ppt-tables', 'ppt-links', 'ppt-features', 'ppt-write'];
   const N = (s) => s;
   const KIND = { doc: N('Word 97-2003 document'), xls: N('Excel 97-2003 workbook'), ppt: N('PowerPoint 97-2003 presentation') };
   const OTHER = { doc: N('This is a Word 97-2003 document, which {0} does not open.'), xls: N('This is an Excel 97-2003 workbook, which {0} does not open.'), ppt: N('This is a PowerPoint 97-2003 presentation, which {0} does not open.') };

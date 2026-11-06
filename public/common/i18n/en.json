@@ -4863,7 +4863,7 @@
  },
  "A presentation color mapping could not be read": {
   "where": [
-   "common/legacy/ppt-theme.js:45"
+   "common/legacy/ppt-theme.js:44"
   ]
  },
  "A presentation editor that runs entirely in your browser. Presentations are read and written as Office Open XML (.pptx, .pptm); nothing is uploaded.": {
@@ -4933,12 +4933,22 @@
  },
  "A stored presentation design could not be kept": {
   "where": [
-   "common/legacy/ppt-theme.js:52"
+   "common/legacy/ppt-theme.js:51"
+  ]
+ },
+ "A stored presentation design has missing or damaged linked parts": {
+  "where": [
+   "common/legacy/ppt-package.js:7"
   ]
  },
  "A style named {0} already exists.": {
   "where": [
    "quire/js/dialogs.js:929"
+  ]
+ },
+ "A table was kept as separate drawing objects": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
   ]
  },
  "A text formatting page is damaged": {
@@ -5821,6 +5831,11 @@
    "ledger/js/objects.js:127"
   ]
  },
+ "An embedded object was kept only as a picture": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
  "An embedded part could not be decompressed": {
   "where": [
    "common/legacy/xml-check.js:51"
@@ -5845,11 +5860,6 @@
  "An embedded part uses unsupported compression": {
   "where": [
    "common/legacy/xml-check.js:53"
-  ]
- },
- "An embedded presentation design contains linked parts": {
-  "where": [
-   "common/legacy/ppt-theme.js:35"
   ]
  },
  "An embedded presentation design could not be read": {
@@ -5949,7 +5959,7 @@
  },
  "Animations were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:93"
+   "common/legacy/ppt-write.js:97"
   ]
  },
  "Animations:": {
@@ -10761,7 +10771,7 @@
  },
  "Damaged macros were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:101"
+   "common/legacy/ppt-write.js:105"
   ]
  },
  "Damaged presentation content could not be read": {
@@ -12185,7 +12195,7 @@
  },
  "Drawing objects were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:88",
+   "common/legacy/ppt-write.js:92",
    "common/legacy/xls-write.js:87"
   ]
  },
@@ -12582,7 +12592,7 @@
  "Embedded fonts were not kept": {
   "where": [
    "common/legacy/doc-write.js:23",
-   "common/legacy/ppt-write.js:99"
+   "common/legacy/ppt-write.js:103"
   ]
  },
  "Embedded object": {
@@ -12642,7 +12652,7 @@
  },
  "Encrypted binary presentations cannot be opened yet": {
   "where": [
-   "common/legacy/ppt-write.js:108"
+   "common/legacy/ppt-write.js:112"
   ]
  },
  "Encrypted binary workbooks cannot be opened yet": {
@@ -15860,7 +15870,7 @@
  },
  "Hyperlinks were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:94"
+   "common/legacy/ppt-write.js:98"
   ]
  },
  "Hyphenate words in &CAPS": {
@@ -18362,7 +18372,7 @@
  "Macros were not kept": {
   "where": [
    "common/legacy/doc-write.js:24",
-   "common/legacy/ppt-write.js:101",
+   "common/legacy/ppt-write.js:105",
    "common/legacy/xls-write.js:90"
   ]
  },
@@ -19892,7 +19902,7 @@
  },
  "Notes without a matching slide were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:97"
+   "common/legacy/ppt-write.js:101"
   ]
  },
  "Notes:": {
@@ -21744,7 +21754,7 @@
  },
  "PowerPoint 95 presentations cannot be opened yet": {
   "where": [
-   "common/legacy/ppt-write.js:106"
+   "common/legacy/ppt-write.js:110"
   ]
  },
  "PowerPoint 97-2003 presentation": {
@@ -21804,6 +21814,13 @@
    "lectern/js/ribbon.js:66"
   ]
  },
+ "Presentation drawing nesting exceeds the limit": {
+  "where": [
+   "common/legacy/ppt-shapes.js:33",
+   "common/legacy/ppt-shapes.js:96",
+   "common/legacy/ppt-shapes.js:103"
+  ]
+ },
  "Presentation record nesting exceeds the limit": {
   "where": [
    "common/legacy/ppt-read.js:28"
@@ -21818,8 +21835,8 @@
  },
  "Presentation text nesting exceeds the limit": {
   "where": [
-   "common/legacy/ppt-text-read.js:75",
-   "common/legacy/ppt-text-write.js:99",
+   "common/legacy/ppt-text-read.js:76",
+   "common/legacy/ppt-text-write.js:101",
    "common/legacy/ppt-text.js:63",
    "common/legacy/ppt-text.js:92"
   ]
@@ -27162,7 +27179,7 @@
  },
  "Slide transitions and automatic advance settings were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:96"
+   "common/legacy/ppt-write.js:100"
   ]
  },
  "Slide {0}": {
@@ -27344,9 +27361,24 @@
    "common/legacy/xls-rules.js:57"
   ]
  },
+ "Some connectors are no longer attached to their shapes": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
  "Some document layout settings could not be read": {
   "where": [
    "common/legacy/doc-settings.js:23"
+  ]
+ },
+ "Some drawing formatting could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
+ "Some drawing objects could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
   ]
  },
  "Some font choices could not be read": {
@@ -27359,9 +27391,19 @@
    "common/legacy/xls-formula-book.js:169"
   ]
  },
+ "Some headers and footers could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
  "Some headers and footers were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:95"
+   "common/legacy/ppt-write.js:99"
+  ]
+ },
+ "Some hyperlinks or actions could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
   ]
  },
  "Some list numbering could not be read": {
@@ -27389,6 +27431,16 @@
    "common/legacy/doc-style.js:52"
   ]
  },
+ "Some picture color adjustments could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
+ "Some pictures could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
  "Some presentation text could not be kept": {
   "where": [
    "common/legacy/ppt-text.js:9"
@@ -27397,6 +27449,16 @@
  "Some section formatting could not be read": {
   "where": [
    "common/legacy/doc-structure.js:77"
+  ]
+ },
+ "Some slide transition settings could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
+ "Some sounds could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
   ]
  },
  "Some text formatting could not be kept": {
@@ -29244,6 +29306,11 @@
    "ledger/js/app.js:1382"
   ]
  },
+ "The background fill could not be kept": {
+  "where": [
+   "common/legacy/ppt-shapes.js:13"
+  ]
+ },
  "The bitmap RLE stream is truncated": {
   "where": [
    "common/legacy/images.js:99"
@@ -29694,7 +29761,7 @@
  },
  "The picture data is missing": {
   "where": [
-   "common/legacy/officeart.js:83"
+   "common/legacy/officeart.js:86"
   ]
  },
  "The picture is too large": {
@@ -29714,7 +29781,7 @@
  },
  "The presentation has too many master layouts": {
   "where": [
-   "common/legacy/ppt-theme.js:60"
+   "common/legacy/ppt-theme.js:59"
   ]
  },
  "The presentation has too many slides and masters": {
@@ -29784,8 +29851,8 @@
  },
  "The shape fill picture is missing": {
   "where": [
-   "common/legacy/shapes.js:67",
-   "common/legacy/shapes.js:124"
+   "common/legacy/shapes.js:75",
+   "common/legacy/shapes.js:132"
   ]
  },
  "The shape geometry has a missing guide": {
@@ -29795,7 +29862,7 @@
  },
  "The shape has no usable anchor": {
   "where": [
-   "common/legacy/shapes.js:44"
+   "common/legacy/shapes.js:52"
   ]
  },
  "The shared string extension is too large": {
@@ -29820,7 +29887,7 @@
  },
  "The slide background was replaced with its color-scheme background": {
   "where": [
-   "common/legacy/ppt-write.js:92"
+   "common/legacy/ppt-write.js:96"
   ]
  },
  "The slide containing these comments was deleted.": {
@@ -29857,6 +29924,11 @@
    "lectern/js/dialogs.js:653",
    "ledger/js/spell.js:72",
    "ledger/js/spell.js:128"
+  ]
+ },
+ "The table cell grid could not be kept": {
+  "where": [
+   "common/legacy/ppt-tables.js:9"
   ]
  },
  "The table or worksheet that owned this query was deleted.": {
@@ -30472,7 +30544,7 @@
  },
  "This legacy shape needs a VML preset definition": {
   "where": [
-   "common/legacy/shapes.js:117"
+   "common/legacy/shapes.js:125"
   ]
  },
  "This link goes to:": {
@@ -30528,7 +30600,7 @@
  },
  "This presentation needs a password": {
   "where": [
-   "common/legacy/ppt-write.js:108"
+   "common/legacy/ppt-write.js:112"
   ]
  },
  "This punctuation mark is repeated.": {
@@ -30570,8 +30642,8 @@
  },
  "This shape uses an unsupported fill": {
   "where": [
-   "common/legacy/shapes.js:81",
-   "common/legacy/shapes.js:131"
+   "common/legacy/shapes.js:89",
+   "common/legacy/shapes.js:139"
   ]
  },
  "This shape uses an unsupported geometry operation": {
@@ -31610,7 +31682,7 @@
  },
  "Unsupported perspective shape shadow": {
   "where": [
-   "common/legacy/shapes.js:96"
+   "common/legacy/shapes.js:104"
   ]
  },
  "Unsupported property-set byte order": {

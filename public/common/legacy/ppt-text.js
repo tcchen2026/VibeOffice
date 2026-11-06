@@ -128,7 +128,7 @@
   T.missingHeaders=function(book,page){
     const h=T.headersFor(book,page),missing=[];
     for(const [bit,type,fields,string]of [[1,'dt',[4087,4088,4117],0],[8,'sldNum',[4056]],[16,'hdr',[4089],1],[32,'ftr',[4090],2]]){
-      if(!(h.flags&bit)||[16,32].includes(bit)&&!h[string])continue;
+      if(page.headerExpected?!page.headerExpected.includes(type):!(h.flags&bit)||[16,32].includes(bit)&&!h[string])continue;
       const found=page.textAll.some(s=>s.textWritten&&s.text.text&&(s.ph?.type===type||s.text.fields.some(f=>fields.includes(f.type))||h[string]&&s.text.text===h[string]));
       if(!found)missing.push(type);
     }return missing;

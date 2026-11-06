@@ -271,6 +271,25 @@ test('what PowerPoint refuses in a converted presentation: unsigned font bytes, 
   assert.ok(!(await codes('total-time-ok', app(2147483647))).includes('extended-property-total-time'));
 });
 
+test('what PowerPoint refuses in a converted presentation\'s drawings: a table of another graphic type, a custom connector, a group placeholder, a master text box with no body', async () => {
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  const one = (xml) => ({ 'ppt/slides/slide1.xml': slide(`<p:cSld><p:spTree>${xml}</p:spTree></p:cSld>`) });
+  const table = (uri) => one(`<p:graphicFrame><a:graphic><a:graphicData uri="${uri}"><a:tbl><a:tblGrid><a:gridCol w="10"/></a:tblGrid></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`);
+  assert.ok((await codes('table-uri', table('http://schemas.openxmlformats.org/presentationml/2006/ole'))).includes('drawingml-table-uri'));
+  assert.ok(!(await codes('table-ok', table('http://schemas.openxmlformats.org/drawingml/2006/table'))).includes('drawingml-table-uri'));
+  const geom = '<a:custGeom><a:pathLst><a:path w="10" h="10"><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:lnTo><a:pt x="10" y="10"/></a:lnTo></a:path></a:pathLst></a:custGeom>';
+  assert.ok((await codes('connector-custom', one(`<p:cxnSp><p:spPr>${geom}</p:spPr></p:cxnSp>`))).includes('presentation-connector-custom-geometry'));
+  assert.ok(!(await codes('shape-custom', one(`<p:sp><p:spPr>${geom}</p:spPr></p:sp>`))).includes('presentation-connector-custom-geometry'), 'the same geometry on a shape opens');
+  assert.ok((await codes('group-ph', one('<p:grpSp><p:nvGrpSpPr><p:cNvPr id="2" name="Group"/><p:cNvGrpSpPr/><p:nvPr><p:ph type="tbl"/></p:nvPr></p:nvGrpSpPr></p:grpSp>'))).includes('presentation-group-placeholder'));
+  assert.ok(!(await codes('shape-ph', one('<p:sp><p:nvSpPr><p:cNvPr id="2" name="Table"/><p:cNvSpPr/><p:nvPr><p:ph type="tbl"/></p:nvPr></p:nvSpPr></p:sp>'))).includes('presentation-group-placeholder'));
+  const box = (body) => `<p:sp><p:nvSpPr><p:cNvPr id="2" name="Text Box"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr/>${body}</p:sp>`;
+  const master = (xml) => ({ '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/></Types>',
+    'ppt/slideMasters/slideMaster1.xml': `<p:sldMaster xmlns:p="${P}" xmlns:a="${A}"><p:cSld><p:spTree>${xml}</p:spTree></p:cSld></p:sldMaster>` });
+  assert.ok((await codes('master-box', master(box('')))).includes('presentation-master-textbox-body'));
+  assert.ok(!(await codes('master-box-body', master(box('<p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody>')))).includes('presentation-master-textbox-body'));
+  assert.ok(!(await codes('slide-box', one(box('')))).includes('presentation-master-textbox-body'), 'only a master was measured');
+});
+
 test('a defined name Excel takes, and its definition qualified by a sheet or a bang (as Office opens them)', async () => {
   const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
   const types = '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +

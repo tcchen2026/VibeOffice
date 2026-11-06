@@ -101,7 +101,8 @@
       }else B.fail('SHAPE_PATH_ESCAPE',N('Unsupported shape path type'));
     }
     finish();
-    const rect=def?.t?.[0];
-    return {width,height,paths,textRect:rect?{l:coord(rect[0][0])-left,t:coord(rect[0][1])-top,r:coord(rect[1][0])-left,b:coord(rect[1][1])-top}:null,native:!vertexProp};
+    const rect=def?.t?.[0],points=props.get(337)?.data?.length?A.array(props.get(337)).map(v=>v.length===4?[v.i16(0),v.i16(2)]:[v.i32(0),v.i32(4)]):def?.c||[],directions=A.array(props.get(338));
+    const connections=points.map((v,i)=>({x:coord(v[0])-left,y:coord(v[1])-top,angle:directions[i]?directions[i].i32(0)/65536:0}));
+    return {width,height,paths,connections,textRect:rect?{l:coord(rect[0][0])-left,t:coord(rect[0][1])-top,r:coord(rect[1][0])-left,b:coord(rect[1][1])-top}:null,native:!vertexProp};
   };
 })(typeof window!=='undefined'?window:globalThis);

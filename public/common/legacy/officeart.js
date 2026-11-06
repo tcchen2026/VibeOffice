@@ -68,9 +68,12 @@
       if (rec.type === 0xf001) {
         for (const entry of rec.children || A.records(rec.r)) {
           if (entry.type !== 0xf007) B.fail('BLIP_STORE', N('Invalid picture-store entry'));
-          const r = entry.r, size = r.u32(20), references = r.u32(24), offset = r.u32(28), nameLength = r.u8(33);
+          const r = entry.r, size = r.length >= 36 ? r.u32(20) : 0, references = r.length >= 36 ? r.u32(24) : 0, offset = r.length >= 36 ? r.u32(28) : 0;
           const index = entries.length + 1; let promise;
           entries.push({ index, references, size, offset, read: () => promise || (promise = (async () => {
+            // A damaged optional picture must not invalidate the indices or
+            // readable entries that follow it in the shared picture store.
+            r.check(0, 36); const nameLength = r.u8(33);
             const inlineAt = 36 + nameLength;
             if (r.length >= inlineAt + 8) return A.blip(A.record(r, inlineAt));
             // Word permits a fallback stream for pictures; the host supplies it explicitly.

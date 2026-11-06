@@ -12,11 +12,11 @@
   const charset=n=>n>127?n-256:n;
   const fontXml=(tag,book,index,modern=false)=>{const f=modern?book.fonts10.get(index):font(book,index);return f?el(tag,{typeface:f.name,pitchFamily:charset(f.pitchFamily),charset:charset(f.charset)}):'';};
   T.color=function(value,page){const index=value>>>24;if(index===255)return '';const rgb=index<8?(page?.scheme||P.defaultScheme)[index]:[value&255,value>>>8&255,value>>>16&255].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();return rgb?el('a:srgbClr',{val:rgb}):'';};
-  T.rPr=function(tag,r,book,page){
+  T.rPr=function(tag,r,book,page,links=''){
     const color=r.color==null?'':T.color(r.color,page),attrs={lang:languages[r.language],altLang:languages[r.altLanguage],sz:r.size?clamp(Math.round(r.size*100),100,400000):null,b:r.bold==null?null:+r.bold,i:r.italic==null?null:+r.italic,u:r.underline==null?null:r.underline?'sng':'none',strike:r.strike==null?null:r.strike?'sngStrike':'noStrike',baseline:r.baseline==null?null:clamp(r.baseline*1000,-100000,100000),kumimoji:r.kumimoji?1:null};
     const effect=r.shadow?el('a:effectLst',{},el('a:outerShdw',{blurRad:0,dist:38100,dir:2700000,algn:'ctr',rotWithShape:0},el('a:srgbClr',{val:page.scheme?.[2]||'808080'}))):'';
     const latin=font(book,r.font)?.charset===2?r.font:book.fonts.has(r.ansiFont)?r.ansiFont:r.font;
-    return el(tag,attrs,(color?el('a:solidFill',{},color):'')+effect+fontXml('a:latin',book,latin)+fontXml('a:ea',book,book.fonts10.has(r.eaFont10)?r.eaFont10:r.eaFont,book.fonts10.has(r.eaFont10))+fontXml('a:cs',book,book.fonts10.has(r.csFont10)?r.csFont10:r.csFont,book.fonts10.has(r.csFont10))+fontXml('a:sym',book,r.symbolFont));
+    return el(tag,attrs,(color?el('a:solidFill',{},color):'')+effect+fontXml('a:latin',book,latin)+fontXml('a:ea',book,book.fonts10.has(r.eaFont10)?r.eaFont10:r.eaFont,book.fonts10.has(r.eaFont10))+fontXml('a:cs',book,book.fonts10.has(r.csFont10)?r.csFont10:r.csFont,book.fonts10.has(r.csFont10))+fontXml('a:sym',book,r.symbolFont)+links);
   };
   T.pPr=function(tag,p,r,book,page){
     const attrs={lvl:tag==='a:pPr'?p.level:null,marL:p.margin==null?null:clamp(emu(p.margin),0,51206400),indent:p.indent==null?null:clamp(emu(p.indent-(p.margin||0)),-51206400,51206400),algn:['l','ctr','r','just','dist','thaiDist','justLow'][p.align],defTabSz:p.defaultTab==null?null:clamp(emu(p.defaultTab),0,51206400),rtl:p.rtl==null?null:+p.rtl,fontAlgn:['base','t','ctr','b'][p.fontAlign],eaLnBrk:p.charWrap==null?null:+p.charWrap,latinLnBrk:p.wordWrap==null?null:+!p.wordWrap,hangingPunct:p.overflow==null?null:+p.overflow};
@@ -51,8 +51,9 @@
     const format=field.format??headers.format??0,n=format>=0&&format<=12?format:0;return {type:'datetime'+(n+1),text:T.dateText(n,r.language??r.altLanguage,book.textDate||(book.textDate=new Date()))};
   };
   const symbolText=(s,r,book)=>font(book,r.font)?.charset===2?s.replace(/[\x20-\xff]/g,c=>String.fromCharCode(c.charCodeAt(0)|0xf000)):s;
-  T.body=function(shape,book,page,blank=false){
+  T.body=function(shape,book,page,blank=false,options={}){
     const t=shape.text||{text:'',type:typeForPh(shape.ph)??4,paragraphs:[],runs:[],special:[],fields:[]},text=blank?'':t.text,parts=[];
+    const linkAt=blank?null:P.links?.cursor(book,page,shape);
     const pc={i:0},rc={i:0},sc={i:0},softPattern=/[\v\n]/g;let start=0,fieldIndex=0,paragraphs=0,nextSoft=softPattern.exec(text)?.index??text.length;
     do{
       const breakAt=text.indexOf('\r',start),end=breakAt<0?text.length:breakAt,localP=rangeAt(t.paragraphs,start,pc)?.props||{},level=localP.level||0,style=T.style(book,page,t.type,level),ruler=t.ruler||{},p={...style.p,...ruler.levels?.[level],...localP,level},baseR={...style.r,...book.defaultSI};
@@ -62,35 +63,36 @@
       while(pos<end){
         const rr=rangeAt(t.runs,pos,rc),sr=rangeAt(t.special,pos,sc),r={...baseR,...t.extra?.r,...rr?.props,...sr?.props};
         while(fieldIndex<t.fields.length&&t.fields[fieldIndex].at<pos)fieldIndex++;
-        const f=t.fields[fieldIndex];
+        const f=t.fields[fieldIndex],link=linkAt?.(pos);
         if(r.emboss)page.textReport?.('format','Embossed text');
-        if(f?.at===pos){const data=T.field(f,book,page,shape,r),content=T.rPr('a:rPr',r,book,page)+el('a:t',{},B.xml(data.text));runs+=data.type?el('a:fld',{id:root.L.opc.guid(),type:data.type},content):el('a:r',{},content);book.textStats.fields++;pos++;fieldIndex++;continue;}
-        if(text[pos]==='\v'||text[pos]==='\n'){runs+=el('a:br',{},T.rPr('a:rPr',r,book,page));pos++;continue;}
+        if(f?.at===pos){const data=T.field(f,book,page,shape,r),content=T.rPr('a:rPr',r,book,page,link?.xml)+el('a:t',{},B.xml(data.text));runs+=data.type?el('a:fld',{id:root.L.opc.guid(),type:data.type},content):el('a:r',{},content);book.textStats.fields++;pos++;fieldIndex++;continue;}
+        if(text[pos]==='\v'||text[pos]==='\n'){runs+=el('a:br',{},T.rPr('a:rPr',r,book,page,link?.xml));pos++;continue;}
         while(nextSoft<pos)nextSoft=softPattern.exec(text)?.index??text.length;
-        let until=Math.min(end,rr?.end??end,sr?.end??end,f?.at??end,nextSoft);
+        let until=Math.min(end,rr?.end??end,sr?.end??end,f?.at??end,nextSoft,link?.next??end);
         // Bad styles may split a surrogate pair; its scalar must stay intact.
         if(until<end&&until>pos&&/[\ud800-\udbff]/.test(text[until-1])&&/[\udc00-\udfff]/.test(text[until]))until++;
         if(until<=pos)until=pos+1;
-        runs+=el('a:r',{},T.rPr('a:rPr',r,book,page)+el('a:t',{},B.xml(symbolText(text.slice(pos,until),r,book))));pos=until;
+        runs+=el('a:r',{},T.rPr('a:rPr',r,book,page,link?.xml)+el('a:t',{},B.xml(symbolText(text.slice(pos,until),r,book))));pos=until;
       }
       const terminal={...baseR,...rangeAt(t.runs,end,rc)?.props,...rangeAt(t.special,end,sc)?.props};
       parts.push(el('a:p',{},T.pPr('a:pPr',p,defaultR,book,page)+runs+T.rPr('a:endParaRPr',terminal,book,page)));paragraphs++;start=end+1;
       if(breakAt<0)break;
     }while(start<=text.length);
     if(!blank){book.textStats.textShapes++;book.textStats.textCharacters+=text.length;book.textStats.paragraphs+=paragraphs;if(shape.ph)book.textStats.placeholders++;shape.textWritten=true;}
-    return el('p:txBody',{},S.bodyPr(shape)+el('a:lstStyle')+parts.join(''));
+    return el(options.tag||'p:txBody',{},(options.bodyPr??S.bodyPr(shape))+el('a:lstStyle')+parts.join(''));
   };
   T.styles=function(book,page,type,tag){let body='';for(let i=0;i<9;i++){const s=T.style(book,page,type,i);body+=T.pPr('a:lvl'+(i+1)+'pPr',s.p,s.r,book,page);}return el(tag,{},body);};
   T.media=async function(book,pkg){
     const media=new Map(),relationships=new Map();let number=0;
-    for(const [index,rec]of book.textBlips)try{const image=await B.officeart.blip(B.officeart.record(rec.r,2)),name='image'+(++number)+'.'+image.ext;pkg.add('ppt/media/'+name,image.bytes,image.mime);media.set(index,name);}catch(e){if(e.name!=='LegacyError')throw e;}
+    for(const [index,rec]of book.textBlips)try{const image=await B.officeart.blip(B.officeart.record(rec.r,2)),name=book.addImage?book.addImage(image):'ppt/media/image'+(++number)+'.'+image.ext;if(!book.addImage)pkg.add(name,image.bytes,image.mime);media.set(index,name);}catch(e){if(e.name!=='LegacyError')throw e;}
     book.textStats.pictureBulletImages=media.size;
-    book.bulletRel=index=>{const name=media.get(index);if(!name||!book.textPart)return null;const key=book.textPart+':'+index;if(!relationships.has(key))relationships.set(key,pkg.rel(book.textPart,'image','../media/'+name));return relationships.get(key);};
+    book.bulletRel=index=>{const name=media.get(index);if(!name||!book.textPart)return null;if(book.mediaRel)return book.mediaRel(name);const key=book.textPart+':'+index;if(!relationships.has(key))relationships.set(key,pkg.rel(book.textPart,'image','../media/'+name.split('/').at(-1)));return relationships.get(key);};
   };
   // A ChildAnchor uses its group's arbitrary coordinate system. It is not a
   // page coordinate in master units (modern writers often already use EMUs).
   const rectFor=shape=>{if(!shape.anchor)return null;const scale=shape.anchor.kind==='child'?v=>v:emu;return {x:scale(shape.anchor.left),y:scale(shape.anchor.top),cx:scale(shape.anchor.right-shape.anchor.left),cy:scale(shape.anchor.bottom-shape.anchor.top)};};
   T.tree=function(book,page,{layout,shapes,usedIds=[],fragment=false}={}){
+    if(P.drawings)return P.drawings.tree(book,page,{layout,shapes,usedIds,fragment});
     if(!page)return P.emptyShapeTree();
     const source=shapes||(layout?layout.textPlaceholders:page.textShapes||[]),used=new Set([1,...usedIds]);
     const ids=new Set();const collect=shapes=>{for(const s of shapes){if(s.id>1)ids.add(s.id);collect(s.children||[]);}};collect(source);let next=2;
@@ -112,7 +114,7 @@
       const nv=el('p:nvSpPr',{},el('p:cNvPr',{id,name:(shape.ph?'Placeholder ':'TextBox ')+id})+el('p:cNvSpPr',{txBox:shape.type===202?1:null},shape.ph?el('a:spLocks',{noGrp:1}):'')+el('p:nvPr',{},ph));
       return el('p:sp',{},nv+el('p:spPr',{},properties)+T.body(shape,book,page,!!layout));
     };
-    const content=source.map(s=>write(s)).join('');return fragment?content:P.emptyShapeTree().replace('</p:spTree>',content+'</p:spTree>');
+    const content=source.map(s=>write(s)).join('');return fragment?content:P.emptyShapeTree().replace('</p:spTree>',()=>content+'</p:spTree>');
   };
   T.storedLayout=function(book,layout){
     const page=layout.source,base=layout.master.source,xml=layout.stored.xml;

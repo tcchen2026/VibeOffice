@@ -43,7 +43,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 
 ## Opening
 
-File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible. PowerPoint 97-2003 files (`.ppt`, `.pps`, `.pot`) are converted on opening to the `.pptx` PowerPoint would write (slides, masters and layouts, notes, colour schemes, text; pictures, shapes and tables not yet); a message names what wasn't converted, and Save asks for a `.pptx` name.
+File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible. PowerPoint 97-2003 files (`.ppt`, `.pps`, `.pot`) are converted on opening to the `.pptx` PowerPoint would write (slides, masters and layouts, notes, colour schemes, text, pictures, shapes and connectors, tables, hyperlinks and actions, headers and footers, transitions; animations, sounds and movies not yet); a message names what wasn't converted, and Save asks for a `.pptx` name.
 
 Strict inputs save as standard Transitional OOXML (recorded, not shown). Same-format
 saves retain the macro, template or slideshow variant and any opening password.

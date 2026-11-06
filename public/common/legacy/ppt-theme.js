@@ -29,11 +29,10 @@
     });
     const local=tree.name.split(':').at(-1),ns=tree.ns[tree.name.includes(':')?tree.name.split(':')[0]:''];
     if(kind==='layout'?local!=='sldLayout'||ns!==B.ns.p:!['theme','themeOverride'].includes(local)||ns!==B.ns.a)B.fail('PPT_EMBEDDED_PART',N('An embedded presentation design could not be read'));
-    // These fragments may contain pictures, charts or links. Retaining their XML
-    // alone would create dangling references; D3 imports those dependencies.
+    // Retain the bounded dependency graph with its original relationship IDs.
     const slash=entry.name.lastIndexOf('/'),rels=entry.name.slice(0,slash+1)+'_rels/'+entry.name.slice(slash+1)+'.rels';
-    if(linked||zip.has(rels))B.fail('PPT_EMBEDDED_LINKS',N('An embedded presentation design contains linked parts'));
-    return {xml,root:local,attrs:tree.attrs,...meta};
+    const bundle=linked||zip.has(rels)?await P.designBundle(bytes,zip,entry,xml):null;
+    return {xml,root:local,attrs:tree.attrs,bundle,...meta};
   };
   P.prepareDesigns=async function(book,losses){
     const pages=[...book.masters,...book.slides,...book.notes,book.notesMaster,book.handoutMaster].filter(Boolean),originals=new Map();

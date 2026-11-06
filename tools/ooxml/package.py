@@ -56,6 +56,9 @@ def in_range(value, low, high):
     return value is not None and re.fullmatch(r'[+-]?\d+', value.strip()) is not None and low <= int(value) <= high
 
 
+TABLE_URI = ('http://schemas.openxmlformats.org/drawingml/2006/table', 'http://purl.oclc.org/ooxml/drawingml/table')
+
+
 def name_fault(name):
     """why Excel refuses a defined name, or None (I24 C3: Office controls; a name that merely looks like a cell, such as
     C1244, opens and is not flagged)"""
@@ -383,6 +386,25 @@ class Package:
                 # ... and an editing time past the extended properties' integer
                 if ns in EXTENDED and tag == 'TotalTime' and not in_range(el.text, -2147483648, 2147483647):
                     self.issue('extended-property-total-time', part, (el.text or '').strip(), path)
+                # What PowerPoint refuses in a converted presentation's drawings (I24 D3, one-object controls): a table
+                # in a graphic frame of another type, a connector with a custom geometry (the same geometry opens on
+                # a shape), a group that is a placeholder ...
+                if ns in A and tag == 'graphicData' and el.find('{' + ns + '}tbl') is not None and el.get('uri') not in TABLE_URI:
+                    self.issue('drawingml-table-uri', part, f'uri="{el.get("uri")}"', path)
+                grand = parents.get(parent) if parent is not None else None
+                if ns in A and tag == 'custGeom' and parent is not None and split(parent.tag)[1] == 'spPr' \
+                        and grand is not None and split(grand.tag)[0] in P and split(grand.tag)[1] == 'cxnSp':
+                    self.issue('presentation-connector-custom-geometry', part, 'a connector with a custom geometry', path)
+                if ns in P and tag == 'ph' and parent is not None and split(parent.tag)[1] == 'nvPr' \
+                        and grand is not None and split(grand.tag)[1] == 'nvGrpSpPr':
+                    self.issue('presentation-group-placeholder', part, f'type="{el.get("type") or "obj"}" idx="{el.get("idx") or 0}"', path)
+                # ... and a slide master's text box with no text body: it opens, but every slide on that master prints
+                # only its background (notes slides with one weren't measured, so they aren't flagged)
+                if ns in P and tag == 'sp' and (self.types.get(part) or '').endswith('slideMaster+xml') \
+                        and el.find('{' + ns + '}txBody') is None:
+                    box = el.find('{' + ns + '}nvSpPr/{' + ns + '}cNvSpPr')
+                    if box is not None and box.get('txBox') in ('1', 'true'):
+                        self.issue('presentation-master-textbox-body', part, 'a text box with no text body', path)
                 if ns in A and tag == 'graphicData' and el.get('uri') == 'urn:vibeoffice:test:unread':
                     # Batch 7: our unguarded synthetic frame repairs in Office,
                     # even in its original fixture. Do not reject unfamiliar

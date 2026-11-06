@@ -33,10 +33,18 @@
   S.geometry = function (shape) {
     const presetName = shape.type === 202 || shape.type === 75 ? 'rect' : S.presets[shape.type];
     const needsNative = !presetName || Array.from({length:10},(_,i)=>shape.properties.has(327+i)).some(Boolean);
-    if (shape.properties.has(325) || needsNative) {
+    if (shape.properties.has(325) || shape.properties.has(337) || needsNative) {
       const path = S.path(shape), names = { M: 'moveTo', L: 'lnTo', C: 'cubicBezTo', Q: 'quadBezTo', Z: 'close' };
       const xml = path.paths.map(p => el('a:path', { w: path.width, h: path.height, fill: p.fill ? 'norm' : 'none', stroke: p.stroke ? 1 : 0 }, p.commands.map(c => el('a:' + names[c.op], {}, c.pts.length ? c.pts.map(([x, y]) => el('a:pt', { x: Math.round(x), y: Math.round(y) })).join('') : undefined)).join(''))).join('');
-      return el('a:custGeom', {}, '<a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/>' + el('a:rect', path.textRect ? Object.fromEntries(Object.entries(path.textRect).map(([k,v])=>[k,Math.round(v)])) : {l:'l',t:'t',r:'r',b:'b'}) + el('a:pathLst', {}, xml));
+      let connections=path.connections;
+      if(!connections.length&&[1,2,75,202].includes(shape.type))connections=[{x:path.width/2,y:0,angle:270},{x:0,y:path.height/2,angle:180},{x:path.width/2,y:path.height,angle:90},{x:path.width,y:path.height/2,angle:0}];
+      // Paths have their own w/h; connection sites and the text rectangle use
+      // the shape coordinate system. Scale them with guides so resizing works.
+      const guides=[];
+      const scaled=(name,value,axis)=>{guides.push(el('a:gd',{name,fmla:'*/ '+axis+' '+Math.round(value)+' '+(axis==='w'?path.width:path.height)}));return name;};
+      const cxn=el('a:cxnLst',{},connections.map((p,i)=>el('a:cxn',{ang:Math.round(((p.angle%360)+360)%360*60000)},el('a:pos',{x:scaled('cx'+i,p.x,'w'),y:scaled('cy'+i,p.y,'h')}))).join(''));
+      const rect=path.textRect?Object.fromEntries(Object.entries(path.textRect).map(([k,v])=>[k,scaled('tx'+k,v,k==='l'||k==='r'?'w':'h')])):{l:'l',t:'t',r:'r',b:'b'};
+      return el('a:custGeom', {}, '<a:avLst/>'+el('a:gdLst',{},guides.join(''))+'<a:ahLst/>' + cxn + el('a:rect',rect) + el('a:pathLst', {}, xml));
     }
     return el('a:prstGeom', { prst: presetName }, '<a:avLst/>');
   };
@@ -80,7 +88,7 @@
         fill = el('a:gradFill', { rotWithShape: bool(shape,447,5,false)?1:0 }, el('a:gsLst', {}, stops.map(s => el('a:gs', { pos: s.pos }, colour(s.value,s.opacity))).join('')) + dir);
       } else B.fail('SHAPE_FILL', N('This shape uses an unsupported fill'), type);
     }
-    let line = '<a:ln><a:noFill/></a:ln>';
+    let line = el(context.lineTag||'a:ln',{},el('a:noFill'));
     if (bool(shape, 511, 3, shape.type !== 202 && shape.type !== 75)) {
       const arrows = ['none', 'triangle', 'stealth', 'diamond', 'oval', 'arrow'], sizes = ['sm', 'med', 'lg'];
       let body = solid(get(shape, 448), get(shape, 449, 65536));
@@ -88,7 +96,7 @@
       if (dash) body += el('a:prstDash', { val: dash });
       body += el(['a:bevel', 'a:miter', 'a:round'][get(shape, 470, 2)] || 'a:round', get(shape, 470, 2) === 1 ? { lim: Math.max(0, Math.round(get(shape, 460, 8 * 65536) * 100000 / 65536)) } : {});
       for (const [tag, head, width, length] of [['a:headEnd', 464, 466, 467], ['a:tailEnd', 465, 468, 469]]) body += el(tag, { type: arrows[get(shape, head)] || 'none', w: sizes[get(shape, width, 1)] || 'med', len: sizes[get(shape, length, 1)] || 'med' });
-      line = el('a:ln', { w: Math.max(0, signed(shape, 459, 9525)), cap: ['rnd', 'sq', 'flat'][get(shape, 471, 2)] || 'flat', cmpd: ['sng', 'dbl', 'thickThin', 'thinThick', 'tri'][get(shape, 461)] || 'sng' }, body);
+      line = el(context.lineTag||'a:ln', { w: Math.max(0, signed(shape, 459, 9525)), cap: ['rnd', 'sq', 'flat'][get(shape, 471, 2)] || 'flat', cmpd: ['sng', 'dbl', 'thickThin', 'thinThick', 'tri'][get(shape, 461)] || 'sng' }, body);
     }
     let effects = '';
     if (bool(shape, 575, 1, false)) {
@@ -96,7 +104,7 @@
       if (get(shape, 512) > 1) B.fail('SHAPE_SHADOW', N('Unsupported perspective shape shadow'));
       effects = el('a:effectLst', {}, el('a:outerShdw', { dist: Math.round(Math.hypot(x, y)), dir: (Math.round(Math.atan2(y, x) * 180 / Math.PI * 60000) + 21600000) % 21600000, rotWithShape: 0 }, colour(get(shape, 513, 0x808080), get(shape, 516, 65536))));
     }
-    return fill + line + effects;
+    return context.components ? {fill,line,effects} : fill + line + effects;
   };
   S.bodyPr = function (shape) {
     const anchor = get(shape, 135), flow = get(shape, 136), attrs = {

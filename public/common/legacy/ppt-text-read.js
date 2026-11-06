@@ -66,6 +66,7 @@
       else if(rec.type===4012)out.ext9=attempt(rec,()=>T.ext9(rec));
       else if([4056,4087,4088,4089,4090,4117].includes(rec.type))attempt(rec,()=>{const at=rec.r.u32(0);if(at<out.text.length){const field={at,type:rec.type};if(rec.type===4087)field.format=rec.r.u8(4);if(rec.type===4117)field.formatString=rec.r.text(4,Math.min(128,rec.r.length-4)&~1,1200).split('\0')[0];out.fields.push(field);}});
     }
+    out.interactiveRecords=records.filter(r=>r.type===4082||r.type===4063);
     out.fields.sort((a,b)=>a.at-b.at);return out;
   };
   // The ninth-era extensions are inside a tagged binary blob, not ordinary

@@ -7,6 +7,7 @@ import { load } from '../../tools/legacy/load.mjs';
 const B = load(), A = B.officeart;
 if (process.env.IMAGES_SOURCE) vm.runInThisContext(fs.readFileSync(process.env.IMAGES_SOURCE, 'utf8'));
 if (process.env.SHAPE_PATH_SOURCE) vm.runInThisContext(fs.readFileSync(process.env.SHAPE_PATH_SOURCE, 'utf8'));
+if (process.env.SHAPES_SOURCE) vm.runInThisContext(fs.readFileSync(process.env.SHAPES_SOURCE, 'utf8'));
 const record = (type, data, instance = 0, version = 0) => { const h = Buffer.alloc(8); h.writeUInt16LE(instance * 16 + version); h.writeUInt16LE(type, 2); h.writeUInt32LE(data.length, 4); return Buffer.concat([h, data]); };
 const pngPixels = bytes => {
   const b = Buffer.from(bytes); let p = 8, compressed = []; assert.equal(b.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
@@ -97,4 +98,15 @@ test('custom guides reject cycles and resolve signed coordinates and ellipse arc
   const path=B.shapePath({type:0,properties:props});assert.ok(path.paths[0].commands.some(c=>c.op==='C'));assert.deepEqual(path.paths[0].commands[0].pts[0],[100,50]);
   props.set(325,arr([[0x80000000,0]],8));props.set(326,arr([[0x4000],[0x8000]],2));props.set(342,arr([[0x2000,0x400,0,0]],8));
   assert.throws(()=>B.shapePath({type:0,properties:props}),{code:'SHAPE_GUIDES'});
+});
+test('custom connection points and text bounds scale with the shape when resized', () => {
+  const array=(values,size)=>{const data=Buffer.alloc(6+values.length*size);data.writeUInt16LE(values.length);data.writeUInt16LE(values.length,2);data.writeUInt16LE(size,4);values.forEach((v,i)=>v.forEach((n,j)=>data.writeInt32LE(n,6+i*size+j*4)));return{data};};
+  const s={type:5,flags:0,properties:new Map([[337,array([[5400,10800],[21600,5400]],8)],[338,array([[180*65536],[90*65536]],4)]])};
+  assert.deepEqual(B.shapePath(s).connections,[{x:5400,y:10800,angle:180},{x:21600,y:5400,angle:90}]);
+  const xml=B.shapes.geometry(s),guides=new Map();
+  B.checkXml('<root xmlns:a="'+B.ns.a+'">'+xml+'</root>',node=>{if(node.name==='a:gd')guides.set(node.attrs.name,node.attrs.fmla);});
+  const resolve=(name,w,h)=>{const[op,axis,n,d]=guides.get(name).split(' ');assert.equal(op,'*/');return (axis==='w'?w:h)*Number(n)/Number(d);};
+  assert.match(xml,/<a:cxn ang="10800000"><a:pos x="cx0" y="cy0"/);
+  assert.equal(resolve('cx0',4000000,2000000),1000000);assert.equal(resolve('cy1',4000000,2000000),500000);
+  assert.equal(resolve('txr',8000000,2160000),6000000);assert.equal(resolve('txb',8000000,2160000),1800000);
 });
