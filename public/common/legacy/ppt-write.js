@@ -72,7 +72,9 @@
     if (P.drawings) await P.drawings.prepare(book, cfb, pkg);
     P.features?.prepare(book);
     await P.text.media(book, pkg);
+    P.media?.prepare(book, pkg);
     P.links?.prepare(book, pkg, cfb);
+    P.timing?.prepare(book);
     const theme = (from, page) => {
       const stored = page.theme?.root === 'theme' ? page.theme.xml : null,
         xml = stored || P.themeXml(page, book);
@@ -117,6 +119,7 @@
           commonSlide(page, true, book) +
             el('p:clrMap', page.colorMap) +
             el('p:sldLayoutIdLst', {}, ids.join('')) +
+            (P.timing?.write(book, page) || '') +
             (P.features?.headerFlags(book, page) || '') +
             (page.storedTextStyles ||
               el(
@@ -155,7 +158,7 @@
           : part(
               'sldLayout',
               commonSlide(page, titleMaster && !(page.flags & 4), book, titleMaster ? null : layout) +
-                override(page),
+                override(page) + (titleMaster ? P.timing?.write(book, page) || '' : ''),
               { type: layout.type, preserve: 1, showMasterSp: titleMaster && !(page.flags & 1) ? 0 : null }
             ),
         ct + 'presentationml.slideLayout+xml'
@@ -232,7 +235,8 @@
           'sld',
           commonSlide(slide, !(slide.flags & 4), book) +
             override(slide) +
-            (P.features?.transition(book, slide) || ''),
+            (P.features?.transition(book, slide) || '') +
+            (P.timing?.write(book, slide) || ''),
           { show: slide.hidden ? 0 : null, showMasterSp: slide.flags & 1 ? null : 0 }
         ),
         ct + 'presentationml.slide+xml'
@@ -350,7 +354,7 @@
             true
           );
       }
-      if (c.animations)
+      if (c.animations && !P.timing)
         P.notice(losses, 'legacy-slide-animation', N('Animations were not kept'), page.where, true);
       if (c.links && !P.links)
         P.notice(losses, 'legacy-slide-links', N('Hyperlinks were not kept'), page.where, true);

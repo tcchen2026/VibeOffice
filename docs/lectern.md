@@ -43,7 +43,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 
 ## Opening
 
-File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible. PowerPoint 97-2003 files (`.ppt`, `.pps`, `.pot`) are converted on opening to the `.pptx` PowerPoint would write (slides, masters and layouts, notes, colour schemes, text, pictures, shapes and connectors, tables, hyperlinks and actions, headers and footers, transitions; animations, sounds and movies not yet); a message names what wasn't converted, and Save asks for a `.pptx` name. A presentation with a password to open asks for it (RC4 CryptoAPI encryption, as PowerPoint 97-2003 wrote it), again after a wrong one, and is saved encrypted with it, as PowerPoint keeps it on Save As.
+File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible. PowerPoint 97-2003 files (`.ppt`, `.pps`, `.pot`) are converted on opening to the `.pptx` PowerPoint would write (slides, masters and layouts, notes, colour schemes, text, pictures, shapes and connectors, tables, hyperlinks and actions, headers and footers, transitions, animations and paragraph builds, sounds and movies); a message names what wasn't converted, and Save asks for a `.pptx` name. A presentation with a password to open asks for it (RC4 CryptoAPI encryption, as PowerPoint 97-2003 wrote it), again after a wrong one, and is saved encrypted with it, as PowerPoint keeps it on Save As.
 
 Strict inputs save as standard Transitional OOXML (recorded, not shown). Same-format
 saves retain the macro, template or slideshow variant and any opening password.
@@ -181,8 +181,10 @@ Office review batches are documented in [testing.md](testing.md).
 files, 171 convert and 47 are refused with a message saying why (PowerPoint 95 and older files, damaged files, unknown
 passwords); none fails otherwise. All 171 pass the Open XML SDK and the 18 tried in PowerPoint 2016 open without a
 repair prompt. Their slides' number, order and size agree with the original's in all 166 files with a reference, and
-the slides' text with LibreOffice's conversion in 907 of 956 slides compared. Animations, sounds and movies are not
-converted yet.
+the slides' text with LibreOffice's conversion in 907 of 956 slides compared. Their animations come along: the 26
+presentations with any keep all 102 of their timing parts, and PowerPoint 2016 runs the 171 effects measured in the
+order, on the shapes and with the timings and behaviours of the original; embedded sounds keep their bytes and linked
+media stay linked. A damaged or unsupported animation is left out and named in the message.
 
 ## What a save keeps, converts and drops
 

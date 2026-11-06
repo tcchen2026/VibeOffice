@@ -143,14 +143,16 @@
       else if (type === 26)
         effect = el('p:wheel', { spokes: [1, 2, 3, 4, 8].includes(direction) ? direction : 4 });
       else if (type !== 255) D.report(book, page, 'transition', null, 'Unknown effect ' + type);
-      if (flags & 16) D.report(book, page, 'sound', null, 'Transition sound');
+      if (flags & 16 && !P.media) D.report(book, page, 'sound', null, 'Transition sound');
       if (flags & 1024 && (time < 0 || time > 86399000))
         D.report(book, page, 'transition', null, 'Invalid advance time');
       if (speed > 2 && type !== 0 && type !== 255)
         D.report(book, page, 'transition', null, 'Invalid transition speed');
       page.transitionWritten = true;
       book.drawingStats.transitions++;
-      return el('p:transition', attrs, effect + (flags & 256 ? el('p:sndAc', {}, el('p:endSnd')) : ''));
+      const sound = P.media ? P.media.transition(book, page, rec) :
+        flags & 256 ? el('p:sndAc', {}, el('p:endSnd')) : '';
+      return el('p:transition', attrs, effect + sound);
     } catch (e) {
       if (e.name !== 'LegacyError') throw e;
       D.report(book, page, 'transition', null, e);

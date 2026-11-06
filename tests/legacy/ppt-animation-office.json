@@ -1,0 +1,786 @@
+{
+  "description": "Independent PowerPoint 2016 Save As of our COM-authored 54 legacy entry effects. Extended tags disabled to exercise Office 97 records.",
+  "build": "16.0.4266.1003",
+  "sourceSha256": "6df114e3008661cc7fd8a4e110312f62ea9e8d0973113cb2acda39e22a7c3718",
+  "nativeSha256": "5e7b77b5471649323f2b5e9777303c5c3d13ffc057e5f7d9008bdfcd36dd578e",
+  "effects": [
+    {
+      "name": "Effect 3844",
+      "old": [
+        0,
+        0
+      ],
+      "preset": [
+        "1",
+        "0"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 769",
+      "old": [
+        2,
+        1
+      ],
+      "preset": [
+        "3",
+        "10"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "blinds(horizontal)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 770",
+      "old": [
+        2,
+        0
+      ],
+      "preset": [
+        "3",
+        "5"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "blinds(vertical)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 1025",
+      "old": [
+        3,
+        0
+      ],
+      "preset": [
+        "5",
+        "10"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "checkerboard(across)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 1026",
+      "old": [
+        3,
+        1
+      ],
+      "preset": [
+        "5",
+        "5"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "checkerboard(down)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 1537",
+      "old": [
+        5,
+        0
+      ],
+      "preset": [
+        "9",
+        "0"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "dissolve"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2305",
+      "old": [
+        8,
+        0
+      ],
+      "preset": [
+        "14",
+        "10"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "randombar(horizontal)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2306",
+      "old": [
+        8,
+        1
+      ],
+      "preset": [
+        "14",
+        "5"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "randombar(vertical)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2561",
+      "old": [
+        9,
+        4
+      ],
+      "preset": [
+        "18",
+        "9"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "strips(upLeft)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2562",
+      "old": [
+        9,
+        5
+      ],
+      "preset": [
+        "18",
+        "3"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "strips(upRight)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2563",
+      "old": [
+        9,
+        6
+      ],
+      "preset": [
+        "18",
+        "12"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "strips(downLeft)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2564",
+      "old": [
+        9,
+        7
+      ],
+      "preset": [
+        "18",
+        "6"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "strips(downRight)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2817",
+      "old": [
+        10,
+        0
+      ],
+      "preset": [
+        "22",
+        "2"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(right)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2818",
+      "old": [
+        10,
+        1
+      ],
+      "preset": [
+        "22",
+        "4"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(down)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2819",
+      "old": [
+        10,
+        2
+      ],
+      "preset": [
+        "22",
+        "8"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(left)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 2820",
+      "old": [
+        10,
+        3
+      ],
+      "preset": [
+        "22",
+        "1"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(up)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3073",
+      "old": [
+        11,
+        0
+      ],
+      "preset": [
+        "4",
+        "32"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "box(out)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3074",
+      "old": [
+        11,
+        1
+      ],
+      "preset": [
+        "4",
+        "16"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "box(in)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3329",
+      "old": [
+        12,
+        0
+      ],
+      "preset": [
+        "2",
+        "8"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3330",
+      "old": [
+        12,
+        1
+      ],
+      "preset": [
+        "2",
+        "1"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3331",
+      "old": [
+        12,
+        2
+      ],
+      "preset": [
+        "2",
+        "2"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3332",
+      "old": [
+        12,
+        3
+      ],
+      "preset": [
+        "2",
+        "4"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3333",
+      "old": [
+        12,
+        4
+      ],
+      "preset": [
+        "2",
+        "9"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3334",
+      "old": [
+        12,
+        5
+      ],
+      "preset": [
+        "2",
+        "3"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3335",
+      "old": [
+        12,
+        6
+      ],
+      "preset": [
+        "2",
+        "12"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3336",
+      "old": [
+        12,
+        7
+      ],
+      "preset": [
+        "2",
+        "6"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3337",
+      "old": [
+        12,
+        8
+      ],
+      "preset": [
+        "12",
+        "8"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(right)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3338",
+      "old": [
+        12,
+        9
+      ],
+      "preset": [
+        "12",
+        "4"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(up)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3339",
+      "old": [
+        12,
+        10
+      ],
+      "preset": [
+        "12",
+        "2"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(left)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3340",
+      "old": [
+        12,
+        11
+      ],
+      "preset": [
+        "12",
+        "1"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "wipe(down)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3341",
+      "old": [
+        12,
+        12
+      ],
+      "preset": [
+        "7",
+        "8"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3342",
+      "old": [
+        12,
+        13
+      ],
+      "preset": [
+        "7",
+        "1"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3343",
+      "old": [
+        12,
+        14
+      ],
+      "preset": [
+        "7",
+        "2"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3344",
+      "old": [
+        12,
+        15
+      ],
+      "preset": [
+        "7",
+        "4"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3345",
+      "old": [
+        12,
+        16
+      ],
+      "preset": [
+        "23",
+        "16"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3346",
+      "old": [
+        12,
+        17
+      ],
+      "preset": [
+        "23",
+        "272"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3347",
+      "old": [
+        12,
+        18
+      ],
+      "preset": [
+        "23",
+        "32"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3348",
+      "old": [
+        12,
+        19
+      ],
+      "preset": [
+        "23",
+        "288"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3349",
+      "old": [
+        12,
+        20
+      ],
+      "preset": [
+        "23",
+        "528"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3350",
+      "old": [
+        12,
+        21
+      ],
+      "preset": [
+        "23",
+        "36"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3351",
+      "old": [
+        12,
+        22
+      ],
+      "preset": [
+        "17",
+        "10"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3352",
+      "old": [
+        12,
+        23
+      ],
+      "preset": [
+        "17",
+        "8"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3353",
+      "old": [
+        12,
+        24
+      ],
+      "preset": [
+        "17",
+        "1"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3354",
+      "old": [
+        12,
+        25
+      ],
+      "preset": [
+        "17",
+        "2"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3355",
+      "old": [
+        12,
+        26
+      ],
+      "preset": [
+        "17",
+        "4"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3356",
+      "old": [
+        12,
+        27
+      ],
+      "preset": [
+        "19",
+        "10"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3357",
+      "old": [
+        12,
+        28
+      ],
+      "preset": [
+        "15",
+        "0"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3585",
+      "old": [
+        13,
+        0
+      ],
+      "preset": [
+        "16",
+        "42"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "barn(outHorizontal)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3586",
+      "old": [
+        13,
+        1
+      ],
+      "preset": [
+        "16",
+        "26"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "barn(inHorizontal)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3587",
+      "old": [
+        13,
+        2
+      ],
+      "preset": [
+        "16",
+        "37"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "barn(outVertical)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3588",
+      "old": [
+        13,
+        3
+      ],
+      "preset": [
+        "16",
+        "21"
+      ],
+      "filters": [
+        {
+          "transition": "in",
+          "filter": "barn(inVertical)"
+        }
+      ]
+    },
+    {
+      "name": "Effect 3841",
+      "old": [
+        14,
+        0
+      ],
+      "preset": [
+        "11",
+        "0"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3842",
+      "old": [
+        14,
+        1
+      ],
+      "preset": [
+        "11",
+        "0"
+      ],
+      "filters": []
+    },
+    {
+      "name": "Effect 3843",
+      "old": [
+        14,
+        2
+      ],
+      "preset": [
+        "11",
+        "0"
+      ],
+      "filters": []
+    }
+  ],
+  "behaviorCounts": {
+    "set": 54,
+    "animEffect": 25,
+    "anim": 68
+  }
+}

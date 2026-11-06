@@ -370,8 +370,11 @@
     for (const [s, id] of ids)
       if (s.tableData && !get(s, 4) && !(s.flags & 192))
         for (const child of s.children || []) bySource.delete(child.id);
-    const cNvPr = s =>
-      el(
+    if (!layout && !fragment) page.timingShapes = new Map();
+    const cNvPr = s => {
+      if (!layout && !fragment && !page.timingShapes.has(s.id))
+        page.timingShapes.set(s.id, { id: ids.get(s), shape: s });
+      return el(
         'p:cNvPr',
         {
           id: ids.get(s),
@@ -382,11 +385,13 @@
         },
         P.links?.shape(book, page, s) || undefined
       );
+    };
     const nvPr = s =>
       el(
         'p:nvPr',
         {},
-        s.ph ? el('p:ph', { type: s.ph.type, idx: s.ph.idx, sz: s.ph.sz, orient: s.ph.orient }) : ''
+        (s.ph ? el('p:ph', { type: s.ph.type, idx: s.ph.idx, sz: s.ph.sz, orient: s.ph.orient }) : '') +
+          (!layout ? P.media?.shape(book, page, s) || '' : '')
       );
     const write = (s, depth = 0) => {
       if (depth > B.limits.depth)
@@ -476,7 +481,7 @@
         book.drawingStats.pictures++;
         const client = s.records?.find(r => r.type === 0xf011);
         if (
-          client &&
+          client && !s.media &&
           P.children(client, e => D.report(book, page, 'object', s, e)).some(r => r.type === 3009)
         )
           D.report(book, page, 'object', s, 'The object preview was retained');

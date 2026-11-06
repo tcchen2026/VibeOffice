@@ -6186,7 +6186,7 @@
  },
  "Animations were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:354"
+   "common/legacy/ppt-write.js:358"
   ]
  },
  "Animations:": {
@@ -11007,7 +11007,7 @@
  },
  "Damaged macros were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:392"
+   "common/legacy/ppt-write.js:396"
   ]
  },
  "Damaged presentation content could not be read": {
@@ -12447,7 +12447,7 @@
  },
  "Drawing objects were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:326"
+   "common/legacy/ppt-write.js:330"
   ]
  },
  "Drop Cap": {
@@ -12848,7 +12848,7 @@
  "Embedded fonts were not kept": {
   "where": [
    "common/legacy/doc-write.js:20",
-   "common/legacy/ppt-write.js:387"
+   "common/legacy/ppt-write.js:391"
   ]
  },
  "Embedded object": {
@@ -13424,7 +13424,7 @@
  },
  "Excel 97-2003 workbook": {
   "where": [
-   "common/legacy/import.js:20"
+   "common/legacy/import.js:21"
   ]
  },
  "Excel Macro-Enabled Workbook (*.xlsm)": {
@@ -16112,7 +16112,7 @@
  },
  "Hyperlinks were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:356"
+   "common/legacy/ppt-write.js:360"
   ]
  },
  "Hyphenate words in &CAPS": {
@@ -18614,7 +18614,7 @@
  "Macros were not kept": {
   "where": [
    "common/legacy/doc-write.js:21",
-   "common/legacy/ppt-write.js:395",
+   "common/legacy/ppt-write.js:399",
    "common/legacy/xls-write.js:395"
   ]
  },
@@ -20144,7 +20144,7 @@
  },
  "Notes without a matching slide were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:381"
+   "common/legacy/ppt-write.js:385"
   ]
  },
  "Notes:": {
@@ -21990,12 +21990,12 @@
  },
  "PowerPoint 95 presentations cannot be opened yet": {
   "where": [
-   "common/legacy/ppt-write.js:422"
+   "common/legacy/ppt-write.js:426"
   ]
  },
  "PowerPoint 97-2003 presentation": {
   "where": [
-   "common/legacy/import.js:20"
+   "common/legacy/import.js:21"
   ]
  },
  "PowerPoint Presentation (*.pptx)": {
@@ -22054,7 +22054,7 @@
   "where": [
    "common/legacy/ppt-shapes.js:119",
    "common/legacy/ppt-shapes.js:343",
-   "common/legacy/ppt-shapes.js:393"
+   "common/legacy/ppt-shapes.js:398"
   ]
  },
  "Presentation record nesting exceeds the limit": {
@@ -22682,7 +22682,7 @@
  },
  "Quire word processor": {
   "where": [
-   "quire/index.html:335"
+   "quire/index.html:336"
   ]
  },
  "R&eading Layout": {
@@ -27404,7 +27404,7 @@
  },
  "Slide transitions and automatic advance settings were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:373"
+   "common/legacy/ppt-write.js:377"
   ]
  },
  "Slide {0}": {
@@ -27576,6 +27576,11 @@
    "common/legacy/xls-misc.js:332"
   ]
  },
+ "Some animations could not be kept": {
+  "where": [
+   "common/legacy/ppt-timing.js:34"
+  ]
+ },
  "Some bookmarks could not be read": {
   "where": [
    "common/legacy/doc-markup.js:253"
@@ -27694,7 +27699,7 @@
  },
  "Some headers and footers were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:363"
+   "common/legacy/ppt-write.js:367"
   ]
  },
  "Some hyperlinks or actions could not be kept": {
@@ -27761,6 +27766,11 @@
  "Some sounds could not be kept": {
   "where": [
    "common/legacy/ppt-shapes.js:36"
+  ]
+ },
+ "Some sounds or videos could not be kept": {
+  "where": [
+   "common/legacy/ppt-media.js:18"
   ]
  },
  "Some table formatting could not be read": {
@@ -29715,7 +29725,7 @@
  },
  "The converter for Office 97-2003 files could not be loaded.": {
   "where": [
-   "common/legacy/import.js:29"
+   "common/legacy/import.js:30"
   ]
  },
  "The criteria range is not valid.": {
@@ -29929,8 +29939,8 @@
  },
  "The file is damaged or is not an Office 97-2003 file.": {
   "where": [
-   "common/legacy/import.js:47",
-   "common/legacy/import.js:49"
+   "common/legacy/import.js:48",
+   "common/legacy/import.js:50"
   ]
  },
  "The file is too large to import": {
@@ -30129,7 +30139,7 @@
  },
  "The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.": {
   "where": [
-   "common/legacy/import.js:58",
+   "common/legacy/import.js:59",
    "ledger/js/dialogs.js:866",
    "ledger/js/xlsx-read.js:1206"
   ]
@@ -30305,7 +30315,7 @@
  },
  "The slide background was replaced with its color-scheme background": {
   "where": [
-   "common/legacy/ppt-write.js:348"
+   "common/legacy/ppt-write.js:352"
   ]
  },
  "The slide containing these comments was deleted.": {
@@ -30922,7 +30932,7 @@
  },
  "This file is password-protected.": {
   "where": [
-   "common/legacy/import.js:57"
+   "common/legacy/import.js:58"
   ]
  },
  "This file needs a password": {
@@ -30958,7 +30968,7 @@
  },
  "This is a PowerPoint 97-2003 presentation, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:21"
+   "common/legacy/import.js:22"
   ]
  },
  "This is a TrueType font. The same font will be used on both your printer and your screen.": {
@@ -30973,12 +30983,12 @@
  },
  "This is a Word 97-2003 document, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:21"
+   "common/legacy/import.js:22"
   ]
  },
  "This is an Excel 97-2003 workbook, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:21"
+   "common/legacy/import.js:22"
   ]
  },
  "This is not a valid print range.": {
@@ -31147,7 +31157,7 @@
  },
  "This {0} is protected with a kind of password {1} cannot open.": {
   "where": [
-   "common/legacy/import.js:59"
+   "common/legacy/import.js:60"
   ]
  },
  "Through": {
@@ -33055,7 +33065,7 @@
  },
  "Word 97-2003 document": {
   "where": [
-   "common/legacy/import.js:20"
+   "common/legacy/import.js:21"
   ]
  },
  "Word Count": {
@@ -34212,7 +34222,7 @@
  },
  "{0} was converted from the {1} format. Not converted:": {
   "where": [
-   "common/legacy/import.js:67"
+   "common/legacy/import.js:68"
   ]
  },
  "{0} x {1} Pages": {

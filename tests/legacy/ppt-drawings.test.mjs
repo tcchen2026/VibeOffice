@@ -122,7 +122,8 @@ test('PPT cut through black and stop-sound keep their separate effects',async()=
  const r=await convert(make([],{slideRecords:[transition(0,1,257)]}));assert.match(r.xml,/<p:transition><p:cut thruBlk="1"\/><p:sndAc><p:endSnd\/><\/p:sndAc>/);
 });
 test('PPT a transition sound loss does not drop its wheel or advance settings',async()=>{
- const r=await convert(make([],{slideRecords:[transition(26,8,1041,0,7000)]}));assert.match(r.xml,/<p:wheel spokes="8"\/>/);assert.match(r.xml,/advTm="7000"/);assert.ok(r.losses.some(l=>l.id==='legacy-presentation-sound'&&l.notify));
+ const record=transition(26,8,1041,0,7000);record.writeUInt32LE(17,12);
+ const r=await convert(make([],{slideRecords:[record]}));assert.match(r.xml,/<p:wheel spokes="8"\/>/);assert.match(r.xml,/advTm="7000"/);assert.ok(r.losses.some(l=>l.id==='legacy-presentation-media'&&l.notify));
 });
 
 test('PPT WordArt letters stored outside textbox atoms remain editable text',async()=>{

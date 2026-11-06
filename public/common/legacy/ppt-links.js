@@ -123,8 +123,15 @@
           }
         };
       if (action || atom.u32(0) || flags & 2) book.drawingStats.sourceHyperlinks++;
-      if (atom.u32(0)) D.report(book, page, 'sound', s, 'Action sound');
-      if (action === 0) return flags & 2 ? info : null;
+      if (atom.u32(0)) {
+        if (P.media) info.sound = atom.u32(0);
+        else D.report(book, page, 'sound', s, 'Action sound');
+      }
+      if (action === 0) return flags & 2 || info.sound ? info : null;
+      if (action === 6 && s.media) {
+        info.attrs.action = 'ppaction://media';
+        return info;
+      }
       if (action === 3) {
         if (!jumps[jump]) bad('Unknown slide jump');
         info.attrs.action = 'ppaction://hlinkshowjump?jump=' + jumps[jump];
@@ -259,7 +266,9 @@
           written.add(info);
           book.drawingStats.hyperlinks++;
         }
-        return el(info.kind === 'over' ? 'a:hlinkMouseOver' : 'a:hlinkClick', attrs);
+        const sound = info.sound ? P.media?.sound(book, info.sound) : '';
+        if (info.sound && !sound) P.media?.report(book, page, s, 'Missing action sound');
+        return el(info.kind === 'over' ? 'a:hlinkMouseOver' : 'a:hlinkClick', attrs, sound || undefined);
       } catch (e) {
         if (e.name !== 'LegacyError') throw e;
         D.report(book, page, 'link', s, e);
