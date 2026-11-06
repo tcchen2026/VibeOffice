@@ -271,6 +271,8 @@ test('Dropping a cell onto empty cells moves it without asking', async () => {
 test('the Drawing toolbar\'s Line and Arrow draw in the drag\'s direction, the arrow with its head; AutoShapes offers every shape', async () => {
   const u = await ledger();
   try {
+    // the toolbar is hidden by default, shown here without saving the choice in the browser
+    await u.evaluate(`L.app.opts.toolbars.drawing = true; L.app.updateToolbars()`);
     await u.click(await u.button('drawLine'));
     await u.drag(await pt(u, 'C10'), await pt(u, 'F4'), 6);   // up and to the right
     await u.click(await u.button('drawArrow'));

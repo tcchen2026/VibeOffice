@@ -32,7 +32,7 @@ const pages = new Map();
 const server = http.createServer((q, s) => { s.writeHead(pages.has(q.url) ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8' }); s.end(pages.get(q.url) || ''); });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const stop = await ensureServer();
-after(() => { server.close(); stop(); });
+after(() => { server.close(); server.closeAllConnections(); stop(); });   // the browser's idle preconnections too
 /** opens `html` in the test's tab: the title it ends with, and `probe` evaluated there */
 async function visit(page, name, html, probe = 'null') {
   pages.set('/' + name, html);
