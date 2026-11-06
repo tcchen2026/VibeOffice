@@ -115,6 +115,8 @@
         const stops = kids(kid(el, 'gsLst'), 'gs').map((g) => { const c = colorOf(g, ctx) || { c: '#000000', a: 1 }; return { p: num(g, 'pos', 0) / 100000, c: c.c, a: c.a }; });
         const lin = kid(el, 'lin'), p = kid(el, 'path');
         const f = { t: 'grad', stops: stops.length ? stops : [{ p: 0, c: '#FFFFFF', a: 1 }, { p: 1, c: '#000000', a: 1 }], ang: lin ? num(lin, 'ang', 0) / 60000 : 90, path: p ? (at(p, 'path') === 'rect' ? 'rect' : at(p, 'path') === 'shape' ? 'shape' : 'circle') : 'lin' };
+        /* an angle in the shape's own space, not stretched with it to the box (scaled="0" or none) */
+        if (lin && !bool(at(lin, 'scaled'))) f.scaled = false;
         /* path gradients radiate from the focus rectangle (insets from the edges, in %) */
         const ftr = p && kid(p, 'fillToRect');
         if (ftr) {
@@ -164,7 +166,14 @@
     if (f) {
       if (f.t === 'none') return { t: 'none', w: ln.w };
       if (f.t === 'solid') { ln.c = f.c; ln.a = f.a; }
-      else if (f.t === 'grad') ln.c = f.stops[0].c;
+      else if (f.t === 'grad' && f.stops.length) {
+        /* drawn in one colour, the first stop's, as opaque as the stops are on average: a gradient of clear stops
+           is no line at all (LibreOffice's tdf149588_transparentSolidFill) */
+        const first = f.stops.reduce((a, b) => (b.p < a.p ? b : a), f.stops[0]);
+        ln.c = first.c;
+        const a = f.stops.reduce((sum, g) => sum + (g.a == null ? 1 : g.a), 0) / f.stops.length;
+        if (a < 1) ln.a = L.round(a, 3);
+      }
       else if (f.t === 'patt') ln.c = f.fg;
     } else if (base && base.t === 'none') return { t: 'none', w: ln.w };
     const dash = kid(el, 'prstDash');
@@ -323,7 +332,8 @@
     if (at(bp, 'anchorCtr') != null) o.anchorCtr = bool(at(bp, 'anchorCtr'));
     if (at(bp, 'wrap')) o.wrap = at(bp, 'wrap') !== 'none';
     if (at(bp, 'vert') && at(bp, 'vert') !== 'horz') o.vert = at(bp, 'vert') === 'vert270' ? 'vert270' : 'vert'; else if (at(bp, 'vert') === 'horz') delete o.vert;
-    if (at(bp, 'numCol') && +at(bp, 'numCol') > 1) { o.cols = +at(bp, 'numCol'); o.colGap = pt(num(bp, 'spcCol', 0)); }
+    /* numCol="1" on a slide undoes its layout's columns (LibreOffice's tdf140852) */
+    if (at(bp, 'numCol')) { o.cols = Math.max(1, +at(bp, 'numCol') || 1); if (o.cols > 1) o.colGap = pt(num(bp, 'spcCol', 0)); else delete o.colGap; }
     if (at(bp, 'rot')) o.rot = num(bp, 'rot', 0) / 60000;
     const na = kid(bp, 'normAutofit'), sa = kid(bp, 'spAutoFit'), noa = kid(bp, 'noAutofit');
     if (na) { o.autofit = 'norm'; o.fontScale = at(na, 'fontScale') ? +at(na, 'fontScale') / 100000 : undefined; o.lnSpcRed = at(na, 'lnSpcReduction') ? +at(na, 'lnSpcReduction') / 100000 : undefined; if (!o.fontScale) delete o.fontScale; if (!o.lnSpcRed) delete o.lnSpcRed; }
@@ -590,7 +600,7 @@
     const layouts = new Map(); /* layout path → info */
     async function loadTheme(p) {
       const t = await xml(p);
-      const theme = { colors: Object.assign({}, L.model.COLOR_SCHEMES[0]), fonts: { major: 'Arial', minor: 'Arial' }, fills: [], lines: [], bgFills: [], name: t ? at(t, 'name') : 'Theme' };
+      const theme = { colors: Object.assign({}, L.model.COLOR_SCHEMES[0]), fonts: { major: 'Arial', minor: 'Arial' }, fills: [], lines: [], bgFills: [], effects: [], name: t ? at(t, 'name') : 'Theme' };
       if (!t) return theme;
       theme.rels = await rels(p);
       const cs = desc(t, 'clrScheme');
@@ -611,6 +621,7 @@
         theme.fills = kids(kid(fm, 'fillStyleLst'));
         theme.lines = kids(kid(fm, 'lnStyleLst'));
         theme.bgFills = kids(kid(fm, 'bgFillStyleLst'));
+        theme.effects = kids(kid(fm, 'effectStyleLst'));
       }
       return theme;
     }
@@ -813,9 +824,13 @@
         const idx = num(fr, 'idx', 1);
         const el = idx >= 1001 ? ctx.theme.bgFills[idx - 1001] : ctx.theme.fills[idx - 1];
         out.fill = el ? fill(el, themeCtx(ctx, ctx.theme, c)) : c ? { t: 'solid', c: c.c, a: c.a } : undefined;
-        if (out.fill && out.fill.t === 'grad' && c) out.fill = { t: 'solid', c: c.c, a: c.a };
       }
-      void er;
+      /* the theme's effect style: its shadow (Office 2007's Moderate and Intense effects, PowerPoint 2016 draws them) */
+      if (er && num(er, 'idx', 0) > 0) {
+        const es = (ctx.theme.effects || [])[num(er, 'idx', 1) - 1];
+        const shd = es && shadow(kid(es, 'effectLst'), Object.assign({}, ctx, { phClr: colorOf(er, ctx) }));
+        if (shd) out.shadow = shd;
+      }
       if (fo) {
         const c = colorOf(fo, ctx);
         out.fontColor = c ? c.c : undefined;
@@ -968,7 +983,7 @@
         sh.geom = g.geom; if (g.adj) sh.adj = g.adj; if (g.path) sh.path = g.path;
         sh.line = line(spPr && kid(spPr, 'ln'), ctx, refs.line ? refs.line : { t: 'none' }) || { t: 'none' };
         const ef = spPr && kid(spPr, 'effectLst');
-        const shd = shadow(ef, ctx); if (shd) sh.shadow = shd;
+        const shd = ef ? shadow(ef, ctx) : refs.shadow; if (shd) sh.shadow = shd;
         if (ph) sh.ph = ph;
         if (!mid) sh.missingLabel = sh.linkUrl ? 'Linked picture: ' + decodeURIComponent(String(sh.linkUrl).split(/[\\/]/).pop() || '') : 'Picture';
         return sh;
@@ -1018,8 +1033,10 @@
         }
         return Object.assign(base, { type: 'shape', geom: 'rect', fill: { t: 'solid', c: '#F2F2F2', a: 1 }, line: { c: '#A6A6A6', w: 0.75, dash: 'dash' }, tx: L.txt.body([L.txt.para('Embedded object', { algn: 'ctr' }, { sz: 12, color: '#7F7F7F' })], { anchor: 'ctr' }) });
       }
-      /* sp & cxnSp */
-      const g = geometry(spPr);
+      /* sp & cxnSp; a placeholder without geometry of its own takes its layout's, else its master's (a picture
+         placeholder cut to a custom shape: LibreOffice's custgeom-placeholder) */
+      const ownGeom = (p) => p && (kid(p, 'prstGeom') || kid(p, 'custGeom'));
+      const g = geometry(ownGeom(spPr) ? spPr : ph && lay && ownGeom(lay.spPr) ? lay.spPr : ph && mas && ownGeom(mas.spPr) ? mas.spPr : spPr);
       const isLine = ln === 'cxnSp' || ['line', 'straightConnector1', 'bentConnector2', 'bentConnector3', 'bentConnector4', 'bentConnector5', 'curvedConnector2', 'curvedConnector3', 'curvedConnector4', 'curvedConnector5'].includes(g.geom);
       if (isLine) {
         const lnEl = spPr && kid(spPr, 'ln');
@@ -1034,7 +1051,7 @@
           L.geom.setLineEnds(sh, p1, p2);
         }
         const ef = spPr && kid(spPr, 'effectLst');
-        const shd = shadow(ef, ctx); if (shd) sh.shadow = shd;
+        const shd = ef ? shadow(ef, ctx) : refs.shadow; if (shd) sh.shadow = shd;
         return sh;
       }
       const txBody = kid(el, 'txBody');
@@ -1056,7 +1073,7 @@
       if (refs.line) lnBase = refs.line;
       sh.line = line(spPr && kid(spPr, 'ln'), ctx, lnBase) || { t: 'none' };
       const ef = spPr && kid(spPr, 'effectLst');
-      const shd = shadow(ef, ctx); if (shd) sh.shadow = shd;
+      const shd = ef ? shadow(ef, ctx) : refs.shadow; if (shd) sh.shadow = shd;
       if (ph) sh.ph = ph;
       if (txBody || ph) {
         let bp = {};
@@ -1332,6 +1349,14 @@
       }
       let drawingPath = null, sa = null, dataTree = null;
       const withSa = (g) => { if (g && sa) g.sa = sa; return g; };
+      /* saved without its drawing (PowerPoint 2007 wrote none; empty in some files): a layout we have is laid out by
+         our engine, as it would be once edited here; any other with the rough layouts of smartArtFromData */
+      const undrawn = async () => {
+        if (sa && sa.office && L.diagram && L.smartart && ctx.design) {
+          try { return L.diagram.relayout(Object.assign(base, { type: 'group', kids: [], name: base.name || 'Diagram', sa }), ctx.design); } catch (e) { console.warn('IntelliArt layout', e); }
+        }
+        return withSa(await smartArtFromData(relIds, base, ctx));
+      };
       if (dm) {
         const dx = await xml(dm.target);
         dataTree = dx;
@@ -1358,11 +1383,11 @@
         if (ext && at(ext, 'relId') && ctx.rels[at(ext, 'relId')]) drawingPath = ctx.rels[at(ext, 'relId')].target;
       }
       if (!drawingPath) { const r = Object.values(ctx.rels).find((x) => x.type === 'diagramDrawing'); if (r) drawingPath = r.target; }
-      if (!drawingPath) return withSa(await smartArtFromData(relIds, base, ctx));
+      if (!drawingPath) return undrawn();
       const dx = await xml(drawingPath);
       if (hasMath(dx)) sa = null; // item text is plain; equations stay in the opaque group's runs
       const tree = dx && desc(dx, 'spTree');
-      if (!tree) return withSa(await smartArtFromData(relIds, base, ctx));
+      if (!tree) return undrawn();
       const dRels = await rels(drawingPath);
       const dctx = Object.assign({}, ctx, { rels: dRels, partPath: drawingPath, map: (b) => ({ x: base.x + b.x, y: base.y + b.y, w: b.w, h: b.h }), layout: null, pendingMedia: ctx.pendingMedia });
       dctx.media = (id) => { const r = dRels[id]; if (!r || r.external) return null; const m = mediaCache.get(r.target); if (m) return m; ctx.pendingMedia.add(r.target); return '__pending__:' + r.target; };
@@ -1381,7 +1406,7 @@
           return true;
         });
       }
-      if (!kidsS.length) return withSa(await smartArtFromData(relIds, base, ctx));
+      if (!kidsS.length) return undrawn();
       const g = Object.assign(base, { type: 'group', kids: kidsS, name: base.name || 'Diagram' });
       if (sa) g.sa = sa;
       return g;

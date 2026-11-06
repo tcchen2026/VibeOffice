@@ -159,6 +159,30 @@
   C.luma = (hex) => { const [r, g, b] = C.hexToRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
   C.rgba = (hex, a) => { const [r, g, b] = C.hexToRgb(hex); return a == null || a >= 1 ? C.rgbToHex(r, g, b) : `rgba(${r},${g},${b},${L.round(a, 3)})`; };
   C.gray = (hex) => { const v = Math.round(C.luma(hex) * 255); return C.rgbToHex(v, v, v); };
+  /** a gradient's stops ({ p: 0–1, c: '#RRGGBB', a }, in order) as Office paints them. A gradient of two colours, two
+      opaque stops at 0 and 100 % (or the first again at 100 % around one at 50 %), it blends in linear light along an
+      S-curve, a normal distribution's (sigma a quarter of the way; erf as Abramowitz and Stegun 7.1.26): FF0000 to
+      00B050 is #BC8038 halfway and #EE461C a quarter of the way, where a browser's straight sRGB blend has #805828 and
+      #BF2C14 (PowerPoint 2016's PDF of LibreOffice's tdf105739 samples its curve: #BA813A and #EE4920). So stops are
+      put in between (n to a gap) for a browser's straight runs to follow it. Any other gradient (more stops, stops
+      inside, transparency) Office blends in sRGB, straight from stop to stop, as a browser does */
+  const SIGMA = 0.25, erf = (x) => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x < 0 ? -y : y; };
+  const sigmoid = (t) => { const e0 = erf(-0.5 / SIGMA / Math.SQRT2); return (erf((t - 0.5) / SIGMA / Math.SQRT2) - e0) / (-2 * e0); };
+  C.lightStops = (stops, n = 16) => {
+    const opaque = stops.every((st) => st.a == null || st.a >= 1), [s0, s1, s2] = stops;
+    const two = stops.length === 2 && s0.p === 0 && s1.p === 1, reflected = stops.length === 3 && s0.p === 0 && s1.p === 0.5 && s2.p === 1 && s0.c === s2.c;
+    if (!opaque || !(two || reflected)) return stops;
+    const out = [];
+    stops.forEach((st, i) => {
+      const prev = stops[i - 1];
+      if (prev && prev.c !== st.c) {
+        const x = C.hexToRgb(prev.c).map(toLin), y = C.hexToRgb(st.c).map(toLin);
+        for (let k = 1; k < n; k++) { const f = sigmoid(k / n); out.push({ p: prev.p + ((st.p - prev.p) * k) / n, c: C.rgbToHex(...x.map((v, j) => toS(v + (y[j] - v) * f))) }); }
+      }
+      out.push(st);
+    });
+    return out;
+  };
   /* OOXML colour modifiers (values in 1/1000 %) */
   const toLin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
   const toS = (l) => { l = Math.min(1, Math.max(0, l)); return 255 * (l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(l, 1 / 2.4) - 0.055); };

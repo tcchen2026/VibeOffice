@@ -37,16 +37,26 @@
     if (/^b/.test(a)) y += bh - h; else if (!/^t/.test(a)) y += (bh - h) / 2;
     return { x, y, w, h, flip: o.flip || 'none' };
   };
+  /** a gradient's stops in order, in their colours, blended as Office blends them (L.color.lightStops) */
+  const gradStops = (fill, design) => L.color.lightStops((fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => ({ p: st.p, c: R.col(st.c, design), a: st.a })));
+  /** a linear gradient's angle in a box as CSS. Office runs it from corner to corner, as CSS does; a scaled one is
+      drawn in the unit square and stretched with it to the box, so its colours change across the box's diagonal at
+      45° (PowerPoint 2016's PDFs: LibreOffice's tdf105739 on a wide slide) */
+  const cssAngle = (fill, box) => {
+    const a = ((fill.ang || 0) * Math.PI) / 180;
+    if (fill.scaled === false || !box || !box.w || !box.h) return (fill.ang || 0) + 90;
+    return (Math.atan2(box.h * Math.cos(a), -box.w * Math.sin(a)) * 180) / Math.PI;
+  };
   R.fillCSS = function (fill, design, box) {
     if (fill && fill.t === 'bg') fill = R.curBg || { t: 'solid', c: 'bg1' };
     if (!fill || fill.t === 'none') return 'transparent';
     if (fill.t === 'solid') return L.color.rgba(R.col(fill.c, design), fill.a);
     if (fill.t === 'grad') {
-      const stops = (fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => `${L.color.rgba(R.col(st.c, design), st.a)} ${L.round(st.p * 100, 1)}%`).join(', ');
+      const stops = gradStops(fill, design).map((st) => `${L.color.rgba(st.c, st.a)} ${L.round(st.p * 100, 2)}%`).join(', ');
       const at = fill.focus ? `${L.round(fill.focus[0] * 100, 2)}% ${L.round(fill.focus[1] * 100, 2)}%` : '50% 50%';
       if (fill.path === 'circle' || fill.path === 'shape') return `radial-gradient(circle farthest-side at ${at}, ${stops})`;
       if (fill.path === 'rect') return `radial-gradient(ellipse farthest-corner at ${at}, ${stops})`;
-      return `linear-gradient(${L.round((fill.ang || 0) + 90, 2)}deg, ${stops})`;
+      return `linear-gradient(${L.round(cssAngle(fill, box), 2)}deg, ${stops})`;
     }
     if (fill.t === 'img') {
       const u = L.media.url(fill.media);
@@ -71,15 +81,17 @@
         const far = Math.max(fx, 1 - fx, fy, 1 - fy);
         g = s('radialGradient', { id, cx: L.round(fx * 100, 2) + '%', cy: L.round(fy * 100, 2) + '%', r: L.round((fill.path === 'rect' ? Math.hypot(Math.max(fx, 1 - fx), Math.max(fy, 1 - fy)) : far) * 100, 2) + '%' });
       }
-      else {
-        /* gradient vector in bounding-box space spanning the whole box (PowerPoint 'scaled' gradients) */
+      else if (fill.scaled === false && box && box.w && box.h) {
+        /* the angle in the shape's own space, the vector long enough to reach its corners */
         const a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a);
-        const k = Math.abs(c) + Math.abs(si);
-        const dx = c * k, dy = si * k;
+        const len = Math.abs(box.w * c) + Math.abs(box.h * si);
+        g = s('linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1: L.round(box.w / 2 - (c * len) / 2, 3), y1: L.round(box.h / 2 - (si * len) / 2, 3), x2: L.round(box.w / 2 + (c * len) / 2, 3), y2: L.round(box.h / 2 + (si * len) / 2, 3) });
+      } else {
+        /* scaled: drawn in the unit square of the box, from corner to corner (cssAngle) */
+        const a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a), k = Math.abs(c) + Math.abs(si), dx = c * k, dy = si * k;
         g = s('linearGradient', { id, gradientUnits: 'objectBoundingBox', x1: L.round(0.5 - dx / 2, 4), y1: L.round(0.5 - dy / 2, 4), x2: L.round(0.5 + dx / 2, 4), y2: L.round(0.5 + dy / 2, 4) });
-        void box;
       }
-      for (const st of (fill.stops || []).slice().sort((a, b) => a.p - b.p)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': R.col(st.c, design), 'stop-opacity': st.a == null ? 1 : st.a }));
+      for (const st of gradStops(fill, design)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': st.c, 'stop-opacity': st.a == null ? 1 : L.round(st.a, 3) }));
       defs.appendChild(g);
       return { paint: `url(#${id})`, opacity: 1 };
     }
@@ -650,9 +662,9 @@
       }
       default: {
         const hasGeom = (sh.fill && sh.fill.t !== 'none') || (sh.line && sh.line.t !== 'none' && sh.line.c) || (sh.geom && sh.geom !== 'rect' && sh.type === 'shape');
-        /* an empty placeholder is only an editing aid: thumbnails, the slide show and printouts leave it out */
-        const emptyPh = sh.ph && (!sh.tx || L.txt.isEmpty(sh.tx)) && ctx.mode !== 'edit' && !opts.deco;
-        if (hasGeom && !emptyPh) el.appendChild(geomSVG(sh, design, ctx, { interactive }));
+        /* an empty placeholder shows its fill and outline everywhere, as PowerPoint 2016 prints a title bar left
+           empty (LibreOffice's empty-title-placeholder); only its prompt is an editing aid */
+        if (hasGeom) el.appendChild(geomSVG(sh, design, ctx, { interactive }));
         if (sh.tx) {
           const empty = L.txt.isEmpty(sh.tx);
           const rect = L.geom.textRect(sh);

@@ -52,7 +52,7 @@
         const gs = stops.map((s) => `<a:gs pos="${Math.round(L.clamp(s.p, 0, 1) * 100000)}">${clr(s.c, s.a, design)}</a:gs>`).join('');
         const shade = f.path && f.path !== 'lin'
           ? `<a:path path="${f.path === 'rect' ? 'rect' : f.path === 'shape' ? 'shape' : 'circle'}">${(() => { const [fx, fy] = f.focus || [0.5, 0.5]; return `<a:fillToRect l="${Math.round(fx * 100000)}" t="${Math.round(fy * 100000)}" r="${Math.round((1 - fx) * 100000)}" b="${Math.round((1 - fy) * 100000)}"/>`; })()}</a:path>`
-          : `<a:lin ang="${Math.round((((f.ang || 0) % 360) + 360) % 360 * 60000)}" scaled="1"/>`;
+          : `<a:lin ang="${Math.round((((f.ang || 0) % 360) + 360) % 360 * 60000)}" scaled="${f.scaled === false ? 0 : 1}"/>`;
         return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst>${shade}</a:gradFill>`;
       }
       case 'patt': return `<a:pattFill prst="${f.prst || 'pct50'}"><a:fgClr>${clr(f.fg || '#000000', null, design)}</a:fgClr><a:bgClr>${clr(f.bg || '#FFFFFF', null, design)}</a:bgClr></a:pattFill>`;
@@ -222,6 +222,7 @@
     if (tx.vert) a.push(`vert="${tx.vert}"`);
     if (tx.rot) a.push(`rot="${Math.round(tx.rot * 60000)}"`);
     if (tx.cols > 1) a.push(`numCol="${tx.cols}" spcCol="${emu(tx.colGap || 0)}"`);
+    else if (tx.cols === 1) a.push('numCol="1"');
     if (extra && extra.attrs) a.push(extra.attrs);
     a.push('rtlCol="0"');
     let kids = extra && extra.warp ? extra.warp : '';

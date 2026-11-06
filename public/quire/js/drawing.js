@@ -25,11 +25,13 @@
   DR.PATTERNS = PATT;
   const pattPath = L.geom.patternPath;
   DR.patternSVG = (prst, fg, bg, tile) => `<svg xmlns="http://www.w3.org/2000/svg" width="${tile || 6}" height="${tile || 6}" viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="${bg}"/><path d="${pattPath(PATT[prst] || PATT.pct50)}" fill="${fg}"/></svg>`;
+  /** a gradient's stops in order, in their colours, blended as Office blends them (L.color.lightStops) */
+  const gradStops = (fill) => L.color.lightStops((fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => ({ p: st.p, c: col(st.c), a: st.a })));
   DR.fillCSS = function (fill) {
     if (!fill || fill.t === 'none') return 'transparent';
     if (fill.t === 'solid') return L.color.rgba(col(fill.c), fill.a);
     if (fill.t === 'grad') {
-      const stops = (fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => `${L.color.rgba(col(st.c), st.a)} ${L.round(st.p * 100, 1)}%`).join(', ');
+      const stops = gradStops(fill).map((st) => `${L.color.rgba(st.c, st.a)} ${L.round(st.p * 100, 2)}%`).join(', ');
       if (fill.path === 'circle' || fill.path === 'shape') return `radial-gradient(circle farthest-side at 50% 50%, ${stops})`;
       if (fill.path === 'rect') return `radial-gradient(ellipse farthest-corner at 50% 50%, ${stops})`;
       return `linear-gradient(${L.round((fill.ang || 0) + 90, 2)}deg, ${stops})`;
@@ -50,7 +52,7 @@
         const a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a), k = Math.abs(c) + Math.abs(si);
         g = s('linearGradient', { id, gradientUnits: 'objectBoundingBox', x1: L.round(0.5 - (c * k) / 2, 4), y1: L.round(0.5 - (si * k) / 2, 4), x2: L.round(0.5 + (c * k) / 2, 4), y2: L.round(0.5 + (si * k) / 2, 4) });
       }
-      for (const st of (fill.stops || []).slice().sort((a, b) => a.p - b.p)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': col(st.c), 'stop-opacity': st.a == null ? 1 : st.a }));
+      for (const st of gradStops(fill)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': st.c, 'stop-opacity': st.a == null ? 1 : L.round(st.a, 3) }));
       defs.appendChild(g);
       return { paint: `url(#${id})`, opacity: 1 };
     }

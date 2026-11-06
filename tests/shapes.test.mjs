@@ -74,3 +74,13 @@ test("a freeform's elliptical arc starts and ends at DrawingML's angles", async 
   const end = d.trim().split(/[\s,]+/).slice(-2).map(Number);
   assert.ok(Math.abs(end[0] - (100 + 100 / Math.sqrt(5))) < 0.05 && Math.abs(end[1] - (50 + 100 / Math.sqrt(5))) < 0.05, d);
 });
+
+test("every preset's text rectangle is the right way out", async () => {
+  // the definitions put the pie's in t="ir" r="it"; PowerPoint 2016 sets its text from il, it to ir, ib
+  // (LibreOffice's tdf149918_pie_textarea: the text starts 49.8 pt in and 33.2 pt down a 340.2 × 226.8 pt pie)
+  const r = await page.evaluate(`(() => {
+    const bad = Object.keys(L.presetShapes).filter((k) => { const t = L.geom.textRect({ geom: k, w: 200, h: 100 }); return !(t[2] >= t[0] && t[3] >= t[1]); });
+    return { bad, pie: L.geom.textRect({ geom: 'pie', w: 340.2, h: 226.8, adj: { adj1: 20345271, adj2: 5405194 } }).map((v) => Math.round(v * 10) / 10) };
+  })()`);
+  assert.deepEqual(r, { bad: [], pie: [49.8, 33.2, 290.4, 193.6] });
+});

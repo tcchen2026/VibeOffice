@@ -9,7 +9,7 @@ Writes OUT/<deck>-edited.pptx and OUT/results.json; removes the Recent Files ent
 import base64, collections, glob, hashlib, json, os, re, subprocess, sys, zipfile
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'tmp/smartart-office'
 os.makedirs(OUT, exist_ok=True)
-M = {'default','orgChart1','hierarchy1','hierarchy2','vList2','hList1','process1','chevron1','process2','hProcess11','cycle2','cycle3','radial1','venn1','venn3','target1','funnel1','matrix1','pyramid1','pyramid2','pyramid3'}
+M = {'default','orgChart1','hierarchy1','hierarchy2','vList2','hList1','process1','chevron1','process2','hProcess11','cycle2','cycle3','radial1','venn1','venn3','target1','funnel1','matrix3','pyramid1','pyramid2','pyramid3'}
 def page(js):
     steps = [{'js': js + '\nwindow.__b64 = window.__out; return window.__b64.length;', 'wait': 300}] + [{'js': f'return window.__b64.slice({i*40000},{(i+1)*40000})'} for i in range(200)]
     open(OUT + '/steps.json', 'w').write(json.dumps(steps))

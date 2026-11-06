@@ -308,7 +308,9 @@
           default: break;
         }
       }
-      out.push({ d: d.trim(), fill: p.fill === 'none' ? 'none' : p.fill || 'norm', stroke: p.stroke !== false, open: !/Z\s*$/.test(d.trim()) });
+      const part = { d: d.trim(), fill: p.fill === 'none' ? 'none' : p.fill || 'norm', stroke: p.stroke !== false, open: !/Z\s*$/.test(d.trim()) };
+      if ((d.match(/M/g) || []).length > 1 && part.fill !== 'none') part.rule = 'evenodd';   // holes, as the presets' (specParts)
+      out.push(part);
     }
     return out;
   }

@@ -23,7 +23,9 @@
       if (fill.t !== 'grad' || !defs) return { paint: PLAIN.col(fill.stops && fill.stops[0] && fill.stops[0].c), opacity: 1 };
       const id = 'chgr' + ++gradients, a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a), k = Math.abs(c) + Math.abs(si);
       const g = s('linearGradient', { id, gradientUnits: 'objectBoundingBox', x1: L.round(0.5 - (c * k) / 2, 4), y1: L.round(0.5 - (si * k) / 2, 4), x2: L.round(0.5 + (c * k) / 2, 4), y2: L.round(0.5 + (si * k) / 2, 4) });
-      for (const st of (fill.stops || []).slice().sort((x, y) => x.p - y.p)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': PLAIN.col(st.c), 'stop-opacity': st.a == null ? 1 : st.a }));
+      // blended as Office blends them (L.color.lightStops)
+      const stops = L.color.lightStops((fill.stops || []).slice().sort((x, y) => x.p - y.p).map((st) => ({ p: st.p, c: PLAIN.col(st.c), a: st.a })));
+      for (const st of stops) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': st.c, 'stop-opacity': st.a == null ? 1 : L.round(st.a, 3) }));
       defs.appendChild(g);
       return { paint: `url(#${id})`, opacity: 1 };
     },

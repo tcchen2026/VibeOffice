@@ -138,7 +138,8 @@
       if (f.t === 'none') s.push('color:transparent');
       else if (f.t === 'solid') s.push(`color:${rgba(f.c, f.a)}`);
       else if (f.t === 'grad' && f.stops && f.stops.length) {
-        s.push(`background-image:linear-gradient(${L.round((f.ang || 0) + 90, 2)}deg,${f.stops.map((g) => rgba(g.c, g.a) + ' ' + L.round(g.p * 100, 2) + '%').join(',')})`,
+        const stops = L.color.lightStops(f.stops.slice().sort((a, b) => a.p - b.p).map((g) => ({ p: g.p, c: g.c, a: g.a })));
+        s.push(`background-image:linear-gradient(${L.round((f.ang || 0) + 90, 2)}deg,${stops.map((g) => rgba(g.c, g.a) + ' ' + L.round(g.p * 100, 2) + '%').join(',')})`,
           '-webkit-background-clip:text', 'background-clip:text', 'color:transparent');
       }
     }

@@ -113,6 +113,10 @@ def main():
     for name in ('star24', 'star32'):
         assert shapes[name]['ah'][0][6] == 'ssd2'
         shapes[name]['ah'][0][6] = 50000
+    # the pie's text rectangle names its guides in the wrong places (t="ir" r="it"); PowerPoint 2016 puts the text in
+    # il, it, ir, ib (LibreOffice's tdf149918_pie_textarea)
+    assert shapes['pie']['rect'] == ['il', 'ir', 'it', 'ib']
+    shapes['pie']['rect'] = ['il', 'it', 'ir', 'ib']
     # the file has upDownArrow twice and no upArrow, which is downArrow turned upside down
     assert 'upArrow' not in shapes
     shapes['upArrow'] = upside_down(shapes['downArrow'])
