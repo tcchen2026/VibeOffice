@@ -1358,7 +1358,7 @@
     /* the book is addressed by its index ([1]) and by its file name */
     if (!wb.external) wb.external = {};
     wb.external[String(idx)] = book;
-    const fname = decodeURIComponent(String(target).split(/[\\/]/).pop() || '');
+    const fname = L.calc.bookFile(target);
     if (fname && !wb.external[fname]) wb.external[fname] = book;
     void ctx;
   }

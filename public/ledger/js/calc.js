@@ -338,12 +338,18 @@
     }
   }
   C.ev = ev;
+  /** the file name at the end of an external workbook's path or URI; a stray % (file:///50%.xls, which Office
+      opens) is kept as it is */
+  C.bookFile = function (target) {
+    const s = String(target || '').split(/[\\/]/).pop() || '';
+    try { return decodeURIComponent(s); } catch (e) { return s; }
+  };
   /** an external workbook by index ([1]) or by name / path */
   C.extBook = function (wb, key) {
     if (!wb.external) return null;
     key = String(key).replace(/^'|'$/g, '');
     if (wb.external[key]) return wb.external[key];
-    const f = decodeURIComponent(key.split(/[\\/]/).pop() || '').toLowerCase();
+    const f = C.bookFile(key).toLowerCase();
     for (const k in wb.external) if (k.toLowerCase() === f) return wb.external[k];
     return null;
   };

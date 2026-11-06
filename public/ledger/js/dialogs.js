@@ -953,7 +953,7 @@
   /* ================================================================ misc */
   D.links = function () {
     const w = wb();
-    const rows = (w.externalLinks || []).map((e, i) => h('tr', null, h('td', { translate: 'no', text: decodeURIComponent(String(e.relTarget || '').split(/[\\/]/).pop()) }), h('td', { text: 'Worksheet' }), h('td', { text: 'A' }), h('td', { text: 'Values cached in this workbook' })));
+    const rows = (w.externalLinks || []).map((e, i) => h('tr', null, h('td', { translate: 'no', text: L.calc.bookFile(e.relTarget) }), h('td', { text: 'Worksheet' }), h('td', { text: 'A' }), h('td', { text: 'Values cached in this workbook' })));
     ui.dialog({ title: 'Edit Links', width: 520, body: h('div', { class: 'col' }, h('table', { class: 'fr-table' }, h('tr', null, h('th', { text: 'Source' }), h('th', { text: 'Type' }), h('th', { text: 'Update' }), h('th', { text: 'Status' })), ...rows), h('div', { class: 'hint', text: 'Formulas that refer to other workbooks use the values Excel saved with this file. Break Link replaces those formulas with their values.' })),
       buttons: [{ label: '&Break Link', onClick: () => { tryRun(() => { O.tx(w, 'Break Links', () => { for (const s of w.sheets) s.rows.forEach((row, r) => { if (row) row.cells.forEach((cl, c) => { if (cl && cl.f != null && /\[\d+\]/.test(cl.f)) O.setValue(s, r, c, cl.v, true); }); }); }); w.externalLinks = []; }); } }, { label: 'Close', primary: true }] });
   };

@@ -53,7 +53,7 @@
     const bookName = (b) => {
       const el = wb && wb.externalLinks && wb.externalLinks[+b - 1];
       const t = el && el.relTarget ? String(el.relTarget) : '';
-      try { return t ? decodeURIComponent(t.split(/[\\/]/).pop()) : 'Book' + b; } catch (e) { return t.split(/[\\/]/).pop(); }
+      return t ? L.calc.bookFile(t) : 'Book' + b;
     };
     let out = '';
     for (let k = 0; k < toks.length; k++) {
