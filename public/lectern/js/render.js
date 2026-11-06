@@ -213,8 +213,8 @@
     if (rp.emb) shadows.push(`-1px -1px 0 rgba(255,255,255,0.7), 1px 1px 0 rgba(0,0,0,0.4)`);
     if (shadows.length) st.textShadow = shadows.join(',');
     if (rp.hl) st.backgroundColor = R.col(rp.hl, design);
-    if (rp.fill && rp.fill.t === 'grad') {
-      st.backgroundImage = R.fillCSS(rp.fill, design);
+    if (rp.fill && (rp.fill.t === 'grad' || rp.fill.t === 'img')) {
+      st.background = R.fillCSS(rp.fill, design);
       st.webkitBackgroundClip = 'text'; st.backgroundClip = 'text'; st.color = 'transparent';
     } else if (rp.fill && rp.fill.t === 'solid') st.color = L.color.rgba(R.col(rp.fill.c, design), rp.fill.a);
     else if (rp.fill && rp.fill.t === 'none') st.color = 'transparent';
@@ -358,6 +358,38 @@
     R.paragraphs(sh, tx, design, ctx, inner, opts);
     outer.appendChild(inner);
     return outer;
+  };
+
+  /** a text body bent by its warp (bodyPr's prstTxWarp, L.geom.warp), as SVG glyphs over the whole shape; null for a
+      warp we don't know. The text body itself stays under it, hidden, for editing. Drawn again once fonts it waits
+      for have loaded. */
+  R.warpedText = function (sh, tx, design, ctx) {
+    const fit = tx.fontScale || 1, size = (sz) => (fit < 1 ? Math.max(1, Math.round(sz * fit)) : sz);
+    /* lines: each paragraph's runs, split where a line break is */
+    const lines = [];
+    for (const p of tx.ps) {
+      const ps = L.style.para(sh, p, design), end = L.style.run(ps, p.end || {}), lh = lineHeight(ps, 1, tx.lnSpcRed);
+      let cur = [];
+      const flush = () => { const sz = Math.max(size(end.sz || 18), ...cur.map((r) => r.size)); lines.push({ runs: cur, algn: ps.algn || 'l', size: sz, pitch: lh.factor ? sz * lh.factor : parseFloat(lh.css) }); cur = []; };
+      for (const r of p.rs) {
+        const rp = L.style.run(ps, r), run = { size: size(rp.sz || 18), family: L.fontStack(L.style.font(rp.font, design), L.style.fontEA(rp.fontEA, design)), bold: !!rp.b, italic: !!rp.i, rp };
+        run.paint = { fill: rp.fill && rp.fill.t !== 'solid' ? rp.fill : { t: 'solid', c: rp.fill ? rp.fill.c : rp.link ? 'hlink' : rp.color || 'tx1', a: rp.fill ? rp.fill.a : undefined }, ln: rp.ln && rp.ln.t !== 'none' && rp.ln.c ? rp.ln : null };
+        String(r.fld ? fieldText(r, ctx) : r.t || '').split('\n').forEach((t, i) => { if (i) flush(); if (t) cur.push(Object.assign({}, run, { text: rp.cap === 'all' ? t.toUpperCase() : t })); });
+      }
+      flush();
+    }
+    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
+    const svg = L.geom.warpSVG(tx.warp, tx.warpAdj, w, hh, lines, ({ fill, ln }, defs) => {
+      const out = { fill: null, stroke: null };
+      if (fill.t === 'solid') Object.assign(out, { fill: R.col(fill.c, design), fillOpacity: fill.a });
+      else if (fill.t !== 'none') { const p = R.svgPaint(fill, design, defs, { w, h: hh }); Object.assign(out, { fill: p.paint, fillOpacity: p.opacity }); }
+      if (ln) Object.assign(out, { stroke: R.col(ln.c, design), strokeWidth: Math.max(0.25, ln.w == null ? 0.75 : ln.w), strokeOpacity: ln.a });
+      return out;
+    });
+    if (!svg) return null;
+    const r0 = lines.find((ln) => ln.runs.length), rp0 = r0 && r0.runs[0].rp;
+    if (rp0 && rp0.shd) svg.style.filter = R.shadowCSS(rp0.shdX || { dx: 2, dy: 2, blur: 2, c: '#000000', a: 0.35 }, design);
+    return svg;
   };
 
   /* ---------- shapes ---------- */
@@ -547,66 +579,16 @@
     ['textPlain', 'Plain Text'], ['textArchUp', 'Arch Up'], ['textArchDown', 'Arch Down'], ['textCircle', L.N('Circle')], ['textWave1', L.N('Wave')],
     ['textSlantUp', 'Slant Up'], ['textSlantDown', 'Slant Down'], ['textTriangle', 'Triangle Up'], ['textChevron', 'Chevron Up'], ['textCanUp', 'Can Up'],
   ];
-  function warpPoints(warp, w, hh, fs) {
-    const pts = [];
-    const N = 64;
-    const m = fs * 0.15;
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      switch (warp) {
-        case 'textArchUp': { const a = Math.PI - t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), hh - m - Math.sin(a) * (hh - fs - m)]); break; }
-        case 'textArchDown': { const a = Math.PI + t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), fs + m - Math.sin(a) * (hh - fs - m * 2)]); break; }
-        case 'textCircle': { const a = Math.PI + t * Math.PI * 2 * 0.98; pts.push([w / 2 + Math.cos(a) * (w / 2 - fs), hh / 2 + Math.sin(a) * (hh / 2 - fs)]); break; }
-        case 'textWave1': pts.push([m + t * (w - 2 * m), hh / 2 + fs / 3 + Math.sin(t * Math.PI * 2) * (hh / 2 - fs * 0.8)]); break;
-        case 'textSlantUp': pts.push([m + t * (w - 2 * m), hh - m - t * (hh - fs - m)]); break;
-        case 'textSlantDown': pts.push([m + t * (w - 2 * m), fs + t * (hh - fs - m)]); break;
-        case 'textTriangle': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh - m - t * 2 * (hh - fs - m) : fs + (t - 0.5) * 2 * (hh - fs - m)]); break;
-        case 'textChevron': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh * 0.75 - t * 2 * hh * 0.35 : hh * 0.4 + (t - 0.5) * 2 * hh * 0.35]); break;
-        case 'textCanUp': { pts.push([m + t * (w - 2 * m), hh * 0.85 - Math.sin(t * Math.PI) * hh * 0.25]); break; }
-        default: pts.push([t * w, hh / 2]);
-      }
-    }
-    return pts;
-  }
+  /** Lectern's own LettersArt: its text set in lines at the size it is saved with (pptx-write.js), bent by its warp
+      as a text body's is (R.warpedText) */
   R.wordart = function (sh, design, ctx) {
     const wa = sh.wa || { text: 'LettersArt' };
-    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
-    const svg = s('svg', { class: 'wa', width: L.round(w, 2), height: L.round(hh, 2), viewBox: `0 0 ${L.round(w, 3)} ${L.round(hh, 3)}`, preserveAspectRatio: 'none', overflow: 'visible' });
-    const defs = s('defs');
-    svg.appendChild(defs);
-    const fill = R.svgPaint(wa.fill || { t: 'solid', c: 'accent1' }, design, defs, { w, h: hh });
-    const ln = wa.line && wa.line.t !== 'none' && wa.line.c ? wa.line : null;
     const lines = String(wa.text || '').split('\n');
-    const family = L.fontStack(wa.font || 'Arial Black');
-    const common = { 'font-family': family, 'font-weight': wa.b ? 700 : 400, 'font-style': wa.i ? 'italic' : 'normal', fill: fill.paint, 'fill-opacity': fill.opacity };
-    if (ln) Object.assign(common, { stroke: R.col(ln.c, design), 'stroke-width': Math.max(0.25, ln.w || 0.75), 'paint-order': 'stroke', 'stroke-linejoin': 'round' });
-    if (wa.shadow) svg.style.filter = R.shadowCSS(wa.shadow, design);
-    if (wa.cap) svg.style.textTransform = 'uppercase';
-    if (wa.spc) common['letter-spacing'] = wa.spc;
-    const warp = wa.warp || 'textPlain';
-    if (warp === 'textPlain' || !lines.length || lines.length > 1) {
-      const lh = hh / lines.length;
-      lines.forEach((t, i) => {
-        const fs = lh * 0.86;
-        const txt = s('text', Object.assign({ x: 0, y: L.round(i * lh + lh * 0.8, 2), 'font-size': L.round(fs, 2), textLength: L.round(w, 2), lengthAdjust: 'spacingAndGlyphs' }, common));
-        txt.textContent = t || ' ';
-        if (wa.vert) { txt.setAttribute('writing-mode', 'tb'); }
-        svg.appendChild(txt);
-      });
-      return svg;
-    }
-    const fs = Math.min(hh * (warp === 'textCircle' ? 0.2 : 0.42), (w / Math.max(lines[0].length, 1)) * 1.4);
-    const pts = warpPoints(warp, w, hh, fs);
-    let len = 0;
-    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    const id = nid('wp');
-    defs.appendChild(s('path', { id, d: 'M' + pts.map((p) => L.round(p[0], 2) + ',' + L.round(p[1], 2)).join(' L') }));
-    const txt = s('text', Object.assign({ 'font-size': L.round(fs, 2) }, common));
-    const tp = s('textPath', { href: '#' + id, textLength: L.round(len * 0.98, 2), lengthAdjust: 'spacingAndGlyphs', startOffset: L.round(len * 0.01, 2) });
-    tp.textContent = lines[0];
-    txt.appendChild(tp);
-    svg.appendChild(txt);
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    const rp = { sz: Math.max(8, Math.round((sh.h / Math.max(lines.length, 1)) * 0.75 * 2) / 2), font: wa.font || 'Arial Black', b: !!wa.b, i: !!wa.i, fill: wa.fill || { t: 'solid', c: 'accent1' },
+      ln: wa.line && wa.line.t !== 'none' ? wa.line : undefined, spc: wa.spc, cap: wa.cap, shd: !!wa.shadow, shdX: wa.shadow || undefined };
+    const tx = { warp: wa.warp || 'textPlain', ps: lines.map((t) => ({ lvl: 0, pp: { algn: wa.algn || 'ctr' }, rs: t ? [Object.assign({ t }, rp)] : [], end: rp })) };
+    const svg = R.warpedText(sh, tx, design, ctx) || s('svg', { class: 'warp', width: 1, height: 1 });
+    svg.classList.add('wa');
     return svg;
   };
 
@@ -672,6 +654,9 @@
             const tb = R.textBody(sh, sh.tx, design, ctx, rect, {});
             if (sh.shadow && !hasGeom) tb.style.filter = R.shadowCSS(sh.shadow, design);
             el.appendChild(tb);
+            /* text bent by a warp: drawn bent, its text body kept under it for editing */
+            const bent = !empty && sh.tx.warp && R.warpedText(sh, sh.tx, design, ctx);
+            if (bent) { el.classList.add('warped'); el.appendChild(bent); }
           }
           if (empty && (sh.ph || (sh.sa && sh.sa.role === 'node')) && ctx.mode === 'edit' && ctx.prompts !== false) {
             const ptype = sh.ph ? sh.ph.type : null;

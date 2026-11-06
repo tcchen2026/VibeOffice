@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Compares each preset's drawing in PowerPoint's PDF of tmp/shapes/shapes.pptx (tools/shapes/deck.mjs) with ours: the
 cells' painted pixels (fill or outline), as a share of the two together that only one of them paints.
-  python3 -I tools/shapes/compare.py office.pdf oursDir [outDir]     oursDir: shapes__<slide>.png, 1920 px wide
-Prints the worst shapes first and writes side-by-side crops of each (PowerPoint left) to outDir."""
+  python3 -I tools/shapes/compare.py office.pdf oursDir [outDir [deck]]     oursDir: <deck>__<slide>.png, 1920 px wide
+Prints the worst shapes first and writes side-by-side crops of each (PowerPoint left) to outDir. deck: shapes (the
+default), or warps for tools/shapes/warp-deck.py's text warps (cell names in tmp/shapes/warps.txt)."""
 import os, subprocess, sys, tempfile
 from PIL import Image, ImageChops, ImageFilter
 
 pdf, ours = sys.argv[1], sys.argv[2]
-out = sys.argv[3] if len(sys.argv) > 3 else None
+out = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] != '-' else None
+deck = sys.argv[4] if len(sys.argv) > 4 else 'shapes'
 S = 2   # pixels per point
 COLS, ROWS = 5, 3
 tmp = tempfile.mkdtemp()
@@ -25,7 +27,9 @@ rows = []
 per = COLS * ROWS
 for si, f in enumerate(pages):
     a = Image.open(os.path.join(tmp, f)).convert('RGB')
-    mine = os.path.join(ours, 'shapes__%d.png' % (si + 1))
+    mine = os.path.join(ours, '%s__%d.png' % (deck, si + 1))
+    if not os.path.exists(mine):
+        continue
     b = Image.open(mine).convert('RGB').resize(a.size)
     for i in range(per):
         cx, cy = 20 + (i % COLS) * 188, 14 + (i // COLS) * 176
@@ -42,9 +46,9 @@ for si, f in enumerate(pages):
         nd = sum(1 for v in da.get_flattened_data() if v) + sum(1 for v in db.get_flattened_data() if v)
         rows.append((round(100 * nd / nu, 2), si + 1, i, ca, cb))
 rows.sort(key=lambda r: -r[0])
-names_file = os.path.join(ours, 'names.txt')
+names_file = os.path.join(ours, 'names.txt') if deck == 'shapes' else os.path.join(os.path.dirname(__file__), '../../tmp/shapes/%s.txt' % deck)
 names = [l.strip() for l in open(names_file)] if os.path.exists(names_file) else None
-half = len(pages) // 2
+half = len(pages) // 2 if deck == 'shapes' else len(pages)
 for score, slide, i, ca, cb in rows:
     idx = ((slide - 1) % half) * per + i
     name = names[idx] if names and idx < len(names) else '?'

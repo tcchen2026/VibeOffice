@@ -1475,7 +1475,12 @@
         if (at(bp, 'vert') && at(bp, 'vert') !== 'horz') it.vert = at(bp, 'vert');
         if (kid(bp, 'spAutoFit')) it.autofit = true;
         const warp = kid(bp, 'prstTxWarp');
-        if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') it.warp = at(warp, 'prst');
+        if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') {
+          it.warp = at(warp, 'prst');
+          const adj = {};
+          for (const gd of kids(kid(warp, 'avLst'))) { const m = /^val\s+(-?\d+)/.exec(at(gd, 'fmla') || ''); if (m && at(gd, 'name')) adj[at(gd, 'name')] = +m[1]; }
+          if (Object.keys(adj).length) it.warpAdj = adj;
+        }
         if (at(bp, 'wrap') === 'none') it.noWrap = true;
       }
       if (refs.fontColor) it.fontColor = refs.fontColor;

@@ -13,7 +13,7 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | `../common/sha.js`, `../common/crypto.js` | Password-protected presentations: ECMA-376 Agile and Standard encryption (AES, SHA-1/SHA-2), read and write |
 | `../common/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML preservation graph, identities, namespace capture and schema order |
-| `../common/presets.js`, `../common/geometry.js` | AutoShapes: the 187 presets drawn from DrawingML's definitions, with their adjust handles and text rectangles; connectors; the 54 preset pattern fills (shared with Quire and Ledger) |
+| `../common/presets.js`, `../common/geometry.js` | AutoShapes: the 187 presets drawn from DrawingML's definitions, with their adjust handles and text rectangles; connectors; the 40 text warps (LettersArt); the 54 preset pattern fills (shared with Quire and Ledger) |
 | `js/designs.js` | Imported master/layout library, selective design changes and independent design copies |
 | `js/properties.js` | Shape/text properties, tags, actions and transitions retained until their owning property changes |
 | `js/model.js` | Presentation model, 15 design templates, 21 slide layouts, undo history |
@@ -88,6 +88,20 @@ PowerPoint's pictures fell by 11% (41 slides closer, 5 further, all SmartArt sav
 * **Outlines:** a gradient outline is drawn in its first colour, as opaque as its stops are on average (all
   clear: no line).
 * **Freeforms** with several pieces fill even-odd, so holes stay holes.
+* **Text warps** (`prstTxWarp`, WordArt's Transform; LettersArt here) are drawn from the standard's 40
+  definitions as PowerPoint 2016 bends text (its PDF of `tools/shapes/warp-deck.py`'s 228 cells: every warp with
+  one, two and three lines, small and long text, insets, anchoring and alignment). A warp fills the whole shape,
+  whatever its insets and anchoring. Paths in pairs are bands (Inflate, Can Up, Plain…): the ink of their lines
+  is stretched to fill each, across from the start of each path to its end and down from one to the other, the
+  lines aligned within the widest. A path alone (Arch Up, Circle, Button's three) carries its lines at their size,
+  as aligned along it, shrunk only when longer; it runs 0.19 em above the baseline of the line on the inside of its
+  curve, the others stacked outward along parallel curves. Lines are dealt out among bands or paths as evenly as
+  they go. Each glyph is bent in slices about 6 pt wide; right-to-left and joined scripts a run at a time. The
+  text stays an ordinary text body, edited in place (shown straight while editing) and saved as it came; it was
+  turned into one-line LettersArt before, with its sizes and colours lost. Against PowerPoint's cells, the
+  differing share of painted pixels fell from 83% to 15% on average; on the 12 PowerPoint-made decks of the corpus
+  with warped text, the slides' difference from PowerPoint's pictures fell from 126 to 53 (all 12 closer).
+  Not drawn: 3-D text (extrusion, bevels); Arch Down text sits about 2° from where PowerPoint centres it.
 
 ## Charts
 

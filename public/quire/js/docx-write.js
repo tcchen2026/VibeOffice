@@ -574,7 +574,7 @@
     else if (it.tbLink) txbx = `<wps:linkedTxbx id="${X(String(it.tbLink.id))}" seq="${it.tbLink.seq | 0}"/>`;
     let shadow = '';
     if (it.shadow) { const sh = it.shadow; const dx = sh.dx == null ? 3 : sh.dx, dy = sh.dy == null ? 3 : sh.dy; shadow = `<a:effectLst><a:outerShdw blurRad="${emu(sh.blur || 0)}" dist="${emu(Math.hypot(dx, dy))}" dir="${Math.round(((((Math.atan2(dy, dx) * 180) / Math.PI) + 360) % 360) * 60000)}" algn="tl" rotWithShape="0">${clr(sh.c || '#000000', sh.a == null ? 0.5 : sh.a)}</a:outerShdw></a:effectLst>`; }
-    const warp = it.wordart || it.warp ? `<a:prstTxWarp prst="${it.warp || (it.wordart && it.wordart.warp) || 'textPlain'}"><a:avLst/></a:prstTxWarp>` : '';
+    const warp = it.wordart || it.warp ? `<a:prstTxWarp prst="${X(it.warp || (it.wordart && it.wordart.warp) || 'textPlain')}"><a:avLst>${Object.entries(it.warpAdj || {}).map(([k, v]) => `<a:gd name="${X(k)}" fmla="val ${Math.round(v)}"/>`).join('')}</a:avLst></a:prstTxWarp>` : '';
     let wa = '';
     const isWA = !!(it.wordart && !it.tb);
     if (isWA) {

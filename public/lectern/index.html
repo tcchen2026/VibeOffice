@@ -137,7 +137,10 @@
 /* ---------- slide rendering ---------- */
 .sl { position: relative; overflow: hidden; background: #fff; transform-origin: 0 0; font-kerning: normal; -webkit-font-smoothing: antialiased; }
 .sl .shp { position: absolute; pointer-events: none; transform-origin: 50% 50%; }
-.sl .shp > svg.geo, .sl .shp > svg.wa, .sl .shp > svg.chart { position: absolute; left: 0; top: 0; overflow: visible; }
+.sl .shp > svg.geo, .sl .shp > svg.wa, .sl .shp > svg.warp, .sl .shp > svg.chart { position: absolute; left: 0; top: 0; overflow: visible; }
+.sl .shp > svg.warp { pointer-events: none; }
+.sl .shp.warped:not(.editing) > .tx { opacity: 0; }
+.sl .shp.warped.editing > svg.warp { display: none; }
 .sl .shp > svg.geo { pointer-events: none; }
 .sl .tx { position: absolute; display: flex; flex-direction: column; overflow: visible; }
 .sl .txi { position: relative; min-width: 1px; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; tab-size: 72px; outline: none; cursor: text; }

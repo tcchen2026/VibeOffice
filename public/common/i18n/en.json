@@ -4513,7 +4513,7 @@
  },
  "3-D model": {
   "where": [
-   "lectern/js/render.js:603"
+   "lectern/js/render.js:597"
   ]
  },
  "3. Start enforcement": {
@@ -4990,7 +4990,7 @@
  },
  "A picture fill on a shape of this IntelliArt is saved as the diagram's colour.": {
   "where": [
-   "lectern/js/pptx-write.js:393"
+   "lectern/js/pptx-write.js:394"
   ]
  },
  "A picture is not in the .md file and shows as a box. Open a .zip holding the file and its pictures to see them.": {
@@ -5454,7 +5454,7 @@
  },
  "Action Buttons": {
   "where": [
-   "common/geometry.js:438",
+   "common/geometry.js:697",
    "lectern/js/app.js:82",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161"
@@ -5573,7 +5573,7 @@
  "Add Text": {
   "where": [
    "lectern/js/textedit.js:339",
-   "quire/js/drawing.js:692"
+   "quire/js/drawing.js:698"
   ]
  },
  "Add at least one picture.": {
@@ -6400,14 +6400,14 @@
  },
  "Arch Down": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:579",
+   "quire/js/drawing.js:127"
   ]
  },
  "Arch Up": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:579",
+   "quire/js/drawing.js:127"
   ]
  },
  "Are you ready to apply these settings? (You can turn them off later)": {
@@ -6426,7 +6426,7 @@
    "common/core.js:720",
    "lectern/js/dialogs.js:999",
    "lectern/js/dialogs.js:1018",
-   "lectern/js/render.js:568"
+   "quire/js/dialogs.js:838"
   ]
  },
  "Aro&und": {
@@ -7053,7 +7053,7 @@
  },
  "Basic Shapes": {
   "where": [
-   "common/geometry.js:433",
+   "common/geometry.js:692",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -7101,7 +7101,7 @@
  },
  "Behind Text": {
   "where": [
-   "quire/js/drawing.js:672"
+   "quire/js/drawing.js:678"
   ]
  },
  "Below selected item": {
@@ -7242,7 +7242,7 @@
  },
  "Block Arrows": {
   "where": [
-   "common/geometry.js:434",
+   "common/geometry.js:693",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -8007,7 +8007,7 @@
  },
  "Callouts": {
   "where": [
-   "common/geometry.js:437",
+   "common/geometry.js:696",
    "lectern/js/app.js:161"
   ]
  },
@@ -8023,8 +8023,8 @@
  },
  "Can Up": {
   "where": [
-   "lectern/js/render.js:536",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:580",
+   "quire/js/drawing.js:127"
   ]
  },
  "Can't &Repeat": {
@@ -8779,8 +8779,8 @@
  },
  "Chevron Up": {
   "where": [
-   "lectern/js/render.js:536",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:580",
+   "quire/js/drawing.js:127"
   ]
  },
  "Chinese (Simp.)": {
@@ -8860,7 +8860,7 @@
  },
  "Circle": {
   "where": [
-   "lectern/js/render.js:535",
+   "lectern/js/render.js:579",
    "lectern/js/slideshow.js:17",
    "lectern/js/slideshow.js:24",
    "lectern/js/slideshow.js:29"
@@ -9081,7 +9081,7 @@
  "Click to add text": {
   "where": [
    "lectern/js/model.js:485",
-   "lectern/js/render.js:667"
+   "lectern/js/render.js:664"
   ]
  },
  "Click to add title": {
@@ -9431,7 +9431,7 @@
    "quire/js/editor.js:381",
    "quire/js/find.js:391",
    "quire/js/find.js:393",
-   "quire/js/render.js:605"
+   "quire/js/render.js:606"
   ]
  },
  "Column Width": {
@@ -10421,7 +10421,7 @@
  "Cross": {
   "where": [
    "common/geometry.js:26",
-   "common/geometry.js:352"
+   "common/geometry.js:608"
   ]
  },
  "Cross-&reference...": {
@@ -11075,22 +11075,22 @@
  },
  "Dark downward diagonal": {
   "where": [
-   "common/geometry.js:354"
+   "common/geometry.js:610"
   ]
  },
  "Dark horizontal": {
   "where": [
-   "common/geometry.js:351"
+   "common/geometry.js:607"
   ]
  },
  "Dark upward diagonal": {
   "where": [
-   "common/geometry.js:354"
+   "common/geometry.js:610"
   ]
  },
  "Dark vertical": {
   "where": [
-   "common/geometry.js:351"
+   "common/geometry.js:607"
   ]
  },
  "Dash": {
@@ -11137,22 +11137,22 @@
  },
  "Dashed downward diagonal": {
   "where": [
-   "common/geometry.js:355"
+   "common/geometry.js:611"
   ]
  },
  "Dashed horizontal": {
   "where": [
-   "common/geometry.js:352"
+   "common/geometry.js:608"
   ]
  },
  "Dashed upward diagonal": {
   "where": [
-   "common/geometry.js:355"
+   "common/geometry.js:611"
   ]
  },
  "Dashed vertical": {
   "where": [
-   "common/geometry.js:352"
+   "common/geometry.js:608"
   ]
  },
  "Data": {
@@ -11760,12 +11760,12 @@
  },
  "Diagonal brick": {
   "where": [
-   "common/geometry.js:357"
+   "common/geometry.js:613"
   ]
  },
  "Diagonal cross": {
   "where": [
-   "common/geometry.js:355"
+   "common/geometry.js:611"
   ]
  },
  "Diagonal down": {
@@ -11781,7 +11781,7 @@
  "Diagram": {
   "where": [
    "lectern/js/app.js:221",
-   "lectern/js/render.js:603"
+   "lectern/js/render.js:597"
   ]
  },
  "Diagram Gallery": {
@@ -11998,7 +11998,7 @@
  },
  "Divot": {
   "where": [
-   "common/geometry.js:358"
+   "common/geometry.js:614"
   ]
  },
  "Dk Dwn Diagonal": {
@@ -12208,12 +12208,12 @@
  },
  "Dotted diamond": {
   "where": [
-   "common/geometry.js:358"
+   "common/geometry.js:614"
   ]
  },
  "Dotted grid": {
   "where": [
-   "common/geometry.js:356"
+   "common/geometry.js:612"
   ]
  },
  "Double": {
@@ -12331,7 +12331,7 @@
  },
  "Downward diagonal": {
   "where": [
-   "common/geometry.js:353"
+   "common/geometry.js:609"
   ]
  },
  "Dra&w Table": {
@@ -12857,7 +12857,7 @@
  },
  "Embedded content": {
   "where": [
-   "quire/js/render.js:427"
+   "quire/js/render.js:428"
   ]
  },
  "Embedded fonts were not kept": {
@@ -12869,8 +12869,8 @@
  "Embedded object": {
   "where": [
    "lectern/js/frames.js:19",
-   "lectern/js/render.js:603",
-   "quire/js/render.js:427"
+   "lectern/js/render.js:597",
+   "quire/js/render.js:428"
   ]
  },
  "Embedded text styles are too large": {
@@ -14301,7 +14301,7 @@
  },
  "Flowchart": {
   "where": [
-   "common/geometry.js:435",
+   "common/geometry.js:694",
    "lectern/js/app.js:161"
   ]
  },
@@ -14682,7 +14682,7 @@
  },
  "Form control": {
   "where": [
-   "quire/js/render.js:427"
+   "quire/js/render.js:428"
   ]
  },
  "Forma&ts": {
@@ -16049,7 +16049,7 @@
  },
  "Horizontal": {
   "where": [
-   "common/geometry.js:351",
+   "common/geometry.js:607",
    "lectern/js/slideshow.js:10",
    "quire/js/dialogs3.js:73"
   ]
@@ -16097,7 +16097,7 @@
  },
  "Horizontal brick": {
   "where": [
-   "common/geometry.js:357"
+   "common/geometry.js:613"
   ]
  },
  "House": {
@@ -16266,12 +16266,12 @@
  },
  "In Front of Text": {
   "where": [
-   "quire/js/drawing.js:672"
+   "quire/js/drawing.js:678"
   ]
  },
  "In Line with Text": {
   "where": [
-   "quire/js/drawing.js:672"
+   "quire/js/drawing.js:678"
   ]
  },
  "In l&ine with text": {
@@ -16457,7 +16457,7 @@
  },
  "Ink": {
   "where": [
-   "lectern/js/render.js:603"
+   "lectern/js/render.js:597"
   ]
  },
  "Ink &Color": {
@@ -16537,14 +16537,14 @@
   "where": [
    "lectern/js/app.js:1525",
    "lectern/js/commands.js:91",
-   "lectern/js/render.js:605",
+   "lectern/js/render.js:599",
    "ledger/js/xchart.js:453"
   ]
  },
  "Insert Clip Art": {
   "where": [
    "lectern/js/commands.js:84",
-   "lectern/js/render.js:605",
+   "lectern/js/render.js:599",
    "quire/js/commands.js:297",
    "quire/js/panes.js:172"
   ]
@@ -16612,7 +16612,7 @@
  },
  "Insert Diagram or Organization Chart": {
   "where": [
-   "lectern/js/render.js:605",
+   "lectern/js/render.js:599",
    "quire/js/commands.js:303"
   ]
  },
@@ -16697,7 +16697,7 @@
  },
  "Insert Media Clip": {
   "where": [
-   "lectern/js/render.js:605"
+   "lectern/js/render.js:599"
   ]
  },
  "Insert Merge Field": {
@@ -16741,7 +16741,7 @@
   "where": [
    "lectern/js/app.js:1303",
    "lectern/js/commands.js:85",
-   "lectern/js/render.js:605",
+   "lectern/js/render.js:599",
    "ledger/js/app.js:1348"
   ]
  },
@@ -16810,7 +16810,7 @@
    "lectern/js/app.js:1375",
    "lectern/js/commands.js:92",
    "lectern/js/dialogs.js:772",
-   "lectern/js/render.js:605"
+   "lectern/js/render.js:599"
   ]
  },
  "Insert Table of Contents": {
@@ -17040,7 +17040,7 @@
  "IntelliArt": {
   "where": [
    "lectern/js/diagram.js:589",
-   "lectern/js/render.js:603",
+   "lectern/js/render.js:597",
    "lectern/js/ribbon.js:40",
    "ledger/js/drawing.js:158"
   ]
@@ -17489,17 +17489,17 @@
  },
  "Large checker board": {
   "where": [
-   "common/geometry.js:356"
+   "common/geometry.js:612"
   ]
  },
  "Large confetti": {
   "where": [
-   "common/geometry.js:357"
+   "common/geometry.js:613"
   ]
  },
  "Large grid": {
   "where": [
-   "common/geometry.js:356"
+   "common/geometry.js:612"
   ]
  },
  "Las Vegas Lights": {
@@ -17953,7 +17953,7 @@
   "where": [
    "lectern/js/app.js:209",
    "lectern/js/dialogs.js:1008",
-   "lectern/js/render.js:560",
+   "lectern/js/render.js:585",
    "lectern/js/ribbon.js:42"
   ]
  },
@@ -18093,22 +18093,22 @@
  },
  "Light downward diagonal": {
   "where": [
-   "common/geometry.js:353"
+   "common/geometry.js:609"
   ]
  },
  "Light horizontal": {
   "where": [
-   "common/geometry.js:351"
+   "common/geometry.js:607"
   ]
  },
  "Light upward diagonal": {
   "where": [
-   "common/geometry.js:353"
+   "common/geometry.js:609"
   ]
  },
  "Light vertical": {
   "where": [
-   "common/geometry.js:351"
+   "common/geometry.js:607"
   ]
  },
  "Lightning Bolt": {
@@ -18279,7 +18279,7 @@
  },
  "Linked picture: {0}": {
   "where": [
-   "lectern/js/render.js:604"
+   "lectern/js/render.js:598"
   ]
  },
  "Links": {
@@ -19298,7 +19298,7 @@
    "lectern/js/editor.js:579",
    "ledger/js/drawing.js:296",
    "ledger/js/drawing.js:373",
-   "quire/js/drawing.js:580"
+   "quire/js/drawing.js:586"
   ]
  },
  "Move Page Break": {
@@ -19498,12 +19498,12 @@
  },
  "Narrow horizontal": {
   "where": [
-   "common/geometry.js:352"
+   "common/geometry.js:608"
   ]
  },
  "Narrow vertical": {
   "where": [
-   "common/geometry.js:352"
+   "common/geometry.js:608"
   ]
  },
  "Navigation": {
@@ -19663,7 +19663,7 @@
  "New chart": {
   "where": [
    "lectern/js/frames.js:22",
-   "lectern/js/render.js:603"
+   "lectern/js/render.js:597"
   ]
  },
  "New column": {
@@ -20218,7 +20218,7 @@
  "Nudge": {
   "where": [
    "lectern/js/app.js:1140",
-   "quire/js/drawing.js:594"
+   "quire/js/drawing.js:600"
   ]
  },
  "Nudge (Ctrl for fine nudge)": {
@@ -20877,7 +20877,7 @@
  },
  "Outlined diamond": {
   "where": [
-   "common/geometry.js:357"
+   "common/geometry.js:613"
   ]
  },
  "Outline|border": {
@@ -21093,7 +21093,7 @@
  "Page Break": {
   "where": [
    "quire/js/editor.js:380",
-   "quire/js/render.js:605"
+   "quire/js/render.js:606"
   ]
  },
  "Page Break Pre&view": {
@@ -21408,7 +21408,7 @@
  },
  "Part of this file couldn't be read. Anything in it that VibeOffice can't edit itself, such as macros or embedded objects, won't be saved.": {
   "where": [
-   "lectern/js/pptx-read.js:553"
+   "lectern/js/pptx-read.js:569"
   ]
  },
  "Part of this file is damaged. Whatever couldn't be read from it won't be saved.": {
@@ -21731,7 +21731,7 @@
    "lectern/js/app.js:201",
    "lectern/js/dialogs.js:22",
    "lectern/js/dialogs.js:458",
-   "lectern/js/render.js:453"
+   "lectern/js/render.js:497"
   ]
  },
  "Picture &Position": {
@@ -21741,7 +21741,7 @@
  },
  "Picture (.{0})": {
   "where": [
-   "lectern/js/render.js:453"
+   "lectern/js/render.js:497"
   ]
  },
  "Picture Border": {
@@ -21870,13 +21870,13 @@
  },
  "Plaid": {
   "where": [
-   "common/geometry.js:358"
+   "common/geometry.js:614"
   ]
  },
  "Plain Text": {
   "where": [
-   "lectern/js/render.js:535",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:579",
+   "quire/js/drawing.js:127"
   ]
  },
  "Plain Text (*.txt)": {
@@ -23509,7 +23509,7 @@
  "Resize Object": {
   "where": [
    "ledger/js/drawing.js:373",
-   "quire/js/drawing.js:621"
+   "quire/js/drawing.js:627"
   ]
  },
  "Resize Picture": {
@@ -26088,28 +26088,28 @@
  },
  "Section Break (Continuous)": {
   "where": [
-   "quire/js/render.js:419"
+   "quire/js/render.js:420"
   ]
  },
  "Section Break (Even Page)": {
   "where": [
-   "quire/js/render.js:419"
+   "quire/js/render.js:420"
   ]
  },
  "Section Break (Next Column)": {
   "where": [
-   "quire/js/render.js:419"
+   "quire/js/render.js:420"
   ]
  },
  "Section Break (Next Page)": {
   "where": [
    "quire/js/app.js:1434",
-   "quire/js/render.js:419"
+   "quire/js/render.js:420"
   ]
  },
  "Section Break (Odd Page)": {
   "where": [
-   "quire/js/render.js:419"
+   "quire/js/render.js:420"
   ]
  },
  "Section break types": {
@@ -26753,7 +26753,7 @@
  },
  "Shingle": {
   "where": [
-   "common/geometry.js:358"
+   "common/geometry.js:614"
   ]
  },
  "Shopping List": {
@@ -27203,14 +27203,14 @@
  },
  "Slant Down": {
   "where": [
-   "lectern/js/render.js:536",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:580",
+   "quire/js/drawing.js:127"
   ]
  },
  "Slant Up": {
   "where": [
-   "lectern/js/render.js:536",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:580",
+   "quire/js/drawing.js:127"
   ]
  },
  "Slanted dash dot": {
@@ -27500,12 +27500,12 @@
  },
  "Small checker board": {
   "where": [
-   "common/geometry.js:355"
+   "common/geometry.js:611"
   ]
  },
  "Small confetti": {
   "where": [
-   "common/geometry.js:356"
+   "common/geometry.js:612"
   ]
  },
  "Small dash": {
@@ -27515,7 +27515,7 @@
  },
  "Small grid": {
   "where": [
-   "common/geometry.js:356"
+   "common/geometry.js:612"
   ]
  },
  "Smiley Face": {
@@ -27576,7 +27576,7 @@
  },
  "Solid diamond": {
   "where": [
-   "common/geometry.js:357"
+   "common/geometry.js:613"
   ]
  },
  "Solid|pattern": {
@@ -28123,7 +28123,7 @@
  },
  "Sphere": {
   "where": [
-   "common/geometry.js:358"
+   "common/geometry.js:614"
   ]
  },
  "Spill Range Isn't Blank": {
@@ -28223,7 +28223,7 @@
  },
  "Square": {
   "where": [
-   "quire/js/drawing.js:672"
+   "quire/js/drawing.js:678"
   ]
  },
  "Square Dot": {
@@ -28309,7 +28309,7 @@
  },
  "Stars and Banners": {
   "where": [
-   "common/geometry.js:436",
+   "common/geometry.js:695",
    "lectern/js/app.js:109",
    "lectern/js/app.js:161",
    "quire/js/app.js:263"
@@ -30936,7 +30936,7 @@
  },
  "This file does not contain a PowerPoint presentation.": {
   "where": [
-   "lectern/js/pptx-read.js:544"
+   "lectern/js/pptx-read.js:560"
   ]
  },
  "This file has no Excel workbook stream": {
@@ -31078,7 +31078,7 @@
  },
  "This presentation is encrypted with a method that is not supported (only the AES encryption of PowerPoint 2007 and later is).": {
   "where": [
-   "lectern/js/pptx-read.js:458"
+   "lectern/js/pptx-read.js:474"
   ]
  },
  "This punctuation mark is repeated.": {
@@ -31186,7 +31186,7 @@
  },
  "Through": {
   "where": [
-   "quire/js/drawing.js:672"
+   "quire/js/drawing.js:678"
   ]
  },
  "Thu&mbnails": {
@@ -31206,7 +31206,7 @@
  },
  "Tight": {
   "where": [
-   "quire/js/drawing.js:672"
+   "quire/js/drawing.js:678"
   ]
  },
  "Time": {
@@ -31582,7 +31582,7 @@
  },
  "Top and Bottom": {
   "where": [
-   "quire/js/drawing.js:672"
+   "quire/js/drawing.js:678"
   ]
  },
  "Top and Bottom Border": {
@@ -31763,7 +31763,7 @@
  },
  "Trellis": {
   "where": [
-   "common/geometry.js:359"
+   "common/geometry.js:615"
   ]
  },
  "Triangle": {
@@ -31773,8 +31773,8 @@
  },
  "Triangle Up": {
   "where": [
-   "lectern/js/render.js:536",
-   "quire/js/drawing.js:125"
+   "lectern/js/render.js:580",
+   "quire/js/drawing.js:127"
   ]
  },
  "Triple": {
@@ -32296,7 +32296,7 @@
  },
  "Upward diagonal": {
   "where": [
-   "common/geometry.js:353"
+   "common/geometry.js:609"
   ]
  },
  "Use \"a\" before a word that starts with a consonant sound.": {
@@ -32540,7 +32540,7 @@
  },
  "Vertical": {
   "where": [
-   "common/geometry.js:351",
+   "common/geometry.js:607",
    "lectern/js/slideshow.js:10",
    "quire/js/dialogs3.js:73"
   ]
@@ -32747,8 +32747,8 @@
  "Wave": {
   "where": [
    "common/geometry.js:40",
-   "common/geometry.js:358",
-   "lectern/js/render.js:535",
+   "common/geometry.js:614",
+   "lectern/js/render.js:579",
    "quire/js/dialogs.js:89"
   ]
  },
@@ -32759,7 +32759,7 @@
  },
  "Weave": {
   "where": [
-   "common/geometry.js:358"
+   "common/geometry.js:614"
   ]
  },
  "Web": {
@@ -32990,12 +32990,12 @@
  },
  "Wide downward diagonal": {
   "where": [
-   "common/geometry.js:354"
+   "common/geometry.js:610"
   ]
  },
  "Wide upward diagonal": {
   "where": [
-   "common/geometry.js:354"
+   "common/geometry.js:610"
   ]
  },
  "Widescreen (16:9), 13.33 x 7.5 in": {
@@ -33411,7 +33411,7 @@
  },
  "Zig zag": {
   "where": [
-   "common/geometry.js:359"
+   "common/geometry.js:615"
   ]
  },
  "Zip Code": {
@@ -33498,7 +33498,7 @@
  "[Text]": {
   "where": [
    "lectern/js/diagram.js:540",
-   "lectern/js/render.js:667"
+   "lectern/js/render.js:664"
   ]
  },
  "[cells]": {

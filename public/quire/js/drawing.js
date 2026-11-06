@@ -125,59 +125,24 @@
 
   /* ---------- WordArt ---------- */
   DR.WARPS = [['textPlain', L.N('Plain Text')], ['textArchUp', L.N('Arch Up')], ['textArchDown', L.N('Arch Down')], ['textCircle', L.N('Circle')], ['textWave1', L.N('Wave')], ['textSlantUp', L.N('Slant Up')], ['textSlantDown', L.N('Slant Down')], ['textTriangle', L.N('Triangle Up')], ['textChevron', L.N('Chevron Up')], ['textCanUp', L.N('Can Up')]];
-  function warpPoints(warp, w, hh, fs) {
-    const pts = [], N = 64, m = fs * 0.15;
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      switch (warp) {
-        case 'textArchUp': { const a = Math.PI - t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), hh - m - Math.sin(a) * (hh - fs - m)]); break; }
-        case 'textArchDown': { const a = Math.PI + t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), fs + m - Math.sin(a) * (hh - fs - m * 2)]); break; }
-        case 'textCircle': { const a = Math.PI + t * Math.PI * 2 * 0.98; pts.push([w / 2 + Math.cos(a) * (w / 2 - fs), hh / 2 + Math.sin(a) * (hh / 2 - fs)]); break; }
-        case 'textWave1': pts.push([m + t * (w - 2 * m), hh / 2 + fs / 3 + Math.sin(t * Math.PI * 2) * (hh / 2 - fs * 0.8)]); break;
-        case 'textSlantUp': pts.push([m + t * (w - 2 * m), hh - m - t * (hh - fs - m)]); break;
-        case 'textSlantDown': pts.push([m + t * (w - 2 * m), fs + t * (hh - fs - m)]); break;
-        case 'textTriangle': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh - m - t * 2 * (hh - fs - m) : fs + (t - 0.5) * 2 * (hh - fs - m)]); break;
-        case 'textChevron': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh * 0.75 - t * 2 * hh * 0.35 : hh * 0.4 + (t - 0.5) * 2 * hh * 0.35]); break;
-        case 'textCanUp': pts.push([m + t * (w - 2 * m), hh * 0.85 - Math.sin(t * Math.PI) * hh * 0.25]); break;
-        default: pts.push([t * w, hh / 2]);
-      }
-    }
-    return pts;
-  }
+  /** LettersArt: its lines at the size they are saved with (docx-write.js: centred), bent by its warp
+      (L.geom.warpSVG, as PowerPoint and Word bend text) */
   DR.wordartSVG = function (sh) {
     const wa = sh.wordart || { text: 'LettersArt' };
-    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
-    const svg = s('svg', { class: 'wa', width: L.round(w * PX, 2), height: L.round(hh * PX, 2), viewBox: `0 0 ${L.round(w, 3)} ${L.round(hh, 3)}`, preserveAspectRatio: 'none', overflow: 'visible' });
-    const defs = s('defs');
-    svg.appendChild(defs);
-    const fill = svgPaint(sh.fill && sh.fill.t !== 'none' ? sh.fill : { t: 'solid', c: '#3366CC' }, defs);
-    const ln = sh.line && sh.line.t !== 'none' && sh.line.c ? sh.line : null;
-    const lines = String(wa.text || '').split('\n');
-    const common = { 'font-family': L.fontStack(wa.font || 'Arial Black'), 'font-weight': wa.b ? 700 : 400, 'font-style': wa.i ? 'italic' : 'normal', fill: fill.paint, 'fill-opacity': fill.opacity };
-    if (ln) Object.assign(common, { stroke: col(ln.c), 'stroke-width': Math.max(0.25, ln.w || 0.75), 'paint-order': 'stroke', 'stroke-linejoin': 'round' });
+    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1), sz = wa.sz || 36;
+    const run = { size: sz, family: L.fontStack(wa.font || 'Arial Black'), bold: !!wa.b, italic: !!wa.i, paint: 0 };
+    const lines = String(wa.text || '').split('\n').map((t) => ({ runs: t ? [Object.assign({ text: t }, run)] : [], algn: 'ctr', size: sz, pitch: sz * 1.2 }));
+    const fill = sh.fill && sh.fill.t !== 'none' ? sh.fill : { t: 'solid', c: '#3366CC' }, ln = sh.line && sh.line.t !== 'none' && sh.line.c ? sh.line : null;
+    const svg = L.geom.warpSVG(sh.warp || wa.warp || 'textPlain', sh.warpAdj, w, hh, lines, (key, defs) => {
+      const out = { fill: null, stroke: null };
+      if (fill.t === 'solid') Object.assign(out, { fill: col(fill.c), fillOpacity: fill.a });
+      else { const p = svgPaint(fill, defs); Object.assign(out, { fill: p.paint, fillOpacity: p.opacity }); }
+      if (ln) Object.assign(out, { stroke: col(ln.c), strokeWidth: Math.max(0.25, ln.w || 0.75), strokeOpacity: ln.a });
+      return out;
+    }) || s('svg', { width: 1, height: 1 });
+    svg.setAttribute('class', 'wa');
+    svg.setAttribute('width', L.round(w * PX, 2)); svg.setAttribute('height', L.round(hh * PX, 2));
     if (sh.shadow) svg.style.filter = shadowCSS(sh.shadow);
-    const warp = sh.warp || wa.warp || 'textPlain';
-    if (warp === 'textPlain' || lines.length > 1) {
-      const lh = hh / lines.length;
-      lines.forEach((t, i) => {
-        const txt = s('text', Object.assign({ x: 0, y: L.round(i * lh + lh * 0.8, 2), 'font-size': L.round(lh * 0.86, 2), textLength: L.round(w, 2), lengthAdjust: 'spacingAndGlyphs' }, common));
-        txt.textContent = t || ' ';
-        svg.appendChild(txt);
-      });
-      return svg;
-    }
-    const fs = Math.min(hh * (warp === 'textCircle' ? 0.2 : 0.42), (w / Math.max(lines[0].length, 1)) * 1.4);
-    const pts = warpPoints(warp, w, hh, fs);
-    let len = 0;
-    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    const id = nid('wp');
-    defs.appendChild(s('path', { id, d: 'M' + pts.map((p) => L.round(p[0], 2) + ',' + L.round(p[1], 2)).join(' L') }));
-    const txt = s('text', Object.assign({ 'font-size': L.round(fs, 2) }, common));
-    const tp = s('textPath', { href: '#' + id, textLength: L.round(len * 0.98, 2), lengthAdjust: 'spacingAndGlyphs', startOffset: L.round(len * 0.01, 2) });
-    tp.textContent = lines[0];
-    txt.appendChild(tp);
-    svg.appendChild(txt);
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     return svg;
   };
 
@@ -262,6 +227,7 @@
           const next = w.find((x) => x.id === cid && x.seq === seq + 1 && x.el.isConnected);
           if (next) { chains.waiters = w.filter((x) => x !== next); next.fill(); }
         }
+        if (it.warp && !it.vert) DR.warpBox(box, tbx, it);
         if (it.autofit && !opts.inGroup) {
           /* resize-shape-to-fit-text: the box grows with its text */
           const need = inner.offsetHeight + px(ins.t + ins.b);
@@ -270,6 +236,44 @@
       };
     }
     return box;
+  };
+  /** a text box's text bent by its warp (bodyPr's prstTxWarp, L.geom.warpSVG) over the whole shape, from its lines
+      as laid out: the characters on each line with their fonts and colours as drawn. The laid-out text stays under it
+      for editing, shown in its place while the caret is in the box. */
+  DR.warpBox = function (box, tbx, it) {
+    const old = box.querySelector(':scope > svg.warp');
+    if (old) old.remove();
+    const lines = [], walk = document.createTreeWalker(tbx, NodeFilter.SHOW_TEXT);
+    let line = null, n = 0;
+    for (let t; (t = walk.nextNode()) && n < 4000;) {
+      const pe = t.parentElement, para = (pe && pe.closest('.p')) || tbx, cs = pe && getComputedStyle(pe);
+      if (!cs || cs.display === 'none' || cs.visibility === 'hidden') continue;
+      const style = { family: cs.fontFamily, size: parseFloat(cs.fontSize), bold: +cs.fontWeight >= 600, italic: cs.fontStyle !== 'normal',
+        paint: { color: /rgba\([^)]*,\s*0\)|transparent/.test(cs.color) && /gradient/.test(cs.backgroundImage) ? (cs.backgroundImage.match(/rgba?\([^)]*\)/) || [cs.color])[0] : cs.color, stroke: parseFloat(cs.webkitTextStrokeWidth) > 0 ? [cs.webkitTextStrokeColor, parseFloat(cs.webkitTextStrokeWidth)] : null } };
+      const r = document.createRange();
+      let i = 0;
+      for (const ch of Array.from(t.data)) {
+        r.setStart(t, i); r.setEnd(t, i + ch.length); i += ch.length; n++;
+        const q = r.getClientRects()[0];
+        if (!q) continue;
+        /* a new line where the text moves down a line, or a new paragraph starts */
+        if (!line || line.para !== para || q.top > line.top + line.size * 0.6) {
+          line = { para, top: q.top, size: style.size, runs: [], algn: { center: 'ctr', right: 'r', end: 'r' }[getComputedStyle(pe.closest('.pc') || para).textAlign] || 'l' };
+          lines.push(line);
+        }
+        const last = line.runs[line.runs.length - 1];
+        if (last && JSON.stringify([last.family, last.size, last.bold, last.italic, last.paint]) === JSON.stringify([style.family, style.size, style.bold, style.italic, style.paint])) last.text += ch;
+        else line.runs.push(Object.assign({ text: ch }, style));
+        line.size = Math.max(line.size, style.size);
+      }
+    }
+    lines.forEach((ln, k) => { ln.runs = ln.runs.filter((x, j, all) => j || x.text.trim() || all.length > 1); ln.pitch = k < lines.length - 1 ? Math.max(1, lines[k + 1].top - ln.top) : ln.size * 1.2; });
+    const w = Math.max(1, px(it.w)), hh = Math.max(1, px(it.h));
+    const svg = lines.length && L.geom.warpSVG(it.warp, it.warpAdj, w, hh, lines, ({ color, stroke }) => ({ fill: color, stroke: stroke && stroke[0], strokeWidth: stroke && stroke[1] }));
+    if (!svg) return;
+    svg.style.cssText = 'position:absolute;left:0;top:0';
+    box.classList.add('warped');
+    box.appendChild(svg);
   };
   /** run deferred text-box layouts below an element */
   DR.fillPending = function (root) {

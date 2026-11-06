@@ -128,7 +128,7 @@
     let f = Q.action(keep.fragment, object.link, ctx, generated);
     let xml = Q.emit(f, ctx); if (xml == null) return generated;
     const fields = kind === 'run' ? { ...L.designs.runFields, font: 'latin cs', shd: '', shdX: '', link: 'hlinkClick' } : kind === 'para' ? { ...L.designs.paraFields, lvl: '@lvl' } : {
-      anchor: '@anchor', anchorCtr: '@anchorCtr', wrap: '@wrap', ins: '@lIns @tIns @rIns @bIns', vert: '@vert', rot: '@rot', cols: '@numCol', colGap: '@spcCol', autofit: 'noAutofit normAutofit spAutoFit', fontScale: 'normAutofit', lnSpcRed: 'normAutofit', warp: 'prstTxWarp',
+      anchor: '@anchor', anchorCtr: '@anchorCtr', wrap: '@wrap', ins: '@lIns @tIns @rIns @bIns', vert: '@vert', rot: '@rot', cols: '@numCol', colGap: '@spcCol', autofit: 'noAutofit normAutofit spAutoFit', fontScale: 'normAutofit', lnSpcRed: 'normAutofit', warp: 'prstTxWarp', warpAdj: 'prstTxWarp',
     };
     const current = kind === 'para' ? { ...object, lvl } : object;
     const fresh = raw(kids(K.parse('<root xmlns:a="' + N.a + '" xmlns:r="' + N.rel + '">' + (generated || '<' + tag + '/>') + '</root>'))[0]);

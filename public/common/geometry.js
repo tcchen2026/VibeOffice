@@ -289,6 +289,260 @@
   }
   const handleCache = new Map();
 
+  /* ---------- text warps (bodyPr's prstTxWarp: L.presetWarps, presetTextWarpDefinitions.xml) ----------
+   * As PowerPoint 2016 bends text, measured in its PDF of tools/shapes/warp-deck.py's 228 cells (2026-11-07):
+   * - a warp fills the whole shape: the text box's insets and anchoring don't count;
+   * - its paths come in pairs, the top and bottom of a band (Inflate, Can Up, Plain…), or alone (Arch Up, Circle, and
+   *   Button's three: an odd number are all alone); lines are dealt out among the bands or paths in order, as evenly
+   *   as they go, the first ones taking one more;
+   * - a band's lines are stretched to fill it: their ink from the start of each path to its end, by the distance
+   *   along it, and from the one path down to the other;
+   * - a path alone carries its lines at their size, placed along it as they are aligned (shrunk to its length only
+   *   when longer); the path runs 0.19 em above the baseline of the line on the inside of its curve, and the others
+   *   are stacked outward from it. */
+  const warpDef = (name) => (L.presetWarps && Object.prototype.hasOwnProperty.call(L.presetWarps, name) ? L.presetWarps[name] : null);
+  /** a warp's paths in a w×h box, as polylines with the distance along them: [{ pts: [[x, y]…], at: [0…], len }] */
+  function warpPaths(def, w, h, adj) {
+    const get = guideValues(def, w, h, adj).get;
+    return (def.path || []).map((p) => {
+      const pts = [];
+      let x = 0, y = 0;
+      const add = (k, f) => { for (let i = 1; i <= k; i++) pts.push(f(i / k)); };
+      for (const c of p.c) {
+        const g = (i) => get(c[i]);
+        switch (c[0]) {
+          case 'M': case 'L': x = g(1); y = g(2); pts.push([x, y]); break;
+          case 'Q': { const x0 = x, y0 = y, x1 = g(1), y1 = g(2); x = g(3); y = g(4); const x2 = x, y2 = y; add(48, (t) => { const s = 1 - t; return [s * s * x0 + 2 * s * t * x1 + t * t * x2, s * s * y0 + 2 * s * t * y1 + t * t * y2]; }); break; }
+          case 'C': { const x0 = x, y0 = y, x1 = g(1), y1 = g(2), x2 = g(3), y2 = g(4); x = g(5); y = g(6); const x3 = x, y3 = y; add(64, (t) => { const s = 1 - t; return [s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3, s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3]; }); break; }
+          case 'A': {
+            /* as arcTo: from the current point, on the wR×hR ellipse through it, by visual angles */
+            const wR = g(1), hR = g(2), st = g(3) / 60000, sw = g(4) / 60000;
+            const par = (deg) => { const t = (deg * Math.PI) / 180; return Math.atan2(wR * Math.sin(t), hR * Math.cos(t)); };
+            const p0 = par(st), cx = x - wR * Math.cos(p0), cy = y - hR * Math.sin(p0);
+            add(Math.max(8, Math.ceil(Math.abs(sw) / 2)), (t) => { const e = par(st + sw * t); return [cx + wR * Math.cos(e), cy + hR * Math.sin(e)]; });
+            [x, y] = pts[pts.length - 1];
+            break;
+          }
+          default: break;
+        }
+      }
+      const at = [0];
+      for (let i = 1; i < pts.length; i++) at.push(at[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      return { pts, at, len: at[at.length - 1] };
+    });
+  }
+  /** the point at distance d along a path (beyond its ends, on along its first or last piece) */
+  function along(p, d) {
+    const { pts, at } = p;
+    if (pts.length < 2) return pts[0] || [0, 0];
+    let lo = 1, hi = at.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (at[m] < d) lo = m + 1; else hi = m; }
+    while (lo > 1 && at[lo] === at[lo - 1]) lo--;
+    const a = pts[lo - 1], b = pts[lo], t = at[lo] > at[lo - 1] ? (d - at[lo - 1]) / (at[lo] - at[lo - 1]) : 0;
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  }
+  /** the unit tangent at distance d along a path */
+  function tangent(p, d) {
+    const e = Math.max(p.len / 400, 0.01), a = along(p, d - e), b = along(p, d + e), l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return [(b[0] - a[0]) / l, (b[1] - a[1]) / l];
+  }
+  /** which way a path turns overall: > 0 clockwise on the page (y down), < 0 anticlockwise */
+  function turning(p) {
+    let s = 0;
+    for (let i = 2; i < p.pts.length; i++) {
+      const [a, b, c] = [p.pts[i - 2], p.pts[i - 1], p.pts[i]];
+      s += (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+    }
+    return s;
+  }
+  /** a path moved off along its normal (positive: to the right of its way, down for a path going right) */
+  function parallel(p, off) {
+    const pts = p.pts.map((pt, i) => {
+      const a = p.pts[Math.max(0, i - 1)], b = p.pts[Math.min(p.pts.length - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return [pt[0] - ((b[1] - a[1]) / l) * off, pt[1] + ((b[0] - a[0]) / l) * off];
+    });
+    const at = [0];
+    for (let i = 1; i < pts.length; i++) at.push(at[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return { pts, at, len: at[at.length - 1] };
+  }
+  /** the SVG matrix that takes a glyph from its own coordinates (its baseline start at 0, 0) to where the map f puts
+      the text space point (x, y) → [X, Y], made affine about the glyph's centre (cx, cy) in text space */
+  function glyphMatrix(f, gx, by, cx, cy, sx, sy) {
+    const p = f(cx, cy), px = f(cx + sx, cy), mx = f(cx - sx, cy), py = f(cx, cy + sy), my = f(cx, cy - sy);
+    const a = (px[0] - mx[0]) / (2 * sx), b = (px[1] - mx[1]) / (2 * sx), c = (py[0] - my[0]) / (2 * sy), d = (py[1] - my[1]) / (2 * sy);
+    return [a, b, c, d, p[0] + a * (gx - cx) + c * (by - cy), p[1] + b * (gx - cx) + d * (by - cy)];
+  }
+  let warpCanvas = null;
+  const COMPLEX = /[\u0590-\u08ff\u0900-\u0dff\u0e00-\u0eff\u0f00-\u0fff\u1000-\u109f\u1780-\u17ff\ufb1d-\ufdff\ufe70-\ufeff]/;
+  const SLICE = 6;   // the widest a slice of a glyph in a band is drawn
+  /** a line of runs [{ text, family (a CSS font stack), size (px), bold, italic }] measured for L.geom.warp: its
+      glyphs (the characters drawn, or a whole run of a right-to-left or joined script, with the run each is in and its
+      advance), width, ink box about its baseline and font size (measured at a large size and scaled: the ink of a
+      small size is rounded to pixels, and warps stretch it many times); pending: a promise of the fonts it needs that
+      aren't loaded yet (measured with a stand-in till then) */
+  function warpLine(runs) {
+    if (!warpCanvas) warpCanvas = document.createElement('canvas').getContext('2d');
+    const ctx = warpCanvas, glyphs = [], waits = [], M = 240;
+    let x = 0, ink = null, size = 0;
+    runs.forEach((r, ri) => {
+      const style = `${r.italic ? 'italic ' : ''}${r.bold ? 'bold ' : ''}`, k = (r.size || 0) / M, text = r.text || '';
+      ctx.font = `${style}${M}px ${r.family}`;
+      if (document.fonts && !document.fonts.check(`${style}${r.size}px ${r.family}`, text || ' ')) waits.push(document.fonts.load(`${style}${r.size}px ${r.family}`, text || ' '));
+      const m = ctx.measureText(text);
+      /* right-to-left and joined scripts are bent a run at a time, in one piece, so the browser orders and shapes them */
+      if (COMPLEX.test(text)) { if (/\S/.test(text)) glyphs.push({ ch: text, run: ri, x, w: m.width * k }); }
+      else {
+        let pre = '';
+        for (const ch of Array.from(text)) {
+          const x0 = ctx.measureText(pre).width;
+          pre += ch;
+          if (/\S/.test(ch)) glyphs.push({ ch, run: ri, x: x + x0 * k, w: (ctx.measureText(pre).width - x0) * k });
+        }
+      }
+      if (/\S/.test(text)) {
+        const box = [x - m.actualBoundingBoxLeft * k, -m.actualBoundingBoxAscent * k, x + m.actualBoundingBoxRight * k, m.actualBoundingBoxDescent * k];
+        ink = ink ? [Math.min(ink[0], box[0]), Math.min(ink[1], box[1]), Math.max(ink[2], box[2]), Math.max(ink[3], box[3])] : box;
+      }
+      x += m.width * k;
+      size = Math.max(size, r.size || 0);
+    });
+    return { glyphs, width: x, ink: ink || [0, 0, 0, 0], size, pending: waits.length ? Promise.all(waits) : null };
+  }
+  /** text bent by a warp in a w×h shape. lines: warpLine's, each with pitch (to the next baseline, px) and
+      algn ('l', 'ctr', 'r'). Returns each line's glyphs, each as pieces { m, clip }: m the SVG matrix [a, b, c, d, e,
+      f] from the glyph's own coordinates (its baseline start at 0, 0) to the shape's, clip the part of the glyph it
+      takes, [x0, x1] across it (null: all of it). [] for a line the warp has no room for; null for an unknown warp */
+  function warp(name, adj, w, h, lines) {
+    const def = warpDef(name);
+    if (!def || !def.path || !def.path.length) return null;
+    const paths = warpPaths(def, w, h, adj), pairs = paths.length % 2 === 0;
+    const slots = pairs ? paths.length / 2 : paths.length, out = lines.map(() => []);
+    /* lines dealt out: as evenly as they go, the first slots one more */
+    const per = Array.from({ length: slots }, (_, i) => Math.floor(lines.length / slots) + (i < lines.length % slots ? 1 : 0));
+    /* in bands, the lines are aligned within the widest of them all, and their ink from side to side spans each band */
+    const width = Math.max(0, ...lines.map((ln) => ln.width));
+    const dxOf = (ln) => (ln.algn === 'ctr' ? (width - ln.width) / 2 : ln.algn === 'r' ? width - ln.width : 0);
+    const inked = lines.filter((ln) => ln.glyphs.length);
+    const x0 = Math.min(...inked.map((ln) => dxOf(ln) + ln.ink[0])), x1 = Math.max(...inked.map((ln) => dxOf(ln) + ln.ink[2]));
+    let next = 0;
+    per.forEach((count, slot) => {
+      const idx = Array.from({ length: count }, (_, k) => next + k);
+      next += count;
+      if (!count) return;
+      if (pairs) {
+        const top = paths[slot * 2], bot = paths[slot * 2 + 1];
+        /* the band's lines, baselines a pitch apart: their ink from top to bottom fills it */
+        let base = 0, y0 = Infinity, y1 = -Infinity;
+        const bases = idx.map((i, k) => {
+          const ln = lines[i];
+          if (k) base += ln.pitch;
+          if (ln.glyphs.length) { y0 = Math.min(y0, base + ln.ink[1]); y1 = Math.max(y1, base + ln.ink[3]); }
+          return base;
+        });
+        if (!(x1 > x0 && y1 > y0)) return;
+        const f = (x, y) => {
+          const u = (x - x0) / (x1 - x0), v = (y - y0) / (y1 - y0), p = along(top, u * top.len), q = along(bot, u * bot.len);
+          return [p[0] + (q[0] - p[0]) * v, p[1] + (q[1] - p[1]) * v];
+        };
+        idx.forEach((i, k) => {
+          const ln = lines[i], dx = dxOf(ln), b = bases[k], cy = b + (ln.ink[1] + ln.ink[3]) / 2, sy = Math.max(1, (ln.ink[3] - ln.ink[1]) / 2);
+          /* each glyph in upright slices, each bent about its own middle, so that it follows the curves */
+          out[i] = ln.glyphs.map((gl) => {
+            const whole = glyphMatrix(f, dx + gl.x, b, dx + gl.x + gl.w / 2, cy, Math.max(0.5, gl.w / 2), sy);
+            const n = Math.min(6, Math.max(1, Math.ceil((Math.hypot(whole[0], whole[1]) * gl.w) / SLICE)));
+            return Array.from({ length: n }, (_, k) => ({
+              m: glyphMatrix(f, dx + gl.x, b, dx + gl.x + (gl.w * (k + 0.5)) / n, cy, Math.max(0.5, gl.w / n / 2), sy),
+              clip: n > 1 ? [k ? (gl.w * k) / n : -1e4, k < n - 1 ? (gl.w * (k + 1)) / n : 1e4] : null,
+            }));
+          });
+        });
+      } else {
+        const p = paths[slot], outward = turning(p) > 0;
+        /* the line on the inside of the curve sits on the path; the others are stacked outward, a pitch apart, each
+           along its own curve parallel to the path (so their letters keep their spacing) */
+        const order = outward ? idx.slice().reverse() : idx;
+        let off = 0;
+        order.forEach((i, k) => {
+          const ln = lines[i];
+          if (k) off += outward ? -lines[order[k - 1]].pitch : ln.pitch;
+          const q = off ? parallel(p, off) : p, s = ln.width > q.len && ln.width > 0 ? q.len / ln.width : 1;
+          const base = 0.19 * ln.size * s, start = ln.algn === 'ctr' ? (q.len - ln.width * s) / 2 : ln.algn === 'r' ? q.len - ln.width * s : 0;
+          out[i] = ln.glyphs.map((gl) => {
+            const d = start + (gl.x + gl.w / 2) * s, pt = along(q, d), [tx, ty] = tangent(q, d), nx = -ty, ny = tx;
+            /* the glyph turned with the path at its middle, its baseline `base` below the path */
+            const a = tx * s, b = ty * s, c = nx * s, dd = ny * s, ox = pt[0] + nx * base, oy = pt[1] + ny * base;
+            return [{ m: [a, b, c, dd, ox - a * (gl.w / 2), oy - b * (gl.w / 2)], clip: null }];
+          });
+        });
+      }
+    });
+    return out;
+  }
+
+  let warpIds = 0;
+  const svgEl = (tag, a) => { const e = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const r4 = (v) => Math.round(v * 1e4) / 1e4;
+  /** text bent by a warp, as SVG over a w×h shape: lines [{ runs: [{ text, family (a CSS font stack), size, bold,
+      italic, paint }], algn, pitch, size (an empty line's) }]. paint(run.paint, defs) gives a run's { fill (a colour, a
+      url(#…) painted across the whole shape through its glyphs, or null), fillOpacity, stroke (a colour or null),
+      strokeWidth, strokeOpacity }; runs with the same paint are drawn together, the fill then the outline over it,
+      each as opaque as it is (the slices of a glyph overlap a little). An outline keeps its width however its glyphs
+      are stretched. Drawn again in place once fonts it waits for have loaded. null for an unknown warp. */
+  function warpSVG(name, adj, w, h, lines, paint) {
+    const measured = lines.map((ln) => Object.assign(warpLine(ln.runs), { algn: ln.algn, pitch: ln.pitch }));
+    measured.forEach((m, i) => { if (!m.size) m.size = lines[i].size || 0; });
+    const mats = warp(name, adj, w, h, measured);
+    if (!mats) return null;
+    const svg = svgEl('svg', { class: 'warp', width: r4(w), height: r4(h), viewBox: `0 0 ${r4(w)} ${r4(h)}`, overflow: 'visible', 'aria-hidden': 'true' });
+    const defs = svgEl('defs', {}), groups = new Map(), id = () => 'warp' + ++warpIds;
+    svg.appendChild(defs);
+    measured.forEach((ln, li) => ln.glyphs.forEach((gl, gi) => {
+      const run = lines[li].runs[gl.run], key = JSON.stringify(run.paint);
+      if (!groups.has(key)) groups.set(key, { paint: run.paint, glyphs: [] });
+      for (const { m, clip } of mats[li][gi] || []) {
+        const t = svgEl('text', { transform: `matrix(${m.map(r4).join(' ')})`, 'font-family': run.family, 'font-size': run.size, 'font-weight': run.bold ? 700 : 400, 'font-style': run.italic ? 'italic' : 'normal' });
+        t.textContent = gl.ch;
+        if (clip) {
+          /* a slice of the glyph, in its own coordinates */
+          const cid = id(), cp = svgEl('clipPath', { id: cid }), o = 0.4 / Math.max(0.01, Math.hypot(m[0], m[1]));
+          cp.appendChild(svgEl('rect', { x: r4(clip[0] - o), y: -1e4, width: r4(clip[1] - clip[0] + 2 * o), height: 2e4 }));
+          defs.appendChild(cp);
+          t.setAttribute('clip-path', `url(#${cid})`);
+        }
+        groups.get(key).glyphs.push({ t, m });
+      }
+    }));
+    const layer = (opacity) => { const g = svgEl('g', {}); if (opacity != null && opacity < 1) g.setAttribute('opacity', r4(opacity)); svg.appendChild(g); return g; };
+    for (const { paint: key, glyphs } of groups.values()) {
+      const p = paint(key, defs);
+      if (p.fill && /^url\(/.test(p.fill)) {
+        const cid = id(), clip = svgEl('clipPath', { id: cid });
+        for (const { t } of glyphs) clip.appendChild(t.cloneNode(true));
+        defs.appendChild(clip);
+        layer(p.fillOpacity).appendChild(svgEl('rect', { width: r4(w), height: r4(h), fill: p.fill, 'clip-path': `url(#${cid})` }));
+      } else if (p.fill) {
+        const g = layer(p.fillOpacity);
+        for (const { t } of glyphs) { t.setAttribute('fill', p.fill); g.appendChild(t); }
+      }
+      if (!p.stroke) continue;
+      const g = layer(p.strokeOpacity);
+      for (const { t, m } of glyphs) {
+        const o = t.cloneNode(true);
+        o.setAttribute('fill', 'none'); o.setAttribute('stroke', p.stroke); o.setAttribute('stroke-linejoin', 'round');
+        o.setAttribute('stroke-width', r4(p.strokeWidth / (Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2])) || 1)));
+        g.appendChild(o);
+      }
+    }
+    const pending = measured.map((m) => m.pending).filter(Boolean);
+    if (pending.length) Promise.all(pending).then(() => {
+      const again = warpSVG(name, adj, w, h, lines, paint);
+      if (!again || !svg.parentNode) return;
+      for (const k of ['class', 'style', 'width', 'height']) if (svg.hasAttribute(k)) again.setAttribute(k, svg.getAttribute(k));   // as the app set them
+      svg.replaceWith(again);
+    }, () => {});
+    return svg;
+  }
+
   /* ---------- custom geometry (freeforms, imported custGeom) ----------
    * path = { paths: [{ w, h, cmds: [['M',x,y], ['L',x,y], ['C',...6], ['Q',...4], ['A', wR, hR, stDeg, swDeg], ['Z']], fill, stroke }] }
    */
@@ -389,6 +643,9 @@
       const sp = spec(sh.geom);
       return sp ? specText(sp, sh.w, sh.h, sh.adj) : [0, 0, sh.w, sh.h];
     },
+    warpLine,
+    warp,
+    warpSVG,
     handles(sh) {
       const sp = !(G[sh.geom] && G[sh.geom].isLine) && spec(sh.geom);
       if (!sp) return [];

@@ -214,6 +214,7 @@
         case 'gradFill': r.fill = fill(c, ctx); if (r.fill && r.fill.stops[0]) r.color = r.fill.stops[0].c; break;
         case 'noFill': r.fill = { t: 'none' }; break;
         case 'pattFill': { const f = fill(c, ctx); r.color = f.fg; break; }
+        case 'blipFill': { const f = fill(c, ctx); if (f && f.t === 'img') r.fill = f; break; }   // text filled with a picture
         case 'ln': { const l = line(c, ctx); if (l && l.t !== 'none') r.ln = l; break; }
         case 'effectLst': { const s = shadow(c, ctx); if (s) { r.shd = true; r.shdX = s; } break; }
         case 'highlight': { const v = colorOf(c, ctx); if (v) r.hl = v.c; break; }
@@ -340,7 +341,12 @@
     else if (sa) o.autofit = 'shape';
     else if (noa) o.autofit = 'none';
     const warp = kid(bp, 'prstTxWarp');
-    if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') o.warp = at(warp, 'prst');
+    if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') {
+      o.warp = at(warp, 'prst');
+      const adj = {};
+      for (const gd of kids(kid(warp, 'avLst'))) { const m = /^val\s+(-?\d+)/.exec(at(gd, 'fmla') || ''); if (m && at(gd, 'name')) adj[at(gd, 'name')] = +m[1]; }
+      if (Object.keys(adj).length) o.warpAdj = adj; else delete o.warpAdj;
+    } else if (warp) { delete o.warp; delete o.warpAdj; }
     if (bool(at(bp, 'fromWordArt'))) o.fromWordArt = true;
     return o;
   }
@@ -1099,8 +1105,6 @@
           }
         }
         delete tx.fromWordArt;
-        const warp = tx.warp;
-        delete tx.warp;
         /* placeholder frames: title anchors default to the master */
         sh.tx = tx;
         /* a SmartArt drawing's shape has a text box of its own (dsp:txXfrm, in the drawing's coordinates), turned by its
@@ -1111,16 +1115,6 @@
           const [cx, cy] = L.rotPt(r.x + r.w / 2, r.y + r.h / 2, sh.x + sh.w / 2, sh.y + sh.h / 2, -(sh.rot || 0));
           sh.txRect = [cx - sh.x - r.w / 2, cy - sh.y - r.h / 2, cx - sh.x + r.w / 2, cy - sh.y + r.h / 2].map((v) => L.round(v, 3));
           if (txf.rot) tx.rot = (tx.rot || 0) + txf.rot;
-        }
-        if (warp && bp.fromWordArt !== false && tx.ps.length <= 3 && !ph) {
-          /* WordArt */
-          const r0 = (tx.ps[0] && tx.ps[0].rs[0]) || {};
-          const fl = r0.fill || (r0.color ? { t: 'solid', c: r0.color, a: 1 } : { t: 'solid', c: 'accent1', a: 1 });
-          sh.type = 'wordart';
-          sh.wa = { text: L.txt.plain(tx), font: L.style.font(r0.font || (lstX && lstX[0] && lstX[0].rPr && lstX[0].rPr.font) || '+mj', ctx.design), b: !!r0.b, i: !!r0.i, fill: fl, line: r0.ln || { t: 'none' }, shadow: r0.shd ? { c: '#000000', a: 0.4, dx: 2, dy: 2, blur: 2 } : null, warp, algn: (tx.ps[0] && tx.ps[0].pp && tx.ps[0].pp.algn) || 'ctr' };
-          delete sh.tx;
-          sh.fill = { t: 'none' }; sh.line = { t: 'none' };
-          return sh;
         }
       }
       return sh;

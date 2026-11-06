@@ -225,7 +225,7 @@
     else if (tx.cols === 1) a.push('numCol="1"');
     if (extra && extra.attrs) a.push(extra.attrs);
     a.push('rtlCol="0"');
-    let kids = extra && extra.warp ? extra.warp : '';
+    let kids = extra && extra.warp ? extra.warp : tx.warp ? `<a:prstTxWarp prst="${X(tx.warp)}"><a:avLst>${Object.entries(tx.warpAdj || {}).map(([k, v]) => `<a:gd name="${X(k)}" fmla="val ${Math.round(v)}"/>`).join('')}</a:avLst></a:prstTxWarp>` : '';
     if (tx.autofit === 'shape') kids += '<a:spAutoFit/>';
     else if (tx.autofit === 'norm') kids += tx.fontScale && tx.fontScale < 1 ? `<a:normAutofit fontScale="${Math.round(tx.fontScale * 100000)}"${tx.lnSpcRed ? ` lnSpcReduction="${Math.round(tx.lnSpcRed * 100000)}"` : ''}/>` : '<a:normAutofit/>';
     return `<a:bodyPr ${a.join(' ')}>${kids}</a:bodyPr>`;

@@ -188,6 +188,10 @@ td.csel { background-image: linear-gradient(rgba(10,36,106,.3), rgba(10,36,106,.
 .flt.sel-obj { outline: 1px solid rgba(0,0,0,.6); }
 .shp svg.geo { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
 .shp .tbx { position: absolute; overflow: hidden; }
+/* a warped text box: its text drawn bent (svg.warp), shown straight while the caret is in it (drawing.js warpBox) */
+.shp > svg.warp { overflow: visible; pointer-events: none; }
+.shp.warped:not(:focus-within) > .tbx { opacity: 0; }
+.shp.warped:focus-within > svg.warp { display: none; }
 .shp .tbx.nowrap .pc { white-space: pre; }
 /* a drag on a picture, shape or diagram moves it: the move cursor says so; its text takes a caret; in the part of the
    page not being edited (the body while a header is, a header while the body is) a press does nothing */
