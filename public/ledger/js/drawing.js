@@ -157,6 +157,13 @@
         content.textContent = '';
         content.appendChild(h('div', { class: 'gobj-ph', translate: 'no', text: d.label === 'IntelliArt' ? L.t('{0}\n(IntelliArt is not displayed)', d.name || L.t('IntelliArt')) : L.t('{0}\n(this object is not displayed)', d.name || L.t('Object')) }));
       }
+    } else if (d.tag === 'grpSp' && d.xml && L.dml) {
+      const key = `g${w}x${hh}@${z}:${d.xml.length}`;
+      if (el._key !== key) {
+        el._key = key;
+        content.textContent = '';
+        try { content.appendChild(groupNode(d, w, hh, z, () => { el._key = null; G().syncObjects(); })); } catch (e) { content.appendChild(shapeSVG(shapeProps(d), w, hh, z)); }
+      }
     } else {
       const p = shapeProps(d);
       const key = `s${w}x${hh}@${z}:${d.xml ? d.xml.length : ''}:${JSON.stringify([p.geom, p.fill, p.line, p.lineW, d.text, p.text, d.font, d.align, p.flipH, p.flipV, p.head, p.tail])}`;
@@ -176,6 +183,39 @@
       el.appendChild(hs);
     } else if (!selected && hs) hs.remove();
   };
+  /** a group's members (shapes, lines, pictures, groups), each where the group's child coordinates (chOff, chExt) put it
+      in the group's box of w × hh px; a member keeps its rotation and flips (redraw: once a picture has loaded) */
+  function groupNode(d, w, hh, z, redraw) {
+    const X = L.dml, box = h('div', { style: 'position:absolute;inset:0' });
+    const place = (grp, into, W, H) => {
+      const g = X.xfrm(X.kid(X.kid(grp, 'grpSpPr'), 'xfrm'));
+      const sx = g && g.chw ? W / g.chw : 1, sy = g && g.chh ? H / g.chh : 1;
+      for (const c of X.kids(grp)) {
+        if (!/^(sp|cxnSp|grpSp|pic)$/.test(c.localName)) continue;
+        const xf = X.xfrm(X.kid(X.kid(c, c.localName === 'grpSp' ? 'grpSpPr' : 'spPr'), 'xfrm'));
+        if (!xf) continue;
+        const cw = xf.w * sx, ch = xf.h * sy;
+        const wrap = h('div', { style: `position:absolute;left:${(xf.x - (g ? g.chx || 0 : 0)) * sx}px;top:${(xf.y - (g ? g.chy || 0 : 0)) * sy}px;width:${cw}px;height:${ch}px` });
+        const turn = [xf.rot ? `rotate(${xf.rot}deg)` : '', xf.flipH || xf.flipV ? `scale(${xf.flipH ? -1 : 1},${xf.flipV ? -1 : 1})` : ''].join(' ').trim();
+        if (turn && c.localName !== 'sp' && c.localName !== 'cxnSp') wrap.style.transform = turn;
+        else if (xf.rot) wrap.style.transform = `rotate(${xf.rot}deg)`;   /* (a shape draws its own flips) */
+        if (c.localName === 'grpSp') place(c, wrap, cw, ch);
+        else if (c.localName === 'pic') {
+          const blip = X.desc(c, 'blip'), id = blip && Object.keys(blip.attrs || {}).find((k) => /:embed$/.test(k));
+          const url = id && d.groupMedia && d.groupMedia[blip.attrs[id]] ? mediaURL(d.groupMedia[blip.attrs[id]], redraw) : null;
+          if (url) wrap.appendChild(h('img', { src: url, alt: '', draggable: 'false', style: 'width:100%;height:100%;display:block' }));
+        } else {
+          const cd = { kind: 'shape', xml: L.xml.serialize(c) }, p = shapeProps(cd);
+          wrap.appendChild(shapeSVG(p, cw, ch, z));
+          const tx = textBox(cd, p, z);
+          if (tx) wrap.appendChild(tx);
+        }
+        into.appendChild(wrap);
+      }
+    };
+    place(L.xml.parse(d.xml), box, w, hh);
+    return box;
+  }
   function shapeSVG(p, w, hh, z) {
     const svg = document.createElementNS(SVGNS, 'svg');
     svg.setAttribute('width', w); svg.setAttribute('height', hh);

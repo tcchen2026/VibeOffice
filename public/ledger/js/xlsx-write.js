@@ -526,6 +526,12 @@
       '<x14:sparklines>' + s.items.map((i) => `<x14:sparkline><xm:f>${esc(i.f)}</xm:f><xm:sqref>${esc(i.sqref)}</xm:sqref></x14:sparkline>`).join('') + '</x14:sparklines></x14:sparklineGroup>', state, owner)).join('');
     return `<extLst>${cfx}<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"><x14:sparklineGroups xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">${g}</x14:sparklineGroups></ext></extLst>`;
   }
+  /** a worksheet's or chart sheet's headers and footers (print settings p) */
+  function headerFooterXml(p) {
+    const hf = [['oddHeader', p.header], ['oddFooter', p.footer], ['evenHeader', p.diffOddEven && p.evenHeader], ['evenFooter', p.diffOddEven && p.evenFooter], ['firstHeader', p.diffFirst && p.firstHeader], ['firstFooter', p.diffFirst && p.firstFooter]].filter(([, v]) => v);
+    if (hf.length || p.diffFirst || p.diffOddEven || p.hfScale === false || p.hfAlign === false) return `<headerFooter${attrs({ differentOddEven: p.diffOddEven ? '1' : undefined, differentFirst: p.diffFirst ? '1' : undefined, scaleWithDoc: p.hfScale === false ? '0' : undefined, alignWithMargins: p.hfAlign === false ? '0' : undefined })}>` + hf.map(([k, v]) => `<${k}>${escX(v)}</${k}>`).join('') + '</headerFooter>';
+    return '';
+  }
   function printXml(sh, writer, owner) {
     const p = sh.print;
     let s = '';
@@ -533,8 +539,7 @@
     const m = p.margins || {};
     s += `<pageMargins left="${m.l != null ? m.l : 0.75}" right="${m.r != null ? m.r : 0.75}" top="${m.t != null ? m.t : 1}" bottom="${m.b != null ? m.b : 1}" header="${m.header != null ? m.header : 0.5}" footer="${m.footer != null ? m.footer : 0.5}"/>`;
     s += L.preserve.pageSetupXML(sh, writer, owner);
-    const hf = [['oddHeader', p.header], ['oddFooter', p.footer], ['evenHeader', p.diffOddEven && p.evenHeader], ['evenFooter', p.diffOddEven && p.evenFooter], ['firstHeader', p.diffFirst && p.firstHeader], ['firstFooter', p.diffFirst && p.firstFooter]].filter(([, v]) => v);
-    if (hf.length || p.diffFirst || p.diffOddEven || p.hfScale === false || p.hfAlign === false) s += `<headerFooter${attrs({ differentOddEven: p.diffOddEven ? '1' : undefined, differentFirst: p.diffFirst ? '1' : undefined, scaleWithDoc: p.hfScale === false ? '0' : undefined, alignWithMargins: p.hfAlign === false ? '0' : undefined })}>` + hf.map(([k, v]) => `<${k}>${escX(v)}</${k}>`).join('') + '</headerFooter>';
+    s += headerFooterXml(p);
     const rb = (p.rowBreaks || []).filter((b) => b > 0), cb = (p.colBreaks || []).filter((b) => b > 0);
     if (rb.length) s += `<rowBreaks count="${rb.length}" manualBreakCount="${rb.length}">` + rb.map((b) => `<brk id="${b}" max="16383" man="1"/>`).join('') + '</rowBreaks>';
     if (cb.length) s += `<colBreaks count="${cb.length}" manualBreakCount="${cb.length}">` + cb.map((b) => `<brk id="${b}" max="1048575" man="1"/>`).join('') + '</colBreaks>';
@@ -729,6 +734,7 @@
     };
     const files = [];
     const keptEmitted = new Set(), diagramParts = new Map(); // kept objects written, private diagram parts (keptXml)
+    const creationIds = new Set(); // charts' creation IDs written
     const overrides = new Map();
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const add = (name, data, ct) => { files.push({ name, data }); if (ct) overrides.set('/' + name, ct); };
@@ -781,9 +787,11 @@
       const objects = L.sheetObjects.begin(sh, pack, pack.part(part), idmaps.get(sh));
       L.tableKeep.sheet(sh, pack, pack.part(part));
       if (sh.kind === 'chartsheet') {
-        let body = HDR + `<chartsheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}">` + (sh.tabColor ? `<sheetPr>${colorEl('tabColor', sh.tabColor)}</sheetPr>` : '') + `<sheetViews><sheetView${si === wb.active ? ' tabSelected="1"' : ''}${sh.view.zoom && sh.view.zoom !== 100 ? ` zoomScale="${Math.round(sh.view.zoom)}"` : ''}${sh.view.zoomToFit ? ' zoomToFit="1"' : ''} workbookViewId="0"/></sheetViews>`;
+        const prA = attrs({ codeName: sh.codeName, published: sh.extra.published }), prIn = sh.tabColor ? colorEl('tabColor', sh.tabColor) : '';
+        let body = HDR + `<chartsheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}">` + (prA || prIn ? `<sheetPr${prA}${prIn ? '>' + prIn + '</sheetPr>' : '/>'}` : '') + `<sheetViews><sheetView${si === wb.active ? ' tabSelected="1"' : ''}${sh.view.zoom && sh.view.zoom !== 100 ? ` zoomScale="${Math.round(sh.view.zoom)}"` : ''}${sh.view.zoomToFit ? ' zoomToFit="1"' : ''} workbookViewId="0"/></sheetViews>`;
+        if (sh.extra.chartProtection) body += `<sheetProtection${attrs(sh.extra.chartProtection)}/>`;
         const m = sh.print.margins;
-        body += `<pageMargins left="${m.l}" right="${m.r}" top="${m.t}" bottom="${m.b}" header="${m.header}" footer="${m.footer}"/>` + L.preserve.pageSetupXML(sh, pack.writer, pack.part(part));
+        body += `<pageMargins left="${m.l}" right="${m.r}" top="${m.t}" bottom="${m.b}" header="${m.header}" footer="${m.footer}"/>` + L.preserve.pageSetupXML(sh, pack.writer, pack.part(part)) + headerFooterXml(sh.print);
         const dr = await drawingPart(sh, rels, objects);
         if (dr) body += `<drawing r:id="${dr}"/>`;
         body += '</chartsheet>';
@@ -979,7 +987,14 @@
           }
           rid = drels.add('chart', '../charts/' + cPart.split('/').pop());
           }
-          obj = `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${id}" name="${nameAttr}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="${NS_C}"><c:chart xmlns:c="${NS_C}" xmlns:r="${NS_R}" r:id="${rid}"/></a:graphicData></a:graphic></xdr:graphicFrame>`;
+          /* the frame's own settings as they came (a creation ID once, should a copied sheet repeat it) */
+          const fr = d.frame || {}, cid = fr.creationId && !creationIds.has(fr.creationId) ? fr.creationId : null;
+          if (cid) creationIds.add(cid);
+          const cNvIn = (d.link ? `<a:hlinkClick xmlns:r="${NS_R}" r:id="${drels.add('hyperlink', d.link, true)}"/>` : '') +
+            (cid ? `<a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"><a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="${esc(cid)}"/></a:ext></a:extLst>` : '');
+          const cNvPr = `<xdr:cNvPr id="${id}" name="${nameAttr}"${attrs({ descr: d.descr, title: fr.title, hidden: d.hidden ? '1' : undefined })}${cNvIn ? '>' + cNvIn + '</xdr:cNvPr>' : '/>'}`;
+          const locks = fr.locks ? `<xdr:cNvGraphicFramePr><a:graphicFrameLocks${attrs(fr.locks)}/></xdr:cNvGraphicFramePr>` : '<xdr:cNvGraphicFramePr/>';
+          obj = `<xdr:graphicFrame${attrs({ macro: fr.macro ?? '', fPublished: fr.published })}><xdr:nvGraphicFramePr>${cNvPr}${locks}</xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="${NS_C}"><c:chart xmlns:c="${NS_C}" xmlns:r="${NS_R}" r:id="${rid}"/></a:graphicData></a:graphic></xdr:graphicFrame>`;
         } else {
           if (d.xml && !d.dirty) {
             const source = K.package(d.keep?.source);

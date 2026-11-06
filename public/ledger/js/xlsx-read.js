@@ -548,6 +548,16 @@
     return { rest: text.slice(0, m.index) + text.slice(e < 0 ? text.length : e + endTag.length), from: re.lastIndex, to: end };
   }
 
+  /** a worksheet's or chart sheet's headers and footers into its print settings p */
+  function readHeaderFooter(hf, p) {
+    if (!hf) return;
+    const t = (n) => { const e = kid(hf, n); return e ? XML.unx(e.textContent) : ''; };
+    p.header = t('oddHeader'); p.footer = t('oddFooter');
+    if (bool(hf, 'differentFirst', false)) { p.diffFirst = true; p.firstHeader = t('firstHeader'); p.firstFooter = t('firstFooter'); }
+    if (bool(hf, 'differentOddEven', false)) { p.diffOddEven = true; p.evenHeader = t('evenHeader'); p.evenFooter = t('evenFooter'); }
+    if (!bool(hf, 'scaleWithDoc', true)) p.hfScale = false;
+    if (!bool(hf, 'alignWithMargins', true)) p.hfAlign = false;
+  }
   function readPageSetup(ps, p) {
     if (!ps) return;
     if (at(ps, 'orientation')) p.orientation = at(ps, 'orientation') === 'landscape' ? 'landscape' : 'portrait';
@@ -707,16 +717,7 @@
     const ps = kid(el, 'pageSetup');
     readPageSetup(ps, sh.print);
     L.preserve.keepPageSetup(sh, ps);
-    const hf = kid(el, 'headerFooter');
-    if (hf) {
-      const p = sh.print;
-      const t = (n) => { const e = kid(hf, n); return e ? XML.unx(e.textContent) : ''; };
-      p.header = t('oddHeader'); p.footer = t('oddFooter');
-      if (bool(hf, 'differentFirst', false)) { p.diffFirst = true; p.firstHeader = t('firstHeader'); p.firstFooter = t('firstFooter'); }
-      if (bool(hf, 'differentOddEven', false)) { p.diffOddEven = true; p.evenHeader = t('evenHeader'); p.evenFooter = t('evenFooter'); }
-      if (!bool(hf, 'scaleWithDoc', true)) p.hfScale = false;
-      if (!bool(hf, 'alignWithMargins', true)) p.hfAlign = false;
-    }
+    readHeaderFooter(kid(el, 'headerFooter'), sh.print);
     for (const b of kids(kid(el, 'rowBreaks'), 'brk')) sh.print.rowBreaks.push(num(b, 'id', 0));
     for (const b of kids(kid(el, 'colBreaks'), 'brk')) sh.print.colBreaks.push(num(b, 'id', 0));
     /* comments (legacy) */
@@ -1074,6 +1075,7 @@
     const label = /\/diagram$/.test(uri) ? 'IntelliArt' : obj?.localName === 'contentPart' || all.some(e => e.localName === 'contentPart') ? 'Ink' : 'Object';
     return { kind: 'frame', id: num(cnv, 'id', 0), name: at(cnv, 'name') || '', descr: at(cnv, 'descr') || undefined, hidden: bool(cnv, 'hidden', false) || undefined, label, xml };
   }
+  const FRAME_LOCKS = ['noGrp', 'noDrilldown', 'noSelect', 'noChangeAspect', 'noMove', 'noResize'];
   async function readDrawingObject(pkg, obj, rels, ctx, sh) {
     const nv = obj.children.find((c) => /^nv/.test(c.localName));
     const cNv = kid(nv, 'cNvPr');
@@ -1124,13 +1126,27 @@
         }
         if (extras.length) d.chartParts = extras;
         if (L.xchart && L.xchart.read) { try { d.chart = L.xchart.read(XML.parse(xml), ctx.wb, sh); } catch (e) { d.chart = null; } }
+        /* the frame's own settings, which Ledger doesn't edit: its macro, title, locks, creation ID and hyperlink */
+        const locks = obj.getElementsByTagName('*').find((e) => e.localName === 'graphicFrameLocks');
+        const cid = cNv.getElementsByTagName('*').find((e) => e.localName === 'creationId');
+        const lockList = locks ? FRAME_LOCKS.filter((k) => at(locks, k) != null).map((k) => [k, at(locks, k)]) : [];
+        d.frame = { macro: at(obj, 'macro'), published: at(obj, 'fPublished'), title: at(cNv, 'title'), locks: lockList.length ? Object.fromEntries(lockList) : null, creationId: cid ? at(cid, 'id') : null };
+        const hl = kid(cNv, 'hlinkClick'); if (hl) { const hr = rels.get(rid(hl, 'id')); if (hr) d.link = hr.raw; }
         return d;
       }
       return null; /* SmartArt, slicers, timelines: not shown */
     }
     if (obj.localName === 'sp' || obj.localName === 'cxnSp' || obj.localName === 'grpSp') {
-      /* shapes and text boxes: keep their XML; images inside groups are not resolved */
+      /* shapes, text boxes and groups: keep their XML; a group's pictures are loaded to be drawn with it */
       const d = Object.assign(base, { kind: 'shape', xml: XML.serialize(obj), tag: obj.localName });
+      if (obj.localName === 'grpSp') {
+        const media = {};
+        for (const b of obj.getElementsByTagName('*').filter((e) => e.localName === 'blip')) {
+          const id = rid(b, 'embed'), r = id && rels.get(id);
+          if (r && !r.external && !media[id]) { const bytes = await pkg.bytes(r.target); if (bytes) media[id] = ctx.media(r.target, bytes); }
+        }
+        if (Object.keys(media).length) d.groupMedia = media;
+      }
       const txb = obj.getElementsByTagName('*').filter((e) => e.localName === 't');
       if (txb.length) d.text = txb.map((e) => e.textContent).join('');
       if (obj.localName === 'sp') {
@@ -1381,6 +1397,12 @@
     if (!el) return;
     const rels = await pkg.rels(part);
     const tc = color(path(el, 'sheetPr', 'tabColor')); if (tc) sh.tabColor = tc;
+    const pr = kid(el, 'sheetPr');
+    if (pr && at(pr, 'codeName')) sh.codeName = at(pr, 'codeName');
+    if (pr && at(pr, 'published') != null) sh.extra.published = at(pr, 'published');
+    /* (a chart sheet's protection has its own attributes: kept as they are) */
+    const sp = kid(el, 'sheetProtection');
+    if (sp) sh.extra.chartProtection = Object.assign({}, sp.attrs);
     const sv = path(el, 'sheetViews', 'sheetView');
     if (sv && at(sv, 'zoomScale')) sh.view.zoom = num(sv, 'zoomScale', 100);
     if (sv && at(sv, 'zoomToFit') === '1') sh.view.zoomToFit = true;
@@ -1389,6 +1411,7 @@
     const ps = kid(el, 'pageSetup');
     readPageSetup(ps, sh.print);
     L.preserve.keepPageSetup(sh, ps);
+    readHeaderFooter(kid(el, 'headerFooter'), sh.print);
     const dr = kid(el, 'drawing');
     if (dr) { const r = rels.get(rid(dr, 'id')); if (r) await readDrawing(pkg, r.target, sh, ctx); }
   }

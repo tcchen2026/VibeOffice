@@ -71,7 +71,9 @@ drawn. A shape from the file that Ledger writes itself after an edit (Format Aut
 the edit didn't touch: its rotation (a quarter-turned shape with its size the other way round, as Office stores it),
 flips, arrowheads, adjustments, a freeform's geometry (it was written as `prst="custom"`), its style and the fill,
 line and effects it came with unless one is set, its text body and runs while its text is the same; a group stays
-whole (Format sets its size and properties, not colours; it was written as one shape, losing the others). Excel 2016
+whole (Format sets its size and properties, not colours; it was written as one shape, losing the others), and it is
+drawn as its members, shapes, lines, pictures and groups within it, each where the group puts it (it was drawn as one
+rectangle over the group). Excel 2016
 opens all 7 files of the check round without a repair prompt, and edited copies of three corpus workbooks (a group of
 freeforms, rotated lines and text boxes, adjusted presets) print pixel-identical to their unedited saves. Open
 Hyperlink goes to a reference in the workbook; a web, mail or file address is shown to copy, never opened
@@ -218,6 +220,13 @@ Cell edits no longer introduce a portrait orientation into a sheet that omitted 
 public save/edit/draft inputs produce 49 passing package/SDK states, with all seven unedited render
 pairs retaining their original page counts. Sixteen distinct command states cover paper/quality
 edits, chart sheets, history and copies.
+
+Chart sheets keep their headers and footers, code names (which macros refer to), `published` flags and
+protection, and chart frames their grouping and other locks, creation IDs, titles, alt text, hyperlinks and macros
+(2026-11-06; found in a converted `.xls`). Before, a save dropped all of them: across the corpus 14 chart sheets'
+header and footer text, 48 code names and 8 protections, and the locks of 24 chart frames, 19 creation IDs and 6
+hyperlinks; now every one survives (`tests/ledger/chart-frames.test.js`), and Excel 2016 opens the five saves of the
+check round without a repair prompt.
 The `984eaf3` refresh completes all 2,853 driver attempts and 6,589 package/SDK states with
 unchanged statuses and zero added diagnostics; independent cell comparisons are also unchanged.
 Its full LibreOffice pass resolves 34 earlier count differences. Office batch 6 files 01–04 cover absence,
