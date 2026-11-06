@@ -55,6 +55,17 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   top of a page reached by overflow, by "page break before" or (Word 2013+ documents) by a section
   break, a line with "multiple" line spacing only needs its single-spaced height to fit at the bottom
   of a page, and Word 2013+ justified text may squeeze spaces by up to 20% to fit a word on a line.
+- Measured in Word 2016's prints of test documents (2026-11-06): an empty paragraph that only holds a section break,
+  the next section going on continuously on the same paper, takes no room at all, neither its line (however large its
+  mark) nor its spacing, in every compatibility mode; spacing collapses across a continuous section break as between
+  any two paragraphs, and the next section starts right below the text (Quire left a pixel). Auto spacing (HTML's)
+  stays out from between two paragraphs whose numbering goes on from one to the next, at any level and through
+  another numbering of the same list, but not between two lists or where the numbering restarts. Paragraphs with the
+  same borders share one box when neither has an indent (they were drawn as separate boxes), and Liberation Sans,
+  Serif and Mono, Arimo, Tinos, Cousine, Carlito and Caladea are as tall as the fonts they stand in for. Of the
+  2,290 Word-saved corpus files, 2,147 now show Word's stored page count (2,140 before); 9 moved toward it, and one
+  with overlapping floating tables, wrong before as well, moved away. A section break's mark (with formatting marks
+  shown) is named by how the next section starts, as in Word (it named the section it ends).
 - More of Word's own habits: a right or centred tab stop placed beyond the right indent lets the page
   number of a table of contents run out to it; superscripts and footnote references do not push their
   line down; table rows are as tall as Word makes them even though the browser draws hairline borders a

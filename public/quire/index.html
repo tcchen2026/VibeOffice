@@ -89,6 +89,7 @@
 /* ---------- paragraphs & runs ---------- */
 .p { position: relative; }
 .p.synth > .pc { font-size: 1px !important; line-height: 1px !important; }
+.p.bare-sect { height: 0; }
 .pc { white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; font-kerning: normal; }
 .pc > span, .pc > br { white-space: pre-wrap; }
 .p.dropcap .pc { overflow: visible; }
@@ -144,6 +145,7 @@
 .pages.marks .pg .hbrk { position: absolute; }
 .sectmark { position: absolute; width: 100%; text-align: center; font: 10px/14px Arial, Arimo, sans-serif; color: #3a3a3a; border-top: 3px double #555; margin-top: 8px; height: 0; text-indent: 0; }
 .sectmark::after { content: attr(data-label); background: #fff; position: relative; top: -9px; padding: 0 4px; }
+.p.bare-sect .sectmark { top: 0; margin-top: -2px; }
 .flow .p.has-sect::after { content: var(--t-sect, "Section Break (Next Page)"); display: block; text-align: center; font: 10px/14px Arial, Arimo, sans-serif; color: #3a3a3a; border-top: 3px double #555; margin: 6px 0 4px; height: 0; }
 .flow .p.has-sect .sectmark { display: none; }
 .flow .pg-fn, .flow .fnote { display: none; }

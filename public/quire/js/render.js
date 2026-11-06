@@ -14,6 +14,8 @@
     'calibri': 1.2207, 'calibri light': 1.2207, 'cambria': 1.1724, 'times new roman': 1.149, 'arial': 1.149, 'courier new': 1.1328, 'verdana': 1.2153, 'georgia': 1.1362,
     'tahoma': 1.2069, 'trebuchet ms': 1.1611, 'segoe ui': 1.3301, 'garamond': 1.1235, 'comic sans ms': 1.3936, 'book antiqua': 1.1704, 'bookman old style': 1.1636, 'century gothic': 1.2251,
     'palatino linotype': 1.1353, 'lucida console': 1.0, 'impact': 1.2197, 'arial black': 1.41, 'arial narrow': 1.149, 'franklin gothic medium': 1.1338, 'symbol': 1.2275, 'wingdings': 1.1, 'aptos': 1.2, 'helvetica': 1.149,
+    /* the metric-compatible families, as tall as the fonts they stand in for (Word printed Liberation Sans as Arial) */
+    'liberation sans': 1.149, 'arimo': 1.149, 'liberation serif': 1.149, 'tinos': 1.149, 'liberation mono': 1.1328, 'cousine': 1.1328, 'carlito': 1.2207, 'caladea': 1.1724,
     /* East Asian fonts, by their English names (L.fontKey: ＭＳ 明朝 is ms mincho), from the fonts' Windows metrics;
        unverified against Word (python3 tools/linegrid.py fonts measures them from its PDF) */
     'ms mincho': 1.0, 'ms pmincho': 1.0, 'ms gothic': 1.0, 'ms pgothic': 1.0, 'ms ui gothic': 1.0, 'yu mincho': 1.73, 'yu gothic': 1.73, 'yu gothic light': 1.73,
@@ -22,7 +24,8 @@
   R.lineFactor = (font) => LH[L.fontKey(font)] || 1.17;
   /* a run's line factor: its East Asian font's where its text has East Asian characters and that font is taller */
   const runFactorFont = (r) => (r.eaText && r.fontEA && LH[L.fontKey(r.fontEA)] > R.lineFactor(r.font) ? r.fontEA : r.font);
-  const SPACE_EM = { 'times new roman': 0.25, arial: 0.2778, calibri: 0.2261, 'calibri light': 0.2261, cambria: 0.2197, georgia: 0.2412, verdana: 0.3516, tahoma: 0.3125, 'courier new': 0.6, garamond: 0.25, 'book antiqua': 0.25, 'palatino linotype': 0.25, 'segoe ui': 0.2744, 'trebuchet ms': 0.3013, 'century gothic': 0.2773, helvetica: 0.2778, aptos: 0.2, 'arial narrow': 0.2278 };
+  const SPACE_EM = { 'times new roman': 0.25, arial: 0.2778, calibri: 0.2261, 'calibri light': 0.2261, cambria: 0.2197, georgia: 0.2412, verdana: 0.3516, tahoma: 0.3125, 'courier new': 0.6, garamond: 0.25, 'book antiqua': 0.25, 'palatino linotype': 0.25, 'segoe ui': 0.2744, 'trebuchet ms': 0.3013, 'century gothic': 0.2773, helvetica: 0.2778, aptos: 0.2, 'arial narrow': 0.2278,
+    'liberation sans': 0.2778, arimo: 0.2778, 'liberation mono': 0.6, cousine: 0.6, carlito: 0.2261, caladea: 0.2197 };
   R.spaceEm = (font) => SPACE_EM[L.fontKey(font)] || 0.25;
   R.mathSolo = (p) => {
     let maths = 0, other = '';
@@ -223,6 +226,13 @@
     const l = ind.l || 0, r = ind.r || 0, fl = ind.fl || 0;
     const sp = pPr.sp || {};
     let before = sp.bAuto ? 14 : sp.b || 0, after = sp.aAuto ? 14 : sp.a || 0;
+    /* auto spacing stays out from between paragraphs of one list, its numbering going on from one to the next at any
+       level, as between the items of an HTML list; next to any other paragraph, another list's or one that restarts the
+       numbering, it is 14 pt (Word 2016's prints, tmp/qp/auto) */
+    const label = (q) => q && ctx.labels && ctx.labels.get(q.id);
+    const oneList = (a, b) => { const la = label(a), lb = label(b); return !!(la && lb && la.abs === lb.abs && !lb.restarts); };
+    if (sp.bAuto && oneList(ctx.prev, p)) before = 0;
+    if (sp.aAuto && oneList(p, ctx.next)) after = 0;
     if (pPr.contextual) {
       const sid = p.pPr.style || 'Normal';
       if (ctx.prev && (ctx.prev.pPr.style || 'Normal') === sid) before = 0;
@@ -236,7 +246,7 @@
     if (before && ctx.prev && !ctx.prevTbl && !ctx.frameEmpty && ctx.prev.t === 'p' && !R.cumulativeSpacing(d)) {
       const pp = D.pProps(d, ctx.prev, tctx);
       const ps = pp.sp || {};
-      let pa = ps.aAuto ? 14 : ps.a || 0;
+      let pa = ps.aAuto ? (oneList(ctx.prev, p) ? 0 : 14) : ps.a || 0;
       if (pp.contextual && (ctx.prev.pPr.style || 'Normal') === (p.pPr.style || 'Normal')) pa = 0;
       before = Math.max(0, before - pa);
     }
@@ -273,7 +283,7 @@
     /* borders & shading, grouped with identical neighbours */
     const bd = pPr.borders;
     const shd = pPr.shd ? R.shadeCSS(pPr.shd) : '';
-    const sameBox = (q) => { if (!q) return false; const qp = D.pProps(d, q, tctx); return JSON.stringify(qp.borders || null) === JSON.stringify(bd || null) && (qp.ind || {}).l === l && (qp.ind || {}).r === r; };
+    const sameBox = (q) => { if (!q) return false; const qp = D.pProps(d, q, tctx); return JSON.stringify(qp.borders || null) === JSON.stringify(bd || null) && ((qp.ind || {}).l || 0) === l && ((qp.ind || {}).r || 0) === r; };
     if (bd && Object.keys(bd).some((k) => R.hasBorder(bd[k]))) {
       const groupPrev = first && sameBox(ctx.prev), groupNext = last && sameBox(ctx.next);
       const side = (k) => (R.hasBorder(bd[k]) ? R.borderCSS(bd[k]) : 'none');
@@ -360,6 +370,7 @@
     /* paragraph the reader had to add after a trailing table: takes no visible space until used */
     /* (Word also collapses the empty end-of-cell paragraph that follows a nested table) */
     if (!n && (p.synth || (ctx.inCell && ctx.lastInCell && ctx.prevTbl))) { outer.classList.add('synth'); outer.style.padding = '0'; }
+    else if (!n && R.bareSectBreak(d, p, ctx.view)) { outer.classList.add('bare-sect'); outer.style.padding = '0'; }
     if (pPr.keepNext) outer.dataset.kn = '1';
     if (ctx.markup && ctx.markup !== 'final' && ctx.markup !== 'original' && (p.mark || p.runs.some((it) => it.rPr && (it.rPr.ins || it.rPr.del || it.rPr.chg)) || p.pPr.chg)) outer.classList.add('chg');
     if (pPr.outline != null && pPr.outline < 9) outer.dataset.lvl = pPr.outline + 1;
@@ -367,7 +378,8 @@
       const sb = document.createElement('span');
       sb.className = 'sectmark';
       sb.contentEditable = 'false';
-      sb.dataset.label = L.t({ nextPage: 'Section Break (Next Page)', continuous: 'Section Break (Continuous)', evenPage: 'Section Break (Even Page)', oddPage: 'Section Break (Odd Page)', nextColumn: 'Section Break (Next Column)' }[p.sect.type || 'nextPage'] || 'Section Break (Next Page)');
+      /* (named, as in Word, by how the next section starts: its own type) */
+      sb.dataset.label = L.t({ nextPage: 'Section Break (Next Page)', continuous: 'Section Break (Continuous)', evenPage: 'Section Break (Even Page)', oddPage: 'Section Break (Odd Page)', nextColumn: 'Section Break (Next Column)' }[D.sectAfter(d, p).type || 'nextPage'] || 'Section Break (Next Page)');
       pc.appendChild(sb);
     }
     return outer;
@@ -771,6 +783,13 @@
    */
   /** documents saved with Word 97 spacing rules add space after and space before together */
   R.cumulativeSpacing = (d) => { const c = d.settings && d.settings.compatXML; return !!c && /doNotUseHTMLParagraphAutoSpacing(?![^>]*w:val="(0|false)")/.test(c); };
+  /** an empty paragraph that only ends a section, the next going on continuously on the same paper: on the page Word
+      gives it no room at all, neither a line nor its spacing, in every compatibility mode (Word 2016's prints) */
+  R.bareSectBreak = (d, p, view) => {
+    if (!p || p.t !== 'p' || !p.sect || D.plen(p) || (view && view !== 'print' && view !== 'reading' && view !== 'preview')) return false;
+    const nx = D.sectAfter(d, p);
+    return nx.type === 'continuous' && Math.abs(nx.pgW - p.sect.pgW) < 1 && Math.abs(nx.pgH - p.sect.pgH) < 1;
+  };
   R.layoutTabs = function (outer, p, ctx, colLeftClient, scale, colWidthPx) {
     const tabs = outer.querySelectorAll('.tb');
     if (!tabs.length) return;

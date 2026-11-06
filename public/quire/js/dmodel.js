@@ -592,11 +592,12 @@
       const absId = def.num.abs;
       let c = counters.get(absId);
       if (!c) { c = new Array(9).fill(null); counters.set(absId, c); }
+      let restarts = false;
       if (!seenNum.has(num.id)) {
         seenNum.add(num.id);
         const ov = def.num.ov || {};
         for (const k in ov) if (ov[k] && ov[k].start != null) { c[+k] = null; for (let j = +k + 1; j < 9; j++) c[j] = null; }
-        if (Object.keys(ov).some((k) => ov[k] && ov[k].start != null)) def._restart = true;
+        if (Object.keys(ov).some((k) => ov[k] && ov[k].start != null)) def._restart = restarts = true;
       }
       const lvDef = D.numLevelDef(doc, num.id, lvl) || {};
       const startOf = (l) => { const ov = def.num.ov && def.num.ov[l]; if (ov && ov.start != null) return ov.start; const d = D.numLevelDef(doc, num.id, l); return d && d.start != null ? d.start : 1; };
@@ -618,7 +619,8 @@
           return D.fmtNum(c[k] == null ? startOf(k) : c[k], fmt);
         });
       }
-      labels.set(p.id, { text, lv: lvDef, numId: num.id, lvl, value: c[lvl] });
+      /* (abs and restarts: whether the numbering goes on from the paragraph before, R.para's auto spacing) */
+      labels.set(p.id, { text, lv: lvDef, numId: num.id, lvl, value: c[lvl], abs: absId, restarts });
     };
     const walk = (blocks) => {
       for (const b of blocks) {
@@ -1060,6 +1062,12 @@
     }
     out.push({ sect: doc.sect, from, to: bl.length, endPara: null });
     return out;
+  };
+  /** the properties of the section after the one that paragraph p (holding a section break) ends */
+  D.sectAfter = function (doc, p) {
+    const bl = doc.main.blocks, r = D.info(doc, p);
+    for (let i = (r && r.cont === doc.main ? r.i : bl.indexOf(p)) + 1; i < bl.length; i++) if (bl[i].t === 'p' && bl[i].sect) return bl[i].sect;
+    return doc.sect;
   };
   D.sectOfBlock = function (doc, idx) {
     for (const s of D.sections(doc)) if (idx < s.to || s.endPara === null) return s;

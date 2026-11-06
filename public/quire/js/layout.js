@@ -271,9 +271,13 @@
       }
       if (frame.kind === 'flow') brk = -1;
       const segEnd = brk >= 0 ? brk + 1 : n;
-      const prevP = st.bi > 0 && blocks[st.bi - 1].t === 'p' ? blocks[st.bi - 1] : null;
-      const nextP = st.bi + 1 < blocks.length && blocks[st.bi + 1].t === 'p' ? blocks[st.bi + 1] : null;
-      const fctx = Object.assign({}, ctx, { prev: prevP, next: nextP, atTop: frame.empty && frame.natural && o === 0, frameEmpty: frame.empty && !ctx.inCell, openCmts: LY.openFor(p), fieldStack: LY.openMap ? LY.openMap.get('f' + p.id) : null, firstInCell: st.bi === 0, lastInCell: st.bi === blocks.length - 1, prevTbl: st.bi > 0 && blocks[st.bi - 1].t === 'tbl' });
+      /* (a section break that takes no room stands between no neighbours) */
+      const pi = R.bareSectBreak(d, blocks[st.bi - 1], ctx.view) ? st.bi - 2 : st.bi - 1;
+      const ni = R.bareSectBreak(d, blocks[st.bi + 1], ctx.view) ? st.bi + 2 : st.bi + 1;
+      const prevP = pi >= 0 && blocks[pi].t === 'p' ? blocks[pi] : null;
+      const nextP = ni < blocks.length && blocks[ni].t === 'p' ? blocks[ni] : null;
+      /* (spacing collapses across a continuous section break too: the new section's first column follows the text above) */
+      const fctx = Object.assign({}, ctx, { prev: prevP, next: nextP, atTop: frame.empty && frame.natural && o === 0, frameEmpty: frame.empty && !ctx.inCell && !frame.follows, openCmts: LY.openFor(p), fieldStack: LY.openMap ? LY.openMap.get('f' + p.id) : null, firstInCell: st.bi === 0, lastInCell: st.bi === blocks.length - 1, prevTbl: pi >= 0 && blocks[pi].t === 'tbl' });
       let frag = R.para(p, o, segEnd, fctx);
       frame.el.appendChild(frag);
       postPara(frag, p, fctx, frame);
@@ -1099,15 +1103,17 @@
   function frameFor(page, region, ci, ctx, natural) {
     const f = region.frames[ci];
     const sc = LY.scale();
-    const fr = { el: f.el, limit: page.bodyH - region.y, top: f.el.getBoundingClientRect().top, empty: !f.el.firstChild, natural, kind: 'col', page, width: f.w, notes: page.notes };
+    const fr = { el: f.el, limit: page.bodyH - region.y, top: f.el.getBoundingClientRect().top, empty: !f.el.firstChild, natural, kind: 'col', page, width: f.w, notes: page.notes, follows: ci === 0 && region.y > 0 };
     if (!fr.empty) fr.top = f.el.getBoundingClientRect().top;
     void sc;
     void ctx;
     return fr;
   }
+  /** where a region's text ends (layout px from the body's top), to the fraction of a pixel */
   function regionBottom(region) {
+    const sc = LY.scale();
     let m = 0;
-    for (const f of region.frames) { const last = f.el.lastElementChild; if (last) m = Math.max(m, last.offsetTop + last.offsetHeight); }
+    for (const f of region.frames) { const last = f.el.lastElementChild; if (last) m = Math.max(m, (last.getBoundingClientRect().bottom - f.el.getBoundingClientRect().top) / sc); }
     return region.y + m;
   }
   /** balance a multi-column region (before a continuous section break) */
@@ -1233,7 +1239,7 @@
           if (type === 'nextColumn' && region.ci + 1 < region.frames.length && (nsect.cols || {}).n === (sec.sect.cols || {}).n) { region.ci++; continue; }
           /* balance columns of the region that just ended */
           if (region.frames.length > 1) balance(page, region, blocks, regionStartState(region, page, blocks), sec.to, ctx);
-          const y = regionBottom(region) + 1;
+          const y = regionBottom(region);
           if (y >= page.bodyH - 12) { if (sn != null) numVal = sn; firstOfSection = true; startPage(false); continue; }
           region = newRegion(page, nsect, y);
           region.natural = false;
