@@ -85,6 +85,9 @@ PowerPoint's pictures fell by 11% (41 slides closer, 5 further, all SmartArt sav
 * **Placeholders:** an empty one shows its fill and outline in thumbnails, the slide show and print, as
   PowerPoint prints a title bar left empty; one without geometry of its own takes its layout's (or master's),
   custom shapes and holes included. `numCol="1"` on a slide undoes its layout's columns.
+* **Colour mapping:** a slide's own (`clrMapOvr`, a dark slide in a light deck) holds for all it shows, its
+  master's background and shapes too; a chart keeps its own mapping over the slide's (LibreOffice's
+  chart_pt_color_bg1 was drawn white with a black point: 317 → 0.6).
 * **Outlines:** a gradient outline is drawn in its first colour, as opaque as its stops are on average (all
   clear: no line).
 * **Freeforms** with several pieces fill even-odd, so holes stay holes.

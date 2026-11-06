@@ -1628,6 +1628,9 @@
         trans: { type: 'none', spd: 'fast', click: true, after: null }, anims: [], hidden: at(sx, 'show') === '0',
       };
       if (themeOverride) slide.themeOverride = themeOverride;
+      /* the slide's own colour mapping (a dark slide in a light deck: bg1 → dk1) holds for all it shows, the master's
+         background and shapes too (M.design) */
+      if (ctx.clrMapOvr) slide.clrMap = Object.assign({}, ctx.clrMapOvr);
       if (lay) {
         slide.layout = LAYOUT_MAP[lay.type] || (lay.phs.some((x) => x.ph.type === 'ctrTitle') ? 'title' : lay.phs.some((x) => x.ph.type === 'title') ? (lay.phs.length > 1 ? 'text' : 'titleOnly') : 'blank');
         if (lay.lkey) slide.lkey = lay.lkey;

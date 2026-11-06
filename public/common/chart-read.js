@@ -20,6 +20,13 @@
     if (!plot) return null;
     const cctx = Object.assign({}, ctx, { keepScheme: false, media: () => null, link: () => null, phClr: null });
     const design = ctx.design;
+    /* the chart's own colour mapping, over its slide's (a chart keeps bg1 light on a slide that maps it dark) */
+    const own = kid(cx, 'clrMapOvr');
+    if (own) {
+      const std = { bg1: 'lt1', tx1: 'dk1', bg2: 'lt2', tx2: 'dk2' }, map = {};
+      for (const k of ['bg1', 'tx1', 'bg2', 'tx2']) { const v = at(own, k); if (v && v !== ((design && design.clrMap && design.clrMap[k]) || std[k])) map[k] = v; }
+      cctx.clrMapOvr = Object.keys(map).length ? map : null;
+    }
     const style = num(kid(cx, 'style'), 'val', 2);
     const yes = (el, d) => { if (!el) return d; const v = at(el, 'val'); return v == null ? true : v === '1' || v === 'true'; };
     const val = (el, n) => at(kid(el, n), 'val');

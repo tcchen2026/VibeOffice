@@ -92,3 +92,12 @@ test('a placeholder without geometry takes its layout\'s custom shape, holes and
   const r = await onSlide('custgeom-placeholder', `(el, pres) => { const s = pres.slides[0].shapes[0]; const p = el.querySelector('[data-sid="' + s.id + '"] svg.geo path'); return [s.geom, p && p.getAttribute('fill-rule')]; }`);
   assert.deepEqual(r, ['custom', 'evenodd']);
 });
+
+test("a slide's colour mapping holds for its master's background; a chart keeps its own", async (t) => {
+  if (!page) return t.skip('Fetch pinned corpus: ' + dir);
+  // LibreOffice's chart_pt_color_bg1: the slide maps bg1 to dk1 (a black slide); its doughnut's point in bg1 at 85%
+  // keeps the chart's own mapping (bg1 light): PowerPoint 2016 draws it light grey on black, Lectern drew it the
+  // other way round
+  const r = await onSlide('chart_pt_color_bg1', `(el) => [getComputedStyle(el.querySelector('.sl-bg')).backgroundColor, [...el.querySelectorAll('svg path')].map((p) => (p.getAttribute('fill') || '').toUpperCase()).filter((f) => f === '#D9D9D9' || f === '#262626').sort()]`);
+  assert.deepEqual(r, ['rgb(0, 0, 0)', ['#D9D9D9']]);
+});
