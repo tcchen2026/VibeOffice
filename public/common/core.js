@@ -737,10 +737,16 @@
   /* the Font Size box of Word and Excel; Lectern sets PowerPoint's list in its app.js */
   L.SIZE_LIST = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
 
-  /* Wingdings / Symbol bullet glyphs mapped to Unicode so imported documents look right */
+  /* the Symbol font's characters at 0x20-0x7e and 0xa0-0xfe (Adobe's Symbol encoding; the arrow and bracket
+     extenders as the nearest whole characters, the unassigned 0xf0 as \0) */
+  const SYMBOL = [' !∀#∃%&∋()∗+,−./0123456789:;<=>?≅ΑΒΧΔΕΦΓΗΙϑΚΛΜΝΟΠΘΡΣΤΥςΩΞΨΖ[∴]⊥_‾αβχδεφγηιϕκλμνοπθρστυϖωξψζ{|}∼',
+    '€ϒ′≤⁄∞ƒ♣♦♥♠↔←↑→↓°±″≥×∝∂•÷≠≡≈…|—↵ℵℑℜ℘⊗⊕∅∩∪⊃⊇⊄⊂⊆∈∉∠∇®©™∏√⋅¬∧∨⇔⇐⇑⇒⇓◊〈®©™∑⎛⎜⎝⎡⎢⎣⎧⎨⎩⎪\0〉∫⌠⎮⌡⎞⎟⎠⎤⎥⎦⎫⎬⎭'];
+  /* Wingdings / Symbol bullet glyphs mapped to Unicode so imported documents look right; a character may come as
+     the font's own code (v) or in the private-use area Word stores it in (U+F076) */
   L.mapSymbolChar = function (ch, font) {
     const f = String(font || '').toLowerCase();
-    const code = ch ? ch.charCodeAt(0) & 0xff : 0;
+    const code = ch ? ch.charCodeAt(0) & 0xff : 0, byte = ch && (ch.charCodeAt(0) < 0x100 || (ch.charCodeAt(0) >= 0xF000 && ch.charCodeAt(0) <= 0xF0FF));
+    const own = byte ? String.fromCharCode(code) : ch;
     /* Wingdings 2 and 3 carry the round, square and triangular bullets of many Office themes */
     if (/^wingdings\s*2/.test(f)) {
       if (code >= 0x96 && code <= 0x9d) return '●';
@@ -750,10 +756,13 @@
     }
     if (/^wingdings\s*3/.test(f)) return { 0x7d: '►', 0x84: '►', 0x75: '►', 0x71: '◄', 0x70: '▲', 0x72: '▼', 0xc6: '➔', 0xc7: '⬅' }[code] || '▸';
     if (f.startsWith('wingdings')) {
-      const m = { 'l': '●', 'n': '■', 'q': '❑', 'u': '◆', 'v': '❖', 'Ø': '➢', 'ü': '✓', '§': '▪', 'o': '❍', 'p': '□', 'w': '⬥', 'Ü': '➢', 'à': '➔', 'è': '➜', 'Þ': '➝', 'ð': '⇨', 'ª': '✦', '¨': '◻', '\uF06E': '■', '\uF06C': '●', '\uF075': '◆', '\uF0FC': '✓', '\uF0D8': '➢', '\uF0A7': '▪' };
-      return m[ch] || '•';
+      const m = { 'l': '●', 'n': '■', 'q': '❑', 'u': '◆', 'v': '❖', 'Ø': '➢', 'ü': '✓', '§': '▪', 'o': '❍', 'p': '□', 'w': '⬥', 'Ü': '➢', 'à': '➔', 'è': '➜', 'Þ': '➝', 'ð': '⇨', 'ª': '✦', '¨': '◻' };
+      return m[own] || '•';
     }
-    if (f === 'symbol') { const m = { '·': '•', '\uF0B7': '•', 'Þ': '⇒', '®': '→', '¾': '—' }; return m[ch] || ch; }
+    if (f === 'symbol') {
+      const u = !byte ? '' : code >= 0xa0 ? SYMBOL[1][code - 0xa0] : code >= 0x20 && code < 0x7f ? SYMBOL[0][code - 0x20] : '';
+      return u && u !== '\0' ? u : ch;
+    }
     if (ch === '' || ch === '') return '•';
     if (ch && ch.charCodeAt(0) >= 0xF000 && ch.charCodeAt(0) <= 0xF0FF) return '•';
     return ch;

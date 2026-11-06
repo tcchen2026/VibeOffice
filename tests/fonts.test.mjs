@@ -80,3 +80,16 @@ test('Ledger: the rows of a Japanese or Korean Excel\'s default font', () => {
   assert.equal(L.model.fontRowPt({ name: '맑은 고딕', sz: 11 }), 16.5);
   assert.equal(L.model.fontRowPt({ name: 'Calibri', sz: 11 }), 15, 'Latin fonts as before');
 });
+
+test('Wingdings and Symbol characters show as Office draws them, also when Word stores them in the private-use area', () => {
+  // I24 E1: a converted Word 97-2003 list's bullets, Wingdings U+F076 and Symbol U+F0A8 (a dot and a missing glyph before)
+  assert.equal(L.mapSymbolChar('', 'Wingdings'), '❖');
+  assert.equal(L.mapSymbolChar('v', 'Wingdings'), '❖');
+  assert.equal(L.mapSymbolChar('', 'Wingdings'), '➢');
+  assert.equal(L.mapSymbolChar('', 'Symbol'), '♦');
+  assert.equal(L.mapSymbolChar('', 'Symbol'), '•');
+  assert.equal(L.mapSymbolChar('a', 'Symbol'), 'α');
+  assert.equal(L.mapSymbolChar('', 'Symbol'), '⇒');
+  assert.equal(L.mapSymbolChar('•', 'Symbol'), '•', 'a Unicode character stays as it is');
+  assert.equal(L.mapSymbolChar('ð', 'Symbol'), 'ð', 'Symbol has nothing at 0xF0');
+});
