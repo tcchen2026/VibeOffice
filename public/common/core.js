@@ -610,10 +610,23 @@
   L.hasEAText = (s) => /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/.test(s || '');
   /** a CSS font-family list for a font and what stands in for it; with ea, an East Asian font, its letters come
       from the first and its East Asian characters from the second (as Word draws a run with both fonts) */
+  /** what a document's font table says about fonts it names (an app fills it when it opens one): font key ->
+      { alt, family, pitch }, for a font we have no stand-in of our own for */
+  L.fontHints = new Map();
+  /* Word's stand-in for a missing font of a kind: a serif face for roman, a fixed-pitch one for modern */
+  const BY_FAMILY = { roman: 'times new roman', modern: 'courier new', swiss: 'arial' };
+  const hinted = (k, depth) => {
+    const h = L.fontHints.get(k);
+    if (!h || depth > 2) return null;
+    const alt = h.alt && L.fontKey(h.alt);
+    if (alt && alt !== k && (FONT_FALLBACK[alt] || CJK_BY.has(alt) || L.fontHints.has(alt))) return `"${h.alt}",` + (hinted(alt, depth + 1) || L.fontStack(h.alt).replace(/^"[^"]*",/, ''));
+    const fam = h.pitch === 'fixed' ? 'courier new' : BY_FAMILY[h.family];
+    return fam ? `"${{ 'times new roman': 'Times New Roman', 'courier new': 'Courier New', arial: 'Arial' }[fam]}",${FONT_FALLBACK[fam]}` : null;
+  };
   L.fontStack = function (name, ea) {
     if (!name) return ea ? L.fontStack(ea) : 'Arial,"Arimo",sans-serif';
     const n = String(name).replace(/"/g, ''), k = L.fontKey(n), cjk = CJK_BY.get(k);
-    const stack = cjk ? `"${n}",` + (cjk.en !== n ? `"${cjk.en}",` : '') + CJK_STACKS[cjk.stack] : `"${n}",${FONT_FALLBACK[k] || 'Arial,"Arimo",sans-serif'}`;
+    const stack = cjk ? `"${n}",` + (cjk.en !== n ? `"${cjk.en}",` : '') + CJK_STACKS[cjk.stack] : `"${n}",${FONT_FALLBACK[k] || hinted(k, 0) || 'Arial,"Arimo",sans-serif'}`;
     if (!ea || L.fontKey(ea) === k || !L.fontIsEA(ea)) return stack;
     return stack.replace(/,(serif|sans-serif|monospace|cursive)$/, '') + ',' + L.fontStack(ea);
   };

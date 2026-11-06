@@ -85,6 +85,9 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   and Arial 1.1502 times the font size, Calibri 1.2209, Cambria 1.1727, Courier New 1.1331, measured at 10 to 12 pt),
   and the browser's line, which it cuts down to a 64th of a pixel, comes to the nearest 64th (R.lhNum): 12 pt Times
   New Roman lines are 13.80 pt apart, not 13.78, which over a page decides whether a last line or a footnote's fits.
+- A font this computer lacks and the suite has no stand-in for is drawn with the font table's alternate name (`w:altName`), else
+  a face of its kind (Times New Roman for `w:family="roman"`, Courier New for fixed pitch), as Word substitutes, not
+  Arial (POI's bug59058.docx now shows Word's 52 pages).
 - Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
   and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
   bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and

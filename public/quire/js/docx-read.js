@@ -1964,6 +1964,12 @@
         (kind === 'fn' ? doc.fn : doc.en)[id] = story;
       }
     }
+    /* the font table: what stands in for a font this computer doesn't have (L.fontHints, common/core.js) */
+    const ftRel = relOfType('fontTable'), ft = ftRel && await xml(ftRel.target);
+    if (ft) for (const f of kids(ft, 'font')) {
+      const name = at(f, 'name'), alt = kid(f, 'altName'), fam = kid(f, 'family'), pitch = kid(f, 'pitch');
+      if (name && !L.fontHints.has(L.fontKey(name))) L.fontHints.set(L.fontKey(name), { alt: alt ? at(alt, 'val') : null, family: fam ? at(fam, 'val') : null, pitch: pitch ? at(pitch, 'val') : null });
+    }
     await notesPart('footnotes', 'fn', 'footnote');
     await notesPart('endnotes', 'en', 'endnote');
     const cmRel = relOfType('comments');
