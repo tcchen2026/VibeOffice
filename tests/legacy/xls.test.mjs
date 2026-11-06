@@ -60,7 +60,7 @@ test('format extensions keep theme index order, RGB color, gradient and font sch
   const ext=(type,data)=>Buffer.concat([words(type,data.length+4),data]);const header=Buffer.alloc(20);header.writeUInt16LE(0x87d);header.writeUInt16LE(1,14);header.writeUInt16LE(3,18);
   const gradient=Buffer.alloc(48+44);gradient.writeDoubleLE(45,4);gradient.writeUInt32LE(2,44);for(let i=0;i<2;i++){const p=48+i*22;gradient.writeUInt16LE(2,p);gradient.writeUInt32LE(i?0xffffffff:0xff332211,p+2);gradient.writeDoubleLE(i,p+6);}
   const book=X.read(workbook([font('Calibri'),xf(0,true),xf(0),rec(0x87d,Buffer.concat([header,ext(13,color),ext(14,Buffer.from([2])),ext(6,gradient)]))],[]));book.theme=true;const styles=X.styles(book,[]);
-  assert.match(styles.xml,/<color theme="1"/);assert.match(styles.xml,/<scheme val="minor"/);assert.match(styles.xml,/<gradientFill type="linear" degree="45">/);assert.match(styles.xml,/rgb="FF112233"/);
+  assert.match(styles.xml,/<color theme="0"/);assert.match(styles.xml,/<scheme val="minor"/);assert.match(styles.xml,/<gradientFill type="linear" degree="45">/);assert.match(styles.xml,/rgb="FF112233"/);
 });
 
 test('bad sheet offsets, unfinished streams and overlapping merges fail cleanly',async()=>{

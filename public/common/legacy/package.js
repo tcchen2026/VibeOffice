@@ -63,7 +63,7 @@
         this.add(name, B.xmlDeclaration + B.el('Relationships', { xmlns: B.ns.rel }, list.map(r => B.el('Relationship', r)).join('')));
       }
       const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
-      for (const [name, type] of this.types) if (/^(?:image|audio|video)\//.test(type)) {
+      for (const [name, type] of this.types) if (/^(?:image|audio|video)\//.test(type) || type === 'application/vnd.openxmlformats-officedocument.vmlDrawing') {
         const extension = name.split('/').at(-1).split('.').at(-1).toLowerCase();
         if (!/^[a-z0-9]+$/.test(extension) || defaults.has(extension) && defaults.get(extension) !== type) B.fail('PART_CONTENT_TYPE', 'Conflicting media content types');
         defaults.set(extension, type);

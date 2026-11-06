@@ -56,6 +56,45 @@ def in_range(value, low, high):
     return value is not None and re.fullmatch(r'[+-]?\d+', value.strip()) is not None and low <= int(value) <= high
 
 
+def name_fault(name):
+    """why Excel refuses a defined name, or None (I24 C3: Office controls; a name that merely looks like a cell, such as
+    C1244, opens and is not flagged)"""
+    if not name or len(name.encode('utf-16-le')) // 2 > 255:
+        return 'length'
+    if name.upper() in ('TRUE', 'FALSE', 'R', 'C', 'RC'):
+        return 'reserved'
+    m = re.match(r'([RrCc])(\d+)\D', name)  # C1244_suffix; C000_V opens (0 is no index)
+    if m and 1 <= int(m.group(2)) <= (1048576 if m.group(1) in 'Rr' else 16384):
+        return 'R1C1 index followed by other characters'
+    for i, ch in enumerate(name):
+        o = ord(ch)
+        if o < 0x20 or 0x7f <= o <= 0x9f or ch in '\u00a6\u00a9\u00bb':
+            return f'character U+{o:04X}'
+        if o < 0x80 and not (ch.isalpha() or ch in '_\\' or (i and (ch.isdigit() or ch in '.?'))):
+            return f'character {ch!r}' + (' first' if i == 0 else '')
+    return None
+
+
+def bare_reference(formula):
+    """a name defined as nothing but an A1 cell or area with no sheet qualifier and no bang (V200, $B$2:$C$3), which
+    Office refuses (I24 C3; MS-OE376 3.2.3.1.4). A reference inside a longer expression isn't flagged: LibreOffice
+    writes SUM(OFFSET($B$1,...)) and that case wasn't measured."""
+    def cell(m):
+        col = 0
+        for c in m.group(1).upper():
+            col = col * 26 + ord(c) - 64
+        return col <= 16384 and 1 <= int(m.group(2)) <= 1048576
+    text = formula.strip()
+    parts = text.split(':')
+    if len(parts) > 2:
+        return None
+    for part in parts:
+        m = re.fullmatch(r'\$?([A-Za-z]{1,3})\$?(\d+)', part.strip())
+        if not m or not cell(m):
+            return None
+    return text
+
+
 def short_calls(formula):
     """(name, operands, needed) for each call of a built-in with fewer operands than it needs: strings, quoted
     sheet names, array constants and structured references are skipped, so their commas don't count"""
@@ -313,6 +352,15 @@ class Package:
                 if ns in S and tag in ('f', 'definedName', 'formula', 'formula1', 'formula2') and el.text:
                     for name, operands, needed in short_calls(el.text):
                         self.issue('function-missing-operands', part, f'{name} with {operands} of its {needed} required operands', path)
+                # ... a workbook's defined name Excel can't take, and a name defined by a cell of no sheet (Office opens
+                # !V200 and Sheet1!V200, not V200; I24 C3)
+                if ns in S and tag == 'definedName' and (self.types.get(part) or '').endswith('.main+xml'):
+                    fault = name_fault(at(el, 'name') or '')
+                    if fault:
+                        self.issue('defined-name-invalid', part, (at(el, 'name') or '') + ': ' + fault, path)
+                    ref = bare_reference(el.text or '')
+                    if ref:
+                        self.issue('defined-name-current-sheet-reference', part, (at(el, 'name') or '') + ': ' + ref, path)
                 # ... and an Excel 4 macro function (GET.CELL) in a defined name of a workbook that can't hold macros
                 # (I24 C2: removing only that name opens the file)
                 if ns in S and tag == 'definedName' and el.text and 'macroEnabled' not in (self.types.get(part) or '') \

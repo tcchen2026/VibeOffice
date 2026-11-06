@@ -8,7 +8,8 @@
   /* the converters in load order (tools/legacy/load.mjs reads this list too) */
   const FILES = ['base', 'codepages', 'properties', 'xls-read', 'doc-read', 'ppt-read', 'inspect',
     'package', 'property-parts', 'images', 'officeart', 'native-geometry', 'shape-path', 'shapes', 'xml-check',
-    'xls-style-ext', 'xls-style', 'xls-sheet', 'xls-functions', 'xls-formula', 'xls-formula-book', 'xls-write',
+    'xls-style-ext', 'xls-style', 'xls-sheet', 'xls-functions', 'xls-formula', 'xls-formula-book',
+    'xls-misc', 'xls-dxf', 'xls-rules', 'xls-comments', 'xls-write',
     'doc-sprm', 'doc-structure', 'doc-style', 'doc-lists', 'doc-xml', 'doc-settings', 'doc-text', 'doc-write',
     'ppt-structure', 'ppt-theme', 'ppt-text-read', 'ppt-text', 'ppt-text-design', 'ppt-text-write', 'ppt-write'];
   const N = (s) => s;

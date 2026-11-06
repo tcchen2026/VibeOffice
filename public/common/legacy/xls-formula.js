@@ -10,7 +10,17 @@
   // Binary operators (including ^) associate left; tParen retains typed grouping.
   const precedence={'<':1,'<=':1,'=':1,'>=':1,'>':1,'<>':1,'&':2,'+':3,'-':3,'*':4,'/':4,'^':5,',':8,' ':9,':':10};
   X.formulaErrors={0:'#NULL!',7:'#DIV/0!',15:'#VALUE!',23:'#REF!',29:'#NAME?',36:'#NUM!',42:'#N/A',43:'#GETTING_DATA'};
-  X.quoteSheet=name=>"'"+String(name).replace(/'/g,"''")+"'";
+  // SheetNameFormatter (POI): delimit only ambiguous names. The destination is
+  // OOXML, so A1-looking names use the modern sheet bounds, not BIFF's bounds.
+  X.quoteSheet=function(name){
+    name=String(name);const bare=name.replace(/^\[\d+\]/,'').split(':');
+    const ambiguous=s=>{
+      if(!s||/^\p{N}/u.test(s)||/[^\p{L}\p{N}_.]/u.test(s)||/^(?:TRUE|FALSE|R|C|RC)$/i.test(s)||/^R(?:\d|C\d)/i.test(s))return true;
+      const m=/^([A-Z]{1,3})([1-9]\d*)$/i.exec(s);if(!m)return false;
+      const col=[...m[1].toUpperCase()].reduce((n,c)=>n*26+c.charCodeAt(0)-64,0);return col<=16384&&+m[2]<=1048576;
+    };
+    return bare.some(ambiguous)?"'"+name.replace(/'/g,"''")+"'":name;
+  };
   const colName=col=>{let out='';for(let n=col+1;n;n=Math.floor((n-1)/26))out=String.fromCharCode(65+(n-1)%26)+out;return out;};
   const string=s=>'"'+s.replace(/"/g,'""')+'"';
   const bad=(message,where)=>B.fail('FORMULA_UNSUPPORTED',message,where);
@@ -48,7 +58,7 @@
     const call=(id,count)=>{
       const fn=X.functions[id];if(id!==255&&!fn)bad('Unknown Excel function',id);
       const args=take(count==null?fn[1]:count);let name=fn?.[0];
-      if(id===255){const first=args.shift();name=first?.name||first?.text;if(!name||!/^(?:(?:'(?:[^']|'')*'|\[\d+\])!)?[_\p{L}\\][\p{L}\p{N}_.\\]*$/u.test(name))bad('Invalid named function');
+      if(id===255){const first=args.shift();name=first?.name||first?.text;if(!name||!/^(?:(?:'(?:[^']|'')*'|\[\d+\](?:[\p{L}\p{N}_.]+)?|[\p{L}_][\p{L}\p{N}_.]*)!)?[_\p{L}\\][\p{L}\p{N}_.\\]*$/u.test(name))bad('Invalid named function');
         // An unbound registered UDF named e.g. Sum is not BIFF's SUM function.
         // Plain A1 text would silently rebind it to the built-in implementation.
         if(first.functionOnly&&minimumArgs.has(name.toUpperCase()))bad('A registered function has the same name as an Excel function',name);
@@ -78,7 +88,12 @@
       if(id===0x21){const fn=r.u16(p);p+=2;call(fn);continue;}
       if(id===0x22){const count=r.u8(p)&127,fn=r.u16(p+1);p+=3;call(fn,count);continue;}
       if(id===0x23){const index=r.u16(p);p+=b8?4:14;r.check(p,0);const name=context.name?.(index);if(!name)bad('Undefined formula name',index);push(typeof name==='string'?{text:name,name}:name);continue;}
-      if([0x24,0x25,0x2c,0x2d].includes(id)){const area=id===0x25||id===0x2d;push(atom(reference(area,relative||id===0x2c||id===0x2d),area?10:11));continue;}
+      if([0x24,0x25,0x2c,0x2d].includes(id)){
+        const area=id===0x25||id===0x2d,ref=reference(area,relative||id===0x2c||id===0x2d);
+        // MS-OE376 3.2.3.1.4: a name formula's current-sheet reference is
+        // !A1, not bare A1. Its sheet remains relative to the caller.
+        push(atom((context.nameMode?'!':'')+ref,area?10:11));continue;
+      }
       if([0x26,0x27,0x28].includes(id)){r.check(p,6);p+=6;if(id===0x26)extensions.push({kind:'memory'});continue;}
       if(id===0x29||id===0x2e||id===0x2f){r.check(p,2);p+=2;continue;}
       if(id===0x2a||id===0x2b){const n=(id===0x2a?1:2)*(b8?4:3);r.check(p,n);p+=n;push(atom('#REF!'));continue;}

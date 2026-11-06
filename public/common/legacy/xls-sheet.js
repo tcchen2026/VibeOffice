@@ -11,10 +11,10 @@
     for(const rec of sheet.records){const r=rec.r,id=rec.id;if(id===0x809){depth++;continue;}if(id===0xa){depth--;continue;}if(depth!==1)continue;out.records.push(rec);
       try{
         if(id===0x208){const row=r.u16(0),flags=r.u16(12),extra=r.u16(14);out.rows.set(row,{r:row+1,ht:(r.u16(6)&0x7fff)/20,customHeight:flags&64?1:null,hidden:flags&32?1:null,outlineLevel:flags&7||null,collapsed:flags&16?1:null,sourceXF:flags&128?extra&4095:null,thickTop:extra&0x1000?1:null,thickBot:extra&0x2000?1:null,defaultHeight:!!(r.u16(6)&0x8000)});}
-        else if(id===0x7d){const first=r.u16(0),last=Math.min(255,r.u16(2)),flags=r.u16(8);if(first<=last)out.cols.push({min:first+1,max:last+1,width:r.u16(4)/256,sourceXF:r.u16(6),customWidth:1,hidden:flags&1?1:null,outlineLevel:flags>>>8&7||null,collapsed:flags&4096?1:null});}
+        else if(id===0x7d){const first=r.u16(0),last=Math.min(255,r.u16(2)),flags=r.u16(8);if(first<=last)out.cols.push({min:first+1,max:last+1,width:Math.min(255,r.u16(4)/256),sourceXF:r.u16(6),customWidth:1,hidden:flags&1?1:null,outlineLevel:flags>>>8&7||null,collapsed:flags&4096?1:null});}
         else if(id===0x225){const flags=r.u16(0);Object.assign(out.format,{defaultRowHeight:(r.u16(2)&0x7fff)/20,customHeight:flags&1?1:null,zeroHeight:flags&2?1:null,thickTop:flags&4?1:null,thickBottom:flags&8?1:null});}
         else if(id===0x55)out.format.baseColWidth=Math.min(255,r.u16(0));
-        else if(id===0x99)out.format.defaultColWidth=r.u16(0)/256;
+        else if(id===0x99)out.format.defaultColWidth=Math.min(255,r.u16(0)/256);
         else if(id===0x81){const flags=r.u16(0);out.dialog=!!(flags&16);out.outline.summaryBelow=flags&64?1:0;out.outline.summaryRight=flags&128?1:0;}
         else if(id===0xe5){const count=r.u16(0);r.check(2,count*8);for(let i=0;i<count;i++){const p=2+i*8,box=[r.u16(p),r.u16(p+4),r.u16(p+2),r.u16(p+6)];if(box[0]<=box[2]&&box[1]<=box[3]&&box[3]<256)out.merges.push(box);}}
         else if(id===0x23e){const flags=r.u16(0);out.flags=flags;Object.assign(out.view,{showFormulas:flags&1?1:null,showGridLines:flags&2?null:0,showRowColHeaders:flags&4?null:0,showZeros:flags&16?null:0,rightToLeft:flags&64?1:null,showOutlineSymbols:flags&128?null:0,tabSelected:flags&512?1:null,view:flags&2048?'pageBreakPreview':null,topLeftCell:X.address(r.u16(2),Math.min(255,r.u16(4)))});if(!(flags&32)){out.view.defaultGridColor=0;out.view.colorId=r.u16(6)&127;}if(r.length>=14){out.view.zoomScaleSheetLayoutView=r.u16(10)||null;out.view.zoomScaleNormal=r.u16(12)||null;}}

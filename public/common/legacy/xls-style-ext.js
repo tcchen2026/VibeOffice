@@ -28,8 +28,10 @@
   X.colorValue=function(type,value,themeAvailable){
     if(type===0)return {auto:1};if(type===1)return {indexed:value<=65?value:64};
     if(type===2)return {rgb:[value>>>24,value&255,value>>>8&255,value>>>16&255].map(n=>n.toString(16).padStart(2,'0')).join('').toUpperCase()};
-    // BIFF orders dark/light pairs in the opposite order to SpreadsheetML.
-    if(type===3&&value<12&&themeAvailable)return {theme:value<4?value^1:value};
+    // Office-written XFExt values use the same numeric theme slots as SpreadsheetML.
+    // Keep the indices: swapping the first pairs turns cached white fills black
+    // (57231_MixedGasReport.xls and the corpus XF/palette cross-check).
+    if(type===3&&value<12&&themeAvailable)return {theme:value};
     return null;
   };
   X.styleExtensions=function(book,xfs,losses){

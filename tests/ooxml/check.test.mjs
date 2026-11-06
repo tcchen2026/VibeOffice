@@ -271,6 +271,20 @@ test('what PowerPoint refuses in a converted presentation: unsigned font bytes, 
   assert.ok(!(await codes('total-time-ok', app(2147483647))).includes('extended-property-total-time'));
 });
 
+test('a defined name Excel takes, and its definition qualified by a sheet or a bang (as Office opens them)', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const types = '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>';
+  const issues = async (tag, names) => run('check', await pkg(tag, { '[Content_Types].xml': types, 'xl/workbook.xml': `<workbook xmlns="${S}"><definedNames>${names.map(([n, d]) => `<definedName name="${n}">${d}</definedName>`).join('')}</definedNames></workbook>` })).issues.map((i) => i.code + ' ' + i.detail);
+  const refused = ['?Name', 'C1244_suffix', 'C1244A1430', 'Name\u008f', 'Name\u00a6', 'Name\u00a9', 'Name\u00bb', 'TRUE', 'rc', 'Two words', '1st'];
+  const taken = ['_?', 'C1244', 'C000_V', '_C1244\u31411430', 'Name\u00b6', 'Name\u00a7', 'Name\u00aa', 'Name\u20ac', 'Name\u2192', 'Name\u00ad', 'a.b?c', '\\x', 'Rate'];
+  const bad = await issues('names-refused', refused.map((n) => [n, '0']));
+  for (const n of refused) assert.ok(bad.some((i) => i.startsWith('defined-name-invalid ' + n + ':')), n);
+  assert.deepEqual(await issues('names-taken', taken.map((n) => [n, '0'])), []);
+  assert.deepEqual(await issues('name-bare', [['GoodName', 'V200'], ['Area', 'B2:C3']]), ['defined-name-current-sheet-reference GoodName: V200', 'defined-name-current-sheet-reference Area: B2:C3']);
+  assert.deepEqual(await issues('name-qualified', [['Here', '!V200'], ['There', 'Sheet1!$V$200:$W$300'], ['Quoted', "'My sheet'!A1"], ['Text', 'LOG10(100)+"A1"'], ['Sum', 'SUM(Sheet1!A1:B2)*Rate'], ['Names', 'XFE1+ABCD12'], ['Offset', 'SUM(OFFSET($B$1,3,0))']]), []);
+});
+
 test('WordArt fill belongs to textFill/textOutline and insertion encloses deletion', async () => {
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', W14 = 'http://schemas.microsoft.com/office/word/2010/wordml';
   const doc = content => `<w:document xmlns:w="${W}" xmlns:w14="${W14}"><w:body><w:p>${content}</w:p></w:body></w:document>`;

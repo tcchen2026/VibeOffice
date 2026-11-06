@@ -1,6 +1,7 @@
 /* Derived from Apache OpenOffice sc/source/filter/excel/xistyle.cxx and
  * Derived from Apache POI hssf/record/{Font,Format,ExtendedFormat,Style,Palette}Record.java
  * (Apache-2.0). BIFF5/8 styles -> SpreadsheetML, independent of any app model. */
+/* Font child order: Derived from Open XML SDK v3.3.0 schema data (MIT). */
 (function(root){
   'use strict';
   const B=root.L.legacy,X=B.xls,el=B.el,N=s=>s;
@@ -10,6 +11,9 @@
   const builtins=['Normal','RowLevel_','ColLevel_','Comma','Currency','Percent','Comma [0]','Currency [0]','Hyperlink','Followed Hyperlink'];
   const defaultPalette=('000000 FFFFFF FF0000 00FF00 0000FF FFFF00 FF00FF 00FFFF 800000 008000 000080 808000 800080 008080 C0C0C0 808080 9999FF 993366 FFFFCC CCFFFF 660066 FF8080 0066CC CCCCFF 000080 FF00FF FFFF00 00FFFF 800080 800000 008080 0000FF 00CCFF CCFFFF CCFFCC FFFF99 99CCFF FF99CC CC99FF FFCC99 3366FF 33CCCC 99CC00 FFCC00 FF9900 FF6600 666699 969696 003366 339966 003300 333300 993300 993366 333399 333333').split(' ').map(c=>'FF'+c);
   const color=(tag,index)=>el(tag,typeof index==='object'?index:index===0x7fff?{auto:1}:{indexed:index<=65?index:64});
+  X.stylePatterns=patterns;X.borderLines=lines;X.styleColor=color;
+  // ECMA-376 CT_Font/CT_RPrElt order, also used in Office-authored comments.xlsx.
+  X.fontOrder=['b','i','strike','condense','extend','outline','shadow','u','vertAlign','sz','color','name','family','charset','scheme'];
   X.styles=function(book,losses){
     const fonts=[],formats=new Map(),xfs=[],named=[];let palette;
     const warn=(code,where)=>losses.push(B.loss(code,N('Some workbook formatting could not be read'),where,'drop','Workbook formatting'));
@@ -49,11 +53,11 @@
     const boldFont=fonts.length;fonts.push({...fonts[0],weight:700});
     const fontIndex=id=>id===4?boldFont:id>=5&&id-1<boldFont?id-1:id>=0&&id<4&&id<boldFont?id:0;
     const fontBody=(f,rich=false)=>{
-      let s=el(rich?'rFont':'name',{val:f.name||'Arial'})+el('sz',{val:f.size>0&&f.size<=409?f.size:10});
-      if(f.weight>=700)s+=el('b');if(f.flags&2)s+=el('i');if(f.flags&8)s+=el('strike');if(f.flags&16)s+=el('outline');if(f.flags&32)s+=el('shadow');
-      const underline={1:'single',2:'double',33:'singleAccounting',34:'doubleAccounting'}[f.underline];if(underline)s+=el('u',{val:underline});
-      if(f.script===1||f.script===2)s+=el('vertAlign',{val:f.script===1?'superscript':'subscript'});
-      s+=color('color',f.color);if(f.family<=5)s+=el('family',{val:f.family});if(f.charset)s+=el('charset',{val:f.charset});if(f.scheme)s+=el('scheme',{val:f.scheme});return s;
+      const parts={name:el(rich?'rFont':'name',{val:f.name||'Arial'}),sz:el('sz',{val:f.size>0&&f.size<=409?f.size:10})};
+      if(f.weight>=700)parts.b=el('b');if(f.flags&2)parts.i=el('i');if(f.flags&8)parts.strike=el('strike');if(f.flags&16)parts.outline=el('outline');if(f.flags&32)parts.shadow=el('shadow');
+      const underline={1:'single',2:'double',33:'singleAccounting',34:'doubleAccounting'}[f.underline];if(underline)parts.u=el('u',{val:underline});
+      if(f.script===1||f.script===2)parts.vertAlign=el('vertAlign',{val:f.script===1?'superscript':'subscript'});
+      parts.color=color('color',f.color);if(f.family<=5)parts.family=el('family',{val:f.family});if(f.charset)parts.charset=el('charset',{val:f.charset});if(f.scheme)parts.scheme=el('scheme',{val:f.scheme});return X.fontOrder.map(key=>parts[key]||'').join('');
     };
     const defaultXF={font:0,numFmt:0,flags:1,parent:0,style:false,used:63,align:{vertical:'bottom'},border:{},pattern:0,foreground:64,background:65};
     if(!xfs.length)xfs.push(defaultXF);for(let i=0;i<xfs.length;i++)xfs[i]||=defaultXF;
@@ -78,11 +82,13 @@
     const styleXfs=styleOrder.map(i=>xfXml(xfs[i]||defaultXF,true)),cellXfs=sourceOrder.map(i=>xfXml(xfs[i],false));
     const names=new Set(),styles=[];
     if(!named.some(n=>n.builtinId===0))named.unshift({source:normal,name:'Normal',builtinId:0});
-    for(const n of named){if(!n.name||names.has(n.name.toLowerCase())||!styleMap.has(n.source))continue;names.add(n.name.toLowerCase());styles.push(el('cellStyle',{name:n.name,xfId:styleMap.get(n.source),builtinId:n.builtinId,iLevel:n.level,hidden:n.hidden,customBuiltin:n.customBuiltin}));}
+    for(const n of named){if(!n.name||names.has(n.name.toLowerCase())||!styleMap.has(n.source))continue;names.add(n.name.toLowerCase());styles.push(el('cellStyle',{name:n.name,xfId:styleMap.get(n.source),builtinId:n.builtinId<=53?n.builtinId:null,iLevel:n.level,hidden:n.hidden,customBuiltin:n.customBuiltin}));}
     const section=(tag,items)=>el(tag,{count:items.length},items.join(''));
     let xml=B.xmlDeclaration+el('styleSheet',{xmlns:B.ns.s},(formats.size?section('numFmts',[...formats].map(([numFmtId,formatCode])=>el('numFmt',{numFmtId,formatCode}))):'')+
       section('fonts',fonts.map(f=>el('font',{},fontBody(f))))+section('fills',fills)+section('borders',borders)+section('cellStyleXfs',styleXfs)+section('cellXfs',cellXfs)+section('cellStyles',styles)+
       (palette?el('colors',{},el('indexedColors',{},['FF000000','FFFFFFFF','FFFF0000','FF00FF00','FF0000FF','FFFFFF00','FFFF00FF','FF00FFFF',...palette].map(rgb=>el('rgbColor',{rgb})).join(''))):''));
-    return {xml,xfMap,fontIndex,fontBody:id=>fontBody(fonts[fontIndex(id)],true),fonts,xfs,defaultXF:def};
+    const dxfs=[],dxfMap=new Map(),at=xml.includes('<colors>')?xml.indexOf('<colors>'):xml.lastIndexOf('</styleSheet>');
+    return {get xml(){return dxfs.length?xml.slice(0,at)+section('dxfs',dxfs)+xml.slice(at):xml;},
+      dxf:body=>intern(dxfs,dxfMap,el('dxf',{},body)),palette:['000000','FFFFFF','FF0000','00FF00','0000FF','FFFF00','FF00FF','00FFFF',...(palette||defaultPalette).map(c=>c.slice(2))],formats,xfMap,fontIndex,fontBody:id=>fontBody(fonts[fontIndex(id)],true),fonts,xfs,defaultXF:def};
   };
 })(typeof window!=='undefined'?window:globalThis);

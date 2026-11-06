@@ -7,6 +7,18 @@
   const B=root.L.legacy,X=B.xls,el=B.el,N=s=>s;
   const fail=(message,where)=>B.fail('FORMULA_LINK',message,where);
   const builtins=['Consolidate_Area','Auto_Open','Auto_Close','Extract','Database','Criteria','Print_Area','Print_Titles','Recorder','Data_Form','Auto_Activate','Auto_Deactivate','Sheet_Title','_FilterDatabase'];
+  // MS-XLSX Names: '?' is allowed after the first character. Keep non-ASCII
+  // names; the ASCII identifier grammar and modern cell bounds still apply.
+  const validName=value=>{
+    if(!value||value.length>255||!/^[_\\A-Za-z\u0080-\uffff][_\\A-Za-z0-9.?\u0080-\uffff]*$/.test(value)||/^(?:TRUE|FALSE|R|C|RC)$/i.test(value))return false;
+    // Isolated Office 2016 controls reject these Latin-1 characters even in
+    // otherwise ordinary names. Other symbols (currency, arrows, etc.) work.
+    if(/[\x7f-\x9f\u00a6\u00a9\u00bb]/.test(value))return false;
+    // Office 2016 treats a leading R/C index as a reference even with a suffix.
+    if(/^[RC][1-9]\d*[^0-9]/i.test(value))return false;
+    const m=/^([A-Z]{1,3})([1-9]\d*)$/i.exec(value);if(!m)return true;
+    const col=[...m[1].toUpperCase()].reduce((n,c)=>n*26+c.charCodeAt(0)-64,0);return col>16384||+m[2]>1048576;
+  };
   const key=(row,col)=>row*256+col;
   const continued=(records,i)=>{
     const record=records[i];let end=i+1,size=record.r.length;
@@ -28,10 +40,10 @@
     }
     value=value.replace(/\\/g,'/');if(/^[A-Za-z]:\//.test(value))value='file:///'+value;else if(value.startsWith('//'))value='file:'+value;
     if(!value||/[\x00-\x1f]/.test(value)||/^(?:javascript|vbscript|data):/i.test(value))fail('Invalid external workbook path');
-    return {kind:'external',url:value.replace(/ /g,'%20')};
+    return {kind:'external',url:value.replace(/%(?![0-9a-f]{2})/gi,'%25').replace(/ /g,'%20')};
   };
   X.prepareFormulas=function(book,losses){
-    const b8=book.version==='BIFF8',names=[],supbooks=[],xti=[],calc={},stats={source:0,converted:0,dropped:0,shared:0,array:0,dataTable:0};let current=null,cachedSheet=-1;
+    const b8=book.version==='BIFF8',names=[],nameKeys=new Set(),supbooks=[],xti=[],calc={},stats={source:0,converted:0,dropped:0,shared:0,array:0,dataTable:0};let current=null,cachedSheet=-1;
     const metadataLoss=(id,what,where,error,notify=false)=>{const loss=B.loss(id,what,where,'drop',String(where),notify);loss.detail={code:error.code,message:error.message};losses.push(loss);};
     const calculation=rec=>{
       const r=rec.r,id=rec.id;
@@ -55,14 +67,16 @@
           if(b8){const wide=r.u8(p++)&1;value=wide?r.text(p,count*2,1200):B.latin16(r.sub(p,count));p+=count*(wide?2:1);}
           else{value=r.text(p,count,book.codepage);p+=count;}
           if(flags&32){const name=builtins[value.charCodeAt(0)];if(!name)fail('Unknown built-in name');value='_xlnm.'+name;}
-          if(!value||/[\x00-\x20!"'\[\]:]/.test(value)||scope>=book.sheets.length)fail('Invalid defined name');
+          slot.name=value;
+          if(!validName(value)||scope>=book.sheets.length)fail('Invalid defined name');
+          const nameKey=scope+'|'+value.toUpperCase();if(nameKeys.has(nameKey))fail('Duplicate defined name');nameKeys.add(nameKey);
           Object.assign(slot,{name:value,scope,flags,tokens:r.sub(p,n),extra:r.sub(p+n,r.length-p-n)});
         }else if(id===0x1ae){
           if(!b8)fail('BIFF5 external workbook table');
           const count=r.u16(0),tag=r.u16(2);
           if(r.length===4&&(tag===0x401||tag===0x3a01)){current.kind=tag===0x401?'self':'addin';continue;}
           const path=X.string(r,2);Object.assign(current,url(path.value));let p=path.end;
-          for(let j=0;j<count;j++){const name=X.string(r,p);current.sheets.push(name.value);p=name.end;}
+          for(let j=0;j<count;j++){const name=X.string(r,p);current.sheets.push(name.value.length<=31&&!/[\[\]:*?\\/\x00-\x1f]/.test(name.value)?name.value:null);p=name.end;}
         }else if(id===0x17){
           if(!b8)continue;const count=r.u16(0);r.check(2,count*6);for(let j=0;j<count;j++)xti.push({book:r.u16(2+j*6),first:r.i16(4+j*6),last:r.i16(6+j*6)});
         }else if(id===0x23&&current){
@@ -109,7 +123,7 @@
     const defined=[];
     for(const name of names){if(name.invalid||!name.tokens.length&&!(name.flags&0xe))continue;try{
       const text=name.tokens.length?X.formula(name.tokens,name.extra,context(name.scope,0,0,{nameMode:true})):'#NAME?';
-      defined.push(el('definedName',{name:name.name,localSheetId:name.scope>=0?name.scope:null,hidden:name.flags&1?1:null,function:name.flags&2?1:null,vbProcedure:name.flags&4?1:null,xlm:name.flags&8&&!(name.flags&4)?1:null},B.xml(text)));
+      name.text=text;defined.push(el('definedName',{name:name.name,localSheetId:name.scope>=0?name.scope:null,hidden:name.flags&1?1:null,function:name.flags&2?1:null,vbProcedure:name.flags&4?1:null,xlm:name.flags&8&&!(name.flags&4)?1:null},B.xml(text)));
     }catch(error){if(error.name!=='LegacyError')throw error;name.invalid=true;metadataLoss('legacy-defined-name',N('A defined name was not kept'),name.name,error,true);}}
     for(let si=0;si<book.sheets.length;si++){
       const sheet=book.sheets[si],groups=new Map(),recordIndex=new Map();let depth=0,last=null,dropped=0;const examples=[],reasons={};
@@ -154,19 +168,21 @@
       }
       if(dropped){const loss=B.loss('legacy-formulas',N('Some formulas were replaced with their saved results'),sheet.name,'drop',sheet.name,true);loss.detail={cells:dropped,examples,reasons};losses.push(loss);}
     }
-    return {stats,defined:defined.length?el('definedNames',{},defined.join('')):'',calc,
+    return {stats,defined:defined.length?el('definedNames',{},defined.join('')):'',calc,context,names,
       addExternalParts(pkg){
         const refs=[];
         for(const sb of supbooks){if(!sb.externalId)continue;const name='xl/externalLinks/externalLink'+sb.externalId+'.xml';
-          const sheets=el('sheetNames',{},sb.sheets.map(s=>el('sheetName',{val:s})).join('')),data=[];
-          for(const [sheetId,cells]of sb.cache){const rows=[];let row=-1,body=[];for(const c of [...cells.values()].sort((a,b)=>a.row-b.row||a.col-b.col)){
+          const sheetIds=new Map();let nextSheet=0;sb.sheets.forEach((s,i)=>{if(s!=null)sheetIds.set(i,nextSheet++);});
+          const sheets=nextSheet?el('sheetNames',{},sb.sheets.filter(s=>s!=null).map(s=>el('sheetName',{val:s})).join('')):'',data=[];
+          for(const [sourceId,cells]of sb.cache){const sheetId=sheetIds.get(sourceId);if(sheetId==null)continue;const rows=[];let row=-1,body=[];for(const c of [...cells.values()].sort((a,b)=>a.row-b.row||a.col-b.col)){
             if(c.row!==row){if(row>=0)rows.push(el('row',{r:row+1},body.join('')));row=c.row;body=[];}
             body.push(el('cell',{r:X.address(c.row,c.col),t:c.type==='n'||c.type==='blank'?null:c.type},c.type==='blank'?undefined:el('v',{},B.xstring(c.type==='b'?c.value?'1':'0':c.value))));
           }if(row>=0)rows.push(el('row',{r:row+1},body.join('')));data.push(el('sheetData',{sheetId},rows.join('')));}
           const extNames=[];
           for(const n of sb.names){if(n.invalid||!n.tokens?.length)continue;try{
+            if(n.scope>=0&&!sheetIds.has(n.scope))fail('The external name refers to an invalid sheet');
             const ctx=context(-1,0,0,{nameMode:true,externalDefinition:true});ctx.sheet=(first,last)=>sb.sheets[first]!=null&&sb.sheets[last]!=null?X.quoteSheet(sb.sheets[first]+(first!==last?':'+sb.sheets[last]:'')):null;
-            extNames.push(el('definedName',{name:n.name,refersTo:X.formula(n.tokens,n.extra,ctx),sheetId:n.scope>=0?n.scope:null}));
+            extNames.push(el('definedName',{name:n.name,refersTo:X.formula(n.tokens,n.extra,ctx),sheetId:n.scope>=0?sheetIds.get(n.scope):null}));
           }catch(error){if(error.name!=='LegacyError')throw error;metadataLoss('legacy-external-name','An external workbook name could not be read',n.name,error);}}
           const rid=pkg.rel(name,'externalLinkPath',sb.url,{external:true});
           pkg.add(name,B.xmlDeclaration+el('externalLink',{xmlns:B.ns.s,'xmlns:r':B.ns.officeRel.slice(0,-1)},el('externalBook',{'r:id':rid},sheets+(extNames.length?el('definedNames',{},extNames.join('')):'')+(data.length?el('sheetDataSet',{},data.join('')):''))),'application/vnd.openxmlformats-officedocument.spreadsheetml.externalLink+xml');

@@ -7,6 +7,7 @@ import {words,dword,rec,str,workbook,cfb} from './xls-fixtures.mjs';
 const B=load(),X=B.xls;
 if(process.env.XLS_C2_BEFORE){for(const key of ['formula','prepareFormulas','formulaConstant'])delete X[key];vm.runInThisContext(fs.readFileSync(process.env.XLS_C2_BEFORE+'/xls-write.js','utf8'));}
 if(process.env.XLS_C2_REVIEW_BEFORE)for(const file of ['xls-formula','xls-formula-book'])vm.runInThisContext(fs.readFileSync(process.env.XLS_C2_REVIEW_BEFORE+'/'+file+'.js','utf8'));
+if(process.env.XLS_C3_NAMES_BEFORE)for(const file of ['xls-formula','xls-formula-book'])vm.runInThisContext(fs.readFileSync(process.env.XLS_C3_NAMES_BEFORE+'/'+file+'.js','utf8'));
 const cat=(...parts)=>Buffer.concat(parts.map(p=>Buffer.isBuffer(p)?p:Buffer.from(p)));
 const integer=n=>cat([0x1e],words(n));
 const ref=(row,col,id=0x24)=>cat([id],words(row,col));
@@ -34,6 +35,27 @@ test('ordinary coordinates differ from shared/name offsets and preserve absolute
   assert.equal(X.formula(ref(7,0x4002),undefined,{row:4,col:3,shared:true}),'F$8');
   assert.equal(X.formula(ref(65535,0x8002,0x2c),undefined,{row:4,col:3}),'$C4');
   assert.equal(X.formula(cat([0x25],words(0,65535,0,1))),'$A:$B');
+});
+
+test('defined names retain current-sheet relative references with the required bang prefix',async()=>{
+  const {z}=await converted([defined('CurrentValue',ref(199,0xc015)),defined('CurrentArea',cat([0x25],words(0,1,0xc000,0xc001)))],[]);
+  const book=await z.get('xl/workbook.xml').text();
+  assert.match(book,/<definedName name="CurrentValue">!V200<\/definedName>/);
+  assert.match(book,/<definedName name="CurrentArea">!A1:B2<\/definedName>/);
+  assert.equal(X.formula(ref(199,0xc015)),'V200');
+});
+
+test('invalid and duplicate names are isolated without rebinding dependent cell formulas',()=>{
+  const bad=['?Bad','A1','XFD1048576','C1244_suffix','Name¦','Name©','Name»','Name\x8f'],good=['_?','Données','Nameㅁ','XFE1','A1048577','_€','±Bad','￥','Name¶','Name§'];
+  const names=[...bad,...good].map(n=>defined(n,integer(2)));names.push(defined('Données',integer(3)),defined('Données',integer(4),0));
+  const {book,result,losses}=prepare(names,[formula(0,0,cat([0x23],words(1,0)),42),formula(0,1,cat([0x23],words(bad.length+1,0)),2)]);
+  for(const n of bad)assert.ok(!result.defined.includes('name="'+n+'"'));
+  for(const n of good)assert.ok(result.defined.includes('name="'+n+'"'));
+  assert.match(result.defined,/name="Données" localSheetId="0">4/);
+  assert.equal((result.defined.match(/name="Données"/g)||[]).length,2);
+  assert.equal(book.sheets[0].cells[0].value,42);assert.equal(book.sheets[0].cells[0].formulaOut,undefined);
+  assert.equal(book.sheets[0].cells[1].formulaOut.text,'_?');assert.equal(result.stats.dropped,1);
+  assert.equal(losses.filter(l=>l.id==='legacy-defined-name').length,bad.length+1);
 });
 
 test('formula array constants consume trailing data after memory extensions',()=>{
@@ -103,8 +125,8 @@ test('empty NAME registrations can identify functions without inventing name def
 test('external name formulas use their own direct sheet-index pair and keep sheet scope',async()=>{
   const ext=cat([0x3b],words(1,1,0,2,0,1)),globals=[rec(0x1ae,cat(words(2),str('Other.xls'),str('First'),str('Second'))),rec(0x23,cat(words(0,2,0),[5,0],Buffer.from('Costs'),words(ext.length),ext)),rec(0x17,cat(words(1),words(0,1,1)))];
   const {z}=await converted(globals,[formula(0,0,cat([0x39],words(0,1,0)),7)]);
-  assert.match(await z.get('xl/externalLinks/externalLink1.xml').text(),/<definedName name="Costs" refersTo="&apos;Second&apos;!\$A\$1:\$B\$3" sheetId="1"\/>/);
-  assert.match(await z.get('xl/worksheets/sheet1.xml').text(),/<f>&apos;\[1\]Second&apos;!Costs<\/f>/);
+  assert.match(await z.get('xl/externalLinks/externalLink1.xml').text(),/<definedName name="Costs" refersTo="Second!\$A\$1:\$B\$3" sheetId="1"\/>/);
+  assert.match(await z.get('xl/worksheets/sheet1.xml').text(),/<f>\[1\]Second!Costs<\/f>/);
 });
 
 test('Office rejects missing required function arguments; preserve only their cached results',()=>{
@@ -137,5 +159,5 @@ test('Office plain workbooks omit unsupported Excel macro names with an explicit
 test('self-book NameX preserves a name scoped to another worksheet',()=>{
   const globals=[defined('LocalOnly',integer(7),0),rec(0x1ae,words(2,0x401)),rec(0x17,cat(words(1),words(0,0,0)))];
   const book=X.read(workbook(globals,[{name:'One',records:[]},{name:'Two',records:[formula(0,0,cat([0x39],words(0,1,0)),7)]}]),{rich:true}),losses=[];
-  X.prepareFormulas(book,losses);assert.equal(book.sheets[1].cells[0].formulaOut.text,"'One'!LocalOnly");assert.equal(losses.length,0);
+  X.prepareFormulas(book,losses);assert.equal(book.sheets[1].cells[0].formulaOut.text,'One!LocalOnly');assert.equal(losses.length,0);
 });
