@@ -222,15 +222,7 @@
       const b = blocks[st.bi];
       if (b.t === 'tbl') {
         /* "page break before" on the first paragraph of the table's first cell breaks before the table (Word) */
-        if (!st.sub && !frame.empty && frame.kind === 'col' && !ctx.inCell) {
-          const c0 = b.rows[0] && b.rows[0].cells[0];
-          const p0 = c0 && c0.blocks && c0.blocks[0];
-          if (p0 && p0.t === 'p') {
-            const { sp } = R.tblProps(d, b);
-            const cs = R.cellStyle(d, b, sp, 0, 0, b.rows.length, b.grid.length || 1);
-            if (D.pProps(d, p0, { tblRPr: D.mergeRPr(sp.rPr, cs.rPr), tblPPr: D.mergePPr(sp.pPr, cs.pPr) }).pageBreakBefore) return { st, stop: 'page', pbb: true };
-          }
-        }
+        if (!st.sub && !frame.empty && frame.kind === 'col' && !ctx.inCell && rowLead(d, b, 0).pageBreakBefore) return { st, stop: 'page', pbb: true };
         /* a floating table (w:tblpPr) stands beside the text, which wraps around it */
         const fl = b.tblPr && b.tblPr.float;
         if (fl && !ctx.inTextBox && (frame.kind === 'col' || frame.kind === 'flow' || frame.kind === 'hf')) {
@@ -241,7 +233,13 @@
           return { st: { bi: st.bi, sub: fr.placed ? fr.sub : st.sub }, stop: 'full' };
         }
         const res = placeTable(frame, b, st.sub, ctx);
-        if (res.placed) { frame.empty = false; frame.chain = []; }
+        if (res.placed) {
+          frame.empty = false;
+          /* a table whose last row keeps with the next paragraph (its first cell's first paragraph does) stays in a
+             chain of such paragraphs, which Word moves together (it doesn't move a chain from the top of a page) */
+          if (res.done && frame.kind === 'col' && !ctx.inCell && b.rows.length && rowLead(d, b, b.rows.length - 1).keepNext) frame.chain.push({ bi: st.bi, el: frame.el.lastElementChild, sub: st.sub ? -1 : 0 });
+          else frame.chain = [];
+        }
         if (res.done) { st = { bi: st.bi + 1, sub: null }; continue; }
         if (!res.placed && !frame.empty) return keepChainBreak(frame, { bi: st.bi, sub: res.sub }, ctx);
         return { st: { bi: st.bi, sub: res.sub }, stop: 'full' };
@@ -587,6 +585,15 @@
   const frameOnPage = (fp) => (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline'))
     ? fp.vAnchor !== 'text' : false;
   const fixAbsFrames = (root) => { for (const w of root.querySelectorAll('.frm-anchor')) LY.posAbsFrame(w); };
+  /** the properties of a table row's first paragraph (its first cell's), which Word reads for the row's page breaks */
+  function rowLead(d, t, ri) {
+    const c0 = t.rows[ri] && t.rows[ri].cells[0];
+    const p0 = c0 && c0.blocks && c0.blocks[0];
+    if (!p0 || p0.t !== 'p') return {};
+    const { sp } = R.tblProps(d, t);
+    const cs = R.cellStyle(d, t, sp, ri, 0, t.rows.length, t.grid.length || 1);
+    return D.pProps(d, p0, { tblRPr: D.mergeRPr(sp.rPr, cs.rPr), tblPPr: D.mergePPr(sp.pPr, cs.pPr) });
+  }
   /** move trailing keep-with-next paragraphs to the next frame along with the block that did not fit */
   function keepChainBreak(frame, st, ctx) {
     const ch = frame.chain || [];

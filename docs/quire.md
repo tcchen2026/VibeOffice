@@ -66,6 +66,10 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   2,290 Word-saved corpus files, 2,147 now show Word's stored page count (2,140 before); 9 moved toward it, and one
   with overlapping floating tables, wrong before as well, moved away. A section break's mark (with formatting marks
   shown) is named by how the next section starts, as in Word (it named the section it ends).
+- Paragraphs kept with the next one go to the next page together, and a table stays in such a chain when its last
+  row keeps with the next paragraph (its first cell's first paragraph does, whatever the other cells say, as Word 2016
+  prints it); a chain that starts at the top of a page is laid out from there. Quire ended every chain at a table, so a
+  contract whose paragraphs all keep with the next took 181 pages to Word's 177 (180 now).
 - Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
   and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
   bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and
