@@ -555,11 +555,15 @@
       }
     }
     const chartCache = new Map();
+    const CHART_DML = { kid: X.kid, kids: X.kids, at: X.at, num: X.num, path: X.path, desc: X.desc, fillIn: X.fillIn, line: X.line, runProps: X.runProps };
     async function loadChart(p) {
       if (chartCache.has(p)) return chartCache.get(p);
       const cx = await xml(p);
       let model = null;
-      try { model = X.chart(cx, dctx); } catch (e) { model = null; }
+      /* the model of charts read from files (common/chart-read.js); the simple one if that fails */
+      const cctx = Object.assign({}, dctx, { accent: (k) => X.schemeHex('accent' + k, dctx), fonts: { mj: doc.theme.major, mn: doc.theme.minor }, chartArea: L.chart.OFFICE_AREA });
+      try { model = L.chart.read && X.runProps ? L.chart.read(cx, CHART_DML, cctx) : null; } catch (e) { model = null; }
+      if (!model) try { model = X.chart(cx, dctx); } catch (e) { model = null; }
       /* keep the original parts so the chart round-trips unchanged */
       const files = [];
       const add = async (path) => { const e = get(path); if (e) files.push({ path, data: await e.bytes() }); };

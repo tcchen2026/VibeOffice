@@ -1,14 +1,36 @@
-/* Lectern — drawing of charts read from PowerPoint 2007-and-later files (chart model v2, see chartModel in
- * pptx-read.js). Follows Office's conventions: automatic axis scaling, gap width and overlap, markers,
- * data labels, secondary axes, reversed and logarithmic axes, manual layout of the plot area and legend,
- * pie explosion, doughnut holes, radar webs and bubbles. Charts made in Lectern itself (model v1) keep the
- * PowerPoint 2003 look drawn by charts.js. */
+/* VibeOffice — drawing of charts read from files (chart model v2: common/chart-read.js), shared by Lectern, Ledger and
+ * Quire. Follows Office's conventions: automatic axis scaling, gap width and overlap, markers, data labels, secondary
+ * axes, reversed and logarithmic axes, manual layout of the plot area and legend, pie explosion, doughnut holes, radar
+ * webs and bubbles. Charts made in the apps themselves (model v1) keep the Office 2003 look drawn by charts.js.
+ * Colours, fills, dashes and theme fonts come from L.chart.paint when an app sets it (Lectern: theme colours through
+ * the slide's design, picture and pattern fills); otherwise from the plain ones below, for colours read as hex.
+ * Moved from Lectern's js/chart-draw.js. */
 (function () {
   'use strict';
   const L = window.L;
   const CH = L.chart;
   const s = L.s;
-  const R = () => L.render;
+  const DASH = { solid: null, sysDot: [1, 1], sysDash: [3, 1], dot: [1, 2], dash: [4, 3], dashDot: [4, 3, 1, 3], lgDash: [8, 3], lgDashDot: [8, 3, 1, 3],
+    lgDashDotDot: [8, 3, 1, 3, 1, 3], sysDashDot: [3, 1, 1, 1], sysDashDotDot: [3, 1, 1, 1, 1, 1] };
+  let gradients = 0;
+  const PLAIN = {
+    col: (c, design, fb) => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : fb || '#000000'),
+    /** {paint, opacity} for a fill: solid colours and gradients; a pattern by its foreground; pictures not drawn */
+    svgPaint(fill, design, defs) {
+      if (!fill || fill.t === 'none' || fill.t === 'img') return { paint: 'none', opacity: 1 };
+      if (fill.t === 'solid') return { paint: PLAIN.col(fill.c), opacity: fill.a == null ? 1 : fill.a };
+      if (fill.t === 'patt') return { paint: PLAIN.col(fill.fg), opacity: 1 };
+      if (fill.t !== 'grad' || !defs) return { paint: PLAIN.col(fill.stops && fill.stops[0] && fill.stops[0].c), opacity: 1 };
+      const id = 'chgr' + ++gradients, a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a), k = Math.abs(c) + Math.abs(si);
+      const g = s('linearGradient', { id, gradientUnits: 'objectBoundingBox', x1: L.round(0.5 - (c * k) / 2, 4), y1: L.round(0.5 - (si * k) / 2, 4), x2: L.round(0.5 + (c * k) / 2, 4), y2: L.round(0.5 + (si * k) / 2, 4) });
+      for (const st of (fill.stops || []).slice().sort((x, y) => x.p - y.p)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': PLAIN.col(st.c), 'stop-opacity': st.a == null ? 1 : st.a }));
+      defs.appendChild(g);
+      return { paint: `url(#${id})`, opacity: 1 };
+    },
+    dashArray: (dash, w) => { const d = DASH[dash]; return d ? d.map((v) => L.round(v * Math.max(w, 0.75), 2)).join(' ') : null; },
+    font: (f) => f,
+  };
+  const R = () => CH.paint || PLAIN;
 
   /* ---------- text ---------- */
   let mc = null;
@@ -23,7 +45,7 @@
   function style(base, o, design) {
     o = o || {};
     const font = o.font || base.font;
-    return { sz: o.sz || base.sz, b: o.b != null ? !!o.b : !!base.b, i: o.i != null ? !!o.i : !!base.i, color: R().col(o.color || base.color, design, '#000000'), stack: L.fontStack(L.style.font(font, design)), rot: o.rot };
+    return { sz: o.sz || base.sz, b: o.b != null ? !!o.b : !!base.b, i: o.i != null ? !!o.i : !!base.i, color: R().col(o.color || base.color, design, '#000000'), stack: L.fontStack(R().font(font, design)), rot: o.rot };
   }
   /** wrap text into lines no wider than w */
   function wrap(t, st, w) {
@@ -111,7 +133,8 @@
     if (!(maxV > minV)) maxV = minV + (step || 1);
     if (!(step > 0) || (maxV - minV) / step > 200) step = niceStep((maxV - minV) / maxN);
     const ticks = [];
-    const first = Math.ceil(minV / step - 1e-9) * step;
+    /* (from a minimum set in the file, as Office counts: 1000, 3000… for a minimum of 1000 and a major unit of 2000) */
+    const first = fixMin ? minV : Math.ceil(minV / step - 1e-9) * step;
     for (let v = first; v <= maxV + step * 1e-6; v += step) ticks.push(Math.abs(v) < step * 1e-9 ? 0 : parseFloat(v.toPrecision(12)));
     return { min: minV, max: maxV, ticks, step };
   }

@@ -20,8 +20,8 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | `js/render.js` | DOM/SVG renderer for slides, fills, patterns, gradients, WordArt |
 | `../common/metafile.js` | WMF/EMF player, so old clip art, logos and pasted Excel/Visio graphics display |
 | `../common/numfmt.js` | Excel number formats (dates, currency, percentages, sections) for chart axes and data labels, including localized `aaa`/`aaaa` weekday names (docs/ledger.md, Formulas and calculation) |
-| `../common/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types with `js/chart-draw.js`) |
-| `js/chart-draw.js` | Drawing of charts that come from PowerPoint 2007 and later (see *Charts* below) |
+| `../common/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types with `chart-draw.js`) |
+| `../common/chart-read.js`, `../common/chart-draw.js` | Reading and drawing of charts that come from PowerPoint 2007 and later (see *Charts* below), shared with Ledger and Quire; `js/pptx-read.js` hands them Lectern's DrawingML readers and its colours, fills, dashes and theme fonts (`L.chart.paint`) |
 | `../common/ui.js`, `../common/search.js`, `../common/icons.js`, `../common/clipart.js`, `../common/looks.css`, `../common/ui.css` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips, Search commands |
 | `js/ribbon.js`, `../common/ribbon.js` | The Paper 2016 look's ribbon: PowerPoint's tabs and groups over Lectern's commands ([suite.md](suite.md#the-ribbon)) |
 | `../common/scout/` | Scout, the assistant: Help ▸ Show the Assistant ([suite.md](suite.md#the-assistant-scout)) |

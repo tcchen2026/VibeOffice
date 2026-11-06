@@ -536,7 +536,7 @@
       /* a fill or line the user set (else the file's own, with its theme colours and effects, is written as it came) */
       if (d.kind === 'shape' && !group) Object.assign(patch, { ownFill: d.ownFill || st.fill !== p.fill || undefined, ownLine: d.ownLine || st.line !== p.line || st.lineW !== p.lineW || undefined });
       if (d.kind === 'shape' && !group) Object.assign(patch, { fill: st.fill, line: st.line, lineW: st.lineW, geom: p.geom, ...kept(p), paras: d.dirty ? d.paras : p.paras || undefined, text: !d.dirty && p.paras ? p.paras.map((q) => q.runs.map((r) => r.t).join('')).join('\n') : d.text != null ? d.text : p.text, dirty: true, font: d.font || { name: 'Arial', sz: 10 } });
-      if (d.kind === 'chart' && d.chart && st.fill !== (d.chart.bg && d.chart.bg.color)) patch.chart = Object.assign({}, d.chart, { bg: st.fill ? { t: 'solid', color: st.fill } : { t: 'none' }, dirty: true });
+      if (d.kind === 'chart' && d.chart && st.fill !== (d.chart.bg && d.chart.bg.color)) patch.chart = Object.assign(L.xchart.plain(d.chart), { bg: st.fill ? { t: 'solid', color: st.fill } : { t: 'none' }, dirty: true });
       const a = JSON.parse(JSON.stringify(d.anchor));
       if (Math.abs(st.w - curW) > 0.5 || Math.abs(st.h - curH) > 0.5) {
         if (a.type === 'two' && el) { const nw = st.w / 0.75 * z, nh = st.h / 0.75 * z; Object.assign(a, anchorFor(d, el.offsetLeft, el.offsetTop, nw, nh)); }

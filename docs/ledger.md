@@ -128,6 +128,11 @@ searchable topics, the keyboard-shortcut reference and a function reference for 
 
 - The Chart Wizard makes Column, Bar, Line, Pie, XY (Scatter), Area and Doughnut charts in the Excel
   2003 palette, embedded or on a chart sheet. Charts follow their data as you type.
+- Charts from files are drawn as Excel draws them (the drawing Lectern uses, `common/chart-draw.js`): their own
+  colours and markers, a secondary axis, fixed axis bounds and units, blank cells as gaps, data labels, 3-D columns,
+  exploded pies, radar and bubble charts, a chart area without formatting white with a grey border. All 106 charts of
+  the 61 corpus workbooks that have them are read so; seven, printed by Excel 2016, agree in their scales, series,
+  markers and labels. A chart edited here is drawn from what Ledger saves of it (its type, series, colours, titles).
 - Charts in opened files are drawn from their own definitions (3-D charts flat; radar and stock charts
   as lines; bubble charts as scatter) and are saved back unchanged unless you edit them.
 - Pictures (PNG, JPEG, GIF, BMP, SVG and Windows metafiles — EMF and WMF are drawn by Ledger's own

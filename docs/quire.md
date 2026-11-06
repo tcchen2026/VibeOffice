@@ -66,6 +66,12 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   2,290 Word-saved corpus files, 2,147 now show Word's stored page count (2,140 before); 9 moved toward it, and one
   with overlapping floating tables, wrong before as well, moved away. A section break's mark (with formatting marks
   shown) is named by how the next section starts, as in Word (it named the section it ends).
+- Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
+  and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
+  bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and
+  bubble charts, a chart area without formatting white with a grey border as in Word, and the categories of the axis
+  the series stand on. All 127 charts of the 74 corpus documents that have them are read so; three documents printed
+  by Word 2016 agree in their scales, series, markers, labels and borders.
 - More of Word's own habits: a right or centred tab stop placed beyond the right indent lets the page
   number of a table of contents run out to it; superscripts and footnote references do not push their
   line down; table rows are as tall as Word makes them even though the browser draws hairline borders a
@@ -498,7 +504,7 @@ compatibility results are archived with the run history rather than mixed into c
 | `js/fields.js` | Field engine (PAGE, DATE, REF, SEQ, TOC, INDEX, IF, formulas, …), footnotes and endnotes |
 | `js/review.js` | Track changes, comments, balloons, Reviewing pane, compare documents |
 | `js/tables.js` | Tables and Borders toolbar, table styles, draw/erase, merge/split, sort, formulas |
-| `js/drawing.js`, `js/drawtool.js`, `../common/geometry.js`, `../common/charts.js`, `../common/metafile.js`, `../common/clipart.js` | Pictures, AutoShapes, LettersArt (WordArt), diagrams, charts, WMF/EMF, clip art |
+| `js/drawing.js`, `js/drawtool.js`, `../common/geometry.js`, `../common/charts.js`, `../common/chart-read.js`, `../common/chart-draw.js`, `../common/numfmt.js`, `../common/metafile.js`, `../common/clipart.js` | Pictures, AutoShapes, LettersArt (WordArt), diagrams, charts (read and drawn as Lectern and Ledger do), WMF/EMF, clip art |
 | `js/autocorrect.js`, `../common/spell.js`, `js/spell.js` | AutoCorrect, AutoFormat as you type, AutoText; the shared spelling engine and Quire's Spelling and Grammar (offline) |
 | `js/omml.js` | Office Math (OMML) to MathML for equations |
 | `../common/dict/` | Spelling word lists, thesaurus, licences (shared with Ledger) |
