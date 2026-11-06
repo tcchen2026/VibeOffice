@@ -48,6 +48,12 @@ test('editing durations outside the OOXML integer range lose only that metadata'
   const app=result.parts.find(p=>p.name==='docProps/app.xml').data;
   assert.doesNotMatch(app,/<TotalTime>/);assert.match(app,/<Pages>7<\/Pages>/);assert.ok(result.losses.some(l=>l.id==='legacy-property-value'&&!l.notify));
 });
+test('binary producer build numbers do not become OOXML application minor versions',()=>{
+  const document=properties([[23,typed(3,u32(0x000b19a8))]]),result=B.propertyParts({stream:name=>name==='\x05DocumentSummaryInformation'?document:null});
+  assert.match(result.parts.find(p=>p.name==='docProps/app.xml').data,/<AppVersion>11\.0000<\/AppVersion>/);
+  assert.equal(result.document[0].values[23].value,0x000b19a8,'source metadata stays available to diagnostics');
+  assert.ok(result.losses.every(x=>!x.notify));
+});
 test('OEM codepages decode legacy characters and non-ASCII-compatible bytes', () => {
   assert.equal(B.decode(Uint8Array.of(0x80, 0xdb), 437), 'Ç█');
   assert.equal(B.decode(Uint8Array.of(0x9b, 0xd5), 850), 'øı');

@@ -290,6 +290,19 @@ test('what PowerPoint refuses in a converted presentation\'s drawings: a table o
   assert.ok(!(await codes('slide-box', one(box('')))).includes('presentation-master-textbox-body'), 'only a master was measured');
 });
 
+test('a Word document\'s AppVersion carries no producer build (Word offers a converter instead of opening 12.0999)', async () => {
+  const codes = async (name, main, version) => run('check', await pkg(name, {
+    '[Content_Types].xml': `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/${main[0]}" ContentType="application/vnd.openxmlformats-officedocument.${main[1]}.main+xml"/></Types>`,
+    '_rels/.rels': `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="${main[0]}"/></Relationships>`,
+    [main[0]]: main[2],
+    'docProps/app.xml': `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><AppVersion>${version}</AppVersion></Properties>` })).issues.map((i) => i.code);
+  const doc = ['word/document.xml', 'wordprocessingml.document', '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body/></w:document>'];
+  const book = ['xl/workbook.xml', 'spreadsheetml.sheet', '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>'];
+  for (const v of ['12.0999', '11.6568', '16.1000']) assert.ok((await codes('word-' + v, doc, v)).includes('word-app-version-build'), v);
+  for (const v of ['12.0300', '16.0000', '00.0001']) assert.ok(!(await codes('word-' + v, doc, v)).includes('word-app-version-build'), v);
+  assert.ok(!(await codes('excel-build', book, '16.6568')).includes('word-app-version-build'), 'only Word was measured');
+});
+
 test('a defined name Excel takes, and its definition qualified by a sheet or a bang (as Office opens them)', async () => {
   const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
   const types = '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +

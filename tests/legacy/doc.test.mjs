@@ -34,7 +34,10 @@ test('footnote and endnote references resolve to their own stories',async()=>{
 });
 test('nested field instructions stay hidden while cached results and table-cell text remain',async()=>{
  const r=await convert(doc({text:'Start \x13SECRET \x13HIDDEN\x14ignored\x15\x14visible\x15\rCell one\x07Cell two\x07'}));
- const s=await r.xml('document');assert.match(s,/visible/);assert.doesNotMatch(s,/SECRET|HIDDEN|ignored/);assert.match(s,/Cell one/);assert.match(s,/Cell two/);assert.ok(r.losses.some(l=>l.id==='legacy-word-fields'&&l.notify));assert.ok(r.losses.some(l=>l.id==='legacy-word-tables'&&l.notify));
+ const s=await r.xml('document'),fields=[];let visible='';
+ const visit=node=>{if(node.name==='w:fldChar'){const type=node.attrs['w:fldCharType'];if(type==='begin')fields.push(false);else if(type==='separate')fields[fields.length-1]=true;else if(type==='end')fields.pop();}};
+ visit.text=(text,node)=>{if(node?.name==='w:t'&&fields.every(Boolean))visible+=text;};B.checkXml(s,visit);
+ assert.equal(visible,'Start visibleCell oneCell two');assert.match(s,/SECRET/);assert.match(s,/HIDDEN/);assert.ok(!r.losses.some(l=>l.id==='legacy-word-fields'));assert.ok(r.losses.some(l=>l.id==='legacy-word-tables'&&l.notify));
 });
 test('damaged optional formatting does not discard readable text; style cycles are bounded',async()=>{
  const r=await convert(doc({text:'Readable\r',styles:[style('Normal',1,[],[],1,0),style('Loop',1,[],[],0)],mutate:(word,table,pairs)=>{const [offset]=pairs.get(12);table.writeUInt32LE(0x3fffff,offset+8);}}));
@@ -69,7 +72,7 @@ test('binary style highlighting and script flags are carried by runs, outside OO
 });
 test('style and plain resets respect property order and preserve highlighting and deleted text',async()=>{
  const r=await convert(doc({text:'Kept\rGone\r',styles:[style('Normal',1,[],[],4095,0),style('Emphasis',2,[],[sprm(0x0836,1)])],chpx:[{start:2048,end:2058,ops:[sprm(0x0835,1),sprm(0x2a0c,7),sprm(0x4a30,1),sprm(0x4a43,30)]},{start:2058,end:2068,ops:[sprm(0x0800,1),sprm(0x2a33,0)]}]}));
- const s=await r.xml('document');assert.match(s,/Kept/);assert.doesNotMatch(s,/Gone|<w:b\b/);assert.match(s,/<w:rStyle w:val="Emphasis"/);assert.match(s,/<w:sz w:val="30"/);assert.match(s,/<w:highlight w:val="yellow"/);
+ const s=await r.xml('document');assert.match(s,/Kept/);assert.match(s,/<w:delText[^>]*>Gone<\/w:delText>/);assert.doesNotMatch(s,/<w:t[^>]*>Gone|<w:b\b/);assert.match(s,/<w:rStyle w:val="Emphasis"/);assert.match(s,/<w:sz w:val="30"/);assert.match(s,/<w:highlight w:val="yellow"/);
 });
 test('extended shading indices and border sides follow the WordprocessingML values and sequence',async()=>{
  const shd=Buffer.concat([u32(0),u32(0xffffff),u16(44)]),border=0x0108;

@@ -36,6 +36,7 @@
     const p=book.settings;let out=v('view',({1:'print',2:'outline',3:'masterPages',4:'normal',5:'web'})[p.view]);
     if(p.zoom)out+=w('zoom',{percent:D.bound(book,p.zoom,10,500,'Document view')});
     if(p.mirrorMargins)out+=w('mirrorMargins');if(p.gutterAtTop)out+=w('gutterAtTop');
+    if(p.trackRevisions)out+=w('trackRevisions');
     out+=v('defaultTabStop',D.bound(book,p.tab,1,31680,'Document settings'));
     if(p.autoHyphen)out+=w('autoHyphenation');if(p.consecutiveHyphens)out+=v('consecutiveHyphenLimit',p.consecutiveHyphens);if(p.hyphenationZone)out+=v('hyphenationZone',p.hyphenationZone);if(p.hyphenateCaps===false)out+=w('doNotHyphenateCaps');
     if(p.evenHeaders)out+=w('evenAndOddHeaders');
@@ -44,10 +45,21 @@
     second.forEach((key,i)=>{const bit=!!(p.compat2&(1<<i));if(i===3?!bit:bit)enabledFlags.add(key);});if(p.compat3&1)enabledFlags.add('cachedColBalance');
     let compat=compatOrder.filter(name=>enabledFlags.has(name)).map(name=>w(name)).join('');
     compat+=w('compatSetting',{name:'compatibilityMode',uri:'http://schemas.microsoft.com/office/word',val:11});out+=w('compat',{},compat);
+    if(book.pair(60).length)out+=D.optional(book,'Document variables',N('Some document variables used by fields were not kept'),()=>{
+      const r=D.table(book,60,'Document variables'),state={},names=D.markup.strings(r,state),seen=new Set();let p=state.end,body='';
+      for(const entry of names){const n=r.u16(p);p+=2;const value=D.unicode(r,p,n*2);p+=n*2;const name=entry.text,key=name.toLowerCase();
+        // These three entries contain binary VBA signatures, not field values.
+        if(['sign','sigagile','sigv3'].includes(key))continue;
+        if(!name||seen.has(key)){D.notice(book,'legacy-word-variables',N('A damaged document variable used by fields was not kept'),'Document variables',true);continue;}
+        seen.add(key);body+=w('docVar',{name,val:value});
+      }
+      return body?w('docVars',{},body):'';
+    },'');
     return D.part('settings',out);
   };
   D.sectionXML=function(book,section){
     const p={width:12240,height:15840,left:1800,right:1800,top:1440,bottom:1440,gutter:0,headerDistance:720,footerDistance:720,columnSpace:720,breakType:2,...section.props},where=section.where||'Section';
+    if(p.revisionFormatting)D.notice(book,'legacy-word-section-revision',N('An earlier section formatting change was not kept; the current formatting was retained'),where,true);
     let out=section.references||'';
     if(book.footnotes.length)out+=D.noteSettings('footnote',p);if(book.endnotes.length)out+=D.noteSettings('endnote',p);
     out+=v('type',['continuous','nextColumn','nextPage','evenPage','oddPage'][p.breakType]||'nextPage');

@@ -326,6 +326,7 @@ class Package:
             if split(root.tag)[0] in W and split(root.tag)[1] == 'comments':
                 comment_counts[part] = Counter(at(c, 'id') for c in root if split(c.tag)[1] == 'comment')
         main = next((r['target'] for r in self.rels.get('', {}).values() if r['type'].endswith('/officeDocument')), '')
+        word = re.search(r'wordprocessingml\.(document|template)\.main|ms-word\.', self.types.get(main) or '') is not None
         for part, root in self.xml.items():
             parents = {child: parent for parent in root.iter() for child in parent}
             for el, path, branches in walk(root):
@@ -386,6 +387,13 @@ class Package:
                 # ... and an editing time past the extended properties' integer
                 if ns in EXTENDED and tag == 'TotalTime' and not in_range(el.text, -2147483648, 2147483647):
                     self.issue('extended-property-total-time', part, (el.text or '').strip(), path)
+                # Word 2016 offers a converter for a newer version instead of opening a document whose AppVersion
+                # carries a producer build after the dot (11.6568, 12.0999; I24 E2): 12.0300 and 16.0300 open, values
+                # between weren't measured, and Excel and PowerPoint write such minors (16.0300, 15.0033)
+                if ns in EXTENDED and tag == 'AppVersion' and word:
+                    m = re.fullmatch(r'\d{1,2}\.(\d{4})', (el.text or '').strip())
+                    if m and int(m.group(1)) >= 999:
+                        self.issue('word-app-version-build', part, (el.text or '').strip(), path)
                 # What PowerPoint refuses in a converted presentation's drawings (I24 D3, one-object controls): a table
                 # in a graphic frame of another type, a connector with a custom geometry (the same geometry opens on
                 # a shape), a group that is a placeholder ...

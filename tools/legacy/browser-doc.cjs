@@ -9,7 +9,7 @@ const fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwr
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('request',r=>{if(/^https?:/.test(r.url())&&!r.url().startsWith('http://127.0.0.1:8769/'))external.push(r.url());});
   try{
    await page.goto('http://127.0.0.1:8769/'+app+'/?new&lang=en');await page.waitForTimeout(600);
-   for(const name of ['base','codepages','properties','package','property-parts','doc-read','doc-sprm','doc-structure','doc-style','doc-lists','doc-xml','doc-settings','doc-text','doc-write'])await page.addScriptTag({url:'/common/legacy/'+name+'.js'});
+   await page.evaluate(()=>L.legacyImport.load());
    for(const [i,file] of (app==='quire'?files:files.slice(0,1)).entries()){
     const result=await page.evaluate(async({source,extension})=>{const r=await L.legacy.doc.convert(Uint8Array.from(atob(source),c=>c.charCodeAt(0)),{extension});window.__legacyConversion=r;return {type:r.type,stats:r.stats,bytes:r.pkg.length};},{source:fs.readFileSync('/work/corpora/'+file).toString('base64'),extension:path.extname(file)});
     if(app==='quire'){

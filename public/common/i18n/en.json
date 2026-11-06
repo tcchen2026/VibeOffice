@@ -4657,6 +4657,11 @@
    "common/legacy/doc-read.js:12"
   ]
  },
+ "A bookmark outside the converted text was not kept": {
+  "where": [
+   "common/legacy/doc-markup.js:106"
+  ]
+ },
  "A cell comment was not kept": {
   "where": [
    "common/legacy/xls-comments.js:85"
@@ -4718,14 +4723,50 @@
    "lectern/js/comments.js:132"
   ]
  },
+ "A comment reference without a matching comment was not kept": {
+  "where": [
+   "common/legacy/doc-text.js:43"
+  ]
+ },
  "A comment thread you edited will be saved as an ordinary note. Excel will show it as a note, not as a conversation.": {
   "where": [
    "ledger/js/threads.js:138"
   ]
  },
+ "A comment with damaged text positions was not kept": {
+  "where": [
+   "common/legacy/doc-markup.js:69"
+  ]
+ },
  "A conditional formatting rule was not kept": {
   "where": [
    "common/legacy/xls-rules.js:57"
+  ]
+ },
+ "A damaged bookmark was not kept": {
+  "where": [
+   "common/legacy/doc-markup.js:46"
+  ]
+ },
+ "A damaged cell merge was removed; its text was retained": {
+  "where": [
+   "common/legacy/doc-tables.js:112"
+  ]
+ },
+ "A damaged comment range was replaced with a point reference": {
+  "where": [
+   "common/legacy/doc-markup.js:70",
+   "common/legacy/doc-markup.js:74"
+  ]
+ },
+ "A damaged document variable used by fields was not kept": {
+  "where": [
+   "common/legacy/doc-settings.js:53"
+  ]
+ },
+ "A damaged field was replaced with its last displayed text": {
+  "where": [
+   "common/legacy/doc-fields.js:77"
   ]
  },
  "A damaged master relationship was not kept": {
@@ -4736,6 +4777,11 @@
  "A damaged style was replaced with default formatting": {
   "where": [
    "common/legacy/doc-style.js:60"
+  ]
+ },
+ "A damaged table was replaced with its cell text": {
+  "where": [
+   "common/legacy/doc-tables.js:87"
   ]
  },
  "A damaged text style was not kept": {
@@ -4784,6 +4830,11 @@
    "common/legacy/xls-comments.js:83"
   ]
  },
+ "A form field lost its settings; its last displayed text was retained": {
+  "where": [
+   "common/legacy/doc-fields.js:16"
+  ]
+ },
  "A formula or function contains invalid numeric values.": {
   "where": [
    "ledger/js/dialogs3.js:329"
@@ -4796,7 +4847,7 @@
  },
  "A header or footer with damaged text positions was not kept": {
   "where": [
-   "common/legacy/doc-structure.js:101"
+   "common/legacy/doc-structure.js:106"
   ]
  },
  "A labelled box for each item, holding its sub-items.": {
@@ -4833,7 +4884,7 @@
  },
  "A note reference without a matching note was not kept": {
   "where": [
-   "common/legacy/doc-text.js:39"
+   "common/legacy/doc-text.js:41"
   ]
  },
  "A note with damaged text positions was not kept": {
@@ -4944,6 +4995,22 @@
  "A style named {0} already exists.": {
   "where": [
    "quire/js/dialogs.js:929"
+  ]
+ },
+ "A table nested too deeply was replaced with its cell text": {
+  "where": [
+   "common/legacy/doc-tables.js:130"
+  ]
+ },
+ "A table row has damaged cell widths": {
+  "where": [
+   "common/legacy/doc-table-props.js:84"
+  ]
+ },
+ "A table row has too many cells": {
+  "where": [
+   "common/legacy/doc-table-props.js:13",
+   "common/legacy/doc-table-props.js:71"
   ]
  },
  "A table was kept as separate drawing objects": {
@@ -5806,6 +5873,31 @@
    "lectern/js/diagram.js:29"
   ]
  },
+ "An earlier field result was not kept; the current result was retained": {
+  "where": [
+   "common/legacy/doc-xml.js:25"
+  ]
+ },
+ "An earlier formatting change was not kept; the current formatting was retained": {
+  "where": [
+   "common/legacy/doc-markup.js:121"
+  ]
+ },
+ "An earlier section formatting change was not kept; the current formatting was retained": {
+  "where": [
+   "common/legacy/doc-settings.js:62"
+  ]
+ },
+ "An earlier table column layout was not kept; the current layout was retained": {
+  "where": [
+   "common/legacy/doc-tables.js:106"
+  ]
+ },
+ "An earlier table formatting change was not kept; the current formatting was retained": {
+  "where": [
+   "common/legacy/doc-tables.js:103"
+  ]
+ },
  "An embedded XML part contains invalid text": {
   "where": [
    "common/legacy/xml-check.js:9"
@@ -5905,7 +5997,7 @@
  },
  "An unsupported text control was not kept": {
   "where": [
-   "common/legacy/doc-text.js:46"
+   "common/legacy/doc-text.js:48"
   ]
  },
  "Analysis ToolPak functions (engineering, financial, date) are built in.": {
@@ -7137,11 +7229,6 @@
    "quire/js/dialogs2.js:420"
   ]
  },
- "Bookmarks were not kept": {
-  "where": [
-   "common/legacy/doc-write.js:18"
-  ]
- },
  "Book|workbook": {
   "where": [
    "ledger/js/dialogs.js:498",
@@ -8240,7 +8327,7 @@
  },
  "Character formatting could not be read": {
   "where": [
-   "common/legacy/doc-structure.js:113"
+   "common/legacy/doc-structure.js:118"
   ]
  },
  "Character in Range": {
@@ -9359,6 +9446,11 @@
    "quire/js/review.js:335"
   ]
  },
+ "Comment replies were kept as separate comments": {
+  "where": [
+   "common/legacy/doc-markup.js:76"
+  ]
+ },
  "Comment {0}: {1}": {
   "where": [
    "quire/js/dialogs3.js:701"
@@ -9377,10 +9469,9 @@
    "lectern/js/comments.js:180"
   ]
  },
- "Comments were not kept": {
+ "Comments without document positions were not kept": {
   "where": [
-   "common/legacy/doc-text.js:41",
-   "common/legacy/doc-write.js:19"
+   "common/legacy/doc-markup.js:55"
   ]
  },
  "Commonly Confused Words": {
@@ -11877,7 +11968,7 @@
  },
  "Document editing restrictions were not kept": {
   "where": [
-   "common/legacy/doc-write.js:22"
+   "common/legacy/doc-write.js:21"
   ]
  },
  "Document number": {
@@ -12336,6 +12427,11 @@
    "common/smartart.js:305"
   ]
  },
+ "Earlier cell formatting changes were not kept; the current formatting was retained": {
+  "where": [
+   "common/legacy/doc-tables.js:117"
+  ]
+ },
  "Earlier versions of “{0}”, kept as saves replaced them:": {
   "where": [
    "common/core.js:324"
@@ -12591,7 +12687,7 @@
  },
  "Embedded fonts were not kept": {
   "where": [
-   "common/legacy/doc-write.js:23",
+   "common/legacy/doc-write.js:22",
    "common/legacy/ppt-write.js:103"
   ]
  },
@@ -12709,7 +12805,7 @@
  },
  "Endnotes could not be read": {
   "where": [
-   "common/legacy/doc-structure.js:118"
+   "common/legacy/doc-structure.js:123"
   ]
  },
  "End|key": {
@@ -13183,7 +13279,7 @@
  },
  "Excel 97-2003 workbook": {
   "where": [
-   "common/legacy/import.js:16"
+   "common/legacy/import.js:18"
   ]
  },
  "Excel Macro-Enabled Workbook (*.xlsm)": {
@@ -13550,12 +13646,8 @@
  },
  "Fields in this document are nested too deeply": {
   "where": [
-   "common/legacy/doc-text.js:31"
-  ]
- },
- "Fields were replaced with their last displayed text": {
-  "where": [
-   "common/legacy/doc-text.js:31"
+   "common/legacy/doc-fields.js:63",
+   "common/legacy/doc-text.js:35"
   ]
  },
  "Fields:": {
@@ -14395,7 +14487,7 @@
  },
  "Footnotes could not be read": {
   "where": [
-   "common/legacy/doc-structure.js:117"
+   "common/legacy/doc-structure.js:122"
   ]
  },
  "For which item:": {
@@ -15459,6 +15551,11 @@
    "lectern/js/panes.js:421"
   ]
  },
+ "Handwriting in a comment was not kept": {
+  "where": [
+   "common/legacy/doc-markup.js:75"
+  ]
+ },
  "Hanging": {
   "where": [
    "quire/js/dialogs.js:194"
@@ -15544,7 +15641,7 @@
  },
  "Headers and footers could not be read": {
   "where": [
-   "common/legacy/doc-structure.js:116"
+   "common/legacy/doc-structure.js:121"
   ]
  },
  "Headers, footers and page numbers": {
@@ -18371,7 +18468,7 @@
  },
  "Macros were not kept": {
   "where": [
-   "common/legacy/doc-write.js:24",
+   "common/legacy/doc-write.js:23",
    "common/legacy/ppt-write.js:105",
    "common/legacy/xls-write.js:90"
   ]
@@ -21100,7 +21197,7 @@
  },
  "Paragraph formatting could not be read": {
   "where": [
-   "common/legacy/doc-structure.js:114"
+   "common/legacy/doc-structure.js:119"
   ]
  },
  "Paragraph number": {
@@ -21537,8 +21634,8 @@
  },
  "Pictures and drawing objects were not kept": {
   "where": [
-   "common/legacy/doc-text.js:40",
-   "common/legacy/doc-write.js:21"
+   "common/legacy/doc-text.js:42",
+   "common/legacy/doc-write.js:20"
   ]
  },
  "Pictures in album:": {
@@ -21759,7 +21856,7 @@
  },
  "PowerPoint 97-2003 presentation": {
   "where": [
-   "common/legacy/import.js:16"
+   "common/legacy/import.js:18"
   ]
  },
  "PowerPoint Presentation (*.pptx)": {
@@ -24997,17 +25094,6 @@
    "quire/js/commands.js:477"
   ]
  },
- "Revision history was not kept": {
-  "where": [
-   "common/legacy/doc-xml.js:25"
-  ]
- },
- "Revision history was not kept; the current text was retained": {
-  "where": [
-   "common/legacy/doc-text.js:35",
-   "common/legacy/doc-text.js:36"
-  ]
- },
  "Revision number:": {
   "where": [
    "quire/js/dialogs3.js:632"
@@ -25886,7 +25972,7 @@
  },
  "Section formatting could not be read": {
   "where": [
-   "common/legacy/doc-structure.js:115"
+   "common/legacy/doc-structure.js:120"
   ]
  },
  "Section sta&rt:": {
@@ -27351,9 +27437,34 @@
    "common/legacy/xls-misc.js:111"
   ]
  },
+ "Some bookmarks could not be read": {
+  "where": [
+   "common/legacy/doc-markup.js:85"
+  ]
+ },
  "Some character style formatting could not be read": {
   "where": [
    "common/legacy/doc-style.js:53"
+  ]
+ },
+ "Some comment author names could not be read": {
+  "where": [
+   "common/legacy/doc-markup.js:58"
+  ]
+ },
+ "Some comment dates could not be read": {
+  "where": [
+   "common/legacy/doc-markup.js:66"
+  ]
+ },
+ "Some comment ranges were replaced with point references": {
+  "where": [
+   "common/legacy/doc-markup.js:62"
+  ]
+ },
+ "Some comments could not be read": {
+  "where": [
+   "common/legacy/doc-markup.js:86"
   ]
  },
  "Some conditional formatting settings were not kept": {
@@ -27371,6 +27482,11 @@
    "common/legacy/doc-settings.js:23"
   ]
  },
+ "Some document variables used by fields were not kept": {
+  "where": [
+   "common/legacy/doc-settings.js:48"
+  ]
+ },
  "Some drawing formatting could not be kept": {
   "where": [
    "common/legacy/ppt-shapes.js:13"
@@ -27381,9 +27497,24 @@
    "common/legacy/ppt-shapes.js:13"
   ]
  },
+ "Some drop-down choices were shortened or not kept": {
+  "where": [
+   "common/legacy/doc-fields.js:39"
+  ]
+ },
+ "Some field settings could not be read": {
+  "where": [
+   "common/legacy/doc-fields.js:49"
+  ]
+ },
  "Some font choices could not be read": {
   "where": [
    "common/legacy/doc-style.js:44"
+  ]
+ },
+ "Some form field settings were shortened": {
+  "where": [
+   "common/legacy/doc-fields.js:25"
   ]
  },
  "Some formulas were replaced with their saved results": {
@@ -27423,7 +27554,7 @@
  },
  "Some paragraph formatting could not be read": {
   "where": [
-   "common/legacy/doc-text.js:13"
+   "common/legacy/doc-text.js:14"
   ]
  },
  "Some paragraph style formatting could not be read": {
@@ -27446,6 +27577,11 @@
    "common/legacy/ppt-text.js:9"
   ]
  },
+ "Some revision author names could not be read": {
+  "where": [
+   "common/legacy/doc-markup.js:87"
+  ]
+ },
  "Some section formatting could not be read": {
   "where": [
    "common/legacy/doc-structure.js:77"
@@ -27461,6 +27597,17 @@
    "common/legacy/ppt-shapes.js:13"
   ]
  },
+ "Some table formatting could not be read": {
+  "where": [
+   "common/legacy/doc-table-props.js:34",
+   "common/legacy/doc-tables.js:69"
+  ]
+ },
+ "Some table formatting was not kept": {
+  "where": [
+   "common/legacy/doc-table-props.js:80"
+  ]
+ },
  "Some text formatting could not be kept": {
   "where": [
    "common/legacy/ppt-text.js:9"
@@ -27471,7 +27618,7 @@
    "common/legacy/doc-structure.js:50",
    "common/legacy/doc-structure.js:60",
    "common/legacy/doc-style.js:66",
-   "common/legacy/doc-text.js:15"
+   "common/legacy/doc-text.js:16"
   ]
  },
  "Some text-box positioning could not be kept": {
@@ -28747,7 +28894,7 @@
  },
  "Tables were replaced with their cell text": {
   "where": [
-   "common/legacy/doc-text.js:55"
+   "common/legacy/doc-tables.js:136"
   ]
  },
  "Tables with vertically merged cells cannot be sorted.": {
@@ -29111,7 +29258,7 @@
  },
  "Text boxes and their text were not kept": {
   "where": [
-   "common/legacy/doc-write.js:20"
+   "common/legacy/doc-write.js:19"
   ]
  },
  "Text control": {
@@ -29384,7 +29531,7 @@
  },
  "The converter for Office 97-2003 files could not be loaded.": {
   "where": [
-   "common/legacy/import.js:25"
+   "common/legacy/import.js:27"
   ]
  },
  "The criteria range is not valid.": {
@@ -29567,8 +29714,8 @@
  },
  "The file is damaged or is not an Office 97-2003 file.": {
   "where": [
-   "common/legacy/import.js:40",
-   "common/legacy/import.js:42"
+   "common/legacy/import.js:42",
+   "common/legacy/import.js:44"
   ]
  },
  "The file is too large to import": {
@@ -29595,6 +29742,17 @@
   "where": [
    "common/core.js:729",
    "start.js:295"
+  ]
+ },
+ "The form field settings are damaged": {
+  "where": [
+   "common/legacy/doc-fields.js:22"
+  ]
+ },
+ "The form field settings are missing": {
+  "where": [
+   "common/legacy/doc-fields.js:17",
+   "common/legacy/doc-fields.js:19"
   ]
  },
  "The formula contains an error.": {
@@ -29847,6 +30005,11 @@
  "The selection contains multiple data values. Merging into one cell will keep the upper-left most data only.": {
   "where": [
    "ledger/js/app.js:1053"
+  ]
+ },
+ "The setting that keeps a table row with the following row was not kept": {
+  "where": [
+   "common/legacy/doc-tables.js:107"
   ]
  },
  "The shape fill picture is missing": {
@@ -30143,6 +30306,11 @@
  "There are no tracked changes or comments in this document.": {
   "where": [
    "quire/js/review.js:404"
+  ]
+ },
+ "There are too many comment authors": {
+  "where": [
+   "common/legacy/doc-markup.js:60"
   ]
  },
  "There are too many overlapping merged-cell ranges": {
@@ -30514,7 +30682,7 @@
  },
  "This is a PowerPoint 97-2003 presentation, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:17"
+   "common/legacy/import.js:19"
   ]
  },
  "This is a TrueType font. The same font will be used on both your printer and your screen.": {
@@ -30529,12 +30697,12 @@
  },
  "This is a Word 97-2003 document, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:17"
+   "common/legacy/import.js:19"
   ]
  },
  "This is an Excel 97-2003 workbook, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:17"
+   "common/legacy/import.js:19"
   ]
  },
  "This is not a valid print range.": {
@@ -30703,7 +30871,7 @@
  },
  "This {0} is protected with a password. {1} cannot open password-protected Office 97-2003 files yet.": {
   "where": [
-   "common/legacy/import.js:50"
+   "common/legacy/import.js:52"
   ]
  },
  "Through": {
@@ -32604,7 +32772,7 @@
  },
  "Word 97-2003 document": {
   "where": [
-   "common/legacy/import.js:16"
+   "common/legacy/import.js:18"
   ]
  },
  "Word Count": {
@@ -33761,7 +33929,7 @@
  },
  "{0} was converted from the {1} format. Not converted:": {
   "where": [
-   "common/legacy/import.js:58"
+   "common/legacy/import.js:60"
   ]
  },
  "{0} x {1} Pages": {

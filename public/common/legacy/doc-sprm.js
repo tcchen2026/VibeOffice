@@ -31,7 +31,8 @@
     const code=one[(prm>>>1)&127];if(!code)B.fail('DOC_PRM',N('A text piece uses unsupported formatting'));
     return piece.ops=D.sprms(new Uint8Array([code&255,code>>>8,prm>>>8]));
   };
-  D.color=n=>n===0xffffffff?'auto':[n&255,n>>>8&255,n>>>16&255].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+  // MS-DOC COLORREF.fAuto occupies the high byte; its RGB bytes are ignored.
+  D.color=n=>n>>>24===255?'auto':[n&255,n>>>8&255,n>>>16&255].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
   D.palette=['auto','000000','0000FF','00FFFF','00FF00','FF00FF','FF0000','FFFF00','FFFFFF','000080','008080','008000','800080','800000','808000','808080','C0C0C0'];
   D.border=function(r){
     if(r.length===8)return {color:D.color(r.u32(0)),size:r.u8(4),type:r.u8(5),space:r.u8(6)&31,shadow:!!(r.u8(6)&32),frame:!!(r.u8(6)&64)};
@@ -59,9 +60,17 @@
     // MS-DOC sprmCIstd/sprmCPlain reset direct formatting but retain these
     // content/markup properties. In particular, clearing formatting must not
     // make deleted text visible again.
-    const reset=next=>{const kept={...next};for(const key of ['deleted','inserted','rtl','complexScript','fieldHidden','special','data','ole','webHidden','object','pictureOffset','revisionFormatting','symbol','hint','highlight']){if(key in out)kept[key]=out[key];else delete kept[key];}return kept;};
+    const reset=next=>{const kept={...next};for(const key of ['deleted','inserted','insertAuthor','insertDate','deleteAuthor','deleteDate','rtl','complexScript','fieldHidden','special','data','ole','webHidden','object','pictureOffset','revisionFormatting','revisionBefore','formatRevision','symbol','hint','highlight']){if(key in out)kept[key]=out[key];else delete kept[key];}return kept;};
     for(const op of ops){if(op.kind!==kind)continue;const r=D.operand(op),id=op.id,v=op.n===1?r.u8(0):op.n===2?r.u16(0):op.n>=4?r.u32(0):0,s=op.n===1?(v>127?v-256:v):op.n===2?r.i16(0):v|0;
+      if(op.code===0x2a83||op.code===0x2664){
+        if(v){const previous={...out};delete previous.revisionBefore;delete previous.revisionFormatting;delete previous.formatRevision;out.revisionBefore=previous;}
+        else delete out.revisionBefore;continue;
+      }
+      if([0xca57,0xca89,0xc63f,0xc66f].includes(op.code)){
+        out.revisionFormatting=!!r.u8(0);out.formatRevision={author:r.i16(1),date:r.u32(3)};continue;
+      }
       if(kind===2){
+        if([0x4804,0x6805,0x4863,0x6864].includes(op.code)){out[({0x4804:'insertAuthor',0x6805:'insertDate',0x4863:'deleteAuthor',0x6864:'deleteDate'})[op.code]]=v;continue;}
         if(toggles[id]){const key=toggles[id];out[key]=v===128?!!toggleBase[key]:v===129?!toggleBase[key]:!!v;continue;}
         if(cpNumbers[id]){out[cpNumbers[id]]=[0x40,0x45].includes(id)?s:v;if(id===0x3d)out.fontOther=out.fontEastAsia=v;continue;}
         if([0,1,2,6,0xa,0x11,0x18,0x55,0x56].includes(id)){out[({0:'deleted',1:'inserted',2:'fieldHidden',6:'data',10:'ole',17:'webHidden',24:'specVanish',85:'special',86:'object'})[id]]=!!v;continue;}
@@ -82,7 +91,7 @@
         if(id===0x49){out.size=r.u16(0);continue;}
         if(id===0x4a){out.size=Math.max(8,(out.size||20)+r.i16(0));continue;}
         if(id===0x4d){out.size=Math.max(2,Math.round((out.size||20)*(1+v/100)));continue;}
-        if(id===0x57||id===0x62||id===0x83||id===0x89){out.revisionFormatting=!!r.u8(0);continue;}
+        if(id===0x62){out.fieldRevision=!!r.u8(0);continue;}
         if(id===0x59&&v===0)continue;
       }else if(kind===1){
         if(ppNumbers[id]){out[ppNumbers[id]]=[0xb,0xe,0xf,0x11,0x18,0x19,0x22,0x2e,0x2f,0x5d,0x5e,0x60,0x55,0x56,0x57].includes(id)?s:v;continue;}

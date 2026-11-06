@@ -24,16 +24,25 @@ def source_text(text):
         elif n==31:result.append('\u00ad')
         elif n>=32 or ch in '\t\n\r':result.append(ch)
     return ''.join(result)
-def xml_text(node):
-    out=[]
+def xml_text(node,include_deleted=False):
+    out=[];fields=[]
     def walk(n):
         name=n.tag.removeprefix(W)
-        if name in ('txbxContent','del','moveFrom','instrText','delInstrText'):return
-        if name=='t':out.append(n.text or '')
+        if name in ('txbxContent','instrText','delInstrText') or not include_deleted and name in ('del','moveFrom'):return
+        if name=='fldChar':
+            kind=n.get(W+'fldCharType')
+            if kind=='begin':fields.append(False)
+            elif kind=='separate' and fields:fields[-1]=True
+            elif kind=='end' and fields:fields.pop()
+            return
+        visible=all(fields)
+        if name in ('t','delText'):
+            if visible and (name=='t' or include_deleted):out.append(n.text or '')
         elif name in ('br','cr','tab'):out.append('\n' if name!='tab' else '\t')
         elif name=='noBreakHyphen':out.append('\u2011')
         elif name=='softHyphen':out.append('\u00ad')
-        elif name=='sym':out.append(chr(int(n.get(W+'char','0'),16)))
+        elif name=='sym':
+            if visible:out.append(chr(int(n.get(W+'char','0'),16)))
         else:
             for c in n:walk(c)
         if name=='p':out.append('\n')
@@ -43,6 +52,11 @@ def content(file):
         result={}
         doc=ET.fromstring(z.read('word/document.xml'))
         result['main']=xml_text(doc.find(W+'body'))
+        result['mainAll']=xml_text(doc.find(W+'body'),True)
+        result['tables']=sum(1 for _ in doc.iter(W+'tbl'))
+        result['comments']=[]
+        if 'word/comments.xml' in z.namelist():
+            result['comments']=[{'author':c.get(W+'author',''),'text':xml_text(c)}for c in ET.fromstring(z.read('word/comments.xml'))]
         for part in ['footnotes','endnotes']:
             if 'word/'+part+'.xml' in z.namelist():
                 root=ET.fromstring(z.read('word/'+part+'.xml'))
@@ -56,13 +70,15 @@ for line in (run/'runs.jsonl').read_text().splitlines():
     h=row['sha256'];source=refs.get(h,{});converted=content(pathlib.Path(row.get('pkg') or run/'packages'/(h+'.'+row['type'])));record={'file':row['file'],'sha256':h,'converted':converted};counts['converted']+=1
     stories=source.get('references',{}).get('stories')
     if stories:
-        expected=source_text(stories['main']);same=norm(expected)==norm(converted['main']);record['source']={'expected':expected,'same':same,'revisions':source.get('features',{}).get('revisionFlags')};counts['sourceCompared']+=1;counts['sourceEqual']+=same
+        expected=source_text(stories['main']);same=norm(expected)==norm(converted['mainAll']);record['source']={'expected':expected,'same':same,'revisions':source.get('features',{}).get('revisionFlags')};counts['sourceCompared']+=1;counts['sourceEqual']+=same
     result=reference_root/h/'result.json'
     if result.exists():
         ref=json.loads(result.read_text())['conversions'].get('docx',{})
         if ref.get('status')=='converted':
             try:
                 lo=content(reference_root/ref['file']);same=norm(lo['main'])==norm(converted['main']);record['libreoffice']={'same':same,'text':lo,'file':ref['file']};counts['loCompared']+=1;counts['loEqual']+=same
+                counts['tablesCompared']+=1;counts['tablesEqual']+=converted['tables']==lo['tables']
+                counts['commentsCompared']+=1;counts['commentsEqual']+=sorted((c['author'],norm(c['text']))for c in converted['comments'])==sorted((c['author'],norm(c['text']))for c in lo['comments'])
                 for name in ['footnotes','endnotes','headers']:
                     a=sorted(norm(x) for x in converted.get(name,[]) if norm(x));b=sorted(norm(x) for x in lo.get(name,[]) if norm(x));counts[name+'Compared']+=1;counts[name+'Equal']+=a==b
                     # Producers may duplicate inherited header/footer parts.

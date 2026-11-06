@@ -28,11 +28,12 @@ async function open(app, src, name, probe) {
 
 const doc = file('legacy-word', 'poi__e38d8be7d96c__cap.stanford.edu_profiles_viewbiosketch_facultyid=4009&name=m_maciver.doc');
 test('Quire opens a Word 97-2003 document', { skip: !fs.existsSync(doc) && 'no corpus' }, async () => {
-  const r = await open('quire', doc, 'm_maciver.doc', `({ name: L.app.fileName, saved: L.app.saved, text: document.querySelector('#pages').textContent })`);
+  const r = await open('quire', doc, 'm_maciver.doc', `({ name: L.app.fileName, saved: L.app.saved, text: document.querySelector('#pages').textContent, tables: document.querySelectorAll('#pages table').length })`);
   assert.equal(r.name, 'm_maciver');
   assert.equal(r.saved, false, 'Save asks for a .docx name');
   assert.match(r.text, /BIOGRAPHICAL SKETCH/);
-  assert.match(r.msgs.join('\n'), /converted from the Word 97-2003 document format[\s\S]*Tables were replaced/);
+  assert.ok(r.tables > 0, 'its tables are tables (I24 E2)');
+  assert.doesNotMatch(r.msgs.join('\n'), /Tables were replaced/);
 });
 
 const xls = file('legacy-excel', 'poi__193e60ac0218__15228.xls');

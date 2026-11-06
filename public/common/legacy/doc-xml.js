@@ -22,7 +22,7 @@
   D.shadingXML=function(book,p,where){const val=patterns[p.pattern];if(!val)D.notice(book,'legacy-word-shading',N('A shading pattern was not kept; its background color was retained'),where,true);return w('shd',{val:val||'clear',color:p.color,fill:p.fill});};
   D.formatWarnings=function(book,p,where){
     if(p.unsupported?.length)D.notice(book,'legacy-word-format','Unsupported binary formatting properties',where,false,p.unsupported.map(n=>n.toString(16)).join(', '));
-    if(p.revisionFormatting)D.notice(book,'legacy-word-revisions',N('Revision history was not kept'),where,true);
+    if(p.fieldRevision)D.notice(book,'legacy-word-field-revision',N('An earlier field result was not kept; the current result was retained'),where,true);
   };
   D.runXML=function(book,p,where,styleBase,directBase){
     // Direct run properties are absolute, unlike style toggles. Omit inherited

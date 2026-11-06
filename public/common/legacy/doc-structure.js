@@ -87,10 +87,15 @@
   function notes(book,name,referenceId,textId){
     const refs=D.table(book,referenceId,name+' references'),texts=D.table(book,textId,name+' text');
     if(!refs.length||!texts.length)return [];
-    const rp=D.plc(refs,2),tp=D.plc(texts,0),result=[],story=book.storyRanges[name];
+    const rp=D.plc(refs,2),tp=D.plc(texts,0),result=[],story=book.storyRanges[name],claimed=new Set();
     for(let i=0;i<rp.n;i++){
       if(i>=tp.n||tp.cp[i+1]>story.end-story.start||rp.cp[i]>=book.stories.main){D.notice(book,'legacy-word-note',N('A note with damaged text positions was not kept'),name,true);continue;}
-      result.push({id:i+1,cp:rp.cp[i],automatic:!!refs.u16(rp.at(i)),start:story.start+tp.cp[i],end:story.start+tp.cp[i+1],where:(name==='footnotes'?'Footnote ':'Endnote ')+(i+1)});
+      const automatic=!!refs.u16(rp.at(i));let cp=rp.cp[i];
+      // Some damaged PLCs point just after the automatic reference character.
+      // Recover that marker without consuming the punctuation which follows it.
+      if(automatic&&book.text[cp]!=='\x02'&&cp>0&&book.text[cp-1]==='\x02'&&!claimed.has(cp-1))cp--;
+      claimed.add(cp);
+      result.push({id:i+1,cp,automatic,start:story.start+tp.cp[i],end:story.start+tp.cp[i+1],where:(name==='footnotes'?'Footnote ':'Endnote ')+(i+1)});
     }
     return result;
   }

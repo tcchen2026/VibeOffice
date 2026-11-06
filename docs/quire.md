@@ -164,7 +164,7 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
 | Markdown `.md` / `.markdown` (GitHub flavour) | yes | yes |
 | Markdown with pictures `.zip` (a `.md` and its picture files) | yes | yes |
 | PDF | — | yes (File ▸ Print, or Save As ▸ PDF) |
-| Word 97-2003 Document `.doc`, Template `.dot` | yes: converted on opening to the `.docx` Word would write (text, styles, lists, sections, headers and footers, notes; tables still as their cells' text, and pictures and drawings not yet); a message names what wasn't converted, and Save asks for a `.docx` name | no |
+| Word 97-2003 Document `.doc`, Template `.dot` | yes: converted on opening to the `.docx` Word would write (text, styles, lists, sections, headers and footers, notes, tables, fields and form fields, bookmarks, comments and tracked changes; pictures and drawings not yet); a message names what wasn't converted, and Save asks for a `.docx` name | no |
 | Password-protected `.docx` | yes (Word 2007 "standard" and Word 2010+ "agile" encryption) | yes: Tools ▸ Options ▸ Security ▸ Password to open (AES-256, as Word 2013+) |
 
 Encryption and decryption happen in the browser (WebCrypto for hashing, so the page must be served over

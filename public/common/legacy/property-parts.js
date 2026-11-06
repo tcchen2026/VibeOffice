@@ -50,7 +50,10 @@
     for (const [id, tag] of [[3, 'PresentationFormat'], [5, 'Lines'], [6, 'Paragraphs'], [7, 'Slides'], [8, 'Notes'], [9, 'HiddenSlides'], [10, 'MMClips'], [11, 'ScaleCrop'], [14, 'Manager'], [15, 'Company'], [16, 'LinksUpToDate'], [17, 'CharactersWithSpaces'], [19, 'SharedDoc'], [22, 'HyperlinksChanged']]) {
       let v = safe(dv, id); if (v != null) { if (id === 16) v = !v; app[tag] = v; }
     }
-    if (typeof value(dv, 23) === 'number') { const ver = value(dv, 23) >>> 0; app.AppVersion = (ver >>> 16) + '.' + String(ver & 65535).padStart(4, '0'); }
+    // PIDDSI_VERSION's low word is a binary producer build, not an OOXML
+    // minor version. Word 2016 refuses 11.6568/12.6568 with a converter
+    // dialog; the same packages open with 11.0000/12.0000, as Office writes.
+    if (typeof value(dv, 23) === 'number') { const ver = value(dv, 23) >>> 0; app.AppVersion = (ver >>> 16) + '.0000'; }
     Object.assign(app, options.extended || {});
     const vectors = {};
     const heads = dv[12]?.value, titles = dv[13]?.value;
