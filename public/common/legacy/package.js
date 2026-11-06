@@ -129,6 +129,7 @@
       for (const [name, type] of this.types)
         if (
           /^(?:image|audio|video)\//.test(type) ||
+          type === 'application/vnd.ms-office.vbaProject' ||
           type === 'application/vnd.openxmlformats-officedocument.vmlDrawing'
         ) {
           const extension = name.split('/').at(-1).split('.').at(-1).toLowerCase();

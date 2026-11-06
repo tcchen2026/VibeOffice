@@ -14,6 +14,9 @@
     H = (P.links = {});
   const string = r => r.r.text(0, r.r.length & ~1, 1200).replace(/\0+$/, '');
   const jumps = ['', 'nextslide', 'previousslide', 'firstslide', 'lastslide', 'lastslideviewed', 'endshow'];
+  const ACTION_MACRO = 1;
+  const MACRO_NAME = 4026;
+  const MACRO_NAME_INSTANCE = 2;
   const bad = reason => B.fail('PPT_HYPERLINK', reason);
   H.propertyTargets = function (cfb) {
     const links = [];
@@ -128,6 +131,16 @@
         else D.report(book, page, 'sound', s, 'Action sound');
       }
       if (action === 0) return flags & 2 || info.sound ? info : null;
+      if (action === ACTION_MACRO && book.macros) {
+        const name = P.children(rec).find(r => r.type === MACRO_NAME && r.instance === MACRO_NAME_INSTANCE);
+        if (!name || !string(name)) bad('Missing macro action name');
+        try {
+          info.attrs.action = 'ppaction://macro?name=' + encodeURIComponent(string(name));
+        } catch {
+          bad('Invalid macro action name');
+        }
+        return info;
+      }
       if (action === 6 && s.media) {
         info.attrs.action = 'ppaction://media';
         return info;

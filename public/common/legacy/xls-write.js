@@ -139,6 +139,7 @@
           sheet.name
         );
     }
+    const macros = B.vba.excel(book, cfb, losses);
     const formulas = X.prepareFormulas(book, losses);
     X.prepareCharts(book, losses);
     book.theme = await X.theme(book, losses);
@@ -270,7 +271,8 @@
             el(
               'chartsheet',
               { xmlns: B.ns.s, 'xmlns:r': B.ns.officeRel.slice(0, -1) },
-              el('sheetPr') + el('sheetViews', {}, el('sheetView', view)) + print + drawing.xml
+              el('sheetPr', { codeName: macros?.sheetNames[i] }) +
+                el('sheetViews', {}, el('sheetView', view)) + print + drawing.xml
             ),
           'application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml'
         );
@@ -355,7 +357,8 @@
         el(
           'worksheet',
           { xmlns: B.ns.s, 'xmlns:r': B.ns.officeRel.slice(0, -1) },
-          el('sheetPr', extra.sheetPr, el('outlinePr', meta.outline) + extra.pagePr) +
+          el('sheetPr', { ...extra.sheetPr, codeName: macros?.sheetNames[i] },
+            el('outlinePr', meta.outline) + extra.pagePr) +
             el('dimension', { ref: dimension }) +
             viewXml +
             el('sheetFormatPr', meta.format) +
@@ -391,8 +394,7 @@
       if (ids.has(0xb0))
         notice(sheet, 'legacy-pivot-tables', N('PivotTables were replaced with their saved cells'));
     }
-    if (cfb.entries.some(e => e.type === 2 && /(?:^|\/)VBA\/(?:dir|_VBA_PROJECT)$/i.test(e.path)))
-      losses.push(B.loss('legacy-macros', N('Macros were not kept'), 'VBA', 'drop', 'Workbook', true));
+    B.vba.add(pkg, 'xl/workbook.xml', macros);
     pkg.add('xl/styles.xml', styles.xml, types.styles);
     pkg.rel('xl/workbook.xml', 'styles', 'styles.xml');
     if (book.theme) {
@@ -408,7 +410,7 @@
       );
       pkg.rel('xl/workbook.xml', 'sharedStrings', 'sharedStrings.xml');
     }
-    const type = template ? 'xltx' : 'xlsx',
+    const type = template ? (macros ? 'xltm' : 'xltx') : (macros ? 'xlsm' : 'xlsx'),
       external = formulas.addExternalParts(pkg);
     pkg.add(
       'xl/workbook.xml',
@@ -416,7 +418,7 @@
         el(
           'workbook',
           { xmlns: B.ns.s, 'xmlns:r': B.ns.officeRel.slice(0, -1) },
-          el('workbookPr', { date1904: date1904 ? 1 : null }) +
+          el('workbookPr', { date1904: date1904 ? 1 : null, codeName: macros?.workbookName }) +
             X.workbookProtection(book, losses) +
             el(
               'bookViews',
@@ -428,7 +430,8 @@
             formulas.defined +
             el('calcPr', formulas.calc)
         ),
-      template ? types.template : types.workbook
+      macros ? 'application/vnd.ms-excel.' + (template ? 'template' : 'sheet') + '.macroEnabled.main+xml'
+        : template ? types.template : types.workbook
     );
     pkg.rel('', 'officeDocument', 'xl/workbook.xml');
     losses.push(...B.addProperties(pkg, cfb));
@@ -439,6 +442,7 @@
       formulas: formulas.stats,
       features
     };
+    if (macros) stats.macros = { streams: macros.streams, bytes: macros.bytes.length };
     // All parts are assembled. Do not retain the source cell/record trees across
     // asynchronous ZIP compression, when the encoded worksheet buffers are largest.
     book.records = null;

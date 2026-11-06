@@ -644,7 +644,9 @@
     const b = A().books[A().cur];
     const base = b.name.replace(/\.[^.]+$/, '');
     const types = L.file.types.map((t) => [t.id, t.label]);
-    let type = b.type === 'xlsm' || b.type === 'xltx' || b.type === 'xltm' || b.type === 'csv' || b.type === 'txt' ? b.type : 'xlsx';
+    /* (an Excel 97-2003 workbook converted with its macros, or a template, offers the type it was converted to) */
+    const own = b.type === 'xls' ? b.wb.ooxmlFormat : b.type;
+    let type = own === 'xlsm' || own === 'xltx' || own === 'xltm' || own === 'csv' || own === 'txt' ? own : 'xlsx';
     if (L.file.native()) {
       const c = await L.file.choose('saveAs', type, base);
       return c ? A().saveAs(c.type, c.file, 'chosen') : false;

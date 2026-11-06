@@ -47,7 +47,7 @@
  },
  "&1904 date system": {
   "where": [
-   "ledger/js/dialogs.js:770"
+   "ledger/js/dialogs.js:772"
   ]
  },
  "&A, Page &P": {
@@ -100,7 +100,7 @@
    "common/dialogs.js:296",
    "common/dialogs.js:301",
    "common/dialogs.js:444",
-   "ledger/js/dialogs.js:789"
+   "ledger/js/dialogs.js:791"
   ]
  },
  "&Add >>": {
@@ -294,7 +294,7 @@
   "where": [
    "lectern/js/commands.js:137",
    "ledger/js/commands.js:211",
-   "ledger/js/dialogs.js:791",
+   "ledger/js/dialogs.js:793",
    "quire/js/commands.js:417"
   ]
  },
@@ -343,7 +343,7 @@
  "&Automatic": {
   "where": [
    "lectern/js/app.js:189",
-   "ledger/js/dialogs.js:768",
+   "ledger/js/dialogs.js:770",
    "quire/js/app.js:297",
    "quire/js/ribbon.js:99"
   ]
@@ -535,7 +535,7 @@
  },
  "&Break Link": {
   "where": [
-   "ledger/js/dialogs.js:958"
+   "ledger/js/dialogs.js:960"
   ]
  },
  "&Break...": {
@@ -877,7 +877,7 @@
  },
  "&Custom:": {
   "where": [
-   "ledger/js/dialogs.js:710"
+   "ledger/js/dialogs.js:712"
   ]
  },
  "&Customize...": {
@@ -1060,7 +1060,7 @@
  },
  "&Dictionary language:": {
   "where": [
-   "ledger/js/dialogs.js:791"
+   "ledger/js/dialogs.js:793"
   ]
  },
  "&Direction:": {
@@ -1203,7 +1203,7 @@
  },
  "&Enable background error checking": {
   "where": [
-   "ledger/js/dialogs.js:792"
+   "ledger/js/dialogs.js:794"
   ]
  },
  "&End Show": {
@@ -1380,7 +1380,7 @@
  },
  "&Fit selection": {
   "where": [
-   "ledger/js/dialogs.js:712"
+   "ledger/js/dialogs.js:714"
   ]
  },
  "&Fit text": {
@@ -1486,7 +1486,7 @@
  },
  "&Formula bar": {
   "where": [
-   "ledger/js/dialogs.js:760"
+   "ledger/js/dialogs.js:762"
   ]
  },
  "&Formula:": {
@@ -1561,7 +1561,7 @@
  },
  "&General Options...": {
   "where": [
-   "ledger/js/dialogs.js:658"
+   "ledger/js/dialogs.js:660"
   ]
  },
  "&Getting Started": {
@@ -1636,7 +1636,7 @@
   "where": [
    "lectern/js/commands.js:68",
    "ledger/js/commands.js:94",
-   "ledger/js/dialogs.js:763",
+   "ledger/js/dialogs.js:765",
    "ledger/js/dialogs3.js:406"
   ]
  },
@@ -1847,7 +1847,7 @@
  },
  "&Inconsistent formula in region": {
   "where": [
-   "ledger/js/dialogs.js:792"
+   "ledger/js/dialogs.js:794"
   ]
  },
  "&Increase Decimal": {
@@ -1933,7 +1933,7 @@
  },
  "&Iteration": {
   "where": [
-   "ledger/js/dialogs.js:769"
+   "ledger/js/dialogs.js:771"
   ]
  },
  "&Justify": {
@@ -2217,7 +2217,7 @@
  },
  "&Manual": {
   "where": [
-   "ledger/js/dialogs.js:768"
+   "ledger/js/dialogs.js:770"
   ]
  },
  "&Manual...": {
@@ -2358,7 +2358,7 @@
  },
  "&Move selection after Enter": {
   "where": [
-   "ledger/js/dialogs.js:774"
+   "ledger/js/dialogs.js:776"
   ]
  },
  "&Multiple Pages": {
@@ -2473,7 +2473,7 @@
   "where": [
    "lectern/js/dialogs.js:837",
    "ledger/js/app.js:668",
-   "ledger/js/dialogs.js:761",
+   "ledger/js/dialogs.js:763",
    "quire/js/dialogs.js:753"
   ]
  },
@@ -2722,12 +2722,12 @@
  },
  "&Password (optional):": {
   "where": [
-   "ledger/js/dialogs.js:906"
+   "ledger/js/dialogs.js:908"
   ]
  },
  "&Password:": {
   "where": [
-   "ledger/js/dialogs.js:857"
+   "ledger/js/dialogs.js:859"
   ]
  },
  "&Paste": {
@@ -2835,7 +2835,7 @@
  },
  "&Precision as displayed": {
   "where": [
-   "ledger/js/dialogs.js:770"
+   "ledger/js/dialogs.js:772"
   ]
  },
  "&Preferred width:": {
@@ -2890,7 +2890,7 @@
  },
  "&Protect worksheet and contents of locked cells": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:877"
   ]
  },
  "&Protection": {
@@ -2915,7 +2915,7 @@
  },
  "&Recently used file list": {
   "where": [
-   "ledger/js/dialogs.js:780"
+   "ledger/js/dialogs.js:782"
   ]
  },
  "&Recently used file list:": {
@@ -2949,7 +2949,7 @@
  },
  "&Reenter password to proceed.": {
   "where": [
-   "ledger/js/dialogs.js:888"
+   "ledger/js/dialogs.js:890"
   ]
  },
  "&Reference Initials": {
@@ -3018,7 +3018,7 @@
  },
  "&Remove personal information from file properties on save": {
   "where": [
-   "ledger/js/dialogs.js:799"
+   "ledger/js/dialogs.js:801"
   ]
  },
  "&Rename": {
@@ -3190,7 +3190,7 @@
    "lectern/js/commands.js:26",
    "lectern/js/dialogs.js:964",
    "ledger/js/commands.js:30",
-   "ledger/js/dialogs.js:668"
+   "ledger/js/dialogs.js:670"
   ]
  },
  "&Save As...": {
@@ -3499,7 +3499,7 @@
  },
  "&Startup Task Pane": {
   "where": [
-   "ledger/js/dialogs.js:760",
+   "ledger/js/dialogs.js:762",
    "quire/js/dialogs3.js:576"
   ]
  },
@@ -3515,7 +3515,7 @@
  },
  "&Structure": {
   "where": [
-   "ledger/js/dialogs.js:906"
+   "ledger/js/dialogs.js:908"
   ]
  },
  "&Style for following paragraph:": {
@@ -3983,7 +3983,7 @@
  },
  "&Vertical scroll bar": {
   "where": [
-   "ledger/js/dialogs.js:764"
+   "ledger/js/dialogs.js:766"
   ]
  },
  "&Vertical spacing:": {
@@ -4086,7 +4086,7 @@
  },
  "&Windows": {
   "where": [
-   "ledger/js/dialogs.js:906"
+   "ledger/js/dialogs.js:908"
   ]
  },
  "&With:": {
@@ -4136,7 +4136,7 @@
  },
  "&Zero values": {
   "where": [
-   "ledger/js/dialogs.js:764"
+   "ledger/js/dialogs.js:766"
   ]
  },
  "&Zoom": {
@@ -4669,12 +4669,12 @@
  },
  "A cell contains an invalid error value": {
   "where": [
-   "common/legacy/xls-write.js:188"
+   "common/legacy/xls-write.js:189"
   ]
  },
  "A cell contains an invalid numeric value": {
   "where": [
-   "common/legacy/xls-write.js:180"
+   "common/legacy/xls-write.js:181"
   ]
  },
  "A cell format extension is damaged": {
@@ -4936,6 +4936,11 @@
    "common/legacy/doc-lists.js:34"
   ]
  },
+ "A macro connection to this workbook or sheet was not kept": {
+  "where": [
+   "common/legacy/vba-hosts.js:62"
+  ]
+ },
  "A master text style has too many levels": {
   "where": [
    "common/legacy/ppt-text-read.js:168",
@@ -5086,7 +5091,7 @@
  },
  "A spreadsheet that runs entirely in your browser. Workbooks are read and written as Office Open XML (.xlsx, .xlsm), CSV and text; nothing is uploaded.": {
   "where": [
-   "ledger/js/dialogs.js:962"
+   "ledger/js/dialogs.js:964"
   ]
  },
  "A stored presentation design could not be kept": {
@@ -5334,7 +5339,7 @@
  },
  "Accept la&bels in formulas": {
   "where": [
-   "ledger/js/dialogs.js:770"
+   "ledger/js/dialogs.js:772"
   ]
  },
  "Accounting": {
@@ -5844,7 +5849,7 @@
  },
  "All Fonts": {
   "where": [
-   "common/core.js:719"
+   "common/core.js:732"
   ]
  },
  "All Reference Books": {
@@ -5910,12 +5915,12 @@
  },
  "Allow all users of this worksheet to:": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:877"
   ]
  },
  "Allow cell &drag and drop": {
   "where": [
-   "ledger/js/dialogs.js:773"
+   "ledger/js/dialogs.js:775"
   ]
  },
  "Allow only this type of editing in the document:": {
@@ -6186,7 +6191,7 @@
  },
  "Animations were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:358"
+   "common/legacy/ppt-write.js:363"
   ]
  },
  "Animations:": {
@@ -6243,7 +6248,7 @@
  },
  "Application:": {
   "where": [
-   "ledger/js/dialogs.js:689"
+   "ledger/js/dialogs.js:691"
   ]
  },
  "Applies a LAMBDA to each column and returns an array of the results.": {
@@ -6375,12 +6380,12 @@
  },
  "Aptos Display": {
   "where": [
-   "common/core.js:699"
+   "common/core.js:712"
   ]
  },
  "Aptos Narrow": {
   "where": [
-   "common/core.js:699"
+   "common/core.js:712"
   ]
  },
  "Aqua": {
@@ -6418,7 +6423,7 @@
  },
  "Arial Black": {
   "where": [
-   "common/core.js:699",
+   "common/core.js:712",
    "lectern/js/dialogs.js:999",
    "lectern/js/dialogs.js:1018",
    "lectern/js/render.js:549"
@@ -6641,7 +6646,7 @@
  "AutoCorrect": {
   "where": [
    "lectern/js/dialogs.js:927",
-   "ledger/js/dialogs.js:818"
+   "ledger/js/dialogs.js:820"
   ]
  },
  "AutoCorrect Exceptions": {
@@ -6652,7 +6657,7 @@
  "AutoCorrect: English (U.S.)": {
   "where": [
    "lectern/js/dialogs.js:934",
-   "ledger/js/dialogs.js:818",
+   "ledger/js/dialogs.js:820",
    "quire/js/dialogs3.js:548"
   ]
  },
@@ -6813,7 +6818,7 @@
  },
  "Automatic except &tables": {
   "where": [
-   "ledger/js/dialogs.js:768"
+   "ledger/js/dialogs.js:770"
   ]
  },
  "Automatically &update": {
@@ -7518,7 +7523,7 @@
  },
  "Break Links": {
   "where": [
-   "ledger/js/dialogs.js:958"
+   "ledger/js/dialogs.js:960"
   ]
  },
  "Break types": {
@@ -7887,7 +7892,7 @@
  },
  "Calc &Now (F9)": {
   "where": [
-   "ledger/js/dialogs.js:768"
+   "ledger/js/dialogs.js:770"
   ]
  },
  "Calculate": {
@@ -7975,8 +7980,8 @@
  },
  "Calculation": {
   "where": [
-   "ledger/js/dialogs.js:768",
-   "ledger/js/dialogs.js:800",
+   "ledger/js/dialogs.js:770",
+   "ledger/js/dialogs.js:802",
    "ledger/js/ribbon.js:61"
   ]
  },
@@ -7992,7 +7997,7 @@
  },
  "Calibri Light": {
   "where": [
-   "common/core.js:699"
+   "common/core.js:712"
   ]
  },
  "Calibri, Carlito, sans-serif": {
@@ -8087,7 +8092,7 @@
  },
  "Capitalize &names of days": {
   "where": [
-   "ledger/js/dialogs.js:819",
+   "ledger/js/dialogs.js:821",
    "quire/js/dialogs3.js:544"
   ]
  },
@@ -8095,7 +8100,7 @@
   "where": [
    "lectern/js/dialogs.js:903",
    "lectern/js/dialogs.js:929",
-   "ledger/js/dialogs.js:819",
+   "ledger/js/dialogs.js:821",
    "quire/js/dialogs3.js:544"
   ]
  },
@@ -8178,8 +8183,8 @@
  "Caution: If you lose or forget the password, it cannot be recovered.": {
   "where": [
    "lectern/js/dialogs.js:913",
-   "ledger/js/dialogs.js:663",
-   "ledger/js/dialogs.js:888",
+   "ledger/js/dialogs.js:665",
+   "ledger/js/dialogs.js:890",
    "quire/js/dialogs3.js:596"
   ]
  },
@@ -8214,7 +8219,7 @@
  },
  "Cell Reference": {
   "where": [
-   "ledger/js/dialogs.js:921"
+   "ledger/js/dialogs.js:923"
   ]
  },
  "Cell Size": {
@@ -8275,7 +8280,7 @@
  },
  "Cells with data:": {
   "where": [
-   "ledger/js/dialogs.js:690"
+   "ledger/js/dialogs.js:692"
   ]
  },
  "Center": {
@@ -8328,7 +8333,7 @@
  },
  "Century Gothic": {
   "where": [
-   "common/core.js:699",
+   "common/core.js:712",
    "lectern/js/model.js:110"
   ]
  },
@@ -9519,7 +9524,7 @@
  },
  "Comic Sans MS": {
   "where": [
-   "common/core.js:699"
+   "common/core.js:712"
   ]
  },
  "Comma Style": {
@@ -9555,7 +9560,7 @@
  },
  "Comment": {
   "where": [
-   "ledger/js/dialogs.js:729",
+   "ledger/js/dialogs.js:731",
    "quire/js/find.js:249",
    "quire/js/panes.js:107",
    "quire/js/ribbon.js:35"
@@ -9563,12 +9568,12 @@
  },
  "Comment && indi&cator": {
   "where": [
-   "ledger/js/dialogs.js:761"
+   "ledger/js/dialogs.js:763"
   ]
  },
  "Comment &indicator only": {
   "where": [
-   "ledger/js/dialogs.js:761"
+   "ledger/js/dialogs.js:763"
   ]
  },
  "Comment [{0}{1}]": {
@@ -9604,7 +9609,7 @@
  "Comments": {
   "where": [
    "ledger/js/dialogs.js:471",
-   "ledger/js/dialogs.js:761",
+   "ledger/js/dialogs.js:763",
    "ledger/js/ribbon.js:72",
    "quire/js/panes.js:500"
   ]
@@ -9761,16 +9766,16 @@
  "Confirm Password": {
   "where": [
    "lectern/js/dialogs.js:913",
-   "ledger/js/dialogs.js:663",
-   "ledger/js/dialogs.js:888",
+   "ledger/js/dialogs.js:665",
+   "ledger/js/dialogs.js:890",
    "quire/js/dialogs3.js:596"
   ]
  },
  "Confirmation password is not identical.": {
   "where": [
    "lectern/js/dialogs.js:913",
-   "ledger/js/dialogs.js:663",
-   "ledger/js/dialogs.js:888"
+   "ledger/js/dialogs.js:665",
+   "ledger/js/dialogs.js:890"
   ]
  },
  "Consolidate": {
@@ -10145,7 +10150,7 @@
  "Correct TWo INitial CApitals": {
   "where": [
    "lectern/js/dialogs.js:928",
-   "ledger/js/dialogs.js:819"
+   "ledger/js/dialogs.js:821"
   ]
  },
  "Correct accidental usage of cAPS &LOCK key": {
@@ -10155,7 +10160,7 @@
  },
  "Correct accidental use of cAPS &LOCK key": {
   "where": [
-   "ledger/js/dialogs.js:819"
+   "ledger/js/dialogs.js:821"
   ]
  },
  "Count": {
@@ -10224,10 +10229,10 @@
  },
  "Courier New": {
   "where": [
-   "common/core.js:700",
+   "common/core.js:624",
+   "common/core.js:713",
    "lectern/js/model.js:152",
-   "quire/js/autocorrect.js:230",
-   "quire/js/dialogs.js:424"
+   "quire/js/autocorrect.js:230"
   ]
  },
  "Courtesy copies (cc):": {
@@ -10347,7 +10352,7 @@
  "Created:": {
   "where": [
    "lectern/js/dialogs.js:945",
-   "ledger/js/dialogs.js:689",
+   "ledger/js/dialogs.js:691",
    "quire/js/dialogs3.js:629",
    "quire/js/dialogs3.js:632"
   ]
@@ -10841,7 +10846,7 @@
  },
  "Custom Lists": {
   "where": [
-   "ledger/js/dialogs.js:800"
+   "ledger/js/dialogs.js:802"
   ]
  },
  "Custom animation is available in Normal view.": {
@@ -10849,14 +10854,24 @@
    "lectern/js/panes.js:776"
   ]
  },
+ "Custom keyboard shortcuts were not kept": {
+  "where": [
+   "common/legacy/vba-hosts.js:148"
+  ]
+ },
  "Custom lists:": {
   "where": [
-   "ledger/js/dialogs.js:788"
+   "ledger/js/dialogs.js:790"
   ]
  },
  "Custom size": {
   "where": [
    "quire/js/dialogs.js:664"
+  ]
+ },
+ "Custom toolbars were not kept": {
+  "where": [
+   "common/legacy/vba-hosts.js:150"
   ]
  },
  "Custom-shape path runs beyond its vertices": {
@@ -10970,7 +10985,7 @@
  },
  "D&irection:": {
   "where": [
-   "ledger/js/dialogs.js:774"
+   "ledger/js/dialogs.js:776"
   ]
  },
  "D&ivide": {
@@ -11007,7 +11022,7 @@
  },
  "Damaged macros were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:396"
+   "common/legacy/vba.js:80"
   ]
  },
  "Damaged presentation content could not be read": {
@@ -11414,13 +11429,13 @@
  },
  "Defined Names": {
   "where": [
-   "ledger/js/dialogs.js:923",
+   "ledger/js/dialogs.js:925",
    "ledger/js/ribbon.js:59"
   ]
  },
  "Defined names:": {
   "where": [
-   "ledger/js/dialogs.js:690"
+   "ledger/js/dialogs.js:692"
   ]
  },
  "Defines a calculated set of members or tuples by sending a set expression to the cube on the server.": {
@@ -11575,7 +11590,7 @@
  },
  "Delete columns": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Delete entire &column": {
@@ -11590,7 +11605,7 @@
  },
  "Delete rows": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Deleted": {
@@ -12113,7 +12128,7 @@
  },
  "Document editing restrictions were not kept": {
   "where": [
-   "common/legacy/doc-write.js:19"
+   "common/legacy/doc-write.js:47"
   ]
  },
  "Document number": {
@@ -12295,7 +12310,7 @@
   "where": [
    "lectern/js/slideshow.js:12",
    "lectern/js/slideshow.js:29",
-   "ledger/js/dialogs.js:771",
+   "ledger/js/dialogs.js:773",
    "quire/js/find.js:311"
   ]
  },
@@ -12447,7 +12462,7 @@
  },
  "Drawing objects were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:330"
+   "common/legacy/ppt-write.js:335"
   ]
  },
  "Drop Cap": {
@@ -12617,7 +12632,7 @@
   "where": [
    "lectern/js/dialogs.js:903",
    "lectern/js/model.js:765",
-   "ledger/js/dialogs.js:800",
+   "ledger/js/dialogs.js:802",
    "quire/js/dialogs3.js:578"
   ]
  },
@@ -12643,7 +12658,7 @@
  },
  "Edit Comment": {
   "where": [
-   "ledger/js/dialogs.js:745",
+   "ledger/js/dialogs.js:747",
    "quire/js/review.js:250"
   ]
  },
@@ -12672,7 +12687,7 @@
  },
  "Edit Links": {
   "where": [
-   "ledger/js/dialogs.js:957"
+   "ledger/js/dialogs.js:959"
   ]
  },
  "Edit Master": {
@@ -12716,7 +12731,7 @@
  },
  "Edit directly in c&ell": {
   "where": [
-   "ledger/js/dialogs.js:773"
+   "ledger/js/dialogs.js:775"
   ]
  },
  "Edit in Formula Bar": {
@@ -12731,7 +12746,7 @@
  },
  "Edit objects": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Edit recipient list...": {
@@ -12742,7 +12757,7 @@
  },
  "Edit scenarios": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Edit the active cell": {
@@ -12847,8 +12862,8 @@
  },
  "Embedded fonts were not kept": {
   "where": [
-   "common/legacy/doc-write.js:20",
-   "common/legacy/ppt-write.js:391"
+   "common/legacy/doc-write.js:49",
+   "common/legacy/ppt-write.js:396"
   ]
  },
  "Embedded object": {
@@ -12888,12 +12903,12 @@
  },
  "Enable Auto&Complete for cell values": {
   "where": [
-   "ledger/js/dialogs.js:775"
+   "ledger/js/dialogs.js:777"
   ]
  },
  "Enable automatic percent entry": {
   "where": [
-   "ledger/js/dialogs.js:775"
+   "ledger/js/dialogs.js:777"
   ]
  },
  "Enclosures:": {
@@ -12976,7 +12991,7 @@
  "English (U.K.)": {
   "where": [
    "lectern/js/dialogs.js:703",
-   "ledger/js/dialogs.js:790",
+   "ledger/js/dialogs.js:792",
    "ledger/js/spell.js:106",
    "quire/js/app.js:513"
   ]
@@ -12985,7 +13000,7 @@
   "where": [
    "lectern/js/app.js:279",
    "lectern/js/dialogs.js:703",
-   "ledger/js/dialogs.js:790",
+   "ledger/js/dialogs.js:792",
    "ledger/js/spell.js:106"
   ]
  },
@@ -13235,7 +13250,7 @@
  },
  "Error Checking": {
   "where": [
-   "ledger/js/dialogs.js:800",
+   "ledger/js/dialogs.js:802",
    "ledger/js/dialogs3.js:362"
   ]
  },
@@ -13352,7 +13367,7 @@
  },
  "Evaluates to error &value": {
   "where": [
-   "ledger/js/dialogs.js:792"
+   "ledger/js/dialogs.js:794"
   ]
  },
  "Evaluation:": {
@@ -13424,7 +13439,7 @@
  },
  "Excel 97-2003 workbook": {
   "where": [
-   "common/legacy/import.js:21"
+   "common/legacy/import.js:22"
   ]
  },
  "Excel Macro-Enabled Workbook (*.xlsm)": {
@@ -13439,7 +13454,7 @@
  },
  "Excel dialog sheets cannot be converted yet": {
   "where": [
-   "common/legacy/xls-write.js:247"
+   "common/legacy/xls-write.js:248"
   ]
  },
  "Exciting": {
@@ -13529,7 +13544,7 @@
  },
  "Extend data range &formats and formulas": {
   "where": [
-   "ledger/js/dialogs.js:775"
+   "ledger/js/dialogs.js:777"
   ]
  },
  "Extend selection": {
@@ -13818,7 +13833,7 @@
  "File &name:": {
   "where": [
    "lectern/js/dialogs.js:964",
-   "ledger/js/dialogs.js:667",
+   "ledger/js/dialogs.js:669",
    "quire/js/dialogs3.js:716"
   ]
  },
@@ -13844,12 +13859,12 @@
  },
  "File encryption settings for this workbook": {
   "where": [
-   "ledger/js/dialogs.js:797"
+   "ledger/js/dialogs.js:799"
   ]
  },
  "File sharing": {
   "where": [
-   "ledger/js/dialogs.js:660"
+   "ledger/js/dialogs.js:662"
   ]
  },
  "File ▸ Open reads .docx, .docm, .dotx, .dotm, .htm, .txt, .rtf and Markdown (.md, or a .zip holding a .md and its pictures) files. File ▸ Save writes a .docx that opens in Word, LibreOffice, Pages and Google Docs, or keeps a Markdown file Markdown (what you did not edit stays exactly as it was). Save As also offers Word Template (.dotx), Web Page, Rich Text Format, Plain Text, Markdown and PDF. File ▸ Print renders every page to a PDF you can print anywhere.": {
@@ -14452,7 +14467,7 @@
  },
  "Fo&rmulas": {
   "where": [
-   "ledger/js/dialogs.js:763"
+   "ledger/js/dialogs.js:765"
   ]
  },
  "Fog": {
@@ -14574,7 +14589,7 @@
  },
  "Fonts on This Computer": {
   "where": [
-   "common/core.js:721"
+   "common/core.js:734"
   ]
  },
  "Fonts on this computer": {
@@ -14822,17 +14837,17 @@
  },
  "Format cells": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Format columns": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Format rows": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Format text": {
@@ -14998,12 +15013,12 @@
  },
  "Formulas that refer to other workbooks use the values Excel saved with this file. Break Link replaces those formulas with their values.": {
   "where": [
-   "ledger/js/dialogs.js:957"
+   "ledger/js/dialogs.js:959"
   ]
  },
  "Formulas:": {
   "where": [
-   "ledger/js/dialogs.js:690"
+   "ledger/js/dialogs.js:692"
   ]
  },
  "Forward": {
@@ -16018,7 +16033,7 @@
  },
  "Hori&zontal scroll bar": {
   "where": [
-   "ledger/js/dialogs.js:764"
+   "ledger/js/dialogs.js:766"
   ]
  },
  "Hori&zontally": {
@@ -16112,7 +16127,7 @@
  },
  "Hyperlinks were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:360"
+   "common/legacy/ppt-write.js:365"
   ]
  },
  "Hyphenate words in &CAPS": {
@@ -16167,7 +16182,7 @@
  },
  "Ignore &Internet and file addresses": {
   "where": [
-   "ledger/js/dialogs.js:791"
+   "ledger/js/dialogs.js:793"
   ]
  },
  "Ignore &blank": {
@@ -16192,13 +16207,13 @@
  },
  "Ignore words in &UPPERCASE": {
   "where": [
-   "ledger/js/dialogs.js:791",
+   "ledger/js/dialogs.js:793",
    "quire/js/dialogs3.js:582"
   ]
  },
  "Ignore words with &numbers": {
   "where": [
-   "ledger/js/dialogs.js:791"
+   "ledger/js/dialogs.js:793"
   ]
  },
  "Ignore words with num&bers": {
@@ -16566,7 +16581,7 @@
  },
  "Insert Comment": {
   "where": [
-   "ledger/js/dialogs.js:745",
+   "ledger/js/dialogs.js:747",
    "quire/js/commands.js:290",
    "quire/js/review.js:174"
   ]
@@ -16835,7 +16850,7 @@
  },
  "Insert columns": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Insert entire &column": {
@@ -16855,7 +16870,7 @@
  },
  "Insert hyperlinks": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Insert or edit comment": {
@@ -16870,7 +16885,7 @@
  },
  "Insert rows": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Insert the contents of a .docx, .txt or .htm file, or a picture.": {
@@ -17269,7 +17284,7 @@
  },
  "Iteration": {
   "where": [
-   "ledger/js/dialogs.js:769"
+   "ledger/js/dialogs.js:771"
   ]
  },
  "Jan": {
@@ -17543,7 +17558,7 @@
  },
  "Last saved by:": {
   "where": [
-   "ledger/js/dialogs.js:689",
+   "ledger/js/dialogs.js:691",
    "quire/js/dialogs3.js:632"
   ]
  },
@@ -17679,7 +17694,7 @@
  "Ledger User": {
   "where": [
    "ledger/js/app.js:28",
-   "ledger/js/dialogs.js:727"
+   "ledger/js/dialogs.js:729"
   ]
  },
  "Ledger builds the report as a formatted summary of values; rebuild it after the source data changes.": {
@@ -17758,7 +17773,7 @@
    "common/charts.js:397",
    "lectern/js/slideshow.js:29",
    "ledger/js/dialogs.js:246",
-   "ledger/js/dialogs.js:771"
+   "ledger/js/dialogs.js:773"
   ]
  },
  "Left (Indent)": {
@@ -18319,7 +18334,7 @@
  },
  "List entries:": {
   "where": [
-   "ledger/js/dialogs.js:788"
+   "ledger/js/dialogs.js:790"
   ]
  },
  "List numbering": {
@@ -18344,7 +18359,7 @@
  },
  "Lists (tables):": {
   "where": [
-   "ledger/js/dialogs.js:690"
+   "ledger/js/dialogs.js:692"
   ]
  },
  "Ln {0}": {
@@ -18354,7 +18369,7 @@
  },
  "Load all fonts on your computer...": {
   "where": [
-   "common/core.js:711"
+   "common/core.js:724"
   ]
  },
  "Load fonts on this computer": {
@@ -18574,6 +18589,11 @@
    "ledger/js/dialogs2.js:111"
   ]
  },
+ "Macro document events could not be read": {
+  "where": [
+   "common/legacy/vba-hosts.js:183"
+  ]
+ },
  "Macro name:": {
   "where": [
    "quire/js/dialogs3.js:513"
@@ -18611,13 +18631,6 @@
    "quire/js/dialogs3.js:513"
   ]
  },
- "Macros were not kept": {
-  "where": [
-   "common/legacy/doc-write.js:21",
-   "common/legacy/ppt-write.js:399",
-   "common/legacy/xls-write.js:395"
-  ]
- },
  "Made possible by open source software: {0}.": {
   "where": [
    "common/ui.js:758",
@@ -18626,7 +18639,7 @@
  },
  "Magnification": {
   "where": [
-   "ledger/js/dialogs.js:712"
+   "ledger/js/dialogs.js:714"
   ]
  },
  "Magnifier": {
@@ -18883,12 +18896,12 @@
  },
  "Maximum &change:": {
   "where": [
-   "ledger/js/dialogs.js:769"
+   "ledger/js/dialogs.js:771"
   ]
  },
  "Maximum iteratio&ns:": {
   "where": [
-   "ledger/js/dialogs.js:769"
+   "ledger/js/dialogs.js:771"
   ]
  },
  "Meadow": {
@@ -19123,7 +19136,7 @@
  },
  "Modified:": {
   "where": [
-   "ledger/js/dialogs.js:689",
+   "ledger/js/dialogs.js:691",
    "quire/js/dialogs3.js:629",
    "quire/js/dialogs3.js:632"
   ]
@@ -19439,7 +19452,7 @@
  },
  "NEW LIST": {
   "where": [
-   "ledger/js/dialogs.js:786"
+   "ledger/js/dialogs.js:788"
   ]
  },
  "NUM": {
@@ -19465,7 +19478,7 @@
  },
  "Named Ranges": {
   "where": [
-   "ledger/js/dialogs.js:691"
+   "ledger/js/dialogs.js:693"
   ]
  },
  "Names": {
@@ -20089,12 +20102,12 @@
  },
  "Not installed": {
   "where": [
-   "common/core.js:656"
+   "common/core.js:669"
   ]
  },
  "Not installed; uses {0}": {
   "where": [
-   "common/core.js:656"
+   "common/core.js:669"
   ]
  },
  "Not {0}": {
@@ -20144,7 +20157,7 @@
  },
  "Notes without a matching slide were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:385"
+   "common/legacy/ppt-write.js:390"
   ]
  },
  "Notes:": {
@@ -20175,25 +20188,25 @@
  "Noto Sans CJK SC": {
   "where": [
    "common/core.js:600",
-   "common/core.js:703"
+   "common/core.js:716"
   ]
  },
  "Noto Sans SC": {
   "where": [
    "common/core.js:600",
-   "common/core.js:703"
+   "common/core.js:716"
   ]
  },
  "Noto Serif CJK SC": {
   "where": [
    "common/core.js:600",
-   "common/core.js:703"
+   "common/core.js:716"
   ]
  },
  "Noto Serif SC": {
   "where": [
    "common/core.js:600",
-   "common/core.js:703"
+   "common/core.js:716"
   ]
  },
  "Nud&ge": {
@@ -20294,7 +20307,7 @@
  },
  "Number stored as &text": {
   "where": [
-   "ledger/js/dialogs.js:792"
+   "ledger/js/dialogs.js:794"
   ]
  },
  "Numbered": {
@@ -20676,7 +20689,7 @@
  "Options": {
   "where": [
    "lectern/js/dialogs.js:917",
-   "ledger/js/dialogs.js:802",
+   "ledger/js/dialogs.js:804",
    "quire/js/dialogs.js:758",
    "quire/js/dialogs2.js:223"
   ]
@@ -20854,7 +20867,7 @@
  },
  "Outline s&ymbols": {
   "where": [
-   "ledger/js/dialogs.js:764"
+   "ledger/js/dialogs.js:766"
   ]
  },
  "Outlined": {
@@ -21175,7 +21188,7 @@
  },
  "Page brea&ks": {
   "where": [
-   "ledger/js/dialogs.js:763"
+   "ledger/js/dialogs.js:765"
   ]
  },
  "Page break": {
@@ -21256,7 +21269,7 @@
  },
  "Palatino Linotype": {
   "where": [
-   "common/core.js:700",
+   "common/core.js:713",
    "quire/js/dialogs.js:841"
   ]
  },
@@ -21412,8 +21425,8 @@
  "Password to &open:": {
   "where": [
    "lectern/js/dialogs.js:905",
-   "ledger/js/dialogs.js:660",
-   "ledger/js/dialogs.js:797"
+   "ledger/js/dialogs.js:662",
+   "ledger/js/dialogs.js:799"
   ]
  },
  "Password to open:": {
@@ -21423,7 +21436,7 @@
  },
  "Password to unprotect sheet:": {
   "where": [
-   "ledger/js/dialogs.js:875"
+   "ledger/js/dialogs.js:877"
   ]
  },
  "Password:": {
@@ -21832,7 +21845,7 @@
  },
  "PivotTables were replaced with their saved cells": {
   "where": [
-   "common/legacy/xls-write.js:392"
+   "common/legacy/xls-write.js:395"
   ]
  },
  "Pixel Mosaic": {
@@ -21990,12 +22003,12 @@
  },
  "PowerPoint 95 presentations cannot be opened yet": {
   "where": [
-   "common/legacy/ppt-write.js:426"
+   "common/legacy/ppt-write.js:425"
   ]
  },
  "PowerPoint 97-2003 presentation": {
   "where": [
-   "common/legacy/import.js:21"
+   "common/legacy/import.js:22"
   ]
  },
  "PowerPoint Presentation (*.pptx)": {
@@ -22346,7 +22359,7 @@
  },
  "Privacy options": {
   "where": [
-   "ledger/js/dialogs.js:799",
+   "ledger/js/dialogs.js:801",
    "quire/js/dialogs3.js:581"
   ]
  },
@@ -22426,7 +22439,7 @@
  "Properties": {
   "where": [
    "lectern/js/dialogs.js:949",
-   "ledger/js/dialogs.js:699",
+   "ledger/js/dialogs.js:701",
    "ledger/js/drawing.js:528",
    "quire/js/dialogs.js:924"
   ]
@@ -22474,20 +22487,20 @@
  },
  "Protect Sheet": {
   "where": [
-   "ledger/js/dialogs.js:875",
+   "ledger/js/dialogs.js:877",
    "ledger/js/ribbon.js:73"
   ]
  },
  "Protect Workbook": {
   "where": [
-   "ledger/js/dialogs.js:906",
-   "ledger/js/dialogs.js:907",
+   "ledger/js/dialogs.js:908",
+   "ledger/js/dialogs.js:909",
    "ledger/js/ribbon.js:73"
   ]
  },
  "Protect workbook for": {
   "where": [
-   "ledger/js/dialogs.js:906"
+   "ledger/js/dialogs.js:908"
   ]
  },
  "Protection": {
@@ -22719,7 +22732,7 @@
  },
  "R1C1 reference st&yle": {
   "where": [
-   "ledger/js/dialogs.js:780"
+   "ledger/js/dialogs.js:782"
   ]
  },
  "REC": {
@@ -22902,7 +22915,7 @@
  },
  "Recently Used Fonts": {
   "where": [
-   "common/core.js:717"
+   "common/core.js:730"
   ]
  },
  "Recently used": {
@@ -23039,7 +23052,7 @@
  },
  "Reenter password to proceed.": {
   "where": [
-   "ledger/js/dialogs.js:663"
+   "ledger/js/dialogs.js:665"
   ]
  },
  "Refe&rences": {
@@ -23173,7 +23186,7 @@
  },
  "Reload fonts on your computer...": {
   "where": [
-   "common/core.js:711"
+   "common/core.js:724"
   ]
  },
  "Remember dime&nsions for new tables": {
@@ -23348,7 +23361,7 @@
  "Replace &text as you type": {
   "where": [
    "lectern/js/dialogs.js:931",
-   "ledger/js/dialogs.js:819",
+   "ledger/js/dialogs.js:821",
    "quire/js/dialogs3.js:544"
   ]
  },
@@ -25263,7 +25276,7 @@
    "common/charts.js:397",
    "lectern/js/slideshow.js:29",
    "ledger/js/dialogs.js:246",
-   "ledger/js/dialogs.js:771"
+   "ledger/js/dialogs.js:773"
   ]
  },
  "Right (Indent)": {
@@ -25523,7 +25536,7 @@
  },
  "Row && column h&eaders": {
   "where": [
-   "ledger/js/dialogs.js:763"
+   "ledger/js/dialogs.js:765"
   ]
  },
  "Row &height:": {
@@ -25759,7 +25772,7 @@
   "where": [
    "common/core.js:303",
    "lectern/js/dialogs.js:964",
-   "ledger/js/dialogs.js:667",
+   "ledger/js/dialogs.js:669",
    "ledger/js/panes.js:129"
   ]
  },
@@ -25770,7 +25783,7 @@
  },
  "Save Options": {
   "where": [
-   "ledger/js/dialogs.js:660"
+   "ledger/js/dialogs.js:662"
   ]
  },
  "Save as &CSV": {
@@ -25781,7 +25794,7 @@
  "Save as &type:": {
   "where": [
    "lectern/js/dialogs.js:964",
-   "ledger/js/dialogs.js:667",
+   "ledger/js/dialogs.js:669",
    "quire/js/dialogs3.js:716"
   ]
  },
@@ -26132,7 +26145,7 @@
  "Security": {
   "where": [
    "lectern/js/dialogs.js:905",
-   "ledger/js/dialogs.js:800",
+   "ledger/js/dialogs.js:802",
    "quire/js/dialogs3.js:581"
   ]
  },
@@ -26143,7 +26156,7 @@
  },
  "Segoe UI": {
   "where": [
-   "common/core.js:700"
+   "common/core.js:713"
   ]
  },
  "Sele&ct": {
@@ -26297,7 +26310,7 @@
  },
  "Select locked cells": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Select range": {
@@ -26379,7 +26392,7 @@
  },
  "Select unlocked cells": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Selected &Object...": {
@@ -26643,7 +26656,7 @@
  },
  "She&et tabs": {
   "where": [
-   "ledger/js/dialogs.js:764"
+   "ledger/js/dialogs.js:766"
   ]
  },
  "Sheet": {
@@ -26671,12 +26684,12 @@
  },
  "Sheets in new work&book:": {
   "where": [
-   "ledger/js/dialogs.js:781"
+   "ledger/js/dialogs.js:783"
   ]
  },
  "Sheets:": {
   "where": [
-   "ledger/js/dialogs.js:690"
+   "ledger/js/dialogs.js:692"
   ]
  },
  "Shift cells &down": {
@@ -26777,7 +26790,7 @@
   "where": [
    "lectern/js/dialogs.js:901",
    "lectern/js/ribbon.js:68",
-   "ledger/js/dialogs.js:760",
+   "ledger/js/dialogs.js:762",
    "ledger/js/filter.js:366"
   ]
  },
@@ -27040,7 +27053,7 @@
  },
  "Si&ze:": {
   "where": [
-   "ledger/js/dialogs.js:781"
+   "ledger/js/dialogs.js:783"
   ]
  },
  "Silver": {
@@ -27404,7 +27417,7 @@
  },
  "Slide transitions and automatic advance settings were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:377"
+   "common/legacy/ppt-write.js:382"
   ]
  },
  "Slide {0}": {
@@ -27699,7 +27712,7 @@
  },
  "Some headers and footers were not kept": {
   "where": [
-   "common/legacy/ppt-write.js:367"
+   "common/legacy/ppt-write.js:372"
   ]
  },
  "Some hyperlinks or actions could not be kept": {
@@ -27710,6 +27723,11 @@
  "Some list numbering could not be read": {
   "where": [
    "common/legacy/doc-lists.js:19"
+  ]
+ },
+ "Some macro command names were not kept": {
+  "where": [
+   "common/legacy/vba-hosts.js:172"
   ]
  },
  "Some mentions could not be kept after the comment text was edited.": {
@@ -27830,7 +27848,7 @@
  },
  "Sort": {
   "where": [
-   "ledger/js/dialogs.js:872",
+   "ledger/js/dialogs.js:874",
    "ledger/js/dialogs2.js:76",
    "ledger/js/ops.js:1118",
    "ledger/js/ribbon.js:65"
@@ -27912,7 +27930,7 @@
  },
  "Source": {
   "where": [
-   "ledger/js/dialogs.js:957"
+   "ledger/js/dialogs.js:959"
   ]
  },
  "Source Han Sans SC": {
@@ -28216,7 +28234,7 @@
  },
  "St&atus bar": {
   "where": [
-   "ledger/js/dialogs.js:760",
+   "ledger/js/dialogs.js:762",
    "quire/js/dialogs3.js:576"
   ]
  },
@@ -28281,7 +28299,7 @@
  },
  "Standard fon&t:": {
   "where": [
-   "ledger/js/dialogs.js:781"
+   "ledger/js/dialogs.js:783"
   ]
  },
  "Star": {
@@ -28426,7 +28444,7 @@
  },
  "Status": {
   "where": [
-   "ledger/js/dialogs.js:957"
+   "ledger/js/dialogs.js:959"
   ]
  },
  "Status Report": {
@@ -29157,7 +29175,7 @@
  "Task pane f&ollows the selected object": {
   "where": [
    "lectern/js/dialogs.js:901",
-   "ledger/js/dialogs.js:760",
+   "ledger/js/dialogs.js:762",
    "quire/js/dialogs3.js:576"
   ]
  },
@@ -29624,7 +29642,7 @@
   "where": [
    "common/legacy/doc-crypto.js:13",
    "common/legacy/doc-read.js:59",
-   "common/legacy/doc-write.js:6"
+   "common/legacy/doc-write.js:10"
   ]
  },
  "The active cell does not contain a formula that refers to a valid reference.": {
@@ -29659,7 +29677,7 @@
  },
  "The calculation engine implements more than 450 worksheet functions, array and dynamic-array formulas, structured references and iterative calculation.": {
   "where": [
-   "ledger/js/dialogs.js:963"
+   "ledger/js/dialogs.js:965"
   ]
  },
  "The cell or chart you are trying to change is protected and therefore read-only.\n\nTo modify a protected cell or chart, first remove protection using the Unprotect Sheet command (Tools menu, Protection submenu). You may be prompted for a password.": {
@@ -29720,12 +29738,12 @@
  "The converted package is too large": {
   "where": [
    "common/legacy/package.js:91",
-   "common/legacy/package.js:151"
+   "common/legacy/package.js:152"
   ]
  },
  "The converter for Office 97-2003 files could not be loaded.": {
   "where": [
-   "common/legacy/import.js:30"
+   "common/legacy/import.js:31"
   ]
  },
  "The criteria range is not valid.": {
@@ -29939,8 +29957,8 @@
  },
  "The file is damaged or is not an Office 97-2003 file.": {
   "where": [
-   "common/legacy/import.js:48",
-   "common/legacy/import.js:50"
+   "common/legacy/import.js:49",
+   "common/legacy/import.js:51"
   ]
  },
  "The file is too large to import": {
@@ -29950,7 +29968,7 @@
  },
  "The first worksheet was made visible": {
   "where": [
-   "common/legacy/xls-write.js:232"
+   "common/legacy/xls-write.js:233"
   ]
  },
  "The fonts on this computer could not be listed: permission was not given.": {
@@ -29960,12 +29978,12 @@
  },
  "The fonts on this computer could not be listed: permission was not given. You can allow it in the site settings of your browser.": {
   "where": [
-   "common/core.js:731"
+   "common/core.js:744"
   ]
  },
  "The fonts on this computer could not be listed: {0}": {
   "where": [
-   "common/core.js:731",
+   "common/core.js:744",
    "start.js:295"
   ]
  },
@@ -30024,6 +30042,12 @@
  "The list range is not valid.": {
   "where": [
    "ledger/js/dialogs2.js:301"
+  ]
+ },
+ "The macro digital signature was not kept": {
+  "where": [
+   "common/legacy/vba-hosts.js:42",
+   "common/legacy/vba-hosts.js:202"
   ]
  },
  "The merge could not be printed. {0}": {
@@ -30134,13 +30158,13 @@
  },
  "The password you supplied is not correct.": {
   "where": [
-   "ledger/js/dialogs.js:898"
+   "ledger/js/dialogs.js:900"
   ]
  },
  "The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.": {
   "where": [
-   "common/legacy/import.js:59",
-   "ledger/js/dialogs.js:866",
+   "common/legacy/import.js:60",
+   "ledger/js/dialogs.js:868",
    "ledger/js/xlsx-read.js:1206"
   ]
  },
@@ -30315,7 +30339,7 @@
  },
  "The slide background was replaced with its color-scheme background": {
   "where": [
-   "common/legacy/ppt-write.js:352"
+   "common/legacy/ppt-write.js:357"
   ]
  },
  "The slide containing these comments was deleted.": {
@@ -30451,7 +30475,7 @@
  },
  "The workbook is encrypted with AES-256 the next time you save it as an Excel workbook, the way Excel 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
   "where": [
-   "ledger/js/dialogs.js:798"
+   "ledger/js/dialogs.js:800"
   ]
  },
  "The workbook palette is too large": {
@@ -30512,7 +30536,7 @@
  },
  "Theme Fonts": {
   "where": [
-   "common/core.js:713"
+   "common/core.js:726"
   ]
  },
  "Themes": {
@@ -30932,7 +30956,7 @@
  },
  "This file is password-protected.": {
   "where": [
-   "common/legacy/import.js:58"
+   "common/legacy/import.js:59"
   ]
  },
  "This file needs a password": {
@@ -30968,7 +30992,7 @@
  },
  "This is a PowerPoint 97-2003 presentation, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:22"
+   "common/legacy/import.js:23"
   ]
  },
  "This is a TrueType font. The same font will be used on both your printer and your screen.": {
@@ -30983,12 +31007,12 @@
  },
  "This is a Word 97-2003 document, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:22"
+   "common/legacy/import.js:23"
   ]
  },
  "This is an Excel 97-2003 workbook, which {0} does not open.": {
   "where": [
-   "common/legacy/import.js:22"
+   "common/legacy/import.js:23"
   ]
  },
  "This is not a valid print range.": {
@@ -31157,7 +31181,7 @@
  },
  "This {0} is protected with a kind of password {1} cannot open.": {
   "where": [
-   "common/legacy/import.js:60"
+   "common/legacy/import.js:61"
   ]
  },
  "Through": {
@@ -31210,10 +31234,10 @@
  },
  "Times New Roman": {
   "where": [
-   "common/core.js:700",
+   "common/core.js:624",
+   "common/core.js:713",
    "lectern/js/dialogs.js:999",
-   "quire/js/dialogs.js:126",
-   "quire/js/dialogs.js:173"
+   "quire/js/dialogs.js:126"
   ]
  },
  "Timing": {
@@ -31483,7 +31507,7 @@
  },
  "Too&ls": {
   "where": [
-   "ledger/js/dialogs.js:668"
+   "ledger/js/dialogs.js:670"
   ]
  },
  "Tool&bars": {
@@ -31731,7 +31755,7 @@
  },
  "Trebuchet MS": {
   "where": [
-   "common/core.js:700",
+   "common/core.js:713",
    "lectern/js/dialogs.js:999",
    "lectern/js/model.js:86",
    "lectern/js/model.js:163"
@@ -31791,7 +31815,7 @@
  "Type": {
   "where": [
    "ledger/js/dialogs.js:608",
-   "ledger/js/dialogs.js:957",
+   "ledger/js/dialogs.js:959",
    "ledger/js/ribbon.js:86",
    "quire/js/dialogs2.js:306"
   ]
@@ -31823,7 +31847,7 @@
  },
  "Type the cell refere&nce:": {
   "where": [
-   "ledger/js/dialogs.js:928"
+   "ledger/js/dialogs.js:930"
   ]
  },
  "Type the equation; it is inserted in Cambria Math italics.": {
@@ -32091,13 +32115,13 @@
  },
  "Unprotect Sheet": {
   "where": [
-   "ledger/js/dialogs.js:864"
+   "ledger/js/dialogs.js:866"
   ]
  },
  "Unprotect Workbook": {
   "where": [
-   "ledger/js/dialogs.js:898",
-   "ledger/js/dialogs.js:900"
+   "ledger/js/dialogs.js:900",
+   "ledger/js/dialogs.js:902"
   ]
  },
  "Unsaved changes": {
@@ -32169,7 +32193,7 @@
  "Up": {
   "where": [
    "lectern/js/slideshow.js:29",
-   "ledger/js/dialogs.js:771",
+   "ledger/js/dialogs.js:773",
    "quire/js/find.js:311"
   ]
  },
@@ -32205,7 +32229,7 @@
  },
  "Update": {
   "where": [
-   "ledger/js/dialogs.js:957"
+   "ledger/js/dialogs.js:959"
   ]
  },
  "Update &automatically": {
@@ -32307,7 +32331,7 @@
  },
  "Use AutoFilter": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Use CTRL + Click to &follow hyperlink": {
@@ -32322,7 +32346,7 @@
  },
  "Use PivotTable reports": {
   "where": [
-   "ledger/js/dialogs.js:872"
+   "ledger/js/dialogs.js:874"
   ]
  },
  "Use an existing &list": {
@@ -32408,7 +32432,7 @@
  },
  "User &name:": {
   "where": [
-   "ledger/js/dialogs.js:781"
+   "ledger/js/dialogs.js:783"
   ]
  },
  "User Information": {
@@ -32471,7 +32495,7 @@
  },
  "Values cached in this workbook": {
   "where": [
-   "ledger/js/dialogs.js:956"
+   "ledger/js/dialogs.js:958"
   ]
  },
  "Var": {
@@ -32626,7 +32650,7 @@
   "where": [
    "lectern/js/dialogs.js:901",
    "lectern/js/ribbon.js:65",
-   "ledger/js/dialogs.js:800",
+   "ledger/js/dialogs.js:802",
    "quire/js/dialogs3.js:576"
   ]
  },
@@ -33007,7 +33031,7 @@
  },
  "Window options": {
   "where": [
-   "ledger/js/dialogs.js:762"
+   "ledger/js/dialogs.js:764"
   ]
  },
  "Windows (ANSI)": {
@@ -33060,12 +33084,12 @@
  },
  "Word 6, Word 95 and earlier documents cannot be opened yet": {
   "where": [
-   "common/legacy/doc-write.js:8"
+   "common/legacy/doc-write.js:13"
   ]
  },
  "Word 97-2003 document": {
   "where": [
-   "common/legacy/import.js:21"
+   "common/legacy/import.js:22"
   ]
  },
  "Word Count": {
@@ -33148,12 +33172,12 @@
  },
  "Workbook options": {
   "where": [
-   "ledger/js/dialogs.js:770"
+   "ledger/js/dialogs.js:772"
   ]
  },
  "Workbooks saved with a password are encrypted (AES-256) and open in Excel 2010 and later.": {
   "where": [
-   "ledger/js/dialogs.js:660"
+   "ledger/js/dialogs.js:662"
   ]
  },
  "Working...": {
@@ -33170,7 +33194,7 @@
  "Worksheet": {
   "where": [
    "ledger/js/dialogs.js:384",
-   "ledger/js/dialogs.js:956"
+   "ledger/js/dialogs.js:958"
   ]
  },
  "Worksheet grid": {
@@ -33185,7 +33209,7 @@
  },
  "Worksheets": {
   "where": [
-   "ledger/js/dialogs.js:691"
+   "ledger/js/dialogs.js:693"
   ]
  },
  "Woven mat": {
@@ -33310,7 +33334,7 @@
  "Your browser asks where to save the file, or saves it to the Downloads folder.": {
   "where": [
    "lectern/js/dialogs.js:964",
-   "ledger/js/dialogs.js:667",
+   "ledger/js/dialogs.js:669",
    "quire/js/dialogs3.js:715"
   ]
  },
@@ -33935,7 +33959,7 @@
  },
  "{0} (hidden)": {
   "where": [
-   "ledger/js/dialogs.js:691"
+   "ledger/js/dialogs.js:693"
   ]
  },
  "{0} (unsaved changes)": {
@@ -34087,12 +34111,12 @@
  },
  "{0} is not installed on this computer, so its text is shown in a default font. The document keeps the font name {0} and shows in that font on computers that have it.": {
   "where": [
-   "common/core.js:657"
+   "common/core.js:670"
   ]
  },
  "{0} is not installed on this computer, so its text is shown in {1}. The document keeps the font name {0} and shows in that font on computers that have it.": {
   "where": [
-   "common/core.js:658"
+   "common/core.js:671"
   ]
  },
  "{0} is not installed on this computer; a default font is used on screen and in print.": {
@@ -34222,7 +34246,7 @@
  },
  "{0} was converted from the {1} format. Not converted:": {
   "where": [
-   "common/legacy/import.js:68"
+   "common/legacy/import.js:69"
   ]
  },
  "{0} x {1} Pages": {

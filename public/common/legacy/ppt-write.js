@@ -11,7 +11,10 @@
     types = {
       pptx: ct + 'presentationml.presentation.main+xml',
       ppsx: ct + 'presentationml.slideshow.main+xml',
-      potx: ct + 'presentationml.template.main+xml'
+      potx: ct + 'presentationml.template.main+xml',
+      pptm: 'application/vnd.ms-powerpoint.presentation.macroEnabled.main+xml',
+      ppsm: 'application/vnd.ms-powerpoint.slideshow.macroEnabled.main+xml',
+      potm: 'application/vnd.ms-powerpoint.template.macroEnabled.main+xml'
     };
   const ns = () => ({ 'xmlns:a': B.ns.a, 'xmlns:r': B.ns.officeRel.slice(0, -1), 'xmlns:p': B.ns.p });
   const part = (tag, body, attrs = {}) => B.xmlDeclaration + el('p:' + tag, { ...ns(), ...attrs }, body);
@@ -66,6 +69,8 @@
       pres = 'ppt/presentation.xml';
     let themeCount = 0,
       overrideCount = 0;
+    book.macros = await B.vba.powerpoint(book);
+    if (book.macros) B.vba.signatureNotice(cfb, book.losses, 'Presentation');
     await P.prepareDesigns(book, losses);
     P.text.prepare(book);
     await P.text.embedded(book);
@@ -264,7 +269,7 @@
     const extension = String(options.extension || 'ppt')
         .replace(/^\./, '')
         .toLowerCase(),
-      type = extension === 'pps' ? 'ppsx' : extension === 'pot' ? 'potx' : 'pptx';
+      type = (extension === 'pps' ? 'pps' : extension === 'pot' ? 'pot' : 'ppt') + (book.macros ? 'm' : 'x');
     pkg.add(
       pres,
       part(
@@ -389,14 +394,7 @@
     }
     if (book.embeddedFonts)
       P.notice(losses, 'legacy-embedded-fonts', N('Embedded fonts were not kept'), 'Presentation', true);
-    const vba = book.documentRecords.find(r => r.type === 1023);
-    if (
-      vba &&
-      P.children(vba, () =>
-        P.notice(losses, 'legacy-macros', N('Damaged macros were not kept'), 'Presentation', true)
-      ).some(r => r.type === 1024 && r.r.length >= 8 && r.r.u32(4))
-    )
-      P.notice(losses, 'legacy-macros', N('Macros were not kept'), 'Presentation', true);
+    B.vba.add(pkg, pres, book.macros);
     return {
       pkg: await pkg.finish(),
       type,
@@ -415,7 +413,8 @@
         incrementalEdits: book.edits.length,
         sourceTextCharacters: textCharacters,
         ...book.textStats,
-        drawings: book.drawingStats
+        drawings: book.drawingStats,
+        ...(book.macros ? { macros: { streams: book.macros.streams, bytes: book.macros.bytes.length } } : {})
       }
     };
   };

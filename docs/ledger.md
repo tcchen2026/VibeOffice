@@ -162,7 +162,7 @@ printer itself.
 | XML Spreadsheet 2003 `.xml` | yes | yes |
 | Web Page `.htm` / `.html` | yes: each table on the page becomes a sheet | yes: one self-contained page per workbook, with its own security policy (no scripts) |
 | PDF | — | yes |
-| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks, comments, hyperlinks, data validation, conditional formatting, filters, print settings and protection, pictures, AutoShapes, groups, text boxes and charts, chart sheets too; pivot tables not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name. A workbook with a password to open asks for it (XOR obfuscation, RC4 and RC4 CryptoAPI encryption) and is saved encrypted with it, as Excel keeps it on Save As; one encrypted with Excel's default password (a workbook protected only against changes) opens without asking and is saved without a password to open | no |
+| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks, comments, hyperlinks, data validation, conditional formatting, filters, print settings and protection, pictures, AutoShapes, groups, text boxes and charts, chart sheets too; pivot tables not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name (`.xlsm`, or `.xltm` for a template, when it has macros: its VBA project is kept byte for byte with the workbook's and sheets' code names, never run; all 100 in the corpus). A workbook with a password to open asks for it (XOR obfuscation, RC4 and RC4 CryptoAPI encryption) and is saved encrypted with it, as Excel keeps it on Save As; one encrypted with Excel's default password (a workbook protected only against changes) opens without asking and is saved without a password to open | no |
 
 Passwords are handled in the browser (WebCrypto plus Ledger's own AES and SHA code), so the page must
 be served over https or from localhost. A workbook opened with its password keeps it when saved.
@@ -541,7 +541,9 @@ tried in Excel 2016 open without a repair prompt; their cells agree with the sto
 and their formulas' cached results in 97,699 of 97,699. The 1,484 formulas still left as values (DDE links, links to
 files in a machine's XLSTART folder, Excel 4 macro names, broken arrays and a few ambiguous names) keep their results
 and are named in the message. A 14 MB workbook of 800,000 cells opens in 2.3 s with a peak of 744 MB in Chromium's
-renderer (3.0 s and 1.12 GB before the converter shared its byte windows).
+renderer (3.0 s and 1.12 GB before the converter shared its byte windows). Workbooks with macros (100
+in the corpus) become `.xlsm` with every stream of their VBA project; LibreOffice opens, saves and reopens the 32
+macro conversions checked (Office 2016's acceptance of macro files is untested: the test machine takes none).
 
 CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`. Current preservation does not imply exact print
 layout or support for every formula or external data source.
@@ -557,7 +559,7 @@ layout or support for every formula or external data source.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.
 - One window per workbook (Window ▸ New Window is not available).
-- Excel 97-2003 `.xls` files are opened by conversion and saved as `.xlsx`.
+- Excel 97-2003 `.xls` files are opened by conversion and saved as `.xlsx` (`.xlsm` when they have macros, which are kept and never run).
 - Saved as XML Spreadsheet 2003, a merged range whose top-left cell holds nothing (no value, no format)
   is not written: that format records a merge on its top-left cell.
 - Spelling is English only (U.S. and U.K.).

@@ -9,6 +9,7 @@
   const FILES = ['base', 'codepages', 'properties', 'encryption-crypto', 'encryption',
     'xls-read', 'doc-read', 'ppt-read', 'xls-crypto', 'doc-crypto', 'ppt-crypto', 'inspect',
     'package', 'property-parts', 'images', 'officeart', 'native-geometry', 'shape-path', 'shapes', 'xml-check',
+    'vba-storage', 'vba', 'vba-hosts',
     'xls-style-ext', 'xls-style', 'xls-sheet', 'xls-functions', 'xls-formula', 'xls-formula-book',
     'xls-misc', 'xls-dxf', 'xls-rules', 'xls-draw-read', 'xls-comments', 'xls-draw-write',
     'xls-chart-read', 'xls-chart-style', 'xls-chart-write', 'xls-write',
