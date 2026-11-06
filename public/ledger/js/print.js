@@ -391,13 +391,14 @@
     ui.busy(true, 'Preparing pages...');
     try {
       const pages = [];
+      const writer = await L.pdfModule();
       const pictures = await printPictures(items.slice(from - 1, to));
       for (let i = from - 1; i < to; i++) {
         const r = await renderAny(items[i], i, items.length, L.PDF_DPI / 72, pictures);
-        const blob = await new Promise((res) => r.cv.toBlob(res, 'image/jpeg', 0.92));
-        pages.push({ jpeg: new Uint8Array(await blob.arrayBuffer()), iw: r.cv.width, ih: r.cv.height, pw: r.w, ph: r.h });
+        pages.push({ jpeg: writer.jpeg(r.cv), iw: r.cv.width, ih: r.cv.height, pw: r.w, ph: r.h });
+        r.cv.width = r.cv.height = 1;
       }
-      const pdf = L.buildPDF(pages, { title: (wb.props && wb.props.title) || (A.books[A.cur] ? A.books[A.cur].name : 'Book1'), author: (wb.props && wb.props.creator) || '' });
+      const pdf = await L.buildPDF(pages, { title: (wb.props && wb.props.title) || (A.books[A.cur] ? A.books[A.cur].name : 'Book1'), author: (wb.props && wb.props.creator) || '' });
       ui.busy(false);
       const name = (A.books[A.cur] ? A.books[A.cur].name : 'Book1').replace(/\.[^.]+$/, '') + '.pdf';
       const res = await L.saveFile(name, pdf);

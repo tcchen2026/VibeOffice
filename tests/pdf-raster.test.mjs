@@ -41,6 +41,33 @@ for (const app of ['quire', 'lectern']) {
   });
 }
 
+test('PDF batches keep each page’s SVG paint references local to that page', async () => {
+  const page = await openPage('quire', { persistence: false, automated: true });
+  try {
+    const same = await page.evaluate(`(async () => {
+      const pdf = await L.pdfModule(), fonts = await L.embedFonts('Carlito');
+      const pages = ['red', 'green', 'blue'].map(color => ({ w: 80, h: 80, scale: 1,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">' +
+          '<defs><linearGradient id="paint"><stop stop-color="' + color + '"/>' +
+          '<stop offset="1" stop-color="white"/></linearGradient></defs>' +
+          '<rect width="80" height="80" fill="url(#paint)"/></svg>' }));
+      const expected = [];
+      for (const p of pages) {
+        const c = document.createElement('canvas'); c.width = c.height = 80;
+        const image = await L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(p.svg));
+        c.getContext('2d').drawImage(image, 0, 0);
+        expected.push(c.toDataURL());
+      }
+      const same = [];
+      for await (const { canvas, index } of pdf.pictures(pages, p => p, fonts)) {
+        same.push(canvas.toDataURL() === expected[index]);
+      }
+      return same;
+    })()`);
+    assert.deepEqual(same, [true, true, true]);
+  } finally { await page.close(); }
+});
+
 for (const kind of ['chart', 'shape', 'chartsheet']) {
   test('Ledger: ' + kind + ' text keeps its web font inside the SVG image', async () => {
     const page = await openPage('ledger', { persistence: false, automated: true });
@@ -149,6 +176,28 @@ for (const app of ['quire', 'lectern', 'ledger']) {
   });
 }
 
+test('PDF export can encode a page without waiting for an idle toBlob callback', async () => {
+  const page = await openPage('quire', { persistence: false, automated: true });
+  try {
+    const result = await page.evaluate(`(async () => {
+      const native = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (callback, type, quality) {
+        if (type === 'image/jpeg') throw new Error('The browser deferred its asynchronous JPEG encoder.');
+        return native.call(this, callback, type, quality);
+      };
+      try {
+        const pdf = await L.app.buildPDF();
+        return { type: pdf.type, size: pdf.size };
+      } finally {
+        HTMLCanvasElement.prototype.toBlob = native;
+        L.ui.busy(false);
+      }
+    })()`);
+    assert.equal(result.type, 'application/pdf');
+    assert.ok(result.size > 1000);
+  } finally { await page.close(); }
+});
+
 test('Lectern: portrait and landscape preview pages use 300 dpi', async () => {
   const page = await openPage('lectern', { persistence: false, automated: true });
   try {
@@ -173,3 +222,69 @@ test('Lectern: portrait and landscape preview pages use 300 dpi', async () => {
     assert.deepEqual(page.errors, []);
   } finally { await page.close(); }
 });
+
+for (const app of ['quire', 'lectern']) {
+  test(app + ': distinct font-heavy pages share font parsing without changing their JPEG pixels', async () => {
+    const page = await openPage(app, { persistence: false, automated: true });
+    try {
+      const result = await page.evaluate(`(async () => {
+        const app = ${JSON.stringify(app)}, elements = [];
+        for (let n = 0; n < 5; n++) {
+          const el = document.createElement('div');
+          el.style.cssText = 'width:794px;height:1123px;background:white;color:black;position:relative';
+          el.innerHTML = '<p style="font:24px Carlito">Different page ' + n + '</p>' +
+            '<p style="font:bold 24px Carlito">Bold</p><p style="font:italic 24px Carlito">Italic</p>' +
+            '<p style="font:bold italic 24px Carlito">Both</p>';
+          document.body.append(el);
+          elements.push(el);
+        }
+        await document.fonts.ready;
+        const image = L.loadImage, individual = [];
+        let actual, loads = 0, maxPixels = 0;
+        const encode = c => new Promise(resolve => c.toBlob(async blob => {
+          resolve(Array.from(new Uint8Array(await blob.arrayBuffer())));
+        }, 'image/jpeg', .92));
+        try {
+          if (app === 'quire') {
+            L.layout.pages = elements.map(el => ({ el, sect: { pgW: 595.5, pgH: 842.25 } }));
+          } else {
+            L.pres.W = 794; L.pres.H = 1123;
+            L.pres.slides = elements.map((el, n) => ({ id: 'PDF-test-' + n }));
+            L.render.slide = (pres, slide) => elements[pres.slides.indexOf(slide)];
+          }
+          L.buildPDF = list => { actual = list.map(p => Array.from(p.jpeg)); return new Blob(); };
+          // Capture the exact isolated SVGs used by the app, then compare the batched export with them.
+          const fonts = await L.embedFonts(elements.map(el => el.outerHTML).join(''));
+          const scale = app === 'quire' ? 300 / 96 : 300 / 72;
+          for (const el of elements) {
+            const c = app === 'quire' ? await L.app.rasterizePage(el, scale, '', new Map(), fonts)
+              : await L.app.rasterize(el, 794, 1123, scale, { map: new Map(), css: ' ', fonts });
+            individual.push(await encode(c));
+            c.width = c.height = 1;
+          }
+          L.loadImage = async src => {
+            if (src.startsWith('data:image/svg+xml')) {
+              loads++;
+              const svg = new DOMParser().parseFromString(decodeURIComponent(src.split(',')[1]), 'image/svg+xml');
+              const el = svg.documentElement;
+              maxPixels = Math.max(maxPixels,
+                Math.round(+el.getAttribute('width') * scale) * Math.round(+el.getAttribute('height') * scale));
+            }
+            return image(src);
+          };
+          await L.app.buildPDF(app === 'lectern' ? 'slides' : undefined);
+          return { loads, maxPixels, same: actual.map((bytes, n) =>
+            bytes.length === individual[n].length && bytes.every((byte, i) => byte === individual[n][i])) };
+        } finally {
+          L.loadImage = image;
+          elements.forEach(el => el.remove());
+          L.ui.busy(false);
+        }
+      })()`);
+      assert.ok(result.loads < 5, JSON.stringify(result));
+      assert.ok(result.maxPixels <= 40_000_000, JSON.stringify(result));
+      assert.deepEqual(result.same, [true, true, true, true, true]);
+      assert.deepEqual(page.errors, []);
+    } finally { await page.close(); }
+  });
+}

@@ -256,42 +256,26 @@
     const limit = Math.sqrt(PDF_MAX_PIXELS / (w * h));
     return Math.min(scale, Math.floor(w * limit) / w, Math.floor(h * limit) / h);
   };
-  /**
-   * Minimal PDF writer: one full-page JPEG per page.
-   * pages: [{ jpeg: Uint8Array, iw, ih (pixels), pw, ph (points) }]
-   */
-  L.buildPDF = function (pages, info) {
-    const enc = new TextEncoder();
-    const chunks = [];
-    let len = 0;
-    const offs = [];
-    const push = (x) => { const b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); len += b.length; };
-    const pdfStr = (t) => { let hex = 'FEFF'; for (const ch of String(t || '')) { const c = ch.codePointAt(0); if (c > 0xffff) { const v = c - 0x10000; hex += (0xd800 + (v >> 10)).toString(16).padStart(4, '0') + (0xdc00 + (v & 0x3ff)).toString(16).padStart(4, '0'); } else hex += c.toString(16).padStart(4, '0'); } return '<' + hex.toUpperCase() + '>'; };
-    const num = (v) => String(Math.round(v * 100) / 100);
-    push('%PDF-1.4\n');
-    push(new Uint8Array([0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]));
-    const obj = (id, body) => { offs[id] = len; push(id + ' 0 obj\n'); if (typeof body === 'string') push(body); else body(); push('\nendobj\n'); };
-    const n = pages.length;
-    const infoId = 3 + n * 3;
-    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
-    obj(2, `<< /Type /Pages /Kids [${pages.map((_, i) => (3 + i * 3) + ' 0 R').join(' ')}] /Count ${n} >>`);
-    pages.forEach((p, i) => {
-      const pid = 3 + i * 3, cid = pid + 1, iid = pid + 2;
-      obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${num(p.pw)} ${num(p.ph)}] /Resources << /XObject << /Im${i} ${iid} 0 R >> >> /Contents ${cid} 0 R >>`);
-      const cs = `q ${num(p.pw)} 0 0 ${num(p.ph)} 0 0 cm /Im${i} Do Q`;
-      obj(cid, `<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
-      obj(iid, () => { push(`<< /Type /XObject /Subtype /Image /Width ${p.iw} /Height ${p.ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpeg.length} >>\nstream\n`); push(p.jpeg); push('\nendstream'); });
-    });
-    const d = new Date();
-    const pad = (v) => String(v).padStart(2, '0');
-    obj(infoId, `<< /Title ${pdfStr(info && info.title)} /Author ${pdfStr(info && info.author)} /Producer ${pdfStr(L.APP)} /CreationDate (D:${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}) >>`);
-    const xref = len;
-    const total = infoId + 1;
-    push(`xref\n0 ${total}\n0000000000 65535 f \n`);
-    for (let i = 1; i < total; i++) push(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
-    push(`trailer\n<< /Size ${total} /Root 1 0 R /Info ${infoId} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
-    return new Blob(chunks, { type: 'application/pdf' });
+  // The writer and its generated empty font are needed only on the first PDF export.
+  let pdfWriter;
+  L.pdfModule = async function () {
+    if (!L.pdf?.write) {
+      if (!pdfWriter) pdfWriter = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = (root.VO?.base || new URL('..', location.href).href) + 'common/pdf.js';
+        script.onload = resolve;
+        script.onerror = () => {
+          pdfWriter = null;
+          script.remove();
+          reject(new Error(L.t('The PDF exporter could not be loaded. Please try again.')));
+        };
+        document.head.append(script);
+      });
+      await pdfWriter;
+    }
+    return L.pdf;
   };
+  L.buildPDF = async (pages, info) => (await L.pdfModule()).write(pages, info);
   /* ---------- saving to real files (the desktop app) ----------
      On the web a save is a download (L.saveFile). In the desktop app it is a real file (docs/desktop.md, Saving):
      Save writes the window's own file in place ('save'), Save As and exports what the user picks in the system's

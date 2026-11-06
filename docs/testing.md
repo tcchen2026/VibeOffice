@@ -647,3 +647,18 @@ timing IDs; from the built-in sample it also writes the deck without slide 6 and
 text targets, validates each package, and writes hashes and a pending PowerPoint result per copy.
 Only slide6.xml changes in the four isolated variants. PowerPoint results are a manual gate:
 schema validity and LibreOffice opening do not prove that the repair problem has been fixed.
+
+## PDF export
+
+`node --test tests/pdf.test.mjs` checks the PDF writer with Poppler (`pdftotext`,
+`pdffonts`, `pdftoppm`) and PDFium (`python3 -I` with `pypdfium2` installed). It checks
+Unicode extraction, rotated and single-character words, selection bounds, links,
+bookmarks, deterministic IDs and xref offsets. The generated font paints no pixels,
+even in visible text mode. No installed font files enter the PDF text layer.
+
+`node --test tests/pdf-raster.test.mjs` checks the three apps in Chromium: embedded
+page-picture fonts, 300 dpi and the 40 MP cap, exact JPEG equality when batching
+pages, local SVG paint references, and encoding without an idle JPEG callback.
+Set `CDP` and `BASE` to use a separate browser and server. Check selection, copy and
+a second-page search in the native PDF viewer as well; Poppler alone missed a
+zero-width text-object rejection in PDFium.

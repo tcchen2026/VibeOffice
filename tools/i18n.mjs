@@ -36,7 +36,7 @@ const catalogFile = path.join(PUB, 'common/i18n/en.json');
 /* files with no UI text of their own: readers, writers, engines (text they put in files or errors they throw are
    handled where they are shown); and the licences page's script, whose page is in English only, as the licences are */
 const SKIP = new Set(['oss-licenses.js', 'common/crypto.js', 'common/sha.js', 'common/zip.js', 'common/xml.js', 'common/opc.js', 'common/opc-order.js',
-  'common/numfmt.js', 'common/dml.js', 'common/metafile.js', 'common/icons.js', 'common/i18n.js', 'sw.js',
+  'common/numfmt.js', 'common/dml.js', 'common/metafile.js', 'common/pdf.js', 'common/icons.js', 'common/i18n.js', 'sw.js',
   'quire/js/docx-read.js', 'quire/js/docx-write.js', 'quire/js/rtf.js', 'quire/js/htmlio.js', 'quire/js/markdown.js', 'quire/js/mdio.js',
   'quire/js/omml.js', 'quire/js/preserve.js', 'quire/js/preserve-drawing.js', 'quire/js/dmodel.js',
   'ledger/js/formula.js', 'ledger/js/calc.js', 'ledger/js/fn-core.js', 'ledger/js/fn-lookup.js', 'ledger/js/fn-stat.js', 'ledger/js/fn-fin.js',

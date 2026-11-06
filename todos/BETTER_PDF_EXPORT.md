@@ -1,6 +1,6 @@
 # Better PDF export: a text layer in Quire, Ledger and Lectern PDFs
 
-Status: Phase 0 ready for Lead, 2026-11-07; Phases 1–5 pending.
+Status: Phase 0 committed (705019a); Phase 1 ready for Lead, 2026-11-07; Phases 2–5 pending.
 Planned 2026-10-15; design revised that day: pages stay pictures, with an invisible text layer on
 top; no font files read or embedded. Read first: this file, `public/common/core.js` (`L.buildPDF`, `L.embedFonts`),
 Quire `public/quire/js/app.js` (`A.rasterizePage`, `A.buildPDF`), Lectern `public/lectern/js/app.js` (`A.rasterize`,
@@ -164,7 +164,7 @@ evidence in `tmp/pdf/artifacts` on the share. No commits or edits to Lead's file
 **PDF.0 READY FOR LEAD**
 
 Phase 1: the writer (`public/common/pdf.js`)
-- [ ] **Objects.**
+- [x] **Objects.**
   - Catalog, a pages tree, pages, content streams, and Info (Title, Author, Producer `L.APP`, CreationDate).
   - `/ID` from a SHA-256 of the content (`common/sha.js`), so the same input gives the same bytes; the date is
     fixable for tests.
@@ -172,19 +172,19 @@ Phase 1: the writer (`public/common/pdf.js`)
   - Streams compressed with `CompressionStream('deflate')` (zlib, as FlateDecode wants), left uncompressed where
     there's none. This makes `L.buildPDF` async: Quire and Lectern already return it from async functions, and
     Ledger's `P.exportPDF` (print.js:341) must `await` it.
-- [ ] **Page content.** The JPEG as today (DCTDecode, bytes copied as they are), then the text layer:
+- [x] **Page content.** The JPEG as today (DCTDecode, bytes copied as they are), then the text layer:
       `BT 3 Tr /F1 … Tf` and per word `Tz … Tm <cids> Tj`, then `ET`.
-- [ ] **The generated font.**
+- [x] **The generated font.**
   - The TrueType bytes: head, hhea, maxp, hmtx, loca, glyf (glyph 0 and one empty glyph), cmap, name, OS/2 and post.
   - The Type0 font, the CIDFontType2 with `DW 500`, the `CIDToGIDMap` stream, and the FontDescriptor (Ascent 800,
     Descent −200, flags non-symbolic).
   - The ToUnicode CMap, written as ranges where CIDs and code points run together.
-- [ ] **Links and bookmarks** (data from the apps in Phase 5):
+- [x] **Links and bookmarks** (data from the apps in Phase 5):
   - `/Link` annotations with a `/URI` action, or a destination `[page /XYZ left top null]`;
   - an `/Outlines` tree nested by level;
   - `/Lang` in the catalog;
   - `/ViewerPreferences << /DisplayDocTitle true >>` when there's a title.
-- [ ] **Tests** (`tests/pdf.test.mjs`, Node):
+- [x] **Tests** (`tests/pdf.test.mjs`, Node):
   - Two pages with a JPEG each and lines of words, including Japanese, an emoji, right-to-left text and a rotated
     word.
   - pdftotext gives the words with single spaces and the lines in order.
@@ -193,6 +193,61 @@ Phase 1: the writer (`public/common/pdf.js`)
   - pdftoppm draws the page with the layer pixel for pixel like the page without it: the layer is invisible.
   - Then once by hand in Chromium's viewer: select a line and copy it, and Find locates a word on page 2 with its
     highlight on the word.
+
+### Phase 1 report — 2026-11-07
+
+26 PDF checks pass (12 writer, 14 raster). 211 / 211 corpus page JPEGs remain
+byte-identical. 10 writer and 3 batching/encoding assertions fail before the change;
+the SVG-reference isolation test also fails without its guard.
+
+| Control | Pages | Before PDF.0 s | PDF.0 s¹ | PDF.1 s | MB PDF.0 → PDF.1 |
+|---|---:|---:|---:|---:|---:|
+| Long Word control | 180 | 10.57 | 18.45 | 15.01 | 134.45 → 134.45 |
+| Five decks | 15 | 0.95 | 2.97 | 2.08 | 3.15 → 3.15 |
+| Five workbooks | 16 | 0.57 | 0.98 | 0.95 | 2.34 → 2.34 |
+| Calibri, four faces | 180 | 6.90 | 117.82 | 8.83 | 59.09 → 59.09 |
+
+¹ Remeasured with the committed export path and current rendering dependencies.
+
+1.28 × the original Calibri time, below the 3 × target. Peak renderer RSS falls
+from 1,071 MB to 553 MB; 180 different pages take 13.97 s / 845 MB. Four-page SVG
+batches reach 33.66 MP; actual A0 exports in all apps stay below 40 MP. Immediate
+JPEG encoding avoids Chromium's idle callback delay; quality remains 0.92.
+
+The asynchronous writer loads on first export; Ledger awaits it. Its generated
+empty glyph retraces a line for measurable bounds: a zero-contour glyph lost
+single-character and vertical words in PDFium. PDFium and Poppler confirm zero
+ink even in visible mode. Chromium copies the line, retains Unicode/rotation and
+highlights the page-2 search word; LibreOffice opens the two-page control. Existing
+Office/LO references and the two Lead-owned layout findings are retained.
+
+Review correction: the scanner now treats pdf.js as a writer: PDF/font syntax is
+excluded and explicit L.t errors remain. The new regression fails before and
+passes after. The requested real English gather adds only the exporter-load
+message, plus refreshed locations; all 8 i18n checks pass against that catalog.
+
+Final `tools/quick.mjs`, after the requested English gather and scanner correction:
+
+```text
+✖ Node tests: 219 passed, 1 failed (29 s)
+✔ tests/ui/smoke.test.mjs: 4 passed (18 s)
+✔ tests/ui/lectern.test.mjs: 39 passed (125 s)
+✔ tests/ui/ledger.test.mjs: 39 passed (130 s)
+✔ tests/ui/quire.test.mjs: 57 passed (227 s)
+1 of 5 failed.
+```
+
+Limit: the existing locale assertion requires blocked catalog data; it is not counted as a pass.
+Limit: this headless viewer uses native text-fragment search; it has no keyboard Find bar.
+Limit: app text collectors remain for Phases 2–4; current app exports still contain pictures only.
+
+[Detailed report](../tmp/PDF-1-REPORT.md), [findings](../tmp/PDF-LEAD-FINDINGS.md).
+Evidence: `tmp/pdf/artifacts/phase1`; final logs `tmp/pdf/phase1-correction-*.log`.
+No commits or translation edits; the English catalog was gathered as requested.
+All final code/test/catalog hashes stayed unchanged during the gate; all 11 original
+tabs remain and server 8769 is stopped. Phase files are frozen until committed.
+
+**PDF.1 READY FOR LEAD**
 
 Phase 2: Quire
 - [ ] **Collector** (`pdftext.js`, `collectDOM(pageEl, scale)`).

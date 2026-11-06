@@ -965,7 +965,7 @@
     for (const [, m] of L.media.all()) { if (html && !html.includes(m.url)) continue; try { map.set(m.url, await L.blobToDataURL(m.view || m.blob)); } catch (e) { /* skip */ } }
     return map;
   }
-  A.rasterizePage = async function (pgEl, scale, css, map, fonts) {
+  async function pageSVG(pgEl, css, map, fonts) {
     const w = pgEl.offsetWidth, hh = pgEl.offsetHeight;
     const clone = pgEl.cloneNode(true);
     clone.style.margin = '0'; clone.style.boxShadow = 'none';
@@ -976,7 +976,11 @@
     // A PDF prepares these once for all pages; a Recent Files picture prepares just its own fonts.
     fonts ??= await L.embedFonts(xhtml + css);
     css = fonts + '\n' + css;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${hh}px;color:#000;font-size:16px;line-height:normal"><style>${css.replace(/</g, '\\3c ')}</style>${xhtml}</div></foreignObject></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${hh}px;color:#000;font-size:16px;line-height:normal"><style>${css.replace(/</g, '\\3c ')}</style>${xhtml}</div></foreignObject></svg>`;
+  }
+  A.rasterizePage = async function (pgEl, scale, css, map, fonts) {
+    const w = pgEl.offsetWidth, hh = pgEl.offsetHeight;
+    const svg = await pageSVG(pgEl, css, map, fonts);
     const img = await L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
     const c = document.createElement('canvas');
     c.width = Math.round(w * scale); c.height = Math.round(hh * scale);
@@ -996,12 +1000,14 @@
     const list = LY.pages.filter((p, i) => !range || range.includes(i + 1));
     const fonts = await L.embedFonts(list.map((p) => p.el.outerHTML).join('') + css);
     const sel = window.getSelection(); sel.removeAllRanges();
-    let n = 0;
-    for (const p of list) {
-      ui.busy(true, L.t('Creating PDF... (page {0} of {1})', ++n, list.length));
-      const scale = L.pdfScale(p.el.offsetWidth, p.el.offsetHeight, L.PDF_DPI / 96);
-      const c = await A.rasterizePage(p.el, scale, css, map, fonts);
-      const jpeg = new Uint8Array(await (await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error(L.t('This browser blocked the page image.')))), 'image/jpeg', 0.92))).arrayBuffer());
+    const pdf = await L.pdfModule();
+    const prepare = async (p) => {
+      const w = p.el.offsetWidth, h = p.el.offsetHeight;
+      return { svg: await pageSVG(p.el, css, map, ''), w, h, scale: L.pdfScale(w, h, L.PDF_DPI / 96) };
+    };
+    for await (const { canvas: c, page: p, index } of pdf.pictures(list, prepare, fonts)) {
+      ui.busy(true, L.t('Creating PDF... (page {0} of {1})', index + 1, list.length));
+      const jpeg = pdf.jpeg(c);
       pages.push({ jpeg, iw: c.width, ih: c.height, pw: p.sect.pgW, ph: p.sect.pgH });
     }
     if (prevView !== A.view || LY.view !== (prevView === 'reading' || prevView === 'preview' ? 'print' : prevView)) { LY.view = prevView === 'reading' || prevView === 'preview' ? 'print' : prevView; LY.render(); }
