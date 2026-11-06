@@ -95,5 +95,7 @@ test('a note with no room for a line takes its reference to the next page; one l
   const huge = await pages(paras(5, 'Body') + refPara('Ref one') + paras(60, 'After'), noteLines(70));
   assert.equal(huge.length, 3);
   assert.ok(huge.every((p) => p.inside), 'the notes stay on the page');
-  assert.match(huge[1].notes, /^Note line 4\d .*line 69$/s);   // Word 47: its lines are 13.8 and 11.5 pt, Quire's 13.79 and 11.49
+  assert.match(huge[0].notes, /line 46$/);
+  assert.match(huge[1].notes, /^Note line 47 .*line 69$/s);
+  assert.deepEqual([huge[1].first, huge[1].last], ['After 0', 'After 25']);
 });

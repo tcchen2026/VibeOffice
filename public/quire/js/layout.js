@@ -377,17 +377,10 @@
         const nh = frame.notes ? frame.notes.measure(frag) : 0;
         const bt = bottomOf(frag, frame.top, scale);
         const ls = bt - (parseFloat(frag.style.paddingBottom) || 0);
-        if (ls - slackOf(lines[k - 1]) <= frame.limit - nh + 0.5 || (k === 1 && frame.empty)) {
-          if (frame.notes) frame.notes.commit(frag);
-          frame.empty = false;
-          frame.chain = [];
-          placed = true;
-          st = cut >= n ? { bi: st.bi + 1, sub: null } : { bi: st.bi, sub: cut };
-          break;
-        }
+        const fitsWhole = ls - slackOf(lines[k - 1]) <= frame.limit - nh + 0.5;
         /* a footnote referenced in the last line placed (or in the first, which may not stand alone at the foot of a
            page) that doesn't fit below it goes on to the next page, and the page ends there (Word) */
-        if (frame.notes && nh > frame.limit - (ls - slackOf(lines[k - 1])) && frame.kind === 'col' && frame.lastCol && !ctx.inCell) {
+        if (!fitsWhole && frame.notes && frame.kind === 'col' && frame.lastCol && !ctx.inCell) {
           const id = frame.notes.lastPending(), ref = id && frag.querySelector(`.nref[data-note="fn:${id}"]`);
           const at = ref ? (ref.getBoundingClientRect().top + ref.getBoundingClientRect().bottom) / 2 : null;
           const lineOf = (j) => lines[j] && at != null && (at - frame.top) / scale >= lines[j].top - 0.5 && (at - frame.top) / scale <= lines[j].bottom + 0.5;
@@ -397,6 +390,14 @@
             frame.chain = [];
             return { st: cut >= n ? { bi: st.bi + 1, sub: null } : { bi: st.bi, sub: cut }, stop: 'full' };
           }
+        }
+        if (fitsWhole || (k === 1 && frame.empty)) {
+          if (frame.notes) frame.notes.commit(frag);
+          frame.empty = false;
+          frame.chain = [];
+          placed = true;
+          st = cut >= n ? { bi: st.bi + 1, sub: null } : { bi: st.bi, sub: cut };
+          break;
         }
         dropFrag(frag);
         if (frame.notes) frame.notes.rollback();
@@ -940,7 +941,8 @@
         if (!note || carryOut) return false;
         last.box.remove();
         const room = avail - (areaH() + gap);
-        const part = room > 8 ? renderPart(last.id, { bi: 0, sub: null }, room) : null;
+        /* (the flow lets a line run half a pixel over: not past the room) */
+        const part = room > 8 ? renderPart(last.id, { bi: 0, sub: null }, room - 0.5) : null;
         const p0 = note.blocks[0];
         if (!part || part.done || !part.box.firstChild || part.h > room + 0.5
           || (part.st.bi === 0 && p0 && p0.t === 'p' && D.pProps(doc(), p0).keepLines)) { area.appendChild(last.box); return false; }

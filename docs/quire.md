@@ -81,6 +81,10 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   Word (Quire added it on the left and Page Setup showed Left), and Strict files' "auto" line spacing given as a
   measure (`w:line="12.95pt"`, 259 twips) is read as lines (Quire read 12.95 twips, so the SDK's Strict01.docx had its
   lines on top of each other: 8 pages to Word 2016's 13; Quire 13 now).
+- Single line spacing is as tall as Word 2016 prints it: a little more than the fonts' metrics give (Times New Roman
+  and Arial 1.1502 times the font size, Calibri 1.2209, Cambria 1.1727, Courier New 1.1331, measured at 10 to 12 pt),
+  and the browser's line, which it cuts down to a 64th of a pixel, comes to the nearest 64th (R.lhNum): 12 pt Times
+  New Roman lines are 13.80 pt apart, not 13.78, which over a page decides whether a last line or a footnote's fits.
 - Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
   and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
   bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and

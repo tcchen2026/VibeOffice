@@ -10,18 +10,24 @@
   R.px = (pt) => Math.round(pt * PX * 100) / 100;
 
   /* ---------- font metrics (line height of "single" spacing as a multiple of font size) ---------- */
+  /* (Times New Roman, Arial, Calibri, Cambria, Courier New, Georgia and Verdana as Word 2016 prints them at 10 to 12 pt,
+     tmp/lead-q/lh: a little taller than the fonts' own metrics, 13.8 pt for 12 pt Times New Roman, not 13.79) */
   const LH = {
-    'calibri': 1.2207, 'calibri light': 1.2207, 'cambria': 1.1724, 'times new roman': 1.149, 'arial': 1.149, 'courier new': 1.1328, 'verdana': 1.2153, 'georgia': 1.1362,
+    'calibri': 1.2209, 'calibri light': 1.2209, 'cambria': 1.1727, 'times new roman': 1.1502, 'arial': 1.1502, 'courier new': 1.1331, 'verdana': 1.2155, 'georgia': 1.1363,
     'tahoma': 1.2069, 'trebuchet ms': 1.1611, 'segoe ui': 1.3301, 'garamond': 1.1235, 'comic sans ms': 1.3936, 'book antiqua': 1.1704, 'bookman old style': 1.1636, 'century gothic': 1.2251,
-    'palatino linotype': 1.1353, 'lucida console': 1.0, 'impact': 1.2197, 'arial black': 1.41, 'arial narrow': 1.149, 'franklin gothic medium': 1.1338, 'symbol': 1.2275, 'wingdings': 1.1, 'aptos': 1.2, 'helvetica': 1.149,
+    'palatino linotype': 1.1353, 'lucida console': 1.0, 'impact': 1.2197, 'arial black': 1.41, 'arial narrow': 1.1502, 'franklin gothic medium': 1.1338, 'symbol': 1.2275, 'wingdings': 1.1, 'aptos': 1.2, 'helvetica': 1.1502,
     /* the metric-compatible families, as tall as the fonts they stand in for (Word printed Liberation Sans as Arial) */
-    'liberation sans': 1.149, 'arimo': 1.149, 'liberation serif': 1.149, 'tinos': 1.149, 'liberation mono': 1.1328, 'cousine': 1.1328, 'carlito': 1.2207, 'caladea': 1.1724,
+    'liberation sans': 1.1502, 'arimo': 1.1502, 'liberation serif': 1.1502, 'tinos': 1.1502, 'liberation mono': 1.1331, 'cousine': 1.1331, 'carlito': 1.2209, 'caladea': 1.1727,
     /* East Asian fonts, by their English names (L.fontKey: ＭＳ 明朝 is ms mincho), from the fonts' Windows metrics;
        unverified against Word (python3 tools/linegrid.py fonts measures them from its PDF) */
     'ms mincho': 1.0, 'ms pmincho': 1.0, 'ms gothic': 1.0, 'ms pgothic': 1.0, 'ms ui gothic': 1.0, 'yu mincho': 1.73, 'yu gothic': 1.73, 'yu gothic light': 1.73,
     'meiryo': 1.5, 'malgun gothic': 1.33,
   };
   R.lineFactor = (font) => LH[L.fontKey(font)] || 1.17;
+  /** a line height v (a multiple of a font size of pt) as CSS's unitless number, nudged so that the browser's line,
+      which it cuts down to a 64th of a pixel, comes to the nearest 64th: lines 13.8 pt apart stay 13.8 pt apart and not
+      13.79, which over a page decides whether its last line fits (Word) */
+  R.lhNum = (v, pt) => { const px = R.px(pt || 12); return String(L.round((Math.round(v * px * 64) + 0.5) / 64 / px, 6)); };
   /* a run's line factor: its East Asian font's where its text has East Asian characters and that font is taller */
   const runFactorFont = (r) => (r.eaText && r.fontEA && LH[L.fontKey(r.fontEA)] > R.lineFactor(r.font) ? r.fontEA : r.font);
   const SPACE_EM = { 'times new roman': 0.25, arial: 0.2778, calibri: 0.2261, 'calibri light': 0.2261, cambria: 0.2197, georgia: 0.2412, verdana: 0.3516, tahoma: 0.3125, 'courier new': 0.6, garamond: 0.25, 'book antiqua': 0.25, 'palatino linotype': 0.25, 'segoe ui': 0.2744, 'trebuchet ms': 0.3013, 'century gothic': 0.2773, helvetica: 0.2778, aptos: 0.2, 'arial narrow': 0.2278,
@@ -143,7 +149,7 @@
        stretch the line (a footnote reference would otherwise push its line down a few pixels) */
     if (vert === 'superscript' || vert === 'subscript') s.push('line-height:0');
     else if (lineMult && lineMult.grid) { const g = R.gridLine(lineMult.grid, lineMult.mult, sz, lf); s.push(g > lineMult.line ? `line-height:${g}px` : `line-height:${R.lineFactor(lf)}`); }
-    else if (lineMult != null) s.push(`line-height:${L.round(R.lineFactor(lf) * lineMult * (fsz < sz ? sz / fsz : 1), 4)}`);
+    else if (lineMult != null) s.push(`line-height:${R.lhNum(R.lineFactor(lf) * lineMult * (fsz < sz ? sz / fsz : 1), fsz)}`);
     if (r.b) s.push('font-weight:bold');
     if (r.i) s.push('font-style:italic');
     const deco = [];
@@ -277,7 +283,7 @@
     if (ls.exact) st.push(`line-height:${ls.exact}px`);
     else if (ls.atLeast) st.push(`line-height:${ls.atLeast}px`);
     else if (gridPx) st.push(`line-height:${gridMin}px`);
-    else st.push(`line-height:${L.round(R.lineFactor(strutR.font) * ls.mult, 4)}`);
+    else st.push(`line-height:${R.lhNum(R.lineFactor(strutR.font) * ls.mult, strutR.sz || 12)}`);
     const runLine = gridPx ? { grid: gridPx, mult: ls.mult || 1, line: gridMin } : ls.mult != null && !ls.exact ? ls.mult : null;
     if (gridPx) pc.dataset.grid = runLine.line;   /* the line's box when measured (LY.lines): runs that fit are shorter */
     /* borders & shading, grouped with identical neighbours */
@@ -328,7 +334,7 @@
         if (lv.fmt === 'bullet' && lv.rPr && /symbol|wingdings/i.test(lv.rPr.font || '')) lr.font = 'Arial';
         span.style.cssText = R.runCSS(lr, runLine);
         /* a Symbol or Wingdings bullet is drawn in Arial, but its line is as tall as its own font makes it (Word) */
-        if (lv.rPr && lr.font !== lv.rPr.font && typeof runLine === 'number') span.style.lineHeight = String(L.round(R.lineFactor(lv.rPr.font) * runLine, 4));
+        if (lv.rPr && lr.font !== lv.rPr.font && typeof runLine === 'number') span.style.lineHeight = R.lhNum(R.lineFactor(lv.rPr.font) * runLine, lr.sz || 12);
         if (lv.picture && L.media.has(lv.picture)) { const im = document.createElement('img'); im.src = L.media.url(lv.picture); im.style.cssText = 'height:0.75em;vertical-align:baseline'; span.appendChild(im); }
         pc.appendChild(span);
         if (lv.suff !== 'nothing') {
@@ -358,7 +364,7 @@
     R.lineBoxes(pc, {
       ls, grid: !!gridPx, dropCap: pc.dataset.dropLines != null, to,
       markCSS: R.runCSS(markR, ls.exact ? null : ls.atLeast ? 1 : runLine), markFont: L.fontStack(markR.font).replace(/"/g, "'"), markSize: R.px(markR.sz || 12) + 'px',
-      markLine: gridPx ? gridLine(markR) + 'px' : String(L.round(R.lineFactor(markR.font) * ls.mult, 4)), strutLine: String(L.round(R.lineFactor(strutR.font) * (ls.mult || 1), 4)),
+      markLine: gridPx ? gridLine(markR) + 'px' : R.lhNum(R.lineFactor(markR.font) * ls.mult, markR.sz || 12), strutLine: R.lhNum(R.lineFactor(strutR.font) * (ls.mult || 1), strutR.sz || 12),
     });
     if (last) {
       outer.classList.add('last');
