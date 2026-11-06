@@ -499,15 +499,24 @@
         const tx = cell.tx || L.txt.body();
         if (tx.vert && tx.vert !== 'horz') {
           const w = t.cols.slice(ci, ci + (cell.gs || 1)).reduce((a, b) => a + b, 0);
-          const h = t.rows.slice(ri, ri + (cell.rs || 1)).reduce((a, r) => a + r.h, 0);
+          const ch = t.rows.slice(ri, ri + (cell.rs || 1)).reduce((a, r) => a + r.h, 0);
           td.style.padding = '0';
-          const body = R.textBody(sh, tx, design, ctx, [0, 0, w, h], {});
-          if (tx.vert !== 'vert' && tx.vert !== 'vert270') {
+          td.style.position = 'relative';
+          const body = R.textBody(sh, tx, design, ctx, [0, 0, w, ch], {});
+          /* the text runs along the cell as tall as its rows grew (a file's row heights are often less than that), so
+             the frame takes the cell's own size: a box filling the cell, measured in its container units */
+          const box = h('div', { class: 'tc-vert' });
+          box.style.cssText = 'position:absolute;inset:0;container-type:size';
+          const across = `(100cqw - ${L.round(ins[0] + ins[2], 2)}px)`, along = `(100cqh - ${L.round(ins[1] + ins[3], 2)}px)`;
+          if (tx.vert === 'vert' || tx.vert === 'vert270') {
+            Object.assign(body.style, { left: `calc(${L.round(ins[0], 2)}px + (${across} - ${along}) / 2)`, top: `calc(${L.round(ins[1], 2)}px + (${along} - ${across}) / 2)`, width: `calc${along}`, height: `calc${across}` });
+          } else {
             // Browser vertical writing approximates Office's stacked/East Asian modes.
-            Object.assign(body.style, { transform: '', left: ins[0] + 'px', top: ins[1] + 'px', width: Math.max(0, w - ins[0] - ins[2]) + 'px', height: Math.max(0, h - ins[1] - ins[3]) + 'px', writingMode: tx.vert === 'mongolianVert' ? 'vertical-lr' : 'vertical-rl' });
+            Object.assign(body.style, { transform: '', left: ins[0] + 'px', top: ins[1] + 'px', width: `calc${across}`, height: `calc${along}`, writingMode: tx.vert === 'mongolianVert' ? 'vertical-lr' : 'vertical-rl' });
             if (/^wordArtVert/.test(tx.vert)) body.style.textOrientation = 'upright';
           }
-          td.appendChild(body);
+          box.appendChild(body);
+          td.appendChild(box);
         } else {
           const inner = h('div', { class: 'txi' });
           R.paragraphs(sh, tx, design, ctx, inner, {});

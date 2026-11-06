@@ -235,3 +235,25 @@ test('table geometry keeps original EMUs and an edit owns only its dimension', a
   const changed=structuredClone(original);changed.cols[1]+=15875;changed.rows[0]+=6350;changed.margins[0][2]='116844';
   for(const k of ['changed','redo','copy','draft']) assert.deepEqual(r[k],changed,k);
 });
+
+// Text turned 90° in a cell runs along the cell as tall as its rows grew: POI's table_test2 stores the rows at less
+// than their text needs, and PowerPoint 2016 wraps "erat, sed diam voluptua. At vero eos et accusam et justo" into
+// five lines along the grown cell (2026-11-07); Lectern wrapped it into ten along the stored height.
+test('rotated cell text wraps along the height the cell grew to', async t => {
+  const file = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint', 'poi__f01b52f70acc__table_test2.pptx');
+  if (!fs.existsSync(file)) return t.skip('Fetch pinned corpus: ' + file);
+  const lines = await run(async data => {
+    const pres = await L.pptx.read(Uint8Array.from(atob(data), c => c.charCodeAt(0)));
+    const el = L.render.slide(pres, pres.slides[0], { mode: 'thumb', index: 0 });
+    el.style.cssText += ';position:fixed;left:0;top:0';
+    document.body.appendChild(el);
+    await document.fonts.ready;
+    const p = [...el.querySelectorAll('td p.pa')].find(x => x.textContent.startsWith('erat'));
+    const range = document.createRange(); range.selectNodeContents(p);
+    // turned 90°, each line is a column: count the columns the words stand in
+    const n = new Set([...range.getClientRects()].map(r => Math.round(r.left))).size;
+    el.remove();
+    return n;
+  }, fs.readFileSync(file).toString('base64'));
+  assert.equal(lines, 5);
+});

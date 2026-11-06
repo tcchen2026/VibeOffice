@@ -4513,7 +4513,7 @@
  },
  "3-D model": {
   "where": [
-   "lectern/js/render.js:594"
+   "lectern/js/render.js:603"
   ]
  },
  "3. Start enforcement": {
@@ -6400,13 +6400,13 @@
  },
  "Arch Down": {
   "where": [
-   "lectern/js/render.js:526",
+   "lectern/js/render.js:535",
    "quire/js/drawing.js:125"
   ]
  },
  "Arch Up": {
   "where": [
-   "lectern/js/render.js:526",
+   "lectern/js/render.js:535",
    "quire/js/drawing.js:125"
   ]
  },
@@ -6426,7 +6426,7 @@
    "common/core.js:720",
    "lectern/js/dialogs.js:999",
    "lectern/js/dialogs.js:1018",
-   "lectern/js/render.js:559"
+   "lectern/js/render.js:568"
   ]
  },
  "Aro&und": {
@@ -8023,7 +8023,7 @@
  },
  "Can Up": {
   "where": [
-   "lectern/js/render.js:527",
+   "lectern/js/render.js:536",
    "quire/js/drawing.js:125"
   ]
  },
@@ -8779,7 +8779,7 @@
  },
  "Chevron Up": {
   "where": [
-   "lectern/js/render.js:527",
+   "lectern/js/render.js:536",
    "quire/js/drawing.js:125"
   ]
  },
@@ -8860,7 +8860,7 @@
  },
  "Circle": {
   "where": [
-   "lectern/js/render.js:526",
+   "lectern/js/render.js:535",
    "lectern/js/slideshow.js:17",
    "lectern/js/slideshow.js:24",
    "lectern/js/slideshow.js:29"
@@ -9081,7 +9081,7 @@
  "Click to add text": {
   "where": [
    "lectern/js/model.js:485",
-   "lectern/js/render.js:658"
+   "lectern/js/render.js:667"
   ]
  },
  "Click to add title": {
@@ -11781,7 +11781,7 @@
  "Diagram": {
   "where": [
    "lectern/js/app.js:221",
-   "lectern/js/render.js:594"
+   "lectern/js/render.js:603"
   ]
  },
  "Diagram Gallery": {
@@ -12869,7 +12869,7 @@
  "Embedded object": {
   "where": [
    "lectern/js/frames.js:19",
-   "lectern/js/render.js:594",
+   "lectern/js/render.js:603",
    "quire/js/render.js:427"
   ]
  },
@@ -16457,7 +16457,7 @@
  },
  "Ink": {
   "where": [
-   "lectern/js/render.js:594"
+   "lectern/js/render.js:603"
   ]
  },
  "Ink &Color": {
@@ -16537,14 +16537,14 @@
   "where": [
    "lectern/js/app.js:1525",
    "lectern/js/commands.js:91",
-   "lectern/js/render.js:596",
+   "lectern/js/render.js:605",
    "ledger/js/xchart.js:453"
   ]
  },
  "Insert Clip Art": {
   "where": [
    "lectern/js/commands.js:84",
-   "lectern/js/render.js:596",
+   "lectern/js/render.js:605",
    "quire/js/commands.js:297",
    "quire/js/panes.js:172"
   ]
@@ -16612,7 +16612,7 @@
  },
  "Insert Diagram or Organization Chart": {
   "where": [
-   "lectern/js/render.js:596",
+   "lectern/js/render.js:605",
    "quire/js/commands.js:303"
   ]
  },
@@ -16697,7 +16697,7 @@
  },
  "Insert Media Clip": {
   "where": [
-   "lectern/js/render.js:596"
+   "lectern/js/render.js:605"
   ]
  },
  "Insert Merge Field": {
@@ -16741,7 +16741,7 @@
   "where": [
    "lectern/js/app.js:1303",
    "lectern/js/commands.js:85",
-   "lectern/js/render.js:596",
+   "lectern/js/render.js:605",
    "ledger/js/app.js:1348"
   ]
  },
@@ -16810,7 +16810,7 @@
    "lectern/js/app.js:1375",
    "lectern/js/commands.js:92",
    "lectern/js/dialogs.js:772",
-   "lectern/js/render.js:596"
+   "lectern/js/render.js:605"
   ]
  },
  "Insert Table of Contents": {
@@ -17040,7 +17040,7 @@
  "IntelliArt": {
   "where": [
    "lectern/js/diagram.js:589",
-   "lectern/js/render.js:594",
+   "lectern/js/render.js:603",
    "lectern/js/ribbon.js:40",
    "ledger/js/drawing.js:158"
   ]
@@ -17953,7 +17953,7 @@
   "where": [
    "lectern/js/app.js:209",
    "lectern/js/dialogs.js:1008",
-   "lectern/js/render.js:551",
+   "lectern/js/render.js:560",
    "lectern/js/ribbon.js:42"
   ]
  },
@@ -18279,7 +18279,7 @@
  },
  "Linked picture: {0}": {
   "where": [
-   "lectern/js/render.js:595"
+   "lectern/js/render.js:604"
   ]
  },
  "Links": {
@@ -19663,7 +19663,7 @@
  "New chart": {
   "where": [
    "lectern/js/frames.js:22",
-   "lectern/js/render.js:594"
+   "lectern/js/render.js:603"
   ]
  },
  "New column": {
@@ -21875,7 +21875,7 @@
  },
  "Plain Text": {
   "where": [
-   "lectern/js/render.js:526",
+   "lectern/js/render.js:535",
    "quire/js/drawing.js:125"
   ]
  },
@@ -27203,13 +27203,13 @@
  },
  "Slant Down": {
   "where": [
-   "lectern/js/render.js:527",
+   "lectern/js/render.js:536",
    "quire/js/drawing.js:125"
   ]
  },
  "Slant Up": {
   "where": [
-   "lectern/js/render.js:527",
+   "lectern/js/render.js:536",
    "quire/js/drawing.js:125"
   ]
  },
@@ -31773,7 +31773,7 @@
  },
  "Triangle Up": {
   "where": [
-   "lectern/js/render.js:527",
+   "lectern/js/render.js:536",
    "quire/js/drawing.js:125"
   ]
  },
@@ -32748,7 +32748,7 @@
   "where": [
    "common/geometry.js:40",
    "common/geometry.js:358",
-   "lectern/js/render.js:526",
+   "lectern/js/render.js:535",
    "quire/js/dialogs.js:89"
   ]
  },
@@ -33498,7 +33498,7 @@
  "[Text]": {
   "where": [
    "lectern/js/diagram.js:540",
-   "lectern/js/render.js:658"
+   "lectern/js/render.js:667"
   ]
  },
  "[cells]": {

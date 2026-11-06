@@ -116,7 +116,7 @@ Checked (2026-10-10): a deck with one diagram per layout (26) passes the Open XM
 
 Table cells retain PowerPoint's text direction (`a:tcPr/@vert`), including explicit horizontal and
 absent defaults, through text edits, copies, undo/redo and draft recovery. `vert` and `vert270` draw
-as rotated text frames. East Asian and Mongolian vertical text use the browser's vertical writing;
+as rotated text frames along the cell as tall as its rows grew (a file's stored row heights can be less). East Asian and Mongolian vertical text use the browser's vertical writing;
 stacked WordArt text uses upright glyphs. Those modes approximate Office's glyph shaping and spacing,
 while the original direction value is saved unchanged. Measured on the five affected public corpus
 decks (2026-11-04): all 11 non-horizontal cells survive, previously zero. Text Direction (Table Tools ›
