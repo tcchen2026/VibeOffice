@@ -199,8 +199,20 @@ New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.
 
 * **.pptx** — standard PresentationML. Exports pass the OOXML schema validator and open in LibreOffice and python-pptx; they are meant for PowerPoint 2007 and later, Keynote and Google Slides. With a password to open, the file is encrypted.
 * **.ppsx / .potx** — show and template variants (standalone page only).
-* **PDF** — one slide per page, or exactly what Print Preview shows (handouts, notes pages, outline). File ▸ Print saves the chosen slides that way (All, Current slide or a list such as 1,3,5–12), with Preview to look first.
+* **PDF** — one slide per page, or exactly what Print Preview shows (handouts, notes pages, outline).
+  Pages are pictures at 300 dpi (lower for pages over 40 megapixels), with invisible text you can find,
+  select and copy. Rotated text follows its box; LettersArt copies once from its ordinary text body,
+  with an approximate highlight for the bent letters. File ▸ Print saves the chosen slides that way
+  (All, Current slide or a list such as 1,3,5–12), with Preview to look first.
 * **Single-file web page** (its one script allowed by its hash in the page's own security policy), **PNG** of the current slide, **plain-text outline**.
+
+PDF text checks (2026-11-07): eight public decks, including Japanese, rotated text, tables, charts,
+LettersArt, Mac producers and a template, retain all nine page pictures and sizes. All 264 collected
+text tokens extract in Poppler and PDFium; clipped text stays out. Six handout, notes and outline
+exports retain all eight page pictures. The originals open in PowerPoint 2016 and LibreOffice
+(the template uses a plain presentation copy for the Office test service). Chromium finds and
+copies the 45-degree test phrase with its space; Poppler's raw extraction splits diagonal letters
+onto separate lines. Acrobat Reader and macOS Preview remain unchecked.
 
 In PowerPoint 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 726 decks **open without repair
 in 719** (3 of them then showing their comments pane); 5 stop at a prompt PowerPoint shows for the original too (a

@@ -680,3 +680,13 @@ PDFs, keeping generated labels and fields separate from content losses. Compare
 page JPEG bytes and rendered pixels against the preceding export path, and time
 a long document. Reader heuristics can join narrow spaces or reorder equations:
 record those separately and check native selection/copy as well as extraction.
+
+`node --test tests/lectern/pdf.test.mjs` checks detached slide export and live
+handout, notes and outline pages, including hidden slides, paper sizes and cleanup
+after a failed collection. Rotation checks use independent matrix coordinates for
+45/90-degree boxes, nested scaling, a rotated parent and a centre origin. Clipping
+is measured in the rotated ancestor's plane; repeated LettersArt SVG slices stay
+out while the transparent source body copies once. Poppler's raw extractor splits
+diagonal letters, so PDFium also checks the complete phrase and its space. Compare
+corpus page JPEGs and rendered pixels against the previous exporter, and check
+rotated search, mouse selection and clipboard text in Chromium's native viewer.

@@ -1,6 +1,6 @@
 # Better PDF export: a text layer in Quire, Ledger and Lectern PDFs
 
-Status: Phases 0 and 1 committed (705019a, ca1d7cd); Phase 2 ready for Lead; Phases 3–5 pending.
+Status: Phases 0–2 committed (705019a, ca1d7cd, 1ed6acb); Phase 3 ready for Lead; Phases 4–5 pending.
 Planned 2026-10-15; design revised that day: pages stay pictures, with an invisible text layer on
 top; no font files read or embedded. Read first: this file, `public/common/core.js` (`L.buildPDF`, `L.embedFonts`),
 Quire `public/quire/js/app.js` (`A.rasterizePage`, `A.buildPDF`), Lectern `public/lectern/js/app.js` (`A.rasterize`,
@@ -325,13 +325,62 @@ Phase files are frozen until committed.
 **PDF.2 READY FOR LEAD**
 
 Phase 3: Lectern
-- [ ] **Collector on slides.** `A.slideCanvas` renders a slide element that isn't in the document, so it has no
+- [x] **Collector on slides.** `A.buildPDF` renders a slide element that isn't in the document, so it has no
       rectangles. Attach it off-screen (fixed position, off the viewport) while collecting, then detach it.
-- [ ] **Transforms.** Autofit and thumbnail scaling are already in the rectangles. For rotated boxes, pass the
+- [x] **Transforms.** Autofit and thumbnail scaling are already in the rectangles. For rotated boxes, pass the
       rotation (`angle`, from the `DOMMatrix` of the ancestors' computed `transform`) with the box's words.
-- [ ] **Print-preview pages** (`.pv-page`: handouts, notes pages, outline) are already in the document: collect them
+- [x] **Print-preview pages** (`.pv-page`: handouts, notes pages, outline) are already in the document: collect them
       as Quire does.
-- [ ] **Checks:** five corpus decks, as in Phase 2, plus slide size and page count unchanged.
+- [x] **Checks:** five corpus decks, as in Phase 2, plus slide size and page count unchanged.
+
+### Phase 3 report — 2026-11-07
+
+19 / 19 page JPEGs and rendered pages are unchanged: eight corpus decks,
+six preview exports and the rotation fixture. Page counts and sizes match.
+264 / 264 collected corpus tokens extract through Poppler and PDFium.
+All six new Lectern tests fail with 1ed6acb's export modules. Final focused gate,
+including licences and i18n after a private English gather:
+
+```text
+ℹ tests 52
+ℹ pass 52
+ℹ fail 0
+```
+
+| Controls | Pages | Seconds before → after | Collector seconds | MB before → after |
+|---|---:|---:|---:|---:|
+| Eight corpus decks | 9 | 1.542 → 1.519 | 0.029 | 1.419 → 1.439 |
+| Handouts, notes, outline | 8 | 1.008 → 1.055 | 0.019 | 1.074 → 1.091 |
+
+8 / 8 inputs open in Office 2016 without repair and in LibreOffice, including
+Mac producers and a template (submitted as a plain PPTX copy to the Office API).
+Input hashes match. Chromium finds and mouse-copies the 45-degree phrase with
+its space, and copies LettersArt once. All three apps load/export without errors.
+
+`collectDOM` gains an opt-in `{ transforms: true }` third argument for Lectern;
+Quire keeps its existing path. No script-order change, new UI text or catalog edits.
+
+Limit: Poppler raw extraction splits diagonal letters; PDFium keeps the phrase.
+Limit: warped text, SVG-only rotation, skew/reflection and 3D CSS have approximate bounds.
+Limit: Acrobat/Preview remain unchecked; [six PDF pairs and checklist are ready](../tmp/pdf/artifacts/phase3/reader-review.zip).
+
+Final `node tools/quick.mjs`:
+
+```text
+✖ Node tests: 198 passed, 1 failed (25 s)
+✔ tests/ui/smoke.test.mjs: 4 passed (18 s)
+✔ tests/ui/lectern.test.mjs: 39 passed (127 s)
+✔ tests/ui/quire.test.mjs: 57 passed (210 s)
+1 of 4 failed.
+```
+
+The sole failure is the existing locale-label assertion requiring blocked
+translation catalogs; it is not counted as a pass. Own hashes stayed unchanged
+through the gate. All 11 original tabs remain; server 8769 is stopped. No commits.
+[Report](../tmp/PDF-3-REPORT.md), [renderer findings](../tmp/PDF-LEAD-FINDINGS.md).
+Phase files are frozen until committed.
+
+**PDF.3 READY FOR LEAD**
 
 Phase 4: Ledger
 - [ ] **A recording 2D context** (`pdftext.js`, `recordCanvas(ctx)`): a proxy that forwards every call to the real

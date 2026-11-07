@@ -35,10 +35,83 @@
     return result;
   }
 
+  const corners = r => [
+    { x: r.left, y: r.top }, { x: r.right, y: r.top },
+    { x: r.right, y: r.bottom }, { x: r.left, y: r.bottom },
+  ];
+  const bounds = ps => ({ left: Math.min(...ps.map(p => p.x)), right: Math.max(...ps.map(p => p.x)),
+    top: Math.min(...ps.map(p => p.y)), bottom: Math.max(...ps.map(p => p.y)) });
+
+  // Range rectangles lose their orientation at 45 degrees. Measure a temporary clone
+  // without HTML transforms, then map its words through the original ancestor matrices.
+  // CSS transforms do not change line layout. Quire's default path never makes this clone.
+  // https://www.w3.org/TR/css-transforms-1/#transform-rendering
+  function transformedPage(page) {
+    const source = [page, ...page.querySelectorAll('*')], transforms = new Map();
+    let rotated = false;
+    for (let i = 0; i < source.length; i++) {
+      const el = source[i];
+      if (el.namespaceURI !== 'http://www.w3.org/1999/xhtml') continue;
+      const css = getComputedStyle(el);
+      if (css.transform === 'none') continue;
+      const matrix = new DOMMatrix(css.transform);
+      if (!matrix.is2D) return null;
+      transforms.set(i, { matrix, origin: css.transformOrigin.split(' ').map(parseFloat) });
+      rotated ||= Math.abs(matrix.b) > 1e-6 || Math.abs(matrix.c) > 1e-6 || matrix.a < 0 || matrix.d < 0;
+    }
+    if (!rotated) return null;
+    const host = page.ownerDocument.createElement('div'), clone = page.cloneNode(true);
+    const css = getComputedStyle(page);
+    host.style.cssText = 'position:fixed;left:-100000px;top:0;pointer-events:none;';
+    host.style.font = css.font;
+    host.style.direction = css.direction;
+    host.inert = true;
+    clone.style.position = 'relative';
+    clone.style.left = clone.style.top = clone.style.margin = '0';
+    const nodes = [clone, ...clone.querySelectorAll('*')];
+    for (const index of transforms.keys()) nodes[index].style.setProperty('transform', 'none', 'important');
+    host.append(clone);
+    page.ownerDocument.body.append(host);
+    try {
+      const origin = clone.getBoundingClientRect(), matrices = new WeakMap(), identity = new DOMMatrix();
+      for (let i = 0; i < nodes.length; i++) {
+        const el = nodes[i], transform = transforms.get(i);
+        let matrix = el === clone ? identity : matrices.get(el.parentElement);
+        if (transform) {
+          const r = el.getBoundingClientRect();
+          const x = r.left - origin.left + transform.origin[0];
+          const y = r.top - origin.top + transform.origin[1];
+          matrix = matrix.multiply(new DOMMatrix().translate(x, y)
+            .multiply(transform.matrix).translate(-x, -y));
+        }
+        matrices.set(el, matrix);
+      }
+      return { page: clone, matrices, identity, remove: () => host.remove() };
+    } catch (e) {
+      host.remove();
+      throw e;
+    }
+  }
+
+  function clipEdge(points, axis, edge, greater) {
+    const result = [];
+    const inside = p => greater ? p[axis] >= edge : p[axis] <= edge;
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i], b = points[(i + 1) % points.length];
+      const ai = inside(a), bi = inside(b);
+      if (ai) result.push(a);
+      if (ai !== bi) {
+        const t = (edge - a[axis]) / (b[axis] - a[axis]);
+        result.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      }
+    }
+    return result;
+  }
+
   /** scale is points per client pixel (for example 72 / 96 / the page's zoom).
    * Clipping stops at the page: scrolling the editor never removes words from a PDF.
-   * No DOM mutation or font measurement canvas is needed. */
-  L.pdf.collectDOM = function (page, scale = 0.75) {
+   * The optional transform pass measures a clone; the original DOM is never changed. */
+  function collect(page, scale, geometry) {
     const origin = page.getBoundingClientRect();
     if (!area(origin) || !(scale > 0)) return [];
     const states = new WeakMap(), pieces = new WeakMap(), lines = [];
@@ -48,23 +121,33 @@
     function state(el) {
       let value = states.get(el);
       if (value) return value;
-      const parent = el === page ? { hidden: false, clip: box(origin), block: page } : state(el.parentElement);
+      const parent = el === page ? { hidden: false, clip: box(origin), block: page,
+        clips: geometry ? [{ matrix: geometry.identity, inverse: geometry.identity, x: true, y: true,
+          rect: { left: 0, top: 0, right: origin.width, bottom: origin.height } }] : null } : state(el.parentElement);
       const css = getComputedStyle(el);
       const hidden = parent.hidden || el.matches(SKIP) || css.display === 'none' ||
         css.contentVisibility === 'hidden' || (+css.opacity === 0 && !el.matches(WARP_BODY));
-      let clip = parent.clip;
+      let clip = parent.clip, clips = parent.clips;
+      const matrix = geometry?.matrices.get(el);
       if (!hidden && (CLIP.test(css.overflowX) || CLIP.test(css.overflowY))) {
         const r = el.getBoundingClientRect();
         clip = { ...clip };
         // overflow clips to the padding box. Client dimensions omit borders and scrollbars.
         const sx = el.offsetWidth ? r.width / el.offsetWidth : 1;
         const sy = el.offsetHeight ? r.height / el.offsetHeight : 1;
-        if (CLIP.test(css.overflowX)) {
+        if (geometry) {
+          const left = r.left - origin.left + (el.clientLeft || 0) * sx;
+          const top = r.top - origin.top + (el.clientTop || 0) * sy;
+          clips = clips.concat({ matrix, inverse: matrix.inverse(),
+            x: CLIP.test(css.overflowX), y: CLIP.test(css.overflowY),
+            rect: { left, top, right: left + (el.clientWidth ?? r.width) * sx,
+              bottom: top + (el.clientHeight ?? r.height) * sy } });
+        } else if (CLIP.test(css.overflowX)) {
           const left = r.left + (el.clientLeft || 0) * sx;
           clip.left = Math.max(clip.left, left);
           clip.right = Math.min(clip.right, left + (el.clientWidth ?? r.width) * sx);
         }
-        if (CLIP.test(css.overflowY)) {
+        if (!geometry && CLIP.test(css.overflowY)) {
           const top = r.top + (el.clientTop || 0) * sy;
           clip.top = Math.max(clip.top, top);
           clip.bottom = Math.min(clip.bottom, top + (el.clientHeight ?? r.height) * sy);
@@ -72,7 +155,7 @@
       }
       const block = BLOCK.test(css.display) || el.localName === 'text' ? el : parent.block;
       const group = el.namespaceURI === MATH && /^(mi|mn|mo|mtext|ms)$/.test(el.localName) ? el : parent.group;
-      value = { hidden, visible: css.visibility === 'visible', clip, block, group,
+      value = { hidden, visible: css.visibility === 'visible', clip, clips, matrix, block, group,
         vertical: /^(vertical|sideways)/.test(css.writingMode) };
       states.set(el, value);
       return value;
@@ -84,12 +167,50 @@
       return Array.from(range.getClientRects()).filter(area).map(box);
     }
     const oneLine = (rs, info) => rs.length && rs.every(r => sameLine(rs[0], r, info.vertical));
-    const points = r => ({ x: (r.left - origin.left) * scale, y: (r.top - origin.top) * scale,
-      w: (r.right - r.left) * scale, h: (r.bottom - r.top) * scale });
+    const local = r => ({ left: r.left - origin.left, right: r.right - origin.left,
+      top: r.top - origin.top, bottom: r.bottom - origin.top });
+    const points = (r, info) => {
+      const b = local(r), m = info.matrix;
+      if (!m) return { x: b.left * scale, y: b.top * scale,
+        w: (b.right - b.left) * scale, h: (b.bottom - b.top) * scale };
+      const sx = Math.hypot(m.a, m.b), sy = Math.hypot(m.c, m.d);
+      if (m.a * m.d - m.b * m.c > 0 && Math.abs(m.a * m.c + m.b * m.d) < sx * sy * 1e-5) {
+        const p = m.transformPoint({ x: b.left, y: b.top });
+        return { x: p.x * scale, y: p.y * scale, w: (b.right - b.left) * sx * scale,
+          h: (b.bottom - b.top) * sy * scale, angle: Math.atan2(m.b, m.a) * 180 / Math.PI };
+      }
+      // Skewed or reflected text still copies, with an axis-aligned selection box.
+      const p = bounds(corners(b).map(p => m.transformPoint(p)));
+      return { x: p.left * scale, y: p.top * scale, w: (p.right - p.left) * scale,
+        h: (p.bottom - p.top) * scale };
+    };
+
+    function clipRect(r, info) {
+      if (!geometry) return { rect: intersection(r, info.clip), whole: inside(r, info.clip) };
+      let ps = corners(local(r)).map(p => info.matrix.transformPoint(p)), whole = true;
+      for (const clip of info.clips) {
+        ps = ps.map(p => clip.inverse.transformPoint(p));
+        const b = clip.rect;
+        if (clip.x) {
+          whole &&= ps.every(p => p.x >= b.left - 1e-6 && p.x <= b.right + 1e-6);
+          ps = clipEdge(clipEdge(ps, 'x', b.left, true), 'x', b.right, false);
+        }
+        if (clip.y) {
+          whole &&= ps.every(p => p.y >= b.top - 1e-6 && p.y <= b.bottom + 1e-6);
+          ps = clipEdge(clipEdge(ps, 'y', b.top, true), 'y', b.bottom, false);
+        }
+        if (!ps.length) return null;
+        ps = ps.map(p => clip.matrix.transformPoint(p));
+      }
+      const inverse = info.matrix.inverse(), b = bounds(ps.map(p => inverse.transformPoint(p)));
+      return { whole, rect: { left: b.left + origin.left, right: b.right + origin.left,
+        top: b.top + origin.top, bottom: b.bottom + origin.top } };
+    }
 
     function add(text, r, info, node, start, end) {
       if (!text || !area(r)) return;
-      const continues = previous && previous.block === info.block && sameLine(previous.rect, r, info.vertical);
+      const continues = previous && previous.block === info.block && previous.matrix === info.matrix &&
+        sameLine(previous.rect, r, info.vertical);
       if (!continues) lines.push([]);
       const line = lines[lines.length - 1];
       // A word may cross several styled spans. Only actual whitespace separates its pieces.
@@ -97,10 +218,10 @@
         const word = line[line.length - 1];
         word.text += text;
         previous.rect = union(previous.rect, r);
-        Object.assign(word, points(previous.rect));
+        Object.assign(word, points(previous.rect, info));
       } else {
-        line.push({ text, ...points(r) });
-        previous = { rect: r, block: info.block, group: info.group };
+        line.push({ text, ...points(r, info) });
+        previous = { rect: r, block: info.block, group: info.group, matrix: info.matrix };
       }
       const word = line[line.length - 1];
       if (!pieces.has(word)) pieces.set(word, []);
@@ -110,11 +231,12 @@
 
     function clipped(node, start, end, rs, info) {
       const r = rs.reduce(union);
-      if (inside(r, info.clip)) {
+      const view = clipRect(r, info);
+      if (view?.whole) {
         add(node.data.slice(start, end), r, info, node, start, end);
         return;
       }
-      if (!area(intersection(r, info.clip))) {
+      if (!view || !area(view.rect)) {
         spaced = true;
         return;
       }
@@ -129,7 +251,7 @@
       };
       for (let i = 1; i < cuts.length; i++) {
         const chars = rects(node, start + cuts[i - 1], start + cuts[i]);
-        const part = chars.length && intersection(chars.reduce(union), info.clip);
+        const part = chars.length && clipRect(chars.reduce(union), info)?.rect;
         if (part && area(part)) {
           if (!visible) from = start + cuts[i - 1];
           to = start + cuts[i];
@@ -207,5 +329,11 @@
       word.visual = glyphs.sort((a, b) => a.at - b.at).map(g => g.text).join('');
     }
     return lines;
+  }
+
+  L.pdf.collectDOM = function (page, scale = 0.75, options) {
+    const geometry = options?.transforms ? transformedPage(page) : null;
+    try { return collect(geometry?.page || page, scale, geometry); }
+    finally { geometry?.remove(); }
   };
 })();

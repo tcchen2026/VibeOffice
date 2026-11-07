@@ -554,7 +554,8 @@
   /** PDF of the slides (one slide per page, page = slide size) or of the print-preview pages. */
   A.buildPDF = async function (source) {
     const pages = [];
-    const pdf = await L.pdfModule();
+    const pdf = await L.pdfModule(true);
+    const text = new Map();
     const map = await mediaDataMap();
     if (source === 'preview') {
       const els = L.$$('.pv-page', L.panes.preview.scroll);
@@ -566,6 +567,8 @@
         clone.style.margin = '0'; clone.style.boxShadow = 'none'; clone.style.position = 'relative';
         const portrait = hh > w;
         const pw = portrait ? 612 : 792;
+        await document.fonts.ready;
+        text.set(p, pdf.collectDOM(p, pw / w, { transforms: true }));
         const scale = L.pdfScale(w, hh, (pw / w) * L.PDF_DPI / 72);
         return { svg: await pageSVG(clone, w, hh, { map, css, fonts: '' }), w, h: hh, scale };
       };
@@ -573,7 +576,8 @@
         ui.busy(true, L.t('Creating PDF... (page {0} of {1})', index + 1, els.length));
         const portrait = p.offsetHeight > p.offsetWidth;
         const pw = portrait ? 612 : 792, ph = portrait ? 792 : 612;
-        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw, ph });
+        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw, ph, lines: text.get(p) });
+        text.delete(p);
       }
     } else {
       const slides = L.pres.slides.filter((s) => !s.hidden);
@@ -581,13 +585,28 @@
       const css = slideCSS();
       const fonts = await L.embedFonts(elements.map((el) => el.outerHTML).join('') + css + ' Arimo');
       const scale = L.pdfScale(L.pres.W, L.pres.H, L.PDF_DPI / 72);
-      const prepare = async (el) => ({
-        svg: await pageSVG(el, L.pres.W, L.pres.H, { map, css, fonts: '' }),
-        w: L.pres.W, h: L.pres.H, scale,
-      });
-      for await (const { canvas: c, index } of pdf.pictures(elements, prepare, fonts)) {
+      const prepare = async (el) => {
+        // Match pageSVG's font context. A detached slide has no measurable text ranges.
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-100000px;top:0;pointer-events:none;font:11px Arial,Arimo,sans-serif';
+        host.inert = true;
+        host.append(el);
+        document.body.append(host);
+        try {
+          el.getBoundingClientRect(); // Begin font loading for text not present on the current slide.
+          await document.fonts.ready;
+          text.set(el, pdf.collectDOM(el, 1, { transforms: true }));
+        } finally {
+          el.remove();
+          host.remove();
+        }
+        return { svg: await pageSVG(el, L.pres.W, L.pres.H, { map, css, fonts: '' }),
+          w: L.pres.W, h: L.pres.H, scale };
+      };
+      for await (const { canvas: c, page: el, index } of pdf.pictures(elements, prepare, fonts)) {
         ui.busy(true, L.t('Creating PDF... (slide {0} of {1})', index + 1, slides.length));
-        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw: L.pres.W, ph: L.pres.H });
+        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw: L.pres.W, ph: L.pres.H, lines: text.get(el) });
+        text.delete(el);
       }
     }
     return L.buildPDF(pages, { title: L.pres.props.title || A.fileName, author: L.pres.props.author || '' });
