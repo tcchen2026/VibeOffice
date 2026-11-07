@@ -1,6 +1,6 @@
 # Better PDF export: a text layer in Quire, Ledger and Lectern PDFs
 
-Status: Phases 0–3 committed (705019a, ca1d7cd, 1ed6acb, 31a03dd); Phase 4 ready for Lead; Phase 5 pending.
+Status: Phases 0–4 committed (705019a, ca1d7cd, 1ed6acb, 31a03dd, eb03301); Phase 5 planned, awaiting Lead's release freeze to lift.
 Planned 2026-10-15; design revised that day: pages stay pictures, with an invisible text layer on
 top; no font files read or embedded. Read first: this file, `public/common/core.js` (`L.buildPDF`, `L.embedFonts`),
 Quire `public/quire/js/app.js` (`A.rasterizePage`, `A.buildPDF`), Lectern `public/lectern/js/app.js` (`A.rasterize`,
@@ -458,6 +458,75 @@ Phase 5: links, bookmarks, language
 - [ ] **Lectern:** links on text and shapes (URL, or a jump to another slide); bookmarks from slide titles.
 - [ ] **Ledger:** cell hyperlinks; bookmarks from sheet names.
 - [ ] **Checks:** links click through in Chromium's viewer and in Firefox, and the bookmarks show in their side panes.
+
+### Phase 5 implementation notes — planning only, 2026-11-07
+
+Lead is running the release UI suite. Only this todo was edited; no implementation,
+test runs, browser sessions or Office jobs were started. Public files remain frozen
+until Lead says otherwise. Quire ownership must remain with Lead during that work;
+the proposed Quire integration is confined to the existing PDF export hook.
+
+1. **Reuse the writer.** `common/pdf.js` already accepts page `links` and info
+   `outline`/`lang`; `tests/pdf.test.mjs` checks URI escaping, destinations and nested
+   outlines. The missing work is app metadata and geometry. Keep `L.buildPDF` and
+   the word collectors' existing return values. Shared DOM link geometry belongs
+   in `pdftext.js`, using the same visibility, clipping and transform rules as text;
+   each app resolves its own targets. Measure while export DOM is attached.
+2. **Map the actual exported pages first.** Destinations use zero-based output
+   indexes, not source page/slide numbers. Build maps after page-range and hidden-item
+   filtering, including Lectern handout slots and Ledger page order. Do not invent a
+   destination for an omitted or unresolved target. Keep links out of clipped-away
+   content and keep wrapped link rectangles separate instead of covering their gaps.
+3. **Quire.** Text and image links already expose `data-link`; internal targets
+   start with `#`. `L.fields.bookmarks()` supplies paragraph/offset positions;
+   `LY.fragFor`, `LY.posToDom` and `LY.pageOf` locate them without editor navigation.
+   Use `D.headingLevel` and `D.plainText` for outlines, deduplicating paragraphs split
+   across pages and excluding non-exported fragments. Resolve a bookmark inside a
+   split paragraph against its offset, not the paragraph's first page. Document
+   language is available as `doc.props.language` and `doc.defaults.rPr.lang`; validate
+   the document tag rather than using the UI locale. No layout/render/model edits
+   are proposed.
+4. **Lectern.** Text links have JSON `data-link`, but shape links are only attached
+   in show mode; export uses thumbnail mode. Resolve model shape links from
+   `data-sid` in the export hook, including grouped shapes, without changing the
+   renderer. Model targets are `{url}`, `{slide}` or `{action}`. Map explicit slide
+   IDs and deterministic first/last/next/previous jumps; last-viewed/end-show actions
+   need a documented static-PDF policy rather than an arbitrary page. Titles come
+   from `M.slideTitle`; `pres.lang` is available. Preview thumbnails retain
+   `data-slide`; outline preview currently emits plain `.pv-text` with no slide ID,
+   so associate its title rows with the filtered slide order, not unique title text.
+5. **Ledger.** `sh.links` holds `{ref, target, location, display, tooltip}`. Compute
+   link rectangles from the same `LY.geo`, print scaling, margins, centring and four
+   repeated-title/body blocks used by `P.renderPage`; intersect each with its printed
+   block. Cover merged cells, hidden rows/columns and repeated title copies. Resolve
+   internal sheet/cell/named-range references through the formula/reference helpers,
+   without calling `A.goToRef` (which changes selection and active sheet). Add one
+   sheet bookmark at its first exported page, including chart sheets. A `HYPERLINK`
+   formula currently returns its display value without populating `sh.links`; probe
+   that separately before claiming formula-backed links. No calculation-engine edits
+   are proposed. The workbook reader does not expose a document language; do not
+   substitute the UI locale.
+6. **Regression and reference cases.** Add failing-before app checks for wrapped
+   and clipped links, Unicode/percent-escaped URLs, nested headings, duplicate titles,
+   split-paragraph bookmarks, partial exports, omitted targets, grouped/rotated slide
+   links, handouts/notes/outline, merged cells and repeated print titles. Check relative
+   file links and non-static slide actions against Office/LibreOffice before settling
+   their export behavior; never resolve a document-relative URL against the app's web
+   origin. Candidate corpus controls: Word `Hyperlink - internal.docx`,
+   `hyperlink-in table.docx`, `footer-contain-hyperlink.docx`; PowerPoint
+   `hyperlinktest.pptx`, `hyperlinkOnImage.pptx`; Excel `ExcelWithHyperlinks.xlsx`,
+   `hyperlink_formula.xlsx`. Select exact files under `/work/corpora`, plus the usual
+   two or three independent metadata/producer controls per Office round.
+7. **Gate after implementation is authorized.** Inspect PDF annotations/outlines
+   with an independent reader; click local-fixture links and outline entries in native
+   Chromium and Firefox (both Firefox binaries are installed). Use 9223/8769 and an
+   isolated Firefox profile; preserve existing tabs and make no external requests.
+   Verify JPEG/pixel identity, text extraction, selected-page destination indexes,
+   document language, deterministic output and long-document/large-workbook cost.
+   Run the full focused PDF/licence/i18n set after private English gather, all-three-app
+   export checks and `tools/quick.mjs`; paste summaries. Finish the remaining docs and
+   common-library list, report limits, then mark **PDF.5 READY FOR LEAD**. No Phase 5
+   completion boxes are checked by this planning pass.
 
 When it's done
 - [ ] Docs:
