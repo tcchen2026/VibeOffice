@@ -1000,15 +1000,18 @@
     const list = LY.pages.filter((p, i) => !range || range.includes(i + 1));
     const fonts = await L.embedFonts(list.map((p) => p.el.outerHTML).join('') + css);
     const sel = window.getSelection(); sel.removeAllRanges();
-    const pdf = await L.pdfModule();
+    const pdf = await L.pdfModule(true);
+    const text = new Map();
     const prepare = async (p) => {
       const w = p.el.offsetWidth, h = p.el.offsetHeight;
+      text.set(p, pdf.collectDOM(p.el, 0.75 / LY.scale()));
       return { svg: await pageSVG(p.el, css, map, ''), w, h, scale: L.pdfScale(w, h, L.PDF_DPI / 96) };
     };
     for await (const { canvas: c, page: p, index } of pdf.pictures(list, prepare, fonts)) {
       ui.busy(true, L.t('Creating PDF... (page {0} of {1})', index + 1, list.length));
       const jpeg = pdf.jpeg(c);
-      pages.push({ jpeg, iw: c.width, ih: c.height, pw: p.sect.pgW, ph: p.sect.pgH });
+      pages.push({ jpeg, iw: c.width, ih: c.height, pw: p.sect.pgW, ph: p.sect.pgH, lines: text.get(p) });
+      text.delete(p);
     }
     if (prevView !== A.view || LY.view !== (prevView === 'reading' || prevView === 'preview' ? 'print' : prevView)) { LY.view = prevView === 'reading' || prevView === 'preview' ? 'print' : prevView; LY.render(); }
     E.restoreDom(true);

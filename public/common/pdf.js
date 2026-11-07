@@ -230,8 +230,8 @@
 
   function textLayer(page, chars) {
     const out = [];
-    const word = (text, x, y, w, h, angle = 0) => {
-      const letters = visualWord(text);
+    const word = (text, x, y, w, h, angle = 0, visual) => {
+      const letters = visual ? Array.from(visual, scalar) : visualWord(text);
       if (!letters.length) return;
       const rad = angle * Math.PI / 180, cos = Math.cos(rad), sin = Math.sin(rad);
       const baseline = h * ASCENT / UNITS;
@@ -263,7 +263,7 @@
           const gap = Math.max(0.01, Math.abs(distance) - left.w);
           word(' ', x, y, gap, previous.h, previous.angle);
         }
-        word(item.text, item.x, item.y, item.w, item.h, item.angle);
+        word(item.text, item.x, item.y, item.w, item.h, item.angle, item.visual);
         previous = item;
       }
     }
@@ -272,8 +272,10 @@
 
   /** Page and outline destinations use zero-based page indexes. Word angles are clockwise degrees
    * about their top-left corner; all rectangles and destinations are in points from the page's top-left.
+   * A DOM collector may supply word.visual, the browser's visual character order for mixed bidi text.
    * info.date can fix the creation date for reproducible exports/tests. */
   L.pdf = L.pdf || {};
+  L.pdf.hasRTL = text => rtl.test(text);
   /** Chromium may defer toBlob's encoder until an idle period, adding hundreds of milliseconds
    * per page after a preview/thumbnail. The same JPEG encoder runs promptly through toDataURL.
    * Decode one page at a time; the temporary base64 string never goes into the PDF or a cache. */
@@ -360,7 +362,7 @@
     for (const page of pages) for (const line of page.lines || []) for (const word of line) {
       if (!validWord(word)) continue;
       if (!chars.size) chars.set(' ', 0);
-      for (const ch of String(word.text)) {
+      for (const ch of String(word.visual || word.text)) {
         const s = scalar(ch);
         if (!chars.has(s)) chars.set(s, chars.size);
       }

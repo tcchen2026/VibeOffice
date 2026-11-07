@@ -1,6 +1,6 @@
 # Better PDF export: a text layer in Quire, Ledger and Lectern PDFs
 
-Status: Phase 0 committed (705019a); Phase 1 ready for Lead, 2026-11-07; Phases 2–5 pending.
+Status: Phases 0 and 1 committed (705019a, ca1d7cd); Phase 2 ready for Lead; Phases 3–5 pending.
 Planned 2026-10-15; design revised that day: pages stay pictures, with an invisible text layer on
 top; no font files read or embedded. Read first: this file, `public/common/core.js` (`L.buildPDF`, `L.embedFonts`),
 Quire `public/quire/js/app.js` (`A.rasterizePage`, `A.buildPDF`), Lectern `public/lectern/js/app.js` (`A.rasterize`,
@@ -72,10 +72,12 @@ Every PDF from the three apps:
 - **What apps hand to the writer.** `L.buildPDF(pages, info)` keeps its name; pages and info gain optional fields:
   ```js
   pages: [{ jpeg, iw, ih, pw, ph,                            // as today
-            lines: [[{ text, x, y, w, h, angle? }, ...], ...],  // words per line, in reading order; page points, top-left origin
+            lines: [[{ text, x, y, w, h, angle?, visual? }, ...], ...],  // words in reading order; page points, top-left origin
             links: [{ x, y, w, h, url } | { x, y, w, h, page, top }] }]
   info:  { title, author, lang, outline: [{ title, page, top, level }] }
   ```
+  `visual` optionally supplies the DOM's resolved visual character order for a mixed bidi word;
+  `text` retains its logical text. Callers without DOM geometry keep the writer's existing fallback.
 - **Shared code** lives in `public/common/` (names provisional):
   - `pdf.js`: the writer, with the generated font. `L.buildPDF` moves there from core.js, or core.js calls it.
   - `pdftext.js`: collects words from a DOM page, and records `fillText` from a canvas.
@@ -250,7 +252,7 @@ tabs remain and server 8769 is stopped. Phase files are frozen until committed.
 **PDF.1 READY FOR LEAD**
 
 Phase 2: Quire
-- [ ] **Collector** (`pdftext.js`, `collectDOM(pageEl, scale)`).
+- [x] **Collector** (`pdftext.js`, `collectDOM(pageEl, scale)`).
   - Walk the page's text nodes in document order, which is Quire's reading order: body, then columns, text boxes,
     footnotes and headers and footers as the page holds them. Apply the skip rules above.
   - Find the line breaks inside each node with `Range.getClientRects` and the binary search `LY.lines` uses
@@ -259,17 +261,68 @@ Phase 2: Quire
     line piece, with its characters spread evenly over it.
   - Group the words into lines by their vertical position.
   - Positions are relative to the page element, divided by `LY.zoom`, then turned into points.
-- [ ] **Output.** `A.buildPDF` collects each page's lines before rasterizing it and passes `lines` with the JPEG.
+- [x] **Output.** `A.buildPDF` collects each page's lines before rasterizing it and passes `lines` with the JPEG.
       The picture is unchanged.
-- [ ] **Checks.** The sample document plus about ten corpus files of different kinds: tables, columns, headers and
+- [x] **Checks.** The sample document plus about ten corpus files of different kinds: tables, columns, headers and
       footers, footnotes, lists, East Asian on a grid, right-to-left, equations, LettersArt, rotated text boxes, and
       a table cell with clipped text.
   - pdftotext word-diffed against the document's text.
   - Rendered pages identical to today's export.
   - Export time on the 181-page document: the collector should add little to the rasterizing.
   - One Chromium test (`tests/quire/`): export the sample; its text extracts with spaces and line breaks.
-- [ ] **For the user to check:** Acrobat Reader and macOS Preview, a handful of files, with a checklist: Find finds
+- [x] **For the user to check:** Acrobat Reader and macOS Preview, a handful of files, with a checklist: Find finds
       words; selecting a paragraph highlights its lines; copying gives the text with spaces; nothing visible changed.
+      [Six PDF pairs and checklist prepared](../tmp/pdf/artifacts/phase2/reader-review.zip); these two viewers remain unchecked.
+
+### Phase 2 report — 2026-11-07
+
+194 / 194 page JPEGs and rendered pages are unchanged across 14 controls (12 corpus,
+sample, clipped cell). All 9 new Quire tests fail on ca1d7cd; 35 PDF checks pass now.
+The final focused gate, including licences and i18n after English gather:
+
+```text
+ℹ tests 46
+ℹ pass 46
+ℹ fail 0
+```
+
+| Controls | Pages | Seconds before → after | Collector seconds | MB before → after |
+|---|---:|---:|---:|---:|
+| Long Word control | 180 | 16.22 → 17.14 | 0.72 | 134.45 → 135.40 |
+| Other 13 | 14 | 1.72 → 2.03 | 0.03 | 2.89 → 2.93 |
+
+14 original controls open in Office 2016 without repair and in LibreOffice;
+Office input hashes match, including the reused long reference. Word differences
+against source XML and native PDFs are retained. Chromium copies a selected line,
+finds the page-2 phrase and copies DrawingML warped text once. All three apps load
+and export without errors or external requests.
+
+`L.pdfModule(true)` lazily loads the DOM collector. Quire supplies lines before
+rasterization; optional `word.visual` retains browser-resolved mixed bidi order.
+No app script-order change or new UI strings; English gather completed.
+
+Limit: older VML LettersArt has no unsliced text body; renderer finding left for Lead.
+Limit: equations copy linearly; rotated/warped highlights approximate the picture.
+Limit: Poppler joins one narrow space in the long control; PDFium preserves it.
+Limit: Acrobat/Preview checks remain for the user; the review packet is prepared.
+
+Final `node tools/quick.mjs`:
+
+```text
+✖ Node tests: 202 passed, 1 failed (26 s)
+✔ tests/ui/smoke.test.mjs: 4 passed (18 s)
+✔ tests/ui/quire.test.mjs: 57 passed (207 s)
+1 of 3 failed.
+```
+
+The existing locale-label assertion needs blocked translation catalogs; it is not
+counted as a pass. Own code/test/doc hashes stayed unchanged through the gate.
+All 11 original tabs remain; server 8769 is stopped. No commits or Lead-file edits.
+
+[Detailed report](../tmp/PDF-2-REPORT.md), [Lead finding](../tmp/PDF-LEAD-FINDINGS.md).
+Phase files are frozen until committed.
+
+**PDF.2 READY FOR LEAD**
 
 Phase 3: Lectern
 - [ ] **Collector on slides.** `A.slideCanvas` renders a slide element that isn't in the document, so it has no

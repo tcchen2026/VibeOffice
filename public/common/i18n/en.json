@@ -186,7 +186,7 @@
  },
  "&Allow Access...": {
   "where": [
-   "common/core.js:296"
+   "common/core.js:303"
   ]
  },
  "&Allow:": {
@@ -307,7 +307,7 @@
   "where": [
    "ledger/js/commands.js:137",
    "quire/js/app.js:87",
-   "quire/js/app.js:1182"
+   "quire/js/app.js:1185"
   ]
  },
  "&AutoFit Selection": {
@@ -1160,7 +1160,7 @@
  },
  "&Edit Comment": {
   "where": [
-   "quire/js/app.js:1189"
+   "quire/js/app.js:1192"
   ]
  },
  "&Edit Field...": {
@@ -1172,7 +1172,7 @@
   "where": [
    "lectern/js/app.js:1791",
    "ledger/js/app.js:876",
-   "quire/js/app.js:1181"
+   "quire/js/app.js:1184"
   ]
  },
  "&Edit Text": {
@@ -2558,13 +2558,13 @@
  },
  "&Open": {
   "where": [
-   "common/core.js:343"
+   "common/core.js:350"
   ]
  },
  "&Open Hyperlink": {
   "where": [
    "ledger/js/app.js:876",
-   "quire/js/app.js:1181"
+   "quire/js/app.js:1184"
   ]
  },
  "&Open...": {
@@ -2597,7 +2597,7 @@
    "lectern/js/app.js:157",
    "lectern/js/app.js:1787",
    "quire/js/app.js:400",
-   "quire/js/app.js:1153"
+   "quire/js/app.js:1156"
   ]
  },
  "&Ordinals (1st) with superscript": {
@@ -3007,7 +3007,7 @@
   "where": [
    "lectern/js/commands.js:94",
    "ledger/js/commands.js:132",
-   "quire/js/app.js:1181",
+   "quire/js/app.js:1184",
    "quire/js/commands.js:309"
   ]
  },
@@ -3051,7 +3051,7 @@
  },
  "&Replace It": {
   "where": [
-   "common/core.js:292"
+   "common/core.js:299"
   ]
  },
  "&Replace:": {
@@ -3195,10 +3195,10 @@
  },
  "&Save As...": {
   "where": [
-   "common/core.js:292",
-   "common/core.js:293",
-   "common/core.js:294",
-   "common/core.js:296"
+   "common/core.js:299",
+   "common/core.js:300",
+   "common/core.js:301",
+   "common/core.js:303"
   ]
  },
  "&Screen": {
@@ -3796,7 +3796,7 @@
  },
  "&Try Again": {
   "where": [
-   "common/core.js:297"
+   "common/core.js:304"
   ]
  },
  "&Two colors": {
@@ -4190,7 +4190,7 @@
  },
  "(No Suggestions)": {
   "where": [
-   "quire/js/app.js:1166"
+   "quire/js/app.js:1169"
   ]
  },
  "(No Theme)": {
@@ -4226,7 +4226,7 @@
  },
  "(This page intentionally left blank by a section break)": {
   "where": [
-   "quire/js/app.js:1439"
+   "quire/js/app.js:1442"
   ]
  },
  "(Top 10...)": {
@@ -5081,7 +5081,7 @@
  },
  "A small table": {
   "where": [
-   "quire/js/app.js:1410"
+   "quire/js/app.js:1413"
   ]
  },
  "A source column used by the pivot table was deleted. Its remaining result cells are kept.": {
@@ -5849,7 +5849,7 @@
  },
  "All Fonts": {
   "where": [
-   "common/core.js:748"
+   "common/core.js:755"
   ]
  },
  "All Reference Books": {
@@ -6380,12 +6380,12 @@
  },
  "Aptos Display": {
   "where": [
-   "common/core.js:728"
+   "common/core.js:735"
   ]
  },
  "Aptos Narrow": {
   "where": [
-   "common/core.js:728"
+   "common/core.js:735"
   ]
  },
  "Aqua": {
@@ -6423,7 +6423,7 @@
  },
  "Arial Black": {
   "where": [
-   "common/core.js:728",
+   "common/core.js:735",
    "lectern/js/dialogs.js:999",
    "lectern/js/dialogs.js:1018",
    "quire/js/dialogs.js:838"
@@ -7356,7 +7356,7 @@
  },
  "Bookmark \"{0}\" not found.": {
   "where": [
-   "quire/js/app.js:1134"
+   "quire/js/app.js:1137"
   ]
  },
  "Bookmark names must begin with a letter and contain only letters, numbers and underscores.": {
@@ -7589,52 +7589,52 @@
  },
  "Browse by Comment": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Edits": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Endnote": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Field": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Footnote": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Graphic": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Heading": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Page": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Section": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse by Table": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Browse...": {
@@ -7997,7 +7997,7 @@
  },
  "Calibri Light": {
   "where": [
-   "common/core.js:728"
+   "common/core.js:735"
   ]
  },
  "Calibri, Carlito, sans-serif": {
@@ -8208,7 +8208,7 @@
  },
  "Cell Alignment": {
   "where": [
-   "quire/js/app.js:1182",
+   "quire/js/app.js:1185",
    "quire/js/tables.js:573"
   ]
  },
@@ -8333,7 +8333,7 @@
  },
  "Century Gothic": {
   "where": [
-   "common/core.js:728",
+   "common/core.js:735",
    "lectern/js/model.js:110"
   ]
  },
@@ -8450,12 +8450,12 @@
  },
  "Chapter One": {
   "where": [
-   "quire/js/app.js:1419"
+   "quire/js/app.js:1422"
   ]
  },
  "Chapter Two": {
   "where": [
-   "quire/js/app.js:1420"
+   "quire/js/app.js:1423"
   ]
  },
  "Chapter starts with style:": {
@@ -8840,7 +8840,7 @@
  },
  "Choose the folder of “{0}” and click Open to let {1} save there.": {
   "where": [
-   "common/core.js:382"
+   "common/core.js:389"
   ]
  },
  "Chooses a value or action to perform from a list of values, based on an index number.": {
@@ -9137,7 +9137,7 @@
  },
  "Close": {
   "where": [
-   "common/core.js:343",
+   "common/core.js:350",
    "common/ui.js:598",
    "common/ui.js:724",
    "common/ui.js:1102"
@@ -9524,7 +9524,7 @@
  },
  "Comic Sans MS": {
   "where": [
-   "common/core.js:728"
+   "common/core.js:735"
   ]
  },
  "Comma Style": {
@@ -9801,7 +9801,7 @@
  },
  "Content Control &Value...": {
   "where": [
-   "quire/js/app.js:1186"
+   "quire/js/app.js:1189"
   ]
  },
  "Content Layouts": {
@@ -10229,8 +10229,8 @@
  },
  "Courier New": {
   "where": [
-   "common/core.js:640",
-   "common/core.js:729",
+   "common/core.js:647",
+   "common/core.js:736",
    "lectern/js/model.js:152",
    "quire/js/autocorrect.js:230"
   ]
@@ -10380,7 +10380,7 @@
  "Creating PDF... (page {0} of {1})": {
   "where": [
    "lectern/js/app.js:573",
-   "quire/js/app.js:1009"
+   "quire/js/app.js:1011"
   ]
  },
  "Creating PDF... (slide {0} of {1})": {
@@ -11501,7 +11501,7 @@
  "Delete Co&mment": {
   "where": [
    "ledger/js/commands.js:118",
-   "quire/js/app.js:1189"
+   "quire/js/app.js:1192"
   ]
  },
  "Delete Column": {
@@ -11650,7 +11650,7 @@
  },
  "DengXian Light": {
   "where": [
-   "common/core.js:612"
+   "common/core.js:619"
   ]
  },
  "Denim": {
@@ -12483,7 +12483,7 @@
  },
  "Drop a document to open it, or pictures to insert them": {
   "where": [
-   "quire/js/app.js:1308"
+   "quire/js/app.js:1311"
   ]
  },
  "Drop a workbook to open it, or pictures to insert them": {
@@ -12609,7 +12609,7 @@
  },
  "Earlier versions of “{0}”, kept as saves replaced them:": {
   "where": [
-   "common/core.js:342"
+   "common/core.js:349"
   ]
  },
  "Early Sunset": {
@@ -13377,12 +13377,12 @@
  },
  "Even Page Footer": {
   "where": [
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1072"
   ]
  },
  "Even Page Header": {
   "where": [
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1072"
   ]
  },
  "Even page": {
@@ -14099,7 +14099,7 @@
  "Find and Replace": {
   "where": [
    "ledger/js/dialogs.js:514",
-   "quire/js/app.js:1412",
+   "quire/js/app.js:1415",
    "quire/js/find.js:364"
   ]
  },
@@ -14125,7 +14125,7 @@
  },
  "Find...": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Find:": {
@@ -14196,12 +14196,12 @@
  },
  "First Page Footer": {
   "where": [
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1072"
   ]
  },
  "First Page Header": {
   "where": [
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1072"
   ]
  },
  "First Record": {
@@ -14589,7 +14589,7 @@
  },
  "Fonts on This Computer": {
   "where": [
-   "common/core.js:750"
+   "common/core.js:757"
   ]
  },
  "Fonts on this computer": {
@@ -14605,8 +14605,8 @@
  "Footer": {
   "where": [
    "ledger/js/dialogs3.js:400",
-   "quire/js/app.js:1042",
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1045",
+   "quire/js/app.js:1072"
   ]
  },
  "Footer (optional)": {
@@ -14710,17 +14710,17 @@
  },
  "Format &Object...": {
   "where": [
-   "quire/js/app.js:1149"
+   "quire/js/app.js:1152"
   ]
  },
  "Format &Picture...": {
   "where": [
-   "quire/js/app.js:1149"
+   "quire/js/app.js:1152"
   ]
  },
  "Format AutoSha&pe...": {
   "where": [
-   "quire/js/app.js:1149"
+   "quire/js/app.js:1152"
   ]
  },
  "Format AutoShape": {
@@ -14755,7 +14755,7 @@
  },
  "Format Letters&Art...": {
   "where": [
-   "quire/js/app.js:1149"
+   "quire/js/app.js:1152"
   ]
  },
  "Format LettersArt": {
@@ -14820,7 +14820,7 @@
  },
  "Format Te&xt Box...": {
   "where": [
-   "quire/js/app.js:1149"
+   "quire/js/app.js:1152"
   ]
  },
  "Format Text Box": {
@@ -15341,7 +15341,7 @@
  },
  "Getting around": {
   "where": [
-   "quire/js/app.js:1405"
+   "quire/js/app.js:1408"
   ]
  },
  "Globe": {
@@ -15391,7 +15391,7 @@
  },
  "Go To...": {
   "where": [
-   "quire/js/app.js:1197"
+   "quire/js/app.js:1200"
   ]
  },
  "Go back to previous edit": {
@@ -15595,7 +15595,7 @@
  },
  "Gro&uping": {
   "where": [
-   "quire/js/app.js:1153"
+   "quire/js/app.js:1156"
   ]
  },
  "Group": {
@@ -15682,12 +15682,12 @@
  },
  "HG Gothic E": {
   "where": [
-   "common/core.js:609"
+   "common/core.js:616"
   ]
  },
  "HG Mincho E": {
   "where": [
-   "common/core.js:609"
+   "common/core.js:616"
   ]
  },
  "HTML Format": {
@@ -15753,8 +15753,8 @@
  "Header": {
   "where": [
    "ledger/js/dialogs3.js:400",
-   "quire/js/app.js:1042",
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1045",
+   "quire/js/app.js:1072"
   ]
  },
  "Header & Footer": {
@@ -15979,7 +15979,7 @@
  "Highlight": {
   "where": [
    "quire/js/app.js:202",
-   "quire/js/app.js:1390",
+   "quire/js/app.js:1393",
    "quire/js/commands.js:353",
    "quire/js/find.js:376"
   ]
@@ -16865,7 +16865,7 @@
  },
  "Insert footnote": {
   "where": [
-   "quire/js/app.js:1412"
+   "quire/js/app.js:1415"
   ]
  },
  "Insert hyperlinks": {
@@ -16920,7 +16920,7 @@
  },
  "Insert ▸ Reference": {
   "where": [
-   "quire/js/app.js:1412"
+   "quire/js/app.js:1415"
   ]
  },
  "Insert ▸ Reference ▸ Footnote (Ctrl+Alt+F footnote, Ctrl+Alt+D endnote), Caption, Cross-reference and Index and Tables (table of contents, figures, index). Right-click a field and choose Update Field, or press F9. Alt+F9 shows field codes.": {
@@ -18369,7 +18369,7 @@
  },
  "Load all fonts on your computer...": {
   "where": [
-   "common/core.js:740"
+   "common/core.js:747"
   ]
  },
  "Load fonts on this computer": {
@@ -18556,27 +18556,27 @@
  },
  "MS Gothic": {
   "where": [
-   "common/core.js:607"
+   "common/core.js:614"
   ]
  },
  "MS Mincho": {
   "where": [
-   "common/core.js:607"
+   "common/core.js:614"
   ]
  },
  "MS PGothic": {
   "where": [
-   "common/core.js:607"
+   "common/core.js:614"
   ]
  },
  "MS PMincho": {
   "where": [
-   "common/core.js:607"
+   "common/core.js:614"
   ]
  },
  "MS UI Gothic": {
   "where": [
-   "common/core.js:608"
+   "common/core.js:615"
   ]
  },
  "MS-DOS (OEM 866)": {
@@ -18719,7 +18719,7 @@
  },
  "Malgun Gothic": {
   "where": [
-   "common/core.js:610"
+   "common/core.js:617"
   ]
  },
  "Manual Line Break": {
@@ -18954,7 +18954,7 @@
  },
  "Meiryo UI": {
   "where": [
-   "common/core.js:609"
+   "common/core.js:616"
   ]
  },
  "Memos": {
@@ -19018,7 +19018,7 @@
  },
  "Microsoft JhengHei": {
   "where": [
-   "common/core.js:617"
+   "common/core.js:624"
   ]
  },
  "Microsoft Word 2003": {
@@ -19048,7 +19048,7 @@
  },
  "Microsoft YaHei": {
   "where": [
-   "common/core.js:613"
+   "common/core.js:620"
   ]
  },
  "Middle": {
@@ -19573,7 +19573,7 @@
  },
  "New Co&mment": {
   "where": [
-   "quire/js/app.js:1190"
+   "quire/js/app.js:1193"
   ]
  },
  "New Comment": {
@@ -20102,12 +20102,12 @@
  },
  "Not installed": {
   "where": [
-   "common/core.js:685"
+   "common/core.js:692"
   ]
  },
  "Not installed; uses {0}": {
   "where": [
-   "common/core.js:685"
+   "common/core.js:692"
   ]
  },
  "Not {0}": {
@@ -20187,26 +20187,26 @@
  },
  "Noto Sans CJK SC": {
   "where": [
-   "common/core.js:616",
-   "common/core.js:732"
+   "common/core.js:623",
+   "common/core.js:739"
   ]
  },
  "Noto Sans SC": {
   "where": [
-   "common/core.js:616",
-   "common/core.js:732"
+   "common/core.js:623",
+   "common/core.js:739"
   ]
  },
  "Noto Serif CJK SC": {
   "where": [
-   "common/core.js:616",
-   "common/core.js:732"
+   "common/core.js:623",
+   "common/core.js:739"
   ]
  },
  "Noto Serif SC": {
   "where": [
-   "common/core.js:616",
-   "common/core.js:732"
+   "common/core.js:623",
+   "common/core.js:739"
   ]
  },
  "Nud&ge": {
@@ -20438,12 +20438,12 @@
  },
  "Odd Page Footer": {
   "where": [
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1072"
   ]
  },
  "Odd Page Header": {
   "where": [
-   "quire/js/app.js:1069"
+   "quire/js/app.js:1072"
   ]
  },
  "Odd page": {
@@ -21269,7 +21269,7 @@
  },
  "Palatino Linotype": {
   "where": [
-   "common/core.js:729",
+   "common/core.js:736",
    "quire/js/dialogs.js:841"
   ]
  },
@@ -22915,7 +22915,7 @@
  },
  "Recently Used Fonts": {
   "where": [
-   "common/core.js:746"
+   "common/core.js:753"
   ]
  },
  "Recently used": {
@@ -22980,7 +22980,7 @@
  },
  "Recovered the unsaved changes. Save the document to keep them.": {
   "where": [
-   "quire/js/app.js:1479"
+   "quire/js/app.js:1482"
   ]
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
@@ -23186,7 +23186,7 @@
  },
  "Reload fonts on your computer...": {
   "where": [
-   "common/core.js:740"
+   "common/core.js:747"
   ]
  },
  "Remember dime&nsions for new tables": {
@@ -25669,7 +25669,7 @@
  },
  "S&ynonyms": {
   "where": [
-   "quire/js/app.js:1190"
+   "quire/js/app.js:1193"
   ]
  },
  "SCRL": {
@@ -25689,7 +25689,7 @@
  },
  "Same as Previous": {
   "where": [
-   "quire/js/app.js:1439"
+   "quire/js/app.js:1442"
   ]
  },
  "Same as the whole &table": {
@@ -25717,7 +25717,7 @@
  },
  "Sample document": {
   "where": [
-   "quire/js/app.js:1426"
+   "quire/js/app.js:1429"
   ]
  },
  "Sample:": {
@@ -25770,7 +25770,7 @@
  },
  "Save As": {
   "where": [
-   "common/core.js:319",
+   "common/core.js:326",
    "lectern/js/dialogs.js:964",
    "ledger/js/dialogs.js:669",
    "ledger/js/panes.js:129"
@@ -26103,7 +26103,7 @@
  },
  "Section Break (Next Page)": {
   "where": [
-   "quire/js/app.js:1440",
+   "quire/js/app.js:1443",
    "quire/js/render.js:420"
   ]
  },
@@ -26156,7 +26156,7 @@
  },
  "Segoe UI": {
   "where": [
-   "common/core.js:729"
+   "common/core.js:736"
   ]
  },
  "Sele&ct": {
@@ -26347,7 +26347,7 @@
  },
  "Select text to highlight. Press Esc to stop.": {
   "where": [
-   "quire/js/app.js:1391"
+   "quire/js/app.js:1394"
   ]
  },
  "Select text, then use the Formatting toolbar or Format ▸ Font. Bullets and numbering live under Format ▸ Bullets and Numbering. Press Tab at the start of a bullet to demote it.": {
@@ -26382,7 +26382,7 @@
  },
  "Select the text to apply the formatting to.": {
   "where": [
-   "quire/js/app.js:1386"
+   "quire/js/app.js:1389"
   ]
  },
  "Select the text you want to store as AutoText first.": {
@@ -27935,12 +27935,12 @@
  },
  "Source Han Sans SC": {
   "where": [
-   "common/core.js:615"
+   "common/core.js:622"
   ]
  },
  "Source Han Serif SC": {
   "where": [
-   "common/core.js:615"
+   "common/core.js:622"
   ]
  },
  "Source: (the Quire clipboard is empty — copy something first, or press Ctrl+V)": {
@@ -28818,7 +28818,7 @@
  },
  "Synonym": {
   "where": [
-   "quire/js/app.js:1166"
+   "quire/js/app.js:1169"
   ]
  },
  "Syntax Error": {
@@ -29116,7 +29116,7 @@
  },
  "Tabs, leaders and fields": {
   "where": [
-   "quire/js/app.js:1418"
+   "quire/js/app.js:1421"
   ]
  },
  "Tab|key": {
@@ -29410,7 +29410,7 @@
  },
  "Text W&rapping": {
   "where": [
-   "quire/js/app.js:1154"
+   "quire/js/app.js:1157"
   ]
  },
  "Text Width": {
@@ -29597,13 +29597,13 @@
  "The PDF could not be created: {0}": {
   "where": [
    "lectern/js/app.js:598",
-   "quire/js/app.js:1019",
+   "quire/js/app.js:1022",
    "quire/js/dialogs3.js:689"
   ]
  },
  "The PDF exporter could not be loaded. Please try again.": {
   "where": [
-   "common/core.js:270"
+   "common/core.js:271"
   ]
  },
  "The PivotTable field name is not valid. To create a PivotTable report, you must use data that is organized as a list with labeled columns.": {
@@ -29983,12 +29983,12 @@
  },
  "The fonts on this computer could not be listed: permission was not given. You can allow it in the site settings of your browser.": {
   "where": [
-   "common/core.js:760"
+   "common/core.js:767"
   ]
  },
  "The fonts on this computer could not be listed: {0}": {
   "where": [
-   "common/core.js:760",
+   "common/core.js:767",
    "start.js:295"
   ]
  },
@@ -30541,7 +30541,7 @@
  },
  "Theme Fonts": {
   "where": [
-   "common/core.js:742"
+   "common/core.js:749"
   ]
  },
  "Themes": {
@@ -30635,7 +30635,7 @@
  },
  "There isn't enough space on the disk to save “{0}”. Your file hasn't changed.": {
   "where": [
-   "common/core.js:298"
+   "common/core.js:305"
   ]
  },
  "Thesaurus": {
@@ -30821,7 +30821,7 @@
  },
  "This browser blocked the page image.": {
   "where": [
-   "common/pdf.js:283"
+   "common/pdf.js:285"
   ]
  },
  "This browser cannot decode the file text encoding": {
@@ -31239,8 +31239,8 @@
  },
  "Times New Roman": {
   "where": [
-   "common/core.js:640",
-   "common/core.js:729",
+   "common/core.js:647",
+   "common/core.js:736",
    "lectern/js/dialogs.js:999",
    "quire/js/dialogs.js:126"
   ]
@@ -31680,7 +31680,7 @@
  },
  "Track changes": {
   "where": [
-   "quire/js/app.js:1412",
+   "quire/js/app.js:1415",
    "quire/js/panes.js:107"
   ]
  },
@@ -31760,7 +31760,7 @@
  },
  "Trebuchet MS": {
   "where": [
-   "common/core.js:729",
+   "common/core.js:736",
    "lectern/js/dialogs.js:999",
    "lectern/js/model.js:86",
    "lectern/js/model.js:163"
@@ -32540,7 +32540,7 @@
  },
  "Versions": {
   "where": [
-   "common/core.js:342"
+   "common/core.js:349"
   ]
  },
  "Vertical": {
@@ -32824,8 +32824,8 @@
  },
  "Welcome to Quire": {
   "where": [
-   "quire/js/app.js:1401",
-   "quire/js/app.js:1403"
+   "quire/js/app.js:1404",
+   "quire/js/app.js:1406"
   ]
  },
  "Welcome to VibeOffice.work.": {
@@ -32835,7 +32835,7 @@
  },
  "WenQuanYi Micro Hei": {
   "where": [
-   "common/core.js:614"
+   "common/core.js:621"
   ]
  },
  "West": {
@@ -33390,22 +33390,22 @@
  },
  "Yu Gothic": {
   "where": [
-   "common/core.js:608"
+   "common/core.js:615"
   ]
  },
  "Yu Gothic Light": {
   "where": [
-   "common/core.js:608"
+   "common/core.js:615"
   ]
  },
  "Yu Gothic UI": {
   "where": [
-   "common/core.js:608"
+   "common/core.js:615"
   ]
  },
  "Yu Mincho": {
   "where": [
-   "common/core.js:608"
+   "common/core.js:615"
   ]
  },
  "ZIP Code": {
@@ -33513,7 +33513,7 @@
  },
  "[object]": {
   "where": [
-   "quire/js/app.js:1440",
+   "quire/js/app.js:1443",
    "quire/js/panes.js:181",
    "quire/js/review.js:38"
   ]
@@ -33959,7 +33959,7 @@
  },
  "{0} (Read-Only)": {
   "where": [
-   "common/core.js:310"
+   "common/core.js:317"
   ]
  },
  "{0} (hidden)": {
@@ -33994,7 +33994,7 @@
  },
  "{0} -Section {1}-": {
   "where": [
-   "quire/js/app.js:1076"
+   "quire/js/app.js:1079"
   ]
  },
  "{0} Column": {
@@ -34014,7 +34014,7 @@
  },
  "{0} KB": {
   "where": [
-   "common/core.js:339",
+   "common/core.js:346",
    "start.js:113"
   ]
  },
@@ -34066,7 +34066,7 @@
  },
  "{0} doesn't save “{1}”.": {
   "where": [
-   "common/core.js:404"
+   "common/core.js:411"
   ]
  },
  "{0} entries marked.": {
@@ -34111,17 +34111,17 @@
  },
  "{0} hasn't kept any earlier versions of “{1}”. It keeps the version a save replaces, for 30 days.": {
   "where": [
-   "common/core.js:337"
+   "common/core.js:344"
   ]
  },
  "{0} is not installed on this computer, so its text is shown in a default font. The document keeps the font name {0} and shows in that font on computers that have it.": {
   "where": [
-   "common/core.js:686"
+   "common/core.js:693"
   ]
  },
  "{0} is not installed on this computer, so its text is shown in {1}. The document keeps the font name {0} and shows in that font on computers that have it.": {
   "where": [
-   "common/core.js:687"
+   "common/core.js:694"
   ]
  },
  "{0} is not installed on this computer; a default font is used on screen and in print.": {
@@ -34281,12 +34281,12 @@
  },
  "{1} can't save “{0}”: it is read-only, or you don't have permission to change it. Your file hasn't changed.": {
   "where": [
-   "common/core.js:294"
+   "common/core.js:301"
   ]
  },
  "{1} doesn't have permission to save “{0}” in its folder. Allow {1} into the folder, or save this version under another name? Your file hasn't changed.": {
   "where": [
-   "common/core.js:296"
+   "common/core.js:303"
   ]
  },
  "{none}": {
@@ -34307,22 +34307,22 @@
  },
  "“{0}” couldn't be saved: {1} Your file hasn't changed.": {
   "where": [
-   "common/core.js:372"
+   "common/core.js:379"
   ]
  },
  "“{0}” is no longer where it was: it was moved, renamed or deleted.": {
   "where": [
-   "common/core.js:293"
+   "common/core.js:300"
   ]
  },
  "“{0}” is open in another program, which is keeping it from being changed. Your file hasn't changed.": {
   "where": [
-   "common/core.js:297"
+   "common/core.js:304"
   ]
  },
  "“{0}” is open in another {1} window. Close it there, or choose another name.": {
   "where": [
-   "common/core.js:323"
+   "common/core.js:330"
   ]
  },
  "“{0}” is over 50 MB, so its changes aren't kept for recovery after a crash. Save it to keep them.": {
@@ -34332,7 +34332,7 @@
  },
  "“{0}” was changed by another program after you opened it. Replace it with this version, or save this version under another name?": {
   "where": [
-   "common/core.js:292"
+   "common/core.js:299"
   ]
  },
  "▶ Play": {

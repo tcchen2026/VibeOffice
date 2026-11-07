@@ -256,23 +256,30 @@
     const limit = Math.sqrt(PDF_MAX_PIXELS / (w * h));
     return Math.min(scale, Math.floor(w * limit) / w, Math.floor(h * limit) / h);
   };
-  // The writer and its generated empty font are needed only on the first PDF export.
-  let pdfWriter;
-  L.pdfModule = async function () {
-    if (!L.pdf?.write) {
-      if (!pdfWriter) pdfWriter = new Promise((resolve, reject) => {
+  // The writer and text collectors are needed only when their export path is used.
+  const pdfLoads = new Map();
+  async function pdfScript(name, ready) {
+    if (!ready()) {
+      if (!pdfLoads.has(name)) {
         const script = document.createElement('script');
-        script.src = (root.VO?.base || new URL('..', location.href).href) + 'common/pdf.js';
-        script.onload = resolve;
-        script.onerror = () => {
-          pdfWriter = null;
-          script.remove();
-          reject(new Error(L.t('The PDF exporter could not be loaded. Please try again.')));
-        };
+        script.src = (root.VO?.base || new URL('..', location.href).href) + 'common/' + name + '.js';
+        const pending = new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = () => {
+            pdfLoads.delete(name);
+            script.remove();
+            reject(new Error(L.t('The PDF exporter could not be loaded. Please try again.')));
+          };
+        });
+        pdfLoads.set(name, pending);
         document.head.append(script);
-      });
-      await pdfWriter;
+        await pending;
+      } else await pdfLoads.get(name);
     }
+  }
+  L.pdfModule = async function (text = false) {
+    await pdfScript('pdf', () => L.pdf?.write);
+    if (text) await pdfScript('pdftext', () => L.pdf?.collectDOM);
     return L.pdf;
   };
   L.buildPDF = async (pages, info) => (await L.pdfModule()).write(pages, info);

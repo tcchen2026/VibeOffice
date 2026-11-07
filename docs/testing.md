@@ -662,3 +662,14 @@ pages, local SVG paint references, and encoding without an idle JPEG callback.
 Set `CDP` and `BASE` to use a separate browser and server. Check selection, copy and
 a second-page search in the native PDF viewer as well; Poppler alone missed a
 zero-width text-object rejection in PDFium.
+
+`node --test tests/quire/pdf.test.mjs` measures the DOM collector in Chromium and
+extracts real Quire exports with Poppler. It covers styled word pieces, line breaks,
+CJK, zoom, columns, tables, clipping, hidden decorations, transparent warped-text
+bodies, SVG, MathML, tabs, mixed Arabic punctuation and lazy loading. The sample
+retains spaces, headers, footers and notes; an exact-height cell excludes hidden text.
+For corpus checks, compare extracted words with original OOXML text and Office/LO
+PDFs, keeping generated labels and fields separate from content losses. Compare
+page JPEG bytes and rendered pixels against the preceding export path, and time
+a long document. Reader heuristics can join narrow spaces or reorder equations:
+record those separately and check native selection/copy as well as extraction.

@@ -216,12 +216,25 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
 | Plain Text `.txt` | yes | yes |
 | Markdown `.md` / `.markdown` (GitHub flavour) | yes | yes |
 | Markdown with pictures `.zip` (a `.md` and its picture files) | yes | yes |
-| PDF | — | yes (File ▸ Print, or Save As ▸ PDF) |
+| PDF | — | yes: page pictures with text you can find, select and copy (File ▸ Print, or Save As ▸ PDF) |
 | Word 97-2003 Document `.doc`, Template `.dot` | yes: converted on opening to the `.docx` Word would write (text, styles, lists, sections, headers and footers, notes, tables, fields and form fields, bookmarks, comments and tracked changes, pictures, drawings and text boxes; embedded objects as their pictures); a message names what wasn't converted, and Save asks for a `.docx` name (`.docm`, or `.dotm` for a template, when it has macros: its VBA project is kept byte for byte with its commands and document events, never run; all 8 in the corpus). A document with a password to open asks for it (XOR obfuscation, RC4 and RC4 CryptoAPI encryption, as Word 97-2003 wrote them) and is saved encrypted with it, as Word keeps it on Save As | no |
 | Password-protected `.docx` | yes (Word 2007 "standard" and Word 2010+ "agile" encryption) | yes: Tools ▸ Options ▸ Security ▸ Password to open (AES-256, as Word 2013+) |
 
 Encryption and decryption happen in the browser (WebCrypto for hashing, so the page must be served over
 https or from localhost). A document opened with its password keeps that password when saved.
+
+PDF pages use the document's fonts at 300 dpi, reduced for pages above 40 megapixels.
+An invisible text layer follows the displayed words, including tables, headers, footers,
+notes, equations and DrawingML LettersArt. Hidden or fully clipped text is omitted.
+Selection within a word is approximate; rotated and bent text has approximate selection boxes.
+Older VML LettersArt and text inside pictures remain pictures, and equations copy as linear text.
+
+Checked on 12 public corpus documents, the sample and an exact-height table control
+(2026-11-07): all 194 page pictures and rendered PDF pages match the picture-only export.
+The 180-page control takes 17.14 s versus 16.22 s; collecting its text takes 0.72 s.
+Chromium copies a selected line and finds text on page 2. Poppler joins one narrow word
+space in the long control; Chromium's PDFium preserves it. Acrobat Reader and macOS
+Preview checks are pending user review.
 
 ## Markdown
 
@@ -524,7 +537,8 @@ compatibility results are archived with the run history rather than mixed into c
 | File | What it does |
 | --- | --- |
 | `index.html` | Window chrome and page CSS, script order |
-| `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF writer, downloads |
+| `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF entry point, downloads |
+| `../common/pdf.js`, `../common/pdftext.js` | Loaded on PDF export: page pictures, generated invisible text font, DOM word collection |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML package graph, identity reservations, AlternateContent capture and schema-order merges |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected documents: compound-file reader/writer, AES, ECMA-376 agile and standard encryption |
 | `js/dmodel.js`, `js/ops.js` | Document model (paragraphs, runs, tables, sections, styles, numbering), undo history, editing operations |
