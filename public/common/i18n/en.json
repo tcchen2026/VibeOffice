@@ -674,7 +674,7 @@
    "lectern/js/commands.js:25",
    "lectern/js/panes.js:427",
    "ledger/js/commands.js:29",
-   "ledger/js/print.js:434"
+   "ledger/js/print.js:465"
   ]
  },
  "&Close Master View": {
@@ -1710,7 +1710,7 @@
  "&Help": {
   "where": [
    "lectern/js/slideshow.js:907",
-   "ledger/js/print.js:435"
+   "ledger/js/print.js:466"
   ]
  },
  "&Help|menu bar": {
@@ -2237,7 +2237,7 @@
  },
  "&Margins": {
   "where": [
-   "ledger/js/print.js:431",
+   "ledger/js/print.js:462",
    "quire/js/dialogs.js:688"
   ]
  },
@@ -2437,7 +2437,7 @@
   "where": [
    "lectern/js/slideshow.js:900",
    "ledger/js/dialogs3.js:364",
-   "ledger/js/print.js:425"
+   "ledger/js/print.js:456"
   ]
  },
  "&Next >": {
@@ -2852,7 +2852,7 @@
   "where": [
    "lectern/js/slideshow.js:901",
    "ledger/js/dialogs3.js:364",
-   "ledger/js/print.js:426"
+   "ledger/js/print.js:457"
   ]
  },
  "&Print (PDF)...": {
@@ -3275,7 +3275,7 @@
  },
  "&Setup...": {
   "where": [
-   "ledger/js/print.js:430"
+   "ledger/js/print.js:461"
   ]
  },
  "&Shading": {
@@ -4141,7 +4141,7 @@
  },
  "&Zoom": {
   "where": [
-   "ledger/js/print.js:427"
+   "ledger/js/print.js:458"
   ]
  },
  "&Zoom...": {
@@ -17729,8 +17729,8 @@
  },
  "Ledger did not find anything to print.": {
   "where": [
-   "ledger/js/print.js:389",
-   "ledger/js/print.js:444"
+   "ledger/js/print.js:420",
+   "ledger/js/print.js:475"
   ]
  },
  "Ledger does not run macros. Workbooks with macros (.xlsm) open and save with their macros intact.": {
@@ -21098,7 +21098,7 @@
  },
  "Page Break Pre&view": {
   "where": [
-   "ledger/js/print.js:432"
+   "ledger/js/print.js:463"
   ]
  },
  "Page Break Preview": {
@@ -22050,7 +22050,7 @@
  },
  "Preparing pages...": {
   "where": [
-   "ledger/js/print.js:391"
+   "ledger/js/print.js:422"
   ]
  },
  "Presentation": {
@@ -22176,7 +22176,7 @@
  },
  "Preview: Page {0} of {1}": {
   "where": [
-   "ledger/js/print.js:445"
+   "ledger/js/print.js:476"
   ]
  },
  "Previous": {
@@ -22297,7 +22297,7 @@
   "where": [
    "lectern/js/commands.js:30",
    "lectern/js/panes.js:407",
-   "ledger/js/print.js:417",
+   "ledger/js/print.js:448",
    "quire/js/dialogs2.js:292"
   ]
  },
@@ -34203,12 +34203,12 @@
  },
  "{0} page saved as {1}. Open it to print.": {
   "where": [
-   "ledger/js/print.js:405"
+   "ledger/js/print.js:436"
   ]
  },
  "{0} pages saved as {1}. Open it to print.": {
   "where": [
-   "ledger/js/print.js:405"
+   "ledger/js/print.js:436"
   ]
  },
  "{0} paragraph(s) use {1}; the selection spans all of them.": {

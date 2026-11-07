@@ -690,3 +690,13 @@ out while the transparent source body copies once. Poppler's raw extractor split
 diagonal letters, so PDFium also checks the complete phrase and its space. Compare
 corpus page JPEGs and rendered pixels against the previous exporter, and check
 rotated search, mouse selection and clipboard text in Chromium's native viewer.
+
+`node --test tests/ledger/pdf.test.mjs` checks the canvas recorder and real Ledger
+PDFs: native pixels stay unchanged, text alignment and all six baselines follow
+independent canvas metrics, and rotation, scaling, `maxWidth`, rectangle clips and
+child-canvas crops keep their geometry. Unicode clips retain whole graphemes.
+Worksheet checks cover formatted values, wrapping, overflow, shrink-to-fit,
+hidden cells/rows, headers/footers, repeated print titles and SVG chart labels.
+The recorder follows the print renderer's rectangular clips; curved paths are not
+measured. Compare original workbooks with Excel/LibreOffice, record image equality
+against the prior exporter, and exercise native Find, mouse selection and copy.

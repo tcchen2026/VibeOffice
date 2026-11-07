@@ -191,13 +191,13 @@
     return el.querySelector('svg');
   }
   /** Font data is prepared once for the selected pages. SVG images live only for this export or preview. */
-  async function printPictures(items) {
+  async function printPictures(items, text = false) {
     const pictures = new Map();
     const add = (d, sh, w, h) => {
       if (pictures.has(d)) return;
       try {
         const svg = drawingSVG(d, sh, w, h);
-        if (svg) pictures.set(d, { svg });
+        if (svg) pictures.set(d, { svg, w, h });
       } catch (e) { console.warn('print object', e); }
     };
     for (const item of items) {
@@ -219,6 +219,18 @@
         add(d, sh, b.w, b.h);
       }
     }
+    if (text) for (const picture of pictures.values()) {
+      const host = document.createElement('div'), svg = picture.svg;
+      host.style.cssText = `position:fixed;left:-100000px;top:0;width:${picture.w}px;height:${picture.h}px`;
+      host.inert = true;
+      host.append(svg);
+      document.body.append(host);
+      try {
+        svg.getBoundingClientRect();
+        await document.fonts.ready;
+        picture.lines = L.pdf.collectDOM(svg, 1);
+      } finally { svg.remove(); host.remove(); }
+    }
     if (pictures.size) {
       const xml = new XMLSerializer();
       const fonts = await L.embedFonts([...pictures.values()].map((p) => xml.serializeToString(p.svg)).join(''));
@@ -236,7 +248,10 @@
     if (!picture.image) {
       const xml = new XMLSerializer().serializeToString(picture.svg);
       // Do not put SVGs containing base64 fonts in the session's image cache.
-      picture.image = L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)).catch(() => null);
+      picture.image = L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)).then(image => {
+        if (picture.lines) L.pdf.recordImage(image, picture.lines, picture.w, picture.h);
+        return image;
+      }).catch(() => null);
     }
     return picture.image;
   }
@@ -246,23 +261,36 @@
     const w = Math.ceil((g.cols.pos(rg.c2 + 1) - g.cols.pos(rg.c1)) * zoom), hh = Math.ceil((g.rows.pos(rg.r2 + 1) - g.rows.pos(rg.r1)) * zoom);
     if (w <= 0 || hh <= 0) return { w: 0, h: 0 };
     const cv = document.createElement('canvas');
+    if (opts.text) {
+      const getContext = cv.getContext.bind(cv);
+      let recorded;
+      // The grid sizes this canvas before getting its context. Wrap only this instance.
+      cv.getContext = (...args) => {
+        const ctx = getContext(...args);
+        return args[0] === '2d' ? (recorded ||= L.pdf.recordCanvas(ctx, { cells: true })) : ctx;
+      };
+    }
     const saved = { freeze: sh.view.freeze, grid: sh.view.grid, headings: sh.view.headings, top: sh.view.top };
     sh.view.freeze = null; sh.view.grid = !!opts.grid; sh.view.headings = !!opts.headings; sh.view.top = { r: 0, c: 0 };
     try {
       L.render.draw(cv, { sh, zoom, scrollR: rg.r1, scrollC: rg.c1, w: w + (opts.headings ? 0 : 0), h: hh, dpr: 1, headers: !!opts.headings }, { sel: null, hideSel: true, pages: null, print: true, bw: opts.bw });
-    } finally { Object.assign(sh.view, saved); }
+    } finally {
+      Object.assign(sh.view, saved);
+      if (opts.text) delete cv.getContext;
+    }
     ctx.drawImage(cv, x, y);
+    cv.width = cv.height = 1;
     return { w, h: hh };
   }
   /** a page as a canvas (pxPerPt pixels per point) */
   P.renderPage = async function (sh, pg, info, pxPerPt) {
     const pag = info.pag;
     const k = L.pdfScale(pag.paper.w, pag.paper.h, pxPerPt);
-    const pictures = info.pictures || await printPictures([{ sh, pg, pag }]);
+    const pictures = info.pictures || await printPictures([{ sh, pg, pag }], info.text);
     const paper = pag.paper, m = pag.margins, p = sh.print;
     const cv = document.createElement('canvas');
     cv.width = Math.round(paper.w * k); cv.height = Math.round(paper.h * k);
-    const ctx = cv.getContext('2d');
+    const raw = cv.getContext('2d'), ctx = info.text ? L.pdf.recordCanvas(raw) : raw;
     ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, cv.width, cv.height);
     const zoom = pag.scale * k * 0.75; /* CSS px → canvas px */
     const g = LY.geo(sh);
@@ -276,7 +304,7 @@
     let x0 = m.l * 72 * k, y0 = m.t * 72 * k;
     if (p.hCenter) x0 = (cv.width - bodyW) / 2;
     if (p.vCenter) y0 = (cv.height - bodyH) / 2;
-    const opts = { grid: p.gridLines, headings: false, bw: p.bw };
+    const opts = { grid: p.gridLines, headings: false, bw: p.bw, text: info.text };
     if (repeatRows && repeatCols) drawCells(ctx, sh, { r1: repeatRows.r1, r2: repeatRows.r2, c1: repeatCols.c1, c2: repeatCols.c2 }, x0, y0, zoom, opts);
     if (repeatRows) drawCells(ctx, sh, { r1: repeatRows.r1, r2: repeatRows.r2, c1: pg.c1, c2: pg.c2 }, x0 + tW, y0, zoom, opts);
     if (repeatCols) drawCells(ctx, sh, { r1: pg.r1, r2: pg.r2, c1: repeatCols.c1, c2: repeatCols.c2 }, x0, y0 + tH, zoom, opts);
@@ -353,7 +381,7 @@
     }
     return out;
   };
-  async function renderAny(item, i, n, k, pictures) {
+  async function renderAny(item, i, n, k, pictures, text = false) {
     pictures ||= await printPictures([item]);
     if (item.chartsheet) {
       const sh = item.sh;
@@ -361,7 +389,7 @@
       k = L.pdfScale(paper.w, paper.h, k);
       const cv = document.createElement('canvas');
       cv.width = Math.round(paper.w * k); cv.height = Math.round(paper.h * k);
-      const ctx = cv.getContext('2d');
+      const raw = cv.getContext('2d'), ctx = text ? L.pdf.recordCanvas(raw) : raw;
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
       const d = sh.drawings.find((x) => x.kind === 'chart' && x.chart);
       if (d) {
@@ -370,10 +398,13 @@
         const im = await pictureImage(pictures.get(d));
         if (im) ctx.drawImage(im, m.l * 72 * k, m.t * 72 * k, w * k, hh * k);
       }
-      return { cv, w: paper.w, h: paper.h };
+      return { cv, w: paper.w, h: paper.h,
+        lines: text ? L.pdf.canvasLines(cv, 1 / k, { consume: true }) : undefined };
     }
-    const cv = await P.renderPage(item.sh, item.pg, { page: i + 1, pages: n, pag: item.pag, pictures }, k);
-    return { cv, w: item.pag.paper.w, h: item.pag.paper.h };
+    k = L.pdfScale(item.pag.paper.w, item.pag.paper.h, k);
+    const cv = await P.renderPage(item.sh, item.pg, { page: i + 1, pages: n, pag: item.pag, pictures, text }, k);
+    return { cv, w: item.pag.paper.w, h: item.pag.paper.h,
+      lines: text ? L.pdf.canvasLines(cv, 1 / k, { rows: true, consume: true }) : undefined };
   }
 
   /* ------------------------------------------------------------ PDF */
@@ -391,11 +422,11 @@
     ui.busy(true, 'Preparing pages...');
     try {
       const pages = [];
-      const writer = await L.pdfModule();
-      const pictures = await printPictures(items.slice(from - 1, to));
+      const writer = await L.pdfModule(true);
+      const pictures = await printPictures(items.slice(from - 1, to), true);
       for (let i = from - 1; i < to; i++) {
-        const r = await renderAny(items[i], i, items.length, L.PDF_DPI / 72, pictures);
-        pages.push({ jpeg: writer.jpeg(r.cv), iw: r.cv.width, ih: r.cv.height, pw: r.w, ph: r.h });
+        const r = await renderAny(items[i], i, items.length, L.PDF_DPI / 72, pictures, true);
+        pages.push({ jpeg: writer.jpeg(r.cv), iw: r.cv.width, ih: r.cv.height, pw: r.w, ph: r.h, lines: r.lines });
         r.cv.width = r.cv.height = 1;
       }
       const pdf = await L.buildPDF(pages, { title: (wb.props && wb.props.title) || (A.books[A.cur] ? A.books[A.cur].name : 'Book1'), author: (wb.props && wb.props.creator) || '' });

@@ -1,6 +1,6 @@
 # Better PDF export: a text layer in Quire, Ledger and Lectern PDFs
 
-Status: Phases 0–2 committed (705019a, ca1d7cd, 1ed6acb); Phase 3 ready for Lead; Phases 4–5 pending.
+Status: Phases 0–3 committed (705019a, ca1d7cd, 1ed6acb, 31a03dd); Phase 4 ready for Lead; Phase 5 pending.
 Planned 2026-10-15; design revised that day: pages stay pictures, with an invisible text layer on
 top; no font files read or embedded. Read first: this file, `public/common/core.js` (`L.buildPDF`, `L.embedFonts`),
 Quire `public/quire/js/app.js` (`A.rasterizePage`, `A.buildPDF`), Lectern `public/lectern/js/app.js` (`A.rasterize`,
@@ -383,7 +383,7 @@ Phase files are frozen until committed.
 **PDF.3 READY FOR LEAD**
 
 Phase 4: Ledger
-- [ ] **A recording 2D context** (`pdftext.js`, `recordCanvas(ctx)`): a proxy that forwards every call to the real
+- [x] **A recording 2D context** (`pdftext.js`, `recordCanvas(ctx)`): a proxy that forwards every call to the real
       canvas, `fillText` included, so the picture is unchanged. For each `fillText` it records:
   - the text, `ctx.font` size, `textAlign` and `textBaseline`;
   - `getTransform()` (rotated cells, render.js:731, give the `angle`);
@@ -392,10 +392,61 @@ Phase 4: Ledger
   - `maxWidth`, which squeezes text to fit.
 
   The width comes from `measureText`. Use it in `P.renderPage` (print.js:193), headers and footers included.
-- [ ] **Reading order:** row by row, cells left to right, as the renderer draws them; check that it does.
-- [ ] **Checks:** a workbook with numbers, wrapped text, overflowing text, clipped text, rotated text, shrink-to-fit,
+- [x] **Reading order:** row by row, cells left to right, as the renderer draws them; check that it does.
+- [x] **Checks:** a workbook with numbers, wrapped text, overflowing text, clipped text, rotated text, shrink-to-fit,
       and headers and footers. pdftotext gives the cell values; Find in a viewer highlights the right cell; clipped
       text is found only as far as it shows.
+
+### Phase 4 report — 2026-11-07
+
+36 / 36 page JPEGs and rendered pages are unchanged: 19 corpus pages, five feature
+and print-title pages, twelve large-control pages. Sizes/counts match the previous
+export. Poppler extracts 1,469 / 1,469 collected corpus tokens. All eight new tests
+fail with 31a03dd's export modules. Final PDF/licence/i18n gate after private gather:
+
+```text
+ℹ tests 60
+ℹ pass 60
+ℹ fail 0
+```
+
+| Control | Pages | Seconds before → after | MB before → after |
+|---|---:|---:|---:|
+| Seven public workbooks | 19 | 1.198 → 1.269 | 4.065 → 4.092 |
+| 34.3 MB workbook, first 12 pages | 12 | 1.363 → 1.564 | 17.974 → 18.024 |
+
+951 MB → 742 MB peak renderer RSS on the large control. Temporary canvases are
+released after copying; recorded measurements are consumed per page. The recorder
+follows actual fillText geometry, clipping, squeeze and rotation through child
+canvases; repeated titles copy by row. Printed SVG labels are collected too.
+
+8 / 8 controls open in Excel 2016 without repair and in LibreOffice. Both Office
+rounds include Mac, missing-metadata and old-template controls; input hashes match
+(the template uses a recorded plain-XLSX copy). Chromium finds the page-4 cell and
+mouse/clipboard copies it and the diagonal phrase. All three apps load/export
+without errors or external requests. No script-order change or new UI strings.
+
+Final `node tools/quick.mjs`:
+
+```text
+✔ Node tests: 183 passed (14 s)
+✔ tests/ui/smoke.test.mjs: 4 passed (18 s)
+✔ tests/ui/ledger.test.mjs: 39 passed (132 s)
+✔ tests/ui/quire.test.mjs: 57 passed (212 s)
+
+All 4 passed.
+```
+
+Limit: existing overlapping chart labels join four spaces in PDFium; Poppler keeps all tokens.
+Limit: PDFium/Chromium mishandle an emoji beside Arabic; the isolated case copies correctly in Poppler.
+Limit: SVG subword clips use approximate advances; curved canvas clips are not measured.
+Limit: Acrobat/Preview remain unchecked; [six PDF pairs and checklist are ready](../tmp/pdf/artifacts/phase4/reader-review.zip).
+
+Own hashes stayed unchanged through the gate; all 11 original tabs remain and
+server 8769 is stopped. No commits, catalog edits or Quire edits. [Report](../tmp/PDF-4-REPORT.md),
+[Lead findings](../tmp/PDF-LEAD-FINDINGS.md). Phase files are frozen until committed.
+
+**PDF.4 READY FOR LEAD**
 
 Phase 5: links, bookmarks, language
 - [ ] **Quire:**

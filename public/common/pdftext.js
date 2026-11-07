@@ -1,4 +1,4 @@
-/* VibeOffice — collect the visible words of a DOM page for the PDF text layer.
+/* VibeOffice — collect visible DOM words and canvas text for the PDF text layer.
  * Original implementation using CSSOM View's Range geometry (font metrics, in client pixels):
  * https://www.w3.org/TR/cssom-view-1/#dom-range-getclientrects
  * DOM order supplies reading order; rectangles supply placement, never the page's text.
@@ -335,5 +335,355 @@
     const geometry = options?.transforms ? transformedPage(page) : null;
     try { return collect(geometry?.page || page, scale, geometry); }
     finally { geometry?.remove(); }
+  };
+
+  const canvasRecords = new WeakMap();
+  const FONT_STATE = ['font', 'fontKerning', 'fontStretch', 'fontVariantCaps', 'letterSpacing',
+    'wordSpacing', 'textRendering', 'direction', 'lang'];
+  const hasArea = r => r.right - r.left > 1e-6 && r.bottom - r.top > 1e-6;
+  const canvasRect = (x, y, w, h) => ({ left: Math.min(x, x + w), top: Math.min(y, y + h),
+    right: Math.max(x, x + w), bottom: Math.max(y, y + h) });
+  function region(rect, matrix = new DOMMatrix()) {
+    const device = !matrix.b && !matrix.c ? canvasRect(matrix.a * rect.left + matrix.e,
+      matrix.d * rect.top + matrix.f, matrix.a * (rect.right - rect.left),
+      matrix.d * (rect.bottom - rect.top)) : null;
+    return { rect, matrix, inverse: matrix.inverse(), device };
+  }
+
+  function clipPolygon(ps, clip) {
+    ps = ps.map(p => clip.inverse.transformPoint(p));
+    const r = clip.rect;
+    ps = clipEdge(clipEdge(ps, 'x', r.left, true), 'x', r.right, false);
+    ps = clipEdge(clipEdge(ps, 'y', r.top, true), 'y', r.bottom, false);
+    return ps.map(p => clip.matrix.transformPoint(p));
+  }
+  function canvasClip(ps, clips) {
+    // Ordinary cells and page clips need only rectangle intersections. Keep the
+    // polygon path for rotated text and rotated clips.
+    const rect = bounds(ps);
+    if (ps.length === 4 && ps.every(p => (p.x === rect.left || p.x === rect.right) &&
+        (p.y === rect.top || p.y === rect.bottom)) && clips.every(rs => rs.length === 1 && rs[0].device)) {
+      let clipped = rect;
+      for (const rs of clips) clipped = intersection(clipped, rs[0].device);
+      return hasArea(clipped) ? { whole: inside(rect, clipped), points: corners(clipped) } : null;
+    }
+    let polygons = [ps], whole = true;
+    for (const regions of clips) {
+      whole &&= regions.some(c => ps.every(p => {
+        const q = c.inverse.transformPoint(p), r = c.rect;
+        return q.x >= r.left - 1e-6 && q.x <= r.right + 1e-6 &&
+          q.y >= r.top - 1e-6 && q.y <= r.bottom + 1e-6;
+      }));
+      polygons = polygons.flatMap(p => regions.map(c => clipPolygon(p, c)))
+        .filter(p => p.length && hasArea(bounds(p)));
+      if (!polygons.length) return null;
+    }
+    return { whole, points: polygons.flat() };
+  }
+  function canvasBox(r, m, scale) {
+    const sx = Math.hypot(m.a, m.b), sy = Math.hypot(m.c, m.d);
+    if (m.a * m.d - m.b * m.c > 0 && Math.abs(m.a * m.c + m.b * m.d) < sx * sy * 1e-5) {
+      const p = m.transformPoint({ x: r.left, y: r.top });
+      return { x: p.x * scale, y: p.y * scale, w: (r.right - r.left) * sx * scale,
+        h: (r.bottom - r.top) * sy * scale, angle: Math.atan2(m.b, m.a) * 180 / Math.PI };
+    }
+    const p = bounds(corners(r).map(p => m.transformPoint(p)));
+    return { x: p.left * scale, y: p.top * scale,
+      w: (p.right - p.left) * scale, h: (p.bottom - p.top) * scale };
+  }
+
+  // The canvas exposes a whole string's metrics, not bidi subranges. Use the browser's
+  // inline layout only for RTL strings, as collectDOM does, retaining its visual order.
+  function canvasBidi(ctx, text, metrics) {
+    const doc = ctx.canvas.ownerDocument || document, span = doc.createElement('span');
+    span.style.cssText = 'all:initial;position:fixed;left:-100000px;top:0;white-space:pre;width:max-content';
+    for (const key of FONT_STATE) if (key in span.style && ctx[key]) span.style[key] = ctx[key];
+    span.style.direction = ctx.direction === 'inherit' && ctx.canvas instanceof Element
+      ? getComputedStyle(ctx.canvas).direction : ctx.direction;
+    span.textContent = text;
+    doc.body.append(span);
+    try {
+      const origin = span.getBoundingClientRect(), range = doc.createRange(), out = [];
+      const scale = origin.width ? metrics.width / origin.width : 1;
+      for (const part of text.matchAll(/\S+/gu)) {
+        const cuts = boundaries(part[0]), glyphs = [];
+        for (let i = 1; i < cuts.length; i++) {
+          range.setStart(span.firstChild, part.index + cuts[i - 1]);
+          range.setEnd(span.firstChild, part.index + cuts[i]);
+          const r = range.getBoundingClientRect();
+          glyphs.push({ text: part[0].slice(cuts[i - 1], cuts[i]),
+            left: (r.left - origin.left) * scale, right: (r.right - origin.left) * scale });
+        }
+        out.push({ text: part[0], left: Math.min(...glyphs.map(g => g.left)),
+          right: Math.max(...glyphs.map(g => g.right)), glyphs });
+      }
+      return out;
+    } finally { span.remove(); }
+  }
+
+  function canvasWords(ctx, text, x, y, maxWidth) {
+    const metrics = ctx.measureText(text), width = metrics.width;
+    if (!(width > 0) || !(maxWidth > 0)) return [];
+    const squeeze = Math.min(1, maxWidth / width), matrix = ctx.getTransform();
+    if (!matrix.is2D || Math.abs(matrix.a * matrix.d - matrix.b * matrix.c) < 1e-12) return [];
+    const state = Object.fromEntries(FONT_STATE.filter(key => key in ctx).map(key => [key, ctx[key]]));
+    const direction = ctx.direction === 'inherit' && ctx.canvas instanceof Element
+      ? getComputedStyle(ctx.canvas).direction : ctx.direction;
+    const align = ctx.textAlign;
+    const right = align === 'right' || (align === 'start' && direction === 'rtl') ||
+      (align === 'end' && direction !== 'rtl');
+    const left = x - (right ? width * squeeze : align === 'center' ? width * squeeze / 2 : 0);
+    const ascent = metrics.fontBoundingBoxAscent ?? metrics.actualBoundingBoxAscent;
+    const descent = metrics.fontBoundingBoxDescent ?? metrics.actualBoundingBoxDescent;
+    const top = y - ascent, bottom = y + descent;
+    const cache = new Map([[0, 0], [text.length, width]]);
+    const advance = end => {
+      if (cache.has(end)) return cache.get(end);
+      ctx.save();
+      try {
+        for (const key in state) ctx[key] = state[key];
+        const w = ctx.measureText(text.slice(0, end)).width;
+        cache.set(end, w);
+        return w;
+      } finally { ctx.restore(); }
+    };
+    const rtl = L.pdf.hasRTL(text);
+    const parts = rtl ? canvasBidi(ctx, text, metrics) : Array.from(text.matchAll(/\S+/gu), part =>
+      ({ text: part[0], index: part.index, left: advance(part.index), right: advance(part.index + part[0].length) }));
+    return parts.map(part => {
+      const rect = { left: left + part.left * squeeze, right: left + part.right * squeeze, top, bottom };
+      const glyphs = (lo, hi) => {
+        if (part.glyphs) return part.glyphs.map(g => ({ text: g.text,
+          rect: { left: left + g.left * squeeze, right: left + g.right * squeeze, top, bottom } }));
+        const cuts = boundaries(part.text), at = i => left + advance(part.index + cuts[i]) * squeeze;
+        // A long overflowing cell needs only the characters near its visible interval.
+        let a = 0, b = cuts.length - 1;
+        while (a < b) { const m = (a + b) >> 1; if (at(m + 1) <= lo + 1e-6) a = m + 1; else b = m; }
+        const first = a;
+        b = cuts.length - 1;
+        while (a < b) { const m = Math.ceil((a + b) / 2); if (at(m) < hi - 1e-6) a = m; else b = m - 1; }
+        const out = [];
+        for (let i = first; i <= a && i + 1 < cuts.length; i++) out.push({ text: part.text.slice(cuts[i], cuts[i + 1]),
+          rect: { left: at(i), right: at(i + 1), top, bottom } });
+        return out;
+      };
+      const visual = rtl ? [...part.glyphs].sort((a, b) => a.left - b.left).map(g => g.text).join('') : undefined;
+      return { text: part.text, rect, matrix, glyphs, visual };
+    });
+  }
+
+  /** A proxy for a fresh canvas paint. Calls still run on the real context. Rectangle
+   * clips are retained in device coordinates, including the transform at rect(), and
+   * the current path is deliberately separate from the save/restore state stack.
+   * https://html.spec.whatwg.org/dev/canvas.html#drawing-text-to-the-bitmap */
+  L.pdf.recordCanvas = function (ctx, options = {}) {
+    const canvas = ctx.canvas, entries = [], stack = [], groups = new WeakMap();
+    let clips = [[region(canvasRect(0, 0, canvas.width, canvas.height))]], path = [], otherPath = false;
+    canvasRecords.set(canvas, entries);
+    const methods = new Map();
+    const hooks = {
+      save() { stack.push(clips); },
+      restore() { if (stack.length) clips = stack.pop(); },
+      beginPath() {
+        path = [];
+        otherPath = false;
+      },
+      rect(x, y, w, h) { path.push(region(canvasRect(+x, +y, +w, +h), ctx.getTransform())); },
+      clip(...args) {
+        // The print renderer uses rectangular paths. Do not expose text behind an
+        // unmeasured Path2D/curved clip if another caller supplies one.
+        const external = args.length && typeof args[0] !== 'string';
+        clips = clips.concat([external || otherPath ? [] : path.slice()]);
+      },
+      reset() {
+        entries.length = stack.length = 0;
+        clips = [[region(canvasRect(0, 0, canvas.width, canvas.height))]];
+        path = [];
+        otherPath = false;
+      },
+      fillText(value, x, y, maxWidth = Infinity) {
+        if (![+x, +y].every(Number.isFinite) || !(maxWidth > 0) || !ctx.globalAlpha) return;
+        const text = String(value).replace(/[\t\n\r\f]/g, ' ');
+        const words = canvasWords(ctx, text, +x, +y, +maxWidth);
+        if (!words.length) return;
+        for (const word of words) word.clips = clips;
+        let group, order;
+        if (options.cells && clips.length > 1) {
+          group = groups.get(clips);
+          if (!group) {
+            group = {};
+            groups.set(clips, group);
+          }
+          const last = clips.at(-1)[0];
+          const visible = last && canvasClip(corners(last.rect).map(p => last.matrix.transformPoint(p)), clips);
+          if (visible) order = bounds(visible.points);
+        }
+        order ||= bounds(words.flatMap(w => corners(w.rect).map(p => w.matrix.transformPoint(p))));
+        entries.push({ words, group, order, leading: /^\s/u.test(text), trailing: /\s$/u.test(text) });
+      },
+      drawImage(image, ...args) {
+        const source = canvasRecords.get(image);
+        if (!source || !ctx.globalAlpha) return;
+        let sx = 0, sy = 0, sw = image.width, sh = image.height, dx, dy, dw = sw, dh = sh;
+        if (args.length === 2) [dx, dy] = args;
+        else if (args.length === 4) [dx, dy, dw, dh] = args;
+        else if (args.length === 8) [sx, sy, sw, sh, dx, dy, dw, dh] = args;
+        else return;
+        if (![sx, sy, sw, sh, dx, dy, dw, dh].every(Number.isFinite) || !sw || !sh || !dw || !dh) return;
+        if (sw < 0) {
+          sx += sw;
+          sw = -sw;
+        }
+        if (sh < 0) {
+          sy += sh;
+          sh = -sh;
+        }
+        if (dw < 0) {
+          dx += dw;
+          dw = -dw;
+        }
+        if (dh < 0) {
+          dy += dh;
+          dh = -dh;
+        }
+        const matrix = ctx.getTransform().translate(dx, dy).scale(dw / sw, dh / sh).translate(-sx, -sy);
+        const crop = [region(canvasRect(sx, sy, sw, sh), matrix)], clipCache = new Map(), groupCache = new Map();
+        const mappedClips = old => {
+          if (!clipCache.has(old)) clipCache.set(old, old.map(rs => rs.map(r =>
+            region(r.rect, matrix.multiply(r.matrix)))).concat([crop], clips));
+          return clipCache.get(old);
+        };
+        for (const entry of source.slice()) {
+          const words = entry.words.map(w => ({ ...w, matrix: matrix.multiply(w.matrix),
+            clips: mappedClips(w.clips) }));
+          let group;
+          if (entry.group) {
+            if (!groupCache.has(entry.group)) groupCache.set(entry.group, {});
+            group = groupCache.get(entry.group);
+          }
+          const visible = canvasClip(corners(entry.order).map(p => matrix.transformPoint(p)), [crop, ...clips]);
+          if (visible) entries.push({ ...entry, words, group, order: bounds(visible.points) });
+        }
+      },
+    };
+    const curves = ['moveTo', 'lineTo', 'arc', 'arcTo', 'ellipse', 'bezierCurveTo', 'quadraticCurveTo', 'roundRect'];
+    for (const key of curves) {
+      hooks[key] = () => { otherPath = true; };
+    }
+    return new Proxy(ctx, {
+      get(target, key) {
+        const value = Reflect.get(target, key, target);
+        if (typeof value !== 'function') return value;
+        if (!methods.has(key)) methods.set(key, hooks[key] ? (...args) => {
+          const result = value.apply(target, args);
+          hooks[key](...args);
+          return result;
+        } : value.bind(target));
+        return methods.get(key);
+      },
+      set(target, key, value) { return Reflect.set(target, key, value, target); },
+    });
+  };
+
+  function visibleCanvasWord(word, scale) {
+    const { matrix, clips } = word, inverse = matrix.inverse();
+    const visible = rect => {
+      const view = canvasClip(corners(rect).map(p => matrix.transformPoint(p)), clips);
+      if (!view) return null;
+      return { whole: view.whole, rect: bounds(view.points.map(p => inverse.transformPoint(p))) };
+    };
+    const view = visible(word.rect);
+    if (!view || !hasArea(view.rect)) return [];
+    const heightOnly = !matrix.b && !matrix.c && clips.every(rs => rs.length === 1 && rs[0].device) &&
+      Math.abs(view.rect.left - word.rect.left) < 1e-6 && Math.abs(view.rect.right - word.rect.right) < 1e-6;
+    if (view.whole || heightOnly) return [{ text: word.text, ...canvasBox(view.rect, matrix, scale),
+      ...(word.visual ? { visual: word.visual } : {}) }];
+    const out = [];
+    let text = '', rect, glyphs = [];
+    const flush = () => {
+      if (text && rect) out.push({ text, ...canvasBox(rect, matrix, scale), ...(word.visual
+        ? { visual: glyphs.sort((a, b) => a.rect.left - b.rect.left).map(g => g.text).join('') } : {}) });
+      text = '';
+      rect = null;
+      glyphs = [];
+    };
+    for (const glyph of word.glyphs(view.rect.left, view.rect.right)) {
+      const r = visible(glyph.rect)?.rect;
+      if (r && hasArea(r)) {
+        text += glyph.text;
+        rect = rect ? union(rect, r) : r;
+        glyphs.push(glyph);
+      } else flush();
+    }
+    flush();
+    return out;
+  }
+
+  /** Associate measured SVG words with their raster image, before drawImage places it.
+   * Subword positions use the supplied word box, as in the PDF font's fixed advances. */
+  L.pdf.recordImage = function (image, lines, width, height) {
+    const scale = new DOMMatrix().scale(image.width / width, image.height / height);
+    const clips = [[region(canvasRect(0, 0, image.width, image.height))]];
+    const entries = lines.map(line => {
+      const words = line.map(w => {
+        const matrix = scale.translate(w.x, w.y).rotate(w.angle || 0);
+        const rect = canvasRect(0, 0, w.w, w.h), cuts = boundaries(w.text);
+        const chars = cuts.slice(1).map((end, i) => w.text.slice(cuts[i], end));
+        const order = w.visual ? boundaries(w.visual).slice(1).map((end, i, ends) =>
+          w.visual.slice(i ? ends[i - 1] : 0, end)) : chars;
+        const glyphs = () => {
+          const remaining = order.slice();
+          return chars.map(text => {
+            const i = remaining.indexOf(text);
+            remaining[i] = null;
+            return { text, rect: canvasRect(i * w.w / chars.length, 0, w.w / chars.length, w.h) };
+          });
+        };
+        return { text: w.text, rect, matrix, clips, glyphs, visual: w.visual };
+      });
+      return { words, order: bounds(words.flatMap(w => corners(w.rect).map(p => w.matrix.transformPoint(p)))) };
+    });
+    canvasRecords.set(image, entries);
+  };
+
+  /** Recorded words in canvas-pixel coordinates, or points when scale is supplied.
+   * rows opts into cell order (recordCanvas's cells option), so separate repeated-title
+   * canvases interleave without changing painting. consume releases the measurement
+   * contexts when an export has finished collecting a page. */
+  L.pdf.canvasLines = function (canvas, scale = 1, options = {}) {
+    const entries = [...(canvasRecords.get(canvas) || [])], lines = [];
+    if (options.rows) entries.sort((a, b) => Math.round(a.order.top * 100) - Math.round(b.order.top * 100) ||
+      Math.round(a.order.left * 100) - Math.round(b.order.left * 100));
+    let previous;
+    for (const entry of entries) {
+      const words = entry.words.flatMap(word => visibleCanvasWord(word, scale));
+      if (!words.length) continue;
+      const first = words[0], last = previous?.line.at(-1);
+      const rad = (first.angle || 0) * Math.PI / 180;
+      const cos = Math.cos(rad), sin = Math.sin(rad);
+      const dx = last ? first.x - last.x : 0, dy = last ? first.y - last.y : 0;
+      const same = last && previous.group === entry.group && Math.abs((last.angle || 0) - (first.angle || 0)) < .001 &&
+        Math.abs(dy * cos - dx * sin) < Math.min(first.h, last.h) * .2;
+      if (same) {
+        const gap = dx * cos + dy * sin - last.w;
+        if (!entry.leading && !previous.trailing && Math.abs(gap) < .1 * scale && !first.angle && !last.angle) {
+          last.text += first.text;
+          const right = first.x + first.w, bottom = Math.max(last.y + last.h, first.y + first.h);
+          last.y = Math.min(last.y, first.y);
+          last.h = bottom - last.y;
+          last.w = right - last.x;
+          if (last.visual || first.visual) last.visual = (last.visual || last.text.slice(0, -first.text.length)) +
+            (first.visual || first.text);
+          words.shift();
+        }
+        previous.line.push(...words);
+      } else {
+        lines.push(words);
+        previous = { line: words, group: entry.group };
+      }
+      previous.trailing = entry.trailing;
+    }
+    if (options.consume) canvasRecords.delete(canvas);
+    return lines;
   };
 })();
