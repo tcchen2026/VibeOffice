@@ -210,3 +210,15 @@ test('a v:rect with a textpath is a text box, not WordArt', async () => {
   const r = await page.evaluate(`(() => { const s = L.layout.pages[0].el.querySelector('.flt .shp'); return { wordart: !!s.querySelector('svg.wa'), text: (s.querySelector('.tbx') || {}).textContent || '' }; })()`);
   assert.deepEqual(r, { wordart: false, text: 'Plain words' });
 });
+
+test('a float in a vertically centred cell stands by its paragraph where the paragraph ends up, drawn once', async () => {
+  // fdo77887.docx: a logo anchored in a cell's second paragraph, centred in a row 450 pt tall that its content outgrows;
+  // Word 2016 draws it 3 pt below that paragraph near the top of the cell. Quire placed it while the cell was still
+  // short (its content centred, far down), and drew it again from the cell's first layout
+  const lines = Array.from({ length: 50 }, (_, i) => p('Line ' + i)).join('');
+  const cell = '<w:tbl><w:tblPr><w:tblW w:w="6000" w:type="dxa"/></w:tblPr><w:tblGrid><w:gridCol w:w="6000"/></w:tblGrid><w:tr><w:trPr><w:trHeight w:val="9000"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="6000" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>'
+    + p('First') + p('Second', PIC(100, 40, [0, 0, 0, 0], at(20, 3, '<wp:wrapNone/>'))) + lines + '</w:tc></w:tr></w:tbl>' + p();
+  const r = await open(cell);
+  assert.equal(r.pics.length, 1, 'the picture drawn once');
+  near(r.pics[0][1], r.text.Second[1] + 3, 'its top: 3 pt below its paragraph');
+});

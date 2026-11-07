@@ -108,7 +108,9 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   line (Quire gave it a second, empty line); a text box that fits its text is fitted again on opening, shrunk as well
   as grown (a box saved 200 pt tall around two lines is 34.5 pt); a line with nothing on it but anchors goes below an
   object text can't go beside, as any line; floating objects stack by every step of their z-order (Word's VML
-  z-index counts by one). VML freeforms and polylines are drawn from their paths and points (they were rectangles),
+  z-index counts by one); a float placed from its paragraph stands by the paragraph where it ends up, in a cell
+  centred vertically while its content was still short as on a page aligned to the middle (Quire left it where the
+  paragraph first stood, and a cell laid out twice drew its floats twice: fdo77887.docx's logo). VML freeforms and polylines are drawn from their paths and points (they were rectangles),
   each SmartArt diagram from its own drawing part (a document with several drew the first each time) with its
   text's bullets, a WMF whose header has empty bounds to its window, and percentage shading as that share of the
   pattern colour over the fill (pct25 auto on auto is light grey; Quire drew it dark grey with white text). STYLEREF

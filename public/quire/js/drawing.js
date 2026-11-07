@@ -401,6 +401,7 @@
         /* stacked by relativeHeight inside the page's layer, every step kept (Word's VML z-index counts by one) */
         wrap.style.cssText = `position:absolute;left:${pos.x}px;top:${pos.y}px;z-index:${Math.max(-2147483647, Math.min(2147483647, Math.round((f.z || 0) - 251658240)))}`;
         wrap._pos = pos;
+        wrap._frag = frag;
         lay.appendChild(wrap);
         (frag._floats || (frag._floats = [])).push(wrap);
         DR.fillPending(wrap);

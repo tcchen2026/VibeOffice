@@ -5573,7 +5573,7 @@
  "Add Text": {
   "where": [
    "lectern/js/textedit.js:339",
-   "quire/js/drawing.js:703"
+   "quire/js/drawing.js:704"
   ]
  },
  "Add at least one picture.": {
@@ -7101,7 +7101,7 @@
  },
  "Behind Text": {
   "where": [
-   "quire/js/drawing.js:683"
+   "quire/js/drawing.js:684"
   ]
  },
  "Below selected item": {
@@ -13279,8 +13279,8 @@
  "Error! No text of specified style in document.": {
   "where": [
    "quire/js/fields.js:368",
-   "quire/js/layout.js:1084",
-   "quire/js/layout.js:1124"
+   "quire/js/layout.js:1089",
+   "quire/js/layout.js:1129"
   ]
  },
  "Error! Not a valid footnote reference.": {
@@ -16266,12 +16266,12 @@
  },
  "In Front of Text": {
   "where": [
-   "quire/js/drawing.js:683"
+   "quire/js/drawing.js:684"
   ]
  },
  "In Line with Text": {
   "where": [
-   "quire/js/drawing.js:683"
+   "quire/js/drawing.js:684"
   ]
  },
  "In l&ine with text": {
@@ -19298,7 +19298,7 @@
    "lectern/js/editor.js:579",
    "ledger/js/drawing.js:296",
    "ledger/js/drawing.js:373",
-   "quire/js/drawing.js:591"
+   "quire/js/drawing.js:592"
   ]
  },
  "Move Page Break": {
@@ -20218,7 +20218,7 @@
  "Nudge": {
   "where": [
    "lectern/js/app.js:1167",
-   "quire/js/drawing.js:605"
+   "quire/js/drawing.js:606"
   ]
  },
  "Nudge (Ctrl for fine nudge)": {
@@ -23509,7 +23509,7 @@
  "Resize Object": {
   "where": [
    "ledger/js/drawing.js:373",
-   "quire/js/drawing.js:632"
+   "quire/js/drawing.js:633"
   ]
  },
  "Resize Picture": {
@@ -28223,7 +28223,7 @@
  },
  "Square": {
   "where": [
-   "quire/js/drawing.js:683"
+   "quire/js/drawing.js:684"
   ]
  },
  "Square Dot": {
@@ -31191,7 +31191,7 @@
  },
  "Through": {
   "where": [
-   "quire/js/drawing.js:683"
+   "quire/js/drawing.js:684"
   ]
  },
  "Thu&mbnails": {
@@ -31211,7 +31211,7 @@
  },
  "Tight": {
   "where": [
-   "quire/js/drawing.js:683"
+   "quire/js/drawing.js:684"
   ]
  },
  "Time": {
@@ -31587,7 +31587,7 @@
  },
  "Top and Bottom": {
   "where": [
-   "quire/js/drawing.js:683"
+   "quire/js/drawing.js:684"
   ]
  },
  "Top and Bottom Border": {

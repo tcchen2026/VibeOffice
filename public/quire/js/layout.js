@@ -1043,10 +1043,16 @@
     const hctx = Object.assign({}, ctx, { story, dyn: (ty, fmt, instr) => LY.dynField(ty, fmt, page, instr), openCmts: null, page, hf: true, grid: 0 });
     LY.flow(fr, story.blocks, { bi: 0, sub: null }, story.blocks.length, hctx);
     fixAbsFrames(container);
-    /* a footer grows upwards from its bottom edge, so the paragraphs after a float's anchor moved it up: a float
-       placed from its paragraph (or line) follows it */
-    const z = LY.scale(), pgTop = page.el.getBoundingClientRect().top;
-    for (const frag of container.querySelectorAll('.p')) {
+    /* a footer grows upwards from its bottom edge, so the paragraphs after a float's anchor moved it up */
+    followAnchors(container, page.el);
+    return container.offsetHeight;
+  }
+  /** a float placed from its paragraph (or line) follows the paragraph when it moved after the float was placed: a
+      footer growing upwards, a cell's content centred while the cell was still short (Word places the float from
+      where the paragraph ends up), a page's vertical alignment */
+  function followAnchors(root, pageEl) {
+    const z = LY.scale(), pgTop = pageEl.getBoundingClientRect().top;
+    for (const frag of root.querySelectorAll('.p')) {
       if (!frag._floats) continue;
       const dy = (frag.getBoundingClientRect().top - pgTop) / z;
       for (const w of frag._floats) {
@@ -1058,7 +1064,6 @@
         w.style.top = pos.y + 'px';
       }
     }
-    return container.offsetHeight;
   }
   LY.dynField = function (ty, fmt, page, instr) {
     if (!page) return '1';
@@ -1441,6 +1446,11 @@
     }
     for (const p of LY.pages) p.el.classList.toggle('vcenter', false);
     applyVAlign();
+    for (const p of LY.pages) {
+      /* a float whose paragraph was laid out again (a table cell measured, then drawn) goes with the copy it came from */
+      for (const w of p.el.querySelectorAll(':scope > .pg-float > .flt')) if (w._frag && !w._frag.isConnected) w.remove();
+      for (const r of p.regions || []) followAnchors(r.el, p.el);
+    }
     clipColumnPictures();
     LY.layoutMs = performance.now() - t0;
     LY.fitSizer();
