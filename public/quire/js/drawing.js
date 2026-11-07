@@ -229,9 +229,10 @@
         }
         if (it.warp && !it.vert) DR.warpBox(box, tbx, it);
         if (it.autofit && !opts.inGroup) {
-          /* resize-shape-to-fit-text: the box grows with its text */
+          /* resize-shape-to-fit-text: the box is as tall as its text, grown or shrunk from the size saved (Word fits
+             it again when it lays the page out) */
           const need = inner.offsetHeight + px(ins.t + ins.b);
-          if (need > hh + 1) { box.style.height = need + 'px'; tbx.style.height = inner.offsetHeight + 'px'; const svg = box.querySelector('svg.geo'); if (svg) { const nh = need / PX; svg.setAttribute('height', need); svg.setAttribute('viewBox', `0 0 ${L.round(Math.max(it.w, 1), 3)} ${L.round(nh, 3)}`); const parts = L.geom.parts(Object.assign({}, it, { h: nh }), it.w, nh); const ps = svg.querySelectorAll('g > path'); parts.forEach((pp, i) => { if (ps[i]) ps[i].setAttribute('d', pp.d); }); } }
+          if (Math.abs(need - hh) > 1) { box.style.height = need + 'px'; tbx.style.height = inner.offsetHeight + 'px'; const svg = box.querySelector('svg.geo'); if (svg) { const nh = need / PX; svg.setAttribute('height', need); svg.setAttribute('viewBox', `0 0 ${L.round(Math.max(it.w, 1), 3)} ${L.round(nh, 3)}`); const parts = L.geom.parts(Object.assign({}, it, { h: nh }), it.w, nh); const ps = svg.querySelectorAll('g > path'); parts.forEach((pp, i) => { if (ps[i]) ps[i].setAttribute('d', pp.d); }); } }
         }
       };
     }
@@ -293,6 +294,7 @@
     }
     const box = DR.objectEl(it, ctx);
     if (it.rot) box.style.transform = `rotate(${it.rot}deg)`;
+    R.effectRoom(box, it);
     return box;
   };
 
@@ -396,7 +398,8 @@
       const pos = floatPos(it, page, frag, anc, frame);
       if (!textWrap || ctx.inCell && !f.layoutInCell) {
         const lay = layer(page, f.wrap === 'behind' || f.behind);
-        wrap.style.cssText = `position:absolute;left:${pos.x}px;top:${pos.y}px;z-index:${Math.max(0, Math.min(1000, Math.round((f.z || 0) / 1e6)))}`;
+        /* stacked by relativeHeight inside the page's layer, every step kept (Word's VML z-index counts by one) */
+        wrap.style.cssText = `position:absolute;left:${pos.x}px;top:${pos.y}px;z-index:${Math.max(-2147483647, Math.min(2147483647, Math.round((f.z || 0) - 251658240)))}`;
         wrap._pos = pos;
         lay.appendChild(wrap);
         (frag._floats || (frag._floats = [])).push(wrap);
@@ -418,21 +421,23 @@
     let ref = pc.firstChild;
     for (const { wrap, obj, pos, f } of wraps) {
       const dist = f.dist || { t: 0, b: 0, l: 9, r: 9 };
-      const t = px(dist.t || 0), b = px(dist.b || 0);
+      /* the room for the object's effects (wp:effectExtent) adds to its distance from the text, as Word keeps it */
+      const e = wrap._item.eff || { l: 0, t: 0, r: 0, b: 0 };
+      const t = px((dist.t || 0) + e.t), b = px((dist.b || 0) + e.b);
       const dy = Math.max(0, pos.y - pcY - t);
       const leftSide = pos.x + pos.ow / 2 < pcX + pcW / 2 || f.side === 'right';
       const side = f.wrap === 'topBottom' || leftSide ? 'left' : 'right';
       const sp = el('span', 'fl-sp', `float:${side};width:0;height:${Math.max(0, many ? dy - cursor : dy)}px${many ? ';clear:both' : ''}`);
       sp.contentEditable = 'false';
       if (f.wrap === 'topBottom') {
-        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};width:100%;height:${pos.oh + b}px;position:relative;padding-top:${t}px`;
+        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};width:100%;height:${t + pos.oh + b}px;position:relative;padding-top:${t}px`;
         obj.style.position = 'absolute';
         obj.style.left = pos.x - pcX + 'px';
         obj.style.top = t + 'px';
       } else if (leftSide) {
-        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};margin-left:${pos.x - pcX}px;margin-right:${px(dist.r || 9)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
+        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};margin-left:${pos.x - pcX}px;margin-right:${px((dist.r != null ? dist.r : 9) + e.r)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
       } else {
-        wrap.style.cssText = `float:right;clear:${many ? 'both' : 'right'};margin-right:${pcX + pcW - pos.x - pos.ow}px;margin-left:${px(dist.l || 9)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
+        wrap.style.cssText = `float:right;clear:${many ? 'both' : 'right'};margin-right:${pcX + pcW - pos.x - pos.ow}px;margin-left:${px((dist.l != null ? dist.l : 9) + e.l)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
       }
       wrap._pos = pos;
       pc.insertBefore(sp, ref);
@@ -440,7 +445,7 @@
       DR.fillPending(wrap);
       /* a text box that grows to fit its text takes its real height in the wrap */
       let oh = pos.oh;
-      if (obj.querySelector('.tbx')) { const real = obj.offsetHeight; if (real > oh + 0.5) { oh = real; if (f.wrap === 'topBottom') wrap.style.height = oh + b + 'px'; } }
+      if (obj.querySelector('.tbx')) { const real = obj.offsetHeight; if (Math.abs(real - oh) > 0.5) { oh = real; if (f.wrap === 'topBottom') wrap.style.height = t + oh + b + 'px'; } }
       cursor = Math.max(cursor, dy) + t + oh + b;
     }
   };

@@ -447,6 +447,7 @@
         if (X.bool(at(s, 'default'))) st.isDefault = true;
         if (X.bool(at(s, 'customStyle'))) st.custom = true; else st.builtin = true;
         if (kid(s, 'qFormat')) st.q = true;
+        if (at(kid(s, 'aliases'), 'val')) st.aliases = at(kid(s, 'aliases'), 'val');
         if (kid(s, 'semiHidden')) st.semiHidden = true;
         if (kid(s, 'unhideWhenUsed')) st.unhide = true;
         if (kid(s, 'hidden')) st.hidden = true;
@@ -1404,6 +1405,10 @@
       it.rPr = base;
       it.w = it.w || w; it.h = it.h || h;
       if (docPr) { if (at(docPr, 'descr')) it.alt = at(docPr, 'descr'); if (at(docPr, 'name')) it.name = at(docPr, 'name'); if (at(docPr, 'title')) it.title = at(docPr, 'title'); if (X.bool(at(docPr, 'hidden'))) it.hidden = true; const hl = kid(docPr, 'hlinkClick'); if (hl) { const r = rid(hl); if (r && ctx.rels[r]) it.link = { url: ctx.rels[r].raw }; } }
+      /* room Word keeps around the object for its effects (shadow, glow, a turned picture's corners): margins inline,
+         more distance from the text when it floats */
+      const ee = kid(inl, 'effectExtent'), eff = ee && { l: emu(num(ee, 'l', 0)), t: emu(num(ee, 't', 0)), r: emu(num(ee, 'r', 0)), b: emu(num(ee, 'b', 0)) };
+      if (eff && (eff.l || eff.t || eff.r || eff.b)) it.eff = eff;
       if (inl.localName === 'anchor') it.float = floatOf(inl);
       return it;
     }
@@ -1573,10 +1578,11 @@
     }
     function smartArtItem(relIds, mctx, w, h, ctx) {
       /* SmartArt: use the pre-rendered drawing part (shapes with DrawingML text) */
+      /* its own drawing, named by its data's dataModelExt (a part with several diagrams has a drawing for each) */
       let dpath = null;
-      const dm = ctx.rels[rid(relIds, 'dm')];
-      for (const r of Object.values(ctx.rels)) if (r.type === 'diagramDrawing') { dpath = r.target; break; }
-      void dm;
+      const dm = ctx.rels[rid(relIds, 'dm')], ext = dm && desc(xmlCache.get(dm.target), 'dataModelExt'), own = ext && ctx.rels[at(ext, 'relId')];
+      if (own && own.type === 'diagramDrawing') dpath = own.target;
+      else if (!ext) { const all = Object.values(ctx.rels).filter((r) => r.type === 'diagramDrawing'); if (all.length === 1) dpath = all[0].target; }
       const dx = dpath && xmlCache.get(dpath);
       const tree = dx && desc(dx, 'spTree');
       if (!tree) return smartArtFromData(relIds, w, h, ctx) || { t: 'img', media: null, w, h, alt: 'Diagram' };
@@ -1671,6 +1677,18 @@
         const ppr = kid(ap, 'pPr');
         const jc = { l: 'left', ctr: 'center', r: 'right', just: 'both' }[at(ppr, 'algn')] || 'center';
         const p = D.para([], { jc, sp: { a: 0, b: 0, line: 0.9, rule: 'auto' } });
+        /* the paragraph's indents, spacing (a share of its text size) and bullet, as the drawing has them */
+        const lnPct = X.path(ppr, 'lnSpc', 'spcPct');
+        if (lnPct) p.pPr.sp.line = num(lnPct, 'val', 100000) / 100000;
+        if (at(ppr, 'marL') != null || at(ppr, 'indent') != null) p.pPr.ind = { l: emu(num(ppr, 'marL', 0)), fl: emu(num(ppr, 'indent', 0)) };
+        const r0 = kid(kid(ap, 'r'), 'rPr'), size = (r0 && at(r0, 'sz') ? num(r0, 'sz', 1800) / 100 : defSz || 18) * scale;
+        for (const [k, n] of [['b', 'spcBef'], ['a', 'spcAft']]) {
+          const pct = X.path(ppr, n, 'spcPct'), pts = X.path(ppr, n, 'spcPts');
+          if (pct) p.pPr.sp[k] = L.round(num(pct, 'val', 0) / 100000 * size, 2);
+          else if (pts) p.pPr.sp[k] = num(pts, 'val', 0) / 100 * scale;
+        }
+        const bu = kid(ppr, 'buChar');
+        let bullet = bu && at(bu, 'char') ? at(bu, 'char') : null;
         for (const r of kids(ap)) {
           if (r.localName !== 'r' && r.localName !== 'br') continue;
           if (r.localName === 'br') { p.runs.push(D.item('br', { type: 'line' })); continue; }
@@ -1689,6 +1707,13 @@
           if (o.sz == null && defSz) o.sz = defSz;
           if (scale !== 1 && o.sz) o.sz = Math.max(1, Math.round(o.sz * scale * 2) / 2);
           const t = kid(r, 't');
+          if (bullet && t && t.textContent) {
+            /* the bullet hangs at the first line's indent, the text right after it (at the left indent when the bullet
+               is narrower than the hang, as SmartArt's are) */
+            const bf = kid(ppr, 'buFont');
+            p.runs.push(D.text(bullet, Object.assign({}, o, bf && at(bf, 'typeface') && !/^\+/.test(at(bf, 'typeface')) ? { font: at(bf, 'typeface') } : {})));
+            bullet = null;
+          }
           if (t && t.textContent) p.runs.push(D.text(t.textContent, o));
         }
         out.push(p);
@@ -1795,6 +1820,14 @@
         if (s.localName === 'shape') geom = { 1: 'rect', 2: 'roundRect', 3: 'ellipse', 4: 'diamond', 5: 'triangle', 6: 'rtTriangle', 9: 'hexagon', 10: 'octagon', 13: 'rightArrow', 32: 'straightConnector1', 33: 'bentConnector2', 34: 'bentConnector3', 35: 'bentConnector4', 37: 'curvedConnector2', 38: 'curvedConnector3', 20: 'line', 66: 'leftArrow', 67: 'downArrow', 68: 'upArrow', 183: 'sun', 184: 'moon', 96: 'smileyFace', 74: 'heart', 12: 'star5' }[spt] || 'rect';
         const isText = spt === '202' || !!tb;
         it = { t: 'shape', w: w || 72, h: h || 36, geom, fill: vmlFill(s, geom !== 'line'), line: vmlLine(s, true) };
+        /* a freeform: its own path (or its shape type's), when no preset stands for it */
+        const vpath = s.localName === 'shape' && geom === 'rect' && !isText && (!spt || spt === '0' || spt === '100' || !/^\d+$/.test(spt)) && (at(s, 'path') || (ty && at(ty, 'path')));
+        if (vpath) {
+          const cs = (at(s, 'coordsize') || (ty && at(ty, 'coordsize')) || '21600,21600').split(',').map((v) => parseFloat(v) || 21600);
+          const co = (at(s, 'coordorigin') || (ty && at(ty, 'coordorigin')) || '0,0').split(',').map((v) => parseFloat(v) || 0);
+          const path = vmlPath(vpath, cs, co);
+          if (path) { it.geom = 'custom'; it.path = path; }
+        }
         if (geom === 'line' || /Connector/.test(geom)) {
           it.fill = { t: 'none' };
           const adj = at(s, 'adj');
@@ -1812,7 +1845,8 @@
           if (va) it.anchor = /middle/.test(va) ? 'ctr' : /bottom/.test(va) ? 'b' : undefined;
           if (/layout-flow:\s*vertical/.test(at(tb, 'style') || '')) it.vert = 'vert';
         }
-        const tp = desc(s, 'textpath');
+        /* WordArt is a v:shape's: Word draws a v:rect's textpath as nothing, and its text box as usual */
+        const tp = s.localName === 'shape' && desc(s, 'textpath');
         if (tp && at(tp, 'string')) { const ts = styleMap(at(tp, 'style')); it.wordart = { text: at(tp, 'string'), font: (ts['font-family'] || 'Arial').replace(/["']/g, ''), b: /bold/.test(ts['font-weight'] || '') || undefined, i: /italic/.test(ts['font-style'] || '') || undefined }; it.warp = it.warp || 'textPlain'; }
         const sh = kid(s, 'shadow');
         if (sh && vBool(at(sh, 'on'), false)) { const off = (at(sh, 'offset') || '2pt,2pt').split(','); it.shadow = { c: vColor(at(sh, 'color')) || '#808080', a: 0.6, dx: cssLen(off[0] || '2pt'), dy: cssLen(off[1] || '2pt'), blur: 0 }; }
@@ -1821,6 +1855,104 @@
       if (st.flip) { if (/x/.test(st.flip)) it.flipH = true; if (/y/.test(st.flip)) it.flipV = true; }
       if (st.visibility === 'hidden') it.hidden = true;
       return it;
+    }
+    /** a VML path (v:shape's path: m l c x e t r v nf ns qb qx qy, and the arcs at ar wa wr ae al) in its coordsize units
+        from its coordorigin, as a custom geometry; null for one that uses its shape type's formulas (@n) */
+    const VML_TWO = new Set(['nf', 'ns', 'ae', 'al', 'at', 'ar', 'wa', 'wr', 'qx', 'qy', 'qb']);
+    function vmlPath(str, cs, co) {
+      if (!str || /@/.test(str)) return null;
+      const src = String(str), cmds = [];
+      for (let i = 0; i < src.length;) {
+        const ch = src[i].toLowerCase();
+        if (!/[a-z]/.test(ch)) { i++; continue; }
+        const two = src.slice(i, i + 2).toLowerCase();
+        const op = VML_TWO.has(two) ? two : ch;
+        i += op.length;
+        let j = i;
+        while (j < src.length && !/[a-z]/i.test(src[j])) j++;
+        const raw = src.slice(i, j).trim();
+        cmds.push([op, raw ? raw.split(/\s*,\s*|\s+/).map((v) => (v === '' ? 0 : parseFloat(v) || 0)) : []]);
+        i = j;
+      }
+      const subs = [];
+      let cur = null, x = 0, y = 0, sx = 0, sy = 0, quad = 0;
+      const X0 = co[0], Y0 = co[1];
+      const sub = () => { if (!cur) { cur = { cmds: [], fill: true, stroke: true }; subs.push(cur); } return cur; };
+      const P = (px, py) => [px - X0, py - Y0];
+      const move = (px, py) => { cur = null; sub().cmds.push(['M', ...P(px, py)]); x = sx = px; y = sy = py; };
+      const line = (px, py) => { if (!cur) move(x, y); cur.cmds.push(['L', ...P(px, py)]); x = px; y = py; };
+      const curve = (a, b, c, d, e, f) => { if (!cur) move(x, y); cur.cmds.push(['C', ...P(a, b), ...P(c, d), ...P(e, f)]); x = e; y = f; };
+      /* an elliptical arc as cubic curves, from angle t0 through dt (radians, y down) */
+      const arc = (cx, cy, rx, ry, t0, dt, join) => {
+        const at0 = [cx + rx * Math.cos(t0), cy + ry * Math.sin(t0)];
+        if (join) line(...at0); else move(...at0);
+        const n = Math.max(1, Math.ceil(Math.abs(dt) / (Math.PI / 2) - 1e-9)), d = dt / n, k = (4 / 3) * Math.tan(d / 4);
+        for (let m = 0; m < n; m++) {
+          const a = t0 + d * m, b = a + d;
+          const p0 = [cx + rx * Math.cos(a), cy + ry * Math.sin(a)], p3 = [cx + rx * Math.cos(b), cy + ry * Math.sin(b)];
+          curve(p0[0] - k * rx * Math.sin(a), p0[1] + k * ry * Math.cos(a), p3[0] + k * rx * Math.sin(b), p3[1] - k * ry * Math.cos(b), p3[0], p3[1]);
+        }
+      };
+      for (const [op, v] of cmds) {
+        switch (op) {
+          case 'm': move(v[0] || 0, v[1] || 0); break;
+          case 't': move(x + (v[0] || 0), y + (v[1] || 0)); break;
+          case 'l': for (let k = 0; k + 1 < v.length; k += 2) line(v[k], v[k + 1]); break;
+          case 'r': for (let k = 0; k + 1 < v.length; k += 2) line(x + v[k], y + v[k + 1]); break;
+          case 'c': for (let k = 0; k + 5 < v.length; k += 6) curve(v[k], v[k + 1], v[k + 2], v[k + 3], v[k + 4], v[k + 5]); break;
+          case 'v': for (let k = 0; k + 5 < v.length; k += 6) { const bx = x, by = y; curve(bx + v[k], by + v[k + 1], bx + v[k + 2], by + v[k + 3], bx + v[k + 4], by + v[k + 5]); } break;
+          case 'x': if (cur) { cur.cmds.push(['Z']); x = sx; y = sy; } break;
+          case 'e': cur = null; break;
+          case 'nf': sub().fill = false; break;
+          case 'ns': sub().stroke = false; break;
+          case 'qb': {
+            /* a quadratic B-spline: on-curve points halfway between its control points, the last one on the curve */
+            const pts = []; for (let k = 0; k + 1 < v.length; k += 2) pts.push([v[k], v[k + 1]]);
+            for (let k = 0; k + 1 < pts.length; k++) {
+              const end = k + 2 === pts.length ? pts[k + 1] : [(pts[k][0] + pts[k + 1][0]) / 2, (pts[k][1] + pts[k + 1][1]) / 2];
+              const c0 = pts[k];
+              curve(x + (2 / 3) * (c0[0] - x), y + (2 / 3) * (c0[1] - y), end[0] + (2 / 3) * (c0[0] - end[0]), end[1] + (2 / 3) * (c0[1] - end[1]), end[0], end[1]);
+            }
+            break;
+          }
+          case 'qx': case 'qy': {
+            /* elliptical quadrants, starting along x (qx) or y (qy) and alternating */
+            quad = op === 'qx' ? 0 : 1;
+            for (let k = 0; k + 1 < v.length; k += 2, quad ^= 1) {
+              const ex = v[k], ey = v[k + 1], K = 0.5522847498;
+              if (quad === 0) curve(x + K * (ex - x), y, ex, ey - K * (ey - y), ex, ey);
+              else curve(x, y + K * (ey - y), ex - K * (ex - x), ey, ex, ey);
+            }
+            break;
+          }
+          case 'at': case 'ar': case 'wa': case 'wr': {
+            for (let k = 0; k + 7 < v.length; k += 8) {
+              const [l, t, r, b, x1, y1, x2, y2] = v.slice(k, k + 8), cx = (l + r) / 2, cy = (t + b) / 2, rx = Math.abs(r - l) / 2 || 1e-9, ry = Math.abs(b - t) / 2 || 1e-9;
+              const a1 = Math.atan2((y1 - cy) / ry, (x1 - cx) / rx), a2 = Math.atan2((y2 - cy) / ry, (x2 - cx) / rx);
+              let dt = a2 - a1;
+              if (op[0] === 'w') { while (dt <= 0) dt += 2 * Math.PI; } else { while (dt >= 0) dt -= 2 * Math.PI; }
+              arc(cx, cy, rx, ry, a1, dt, op === 'ar' || op === 'wr');
+            }
+            break;
+          }
+          case 'ae': case 'al': {
+            for (let k = 0; k + 5 < v.length; k += 6) {
+              const [cx, cy, rx, ry, a, sw] = v.slice(k, k + 6), rad = Math.PI / 180 / 65536;
+              arc(cx, cy, rx, ry, -a * rad, -sw * rad, op === 'al');
+            }
+            break;
+          }
+          default: return null;
+        }
+      }
+      const paths = [];
+      for (const q of subs) {
+        if (!q.cmds.length) continue;
+        const last = paths[paths.length - 1];
+        if (last && last.fill === (q.fill ? 'norm' : 'none') && last.stroke === q.stroke) last.cmds.push(...q.cmds);
+        else paths.push({ w: Math.max(cs[0], 0.01), h: Math.max(cs[1], 0.01), cmds: q.cmds.slice(), fill: q.fill ? 'norm' : 'none', stroke: q.stroke });
+      }
+      return paths.length ? { paths } : null;
     }
     /** a VML group flattened into a Quire group: children mapped from the group's coordinate space into points */
     function vmlGroup(g, ctx, w, h) {
@@ -1913,6 +2045,18 @@
         if (y2 < y1) it.flipV = true;
         if (st.position === 'absolute' && !st['margin-left'] && !st.left) st['margin-left'] = Math.min(x1, x2) + 'pt';
         if (st.position === 'absolute' && !st['margin-top'] && !st.top) st['margin-top'] = Math.min(y1, y2) + 'pt';
+      } else if (s.localName === 'polyline') {
+        /* its points are where it stands: the box around them, the path inside it */
+        const raw = (at(s, 'points') || '').split(/\s*,\s*|\s+/).filter(Boolean).map(cssLen), pts = [];
+        for (let i = 0; i + 1 < raw.length; i += 2) pts.push([raw[i], raw[i + 1]]);
+        if (!pts.length) return null;
+        const x0 = Math.min(...pts.map((q) => q[0])), y0 = Math.min(...pts.map((q) => q[1]));
+        const pw = Math.max(...pts.map((q) => q[0])) - x0 || 0.5, ph = Math.max(...pts.map((q) => q[1])) - y0 || 0.5;
+        it = vmlShape(s, ctx, pw, ph);
+        it.geom = 'custom';
+        it.path = { paths: [{ w: pw, h: ph, cmds: pts.map((q, i) => [i ? 'L' : 'M', L.round(q[0] - x0, 3), L.round(q[1] - y0, 3)]), fill: 'norm', stroke: true }] };
+        if (st.position === 'absolute' && !st['margin-left'] && !st.left) st['margin-left'] = x0 + 'pt';
+        if (st.position === 'absolute' && !st['margin-top'] && !st.top) st['margin-top'] = y0 + 'pt';
       } else it = vmlShape(s, ctx, w, h);
       if (!it) return null;
       if (it.t === 'img') { const ole = kid(pict, 'OLEObject'); if (ole) it.ole = { progId: at(ole, 'ProgID') }; }

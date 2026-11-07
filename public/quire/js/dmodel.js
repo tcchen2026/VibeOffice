@@ -1114,9 +1114,16 @@
     D.walk(doc.main, (b) => { if (b.t === 'p') { if (b.pPr.style) s.add(b.pPr.style); for (const it of b.runs) if (it.rPr && it.rPr.style) s.add(it.rPr.style); } });
     return s;
   };
+  /** a style by its id or name; also by the name Word shows with its aliases ("Product Head,ph") or one alias alone */
   D.findStyleByName = (doc, name) => {
     const n = String(name).toLowerCase();
-    for (const k in doc.styles) { const s = doc.styles[k]; if (s.sameAs) continue; if (s.id.toLowerCase() === n || String(s.name).toLowerCase() === n || D.styleDisplayName(s).toLowerCase() === n) return s; }
+    for (const k in doc.styles) {
+      const s = doc.styles[k];
+      if (s.sameAs) continue;
+      if (s.id.toLowerCase() === n || String(s.name).toLowerCase() === n || D.styleDisplayName(s).toLowerCase() === n) return s;
+      const al = s.aliases ? String(s.aliases).toLowerCase() : '';
+      if (al && (n === String(s.name).toLowerCase() + ',' + al || al.split(',').some((a) => a.trim() === n))) return s;
+    }
     return null;
   };
   D.uniqueStyleId = (doc, name) => { let base = String(name).replace(/[^A-Za-z0-9]/g, '') || 'Style'; let id = base, i = 1; while (doc.styles[id]) id = base + (++i); return id; };

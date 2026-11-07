@@ -24,8 +24,8 @@ for deck in sorted(os.listdir(pp)):
         if not os.path.exists(mine):
             rows.append({'deck': deck, 'slide': i + 1, 'score': 99, 'note': 'no Lectern slide'}); continue
         a = Image.open(os.path.join(pdir, f)).convert('RGB'); b = Image.open(mine).convert('RGB')
-        if abs(a.height - b.height) > 2:
-            rows.append({'deck': deck, 'slide': i + 1, 'score': 98, 'note': 'height %d vs %d' % (a.height, b.height)})
+        if abs(a.height - b.height * a.width / b.width) > 2:
+            rows.append({'deck': deck, 'slide': i + 1, 'score': 98, 'note': 'height %d vs %d' % (a.height, round(b.height * a.width / b.width))})
         b = b.resize(a.size)
         size = (192, round(192 * a.height / a.width))
         pa, pb = (x.resize(size, Image.BILINEAR).filter(ImageFilter.GaussianBlur(1.2)) for x in (a, b))

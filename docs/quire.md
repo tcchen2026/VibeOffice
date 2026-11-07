@@ -101,6 +101,26 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   bubble charts, a chart area without formatting white with a grey border as in Word, and the categories of the axis
   the series stand on. All 127 charts of the 74 corpus documents that have them are read so; three documents printed
   by Word 2016 agree in their scales, series, markers, labels and borders.
+- Drawings take the room Word gives them, measured in Word 2016's prints of documents made for the purpose
+  (2026-11-07; `tests/quire/drawn-as-word.test.mjs`): the room an object keeps for its effects (`wp:effectExtent`: a
+  shadow, a glow, a turned picture's corners) is a margin around it in its line and adds to a floating object's
+  distance from the text; a picture in line with text wider than its line sticks out past the right edge on its one
+  line (Quire gave it a second, empty line); a text box that fits its text is fitted again on opening, shrunk as well
+  as grown (a box saved 200 pt tall around two lines is 34.5 pt); a line with nothing on it but anchors goes below an
+  object text can't go beside, as any line; floating objects stack by every step of their z-order (Word's VML
+  z-index counts by one). VML freeforms and polylines are drawn from their paths and points (they were rectangles),
+  each SmartArt diagram from its own drawing part (a document with several drew the first each time) with its
+  text's bullets, a WMF whose header has empty bounds to its window, and percentage shading as that share of the
+  pattern colour over the fill (pct25 auto on auto is light grey; Quire drew it dark grey with white text). STYLEREF
+  finds a style by the name Word shows with its aliases ("Product Head,ph") or by one alias, and the first paragraph
+  in that style on the page gives its text even when it is empty, as Word prints it. A `v:rect` with a textpath is
+  the text box it holds (Word draws no WordArt for it), and "Don't use HTML paragraph auto spacing" adds space after
+  and space before together only up to compatibility mode 14: in mode 15 Word 2016 takes the larger even so (Quire
+  added them, and LibreOffice's tdf145716_nonHTMLspacing.docx ran to a second page). Measured with
+  `tools/quire-pictures.mjs` against Word 2016's PDFs of 320 Word-made corpus documents (374 pages): the summed
+  difference of the pages went from 1011 to 888; the SmartArt document from 27.7 to 1.9, a table shaded pct25 from
+  40.4 to 4.5, the VML stars from 43.8 to 5.3; three pages moved away from Word's by more than 1 (a picture whose
+  line was already lower than Word's moved 1.5 pt further, by its effects' room).
 - More of Word's own habits: a right or centred tab stop placed beyond the right indent lets the page
   number of a table of contents run out to it; superscripts and footnote references do not push their
   line down; table rows are as tall as Word makes them even though the browser draws hairline borders a

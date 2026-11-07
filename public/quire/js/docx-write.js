@@ -654,7 +654,8 @@
     else if (it.t === 'shape') graphic = `<a:graphicData uri="${NS.wps}">${shapeXML(it, ctx, 0, 0, id)}</a:graphicData>`;
     else if (it.t === 'group') graphic = `<a:graphicData uri="${NS.wpg}">${groupXML(it, ctx, 0, 0, id, false)}</a:graphicData>`;
     else if (it.t === 'chart') { const rid = ctx.chart(it); graphic = `<a:graphicData uri="${NS.c}"><c:chart xmlns:c="${NS.c}" r:id="${rid}"/></a:graphicData>`; }
-    const ext = `<wp:extent cx="${Math.max(0, emu(it.w))}" cy="${Math.max(0, emu(it.h))}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>`;
+    const e = it.eff || { l: 0, t: 0, r: 0, b: 0 };
+    const ext = `<wp:extent cx="${Math.max(0, emu(it.w))}" cy="${Math.max(0, emu(it.h))}"/><wp:effectExtent l="${emu(e.l)}" t="${emu(e.t)}" r="${emu(e.r)}" b="${emu(e.b)}"/>`;
     const docPr = `<wp:docPr id="${id}" name="${X(it.name || (it.t === 'img' ? 'Picture ' : it.t === 'chart' ? 'Chart ' : 'Shape ') + id)}"${it.alt ? ` descr="${X(it.alt)}"` : ''}${it.title ? ` title="${X(it.title)}"` : ''}${it.hidden ? ' hidden="1"' : ''}>${it.link && it.link.url ? `<a:hlinkClick xmlns:a="${NS.a}" r:id="${ctx.rels.add(RT('hyperlink'), it.link.url, true)}"/>` : ''}</wp:docPr>`;
     const lock = it.t === 'img' ? `<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="${NS.a}" noChangeAspect="1"/></wp:cNvGraphicFramePr>` : '<wp:cNvGraphicFramePr/>';
     const graphicEl = `<a:graphic xmlns:a="${NS.a}">${graphic}</a:graphic>`;

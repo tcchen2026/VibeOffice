@@ -66,7 +66,7 @@
   R.authors = () => authors.slice();
   /* automatic text colour turns white on dark shading (same luminance threshold LibreOffice uses for Word compatibility) */
   R.isDark = (hex) => { if (!hex || hex === 'auto') return false; const [r, g, b] = L.color.hexToRgb('#' + String(hex).replace('#', '')); return (r * 299 + g * 587 + b * 114) / 1000 <= 156; };
-  /** 'pct25' style shading over a colour */
+  /** 'pct25' style shading over a colour: that share of the pattern colour over the fill (pct12 is 12.5%) */
   R.shadeCSS = function (shd) {
     if (!shd) return '';
     const fill = shd.fill && shd.fill !== 'auto' ? '#' + shd.fill : null;
@@ -75,10 +75,10 @@
     const fg = shd.color && shd.color !== 'auto' ? '#' + shd.color : '#000000';
     if (v === 'solid') return fg;
     const m = /^pct(\d+)$/.exec(v);
-    if (m) return L.color.mix(fg, fill || '#FFFFFF', +m[1] / 100);
+    if (m) return L.color.mix(fill || '#FFFFFF', fg, ({ 12: 12.5, 37: 37.5, 62: 62.5, 87: 87.5 }[m[1]] || +m[1]) / 100);
     /* patterns approximated by their density */
     const dens = { horzStripe: 0.5, vertStripe: 0.5, reverseDiagStripe: 0.5, diagStripe: 0.5, horzCross: 0.6, diagCross: 0.6, thinHorzStripe: 0.25, thinVertStripe: 0.25, thinReverseDiagStripe: 0.25, thinDiagStripe: 0.25, thinHorzCross: 0.4, thinDiagCross: 0.4 }[v];
-    return dens ? L.color.mix(fg, fill || '#FFFFFF', dens) : fill || '';
+    return dens ? L.color.mix(fill || '#FFFFFF', fg, dens) : fill || '';
   };
 
   /* ---------- borders ---------- */
@@ -392,6 +392,9 @@
       br.className = 'fill';
       pc.appendChild(br);
     }
+    /* an empty line still takes room: Word moves it below an object text can't go beside (Chromium sets an empty
+       line beside a float that leaves no room). Not a paragraph with anchors: its own floats go before the line */
+    if (!pc.querySelector('[data-o]:not(.zw)') && !pc.querySelector('.lbl')) pc.classList.add('blank');
     /* each line as tall as what it holds (portions.js) */
     R.lineBoxes(pc, {
       ls, grid: !!gridPx, dropCap: pc.dataset.dropLines != null, to,
@@ -615,6 +618,7 @@
       } else if (it.t === 'img') {
         el = R.image(it, r, ctx);
         if (!el) continue;
+        R.effectRoom(el, it);
       } else if (it.t === 'shape' || it.t === 'group' || it.t === 'chart') {
         el = L.drawing && L.drawing.renderInline ? L.drawing.renderInline(it, r, ctx, p) : null;
         if (!el) { el = document.createElement('span'); el.className = 'obj-missing'; el.contentEditable = 'false'; }
@@ -769,6 +773,12 @@
   }
 
   /* ---------- images ---------- */
+  /** an object in line with text: Word sets it in its line with the room for its effects around it (wp:effectExtent:
+      a shadow, a glow, a turned picture's corners) */
+  R.effectRoom = function (el, it) {
+    const e = it.eff;
+    if (e) el.style.margin = `${R.px(e.t)}px ${R.px(e.r)}px ${R.px(e.b)}px ${R.px(e.l)}px`;
+  };
   R.image = function (it, r, ctx) {
     const wrap = document.createElement('span');
     wrap.className = 'img';
@@ -820,7 +830,9 @@
    * colLeft: x (px, client coords) of the column's left edge; scale: current zoom.
    */
   /** documents saved with Word 97 spacing rules add space after and space before together */
-  R.cumulativeSpacing = (d) => { const c = d.settings && d.settings.compatXML; return !!c && /doNotUseHTMLParagraphAutoSpacing(?![^>]*w:val="(0|false)")/.test(c); };
+  /* "Don't use HTML paragraph auto spacing" adds space after and before together, up to Word 2010's compatibility
+     mode (14); in Word 2013's (15) they collapse to the larger even so (Word 2016's prints) */
+  R.cumulativeSpacing = (d) => { const c = d.settings && d.settings.compatXML; return !!c && (d.settings.compat || 12) < 15 && /doNotUseHTMLParagraphAutoSpacing(?![^>]*w:val="(0|false)")/.test(c); };
   /** an empty paragraph that only ends a section, the next going on continuously on the same paper: on the page Word
       gives it no room at all, neither a line nor its spacing, in every compatibility mode (Word 2016's prints) */
   R.bareSectBreak = (d, p, view) => {

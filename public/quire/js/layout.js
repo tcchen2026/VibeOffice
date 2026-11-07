@@ -599,6 +599,17 @@
   const frameOnPage = (fp) => (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline'))
     ? fp.vAnchor !== 'text' : false;
   const fixAbsFrames = (root) => { for (const w of root.querySelectorAll('.frm-anchor')) LY.posAbsFrame(w); };
+  /** an object in line with text that is wider than its line ends the paragraph sticking out past the right edge, as
+      in Word: the caret's filler after it (R.fillRuns) stays on its line instead of taking a line of its own */
+  function hangWide(zw) {
+    const obj = zw.previousSibling;
+    if (!obj || obj.nodeType !== 1 || !(obj.classList.contains('img') || obj.classList.contains('shp'))) return;
+    const o = obj.getBoundingClientRect(), z = zw.getBoundingClientRect();
+    if (z.top < o.bottom - 1) return;
+    const pc = zw.parentNode, right = pc.getBoundingClientRect().right - parseFloat(getComputedStyle(pc).paddingRight || 0);
+    const over = (o.right - right) / LY.scale();
+    if (over > 0) obj.style.marginRight = (parseFloat(obj.style.marginRight) || 0) - over - 1 + 'px';
+  }
   /** the properties of a table row's first paragraph (its first cell's), which Word reads for the row's page breaks */
   function rowLead(d, t, ri) {
     const c0 = t.rows[ri] && t.rows[ri].cells[0];
@@ -625,6 +636,8 @@
   }
   /** after inserting a paragraph fragment: tabs, floats */
   function postPara(frag, p, ctx, frame) {
+    const zw = frag.firstChild && frag.firstChild.querySelector(':scope > .zw');
+    if (zw) hangWide(zw);
     if (frag.querySelector('.tb')) {
       const colRect = frame.el.getBoundingClientRect();
       frag._tabs = { p, ctx, frame };
@@ -1087,6 +1100,7 @@
       if (!spans.length) return null;
       return (fromEnd ? spans[spans.length - 1] : spans[0]).join('').trim() || null;
     };
+    /* a paragraph in the style is a hit even when empty: Word then shows nothing */
     const hit = (q, from, to, fromEnd) => (isChar ? charHit(q, from, to == null ? D.plen(q) : to, fromEnd) : paraHit(q) ? D.plainText(q).trim() : null);
     let frags = Array.from(page.body.querySelectorAll('.p[data-pid]')).filter((e) => !e.closest('.shp, .frm-abs'));
     if (last) frags = frags.reverse();
@@ -1095,7 +1109,7 @@
       if (!q) continue;
       const tt = parseFloat(e.dataset.to);
       const r = hit(q, +e.dataset.from || 0, isFinite(tt) ? tt : null, last);
-      if (r) return r;
+      if (r != null) return r;
     }
     /* not on this page: search back from its start, then forward from its end */
     D.reindex(d);
@@ -1104,9 +1118,9 @@
     const firstQ = firstE && D.byId(d, +firstE.dataset.pid), lastQ = lastE && D.byId(d, +lastE.dataset.pid);
     /* the part of the page's first paragraph that lies on earlier pages comes first */
     if (firstQ && isChar && +firstE.dataset.from > 0) { const r = charHit(firstQ, 0, +firstE.dataset.from, true); if (r) return r; }
-    for (let q = firstQ && D.prevPara(d, firstQ); q; q = D.prevPara(d, q)) { const r = hit(q, 0, null, true); if (r) return r; }
+    for (let q = firstQ && D.prevPara(d, firstQ); q; q = D.prevPara(d, q)) { const r = hit(q, 0, null, true); if (r != null) return r; }
     if (lastQ && isChar) { const tt = parseFloat(lastE.dataset.to); if (isFinite(tt) && tt < D.plen(lastQ)) { const r = charHit(lastQ, tt, D.plen(lastQ), false); if (r) return r; } }
-    for (let q = lastQ && D.nextPara(d, lastQ); q; q = D.nextPara(d, q)) { const r = hit(q, 0, null, false); if (r) return r; }
+    for (let q = lastQ && D.nextPara(d, lastQ); q; q = D.nextPara(d, q)) { const r = hit(q, 0, null, false); if (r != null) return r; }
     return 'Error! No text of specified style in document.';
   };
   /** create a page DOM for section index si */

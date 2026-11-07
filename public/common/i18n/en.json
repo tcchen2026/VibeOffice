@@ -5573,7 +5573,7 @@
  "Add Text": {
   "where": [
    "lectern/js/textedit.js:339",
-   "quire/js/drawing.js:698"
+   "quire/js/drawing.js:703"
   ]
  },
  "Add at least one picture.": {
@@ -7101,7 +7101,7 @@
  },
  "Behind Text": {
   "where": [
-   "quire/js/drawing.js:678"
+   "quire/js/drawing.js:683"
   ]
  },
  "Below selected item": {
@@ -9431,7 +9431,7 @@
    "quire/js/editor.js:381",
    "quire/js/find.js:391",
    "quire/js/find.js:393",
-   "quire/js/render.js:606"
+   "quire/js/render.js:609"
   ]
  },
  "Column Width": {
@@ -12857,7 +12857,7 @@
  },
  "Embedded content": {
   "where": [
-   "quire/js/render.js:428"
+   "quire/js/render.js:431"
   ]
  },
  "Embedded fonts were not kept": {
@@ -12870,7 +12870,7 @@
   "where": [
    "lectern/js/frames.js:19",
    "lectern/js/render.js:597",
-   "quire/js/render.js:428"
+   "quire/js/render.js:431"
   ]
  },
  "Embedded text styles are too large": {
@@ -13279,8 +13279,8 @@
  "Error! No text of specified style in document.": {
   "where": [
    "quire/js/fields.js:368",
-   "quire/js/layout.js:1071",
-   "quire/js/layout.js:1110"
+   "quire/js/layout.js:1084",
+   "quire/js/layout.js:1124"
   ]
  },
  "Error! Not a valid footnote reference.": {
@@ -14682,7 +14682,7 @@
  },
  "Form control": {
   "where": [
-   "quire/js/render.js:428"
+   "quire/js/render.js:431"
   ]
  },
  "Forma&ts": {
@@ -16266,12 +16266,12 @@
  },
  "In Front of Text": {
   "where": [
-   "quire/js/drawing.js:678"
+   "quire/js/drawing.js:683"
   ]
  },
  "In Line with Text": {
   "where": [
-   "quire/js/drawing.js:678"
+   "quire/js/drawing.js:683"
   ]
  },
  "In l&ine with text": {
@@ -19298,7 +19298,7 @@
    "lectern/js/editor.js:579",
    "ledger/js/drawing.js:296",
    "ledger/js/drawing.js:373",
-   "quire/js/drawing.js:586"
+   "quire/js/drawing.js:591"
   ]
  },
  "Move Page Break": {
@@ -20218,7 +20218,7 @@
  "Nudge": {
   "where": [
    "lectern/js/app.js:1148",
-   "quire/js/drawing.js:600"
+   "quire/js/drawing.js:605"
   ]
  },
  "Nudge (Ctrl for fine nudge)": {
@@ -21093,7 +21093,7 @@
  "Page Break": {
   "where": [
    "quire/js/editor.js:380",
-   "quire/js/render.js:606"
+   "quire/js/render.js:609"
   ]
  },
  "Page Break Pre&view": {
@@ -22695,7 +22695,7 @@
  },
  "Quire word processor": {
   "where": [
-   "quire/index.html:340"
+   "quire/index.html:341"
   ]
  },
  "R&eading Layout": {
@@ -23509,7 +23509,7 @@
  "Resize Object": {
   "where": [
    "ledger/js/drawing.js:373",
-   "quire/js/drawing.js:627"
+   "quire/js/drawing.js:632"
   ]
  },
  "Resize Picture": {
@@ -26088,28 +26088,28 @@
  },
  "Section Break (Continuous)": {
   "where": [
-   "quire/js/render.js:420"
+   "quire/js/render.js:423"
   ]
  },
  "Section Break (Even Page)": {
   "where": [
-   "quire/js/render.js:420"
+   "quire/js/render.js:423"
   ]
  },
  "Section Break (Next Column)": {
   "where": [
-   "quire/js/render.js:420"
+   "quire/js/render.js:423"
   ]
  },
  "Section Break (Next Page)": {
   "where": [
    "quire/js/app.js:1443",
-   "quire/js/render.js:420"
+   "quire/js/render.js:423"
   ]
  },
  "Section Break (Odd Page)": {
   "where": [
-   "quire/js/render.js:420"
+   "quire/js/render.js:423"
   ]
  },
  "Section break types": {
@@ -28223,7 +28223,7 @@
  },
  "Square": {
   "where": [
-   "quire/js/drawing.js:678"
+   "quire/js/drawing.js:683"
   ]
  },
  "Square Dot": {
@@ -31191,7 +31191,7 @@
  },
  "Through": {
   "where": [
-   "quire/js/drawing.js:678"
+   "quire/js/drawing.js:683"
   ]
  },
  "Thu&mbnails": {
@@ -31211,7 +31211,7 @@
  },
  "Tight": {
   "where": [
-   "quire/js/drawing.js:678"
+   "quire/js/drawing.js:683"
   ]
  },
  "Time": {
@@ -31587,7 +31587,7 @@
  },
  "Top and Bottom": {
   "where": [
-   "quire/js/drawing.js:678"
+   "quire/js/drawing.js:683"
   ]
  },
  "Top and Bottom Border": {

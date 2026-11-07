@@ -172,6 +172,13 @@ Word's; `--compare BEFORE.jsonl AFTER.jsonl` lists what a change moved, and ever
 For the "before", serve the last commit's site on a port of its own (`git archive HEAD public | tar -x -C
 tmp/pages-before`, `python3 tools/serve.py 8771 tmp/pages-before/public`) and run with `BASE=http://127.0.0.1:8771`.
 
+Pages as drawn, against Word: `node tools/quire-pictures.mjs docs.json out/ [nameFilter]` (docs.json `[{ "name",
+"file" }]`) opens each document in Print Layout at 100% and takes a picture of every page as Quire draws it (`<name>__<page>.png`,
+816 px for a Letter page; no corner marks or window around it); `python3 -I tools/lectern-vs-powerpoint.py wordDir out/
+cmp/` scores each against Word 2016's PDF of the document from the Office test API (`<name>/file/office.pdf`) and
+writes the pairs side by side, worst first. A page count unlike Word's shows as "height" or "no Lectern slide" rows.
+Before and after a change: render twice, the "before" with `BASE` as above.
+
 ## From issues: tests/from-issues/
 
 Regression tests for a reported issue live in `tests/from-issues/N/` (N is the issue number), so a later change that breaks one shows which report it reopens. Each fails on the commit before its fix.

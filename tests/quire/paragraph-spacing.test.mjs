@@ -3,7 +3,9 @@
 //   and the space after and before on either side of the break collapse to the larger, as between any paragraphs
 //   (LibreOffice's tdf169986_bottomSpacing.docx, one page in Word, took two in Quire);
 // - auto spacing stays out from between paragraphs whose numbering goes on from one to the next (tdf133052.docx,
-//   one page in Word, took two; bullet-simple1.docx keeps it between two lists).
+//   one page in Word, took two; bullet-simple1.docx keeps it between two lists);
+// - "Don't use HTML paragraph auto spacing" adds space after and space before together in compatibility modes up to
+//   14 (Word 2010), and not in mode 15 (2026-11-07).
 // node --test tests/quire/paragraph-spacing.test.mjs
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,13 +32,14 @@ const NUMBERING = '<w:abstractNum w:abstractNumId="0">' + LEVEL(0, 'decimal') + 
 
 // opens the body (Times New Roman 12 pt, single spacing, the last section continuous) and returns how far below
 // Alpha's line (pt) each paragraph's text stands, by its first word
-async function offsets(body) {
+async function offsets(body, compat = '') {
   const r = await page.evaluate(`(async () => {
     const K = L.opc, N = K.NS, part = 'word/document.xml', T = 'application/vnd.openxmlformats-officedocument.wordprocessingml.';
     const files = [
-      { name: '[Content_Types].xml', data: '<Types xmlns="' + N.ct + '"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/' + part + '" ContentType="' + T + 'document.main+xml"/><Override PartName="/word/styles.xml" ContentType="' + T + 'styles+xml"/><Override PartName="/word/numbering.xml" ContentType="' + T + 'numbering+xml"/></Types>' },
+      { name: '[Content_Types].xml', data: '<Types xmlns="' + N.ct + '"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/' + part + '" ContentType="' + T + 'document.main+xml"/><Override PartName="/word/styles.xml" ContentType="' + T + 'styles+xml"/><Override PartName="/word/numbering.xml" ContentType="' + T + 'numbering+xml"/><Override PartName="/word/settings.xml" ContentType="' + T + 'settings+xml"/></Types>' },
       { name: '_rels/.rels', data: '<Relationships xmlns="' + N.pkg + '"><Relationship Id="rId1" Type="' + N.rel + '/officeDocument" Target="' + part + '"/></Relationships>' },
-      { name: 'word/_rels/document.xml.rels', data: '<Relationships xmlns="' + N.pkg + '"><Relationship Id="rId1" Type="' + N.rel + '/styles" Target="styles.xml"/><Relationship Id="rId2" Type="' + N.rel + '/numbering" Target="numbering.xml"/></Relationships>' },
+      { name: 'word/_rels/document.xml.rels', data: '<Relationships xmlns="' + N.pkg + '"><Relationship Id="rId1" Type="' + N.rel + '/styles" Target="styles.xml"/><Relationship Id="rId2" Type="' + N.rel + '/numbering" Target="numbering.xml"/><Relationship Id="rId3" Type="' + N.rel + '/settings" Target="settings.xml"/></Relationships>' },
+      { name: 'word/settings.xml', data: '<w:settings xmlns:w="' + N.w + '"><w:compat>' + ${JSON.stringify(compat)} + '</w:compat></w:settings>' },
       { name: 'word/styles.xml', data: '<w:styles xmlns:w="' + N.w + '"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="24"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>' },
       { name: 'word/numbering.xml', data: '<w:numbering xmlns:w="' + N.w + '">' + ${JSON.stringify(NUMBERING)} + '</w:numbering>' },
       { name: part, data: '<w:document xmlns:w="' + N.w + '"><w:body>' + ${JSON.stringify(body)} + '<w:sectPr><w:type w:val="continuous"/>${SECT}</w:sectPr></w:body></w:document>' },
@@ -94,4 +97,15 @@ test('paragraphs with the same borders and no indent share one box, as tall as W
   const r = await offsets('<w:p><w:pPr>' + BOX + '</w:pPr>' + run('Alpha') + '</w:p><w:p><w:pPr>' + BOX + '</w:pPr>' + run('Boxed') + '</w:p><w:p>' + run('After') + '</w:p>');
   near(r.Boxed, 18.6, 'the second line of the box');
   near(r.After, 39.1, 'the paragraph after the box');
+});
+
+test('Don\'t use HTML paragraph auto spacing adds space after and before up to Word 2010\'s mode, not in Word 2013\'s', async () => {
+  // Word 2016, 20 pt after Alpha and 20 pt before Beta, the setting on: 40 pt between them with no compatibility mode
+  // and in modes 11, 12 and 14; 20 in mode 15 (tdf145716_nonHTMLspacing.docx, mode 15, two pages to Word's one)
+  const body = para('Alpha', '<w:spacing w:after="400"/>') + para('Beta', '<w:spacing w:before="400"/>') + para('Gamma');
+  const mode = (m) => '<w:doNotUseHTMLParagraphAutoSpacing/>' + (m ? '<w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="' + m + '"/>' : '');
+  near((await offsets(body, mode(0))).Beta, 53.9, 'no compatibility mode');
+  near((await offsets(body, mode(14))).Beta, 53.9, 'mode 14');
+  near((await offsets(body, mode(15))).Beta, 33.9, 'mode 15');
+  near((await offsets(body, '')).Beta, 33.9, 'the setting off');
 });
