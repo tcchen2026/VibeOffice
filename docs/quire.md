@@ -121,6 +121,16 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   difference of the pages went from 1011 to 888; the SmartArt document from 27.7 to 1.9, a table shaded pct25 from
   40.4 to 4.5, the VML stars from 43.8 to 5.3; three pages moved away from Word's by more than 1 (a picture whose
   line was already lower than Word's moved 1.5 pt further, by its effects' room).
+- A table style comes between the document defaults and the paragraph style, the Normal style included: what Normal
+  sets itself (size, colour, spacing, line spacing, shading) wins over the table style in Word 2016's prints in every
+  compatibility mode, with overrideTableStyleFontSizeAndJustification on or off, and a toggle Normal turns off (b=0)
+  leaves the table style's bold on (`tests/quire/table-style-precedence.test.mjs`). Below mode 15, unless that setting
+  is on, Normal's own "left" gives way to the table style's justification ([MS-DOCX]); its rule for 11 and 12 pt
+  sizes Word 2016 follows only in part (Normal's 12 pt gave way over 8 pt defaults and held over 11 pt ones), so
+  Normal's size is kept. Quire let the table style override all of Normal's own settings (LibreOffice's
+  tdf90906_colAutoB.docx lost its 12 pt text and red shading in the cells). Of the 2,289 Word-saved corpus files,
+  2,146 show Word's stored page count (2,145 before); one moved away (tdf81100.docx: its rows now as tall as Word's,
+  a tall row Word splits across the page goes whole to the next).
 - More of Word's own habits: a right or centred tab stop placed beyond the right indent lets the page
   number of a table of contents run out to it; superscripts and footnote references do not push their
   line down; table rows are as tall as Word makes them even though the browser draws hairline borders a

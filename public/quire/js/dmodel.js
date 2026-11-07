@@ -459,44 +459,21 @@
     styleCache.set(key, out);
     return out;
   };
-  D.isDefaultParaStyle = (doc, sid) => !doc.styles[sid] || sid === D.defaultStyleId(doc, 'paragraph');
-  /** the default paragraph style's own settings, and those it inherits (and does not override) from parents */
-  D.defaultStyleSplit = function (doc, sid) {
-    const key = 'ds:' + sid;
-    if (styleCache.has(key)) return styleCache.get(key);
-    const chain = D.styleChain(doc, doc.styles[sid] ? sid : D.defaultStyleId(doc, 'paragraph'));
-    const own = (chain.length && chain[chain.length - 1].pPr) || {};
-    let anc = {};
-    for (const st of chain.slice(0, -1)) anc = D.mergePPr(anc, st.pPr);
-    const inherited = {};
-    for (const k in anc) {
-      const v = anc[k], o = own[k];
-      if (v === undefined) continue;
-      if (o === undefined) inherited[k] = v;
-      else if (NESTED_P.includes(k) && v && o && typeof v === 'object' && typeof o === 'object' && !Array.isArray(v)) {
-        const sub = {};
-        for (const kk in v) if (o[kk] === undefined) sub[kk] = v[kk];
-        if (Object.keys(sub).length) inherited[k] = sub;
-      }
-    }
-    const out = { own, inherited };
-    styleCache.set(key, out);
-    return out;
-  };
+  const TOGGLES = ['b', 'i', 'caps', 'smallCaps', 'strike', 'dstrike', 'outline', 'shadow', 'emboss', 'imprint', 'hidden'];
   /** paragraph properties after style + numbering + direct formatting */
   D.pProps = function (doc, p, ctx) {
     const sid = p.pPr.style || 'Normal';
     let pPr;
-    /* precedence: document defaults < table style < paragraph style < numbering < direct */
+    /* precedence: document defaults < table style < paragraph style < numbering < direct. The Normal style is a
+       paragraph style like any other here: what it sets itself (size, spacing, shading) wins over the table style in
+       Word 2016's prints (2026-11-07). One exception, [MS-DOCX]'s overrideTableStyleFontSizeAndJustification: below
+       compatibility mode 15, unless the document turns it on, Normal's own "left" gives way to the table style's
+       justification. (Its font size rule Word 2016 follows only in part: Normal's 12 pt over 8 pt defaults gave way,
+       over 11 pt defaults it held; Normal's size is kept here.) */
     if (ctx && ctx.tblPPr) {
-      if (D.isDefaultParaStyle(doc, sid)) {
-        /* inside a table, settings made in the default paragraph style itself count like document defaults:
-           the table style overrides them (what Word and LibreOffice do); settings inherited from a parent
-           style still win. overrideTableStyleFontSizeAndJustification gives the style's justification back. */
-        const sp = D.defaultStyleSplit(doc, sid);
-        pPr = D.mergePPr(D.mergePPr(D.mergePPr(doc.defaults.pPr, sp.own), ctx.tblPPr), sp.inherited);
-        if (sp.own.jc && doc.settings && doc.settings.tblFsJcOverride) pPr = Object.assign({}, pPr, { jc: sp.own.jc });
-      } else pPr = D.mergePPr(D.mergePPr(doc.defaults.pPr, ctx.tblPPr), D.stylePPrOnly(doc, sid));
+      pPr = D.mergePPr(D.mergePPr(doc.defaults.pPr, ctx.tblPPr), D.stylePPrOnly(doc, sid));
+      const def = D.defaultStyleId(doc, 'paragraph'), normal = doc.styles[def];
+      if (ctx.tblPPr.jc && (sid === def || !doc.styles[sid]) && normal && normal.pPr && normal.pPr.jc === 'left' && (doc.settings.compat || 12) < 15 && !doc.settings.tblFsJcOverride) pPr = Object.assign({}, pPr, { jc: ctx.tblPPr.jc });
     } else pPr = D.styleProps(doc, sid).pPr;
     const num = (p.pPr.num !== undefined ? p.pPr.num : pPr.num);
     if (num && num.id && num.id !== '0') {
@@ -540,8 +517,10 @@
     const sp = D.styleProps(doc, p.pPr.style || 'Normal');
     let r = sp.rPr;
     if (ctx && ctx.tblRPr) {
-      r = D.mergeRPr(D.mergeRPr(doc.defaults.rPr, ctx.tblRPr), D.styleRPrOnly(doc, p.pPr.style || 'Normal'));
-      if (ctx.tblRPr.sz && !(doc.settings && doc.settings.tblFsJcOverride) && D.isDefaultParaStyle(doc, p.pPr.style || 'Normal')) r = Object.assign({}, r, { sz: ctx.tblRPr.sz });
+      /* a toggle the paragraph style turns off (b=0) leaves the table style's on: bold stays bold, as Word prints it */
+      const own = Object.assign({}, D.styleRPrOnly(doc, p.pPr.style || 'Normal'));
+      for (const k of TOGGLES) if (own[k] === false && ctx.tblRPr[k]) delete own[k];
+      r = D.mergeRPr(D.mergeRPr(doc.defaults.rPr, ctx.tblRPr), own);
     }
     const rp = it ? it.rPr : p.rPr;
     if (rp && rp.style) r = D.mergeRPr(r, D.charStyleProps(doc, rp.style));
