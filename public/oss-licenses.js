@@ -49,3 +49,10 @@ if (window.__VO_HOST__) {
     box.select();
   });
 }
+
+/* The lite edition has one window (desktop/src/lite.rs): Esc goes back to its start page */
+if (window.__VO_HOST__ && window.__VO_HOST__.edition === 'lite' && window.__TAURI_INTERNALS__) {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.querySelector('dialog[open]')) window.__TAURI_INTERNALS__.invoke('host_lite_home').catch(() => {});
+  });
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob: https://vibeoffice.work ipc: https://ipc.localhost; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VibeOffice Lite</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<script src="common/look.js"></script>
+<script src="common/lang.js"></script>
+<link rel="stylesheet" href="common/looks.css">
+<style>
+  /* The lite edition's start page (desktop/src/lite.rs): made for a 320×170 screen and a keyboard. Colours come from
+     the look settings (common/looks.css); the app colours are the apps' own. */
+  :root { --quire: #2a64c8; --ledger: #1f8a4c; --lectern: #e0682d; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); color: var(--ink); font: 12px/1.3 var(--ui-font); }
+  button { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  kbd { font: inherit; font-weight: bold; padding: 0 3px; border: 1px solid var(--ctl-line); border-radius: 2px; background: var(--white); color: var(--ink); }
+
+  .bar { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 6px; white-space: nowrap; overflow: hidden; }
+  .top { height: 24px; background: linear-gradient(var(--tb-a), var(--tb-b)); border-bottom: 1px solid var(--chrome-line); }
+  .top b { font-size: 13px; }
+  .foot { height: 20px; border-top: 1px solid var(--chrome-line); background: var(--pane-a); color: var(--ink-7); font-size: 11px; }
+  .keys { margin-left: auto; color: var(--ink-7); font-size: 11px; }
+  .foot b { color: var(--ink); }
+
+  #list { flex: 1; min-height: 0; overflow-y: auto; outline: none; }
+  .doc { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px; border: 1px solid transparent; cursor: default; white-space: nowrap; }
+  .doc.on { background: var(--menu-hot); border-color: var(--hot-border); }
+  .ext { flex: none; width: 34px; text-align: center; font-size: 9px; font-weight: bold; line-height: 14px; border-radius: 2px; color: #fff; }
+  .ext.quire { background: var(--quire); } .ext.ledger { background: var(--ledger); } .ext.lectern { background: var(--lectern); }
+  .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .when { flex: none; color: var(--ink-7); font-size: 11px; }
+  #empty { margin: 14px 10px; color: var(--ink-7); }
+  #status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  #status.error { color: var(--error-ink); }
+
+  /* New and Help: a sheet over the list */
+  .sheet { position: fixed; inset: 24px 0 20px; display: flex; flex-direction: column; background: var(--surface); border-top: 1px solid var(--chrome-line); }
+  .sheet h2 { flex: none; margin: 0; padding: 3px 6px; font-size: 12px; background: var(--pane-a); border-bottom: 1px solid var(--chrome-line); }
+  .sheet .body { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 6px; }
+  .pick { display: flex; align-items: center; gap: 8px; width: 100%; height: 26px; padding: 0 6px; border: 1px solid transparent; background: none; text-align: left; }
+  .pick.on { background: var(--menu-hot); border-color: var(--hot-border); }
+  .help p { margin: 3px 0; }
+  .help .ad { margin-top: 6px; font-weight: bold; }
+</style>
+</head>
+<body>
+<header class="bar top"><img src="icons/icon.svg" alt="" width="16" height="16"><b translate="no">VibeOffice Lite</b><span class="keys"><kbd translate="no">N</kbd> New <kbd translate="no">F1</kbd> Help</span></header>
+<main id="list" role="listbox" aria-label="Documents" tabindex="0"></main>
+<p id="empty" hidden>No documents yet. Press N to make one, or copy files into the VibeOffice/Documents folder.</p>
+<footer class="bar foot"><span id="status">Full version: <b translate="no">vibeoffice.work</b></span><span class="keys"><kbd translate="no">Esc</kbd> <span id="esc">Quit</span></span></footer>
+
+<section id="new" class="sheet" role="menu" aria-label="New" hidden>
+  <h2>New</h2>
+  <div class="body">
+    <button class="pick" type="button" role="menuitem" data-app="quire"><kbd translate="no">D</kbd> Document</button>
+    <button class="pick" type="button" role="menuitem" data-app="ledger"><kbd translate="no">S</kbd> Spreadsheet</button>
+    <button class="pick" type="button" role="menuitem" data-app="lectern"><kbd translate="no">P</kbd> Presentation</button>
+  </div>
+</section>
+
+<section id="help" class="sheet help" aria-label="Help" hidden>
+  <h2>Help</h2>
+  <div class="body" tabindex="-1">
+    <p><kbd translate="no">↑</kbd> <kbd translate="no">↓</kbd> (Fn+F, Fn+X) choose a document, <kbd translate="no">Enter</kbd> opens it.</p>
+    <p><kbd translate="no">N</kbd> makes a new document. <kbd translate="no">Esc</kbd> quits.</p>
+    <p>In a document: <kbd translate="no">F10</kbd> or <kbd translate="no">Alt</kbd>+letter for the menus, <kbd translate="no">Ctrl</kbd>+<kbd translate="no">S</kbd> saves, File ▸ Close comes back here.</p>
+    <p>The pointer: Sym+F, Z, X, C move it; Sym+Enter clicks, Sym+Space right-clicks. Tap Sym twice to keep it on.</p>
+    <p>Your documents are in the VibeOffice/Documents folder.</p>
+    <p class="ad">The full VibeOffice for computers, with templates, Recent Files and more: vibeoffice.work</p>
+    <p id="version"></p>
+    <p><button class="pick" type="button" id="licenses"><kbd translate="no">L</kbd> Open source licenses</button></p>
+  </div>
+</section>
+
+<script src="common/suite.js"></script>
+<script src="common/i18n.js"></script>
+<script src="lite.js"></script>
+</body>
+</html>

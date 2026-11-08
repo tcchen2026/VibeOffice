@@ -18,7 +18,7 @@ Each app is classic `<script>` files (no ES modules) that attach to one global n
 | [docs/ledger.md](docs/ledger.md) | Ledger: features, formulas and calculation, compatibility results, source layout |
 | [docs/lectern.md](docs/lectern.md) | Lectern: source layout, opening, saving, known limits |
 | [docs/suite.md](docs/suite.md) | Start Center, `common/suite.js` (app launch, Recent Files), PWA manifest, service worker |
-| [docs/desktop.md](docs/desktop.md) | Desktop app (Tauri; Windows with mingw, macOS: the DMG and the Mac App Store, Linux): host interface (`VO.host`), building, installer and file types, signing, CI, size, to do |
+| [docs/desktop.md](docs/desktop.md) | Desktop app (Tauri; Windows with mingw, macOS: the DMG and the Mac App Store, Linux, the lite edition for the CardputerZero): host interface (`VO.host`), building, installer and file types, signing, CI, size, to do |
 | [docs/testing.md](docs/testing.md) | Test workflow and tools |
 | [docs/i18n.md](docs/i18n.md) | The UI in other languages: choosing it, `L.t`, the English catalog, the pseudo-locale, translations, defaults and fonts per language, adding a language |
 | [docs/LOSSLESS_SAVE.md](docs/LOSSLESS_SAVE.md) | Same-format save: design summary, what was done, working rules, to do |

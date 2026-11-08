@@ -42,7 +42,7 @@ const SKIP = new Set(['oss-licenses.js', 'common/crypto.js', 'common/sha.js', 'c
   'ledger/js/formula.js', 'ledger/js/calc.js', 'ledger/js/fn-core.js', 'ledger/js/fn-lookup.js', 'ledger/js/fn-stat.js', 'ledger/js/fn-fin.js',
   'ledger/js/fn-eng.js', 'ledger/js/xlsx-read.js', 'ledger/js/xlsx-write.js', 'ledger/js/xml.js', 'ledger/js/xmlss.js', 'ledger/js/extensions.js', 'ledger/js/preserve.js',
   'lectern/js/pptx-read.js', 'lectern/js/pptx-write.js', 'lectern/js/preserve.js', 'lectern/js/properties.js', 'lectern/js/smartart-io.js']);
-const HTML = ['index.html', 'quire/index.html', 'lectern/index.html'];   // Ledger's page is built from its template
+const HTML = ['index.html', 'lite.html', 'quire/index.html', 'lectern/index.html'];   // Ledger's page is built from its template
 const LEDGER_TEMPLATE = 'tools/ledger/build/template.html';
 
 /* where the UI takes text */

@@ -233,6 +233,9 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .sb-zoom.dis { color: var(--dis-ink); }
 .sb-zoom.dis .zs-thumb { background: var(--dis-ink); }
 .sb-zoom.dis .zs-step, .sb-zoom.dis .zs-pct, .sb-zoom.dis .zs-track { pointer-events: none; }
+/* a very narrow status bar (a phone, a handheld): the view and browse buttons and the zoom slider's track give way
+   too (the View menu has them), so the cells keep their words */
+@container (max-width: 520px) { .statusbar .sb-group, .statusbar .sb-gap, .sb-zoom .zs-track { display: none; } }
 
 /* floating toolbars */
 .floatbar { position: absolute; z-index: 60; background: linear-gradient(var(--tb-a), var(--tb-b)); border: 1px solid var(--tb-border); border-radius: 3px; box-shadow: 2px 2px 5px var(--shadow-c); display: flex; flex-direction: column; }

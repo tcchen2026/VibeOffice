@@ -39,12 +39,18 @@ fn named(dir: &Path, ext: &str) -> PathBuf {
     dir.join(format!("vibeoffice.{display}.{ext}"))
 }
 
-/// Where the socket goes: `VIBEOFFICE_HOME` (tests), else $XDG_RUNTIME_DIR, else ~/.vibeoffice.
+/// Where the socket goes: `VIBEOFFICE_HOME` (tests), else $XDG_RUNTIME_DIR, else ~/.vibeoffice (the lite
+/// edition's ~/VibeOffice).
 pub fn folder(home: Option<PathBuf>) -> Option<PathBuf> {
+    let name = if cfg!(feature = "lite") {
+        "VibeOffice"
+    } else {
+        ".vibeoffice"
+    };
     std::env::var_os("VIBEOFFICE_HOME")
         .or_else(|| std::env::var_os("XDG_RUNTIME_DIR"))
         .map(PathBuf::from)
-        .or_else(|| home.map(|h| h.join(".vibeoffice")))
+        .or_else(|| home.map(|h| h.join(name)))
 }
 
 /// The first start takes the lock and listens; a later one hands over `args` (and `cwd`, which relative paths

@@ -58,7 +58,7 @@ const RULES = [
   [/^tools\/ooxml\/.*\.py$/, ['tests/ooxml/check.test.mjs', 'tests/ooxml/audit.test.mjs']],
   [/^public\/common\/scout\//, ['tests/scout.test.mjs']],
   [/^public\/[^/]+\/js\/painter\.js$/, ['tests/ui/painter.test.mjs']],
-  [/^public\/common\/(lang|i18n|suite)\.js$|^public\/(?:index|(?:quire|ledger|lectern)\/index)\.html$|^tools\/ledger\/build\/template\.html$/, ['tests/chinese-language.test.mjs']],
+  [/^public\/common\/(lang|i18n|suite)\.js$|^public\/(?:index|lite|(?:quire|ledger|lectern)\/index)\.html$|^tools\/ledger\/build\/template\.html$/, ['tests/chinese-language.test.mjs']],
   [/^tools\/i18n\.mjs$|^tools\/ledger\/build\/template\.html$/, ['tests/i18n.test.mjs']],
   [/^public\/common\/core\.js$|^public\/ledger\/js\/model\.js$/, ['tests/fonts.test.mjs']],
   [/^public\/common\/locales\.js$|^public\/quire\/js\/(app|dmodel|docx-write)\.js$|^public\/ledger\/js\/(app|xlsx-write)\.js$|^public\/lectern\/js\/(model|pptx-write)\.js$/, ['tests/locales.test.mjs']],

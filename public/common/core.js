@@ -313,6 +313,8 @@
     typeOf: (name) => (L.file.types.find((t) => t.ext.includes(extOf(name))) || {}).id || null,
     /** the desktop app: whether the window has a file of its own */
     bound: () => { const h = native(); return !!(h && h.file.bound); },
+    /** whether File ▸ Versions... is there: the desktop app keeps the versions saves replace (not the lite edition) */
+    versions: () => { const h = native(); return !!(h && !h.lite); },
     /** the document's name for the title bar: "(Read-Only)" after it when the window's file may not be changed */
     titled: (name) => { const h = native(); return h && h.file.bound && h.file.readOnly ? L.t('{0} (Read-Only)', name) : name; },
     /** the desktop app: whether Save writes the window's own file in place (it has one, and may change it) */
@@ -321,6 +323,7 @@
      *  `type` first, `name` (no extension) filled in. { name (no extension), file (with it), type }, or null */
     async choose(purpose, type, name, ids) {
       const types = L.file.types.filter((t) => !ids || ids.includes(t.id)).map((t) => ({ id: t.id, label: L.t(t.label) }));
+      if (native().lite) return chooseByName(purpose, types, type, without(name) || 'Document');
       for (;;) {
         try {
           const c = await native().choose({ purpose, types, type, name: without(name) || 'Document', title: L.t('Save As') });
@@ -358,6 +361,37 @@
       return run;
     },
   };
+  /* the lite edition (desktop/src/lite.rs): no system Save dialog on its small screen. The name and type are asked
+     here and the file goes in its Documents folder; one already there is replaced only once the user says so */
+  async function chooseByName(purpose, types, type, name) {
+    const ui = L.ui, title = L.t(purpose === 'export' ? 'Export' : 'Save As');
+    for (;;) {
+      const inp = L.h('input', { type: 'text', id: 'save-name', value: name, spellcheck: 'false', style: 'width:100%' });
+      const sel = types.length > 1 ? ui.select(types.map((t) => [t.id, t.label]), type, null, { id: 'save-type', style: 'width:100%' }) : null;
+      let ok = false;
+      await ui.dialog({ title, width: 300, focus: inp,
+        body: L.h('div', { class: 'col' }, ui.field('File &name:', inp), sel ? ui.field('Save as &type:', sel) : null, L.h('div', { class: 'hint', text: L.t('In your Documents folder.') })),
+        buttons: [{ label: '&Save', primary: true, onClick: () => { ok = true; } }, { label: 'Cancel', cancel: true }] }).done;
+      if (!ok) return null;
+      /* a type's extension typed (report.xlsx) chooses it */
+      const typed = types.find((t) => t.id === L.file.typeOf(inp.value.trim()));
+      type = typed ? typed.id : sel ? sel.value : type;
+      name = (typed ? without(inp.value.trim()) : inp.value.trim()) || name;
+      let replace = false;
+      for (;;) {
+        try {
+          const c = await native().choose({ purpose, types, type, name, title, replace });
+          pending = c;
+          return c && { name: without(c.name), file: c.name, type: c.type };
+        } catch (e) {
+          if (e && e.code === 'exists' && !replace) {
+            if (await ui.msg(L.t('“{0}” already exists. Replace it?', e.file || name), { icon: 'warn', buttons: ['&Yes', '&No'] }) === 0) { replace = true; continue; }
+          } else await ui.msg(String(e && e.message || e), { icon: 'error' });
+          break;   // the name again
+        }
+      }
+    }
+  }
   async function writeNow(blob, how, type, name) {
     const host = native();
     const bytes = new Uint8Array(await blob.arrayBuffer());

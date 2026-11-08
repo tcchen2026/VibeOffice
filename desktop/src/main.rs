@@ -1,6 +1,8 @@
 // No console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(all(feature = "lite", target_os = "linux"))]
+mod cardputer;
 mod dialog;
 mod doc;
 mod files;
@@ -11,6 +13,8 @@ mod installation;
 mod installed;
 #[cfg(target_os = "linux")]
 mod instance;
+#[cfg(feature = "lite")]
+mod lite;
 mod net;
 mod settings;
 mod store;
@@ -42,10 +46,19 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
     #[cfg(not(feature = "custom-protocol"))]
     let builder =
         builder.initialization_script(settings::script(&app.state::<settings::Settings>()));
+    // the lite edition's one window: the device's whole screen, as the compositor gives it (cardputer/), with no
+    // title bar; elsewhere a window of its size
+    #[cfg(feature = "lite")]
+    let builder = builder
+        .inner_size(320.0, 170.0)
+        .decorations(false)
+        .data_directory(lite::web_data());
+    #[cfg(not(feature = "lite"))]
+    let builder = builder
+        .inner_size(1280.0, 820.0)
+        .min_inner_size(640.0, 480.0);
     let window = builder
         .title("VibeOffice")
-        .inner_size(1280.0, 820.0)
-        .min_inner_size(640.0, 480.0)
         .initialization_script(host::init_script())
         .initialization_script_for_all_frames(net::NO_WEBRTC)
         .initialization_script_for_all_frames(host::NO_FILE_PICKERS)
@@ -53,7 +66,8 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
         // nothing the web view would keep outlives the app (WebView2 InPrivate, WKWebView's non-persistent data
         // store). Not on Linux: Tauri 2.12 registers tauri:// once per shared web context, while an incognito
         // WebKitGTK view gets a context of its own, so from the second window on no page would load there.
-        .incognito(cfg!(any(windows, target_os = "macos")))
+        // The lite edition has one window, so it can be (its whole profile would be on disk otherwise).
+        .incognito(cfg!(any(windows, target_os = "macos", feature = "lite")))
         // Windows: https://tauri.localhost, a secure context, where WebView2 doesn't look up the names of links
         // on the page ahead (DNS prefetch); macOS and Linux serve tauri://localhost either way
         .use_https_scheme(true)
@@ -102,10 +116,15 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
             }
             let _ = window.set_title(&title);
         })
-        // The UI size (Settings), as each page starts: WebKitGTK resets the zoom on the first load.
+        // The UI size (Settings), as each page starts: WebKitGTK resets the zoom on the first load. The lite
+        // edition's start page is made for its screen: always 100 %.
         .on_page_load(|window, payload| {
             if payload.event() == PageLoadEvent::Started {
-                let scale = window.state::<settings::Settings>().ui_scale();
+                let scale = if cfg!(feature = "lite") && payload.url().path() == "/lite.html" {
+                    1.0
+                } else {
+                    window.state::<settings::Settings>().ui_scale()
+                };
                 let _ = window.set_zoom(scale);
             }
             // The first start after installing: what the user chose in the installer
@@ -118,9 +137,19 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
             }
         })
         .build()?;
+    #[cfg(feature = "lite")]
+    lite::web_view(&window);
     #[cfg(any(windows, target_os = "macos"))]
     net::guard(&window, page)?;
     Ok(window)
+}
+
+/// The Start Center's page: index.html, the lite edition's own lite.html.
+fn start_page() -> WebviewUrl {
+    #[cfg(feature = "lite")]
+    return WebviewUrl::App(lite::START.into());
+    #[cfg(not(feature = "lite"))]
+    WebviewUrl::default()
 }
 
 /// Windows can be made (setup has run; on macOS WebKit has compiled the network rules). Until then, files that
@@ -154,7 +183,7 @@ fn show_start_center(app: &AppHandle) {
         }
         // (on Windows it does what the installer asked as it loads)
         None => {
-            if let Err(e) = open_window(app, "main", WebviewUrl::default()) {
+            if let Err(e) = open_window(app, "main", start_page()) {
                 eprintln!("the Start Center: {e}");
             }
         }
@@ -168,7 +197,11 @@ fn another_start(app: &AppHandle, args: Vec<std::ffi::OsString>, cwd: std::path:
     // the other process waits for its handler: windows are made in a task, after that has returned
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
-        let files = doc::files_among(args, &cwd);
+        let files = if cfg!(feature = "lite") {
+            Vec::new()
+        } else {
+            doc::files_among(args, &cwd)
+        };
         if open_files(&app, &files) == 0 {
             show_start_center(&app);
         }
@@ -325,6 +358,20 @@ fn mac_menu_event(app: &AppHandle, id: &str) {
 }
 
 fn main() {
+    // The lite edition (docs/desktop.md, Lite edition), for a device that swaps: JavaScriptCore without its JIT,
+    // about 30 MiB less for the pages at the same speed; GTK without OpenGL, so WebKit draws on the CPU (its web
+    // process half the size), and hands its frames over in shared memory, not GPU buffers (the app's own process
+    // 11 MiB smaller). Set beforehand, each stays as set (measuring).
+    #[cfg(feature = "lite")]
+    for (var, value) in [
+        ("JSC_useJIT", "false"),
+        ("GDK_GL", "disable"),
+        ("WEBKIT_DISABLE_DMABUF_RENDERER", "1"),
+    ] {
+        if std::env::var_os(var).is_none() {
+            std::env::set_var(var, value);
+        }
+    }
     // `-uninstall` ends here
     #[cfg(windows)]
     if !installed::start() {
@@ -385,7 +432,21 @@ fn main() {
             doc::host_write_chosen,
             doc::host_cancel_choice,
             doc::host_versions,
-            doc::host_open_version
+            doc::host_open_version,
+            #[cfg(feature = "lite")]
+            lite::host_lite_list,
+            #[cfg(feature = "lite")]
+            lite::host_lite_open,
+            #[cfg(feature = "lite")]
+            lite::host_lite_new,
+            #[cfg(feature = "lite")]
+            lite::host_lite_home,
+            #[cfg(feature = "lite")]
+            lite::host_lite_licenses,
+            #[cfg(feature = "lite")]
+            lite::host_lite_quit,
+            #[cfg(feature = "lite")]
+            lite::host_lite_show
         ])
         .on_window_event(window_event)
         .setup(move |app| {
@@ -408,11 +469,21 @@ fn main() {
             // expired versions and what a crash left, away from the windows' start
             let sweep = store::Store::at(home.clone());
             std::thread::spawn(move || sweep.sweep());
-            app.manage(doc::Docs::new(store::Store::at(home)));
+            let docs = doc::Docs::new(store::Store::at(home));
+            #[cfg(feature = "lite")]
+            lite::init(docs.store.root());
+            // the CardputerZero's keyboard, read here and handed to the compositor
+            #[cfg(all(feature = "lite", target_os = "linux"))]
+            cardputer::start();
+            app.manage(docs);
             // the files on the command line (Open with, a double-click on a file: "%1") open in their own windows;
             // without any, the Start Center
             let cwd = std::env::current_dir().unwrap_or_default();
-            let files = doc::files_among(std::env::args_os().skip(1), &cwd);
+            let files = if cfg!(feature = "lite") {
+                Vec::new()
+            } else {
+                doc::files_among(std::env::args_os().skip(1), &cwd)
+            };
             let start = {
                 let app = app.handle().clone();
                 move || {
@@ -422,7 +493,7 @@ fn main() {
                     if open_files(&app, &files) > 0 && !cfg!(target_os = "macos") {
                         return;
                     }
-                    if let Err(e) = open_window(&app, "main", WebviewUrl::default()) {
+                    if let Err(e) = open_window(&app, "main", start_page()) {
                         eprintln!("the Start Center: {e}");
                         app.exit(1);
                     }

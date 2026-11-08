@@ -40,14 +40,21 @@ pub const NO_STORAGE: &str = "for (const [o, k] of [[window, 'localStorage'], [w
      try { Object.defineProperty(o, k, { get() { throw new Error(k + ' is not used in the desktop app'); }, configurable: false }); } catch (e) {}";
 
 /// The script that runs before each page's own: what the pages see as the host. `edition`: 'appstore' for the
-/// Mac App Store's, which the store updates (the pages never check), else 'direct'. The values go in as JSON, and
-/// `__VO_HOST__` can't be replaced or changed by the page.
+/// Mac App Store's, which the store updates (the pages never check), 'lite' for the lite edition (lite.rs), else
+/// 'direct'. The values go in as JSON, and `__VO_HOST__` can't be replaced or changed by the page.
 pub fn init_script() -> String {
+    let edition = if cfg!(feature = "lite") {
+        "lite"
+    } else if app_store() {
+        "appstore"
+    } else {
+        "direct"
+    };
     let host = serde_json::json!({
         "platform": std::env::consts::OS, // windows, linux, macos
         "version": VERSION,
         "appVersion": option_env!("VO_VERSION").unwrap_or("dev"), // tools/current-tree-version.sh, from build.sh
-        "edition": if app_store() { "appstore" } else { "direct" },
+        "edition": edition,
         // in the Mac App Sandbox (both editions): a save it refuses may ask for the file's folder (doc.rs)
         "sandboxed": cfg!(target_os = "macos") && std::env::var_os("APP_SANDBOX_CONTAINER_ID").is_some(),
     });
@@ -82,8 +89,8 @@ const MAX_WINDOWS: usize = 64;
 #[serde(deny_unknown_fields)]
 pub struct Start {
     #[serde(default)]
-    new: bool,
-    template: Option<String>,
+    pub new: bool,
+    pub template: Option<String>,
 }
 
 /// A label for a new window of `page`: the page and a number never used before (`quire-3`), which the capabilities
@@ -108,6 +115,9 @@ pub async fn host_new_window(
     page: String,
     start: Option<Start>,
 ) -> Result<(), String> {
+    if cfg!(feature = "lite") {
+        return Err("the lite edition has one window".into());
+    }
     let start = start.unwrap_or_default();
     page_path(&page, &start, None)?;
     let caller = window.label().rsplit_once('-').map_or("main", |(p, _)| p);
@@ -132,7 +142,16 @@ pub fn open_blank(app: &AppHandle, page: &str) -> Result<(), String> {
 
 /// The window for `page` started as `start` (`host_new_window`, `open_blank`).
 fn open_page(app: &AppHandle, page: &str, start: &Start) -> Result<(), String> {
-    // a new document's number: Document2 in the second window that makes one
+    let path = start_path(app, page, start)?;
+    let label = new_label(app, page)?;
+    crate::open_window(app, &label, WebviewUrl::App(PathBuf::from(path)))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// The address of `page` started as `start`, a new document numbered: Document2 in the second window that makes
+/// one (the lite edition's window: the second time it makes one).
+pub fn start_path(app: &AppHandle, page: &str, start: &Start) -> Result<String, String> {
     let n = (start.new || start.template.is_some()).then(|| {
         let host = app.state::<Host>();
         let mut untitled = host.untitled.lock().unwrap();
@@ -140,11 +159,17 @@ fn open_page(app: &AppHandle, page: &str, start: &Start) -> Result<(), String> {
         *n += 1;
         *n
     });
-    let path = page_path(page, start, n)?;
-    let label = new_label(app, page)?;
-    crate::open_window(app, &label, WebviewUrl::App(PathBuf::from(path)))
-        .map_err(|e| e.to_string())?;
-    Ok(())
+    page_path(page, start, n)
+}
+
+/// Sends `window` to the suite's page `path` (`quire/?doc&t=…`; the lite edition's `lite.html`, `ledger/?new`):
+/// from now on it loads only that (`Page`).
+pub fn navigate(app: &AppHandle, window: &WebviewWindow, path: &str) -> Result<(), String> {
+    let url = crate::net::page_url(app, WebviewUrl::App(PathBuf::from(path)))
+        .ok_or("no address for the page")?;
+    app.state::<Host>()
+        .expect(window.label(), Page::new(url.clone(), false));
+    window.navigate(url).map_err(|e| e.to_string())
 }
 
 /// The address of `page` (from the app's root) started as `start`, its new document numbered `n`, or why there is none.
@@ -296,6 +321,12 @@ impl Host {
     /// A window is made for `page` (open_window): from now on it loads only that (`Page`).
     pub fn expect(&self, label: &str, page: Page) {
         self.pages.lock().unwrap().insert(label.into(), page);
+    }
+
+    /// The page the window `label` was made for or last sent to.
+    #[cfg_attr(not(feature = "lite"), allow(dead_code))]
+    pub fn page_of(&self, label: &str) -> Option<Url> {
+        self.pages.lock().unwrap().get(label).map(|p| p.url.clone())
     }
 
     /// Whether the window `label` may go to `url` (an address inside the app; on_navigation).
@@ -532,7 +563,14 @@ mod tests {
             .unwrap();
         let host: serde_json::Value = serde_json::from_str(json).unwrap();
         assert_eq!(host["version"], VERSION);
-        assert_eq!(host["edition"], "direct");
+        assert_eq!(
+            host["edition"],
+            if cfg!(feature = "lite") {
+                "lite"
+            } else {
+                "direct"
+            }
+        );
         assert!(script.contains("writable: false, configurable: false"));
     }
 }

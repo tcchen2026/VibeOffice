@@ -22,6 +22,9 @@
 | `desktop/app.manifest` | common controls v6 and `asInvoker` (never asks for administrator rights) |
 | `desktop/macos/` | `Info.plist` (the bundle's, filled in by `build.sh`), `direct.entitlements` and `appstore.entitlements`, `build.sh` (the macOS release, on a Mac: macOS, below) |
 | `desktop/linux/` | `build.sh` (the AppImage: Linux, below), `AppRun` (its entry point: the check for WebKitGTK 4.1), `vibeoffice.desktop`, `smoke.sh` and `on-system.sh` (the CI's runs) |
+| `desktop/src/lite.rs` | the lite edition (Lite edition, below): its one window going between its start page (`public/lite.html`) and a document, the list of `~/VibeOffice/Documents`, WebKit's cache model and folder |
+| `desktop/src/cardputer.rs` | the lite edition on the CardputerZero: its keyboard, read from evdev and handed to cage as a virtual keyboard and pointer |
+| `desktop/cardputer/` | `launch.sh` (the launcher's entry point: cage on the built-in screen) and `packaging/` (the `.deb` on AppBuilder's contract: `build.sh`, the aarch64 build against a Debian sysroot; `stage.sh`; `meta.env`) |
 | `desktop/release-notes.md` | the GitHub release's notes, every download (any of the workflows may create the release) |
 | `desktop/setup/` | the installer, `VibeOfficeSetup.exe`: carries the app; its dialog, manifest and version in `setup.rc` |
 | `desktop/permissions/host.toml`, `desktop/capabilities/` | which `host_*` commands each kind of window may call (Host interface, below); no Tauri core commands |
@@ -38,13 +41,14 @@
 
 ## Host interface
 
-One interface between the pages and what runs them, so a page never asks which: `VO.host` in `public/common/suite.js`. In a browser (tab or installed PWA) it is built on the browser's APIs; in the desktop app on the commands in `desktop/src/host.rs`, called over Tauri's IPC (`window.__TAURI_INTERNALS__.invoke`). The desktop app announces itself before each page's scripts with `window.__VO_HOST__ = { platform, version, appVersion, edition }` (`edition`: `'appstore'` for the Mac App Store's, else `'direct'`; written as JSON, frozen, on a property the page can't replace). The settings come with `common/look.js` (Settings and storage, below).
+One interface between the pages and what runs them, so a page never asks which: `VO.host` in `public/common/suite.js`. In a browser (tab or installed PWA) it is built on the browser's APIs; in the desktop app on the commands in `desktop/src/host.rs`, called over Tauri's IPC (`window.__TAURI_INTERNALS__.invoke`). The desktop app announces itself before each page's scripts with `window.__VO_HOST__ = { platform, version, appVersion, edition }` (`edition`: `'appstore'` for the Mac App Store's, `'lite'` for the lite edition (Lite edition, below), else `'direct'`; written as JSON, frozen, on a property the page can't replace). The settings come with `common/look.js` (Settings and storage, below).
 
 | `VO.host` | Web | Desktop |
 |---|---|---|
 | `kind` | `'web'` | `'desktop'` |
 | `platform` | `'web'` | `'windows'`, `'macos'`, `'linux'` (Rust's `std::env::consts::OS`) |
-| `updates` | `true` (the page never checks) | `true`; `false` in the Mac App Store edition, which the store updates (the Start Center never reads `current.json`; old, it still shows Check for updates, for the App Store) |
+| `updates` | `true` (the page never checks) | `true`; `false` in the Mac App Store edition, which the store updates (the Start Center never reads `current.json`; old, it still shows Check for updates, for the App Store), and in the lite edition, which its package updates |
+| `lite` | `null` | `null`; the lite edition's `{ list, open, create, home, licenses, quit }` (`host_lite_*`: Lite edition, below) |
 | `version` | `0` | `host::VERSION`, raised when a command changes shape (5 since the settings moved to `~/.vibeoffice`) |
 | `onFiles(fn)` | `launchQueue` (the PWA's file handlers) | nothing: the native side opens the files the app is started with, or that another start (Windows) or Finder (macOS) hands over, each in a window of its own |
 | `openUrl(url)` | a new tab | `host_open_url`, from the Start Center: the update page and our GitHub only (Links, below), to the system (`ShellExecuteW`, `NSWorkspace openURL:`, `xdg-open`) |
@@ -422,6 +426,68 @@ libraries are the system's:
 
 Run it with a file to open: `target/x86_64-unknown-linux-gnu/release/vibeoffice ~/Budget.csv`, or the AppImage the
 same way; `desktop/linux/smoke.sh <AppImage> <folder>` on a display (or with Xvfb) does what the CI does.
+
+## Lite edition (CardputerZero)
+
+`--features lite`: the same app for a small Linux device with a keyboard and little memory, made for the M5Stack
+CardputerZero (a Raspberry Pi CM0: four Cortex-A53 cores, 352 MiB of RAM and as much zram, a 320×170 screen, a keyboard
+with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in a `lite` build (`cfg!(feature = "lite")`,
+`VO.host.lite` in the pages); the other editions are as described above.
+
+- **One window.** `main`, without a title bar, has the lite start page (`public/lite.html`, `lite.js`) or one app's
+  page and its document, in turn (`src/lite.rs`): one web process at a time. The start page lists the files in
+  `~/VibeOffice/Documents` that an app opens, newest first (`host_lite_list`); opens one (`host_lite_open`: the window
+  goes to `<app>/?doc&t=…`, as File ▸ Open's reload does, `doc::open_here`), makes a new document (N: `host_lite_new`),
+  shows Help (the keys, the version, the licences) and quits (Esc). It is drawn at 100 % for its screen, the apps at the
+  UI size. In an app, File ▸ New, Open, Close, Exit and Recent Files let the document go ("Save changes?") and the
+  window goes on (`host_lite_home` back to the list); `host_new_window` refuses. `doc::app_of` reads the app from the
+  window's page, not its label. The footer advertises the full suite at vibeoffice.work, as text (the device has no
+  browser). The licences page goes back with Esc.
+- **Documents only.** `~/VibeOffice` holds `config.json` (the settings) and `Documents/`; nothing else is kept
+  (`store.rs`: no Recent Files, previews, drafts or previous versions, and the pages make none). The web view is
+  incognito, WebKit's own folder in `$XDG_RUNTIME_DIR/vibeoffice-lite`. Save As has no system dialog: `L.file.choose`
+  asks for the name and type in the page, and `host_choose` puts the file in Documents (a name, no folder; a link there
+  is refused) and asks the page again before it replaces one (`exists`). Files on the command line are ignored.
+- **Small screen.** Until the user changes them (`settings.rs`, `LITE`): the Classic look, the UI at 75 %, each app with
+  its menus, document and status bar (no toolbars, rulers or task pane; Lectern's notes 24 px), Quire in Web Layout at
+  100 %. Scout stays away until asked; File ▸ Versions… is gone.
+- **Memory.** `main()` sets, unless already set: `JSC_useJIT=false` (on the device about 30 MiB less for a 22-page
+  document, opened no slower: swap, not the JIT, sets its pace), `GDK_GL=disable` (WebKit draws on the CPU: here its web
+  process 111 MiB at start instead of 202) and `WEBKIT_DISABLE_DMABUF_RENDERER=1` (frames in shared memory: the app's own
+  process 11 MiB smaller). WebKit's cache model is `DocumentViewer`, so a page the window left is freed.
+- **The keyboard** (`src/cardputer.rs`, from r86's): cage reads no input; a thread of the app reads the keyboard
+  (evdev `tca8418c`, not grabbed: the launcher's held Esc still ends the app) and hands cage a virtual keyboard (a US
+  keymap) and pointer. Sym symbols become the US keys of the printed symbol; Sym+F/Z/X/C move the pointer, faster while
+  held (double-tap Sym to keep them on), Sym+Enter and Sym+Space click left and right; Fn+F/Z/X/C are the arrows (M5's
+  driver). The app repeats held keys itself.
+- **Slide shows on HDMI.** With an HDMI screen connected (a `/sys/class/drm/*-HDMI-*` connector that says
+  `connected`), Lectern's slide show moves the window to the desktop there, full screen, and back when it ends
+  (`host_lite_show`, from `slideshow.js`). The desktop is the live Wayland socket in `$XDG_RUNTIME_DIR` other than
+  cage's (M5's labwc); GDK opens it and the window goes over (`gtk_window_set_screen`), the keyboard with it
+  (`cardputer::follow`), while the device's own screen shows a few lines of native text (Showing on HDMI, the keys).
+  That display stays open once opened: closed after a show, it took visuals the window still used, and GTK crashed.
+  `VIBEOFFICE_HDMI=wayland-N` names the display, to try it without the device (two nested cage compositors in Xvfb,
+  the second standing in for labwc). If that desktop's compositor ends while its display is open, GDK ends the app.
+- **The package** (`cardputer/`): `launch.sh` becomes `/usr/share/APPLaunch/bin/vibeoffice`. It runs cage on the
+  panel's own DRM device (`/dev/dri/cardputer-zero-internal`, `WLR_BACKENDS=drm`, pixman, `LIBSEAT_BACKEND=noop`, `-d`:
+  no client decorations), its messages in `$XDG_RUNTIME_DIR/vibeoffice.log`; the screen goes back to the launcher when
+  it ends. The app is in `apps/vibeoffice/`, with `LICENSE`; it depends on `cage` and `libwebkit2gtk-4.1-0` (Raspberry
+  Pi OS has both; the device's image has GTK 3 and libsoup 3 already).
+
+Building, on any Debian or Ubuntu machine (clang, lld, llvm-ar, apt-get, dpkg-deb; no cross gcc, no container): the
+build fetches the arm64 development packages of Debian 13 with apt run as the user (its own folders in
+`desktop/target/cardputer/`, the machine's Debian archive keyring), unpacks them as a sysroot and links with lld:
+
+    desktop/cardputer/packaging/build.sh
+    path/to/AppBuilder/scripts/pack-deb.sh desktop/cardputer --skip-build --output-dir desktop/target/dist
+
+which writes `vibeoffice_<yyyy.mm.dd>+git<hash>-1_arm64.deb` (6.5 MB; the app 8.4 MB). On the device:
+`sudo apt install ./vibeoffice_…_arm64.deb` (online), or `dpkg -i` with `cage` and the WebKitGTK packages beside it.
+
+Checked here before the device: the lite pages in Chromium with `tests/desktop/host-stub.js` and `?lite` (the lite host:
+its Documents are the stub's files), and the x86_64 build (`--features lite`, `TAURI_CONFIG` with the `lite`
+capability as in `build.sh`) in a 320×170 X screen (`Xvfb :57 -screen 0 320x170x24`, `HOME` a test folder), driven
+with xdotool.
 
 ## Size
 

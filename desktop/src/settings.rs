@@ -23,6 +23,26 @@ use tauri::{
 use crate::store::Store;
 
 pub const UI_SCALE: &str = "vibeoffice.uiScale";
+/// The lite edition's settings until the user changes them, for its small screen (docs/desktop.md, Lite edition):
+/// the Classic look's menus at 75 % (also `ui_scale`), each app without toolbars, rulers or task pane, Quire in Web
+/// Layout. Each app's options merge with its own defaults.
+#[cfg(feature = "lite")]
+const LITE: &[(&str, &str)] = &[
+    (LOOK, "classic"),
+    (UI_SCALE, "0.75"),
+    (
+        "quire.opts",
+        r#"{"taskOpen":false,"startupPane":false,"ruler":false,"vruler":false,"view":"web","toolbars":{"standard":false,"formatting":false,"drawing":false}}"#,
+    ),
+    (
+        "ledger.opts",
+        r#"{"taskOpen":false,"toolbars":{"standard":false,"formatting":false}}"#,
+    ),
+    (
+        "lectern.opts",
+        r#"{"taskOpen":false,"startupPane":false,"layoutPaneOnNew":false,"leftOpen":false,"notesH":24,"toolbars":{"standard":false,"formatting":false,"drawing":false}}"#,
+    ),
+];
 const SCALES: RangeInclusive<f64> = 0.5..=4.0;
 const LOOK: &str = "vibeoffice.look";
 const MAX_VALUE: usize = 1 << 20;
@@ -110,12 +130,18 @@ impl Settings {
             .0
             .get(UI_SCALE)
             .and_then(|v| scale_of(v))
-            .unwrap_or(1.0)
+            .unwrap_or(if cfg!(feature = "lite") { 0.75 } else { 1.0 })
     }
 
-    /// Every setting as a JSON object, with the desktop app's default look.
+    /// Every setting as a JSON object, with the desktop app's default look (the lite edition's defaults: `LITE`).
     pub fn json(&self) -> String {
         let mut values = self.values.lock().unwrap().0.clone();
+        #[cfg(feature = "lite")]
+        for (key, value) in LITE {
+            values
+                .entry((*key).into())
+                .or_insert_with(|| (*value).into());
+        }
         values.entry(LOOK.into()).or_insert_with(|| "paper".into());
         serde_json::to_string(&values).unwrap_or_else(|_| "{}".into())
     }
@@ -318,7 +344,12 @@ mod tests {
         let json: serde_json::Value = serde_json::from_str(&again.json()).unwrap();
         assert_eq!(json["quire.opts"], "{\"a\":1}");
         assert_eq!(
-            json["vibeoffice.look"], "paper",
+            json["vibeoffice.look"],
+            if cfg!(feature = "lite") {
+                "classic"
+            } else {
+                "paper"
+            },
             "the desktop app's look until one is picked"
         );
         assert!(json.get("vibeoffice.lang").is_none());
@@ -367,17 +398,57 @@ mod tests {
         )
         .unwrap();
         let s = Settings::load(Store::new(root.clone()), Some(&old));
+        #[cfg(not(feature = "lite"))]
         assert_eq!(s.json(), r#"{"vibeoffice.look":"classic"}"#);
+        let json: serde_json::Value = serde_json::from_str(&s.json()).unwrap();
+        assert_eq!(json["vibeoffice.look"], "classic");
+        assert!(json.get("Bad").is_none() && json.get("quire.n").is_none());
         assert_eq!(
             s.ui_scale(),
-            1.0,
+            if cfg!(feature = "lite") { 0.75 } else { 1.0 },
             "config.json is there: settings.json is no longer read"
         );
         std::fs::write(root.join("config.json"), "{not json").unwrap();
+        #[cfg(not(feature = "lite"))]
         assert_eq!(
             Settings::load(Store::new(root.clone()), None).json(),
             r#"{"vibeoffice.look":"paper"}"#
         );
+        #[cfg(feature = "lite")]
+        assert_eq!(
+            Settings::load(Store::new(root.clone()), None).json(),
+            Settings::load(Store::new(temp("lite-empty")), None).json(),
+            "a broken file is as none"
+        );
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[cfg(feature = "lite")]
+    #[test]
+    fn the_lite_defaults_hold_until_the_user_changes_them() {
+        let root = temp("lite");
+        let settings = Settings::load(Store::new(root.clone()), None);
+        let json: serde_json::Value = serde_json::from_str(&settings.json()).unwrap();
+        assert_eq!(json["vibeoffice.look"], "classic");
+        assert_eq!(json[UI_SCALE], "0.75");
+        let quire: serde_json::Value =
+            serde_json::from_str(json["quire.opts"].as_str().unwrap()).unwrap();
+        assert_eq!(quire["view"], "web");
+        assert_eq!(settings.ui_scale(), 0.75);
+        settings.set(UI_SCALE, Some("1".into())).unwrap();
+        settings.set("quire.opts", Some("{}".into())).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&settings.json()).unwrap();
+        assert_eq!(
+            (json[UI_SCALE].as_str(), json["quire.opts"].as_str()),
+            (Some("1"), Some("{}"))
+        );
+        assert_eq!(settings.ui_scale(), 1.0);
+        settings.flush();
+        let written = std::fs::read_to_string(root.join("config.json")).unwrap();
+        assert!(
+            !written.contains("ledger.opts"),
+            "defaults aren't written: {written}"
+        );
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

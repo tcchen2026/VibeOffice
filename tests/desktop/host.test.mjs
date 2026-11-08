@@ -164,11 +164,13 @@ test('the stub grants each kind of window the commands the desktop app does (des
   const caps = {};
   for (const f of fs.readdirSync(path.join(root, 'desktop/capabilities'))) {
     const c = JSON.parse(fs.readFileSync(path.join(root, 'desktop/capabilities', f), 'utf8'));
-    caps[c.windows.join(' ')] = c.permissions.flatMap((p) => perms[p]).sort();
+    caps[c.identifier + ': ' + c.windows.join(' ')] = c.permissions.flatMap((p) => perms[p]).sort();
   }
   const stub = fs.readFileSync(path.join(root, 'tests/desktop/host-stub.js'), 'utf8');
   const grants = (kind) => list(new RegExp(`\\b${kind}: \\[([^\\]]*)\\]`).exec(stub)[1]);
-  assert.deepEqual(caps, { main: grants('start'), 'quire-* ledger-* lectern-*': grants('app') });
+  /* lite: the lite build's one window instead of start and apps (its TAURI_CONFIG; desktop/tauri.conf.json) */
+  assert.deepEqual(caps, { 'start: main': grants('start'), 'apps: quire-* ledger-* lectern-*': grants('app'), 'lite: main': grants('lite') });
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, 'desktop/tauri.conf.json'), 'utf8')).app.security.capabilities, ['start', 'apps']);
 });
 
 test('no browser storage in the desktop app: the stub removes what host.rs does, and only the web\'s own code names it', () => {

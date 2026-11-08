@@ -20,18 +20,22 @@ import hashlib, html, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'public', 'oss-licenses.html')
-TARGETS = {'windows': 'x86_64-pc-windows-gnu', 'macos': 'aarch64-apple-darwin', 'linux': 'x86_64-unknown-linux-gnu'}
+# platform -> the target it is built for, and its features: the lite edition is the CardputerZero's build
+# (docs/desktop.md, Lite edition)
+TARGETS = {'windows': ('x86_64-pc-windows-gnu', ''), 'macos': ('aarch64-apple-darwin', ''), 'linux': ('x86_64-unknown-linux-gnu', ''),
+           'lite': ('aarch64-unknown-linux-gnu', 'lite')}
 LICENSE_FILE = re.compile(r'^(licen[cs]e|copying|copyright|notice|unlicense)', re.I)
 
 E = html.escape
 
 
-def shipped_crates(target):
+def shipped_crates(target, features=''):
     """{package id: package} of every crate compiled into what ships for a target: the workspace's members (the app
     and its installer) and, along normal dependencies, what they link, with features resolved as the build resolves
     them (cargo tree; cargo metadata's graph also holds what only Tauri's build-time macros use). Our own path crates
     (desktop/patches/) are left out."""
-    run = lambda *a: subprocess.run(['cargo', *a, '--locked'], cwd=os.path.join(ROOT, 'desktop'), capture_output=True, text=True, check=True).stdout
+    with_features = ['--features', features] if features else []
+    run = lambda *a: subprocess.run(['cargo', *a, *with_features, '--locked'], cwd=os.path.join(ROOT, 'desktop'), capture_output=True, text=True, check=True).stdout
     tree = run('tree', '--target', target, '--workspace', '-e', 'normal,no-proc-macro', '--prefix', 'none', '--format', '{p}')
     shipped = {(m[1], m[2]) for m in re.finditer(r'^(\S+) v(\S+)(?! \((?:/|[A-Za-z]:\\))', tree, re.M)}
     meta = json.loads(run('metadata', '--format-version', '1', '--filter-platform', target))
@@ -108,8 +112,8 @@ def main():
         return key
 
     crates = {}   # (name, version) -> entry
-    for platform, target in TARGETS.items():
-        for package in shipped_crates(target).values():
+    for platform, (target, features) in TARGETS.items():
+        for package in shipped_crates(target, features).values():
             key = (package['name'], package['version'])
             if key not in crates:
                 files = license_texts(package)
@@ -152,6 +156,9 @@ def main():
              'Approximate spreadsheet lookup and database criteria; compound-file header, allocation and directory handling; binary Office import: BIFF cell records, shared strings, phonetic text, styles, worksheet views, formula tokens, function metadata, shared and array formulas, data tables, names and external caches, comments, hyperlinks, validation, differential and conditional formats, filters, printing and protection, Word FIB, text pieces, formatting pages, styles, fonts, lists, sections, headers and notes, PowerPoint edit and persist records, document sizes, slide and notes associations, fonts and color schemes, text runs, master styles, placeholders, rulers, bullets and text fields, OLE properties, OfficeArt pictures, properties, gradients and shape geometry, PowerPoint animation and media records, VBA persist storage and Word document events. Rewritten in JavaScript from Apache POI at ae62bb51; Copyright The Apache Software Foundation.',
              files='public/common/legacy/vba-hosts.js, public/ledger/js/fn-lookup.js, public/ledger/js/fn-eng.js, public/common/crypto.js, public/common/legacy/encryption.js, public/common/legacy/xls-crypto.js, public/common/legacy/doc-crypto.js, public/common/legacy/ppt-crypto.js, public/common/legacy/xls-read.js, public/common/legacy/xls-style.js, public/common/legacy/xls-sheet.js, public/common/legacy/xls-write.js, public/common/legacy/xls-formula.js, public/common/legacy/xls-formula-book.js, public/common/legacy/xls-functions.js, public/common/legacy/xls-misc.js, public/common/legacy/xls-dxf.js, public/common/legacy/xls-rules.js, public/common/legacy/xls-comments.js, public/common/legacy/xls-draw-read.js, public/common/legacy/xls-draw-write.js, public/common/legacy/xls-chart-read.js, public/common/legacy/xls-chart-style.js, public/common/legacy/xls-chart-write.js, public/common/legacy/doc-read.js, public/common/legacy/doc-sprm.js, public/common/legacy/doc-structure.js, public/common/legacy/doc-style.js, public/common/legacy/doc-lists.js, public/common/legacy/doc-markup.js, public/common/legacy/doc-table-props.js, public/common/legacy/doc-fields.js, public/common/legacy/doc-draw-read.js, public/common/legacy/ppt-read.js, public/common/legacy/ppt-structure.js, public/common/legacy/ppt-text-read.js, public/common/legacy/ppt-text.js, public/common/legacy/ppt-shapes.js, public/common/legacy/ppt-tables.js, public/common/legacy/ppt-links.js, public/common/legacy/ppt-features.js, public/common/legacy/ppt-builds.js, public/common/legacy/ppt-media.js, public/common/legacy/ppt-text-write.js, public/common/legacy/properties.js, public/common/legacy/officeart.js, public/common/legacy/shapes.js',
              src='common/legacy/POI-LICENSE.txt', texts_=[apache, notice('../legacy/POI-NOTICE.txt')], derived=True),
+        work('r86', 'Apache License 2.0', [],
+             'The lite edition\'s keyboard on the CardputerZero: M5\'s Sym symbols as the keys of a US keyboard, and the Sym pointer keys, whose presses come as scan records alone.',
+             files='desktop/src/cardputer.rs', texts_=[apache], derived=True),
         work('Unicode', 'Unicode License v3', [('unicode.org', 'https://www.unicode.org'), ('ICU mapping data', 'https://github.com/unicode-org/icu/tree/release-77-1/icu4c/source/data/mappings')],
              'Single-byte OEM and Macintosh codepage tables used to read binary Office text and properties. Generated from Unicode\'s published Microsoft mapping data and ICU 77.1. Copyright 1991-2026 Unicode, Inc.',
              files='public/common/legacy/codepages.js', texts_=[notice('../legacy/UNICODE-LICENSE.txt')], derived=True),
@@ -198,7 +205,7 @@ def main():
         print(f'{os.path.relpath(OUT, ROOT)}: lists the {len(wanted)} shipped crates; none needs a copyleft licence')
         return
 
-    names = {'windows': 'Windows', 'macos': 'macOS', 'linux': 'Linux'}
+    names = {'windows': 'Windows', 'macos': 'macOS', 'linux': 'Linux', 'lite': 'Lite (CardputerZero)'}
     desktop = work('WebView2Loader.dll', 'BSD-3-Clause (Microsoft WebView2 SDK)', [('aka.ms/webview2', 'https://aka.ms/webview2')],
                    'Finds the system\'s WebView2 (Edge) runtime; ships beside vibeoffice.exe. Copyright Microsoft Corporation.', files='Windows', texts_=[webview2])
     desktop += work('AppImage runtime', 'MIT; with libfuse (LGPL-2.1), squashfuse, zstd, zlib and musl inside',

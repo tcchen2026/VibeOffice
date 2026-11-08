@@ -25,6 +25,14 @@ rfd = { version = "0.17", default-features = false, features = ["common-controls
 # The Open and Save dialogs on Linux (src/dialog.rs): GTK's native chooser, the version Tauri uses
 [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
 gtk = "0.18"
+# The lite edition's web view settings (src/lite.rs): the version wry uses
+webkit2gtk = { version = "2.0", optional = true }
+# The lite edition on the CardputerZero (src/cardputer.rs): its keyboard handed to cage as a virtual keyboard and
+# pointer, over a Wayland connection of its own (pure Rust, no libwayland)
+wayland-client = { version = "0.31", optional = true }
+wayland-protocols-misc = { version = "0.3", features = ["client"], optional = true }
+wayland-protocols-wlr = { version = "0.3", features = ["client"], optional = true }
+libc = { version = "0.2", optional = true }
 
 # ShellExecuteW for links; the installation (src/installation.rs, src/installed.rs, setup/): registry,
 # shortcuts, the uninstall dialog, taskbar pinning. Already built for Tauri, so this adds little.
@@ -69,6 +77,9 @@ objc2-web-kit = { version = "0.3", default-features = false, features = ["std", 
 # Embed public/ in the exe. `--no-default-features` loads devUrl (tools/serve.py) instead.
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+# The lite edition (docs/desktop.md, Lite edition): one window, documents in ~/VibeOffice/Documents, nothing else kept;
+# built for the CardputerZero (cardputer/)
+lite = ["dep:webkit2gtk", "dep:wayland-client", "dep:wayland-protocols-misc", "dep:wayland-protocols-wlr", "dep:libc"]
 
 [profile.release]
 opt-level = "z"

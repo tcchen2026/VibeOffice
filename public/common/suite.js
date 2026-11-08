@@ -67,6 +67,9 @@
    *  window.__VO_HOST__ and answers the host_* commands (desktop/src/host.rs). Pages use VO.host, never
    *  Tauri's or the system's file APIs directly. */
   const native = window.__VO_HOST__ && window.__TAURI_INTERNALS__ ? window.__VO_HOST__ : null;
+  /* the lite edition (desktop/src/lite.rs): one window, its start page (lite.html) and each app's page in turn; it
+     keeps only the settings and the files in ~/VibeOffice/Documents: no Recent Files, previews or drafts */
+  const lite = !!(native && native.edition === 'lite');
   const call = (cmd, args, options) => window.__TAURI_INTERNALS__.invoke(cmd, args, options);
   /* an app page, not the Start Center (the desktop app: only the Start Center lists Recent Files) */
   const appPage = !!document.documentElement.dataset.app;
@@ -79,8 +82,21 @@
     platform: native ? native.platform : 'web',
     version: native ? native.version : 0,
     /** whether this edition looks for its updates (updater/current.json): not the Mac App Store's, which the store
-     *  updates and which has no network */
-    updates: !native || native.edition !== 'appstore',
+     *  updates and which has no network, nor the lite edition's, which its package updates */
+    updates: !native || (native.edition !== 'appstore' && !lite),
+    /** the lite edition's start page and window (desktop/src/lite.rs), else null: list() the documents in
+     *  ~/VibeOffice/Documents, [{ name, app, size, modified }] newest first; open(name), create(page, start) a new
+     *  document (start: { new } or { template }), home() and licenses() send the one window there; quit(); show(on): a
+     *  slide show starts or ends, and with an HDMI screen the window goes there for it (true when it went) */
+    lite: lite ? {
+      list: () => call('host_lite_list'),
+      open: (name) => call('host_lite_open', { name }),
+      create: (page, start) => call('host_lite_new', { page, start }),
+      home: () => call('host_lite_home'),
+      licenses: () => call('host_lite_licenses'),
+      quit: () => call('host_lite_quit'),
+      show: (on) => call('host_lite_show', { on: !!on }),
+    } : null,
     /** open a web or mail address in the system's browser: a new tab on the web, the default browser in the
      *  desktop app (which also sends every link that leaves the app there) */
     async openUrl(url) {
@@ -127,8 +143,9 @@
     /** the Start Center's Recent Files entry (draft: its unsaved version) in a window of its own, or the window that
      *  has it brought forward */
     async openRecent(key, draft) { return call('host_open_recent', { key, draft: !!draft }); },
-    /** an app window's Recent Files: the Start Center, the one window that lists them, on its Recent Files */
-    async showRecent() { return call('host_show_recent'); },
+    /** an app window's Recent Files: the Start Center, the one window that lists them, on its Recent Files (the lite
+     *  edition: its start page's list of documents, once this page's document has gone) */
+    async showRecent() { return lite ? VO.openDialog() : call('host_show_recent'); },
     /** a document as bytes in a new window: a file dropped on a page, or one a page made (made: never saved) */
     async newDocument(blob, name, made) {
       const headers = { 'X-Name': encodeURIComponent(name) };
@@ -163,7 +180,7 @@
     async versions() { return native ? call('host_versions') : []; },
     async openVersion(id) { return call('host_open_version', { id }); },
     /** close this window if it is an app window the suite opened; false for the Start Center's (and on the web) */
-    async closeWindow() { return native ? call('host_close_window') : false; },
+    async closeWindow() { return native && !lite ? call('host_close_window') : false; },
     /** fn(files) for the files the system asks us to open: the installed PWA's file handlers (Open with, a
      *  double-click on an associated file); the page that calls this takes them. The desktop app opens those
      *  itself, each in a window of its own */
@@ -180,6 +197,7 @@
    *  Windows Edition, Quire macOS Edition (DMG) or (App Store), Quire Linux Edition */
   VO.editionName = (app) => {
     if (!native) return app + ' Web Edition';
+    if (lite) return app + ' Lite Edition';
     const system = { windows: 'Windows', macos: 'macOS', linux: 'Linux' }[native.platform] || native.platform;
     return `${app} ${system} Edition` + (native.platform === 'macos' ? (native.edition === 'appstore' ? ' (App Store)' : ' (DMG)') : '');
   };
@@ -441,6 +459,7 @@
    *  LibreOffice), else this tab. The desktop app's windows each keep their one page, so there a window that
    *  can't be opened is an error for the caller to show, not a page change */
   VO.go = async (url) => {
+    if (lite) return liteGo(url);
     if (VO.host.kind === 'desktop') return VO.host.newWindow(url);
     const standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: window-controls-overlay)').matches;
     try { if (standalone && await VO.host.newWindow(url)) return; } catch (e) { console.error('new window:', e); }
@@ -449,6 +468,7 @@
   /** File ▸ Exit, after the app has closed its documents: an app window the Start Center opened
    * (installed) closes and shows the Start Center behind it; a tab goes to the Start Center */
   VO.exit = async () => {
+    if (lite) { leaving = true; return VO.host.lite.home().catch((e) => { leaving = false; say(e); }); }
     if (await VO.host.closeWindow().catch(() => false)) return;   // the desktop app's app windows
     if (window.opener && !window.opener.closed) { window.close(); if (window.closed) return; }
     location.href = BASE;
@@ -539,6 +559,7 @@
    *  once its document has gone, saved or given up as when the window closes ("Save changes?"; Cancel keeps it):
    *  the window reloads with the file, as a fresh page. Other files open in windows of their own */
   VO.openDialog = async () => {
+    if (lite) return leave(() => VO.host.lite.home());   // its list of documents is the Open dialog
     try {
       const r = await VO.host.open();
       if (!r || !r.here) return;
@@ -549,6 +570,24 @@
   };
   /* its document let go, the page leaves without the apps' "Leave the page?" (their beforeunload, added after this) */
   let leaving = false;
+  /** the lite edition: the one window goes elsewhere (`to`, a host call) once this page's document has gone, saved or
+   *  given up as when a window closes ("Save changes?"; Cancel keeps it); false when it stays */
+  async function leave(to) {
+    try {
+      if (current && current.hooks.close && !(await current.hooks.close())) return false;
+      leaving = true;
+      await to();
+      return true;
+    } catch (e) { leaving = false; say(e); return false; }
+  }
+  /** VO.go in the lite edition: a new document of an app (?new, ?template=) or the licences page, in this window */
+  function liteGo(url) {
+    const u = new URL(url, location.href), path = u.pathname.slice(new URL(BASE).pathname.length);
+    if (path === 'oss-licenses.html') return leave(() => VO.host.lite.licenses());
+    const page = path.replace(/\/(index\.html)?$/, '');
+    const start = u.searchParams.has('template') ? { template: u.searchParams.get('template') } : { new: true };
+    return leave(() => VO.host.lite.create(page, start));
+  }
   window.addEventListener('beforeunload', (e) => { if (leaving) e.stopImmediatePropagation(); }, true);
   /** a dialog of the page is open: the Mac's menu bar (vo-menu) waits for it, as a Mac app's menus do */
   VO.busyDialog = () => !!document.querySelector('.dlg-overlay, [aria-modal="true"]');
@@ -659,7 +698,7 @@
   /** the thumbnail for a Recent Files entry, a little after the document has been drawn (the desktop app: this
    *  window's entry, if it has one) */
   function thumbLater(key) {
-    if (!key && !native) return;
+    if (lite || (!key && !native)) return;
     setTimeout(async () => {
       try {
         const blob = await VO.thumbnail();
@@ -705,7 +744,7 @@
   /** doc has new unsaved changes: its unsaved version is written a little later */
   VO.changed = (doc) => {
     if (doc) changes.set(doc, (changes.get(doc) || 0) + 1);
-    if (!current || !doc || !current.hooks.snapshot) return;
+    if (!current || !doc || !current.hooks.snapshot || lite) return;   // the lite edition keeps no unsaved versions
     const s = draftOf(doc), now = Date.now();
     if (s.since === null) s.since = now;
     clearTimeout(s.timer);
@@ -753,7 +792,7 @@
     if (!doc) return;
     clearTimeout(draftOf(doc).timer);
     drafts.delete(doc);
-    if (native) { call('host_clear_draft').catch(() => {}); return; }
+    if (native) { if (!lite) call('host_clear_draft').catch(() => {}); return; }
     const key = docKeys.get(doc);
     if (!key) return;
     docKeys.delete(doc);
@@ -774,13 +813,14 @@
   const toStart = (text) => { const b = el('button', 'tp-link', null); b.type = 'button'; const ic = el('span'); ic.innerHTML = icon('open'); b.append(ic, el('span', null, text)); b.addEventListener('click', () => VO.host.showRecent().catch(() => {})); return b; };
   /** File menu: the app's four most recent entries ({ label, run } items for L.ui menus); the desktop app's Recent
    *  Files... */
-  VO.recentMenuItems = (max) => (native ? [{ label: VO.t('Recent &Files...'), raw: true, run: () => VO.host.showRecent().catch(() => {}) }] : VO.recent.forApp().slice(0, max || 4).map((e, i) => ({
+  VO.recentMenuItems = (max) => (lite ? [] : native ? [{ label: VO.t('Recent &Files...'), raw: true, run: () => VO.host.showRecent().catch(() => {}) }] : VO.recent.forApp().slice(0, max || 4).map((e, i) => ({
     label: '&' + (i + 1) + ' ' + (e.draft ? VO.t('{0} (unsaved changes)', e.name) : e.name).replace(/&/g, '&&'), raw: true,
     run: () => VO.openRecent(e.key, { draft: !!e.draft }),
   })));
   /** task pane: the app's recent entries as links (Getting Started ▸ Open); keeps itself up to date */
   VO.recentLinks = (max) => {
     const box = el('div', 'vo-recent');
+    if (lite) return box;
     if (native) { box.append(toStart('Recent Files...')); return box; }
     const draw = () => {
       if (!box.isConnected && box.dataset.drawn) { stop(); return; }
@@ -805,6 +845,7 @@
   };
   /** the Document Recovery task pane: this app's unsaved versions, each to open or to discard */
   VO.recoveryPane = (b) => {
+    if (lite) { b.append(el('div', 'tp-note', 'VibeOffice Lite doesn\'t keep unsaved changes: save your document to keep them.')); return; }
     if (native) { b.append(el('div', 'tp-note', 'Unsaved changes are kept for each document in Recent Files, in the Start Center: open them from there, or discard them.'), toStart('Recent Files...')); return; }
     const list = el('div', 'vo-recovery');
     const draw = () => {

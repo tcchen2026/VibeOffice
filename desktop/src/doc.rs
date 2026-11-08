@@ -241,6 +241,17 @@ fn describe(path: &Path, e: std::io::Error) -> String {
 
 /// The app of an app window (`quire-3` → quire), none for the Start Center and the licences page.
 fn app_of(window: &WebviewWindow) -> Option<&'static str> {
+    // the lite edition's one window has each app's page in turn: the app of the page it was sent to
+    #[cfg(feature = "lite")]
+    let page = window
+        .state::<crate::host::Host>()
+        .page_of(window.label())?
+        .path()
+        .trim_start_matches('/')
+        .split_once('/')?
+        .0
+        .to_string();
+    #[cfg(not(feature = "lite"))]
     let page = window.label().rsplit_once('-')?.0;
     types::APPS.iter().map(|(a, _)| *a).find(|a| *a == page)
 }
@@ -478,8 +489,21 @@ pub async fn host_reopen(app: AppHandle, window: WebviewWindow, go: bool) -> Res
     if types::app_for(&path) != Some(own) {
         return Err(format!("{own} doesn't open “{}”", file_name(&path)));
     }
-    let (key, real) = docs.record(own, &path)?;
-    recent_changed(&app);
+    open_here(&app, &window, own, &path)
+}
+
+/// `window` goes to `app`'s page with the file `path` (File ▸ Open, `host_reopen`; the lite edition's window,
+/// lite.rs). The address has a one-time word only that page knows (`token`), so the page it replaces, which may
+/// have parsed something hostile, is never given the file.
+pub fn open_here(
+    app_handle: &AppHandle,
+    window: &WebviewWindow,
+    app: &str,
+    path: &Path,
+) -> Result<(), String> {
+    let docs = app_handle.state::<Docs>();
+    let (key, real) = docs.record(app, path)?;
+    recent_changed(app_handle);
     let token = store::random_key();
     let doc = Doc {
         key: Some(key),
@@ -489,17 +513,10 @@ pub async fn host_reopen(app: AppHandle, window: WebviewWindow, go: bool) -> Res
         ..Doc::default()
     };
     if let Err(holder) = docs.replace(window.label(), doc) {
-        raise(&app, &holder);
+        raise(app_handle, &holder);
         return Ok(());
     }
-    let url = crate::net::page_url(
-        &app,
-        WebviewUrl::App(format!("{own}/?doc&t={token}").into()),
-    )
-    .ok_or("no address for the page")?;
-    app.state::<crate::host::Host>()
-        .expect(window.label(), crate::host::Page::new(url.clone(), false));
-    window.navigate(url).map_err(|e| e.to_string())
+    crate::host::navigate(app_handle, window, &format!("{app}/?doc&t={token}"))
 }
 
 /// An app window's Recent Files: the Start Center, the one window that lists them, brought forward (or opened again)
@@ -913,7 +930,9 @@ pub struct Chosen {
 /// Save As (`saveAs`) and every export (`export`): the system's Save dialog, in the folder of the window's file
 /// (else the last one this window used, else Documents), with `name` (a bare name, no extension) and the types
 /// offered, `type` first; Rust makes the filters from its own table. Remembers the choice for `host_write_chosen`;
-/// none when cancelled.
+/// none when cancelled. The lite edition has no dialog: the page asked for the name, and the file is `name` with
+/// `type`'s extension in its Documents (lite.rs); one that is there is replaced only when the page asks again with
+/// `replace`, after asking the user (error `exists`).
 #[tauri::command]
 pub async fn host_choose(
     app: AppHandle,
@@ -923,6 +942,7 @@ pub async fn host_choose(
     r#type: String,
     name: String,
     title: Option<String>,
+    replace: Option<bool>,
 ) -> Result<Option<Chosen>, SaveError> {
     let bad = |m: String| files::fail("type", m);
     let own = own_app(&window).map_err(|e| files::fail("io", e))?;
@@ -946,54 +966,75 @@ pub async fn host_choose(
         return Err(bad(format!("not a file name: {name}")));
     }
     let docs = app.state::<Docs>();
-    let (file, last) = {
-        let windows = docs.windows.lock().unwrap();
-        let d = windows.get(window.label());
-        (
-            d.and_then(|d| d.file.clone()),
-            d.and_then(|d| d.folder.clone()),
-        )
-    };
-    let folder = file
-        .as_deref()
-        .and_then(Path::parent)
-        .map(Path::to_path_buf)
-        .or(last)
-        .or_else(|| app.path().document_dir().ok());
-    let filters = offered
-        .iter()
-        .map(|(k, l)| dialog::Filter::new(l.clone(), k.exts))
-        .collect();
-    let title = label(&title, if save_as { "Save As" } else { "Export" });
-    let suggested = format!("{name}.{}", offered[0].0.exts[0]);
-    let Some((picked, filter)) = dialog::save(&window, &title, filters, folder, &suggested).await
-    else {
-        return Ok(None);
-    };
-    // the type: the extension typed, if it is one offered; else the filter's (GTK says which), the extension added
-    let typed = types::ext(&picked)
-        .and_then(|e| offered.iter().find(|(k, _)| k.exts.contains(&e.as_str())));
-    let (kind, path) = match typed {
-        Some((k, _)) => (*k, picked.clone()),
-        None => {
-            let k = offered[filter.unwrap_or(0).min(offered.len() - 1)].0;
-            let mut p = picked.clone().into_os_string();
-            p.push(format!(".{}", k.exts[0]));
-            (k, PathBuf::from(p))
+    #[cfg(feature = "lite")]
+    let (kind, path) = {
+        let _ = title;
+        let kind = offered[0].0;
+        let path = crate::lite::document(&format!("{name}.{}", kind.exts[0]))
+            .map_err(|e| files::fail("io", e))?;
+        if path.exists() && replace != Some(true) {
+            return Err(SaveError {
+                file: Some(file_name(&path)),
+                ..files::fail("exists", format!("“{}” already exists.", file_name(&path)))
+            });
         }
+        (kind, path)
     };
-    // the dialog asked about replacing the name it showed, not one with an extension added
-    if path != picked
-        && path.exists()
-        && !dialog::confirm(
-            &window,
-            &title,
-            &format!("“{}” already exists. Replace it?", file_name(&path)),
-        )
-        .await
-    {
-        return Ok(None);
-    }
+    #[cfg(not(feature = "lite"))]
+    let (kind, path) = {
+        let _ = replace;
+        let (file, last) = {
+            let windows = docs.windows.lock().unwrap();
+            let d = windows.get(window.label());
+            (
+                d.and_then(|d| d.file.clone()),
+                d.and_then(|d| d.folder.clone()),
+            )
+        };
+        let folder = file
+            .as_deref()
+            .and_then(Path::parent)
+            .map(Path::to_path_buf)
+            .or(last)
+            .or_else(|| app.path().document_dir().ok());
+        let filters = offered
+            .iter()
+            .map(|(k, l)| dialog::Filter::new(l.clone(), k.exts))
+            .collect();
+        let title = label(&title, if save_as { "Save As" } else { "Export" });
+        let suggested = format!("{name}.{}", offered[0].0.exts[0]);
+        let Some((picked, filter)) =
+            dialog::save(&window, &title, filters, folder, &suggested).await
+        else {
+            return Ok(None);
+        };
+        // the type: the extension typed, if it is one offered; else the filter's (GTK says which), the extension
+        // added
+        let typed = types::ext(&picked)
+            .and_then(|e| offered.iter().find(|(k, _)| k.exts.contains(&e.as_str())));
+        let (kind, path) = match typed {
+            Some((k, _)) => (*k, picked.clone()),
+            None => {
+                let k = offered[filter.unwrap_or(0).min(offered.len() - 1)].0;
+                let mut p = picked.clone().into_os_string();
+                p.push(format!(".{}", k.exts[0]));
+                (k, PathBuf::from(p))
+            }
+        };
+        // the dialog asked about replacing the name it showed, not one with an extension added
+        if path != picked
+            && path.exists()
+            && !dialog::confirm(
+                &window,
+                &title,
+                &format!("“{}” already exists. Replace it?", file_name(&path)),
+            )
+            .await
+        {
+            return Ok(None);
+        }
+        (kind, path)
+    };
     if let Ok((key, _)) = store::key_of(&path) {
         if docs.window_of(&key).is_some_and(|w| w != window.label()) {
             return Err(SaveError {

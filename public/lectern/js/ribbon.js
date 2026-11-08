@@ -14,7 +14,7 @@
       gridGuides: 'grid', autocorrectDlg: 'options', duplicateSlide: 'duplicate', subscript: 'subscript', superscript: 'superscript', headerFooter: 'headerFooter',
       pageSetup: 'pageSetup', animSchemes: 'animation' },
     qat: ['save', { split: 'undo', menu: (r) => A().historyMenu(r, 'undo') }, { split: 'redo', menu: (r) => A().historyMenu(r, 'redo') }, 'showFromStart'],
-    file: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'properties', ...(L.file.native() ? ['versions'] : []), '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
+    file: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
     tabs: [
       { id: 'home', label: '&Home', groups: [
         { label: 'Clipboard', launcher: 'officeClipboard', items: [{ split: 'paste', size: 'large', menu: open(['paste', 'pasteSpecial']) }, 'cut', { split: 'copy', menu: open(['copy', 'duplicate']) }, 'painter'] },

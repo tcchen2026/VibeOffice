@@ -31,8 +31,9 @@
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
   /* in when the app starts: not on a day the user hid him; otherwise once they have shown him, or by default
-     (but not on a phone or tablet, nor in an automated browser: UI checks) */
-  const wanted = () => get(HIDDEN) !== today() && (load().on === true || (!L.isMobile && !navigator.webdriver));
+     (but not on a phone or tablet, in an automated browser (UI checks) or in the lite edition, for its small screen
+     and memory) */
+  const wanted = () => get(HIDDEN) !== today() && (load().on === true || (!L.isMobile && !navigator.webdriver && !(window.VO && VO.host.lite)));
   let scout = null, on = wanted(), away = false, awayTimer = 0;   // away: the window is in the background
 
   const searchInput = () => ui.searchInput && ui.searchInput();

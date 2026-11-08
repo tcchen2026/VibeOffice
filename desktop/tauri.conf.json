@@ -10,7 +10,8 @@
   "app": {
     "windows": [],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": ["start", "apps"]
     }
   },
   "bundle": {

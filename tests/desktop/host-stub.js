@@ -10,6 +10,8 @@
 // (each use of a storage API the app removes); stubSettings, the settings (settings.rs, config.json).
 // The clock says 2026-10-16 (?today=yyyy-mm-dd another day), so the versions here don't grow old (VO.isOutdated).
 // ?web: no host, only the version a published copy of the site is stamped with.
+// ?lite (on the first page; the tab keeps it): the lite edition (desktop/src/lite.rs): one window, whose pages all
+// have its grants; its Documents hold FILES; records liteOpened, liteNew, liteHome, liteQuit.
 (() => {
   const sessionStorage = window.stubSession = window.sessionStorage;
   const RealDate = Date;
@@ -39,14 +41,16 @@
   const appVersion = (/version=(v[0-9.]+-[0-9a-f]{6})/.exec(location.search) || [])[1] || 'v2026.10.11-abc123';
   // ?appstore: the Mac App Store edition, which the store updates (host.rs, init_script)
   const appStore = /appstore/.test(location.search);
+  if (/[?&]lite\b/.test(location.search)) sessionStorage.stubLite = '1';
+  const lite = !!sessionStorage.stubLite;
   // ?sandboxed: the Mac App Sandbox, where a refused save may ask for the file's folder (host_allow_access)
-  window.__VO_HOST__ = Object.freeze({ platform: appStore ? 'macos' : 'windows', version: 1, appVersion, edition: appStore ? 'appstore' : 'direct',
+  window.__VO_HOST__ = Object.freeze({ platform: lite ? 'linux' : appStore ? 'macos' : 'windows', version: 1, appVersion, edition: lite ? 'lite' : appStore ? 'appstore' : 'direct',
     sandboxed: /[?&]sandboxed\b/.test(location.search),
     updates: updates || '/updater/current.json', whatsnew: ask ? json(news) : '/updater/whatsnew.json' });
   // the commands each kind of window may call (desktop/permissions/host.toml, desktop/capabilities/); the licences
   // page none
-  const kind = /^\/(index\.html)?$/.test(location.pathname) ? 'start' : /^\/(quire|ledger|lectern)\//.test(location.pathname) ? 'app' : 'none';
-  const app = kind === 'app' ? location.pathname.split('/')[1] : null;
+  const kind = lite ? 'lite' : /^\/(index\.html)?$/.test(location.pathname) ? 'start' : /^\/(quire|ledger|lectern)\//.test(location.pathname) ? 'app' : 'none';
+  const app = /^\/(quire|ledger|lectern)\//.test(location.pathname) ? location.pathname.split('/')[1] : null;
   const grants = {
     start: ['host_open', 'host_open_recent', 'host_new_document', 'host_recent', 'host_recent_preview', 'host_recent_remove',
       'host_recent_clear', 'host_discard_draft', 'host_new_window', 'host_open_url', 'host_set_setting'],
@@ -54,6 +58,12 @@
       'host_set_preview', 'host_set_draft', 'host_clear_draft', 'host_windows',
       'host_focus', 'host_closing', 'host_save', 'host_allow_access', 'host_choose', 'host_write_chosen', 'host_cancel_choice', 'host_versions',
       'host_open_version', 'host_new_window', 'host_close_window', 'host_set_setting'],
+    lite: ['host_document', 'host_document_bytes', 'host_open', 'host_reopen', 'host_show_recent', 'host_new_document',
+      'host_set_preview', 'host_set_draft', 'host_clear_draft', 'host_windows',
+      'host_focus', 'host_closing', 'host_save', 'host_allow_access', 'host_choose', 'host_write_chosen', 'host_cancel_choice', 'host_versions',
+      'host_open_version', 'host_new_window', 'host_close_window', 'host_set_setting',
+      'host_lite_list', 'host_lite_open', 'host_lite_new', 'host_lite_home', 'host_lite_licenses', 'host_lite_quit',
+      'host_lite_show'],
     none: [],
   }[kind];
   /* the disk, the apps' types (desktop/src/types.rs) and Recent Files (doc.rs, store.rs) */
@@ -89,6 +99,36 @@
       log('hostCalls');
       sessionStorage.hostCalls += ':' + cmd;
       if (!grants.includes(cmd)) throw `Command ${cmd} not allowed by ACL`;
+      if (lite) {   // lite.rs: the one window goes to the page; the documents are FILES, newest first
+        const go = (url) => { sessionStorage.liteAt = url; setTimeout(() => { location.href = url; }); return null; };
+        if (cmd === 'host_lite_list') return Object.keys(FILES).map((name, i) => ({ name, app: appFor(name), size: FILES[name].length, modified: Date.now() - i * 86400000 }));
+        if (cmd === 'host_lite_open') {
+          if (!FILES[args.name]) throw `“${args.name}” is no longer in Documents`;
+          const token = Math.random().toString(36).slice(2);
+          sessionStorage.stubDoc = JSON.stringify({ ...fileDoc(args.name), token });
+          sessionStorage.liteOpened = args.name;
+          return go(`/${appFor(args.name)}/?doc&t=${token}`);
+        }
+        if (cmd === 'host_lite_new') {
+          if (!['quire', 'ledger', 'lectern'].includes(args.page)) throw `not one of the apps: ${args.page}`;
+          sessionStorage.liteNew = args.page;
+          delete sessionStorage.stubKey;
+          return go(`/${args.page}/?` + (args.start && args.start.template ? 'template=' + args.start.template : 'new') + '&n=1');
+        }
+        if (cmd === 'host_lite_home') { log('liteHome'); delete sessionStorage.stubKey; return go('/lite.html'); }
+        if (cmd === 'host_lite_licenses') return go('/oss-licenses.html');
+        if (cmd === 'host_lite_quit') { sessionStorage.liteQuit = '1'; return null; }
+        if (cmd === 'host_lite_show') { log(args.on ? 'liteShow' : 'liteShown'); return false; }   // no HDMI screen here
+        if (cmd === 'host_new_window') throw 'the lite edition has one window';
+        if (cmd === 'host_close_window') return false;
+        if (cmd === 'host_choose') {   // no dialog: the page's name, the type's extension, in Documents (doc.rs)
+          sessionStorage.chose = JSON.stringify(args);
+          const ext = { html: 'htm', mdzip: 'zip', xmlss: 'xml' }[args.type] || args.type, name = args.name + '.' + ext;
+          if (FILES[name] && !args.replace) throw { code: 'exists', message: `“${name}” already exists.`, file: name };
+          sessionStorage.choice = JSON.stringify({ name, type: args.type, saveAs: args.purpose === 'saveAs' });
+          return { name, type: args.type };
+        }
+      }
       if (cmd === 'host_open') {   // an app window: its app's first file is held for host_reopen (next)
         sessionStorage.dialogs = JSON.stringify(args.labels);
         let opened = 0, here = null;
@@ -226,7 +266,12 @@
     },
   };
   // the settings as they are now, at the top of common/look.js (settings.rs, Served)
-  window.__VO_SETTINGS__ = Object.assign({ 'vibeoffice.look': 'paper' }, JSON.parse(sessionStorage.stubSettings || '{}'));
+  // (the lite edition's defaults: settings.rs, LITE)
+  const LITE = { 'vibeoffice.look': 'classic', 'vibeoffice.uiScale': '0.75',
+    'quire.opts': '{"taskOpen":false,"startupPane":false,"ruler":false,"vruler":false,"view":"web","toolbars":{"standard":false,"formatting":false,"drawing":false}}',
+    'ledger.opts': '{"taskOpen":false,"toolbars":{"standard":false,"formatting":false}}',
+    'lectern.opts': '{"taskOpen":false,"startupPane":false,"layoutPaneOnNew":false,"leftOpen":false,"notesH":24,"toolbars":{"standard":false,"formatting":false,"drawing":false}}' };
+  window.__VO_SETTINGS__ = Object.assign(lite ? LITE : { 'vibeoffice.look': 'paper' }, JSON.parse(sessionStorage.stubSettings || '{}'));
   // no browser storage (host.rs, NO_STORAGE): a use is recorded, and throws
   for (const [o, k] of [[window, 'localStorage'], [window, 'sessionStorage'], [window, 'indexedDB'], [window, 'caches'], [window, 'BroadcastChannel'], [navigator, 'storage'], [navigator, 'serviceWorker']]) {
     Object.defineProperty(o, k, { get() { log('touched'); sessionStorage.touched += ':' + k; throw new Error(k + ' is not used in the desktop app'); }, configurable: false });

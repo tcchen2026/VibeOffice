@@ -56,7 +56,7 @@
   function buildMenus() {
     const recentItems = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', { label: 'Sen&d To', sub: ['sendMail'] }, 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', { label: 'Sen&d To', sub: ['sendMail'] }, 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'Cle&ar', sub: ['clearFormats', 'clearContents'] }, 'selectAll', '-', 'find', 'replace', 'goTo', '-', 'links', 'editObject'],
@@ -1177,7 +1177,7 @@
     /* a selected object: its own menu, without the text's */
     const obj = onObj && L.drawing && L.drawing.selectedItem();
     if (obj) { ui.openMenu(A.objectMenu(obj), { x: e.clientX, y: e.clientY }); return; }
-    if (L.thesaurus) L.thesaurus.load().catch(() => {});
+    if (L.thesaurus && !(window.VO && VO.host.lite)) L.thesaurus.load().catch(() => {});   // 2 MB: not ahead in the lite edition
     const inTable = L.tables && L.tables.inTable();
     const items = ['cut', 'copy', 'paste', '-'];
     const ln = e.target.closest && e.target.closest('[data-link]');
@@ -1461,13 +1461,16 @@
     const narrow = window.innerWidth < 820;
     if (narrow) A.opts.taskOpen = false;
     L.$('#taskpane').hidden = !A.opts.taskOpen;
-    LY.zoom = narrow ? Math.max(0.4, (window.innerWidth - 40) / 816) : A.opts.zoom || 1;
+    const view = A.opts.view && ['print', 'normal', 'web', 'outline'].includes(A.opts.view) ? A.opts.view : 'print';
+    /* a narrow window shows Print Layout's page whole; the other views wrap the text to the window (the lite edition's
+       Web Layout) */
+    LY.zoom = narrow && view === 'print' ? Math.max(0.4, (window.innerWidth - 40) / 816) : A.opts.zoom || 1;
     /* opened from the Start Center: a template, or blank (a new document, or to open a file into); else the sample */
     const launch = window.VO && VO.launch;
     if (launch && launch.n) A.untitled = launch.n;   // the desktop app's number for it
     A.loadDoc(launch && launch.template && L.templates ? L.templates.build(launch.template) : launch ? blank() : A.buildSample(), 'Document' + A.untitled);
     A.view = 'x';
-    A.setView(A.opts.view && ['print', 'normal', 'web', 'outline'].includes(A.opts.view) ? A.opts.view : 'print');
+    A.setView(view);
     if (L.panes && A.opts.taskOpen) L.panes.task.show('getting-started');
     A.applyOpts();
     if (A.opts.docMap) A.toggleDocMap(true);

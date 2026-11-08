@@ -160,7 +160,17 @@
       el.appendChild(row);
     });
     let active = null;
-    function setActive(r) { if (active) active.classList.remove('act'); active = r; if (r) r.classList.add('act'); }
+    /* shown: the menu scrolls to it (a move by the keyboard in a menu taller than the window) */
+    function setActive(r, shown) {
+      if (active) active.classList.remove('act');
+      active = r;
+      if (!r) return;
+      r.classList.add('act');
+      if (shown && el.scrollHeight > el.clientHeight) {
+        if (r.offsetTop < el.scrollTop) el.scrollTop = r.offsetTop;
+        else if (r.offsetTop + r.offsetHeight > el.scrollTop + el.clientHeight) el.scrollTop = r.offsetTop + r.offsetHeight - el.clientHeight;
+      }
+    }
     function openSub(row) {
       const r = row.getBoundingClientRect();
       ui.openMenu(row._it.sub, { x: r.right - 3, y: r.top - 3, side: r.left }, { depth: depth + 1 });
@@ -177,8 +187,8 @@
     el._keys = (e) => {
       const idx = rows.indexOf(active);
       const usable = rows.filter((r) => !r.classList.contains('dis'));
-      if (e.key === 'ArrowDown') { const n = usable[(usable.indexOf(active) + 1) % usable.length]; setActive(n); return true; }
-      if (e.key === 'ArrowUp') { const i = usable.indexOf(active); setActive(usable[(i - 1 + usable.length) % usable.length]); return true; }
+      if (e.key === 'ArrowDown') { const n = usable[(usable.indexOf(active) + 1) % usable.length]; setActive(n, true); return true; }
+      if (e.key === 'ArrowUp') { const i = usable.indexOf(active); setActive(usable[(i - 1 + usable.length) % usable.length], true); return true; }
       if (e.key === 'ArrowRight' && active && active._it.sub) { openSub(active); const sub = openStack[openStack.length - 1]; if (sub && sub.first) sub.first(); return true; }
       if (e.key === 'Enter' || e.key === ' ') { if (active) activate(active); return true; }
       if (e.key.length === 1) {

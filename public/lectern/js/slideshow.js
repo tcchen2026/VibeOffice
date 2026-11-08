@@ -389,6 +389,8 @@
     root.addEventListener('contextmenu', onContext);
     root.addEventListener('wheel', onWheel, { passive: true });
     document.addEventListener('keydown', onKey, true);
+    /* the lite edition: with an HDMI screen connected, the window goes there for the show (desktop/src/lite.rs) */
+    if (!st.preview && window.VO && VO.host.lite) VO.host.lite.show(true).catch((e) => console.warn('HDMI:', e));
     if (!st.preview && root.requestFullscreen) root.requestFullscreen().catch(() => { /* fullscreen is optional */ });
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then((l) => { st.wake = l; }).catch(() => {}); } catch (e) { /* ignore */ }
     root.focus();
@@ -733,6 +735,7 @@
     window.removeEventListener('resize', layout);
     window.removeEventListener('blur', pressLost);
     try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) { /* ignore */ }
+    if (!st.preview && window.VO && VO.host.lite) VO.host.lite.show(false).catch(() => {});   // back from HDMI
     try { if (st.wake) st.wake.release(); } catch (e) { /* ignore */ }
     const inkData = st.ink;
     const rehearse = st.rehearse ? st.times : null;

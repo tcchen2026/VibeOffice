@@ -538,7 +538,7 @@
   function buildMenus() {
     const recent = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', 'exportPDF', 'exportCSV', '-', 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', 'exportPDF', 'exportCSV', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'F&ill', sub: ['fillDown', 'fillRight', 'fillUp', 'fillLeft', 'fillAcross', 'fillSeries', 'fillJustify'] },

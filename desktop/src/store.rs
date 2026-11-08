@@ -8,6 +8,8 @@
 //!                        <key>.recent.draft     its unsaved changes in the app's own format, at most MAX_DRAFT
 //! ```
 //!
+//! The lite edition keeps only config.json, in ~/VibeOffice beside its Documents (lite.rs).
+//!
 //! A user's file name never comes into a path made here: a file's key is the sha256 of its path, a never-saved
 //! document's of random bytes, 64 hex digits either way. Only names of that form are read; anything else in the
 //! folder is left alone, and links are never followed. Every file is written whole or not at all (`write_atomic`).
@@ -78,20 +80,38 @@ impl Entry {
 
 pub struct Store {
     root: PathBuf,
+    /// Recent Files, their previews and drafts, and previous versions are written (not in the lite edition, which
+    /// keeps only the settings: what it would keep is dropped, and the lists read empty)
+    keeps: bool,
 }
 
 impl Store {
     pub fn new(root: PathBuf) -> Store {
-        Store { root }
+        Store { root, keeps: true }
     }
 
-    /// `VIBEOFFICE_HOME`, for tests, else `.vibeoffice` in the user's home folder.
+    /// `VIBEOFFICE_HOME`, for tests, else `.vibeoffice` in the user's home folder; the lite edition's is
+    /// `VibeOffice`, which holds its Documents too (lite.rs).
     pub fn at(home: Option<PathBuf>) -> Store {
+        let name = if cfg!(feature = "lite") {
+            "VibeOffice"
+        } else {
+            ".vibeoffice"
+        };
         let root = std::env::var_os("VIBEOFFICE_HOME")
             .map(PathBuf::from)
-            .or_else(|| home.map(|h| h.join(".vibeoffice")))
-            .unwrap_or_else(|| PathBuf::from(".vibeoffice"));
-        Store::new(root)
+            .or_else(|| home.map(|h| h.join(name)))
+            .unwrap_or_else(|| PathBuf::from(name));
+        Store {
+            keeps: !cfg!(feature = "lite"),
+            ..Store::new(root)
+        }
+    }
+
+    /// The folder: settings, Recent Files and versions (the lite edition: settings and Documents).
+    #[cfg_attr(not(feature = "lite"), allow(dead_code))]
+    pub fn root(&self) -> &Path {
+        &self.root
     }
 
     fn recent(&self) -> PathBuf {
@@ -138,6 +158,9 @@ impl Store {
 
     /// Writes `key`'s entry: where it is, or in this month's folder for a new one.
     pub fn put(&self, key: &str, entry: &Entry) -> io::Result<()> {
+        if !self.keeps {
+            return Ok(());
+        }
         let folder = self.folder_for(key)?;
         let json = serde_json::to_vec(entry).map_err(io::Error::other)?;
         if json.len() as u64 > MAX_ENTRY {
@@ -190,6 +213,9 @@ impl Store {
 
     /// Stores the preview of an entry that exists.
     pub fn set_preview(&self, key: &str, jpeg: &[u8]) -> io::Result<()> {
+        if !self.keeps {
+            return Ok(());
+        }
         if jpeg.len() > MAX_PREVIEW || !jpeg.starts_with(&[0xFF, 0xD8, 0xFF]) {
             return Err(io::Error::other("not a preview: a JPEG up to 512 KB"));
         }
@@ -209,6 +235,9 @@ impl Store {
 
     /// Stores an unsaved version: the draft first, then the entry that names it.
     pub fn set_draft(&self, key: &str, entry: &Entry, bytes: &[u8]) -> io::Result<()> {
+        if !self.keeps {
+            return Ok(());
+        }
         if bytes.len() > MAX_DRAFT {
             return Err(io::Error::other("the unsaved version is over 50 MB"));
         }
@@ -317,7 +346,10 @@ impl Store {
 
     /// Keeps the file `key` names as it is now, before a save replaces it.
     pub fn keep_previous(&self, key: &str, file: &Path) {
-        if !is_key(key) || fs::metadata(file).map_or(true, |m| m.len() > VERSION_LARGEST) {
+        if !self.keeps
+            || !is_key(key)
+            || fs::metadata(file).map_or(true, |m| m.len() > VERSION_LARGEST)
+        {
             return;
         }
         let folder = self.versions_dir().join(month(now_ms()));
