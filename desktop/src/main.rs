@@ -123,7 +123,7 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
             #[cfg(feature = "lite")]
             match payload.event() {
                 PageLoadEvent::Started => lite::loading(&window, payload.url()),
-                PageLoadEvent::Finished => lite::loaded(&window),
+                PageLoadEvent::Finished => lite::loaded(&window, payload.url()),
             }
             if payload.event() == PageLoadEvent::Started {
                 let scale = if cfg!(feature = "lite") && payload.url().path() == "/lite.html" {
@@ -144,7 +144,10 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
         })
         .build()?;
     #[cfg(feature = "lite")]
-    lite::web_view(&window);
+    {
+        lite::web_view(&window);
+        lite::starting(&window);
+    }
     #[cfg(any(windows, target_os = "macos"))]
     net::guard(&window, page)?;
     Ok(window)
@@ -364,6 +367,8 @@ fn mac_menu_event(app: &AppHandle, id: &str) {
 }
 
 fn main() {
+    #[cfg(feature = "lite")]
+    lite::clock();
     // The lite edition (docs/desktop.md, Lite edition), for a device that swaps: JavaScriptCore without its JIT,
     // about 30 MiB less for the pages at the same speed; GTK without OpenGL, so WebKit draws on the CPU (its web
     // process half the size), and hands its frames over in shared memory, not GPU buffers (the app's own process

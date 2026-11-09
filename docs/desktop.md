@@ -25,7 +25,7 @@
 | `desktop/src/lite.rs` | the lite edition (Lite edition, below): its one window going between its start page (`public/lite.html`) and a document, the list of `~/VibeOffice/Documents`, WebKit's cache model and folder |
 | `desktop/src/cardputer.rs` | the lite edition on the CardputerZero: its keyboard, read from evdev and handed to cage as a virtual keyboard and pointer |
 | `desktop/lite-examples/` | the three example documents a new lite Documents folder starts with (`tools/lite-examples.mjs`: each app's sample, saved by the app) |
-| `desktop/cardputer/` | `launch.sh` (the launcher's entry point: cage on the built-in screen), `helpers.sh` (the session's idle helpers stopped while the app runs) and `packaging/` (the `.deb` on AppBuilder's contract: `build.sh`, the aarch64 build against a Debian sysroot; `stage.sh`; `meta.env`) |
+| `desktop/cardputer/` | `launch.sh` (the launcher's entry point: cage on the built-in screen), `helpers.sh` (the HDMI desktop's panel and file manager stopped while the app runs) and `packaging/` (the `.deb` on AppBuilder's contract: `build.sh`, the aarch64 build against a Debian sysroot; `stage.sh`; `meta.env`) |
 | `desktop/release-notes.md` | the GitHub release's notes, every download (any of the workflows may create the release) |
 | `desktop/setup/` | the installer, `VibeOfficeSetup.exe`: carries the app; its dialog, manifest and version in `setup.rc` |
 | `desktop/permissions/host.toml`, `desktop/capabilities/` | which `host_*` commands each kind of window may call (Host interface, below); no Tauri core commands |
@@ -437,17 +437,22 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
 
 - **One window.** `main`, without a title bar, has the lite start page (`public/lite.html`, `lite.js`) or one app's
   page and its document, in turn (`src/lite.rs`): one web process at a time. The start page lists the files in
-  `~/VibeOffice/Documents` that an app opens, newest first (`host_lite_list`); opens one (`host_lite_open`: the window
-  goes to `<app>/?doc&t=…`, as File ▸ Open's reload does, `doc::open_here`), makes a new document (N:
-  `host_lite_new`), shows Help (the keys, the version, the licences) and quits (Esc); F and X (or the arrows) choose,
-  Z and C go a page at a time, no Fn needed. It is drawn at 100 % for its screen, the apps at the UI size. From Enter
-  until an app's page has loaded (on the device, seconds), a note in the middle of the screen says Loading…, with a
-  hint about the pointer keys (`lite::loading`, at once from `host::navigate`: native text in a GTK popup, part of the
-  window's surface, so cage doesn't show it full screen); the app's own Opening box follows. In an app, File ▸ New,
-  Open, Close and Recent Files let the document go ("Save changes?") and the window goes on (`host_lite_home` back to
-  the list); File ▸ Exit lets it go and ends VibeOffice (`VO.quit`, `host_lite_quit`), as Esc on the list does;
-  `host_new_window` refuses. `doc::app_of` reads the app from the window's page, not its label. The footer advertises
-  the full suite at vibeoffice.work, as text (the device has no browser). The licences page goes back with Esc.
+  `~/VibeOffice/Documents` that an app opens, newest first (`host_lite_list`), and below them, where the list leaves
+  room, where they are and, while an SSH server listens (port 22), how to copy files in over Wi-Fi with SFTP (the user
+  at each of the device's network addresses, Wi-Fi's first; without one, to connect to Wi-Fi); opens one
+  (`host_lite_open`: the window goes to `<app>/?doc&t=…`, as File ▸ Open's reload does, `doc::open_here`), makes a new
+  document (N: `host_lite_new`), shows Help (the keys, the version, the licences) and quits (Esc); F and X (or the
+  arrows) choose, Z and C go a page at a time, no Fn needed. It is drawn at 100 % for its screen, the apps at the UI
+  size. Until the window's first page has loaded, a splash covers it: the app's icon and name on the start page's
+  colours (`lite::starting`), as the window shows seconds before WebKit has drawn anything; the log
+  (`$XDG_RUNTIME_DIR/vibeoffice.log`) says when the window came and each page loaded. From Enter until an app's page
+  has loaded (on the device, seconds), a note in the middle of the screen says Loading…, with a hint about the pointer
+  keys (`lite::loading`, at once from `host::navigate`: native text in a GTK popup, part of the window's surface, so
+  cage doesn't show it full screen); the app's own Opening box follows. In an app, File ▸ New, Open, Close, Exit and
+  Recent Files let the document go ("Save changes?") and the window goes on (`host_lite_home`: Close and Exit back to
+  the list); VibeOffice ends from the list (Esc, `host_lite_quit`); `host_new_window` refuses. `doc::app_of` reads the
+  app from the window's page, not its label. The footer advertises the full suite at vibeoffice.work, as text (the
+  device has no browser). The licences page goes back with Esc.
 - **Documents only.** `~/VibeOffice` holds `config.json` (the settings) and `Documents/`; nothing else is kept
   (`store.rs`: no Recent Files, previews, drafts or previous versions, and the pages make none). The web view is
   incognito, WebKit's own folder in `$XDG_RUNTIME_DIR/vibeoffice-lite`. Save As has no system dialog: `L.file.choose`
@@ -480,9 +485,11 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
   document holds 48 MiB instead of 83.
 - **The keyboard** (`src/cardputer.rs`, from r86's): cage reads no input; a thread of the app reads the keyboard
   (evdev `tca8418c`, not grabbed: the launcher's held Esc still ends the app) and hands cage a virtual keyboard (a US
-  keymap) and pointer. Sym symbols become the US keys of the printed symbol; Sym+F/Z/X/C move the pointer, faster while
-  held (double-tap Sym to keep them on), Sym+Enter and Sym+Space click left and right; Fn+F/Z/X/C are the arrows (M5's
-  driver). The app repeats held keys itself.
+  keymap) and pointer. Sym symbols become the US keys of the printed symbol; Sym+F/Z/X/C move the pointer, faster
+  while held (double-tap Sym to keep them on), Sym+Enter and Sym+Space click left and right; Fn+F/Z/X/C are the arrows
+  (M5's driver). A virtual keyboard's keys move no modifier in cage (wlroots), so the thread also says which modifiers
+  are down after each Shift, Ctrl, Alt or Super key (and Caps Lock's lock): without that, Ctrl+Z, Ctrl+S and Shift
+  came through as their plain keys. The app repeats held keys itself.
 - **Slide shows on HDMI.** With an HDMI screen connected (a `/sys/class/drm/*-HDMI-*` connector that says
   `connected`), Lectern's slide show moves the window to the desktop there, full screen, and back when it ends
   (`host_lite_show`, from `slideshow.js`). The desktop is the live Wayland socket in `$XDG_RUNTIME_DIR` other than
@@ -498,13 +505,17 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
   decorations), its messages in `$XDG_RUNTIME_DIR/vibeoffice.log`; the screen goes back to the launcher when
   it ends. The app is in `apps/vibeoffice/`, with `LICENSE` and `helpers.sh`; it depends on `cage` and
   `libwebkit2gtk-4.1-0` (Raspberry Pi OS has both; the device's image has GTK 3 and libsoup 3 already).
-- **The session's helpers wait.** Before cage, `helpers.sh stop` stops the desktop session's idle helpers: the sound
-  server and the desktop portals (systemd user units, sockets first) and the HDMI desktop's panel and file manager
-  (`wf-panel-pi`, `pcmanfm-pi`, each under `lwrespawn`, which is stopped first or it starts them again). It records
-  what ran, with each program's environment, in `$XDG_RUNTIME_DIR/vibeoffice-helpers`; a watcher in a session of its
-  own (`helpers.sh after`, `tail --pid` on cage) starts exactly that again however cage ends (Esc, Exit, the
-  launcher's held Esc, a crash). On the device that is about 35 MiB more MemAvailable and 40 MiB less in zram. labwc
-  stays: the slide show uses its HDMI desktop. No setting of the device changes.
+- **The HDMI desktop's helpers wait.** Before cage, `helpers.sh stop` stops the HDMI desktop's panel and file manager
+  (`wf-panel-pi`, `pcmanfm-pi`, each under `lwrespawn`, which is stopped first or it starts them again): about 32 MiB
+  more MemAvailable on the device. It records what ran, with each program's environment, in
+  `$XDG_RUNTIME_DIR/vibeoffice-helpers`; a watcher in a session of its own (`helpers.sh after`, `tail --pid` on cage)
+  starts exactly that again however cage ends (Esc on the start page, the launcher's held Esc, a crash), each in a
+  scope of its own in the user's systemd (the watcher's unit, which ends with its script, would take them along) and
+  without the script's lock (holding it, they kept the next start waiting for good). labwc stays: the slide show uses
+  its HDMI desktop. So do the sound server, which M5's launcher plays its own sounds through (stopped under it, the
+  launcher's menu froze as VibeOffice ended: its sound engine waited for good on the server it had lost), and the
+  desktop portals, which VibeOffice's GTK asks for as it starts (the session bus started them again at once). No
+  setting of the device changes.
 
 Building, on any Debian or Ubuntu machine (clang, lld, llvm-ar, apt-get, dpkg-deb; no cross gcc, no container): the
 build fetches the arm64 development packages of Debian 13 with apt run as the user (its own folders in

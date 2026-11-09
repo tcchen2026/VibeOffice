@@ -26,8 +26,17 @@ VO.i18n.whenReady(function () {
   };
   const failed = (e) => say(String(e && e.message || e), true);
 
+  /* a sentence translated whole, its {0}, {1}… filled in as `tag` elements (a key, a name): the nodes */
+  const filled = (text, values, tag) => VO.t(text).split(/\{(\d)\}/).map((part, i) => {
+    if (i % 2 === 0) return part;
+    const el = document.createElement(tag);
+    el.translate = false;
+    el.textContent = values[+part] || '';
+    return el;
+  }).filter((n) => n !== '');
+
   /* ---------------------------------------------------------------- the documents */
-  let items = [], at = 0;
+  let items = [], at = 0, where = null;
   const loc = VO.i18n ? VO.i18n.dates : [];
   const when = (ms) => {
     const d = new Date(ms);
@@ -55,7 +64,22 @@ VO.i18n.whenReady(function () {
       return row;
     }));
     $('empty').hidden = items.length > 0;
+    drawWhere();
     select(Math.min(at, items.length - 1));
+  }
+  /* where the documents are and, while an SSH server listens, how an SFTP app copies files there over Wi-Fi: only
+     where the list leaves room for it */
+  function drawWhere() {
+    const p = $('where');
+    p.hidden = !where;
+    if (!where) return;
+    const line = (nodes) => { const d = document.createElement('div'); d.append(...nodes); return d; };
+    p.replaceChildren(line(filled(VO.N('Your documents: {0}'), [where.folder], 'b')));
+    if (where.sftp) {
+      p.append(line(where.sftp.length ? filled(VO.N('Copy files over Wi-Fi with SFTP: {0}'), [where.sftp.join(', ')], 'b')
+        : [VO.t('Connect to Wi-Fi to copy files in with SFTP.')]));
+    }
+    if (list.scrollHeight > list.clientHeight) p.hidden = true;
   }
   function select(i) {
     const rows = list.children;
@@ -71,7 +95,7 @@ VO.i18n.whenReady(function () {
   const page = () => Math.max(1, Math.floor(list.clientHeight / 22) - 1);
   const open = (i) => { if (items[i]) host.open(items[i].name).catch(failed); };
   async function refresh() {
-    try { items = await host.list(); } catch (e) { items = []; failed(e); }
+    try { ({ documents: items, ...where } = await host.list()); } catch (e) { items = []; where = null; failed(e); }
     draw();
   }
   list.addEventListener('click', (e) => { const row = e.target.closest('.doc'); if (row) open(+row.dataset.i); });
@@ -81,19 +105,13 @@ VO.i18n.whenReady(function () {
      as keys */
   const keyLine = (text, keys) => {
     const p = document.createElement('p');
-    for (const [i, part] of VO.t(text).split(/\{(\d)\}/).entries()) {
-      if (i % 2 === 0) { if (part) p.append(part); continue; }
-      const k = document.createElement('kbd');
-      k.translate = false;
-      k.textContent = keys[+part] || '';
-      p.append(k);
-    }
+    p.append(...filled(text, keys, 'kbd'));
     return p;
   };
   $('keys').replaceChildren(
     keyLine(VO.N('{0} {1} (or {2} {3}) choose a document, {4} {5} a page at a time, {6} opens it.'), ['F', 'X', '↑', '↓', 'Z', 'C', 'Enter']),
     keyLine(VO.N('{0} makes a new document. {1} quits.'), ['N', 'Esc']),
-    keyLine(VO.N('In a document: {0} or {1}+letter for the menus, {2}+{3} saves, File ▸ Close comes back here, File ▸ Exit quits.'), ['F10', 'Alt', 'Ctrl', 'S']),
+    keyLine(VO.N('In a document: {0} or {1}+letter for the menus, {2}+{3} saves, File ▸ Close or Exit comes back here.'), ['F10', 'Alt', 'Ctrl', 'S']),
     keyLine(VO.N('In a document the arrows are {0}+{1} {2} {3} {4}; in a menu {1} {2} {3} {4} alone.'), ['Fn', 'F', 'X', 'Z', 'C']),
     keyLine(VO.N('The pointer: {0}+{1} {2} {3} {4} move it; {0}+{5} clicks, {0}+{6} right-clicks. Tap {0} twice to keep it on.'), ['Sym', 'F', 'Z', 'X', 'C', 'Enter', 'Space']));
   let sheet = null;   // the open one

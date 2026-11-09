@@ -467,9 +467,6 @@
     try { if (standalone && await VO.host.newWindow(url)) return; } catch (e) { console.error('new window:', e); }
     location.href = url;
   };
-  /** File ▸ Exit in the lite edition: once the page has let its document go ("Save changes?"; Cancel keeps it),
-   *  VibeOffice ends and the device's launcher comes back; null elsewhere (VO.exit) */
-  VO.quit = lite ? () => leave(() => VO.host.lite.quit()) : null;
   /** File ▸ Exit, after the app has closed its documents: an app window the Start Center opened
    * (installed) closes and shows the Start Center behind it; a tab goes to the Start Center */
   VO.exit = async () => {

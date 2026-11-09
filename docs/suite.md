@@ -52,7 +52,7 @@ The query is removed from the address once read, so a reload starts clean. Openi
 
 **Saving.** On the web a save is a download (`L.saveFile`). In the desktop app the apps save to real files through `L.file` (`common/core.js`; docs/desktop.md, Saving): Save writes the window's own file in place when it has one it may change (`L.file.inPlace()`), Save As and every export ask with the system's Save dialog (`L.file.choose`), and `L.file.write` writes and tells a failure with its next step. Each app lists what it saves in `L.file.types` (`{ id, label, ext }`, its Save As dialog's list); its save code takes `how` (`'save'` or `'chosen'`), and `L.saveFile`'s other callers (PDF from Print, mail merge's PDF) are exports there. A document's name, type and changes follow a save only when the file became its own.
 
-File ▸ Exit closes the app's documents (asking to save each; Cancel stays) and calls `VO.exit()`: an app window the Start Center opened (installed) closes, showing the Start Center behind it; a tab goes to the Start Center. In the desktop app's lite edition Exit ends VibeOffice instead, once the page has let its document go (`VO.quit`, null elsewhere; docs/desktop.md, Lite edition).
+File ▸ Exit closes the app's documents (asking to save each; Cancel stays) and calls `VO.exit()`: an app window the Start Center opened (installed) closes, showing the Start Center behind it; a tab goes to the Start Center. In the desktop app's lite edition the window goes back to its start page (docs/desktop.md, Lite edition).
 
 Each app, in its `A.init`, picks template, blank or sample from `VO.launch` and finishes with
 

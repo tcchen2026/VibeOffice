@@ -63,6 +63,29 @@ const BTN_RIGHT: u16 = 0x111;
 const SYM: u16 = 383;
 const FN: u16 = 389;
 
+/// The modifier keys and the modifier each holds down, as masks of the keymap's real modifiers (Shift 1, Lock 2,
+/// Control 4, Mod1 8 = Alt, Mod4 64 = Super). A virtual keyboard's keys move no modifier in the compositor
+/// (wlroots): its client says which are on (`modifiers`), or Ctrl+Z, Shift+2 and the like arrive as Z and 2.
+const MODIFIERS: [(u16, u32); 8] = [
+    (LEFT_SHIFT, 1),
+    (54, 1), // right Shift
+    (29, 4), // Ctrl
+    (97, 4),
+    (56, 8), // Alt
+    (100, 8),
+    (125, 64), // Super
+    (126, 64),
+];
+/// Caps Lock: Lock (2) on and off with each press
+const CAPS_LOCK: u16 = 58;
+
+/// The modifiers the keys `down` hold.
+fn held(down: &[u16]) -> u32 {
+    down.iter()
+        .filter_map(|code| MODIFIERS.iter().find(|(c, _)| c == code))
+        .fold(0, |mods, (_, mask)| mods | mask)
+}
+
 /// M5 Sym code -> (US key, with Shift), from M5's character map (m5stack/m5stack-linux-dtoverlays,
 /// modules/tca8418-1.0/tca8418_keypad_m5stack_keymap.map). The base layer has no punctuation keys, so these codes
 /// only ever mean Sym symbols.
@@ -348,6 +371,8 @@ struct Seat {
     pointer: ZwlrVirtualPointerV1,
     /// keys and buttons down here, let go before the keyboard goes elsewhere
     down: Vec<u16>,
+    /// Caps Lock's Lock, on or off
+    locked: u32,
 }
 
 impl Seat {
@@ -385,6 +410,7 @@ impl Seat {
             keyboard,
             pointer,
             down: Vec::new(),
+            locked: 0,
         })
     }
 
@@ -406,6 +432,12 @@ impl Seat {
             self.pointer.frame();
         } else {
             self.keyboard.key(time, code.into(), value as u32);
+            if code == CAPS_LOCK && value == 1 {
+                self.locked ^= 2;
+            }
+            if code == CAPS_LOCK || MODIFIERS.iter().any(|(c, _)| *c == code) {
+                self.keyboard.modifiers(held(&self.down), 0, self.locked, 0);
+            }
         }
     }
 
@@ -487,6 +519,16 @@ fn run(path: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn modifier_keys_hold_their_modifiers() {
+        assert_eq!(held(&[]), 0);
+        assert_eq!(held(&[29]), 4); // Ctrl
+        assert_eq!(held(&[29, 44]), 4); // Ctrl+Z: Z holds nothing
+        assert_eq!(held(&[LEFT_SHIFT, 97, 56]), 1 | 4 | 8); // Shift, right Ctrl, Alt
+        assert_eq!(held(&[LEFT_SHIFT, 54]), 1); // both Shifts: Shift
+        assert_eq!(held(&[125]), 64); // Super
+    }
 
     fn feed(keys: &mut Keys, frames: &[(Option<i32>, Option<(u16, i32)>)]) -> Vec<(u16, i32)> {
         let mut out = Vec::new();

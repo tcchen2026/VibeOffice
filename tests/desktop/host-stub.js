@@ -101,7 +101,10 @@
       if (!grants.includes(cmd)) throw `Command ${cmd} not allowed by ACL`;
       if (lite) {   // lite.rs: the one window goes to the page; the documents are FILES, newest first
         const go = (url) => { sessionStorage.liteAt = url; setTimeout(() => { location.href = url; }); return null; };
-        if (cmd === 'host_lite_list') return Object.keys(FILES).map((name, i) => ({ name, app: appFor(name), size: FILES[name].length, modified: Date.now() - i * 86400000 }));
+        if (cmd === 'host_lite_list') {
+          return { documents: Object.keys(FILES).map((name, i) => ({ name, app: appFor(name), size: FILES[name].length, modified: Date.now() - i * 86400000 })),
+            folder: '~/VibeOffice/Documents', sftp: ['pi@192.168.1.23'] };
+        }
         if (cmd === 'host_lite_open') {
           if (!FILES[args.name]) throw `“${args.name}” is no longer in Documents`;
           const token = Math.random().toString(36).slice(2);

@@ -36,6 +36,9 @@
   .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .when { flex: none; color: var(--ink-7); font-size: 11px; }
   #empty { margin: 14px 10px; color: var(--ink-7); }
+  #where { flex: none; padding: 3px 6px; font-size: 11px; color: var(--ink-7); }
+  #where div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #where b { font-weight: normal; color: var(--ink); }
   #status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   #status.error { color: var(--error-ink); }
 
@@ -52,7 +55,8 @@
 <body>
 <header class="bar top"><img src="icons/icon.svg" alt="" width="16" height="16"><b translate="no">VibeOffice Lite</b><span class="keys"><kbd translate="no">N</kbd> New <kbd translate="no">F1</kbd> Help</span></header>
 <main id="list" role="listbox" aria-label="Documents" tabindex="0"></main>
-<p id="empty" hidden>No documents yet. Press N to make one, or copy files into the VibeOffice/Documents folder.</p>
+<p id="empty" hidden>No documents yet. Press N to make one.</p>
+<div id="where" hidden></div>
 <footer class="bar foot"><span id="status">Full version: <b translate="no">vibeoffice.work</b></span><span class="keys"><kbd translate="no">Esc</kbd> <span id="esc">Quit</span></span></footer>
 
 <section id="new" class="sheet" role="menu" aria-label="New" hidden>

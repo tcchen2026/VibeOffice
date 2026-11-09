@@ -237,7 +237,7 @@
   C('properties', { label: 'Propert&ies', icon: 'properties', run: dlg('properties') });
   C('versions', { label: 'Versio&ns...', icon: 'open', enabled: () => L.file.bound(), run: () => L.file.showVersions(A.fileName) });   // the desktop app
   /* close every document (asking to save each), then return to the Start Center */
-  C('exitApp', { label: 'E&xit', run: async () => { if (window.VO && VO.quit) return VO.quit(); for (;;) { const last = A.docs.length <= 1; if (!(await A.closeDocument())) return; if (last) break; } if (window.VO) VO.exit(); } });
+  C('exitApp', { label: 'E&xit', run: async () => { for (;;) { const last = A.docs.length <= 1; if (!(await A.closeDocument())) return; if (last) break; } if (window.VO) VO.exit(); } });
 
   /* ================= Edit ================= */
   C('undo', { get label() { return D.canUndo() ? L.t('&Undo {0}', L.t(D.undoLabel())) : "Can't &Undo"; }, tip: 'Undo', icon: 'undo', key: 'Ctrl+Z', enabled: () => D.canUndo() && !viewing(), run: () => { D.undo(); } });

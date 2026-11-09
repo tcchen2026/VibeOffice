@@ -6959,7 +6959,7 @@
   "where": [
    "lectern/js/panes.js:484",
    "ledger/js/panes.js:17",
-   "lite.js:104",
+   "lite.js:122",
    "quire/js/panes.js:18"
   ]
  },
@@ -8811,7 +8811,7 @@
  },
  "Choose Blank or a template:": {
   "where": [
-   "common/suite.js:684"
+   "common/suite.js:681"
   ]
  },
  "Choose a Theme:": {
@@ -9779,6 +9779,11 @@
    "ledger/js/dialogs.js:890"
   ]
  },
+ "Connect to Wi-Fi to copy files in with SFTP.": {
+  "where": [
+   "lite.js:80"
+  ]
+ },
  "Consolidate": {
   "where": [
    "ledger/js/dialogs2.js:789",
@@ -10126,6 +10131,11 @@
  "Copy Value from Above": {
   "where": [
    "ledger/js/commands.js:263"
+  ]
+ },
+ "Copy files over Wi-Fi with SFTP: {0}": {
+  "where": [
+   "lite.js:79"
   ]
  },
  "Copy formula / value from the cell above": {
@@ -11856,7 +11866,7 @@
  },
  "Discard the changes": {
   "where": [
-   "common/suite.js:870"
+   "common/suite.js:867"
   ]
  },
  "Discard the unsaved changes": {
@@ -12093,7 +12103,7 @@
   "where": [
    "quire/js/dialogs3.js:667",
    "quire/js/layout.js:34",
-   "lite.html:61"
+   "lite.html:65"
   ]
  },
  "Document &properties": {
@@ -12157,7 +12167,7 @@
   "where": [
    "common/suite.js:140",
    "start.js:130",
-   "lite.html:54"
+   "lite.html:57"
   ]
  },
  "Documents with track changes, comments, footnotes, tables of contents and mail merge. Opens and saves .docx, .rtf, Markdown, HTML and text; prints to PDF.": {
@@ -15236,7 +15246,7 @@
  },
  "Full version:": {
   "where": [
-   "lite.html:56"
+   "lite.html:60"
   ]
  },
  "Function Arguments": {
@@ -16290,12 +16300,12 @@
  },
  "In a document the arrows are {0}+{1} {2} {3} {4}; in a menu {1} {2} {3} {4} alone.": {
   "where": [
-   "lite.js:97"
+   "lite.js:115"
   ]
  },
- "In a document: {0} or {1}+letter for the menus, {2}+{3} saves, File ▸ Close comes back here, File ▸ Exit quits.": {
+ "In a document: {0} or {1}+letter for the menus, {2}+{3} saves, File ▸ Close or Exit comes back here.": {
   "where": [
-   "lite.js:96"
+   "lite.js:114"
   ]
  },
  "In l&ine with text": {
@@ -19613,13 +19623,13 @@
  },
  "New Document": {
   "where": [
-   "common/suite.js:686",
+   "common/suite.js:683",
    "quire/js/panes.js:81"
   ]
  },
  "New Help": {
   "where": [
-   "lite.html:53"
+   "lite.html:56"
   ]
  },
  "New Label": {
@@ -19629,7 +19639,7 @@
  },
  "New Presentation": {
   "where": [
-   "common/suite.js:686",
+   "common/suite.js:683",
    "lectern/js/panes.js:544"
   ]
  },
@@ -19653,7 +19663,7 @@
  },
  "New Spreadsheet": {
   "where": [
-   "common/suite.js:686"
+   "common/suite.js:683"
   ]
  },
  "New Style": {
@@ -19944,9 +19954,9 @@
    "common/search.js:245"
   ]
  },
- "No documents yet. Press N to make one, or copy files into the VibeOffice/Documents folder.": {
+ "No documents yet. Press N to make one.": {
   "where": [
-   "lite.html:55"
+   "lite.html:58"
   ]
  },
  "No fields were updated.": {
@@ -20043,7 +20053,7 @@
  },
  "No unsaved versions are waiting.": {
   "where": [
-   "common/suite.js:874"
+   "common/suite.js:871"
   ]
  },
  "No-Width Non Break": {
@@ -20651,7 +20661,7 @@
   "where": [
    "common/ui.js:776",
    "start.js:189",
-   "lite.html:74"
+   "lite.html:78"
   ]
  },
  "Open source under the Apache License 2.0, provided as is, without warranty. VibeOffice.work is an independent project. Product names in its documentation are trademarks of their owners; VibeOffice.work is not affiliated with them.": {
@@ -20662,7 +20672,7 @@
  },
  "Open the unsaved version": {
   "where": [
-   "common/suite.js:867"
+   "common/suite.js:864"
   ]
  },
  "Open the version saved before the changes": {
@@ -22101,7 +22111,7 @@
  "Presentation": {
   "where": [
    "lectern/js/dialogs.js:943",
-   "lite.html:63"
+   "lite.html:67"
   ]
  },
  "Presentation Views": {
@@ -22746,8 +22756,8 @@
  },
  "Quit": {
   "where": [
-   "lite.js:104",
-   "lite.html:56"
+   "lite.js:122",
+   "lite.html:60"
   ]
  },
  "R&eading Layout": {
@@ -22938,7 +22948,7 @@
  },
  "Recent &Files...": {
   "where": [
-   "common/suite.js:821"
+   "common/suite.js:818"
   ]
  },
  "Recent Files": {
@@ -22961,8 +22971,8 @@
  },
  "Recent Files...": {
   "where": [
-   "common/suite.js:829",
-   "common/suite.js:854"
+   "common/suite.js:826",
+   "common/suite.js:851"
   ]
  },
  "Recently Used Fonts": {
@@ -28251,7 +28261,7 @@
  "Spreadsheet": {
   "where": [
    "index.html:250",
-   "lite.html:62"
+   "lite.html:66"
   ]
  },
  "Spreadsheet (table)": {
@@ -29618,8 +29628,8 @@
  },
  "That file is no longer available here. Open it again from your computer.": {
   "where": [
-   "common/suite.js:540",
-   "common/suite.js:640"
+   "common/suite.js:537",
+   "common/suite.js:637"
   ]
  },
  "The Find What text contains a Pattern Match expression which is not valid.": {
@@ -30085,7 +30095,7 @@
  },
  "The full VibeOffice for computers, with templates, Recent Files and more: vibeoffice.work": {
   "where": [
-   "lite.html:72"
+   "lite.html:76"
   ]
  },
  "The generated XML is too large": {
@@ -30282,7 +30292,7 @@
  },
  "The pointer: {0}+{1} {2} {3} {4} move it; {0}+{5} clicks, {0}+{6} right-clicks. Tap {0} twice to keep it on.": {
   "where": [
-   "lite.js:98"
+   "lite.js:116"
   ]
  },
  "The presentation has too many master layouts": {
@@ -32206,17 +32216,17 @@
  },
  "Unsaved changes are kept for each document in Recent Files, in the Start Center: open them from there, or discard them.": {
   "where": [
-   "common/suite.js:854"
+   "common/suite.js:851"
   ]
  },
  "Unsaved changes from {0}": {
   "where": [
-   "common/suite.js:863"
+   "common/suite.js:860"
   ]
  },
  "Unsaved changes from {0} (never saved)": {
   "where": [
-   "common/suite.js:863"
+   "common/suite.js:860"
   ]
  },
  "Unsupported bitmap encoding": {
@@ -32702,7 +32712,7 @@
  },
  "VibeOffice Lite doesn't keep unsaved changes: save your document to keep them.": {
   "where": [
-   "common/suite.js:853"
+   "common/suite.js:850"
   ]
  },
  "VibeOffice.work can't open “{0}”. It opens documents (.docx, .rtf), spreadsheets (.xlsx, .csv) and presentations (.pptx).": {
@@ -33435,7 +33445,12 @@
  },
  "Your documents are in the VibeOffice/Documents folder.": {
   "where": [
-   "lite.html:71"
+   "lite.html:75"
+  ]
+ },
+ "Your documents: {0}": {
+  "where": [
+   "lite.js:77"
   ]
  },
  "Your files stay on this computer.": {
@@ -34054,12 +34069,12 @@
  },
  "{0} (unsaved changes)": {
   "where": [
-   "common/suite.js:822"
+   "common/suite.js:819"
   ]
  },
  "{0} (unsaved)": {
   "where": [
-   "common/suite.js:840"
+   "common/suite.js:837"
   ]
  },
  "{0} ({1} seconds)": {
@@ -34221,7 +34236,7 @@
  },
  "{0} kept the unsaved changes of these documents. Open the ones you want to keep and save them; discard the rest.": {
   "where": [
-   "common/suite.js:878"
+   "common/suite.js:875"
   ]
  },
  "{0} key sentence highlighted. Undo to restore.": {
@@ -34251,7 +34266,7 @@
  },
  "{0} makes a new document. {1} quits.": {
   "where": [
-   "lite.js:95"
+   "lite.js:113"
   ]
  },
  "{0} match in {1}": {
@@ -34356,22 +34371,22 @@
  },
  "{0} {1} (or {2} {3}) choose a document, {4} {5} a page at a time, {6} opens it.": {
   "where": [
-   "lite.js:94"
+   "lite.js:112"
   ]
  },
  "{0} — open in another window": {
   "where": [
-   "common/suite.js:865"
+   "common/suite.js:862"
   ]
  },
  "{0} — open in this window": {
   "where": [
-   "common/suite.js:865"
+   "common/suite.js:862"
   ]
  },
  "{0} — unsaved changes from {1}": {
   "where": [
-   "common/suite.js:836"
+   "common/suite.js:833"
   ]
  },
  "{1} can't save “{0}”: it is read-only, or you don't have permission to change it. Your file hasn't changed.": {
@@ -34427,7 +34442,7 @@
  },
  "“{0}” is over 50 MB, so its changes aren't kept for recovery after a crash. Save it to keep them.": {
   "where": [
-   "common/suite.js:771"
+   "common/suite.js:768"
   ]
  },
  "“{0}” was changed by another program after you opened it. Replace it with this version, or save this version under another name?": {

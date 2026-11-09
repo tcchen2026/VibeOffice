@@ -389,7 +389,7 @@
   /** slide size for new presentations (Page Setup ▸ "Use for new presentations") */
   A.newSize = () => { const z = A.opts.slideSize; return z && z.w > 0 && z.h > 0 ? { w: z.w, h: z.h } : {}; };
   /** File ▸ Exit: ask to save, then return to the Start Center */
-  A.exit = async function () { if (window.VO && VO.quit) return VO.quit(); if (await confirmDiscard() && window.VO) VO.exit(); };
+  A.exit = async function () { if (await confirmDiscard() && window.VO) VO.exit(); };
   A.closePresentation = async function () {
     if (!(await confirmDiscard())) return;
     if (window.VO && VO.oneDocument) { VO.exit(); return; }   // its window closes
