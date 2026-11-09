@@ -282,16 +282,9 @@
     cv.width = cv.height = 1;
     return { w, h: hh };
   }
-  /** a page as a canvas (pxPerPt pixels per point) */
-  P.renderPage = async function (sh, pg, info, pxPerPt) {
-    const pag = info.pag;
-    const k = L.pdfScale(pag.paper.w, pag.paper.h, pxPerPt);
-    const pictures = info.pictures || await printPictures([{ sh, pg, pag }], info.text);
+  // The same blocks position pictures and links: repeated corner, rows, columns, then body.
+  function pageLayout(sh, pg, pag, k) {
     const paper = pag.paper, m = pag.margins, p = sh.print;
-    const cv = document.createElement('canvas');
-    cv.width = Math.round(paper.w * k); cv.height = Math.round(paper.h * k);
-    const raw = cv.getContext('2d'), ctx = info.text ? L.pdf.recordCanvas(raw) : raw;
-    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, cv.width, cv.height);
     const zoom = pag.scale * k * 0.75; /* CSS px → canvas px */
     const g = LY.geo(sh);
     const titles = pag.titles || {};
@@ -302,13 +295,31 @@
     const bodyW = (g.cols.pos(pg.c2 + 1) - g.cols.pos(pg.c1)) * zoom + tW;
     const bodyH = (g.rows.pos(pg.r2 + 1) - g.rows.pos(pg.r1)) * zoom + tH;
     let x0 = m.l * 72 * k, y0 = m.t * 72 * k;
-    if (p.hCenter) x0 = (cv.width - bodyW) / 2;
-    if (p.vCenter) y0 = (cv.height - bodyH) / 2;
+    if (p.hCenter) x0 = (Math.round(paper.w * k) - bodyW) / 2;
+    if (p.vCenter) y0 = (Math.round(paper.h * k) - bodyH) / 2;
+    const blocks = [];
+    if (repeatRows && repeatCols) blocks.push({
+      range: { ...repeatRows, ...repeatCols }, x: x0, y: y0 });
+    if (repeatRows) blocks.push({
+      range: { ...repeatRows, c1: pg.c1, c2: pg.c2 }, x: x0 + tW, y: y0 });
+    if (repeatCols) blocks.push({
+      range: { r1: pg.r1, r2: pg.r2, ...repeatCols }, x: x0, y: y0 + tH });
+    blocks.push({ range: pg, x: x0 + tW, y: y0 + tH });
+    return { g, zoom, x0, y0, tW, tH, bodyW, bodyH, blocks, k };
+  }
+  /** a page as a canvas (pxPerPt pixels per point) */
+  P.renderPage = async function (sh, pg, info, pxPerPt) {
+    const pag = info.pag;
+    const k = L.pdfScale(pag.paper.w, pag.paper.h, pxPerPt);
+    const pictures = info.pictures || await printPictures([{ sh, pg, pag }], info.text);
+    const paper = pag.paper, m = pag.margins, p = sh.print;
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(paper.w * k); cv.height = Math.round(paper.h * k);
+    const raw = cv.getContext('2d'), ctx = info.text ? L.pdf.recordCanvas(raw) : raw;
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, cv.width, cv.height);
+    const { g, zoom, x0, y0, tW, tH, bodyW, bodyH, blocks } = pageLayout(sh, pg, pag, k);
     const opts = { grid: p.gridLines, headings: false, bw: p.bw, text: info.text };
-    if (repeatRows && repeatCols) drawCells(ctx, sh, { r1: repeatRows.r1, r2: repeatRows.r2, c1: repeatCols.c1, c2: repeatCols.c2 }, x0, y0, zoom, opts);
-    if (repeatRows) drawCells(ctx, sh, { r1: repeatRows.r1, r2: repeatRows.r2, c1: pg.c1, c2: pg.c2 }, x0 + tW, y0, zoom, opts);
-    if (repeatCols) drawCells(ctx, sh, { r1: pg.r1, r2: pg.r2, c1: repeatCols.c1, c2: repeatCols.c2 }, x0, y0 + tH, zoom, opts);
-    drawCells(ctx, sh, pg, x0 + tW, y0 + tH, zoom, opts);
+    for (const block of blocks) drawCells(ctx, sh, block.range, block.x, block.y, zoom, opts);
     /* pictures and charts on this page */
     for (const d of sh.drawings) {
       if (d.noPrint || d.hidden || !d.anchor || d.anchor.type === 'abs') continue;
@@ -408,6 +419,118 @@
   }
 
   /* ------------------------------------------------------------ PDF */
+  function pdfNavigation(items) {
+    const sheets = new Map(), layouts = new Map(), targets = new Map(), formulas = new Map(), outline = [];
+    for (const [page, item] of items.entries()) {
+      if (!sheets.has(item.sh)) {
+        sheets.set(item.sh, []);
+        outline.push({ title: item.sh.name, page, top: 0, level: 1 });
+      }
+      sheets.get(item.sh).push({ item, page });
+    }
+    const layout = (item) => {
+      if (!layouts.has(item)) {
+        const k = L.pdfScale(item.pag.paper.w, item.pag.paper.h, L.PDF_DPI / 72);
+        layouts.set(item, pageLayout(item.sh, item.pg, item.pag, k));
+      }
+      return layouts.get(item);
+    };
+    const rectangles = (item, ref) => {
+      if (item.chartsheet) return [];
+      const { g, zoom, blocks, k } = layout(item), result = [];
+      for (const block of blocks) {
+        const rg = block.range;
+        const r1 = Math.max(ref.r1, rg.r1), r2 = Math.min(ref.r2, rg.r2);
+        const c1 = Math.max(ref.c1, rg.c1), c2 = Math.min(ref.c2, rg.c2);
+        if (r2 < r1 || c2 < c1) continue;
+        const x = (block.x + (g.cols.pos(c1) - g.cols.pos(rg.c1)) * zoom) / k;
+        const y = (block.y + (g.rows.pos(r1) - g.rows.pos(rg.r1)) * zoom) / k;
+        const right = Math.min(item.pag.paper.w, x + (g.cols.pos(c2 + 1) - g.cols.pos(c1)) * zoom / k);
+        const bottom = Math.min(item.pag.paper.h, y + (g.rows.pos(r2 + 1) - g.rows.pos(r1)) * zoom / k);
+        const left = Math.max(0, x), top = Math.max(0, y);
+        if (right > left && bottom > top) result.push({ x: left, y: top, w: right - left, h: bottom - top });
+      }
+      return result;
+    };
+    const destination = (sh, text, source) => {
+      let ref;
+      try {
+        ref = C.ev(F.parse(text.replace(/^=/, '')), C.ctx(sh.wb, sh, source.r1, source.c1));
+        if (ref instanceof C.RefList) ref = ref.list[0];
+      } catch (e) { /* invalid or unsupported destination */ }
+      if (!(ref instanceof C.Ref)) {
+        const r1c1 = /^R([1-9]\d*)C([1-9]\d*)$/i.exec(text);
+        if (!r1c1) return null;
+        ref = new C.Ref(sh, +r1c1[1] - 1, +r1c1[2] - 1);
+      }
+      const cell = { r1: ref.r1, r2: ref.r1, c1: ref.c1, c2: ref.c1 };
+      for (const { item, page } of sheets.get(ref.sheet) || []) {
+        const rect = rectangles(item, cell)[0];
+        if (rect) return { page, top: rect.y };
+      }
+      return null;
+    };
+    const target = (sh, link) => {
+      if (targets.has(link)) return targets.get(link);
+      let result = null;
+      const url = link.target || '', location = link.location || '';
+      if (url && !url.startsWith('#')) {
+        result = { url: url + (location ? '#' + location.replace(/^#/, '') : '') };
+      } else if (location || url.startsWith('#')) {
+        let name = (location || url).replace(/^#/, '');
+        try { name = decodeURIComponent(name); } catch (e) { /* keep a literal percent sign */ }
+        result = destination(sh, name, link.ref);
+      }
+      targets.set(link, result);
+      return result;
+    };
+    const sourceLinks = (item) => {
+      const sh = item.sh, links = [...(sh.links || [])];
+      if (item.chartsheet) return links;
+      if (!formulas.has(sh)) formulas.set(sh, new Map());
+      const cache = formulas.get(sh), seen = new Set();
+      for (const { range } of layout(item).blocks) {
+        for (let r = range.r1; r <= range.r2; r++) {
+          const row = sh.rows[r];
+          if (!row || row.hidden) continue;
+          row.cells.forEach((cell, c) => {
+            if (c < range.c1 || c > range.c2 || !cell.f || !/\bHYPERLINK\s*\(/i.test(cell.f)) return;
+            const key = M.key(r, c);
+            if (seen.has(key) || (sh.links || []).some(l => M.rangeContains(l.ref, r, c))) return;
+            seen.add(key);
+            if (!cache.has(key)) {
+              let link = null;
+              try {
+                let ast = F.parse(cell.f.replace(/^=/, ''));
+                while (ast.t === 'paren') ast = ast.a;
+                if (ast.t === 'fn' && ast.name === 'HYPERLINK' && ast.args.length && !C.isErr(cell.v)) {
+                  const ctx = C.ctx(sh.wb, sh, r, c), url = C.scalar(C.ev(ast.args[0], ctx), ctx);
+                  if (typeof url === 'string' && url) link = {
+                    ref: { r1: r, r2: r, c1: c, c2: c }, target: url,
+                  };
+                }
+              } catch (e) { /* a formula the calculation engine cannot resolve */ }
+              cache.set(key, link);
+            }
+            if (cache.get(key)) links.push(cache.get(key));
+          });
+        }
+      }
+      return links;
+    };
+    return { outline, links: (item) => {
+      const links = [];
+      for (const link of sourceLinks(item)) {
+        if (!link.ref) continue;
+        const to = target(item.sh, link);
+        if (!to) continue;
+        let ref = link.ref;
+        if (ref.r1 === ref.r2 && ref.c1 === ref.c2) ref = item.sh.mergeAt(ref.r1, ref.c1) || ref;
+        for (const rect of rectangles(item, ref)) links.push({ ...rect, ...to });
+      }
+      return links;
+    } };
+  }
   /**
    * opts: {what: 'sheets'|'selection'|'workbook', from, to, quick}
    */
@@ -423,13 +546,18 @@
     try {
       const pages = [];
       const writer = await L.pdfModule(true);
-      const pictures = await printPictures(items.slice(from - 1, to), true);
+      const selected = items.slice(from - 1, to), navigation = pdfNavigation(selected);
+      const pictures = await printPictures(selected, true);
       for (let i = from - 1; i < to; i++) {
         const r = await renderAny(items[i], i, items.length, L.PDF_DPI / 72, pictures, true);
-        pages.push({ jpeg: writer.jpeg(r.cv), iw: r.cv.width, ih: r.cv.height, pw: r.w, ph: r.h, lines: r.lines });
+        pages.push({ jpeg: writer.jpeg(r.cv), iw: r.cv.width, ih: r.cv.height, pw: r.w, ph: r.h,
+          lines: r.lines, links: navigation.links(items[i]) });
         r.cv.width = r.cv.height = 1;
       }
-      const pdf = await L.buildPDF(pages, { title: (wb.props && wb.props.title) || (A.books[A.cur] ? A.books[A.cur].name : 'Book1'), author: (wb.props && wb.props.creator) || '' });
+      const pdf = await L.buildPDF(pages, {
+        title: (wb.props && wb.props.title) || (A.books[A.cur] ? A.books[A.cur].name : 'Book1'),
+        author: (wb.props && wb.props.creator) || '', outline: navigation.outline,
+      });
       ui.busy(false);
       const name = (A.books[A.cur] ? A.books[A.cur].name : 'Book1').replace(/\.[^.]+$/, '') + '.pdf';
       const res = await L.saveFile(name, pdf);

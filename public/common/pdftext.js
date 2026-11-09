@@ -111,12 +111,11 @@
   /** scale is points per client pixel (for example 72 / 96 / the page's zoom).
    * Clipping stops at the page: scrolling the editor never removes words from a PDF.
    * The optional transform pass measures a clone; the original DOM is never changed. */
-  function collect(page, scale, geometry) {
+  function domGeometry(page, scale, geometry) {
     const origin = page.getBoundingClientRect();
-    if (!area(origin) || !(scale > 0)) return [];
-    const states = new WeakMap(), pieces = new WeakMap(), lines = [];
+    if (!area(origin) || !(scale > 0)) return null;
+    const states = new WeakMap();
     const range = page.ownerDocument.createRange();
-    let previous, spaced = true;
 
     function state(el) {
       let value = states.get(el);
@@ -203,9 +202,19 @@
         ps = ps.map(p => clip.matrix.transformPoint(p));
       }
       const inverse = info.matrix.inverse(), b = bounds(ps.map(p => inverse.transformPoint(p)));
-      return { whole, rect: { left: b.left + origin.left, right: b.right + origin.left,
+      return { whole, polygon: ps, rect: { left: b.left + origin.left, right: b.right + origin.left,
         top: b.top + origin.top, bottom: b.bottom + origin.top } };
     }
+
+    return { origin, state, rects, oneLine, points, clipRect, local };
+  }
+
+  function collect(page, scale, geometry) {
+    const dom = domGeometry(page, scale, geometry);
+    if (!dom) return [];
+    const { state, rects, oneLine, points, clipRect } = dom;
+    const pieces = new WeakMap(), lines = [];
+    let previous, spaced = true;
 
     function add(text, r, info, node, start, end) {
       if (!text || !area(r)) return;
@@ -335,6 +344,43 @@
     const geometry = options?.transforms ? transformedPage(page) : null;
     try { return collect(geometry?.page || page, scale, geometry); }
     finally { geometry?.remove(); }
+  };
+
+  /** Link rectangles in page points. resolve(el) supplies a URI or output-page destination.
+   * Selectors and target resolution belong to the app; hidden/clipped geometry is shared
+   * with the word collector. Inline elements keep a separate area on each wrapped line. */
+  L.pdf.collectLinks = function (page, scale, resolve, options) {
+    const selector = options?.selector || '[data-link]';
+    if (!page.querySelector(selector)) return [];
+    const geometry = options?.transforms ? transformedPage(page) : null;
+    try {
+      const root = geometry?.page || page, dom = domGeometry(root, scale, geometry), links = [];
+      if (!dom) return links;
+      for (const el of root.querySelectorAll(selector)) {
+        const info = dom.state(el);
+        if (info.hidden || !info.visible) continue;
+        const target = resolve(el);
+        if (!target) continue;
+        for (const r of el.getClientRects()) {
+          if (!area(r)) continue;
+          const visible = dom.clipRect(r, info);
+          if (!visible || !area(visible.rect)) continue;
+          const b = visible.polygon ? bounds(visible.polygon) : dom.local(visible.rect);
+          links.push({ x: b.left * scale, y: b.top * scale,
+            w: (b.right - b.left) * scale, h: (b.bottom - b.top) * scale, ...target });
+        }
+      }
+      return links;
+    } finally { geometry?.remove(); }
+  };
+
+  /** Use document language metadata, never the UI's locale. Omit an invalid tag. */
+  L.pdf.language = function (...values) {
+    for (const value of values) {
+      if (typeof value !== 'string' || !value.trim()) continue;
+      try { return Intl.getCanonicalLocales(value.trim())[0]; } catch (e) { /* try the document default */ }
+    }
+    return undefined;
   };
 
   const canvasRecords = new WeakMap();

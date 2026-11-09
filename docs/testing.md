@@ -700,3 +700,20 @@ hidden cells/rows, headers/footers, repeated print titles and SVG chart labels.
 The recorder follows the print renderer's rectangular clips; curved paths are not
 measured. Compare original workbooks with Excel/LibreOffice, record image equality
 against the prior exporter, and exercise native Find, mouse selection and copy.
+
+`node --test tests/pdf-links.test.mjs` checks all three apps' PDF navigation:
+wrapped and clipped link areas, rotated shapes, split-paragraph bookmark offsets,
+heading levels, document language, slide actions, handout/notes/outline destinations,
+merged cells, named ranges, repeated titles and top-level `HYPERLINK` formulas.
+Hostile links from each app reach the shared writer: script and data schemes,
+including mixed case and embedded ASCII controls, produce no PDF annotation;
+web, mail, FTP, file and relative targets retain their spelling.
+Partial exports remap page indexes and omit targets outside the output. For a
+navigation change, inspect annotations and outlines with an independent PDF reader;
+click links and sidebar bookmarks in native Chromium and Firefox using local-only
+targets. Compare Office and LibreOffice PDFs, including relative file links and
+two or three unusual producer/metadata controls in each Office round. Verify that
+page JPEGs, rendered pixels and extracted text stay unchanged, and time a long
+document and a large workbook. Fix the writer's date to check byte determinism.
+Preview checks wait for the view's queued repaint before exporting. None of these
+checks use the browser's print or print-to-PDF paths.

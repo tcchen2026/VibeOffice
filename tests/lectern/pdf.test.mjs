@@ -11,6 +11,7 @@ let page, stop, dir;
 before(async () => {
   stop = await ensureServer();
   page = await openPage('lectern', { persistence: false, automated: true });
+  await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lectern-pdf-'));
 });
 after(async () => {
@@ -160,9 +161,11 @@ test('Lectern slide PDFs collect detached slide text, omit hidden slides and kee
 test('Lectern handouts, notes and outline PDFs retain preview text, labels and paper size', async () => {
   await page.evaluate(setup);
   for (const what of ['handouts', 'notes', 'outline']) {
-    await page.evaluate(`(() => {
+    await page.evaluate(`(async () => {
       Object.assign(L.app.printOpts, { what: ${JSON.stringify(what)}, per: 2, hidden: false, range: null });
       L.app.setView('preview');
+      // setView queues a repaint; export the settled preview as a user would.
+      await new Promise(requestAnimationFrame);
       L.panes.preview.render();
     })()`);
     const result = await exported('preview');

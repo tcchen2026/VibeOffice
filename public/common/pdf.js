@@ -405,7 +405,10 @@
         if (![link.x, link.y, link.w, link.h].every(Number.isFinite) || link.w <= 0 || link.h <= 0) continue;
         let action;
         if (link.url) {
-          const uri = encodeURI(String(link.url)).replace(/%25([\da-f]{2})/gi, '%$1');
+          const url = String(link.url);
+          // Ignore ASCII spacing/controls for this check; preserve other targets verbatim.
+          if (/^(javascript|vbscript|data):/i.test(url.replace(/[\u0000-\u0020\u007f]/g, ''))) continue;
+          const uri = encodeURI(url).replace(/%25([\da-f]{2})/gi, '%$1');
           action = '/A << /S /URI /URI ' + literal(uri) + ' >>';
         }
         else {

@@ -555,12 +555,51 @@
   A.buildPDF = async function (source) {
     const pages = [];
     const pdf = await L.pdfModule(true);
-    const text = new Map();
+    const text = new Map(), links = new Map(), destinations = new Map(), outline = [];
+    const slidesById = new Map(L.pres.slides.map(s => [String(s.id), s]));
+    const navigationSlides = L.pres.slides.filter(s => !s.hidden || (source === 'preview' && A.printOpts.hidden));
+    const addDestination = (slide, page, top) => {
+      if (!slide || destinations.has(String(slide.id))) return;
+      destinations.set(String(slide.id), { page, top });
+      const title = M.slideTitle(slide);
+      if (title) outline.push({ title, page, top, level: 1 });
+    };
+    const resolveLink = (el) => {
+      const slide = slidesById.get(el.closest('[data-slide]')?.dataset.slide);
+      let link;
+      if (el.dataset.link) {
+        try { link = JSON.parse(el.dataset.link); } catch (e) { return null; }
+      } else if (slide && el.dataset.sid) link = M.shapeById(slide, el.dataset.sid)?.link;
+      if (link?.url) return { url: link.url };
+      if (link?.slide != null) return destinations.get(String(link.slide));
+      if (slide && link?.action) {
+        const current = navigationSlides.indexOf(slide), last = navigationSlides.length - 1;
+        const index = { first: 0, last, next: Math.min(last, current + 1), prev: Math.max(0, current - 1) }[link.action];
+        // PowerPoint and LibreOffice omit last-viewed/end-show actions from PDFs.
+        if (index !== undefined) return destinations.get(String(navigationSlides[index]?.id));
+      }
+      return null;
+    };
+    const collectLinks = (el, scale) => pdf.collectLinks(el, scale, resolveLink,
+      { transforms: true, selector: '[data-link],[data-sid]' });
     const map = await mediaDataMap();
     if (source === 'preview') {
       const els = L.$$('.pv-page', L.panes.preview.scroll);
       const css = slideCSS(true);
       const fonts = await L.embedFonts(els.map((p) => p.outerHTML).join('') + css + ' Arimo');
+      await document.fonts.ready;
+      const o = A.printOpts;
+      const shown = L.pres.slides.filter((s, i) => (o.hidden || !s.hidden) && (!o.range || o.range.includes(i)));
+      let titleIndex = 0;
+      for (const [page, el] of els.entries()) {
+        const origin = el.getBoundingClientRect(), scale = (el.offsetHeight > el.offsetWidth ? 612 : 792) / el.offsetWidth;
+        const targets = o.what === 'outline' ? [...el.querySelectorAll('.pv-text')]
+          .filter(node => node.style.fontWeight === 'bold') : el.querySelectorAll('[data-slide]');
+        for (const node of targets) {
+          const slide = o.what === 'outline' ? shown[titleIndex++] : slidesById.get(node.dataset.slide);
+          addDestination(slide, page, Math.max(0, (node.getBoundingClientRect().top - origin.top) * scale));
+        }
+      }
       const prepare = async (p) => {
         const w = p.offsetWidth, hh = p.offsetHeight;
         const clone = p.cloneNode(true);
@@ -569,6 +608,7 @@
         const pw = portrait ? 612 : 792;
         await document.fonts.ready;
         text.set(p, pdf.collectDOM(p, pw / w, { transforms: true }));
+        links.set(p, collectLinks(p, pw / w));
         const scale = L.pdfScale(w, hh, (pw / w) * L.PDF_DPI / 72);
         return { svg: await pageSVG(clone, w, hh, { map, css, fonts: '' }), w, h: hh, scale };
       };
@@ -576,11 +616,14 @@
         ui.busy(true, L.t('Creating PDF... (page {0} of {1})', index + 1, els.length));
         const portrait = p.offsetHeight > p.offsetWidth;
         const pw = portrait ? 612 : 792, ph = portrait ? 792 : 612;
-        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw, ph, lines: text.get(p) });
+        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw, ph,
+          lines: text.get(p), links: links.get(p) });
         text.delete(p);
+        links.delete(p);
       }
     } else {
       const slides = L.pres.slides.filter((s) => !s.hidden);
+      slides.forEach((slide, page) => addDestination(slide, page, 0));
       const elements = slides.map((s) => L.render.slide(L.pres, s, { mode: 'thumb', index: L.pres.slides.indexOf(s) }));
       const css = slideCSS();
       const fonts = await L.embedFonts(elements.map((el) => el.outerHTML).join('') + css + ' Arimo');
@@ -596,6 +639,7 @@
           el.getBoundingClientRect(); // Begin font loading for text not present on the current slide.
           await document.fonts.ready;
           text.set(el, pdf.collectDOM(el, 1, { transforms: true }));
+          links.set(el, collectLinks(el, 1));
         } finally {
           el.remove();
           host.remove();
@@ -605,11 +649,14 @@
       };
       for await (const { canvas: c, page: el, index } of pdf.pictures(elements, prepare, fonts)) {
         ui.busy(true, L.t('Creating PDF... (slide {0} of {1})', index + 1, slides.length));
-        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw: L.pres.W, ph: L.pres.H, lines: text.get(el) });
+        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw: L.pres.W, ph: L.pres.H,
+          lines: text.get(el), links: links.get(el) });
         text.delete(el);
+        links.delete(el);
       }
     }
-    return L.buildPDF(pages, { title: L.pres.props.title || A.fileName, author: L.pres.props.author || '' });
+    return L.buildPDF(pages, { title: L.pres.props.title || A.fileName, author: L.pres.props.author || '',
+      lang: pdf.language(L.pres.lang), outline });
   };
   A.previewPDF = async function () {
     ui.busy(true, 'Creating PDF...');

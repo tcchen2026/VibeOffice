@@ -9,7 +9,8 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | File | Responsibility |
 |---|---|
 | `index.html` | Window chrome CSS, slide rendering styles, script order |
-| `../common/core.js` | Utilities, colors, fonts, file I/O, media store, PDF writer (shared, see docs/suite.md) |
+| `../common/core.js` | Utilities, colors, fonts, file I/O, media store, PDF entry point (shared, see docs/suite.md) |
+| `../common/pdf.js`, `../common/pdftext.js` | Loaded on PDF export: writer, word/link geometry with transforms, slide destinations and title bookmarks |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected presentations: ECMA-376 Agile and Standard encryption (AES, SHA-1/SHA-2), read and write |
 | `../common/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML preservation graph, identities, namespace capture and schema order |
@@ -204,6 +205,11 @@ New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.
   select and copy. Rotated text follows its box; LettersArt copies once from its ordinary text body,
   with an approximate highlight for the bent letters. File ▸ Print saves the chosen slides that way
   (All, Current slide or a list such as 1,3,5–12), with Preview to look first.
+  Text and shape hyperlinks remain clickable; slide titles become sidebar bookmarks,
+  including their positions on handouts and notes pages. First, last, next and previous
+  slide actions become page jumps; last-viewed and end-show actions are omitted, as
+  PowerPoint and LibreOffice do. Links to excluded slides are omitted. Document
+  language is recorded when available.
 * **Single-file web page** (its one script allowed by its hash in the page's own security policy), **PNG** of the current slide, **plain-text outline**.
 
 PDF text checks (2026-11-07): eight public decks, including Japanese, rotated text, tables, charts,
@@ -213,6 +219,12 @@ exports retain all eight page pictures. The originals open in PowerPoint 2016 an
 (the template uses a plain presentation copy for the Office test service). Chromium finds and
 copies the 45-degree test phrase with its space; Poppler's raw extraction splits diagonal letters
 onto separate lines. Acrobat Reader and macOS Preview remain unchecked.
+
+PDF navigation checks (2026-11-09): three public decks and six single-action copies
+open in PowerPoint 2016 and LibreOffice. All 16 pages retain identical pictures and
+extracted text after adding links and bookmarks. Native Chromium and Firefox follow
+the internal and external links and show the slide-title bookmarks. Rotated shape
+links use the bounding rectangle of the visible shape.
 
 In PowerPoint 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 726 decks **open without repair
 in 719** (3 of them then showing their comments pane); 5 stop at a prompt PowerPoint shows for the original too (a

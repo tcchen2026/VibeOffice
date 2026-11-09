@@ -1,6 +1,6 @@
 # Better PDF export: a text layer in Quire, Ledger and Lectern PDFs
 
-Status: Phases 0–4 committed (705019a, ca1d7cd, 1ed6acb, 31a03dd, eb03301); Phase 5 planned, awaiting Lead's release freeze to lift.
+Status: Phases 0–4 committed (705019a, ca1d7cd, 1ed6acb, 31a03dd, eb03301); Phase 5 complete and reviewed by Lead, including the final URI filter.
 Planned 2026-10-15; design revised that day: pages stay pictures, with an invisible text layer on
 top; no font files read or embedded. Read first: this file, `public/common/core.js` (`L.buildPDF`, `L.embedFonts`),
 Quire `public/quire/js/app.js` (`A.rasterizePage`, `A.buildPDF`), Lectern `public/lectern/js/app.js` (`A.rasterize`,
@@ -449,22 +449,22 @@ server 8769 is stopped. No commits, catalog edits or Quire edits. [Report](../tm
 **PDF.4 READY FOR LEAD**
 
 Phase 5: links, bookmarks, language
-- [ ] **Quire:**
+- [x] **Quire:**
   - hyperlinks become link areas from their rectangles;
   - internal links and cross-references go to their target's page and position;
   - bookmarks come from headings (outline level, page and position from `LY.pages` and the fragment's rectangle),
     nested by level;
   - `lang` comes from the document's language.
-- [ ] **Lectern:** links on text and shapes (URL, or a jump to another slide); bookmarks from slide titles.
-- [ ] **Ledger:** cell hyperlinks; bookmarks from sheet names.
-- [ ] **Checks:** links click through in Chromium's viewer and in Firefox, and the bookmarks show in their side panes.
+- [x] **Lectern:** links on text and shapes (URL, or a jump to another slide); bookmarks from slide titles.
+- [x] **Ledger:** cell hyperlinks; bookmarks from sheet names.
+- [x] **Checks:** links click through in Chromium's viewer and in Firefox, and the bookmarks show in their side panes.
 
-### Phase 5 implementation notes — planning only, 2026-11-07
+### Phase 5 implementation notes — planned 2026-11-07, authorized 2026-11-09
 
-Lead is running the release UI suite. Only this todo was edited; no implementation,
-test runs, browser sessions or Office jobs were started. Public files remain frozen
-until Lead says otherwise. Quire ownership must remain with Lead during that work;
-the proposed Quire integration is confined to the existing PDF export hook.
+The release freeze was lifted and I25 was cancelled before any edits. Phase 5's
+implementation is confined to shared PDF code and the existing export hooks;
+Lead's desktop, Quire layout/drawing and UI work remains untouched. The following
+plan guided implementation; the final report below records the measured results.
 
 1. **Reuse the writer.** `common/pdf.js` already accepts page `links` and info
    `outline`/`lang`; `tests/pdf.test.mjs` checks URI escaping, destinations and nested
@@ -526,17 +526,105 @@ the proposed Quire integration is confined to the existing PDF export hook.
    Run the full focused PDF/licence/i18n set after private English gather, all-three-app
    export checks and `tools/quick.mjs`; paste summaries. Finish the remaining docs and
    common-library list, report limits, then mark **PDF.5 READY FOR LEAD**. No Phase 5
-   completion boxes are checked by this planning pass.
+   completion boxes were checked by the planning pass.
+
+### Phase 5 report — 2026-11-09
+
+357 / 357 page JPEGs, rendered pages and sizes match the preceding exporter;
+25 / 25 PDF pairs extract identical text. The controls cover 13 public originals,
+seven single-change derivatives, three navigation fixtures and the long/large
+timing controls. All 11 new tests fail with 8f93f0f's frozen export modules.
+Final PDF/licence/i18n gate after private English gather:
+
+```text
+ℹ tests 71
+ℹ pass 71
+ℹ fail 0
+```
+
+| Control | Pages | Seconds before → after |
+|---|---:|---:|
+| 20 corpus/derivative controls | 155 | 10.066 → 10.268 |
+| Long Word control | 180 | 11.547 → 11.265 |
+| 34.3 MB workbook, first 12 pages | 12 | 0.984 → 1.236 |
+
+30 / 30 Office jobs open without repair and produce PDFs, with hashes and
+unchanged inputs checked; LibreOffice opens the same controls. Each Office round
+includes unusual metadata/producer controls. Native Chromium and Firefox follow
+links and sidebar bookmarks in all three apps; Quire's headings nest correctly.
+Relative URIs stay literal. Page-range exports omit unavailable destinations.
+Three fixed-date fixture exports are byte deterministic. All three app exports
+and screenshots have no errors or external requests.
+
+Final `node tools/quick.mjs`:
+
+```text
+✖ Node tests: 247 passed, 2 failed (145 s)
+✔ tests/ui/smoke.test.mjs: 4 passed (16 s)
+✔ tests/ui/lectern.test.mjs: 39 passed (116 s)
+✔ tests/ui/ledger.test.mjs: 39 passed (117 s)
+✔ tests/ui/quire.test.mjs: 57 passed (192 s)
+
+1 of 5 failed.
+```
+
+The two failures are the desktop test's hard-coded port 8760 (Intern uses 8769)
+and the locale-label assertion requiring blocked translation catalogs. Neither
+is counted as passing. Two raster/preview test fixtures now supply the required
+shape list and await the queued repaint; 20 corrected old checks pass on the
+baseline, and all 11 new checks still fail there.
+
+Limit: nested HYPERLINK formulas are not exported as links.
+Limit: rotated shape links use bounding rectangles.
+Limit: absent document language is omitted; Ledger has no document-language field.
+Limit: the formula workbook keeps its prior pagination difference (122 vs Excel 116/LO 79).
+Limit: Acrobat Reader/macOS Preview remain unchecked.
+
+No writer API/script-order change, new UI strings, commits, catalog access or
+Lead-file edits. I25 had no edits to revert; its todo is intact. Own hashes stayed
+unchanged through the gate; all 11 original tabs remain, and 8769/9224 are stopped.
+[Report](../tmp/PDF-5-REPORT.md), [findings](../tmp/PDF-LEAD-FINDINGS.md).
+Phase files are frozen pending review.
+
+**PDF.5 READY FOR LEAD**
+
+### Phase 5 review correction — 2026-11-09
+
+3 / 3 hostile-link regressions fail before the correction and pass after it;
+the complete focused PDF/licence/i18n gate now passes 74 / 74. The shared writer
+drops `javascript:`, `vbscript:` and `data:` links, including mixed case and ASCII
+controls. HTTP, HTTPS, mail, FTP, file and relative links retain their spelling;
+the stricter HTML rule is unchanged. In the affected public Word control, six
+script annotations are omitted (27 → 21 links); all other destinations, 18
+bookmarks, language, eight page pictures and extracted text are unchanged.
+
+All three fresh app exports/screenshots pass without errors or external requests.
+Final `node tools/quick.mjs` on the correction:
+
+```text
+✖ Node tests: 209 passed, 1 failed (18 s)
+✔ tests/ui/smoke.test.mjs: 4 passed (17 s)
+✔ tests/ui/lectern.test.mjs: 39 passed (117 s)
+✔ tests/ui/ledger.test.mjs: 39 passed (120 s)
+✔ tests/ui/quire.test.mjs: 57 passed (236 s)
+
+1 of 5 failed.
+```
+
+The sole failure needs the prohibited translation catalogs; Lead confirmed it is
+an environment constraint. Lead authorized the Phase 5 commit after this fix.
+Only Phase 5 files and the two PDF library rows in `docs/suite.md` are included;
+Lead's desktop and other documentation hunks remain untouched.
 
 When it's done
-- [ ] Docs:
+- [x] Docs:
   - docs/quire.md, docs/ledger.md and docs/lectern.md: the PDF row (pages as pictures, with text you can find, select
     and copy, links and bookmarks);
   - docs/suite.md: the shared `pdf.js` and `pdftext.js`;
   - AGENTS.md: the list of `public/common/` libraries;
   - docs/testing.md: the PDF checks.
-- [ ] Each app loaded and exported once after the change in common code (AGENTS.md: a common change is checked in
-      all three apps), and `node tools/quick.mjs`.
+- [x] Each app loaded and exported once after the change in common code (AGENTS.md: a common change is checked in
+      all three apps), and `node tools/quick.mjs` (the two environment-related failures are recorded above).
 
 
 ## Not in this plan

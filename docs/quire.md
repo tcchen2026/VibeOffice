@@ -248,7 +248,7 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
 | Plain Text `.txt` | yes | yes |
 | Markdown `.md` / `.markdown` (GitHub flavour) | yes | yes |
 | Markdown with pictures `.zip` (a `.md` and its picture files) | yes | yes |
-| PDF | — | yes: page pictures with text you can find, select and copy (File ▸ Print, or Save As ▸ PDF) |
+| PDF | — | yes: page pictures with text you can find, select and copy, clickable links and heading bookmarks (File ▸ Print, or Save As ▸ PDF) |
 | Word 97-2003 Document `.doc`, Template `.dot` | yes: converted on opening to the `.docx` Word would write (text, styles, lists, sections, headers and footers, notes, tables, fields and form fields, bookmarks, comments and tracked changes, pictures, drawings and text boxes; embedded objects as their pictures); a message names what wasn't converted, and Save asks for a `.docx` name (`.docm`, or `.dotm` for a template, when it has macros: its VBA project is kept byte for byte with its commands and document events, never run; all 8 in the corpus). A document with a password to open asks for it (XOR obfuscation, RC4 and RC4 CryptoAPI encryption, as Word 97-2003 wrote them) and is saved encrypted with it, as Word keeps it on Save As | no |
 | Password-protected `.docx` | yes (Word 2007 "standard" and Word 2010+ "agile" encryption) | yes: Tools ▸ Options ▸ Security ▸ Password to open (AES-256, as Word 2013+) |
 
@@ -260,6 +260,15 @@ An invisible text layer follows the displayed words, including tables, headers, 
 notes, equations and DrawingML LettersArt. Hidden or fully clipped text is omitted.
 Selection within a word is approximate; rotated and bent text has approximate selection boxes.
 Older VML LettersArt and text inside pictures remain pictures, and equations copy as linear text.
+
+Hyperlinks keep their visible areas, with separate areas for wrapped lines. Internal
+links and cross-references go to the bookmark's page and text position; a target
+outside the exported page range is omitted. The PDF sidebar nests headings by their
+outline level, and the PDF records the document's language when available.
+Navigation checks (2026-11-09) cover six Word controls, compared with Word 2016 and
+LibreOffice, including a relative file link: all 13 pages retain identical pictures
+and extracted text. Internal and external links and nested bookmarks work in the
+native Chromium and Firefox PDF viewers.
 
 Checked on 12 public corpus documents, the sample and an exact-height table control
 (2026-11-07): all 194 page pictures and rendered PDF pages match the picture-only export.
@@ -570,7 +579,7 @@ compatibility results are archived with the run history rather than mixed into c
 | --- | --- |
 | `index.html` | Window chrome and page CSS, script order |
 | `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF entry point, downloads |
-| `../common/pdf.js`, `../common/pdftext.js` | Loaded on PDF export: page pictures, generated invisible text font, DOM word collection |
+| `../common/pdf.js`, `../common/pdftext.js` | Loaded on PDF export: page pictures, generated invisible text font, DOM word/link geometry, heading destinations and document language |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML package graph, identity reservations, AlternateContent capture and schema-order merges |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected documents: compound-file reader/writer, AES, ECMA-376 agile and standard encryption |
 | `js/dmodel.js`, `js/ops.js` | Document model (paragraphs, runs, tables, sections, styles, numbering), undo history, editing operations |

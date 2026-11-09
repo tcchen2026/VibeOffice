@@ -1001,21 +1001,73 @@
     const fonts = await L.embedFonts(list.map((p) => p.el.outerHTML).join('') + css);
     const sel = window.getSelection(); sel.removeAllRanges();
     const pdf = await L.pdfModule(true);
-    const text = new Map();
+    const text = new Map(), links = new Map(), outline = [], headings = new Set();
+    const scale = 0.75 / LY.scale(), pageIndex = new Map(list.map((p, i) => [p.el, i]));
+    const bookmarks = L.fields.bookmarks();
+    const destination = (pos) => {
+      const frag = LY.fragFor(pos.p, pos.o, LY.root);
+      const pageEl = frag?.closest('.pg'), page = pageIndex.get(pageEl);
+      if (page === undefined) return null;
+      const point = LY.posToDom(pos, pageEl), range = document.createRange();
+      let r = frag.getBoundingClientRect();
+      if (point) {
+        range.setStart(point.node, point.offset); range.collapse(true);
+        let caret = range.getClientRects()[0];
+        // A bookmark at a run boundary can map between elements, with no caret box.
+        // The next character locates that same line without changing the editor selection.
+        if (!caret?.height && pos.o < +frag.dataset.to) {
+          const next = LY.posToDom({ p: pos.p, o: pos.o + 1 }, pageEl);
+          if (next) {
+            range.setStart(next.node, next.offset); range.collapse(true);
+            caret = range.getClientRects()[0];
+          }
+        }
+        if (caret && caret.height) r = caret;
+      }
+      const bounds = pageEl.getBoundingClientRect();
+      if (r.bottom <= bounds.top || r.top >= bounds.bottom) return null;
+      return { page, top: Math.max(0, (r.top - bounds.top) * scale) };
+    };
+    const resolve = (el) => {
+      const link = el.dataset.link;
+      if (!link) return null;
+      if (!link.startsWith('#')) return { url: link };
+      let name = link.slice(1);
+      try { name = decodeURIComponent(name); } catch (e) { /* a literal bookmark name */ }
+      const b = bookmarks.get(link.slice(1)) || bookmarks.get(name);
+      return b ? destination(b) : null;
+    };
+    for (const [page, p] of list.entries()) {
+      const origin = p.el.getBoundingClientRect();
+      for (const frag of p.el.querySelectorAll('.p[data-pid]')) {
+        const id = +frag.dataset.pid;
+        if (headings.has(id)) continue;
+        const para = D.byId(doc(), id), level = para && D.headingLevel(doc(), para);
+        if (!level) continue;
+        const title = D.plainText(para, { skipDeleted: true }).trim(), r = frag.getBoundingClientRect();
+        if (!title || !r.height || r.bottom <= origin.top || r.top >= origin.bottom) continue;
+        headings.add(id);
+        outline.push({ title, page, top: Math.max(0, (r.top - origin.top) * scale), level });
+      }
+    }
     const prepare = async (p) => {
       const w = p.el.offsetWidth, h = p.el.offsetHeight;
-      text.set(p, pdf.collectDOM(p.el, 0.75 / LY.scale()));
+      text.set(p, pdf.collectDOM(p.el, scale));
+      links.set(p, pdf.collectLinks(p.el, scale, resolve));
       return { svg: await pageSVG(p.el, css, map, ''), w, h, scale: L.pdfScale(w, h, L.PDF_DPI / 96) };
     };
     for await (const { canvas: c, page: p, index } of pdf.pictures(list, prepare, fonts)) {
       ui.busy(true, L.t('Creating PDF... (page {0} of {1})', index + 1, list.length));
       const jpeg = pdf.jpeg(c);
-      pages.push({ jpeg, iw: c.width, ih: c.height, pw: p.sect.pgW, ph: p.sect.pgH, lines: text.get(p) });
+      pages.push({ jpeg, iw: c.width, ih: c.height, pw: p.sect.pgW, ph: p.sect.pgH,
+        lines: text.get(p), links: links.get(p) });
       text.delete(p);
+      links.delete(p);
     }
     if (prevView !== A.view || LY.view !== (prevView === 'reading' || prevView === 'preview' ? 'print' : prevView)) { LY.view = prevView === 'reading' || prevView === 'preview' ? 'print' : prevView; LY.render(); }
     E.restoreDom(true);
-    return L.buildPDF(pages, { title: doc().props.title || A.fileName, author: doc().props.creator || '' });
+    return L.buildPDF(pages, { title: doc().props.title || A.fileName, author: doc().props.creator || '',
+      lang: pdf.language(doc().props.language, doc().defaults.rPr.lang), outline });
   };
   A.printPDF = async function () {
     try { const blob = await A.buildPDF(); ui.busy(false); await L.saveFile(`${A.fileName}.pdf`, blob); }

@@ -249,7 +249,7 @@ for (const app of ['quire', 'lectern']) {
             L.layout.pages = elements.map(el => ({ el, sect: { pgW: 595.5, pgH: 842.25 } }));
           } else {
             L.pres.W = 794; L.pres.H = 1123;
-            L.pres.slides = elements.map((el, n) => ({ id: 'PDF-test-' + n }));
+            L.pres.slides = elements.map((el, n) => ({ id: 'PDF-test-' + n, shapes: [] }));
             L.render.slide = (pres, slide) => elements[pres.slides.indexOf(slide)];
           }
           L.buildPDF = list => { actual = list.map(p => Array.from(p.jpeg)); return new Blob(); };
