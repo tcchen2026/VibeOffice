@@ -41,7 +41,7 @@
   cmd('properties', { label: 'Propert&ies', icon: 'properties', run: run(() => D().properties()) });
   cmd('versions', { label: 'Versio&ns...', icon: 'open', enabled: () => L.file.bound(), run: run(() => L.file.showVersions(A().books[A().cur].name)) });   // the desktop app
   /* close every workbook (asking to save each), then return to the Start Center */
-  cmd('exitApp', { label: 'E&xit', run: async () => { for (;;) { const last = A().books.length <= 1; if (!(await A().closeWorkbook())) return; if (last) break; } if (window.VO) VO.exit(); } });
+  cmd('exitApp', { label: 'E&xit', run: async () => { if (window.VO && VO.quit) return VO.quit(); for (;;) { const last = A().books.length <= 1; if (!(await A().closeWorkbook())) return; if (last) break; } if (window.VO) VO.exit(); } });
 
   /* ------------------------------------------------------------ Edit */
   /* the step's name (an English label, L.N at its O.tx) shown translated */

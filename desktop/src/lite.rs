@@ -10,7 +10,7 @@ use std::{
 };
 
 use serde::Serialize;
-use tauri::{AppHandle, Manager, WebviewWindow};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow};
 
 use crate::{doc::Docs, host, store, types};
 
@@ -93,6 +93,28 @@ fn list(dir: &Path) -> Vec<Item> {
         .collect();
     items.sort_by(|a, b| b.modified.cmp(&a.modified).then(a.name.cmp(&b.name)));
     items
+}
+
+/// The window's first page: the start page, or the document named first on the command line, a file in Documents
+/// an app opens (`vibeoffice Agreement.docx`: for measuring and testing; M5's launcher names none).
+pub fn first_page(app: &AppHandle, args: impl IntoIterator<Item = std::ffi::OsString>) -> WebviewUrl {
+    let named = args.into_iter().next().map(|arg| {
+        let name = arg.to_string_lossy().into_owned();
+        let path = document(&name)?;
+        let own = types::app_for(&path)
+            .filter(|_| path.is_file())
+            .ok_or_else(|| format!("“{name}” is not a document in Documents"))?;
+        crate::doc::doc_address(app, "main", own, &path)?
+    });
+    let page = match named {
+        Some(Ok(page)) => page,
+        Some(Err(e)) => {
+            eprintln!("{e}");
+            START.into()
+        }
+        None => START.into(),
+    };
+    WebviewUrl::App(page.into())
 }
 
 /// The start page's list: the documents in Documents.

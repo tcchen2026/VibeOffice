@@ -501,6 +501,23 @@ pub fn open_here(
     app: &str,
     path: &Path,
 ) -> Result<(), String> {
+    match doc_address(app_handle, window.label(), app, path)? {
+        Ok(page) => crate::host::navigate(app_handle, window, &page),
+        Err(holder) => {
+            raise(app_handle, &holder);
+            Ok(())
+        }
+    }
+}
+
+/// The window `label` takes the file `path` as `app`'s document: the address of the page that opens it, with the
+/// one-time word (`open_here`; the lite edition's first page, lite.rs), or the window that has the file already.
+pub fn doc_address(
+    app_handle: &AppHandle,
+    label: &str,
+    app: &str,
+    path: &Path,
+) -> Result<Result<String, String>, String> {
     let docs = app_handle.state::<Docs>();
     let (key, real) = docs.record(app, path)?;
     recent_changed(app_handle);
@@ -512,11 +529,9 @@ pub fn open_here(
         token: Some(token.clone()),
         ..Doc::default()
     };
-    if let Err(holder) = docs.replace(window.label(), doc) {
-        raise(app_handle, &holder);
-        return Ok(());
-    }
-    crate::host::navigate(app_handle, window, &format!("{app}/?doc&t={token}"))
+    Ok(docs
+        .replace(label, doc)
+        .map(|()| format!("{app}/?doc&t={token}")))
 }
 
 /// An app window's Recent Files: the Start Center, the one window that lists them, brought forward (or opened again)

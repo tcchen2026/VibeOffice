@@ -24,15 +24,16 @@ use crate::store::Store;
 
 pub const UI_SCALE: &str = "vibeoffice.uiScale";
 /// The lite edition's settings until the user changes them, for its small screen (docs/desktop.md, Lite edition):
-/// the Classic look's menus at 75 % (also `ui_scale`), each app without toolbars, rulers or task pane, Quire in Web
-/// Layout. Each app's options merge with its own defaults.
+/// the Classic look's menus at 75 % (also `ui_scale`), each app without toolbars (none that shows by itself
+/// either), rulers or task pane, Quire in Web Layout; nothing checked as you type (Quire's spelling and grammar went
+/// over a whole document for minutes on the device's CPU). Each app's options merge with its own defaults.
 #[cfg(feature = "lite")]
 const LITE: &[(&str, &str)] = &[
     (LOOK, "classic"),
     (UI_SCALE, "0.75"),
     (
         "quire.opts",
-        r#"{"taskOpen":false,"startupPane":false,"ruler":false,"vruler":false,"view":"web","toolbars":{"standard":false,"formatting":false,"drawing":false}}"#,
+        r#"{"taskOpen":false,"startupPane":false,"ruler":false,"vruler":false,"view":"web","spell":false,"toolbars":{"standard":false,"formatting":false,"drawing":false,"tables":false,"reviewing":false,"picture":false,"outlining":false,"headerFooter":false,"mailMerge":false,"wordart":false}}"#,
     ),
     (
         "ledger.opts",
@@ -40,7 +41,7 @@ const LITE: &[(&str, &str)] = &[
     ),
     (
         "lectern.opts",
-        r#"{"taskOpen":false,"startupPane":false,"layoutPaneOnNew":false,"leftOpen":false,"notesH":24,"toolbars":{"standard":false,"formatting":false,"drawing":false}}"#,
+        r#"{"taskOpen":false,"startupPane":false,"layoutPaneOnNew":false,"leftOpen":false,"notesH":24,"spell":false,"toolbars":{"standard":false,"formatting":false,"drawing":false}}"#,
     ),
 ];
 const SCALES: RangeInclusive<f64> = 0.5..=4.0;

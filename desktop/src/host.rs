@@ -169,6 +169,13 @@ pub fn navigate(app: &AppHandle, window: &WebviewWindow, path: &str) -> Result<(
         .ok_or("no address for the page")?;
     app.state::<Host>()
         .expect(window.label(), Page::new(url.clone(), false));
+    // the lite edition: each page in a web process of its own, so the memory the last one never gave back goes with
+    // it (its page has let its document go first); WebKit starts a new process for the load
+    #[cfg(all(feature = "lite", target_os = "linux"))]
+    let _ = window.with_webview(|webview| {
+        use webkit2gtk::WebViewExt;
+        webview.inner().terminate_web_process();
+    });
     window.navigate(url).map_err(|e| e.to_string())
 }
 

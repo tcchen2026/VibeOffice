@@ -493,7 +493,11 @@ fn main() {
                     if open_files(&app, &files) > 0 && !cfg!(target_os = "macos") {
                         return;
                     }
-                    if let Err(e) = open_window(&app, "main", start_page()) {
+                    #[cfg(feature = "lite")]
+                    let first = lite::first_page(&app, std::env::args_os().skip(1));
+                    #[cfg(not(feature = "lite"))]
+                    let first = start_page();
+                    if let Err(e) = open_window(&app, "main", first) {
                         eprintln!("the Start Center: {e}");
                         app.exit(1);
                     }

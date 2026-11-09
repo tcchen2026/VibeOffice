@@ -48,7 +48,7 @@ One interface between the pages and what runs them, so a page never asks which: 
 | `kind` | `'web'` | `'desktop'` |
 | `platform` | `'web'` | `'windows'`, `'macos'`, `'linux'` (Rust's `std::env::consts::OS`) |
 | `updates` | `true` (the page never checks) | `true`; `false` in the Mac App Store edition, which the store updates (the Start Center never reads `current.json`; old, it still shows Check for updates, for the App Store), and in the lite edition, which its package updates |
-| `lite` | `null` | `null`; the lite edition's `{ list, open, create, home, licenses, quit }` (`host_lite_*`: Lite edition, below) |
+| `lite` | `null` | `null`; the lite edition's `{ list, open, create, home, licenses, quit, show }` (`host_lite_*`: Lite edition, below) |
 | `version` | `0` | `host::VERSION`, raised when a command changes shape (5 since the settings moved to `~/.vibeoffice`) |
 | `onFiles(fn)` | `launchQueue` (the PWA's file handlers) | nothing: the native side opens the files the app is started with, or that another start (Windows) or Finder (macOS) hands over, each in a window of its own |
 | `openUrl(url)` | a new tab | `host_open_url`, from the Start Center: the update page and our GitHub only (Links, below), to the system (`ShellExecuteW`, `NSWorkspace openURL:`, `xdg-open`) |
@@ -439,22 +439,30 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
   `~/VibeOffice/Documents` that an app opens, newest first (`host_lite_list`); opens one (`host_lite_open`: the window
   goes to `<app>/?doc&t=…`, as File ▸ Open's reload does, `doc::open_here`), makes a new document (N: `host_lite_new`),
   shows Help (the keys, the version, the licences) and quits (Esc). It is drawn at 100 % for its screen, the apps at the
-  UI size. In an app, File ▸ New, Open, Close, Exit and Recent Files let the document go ("Save changes?") and the
-  window goes on (`host_lite_home` back to the list); `host_new_window` refuses. `doc::app_of` reads the app from the
+  UI size. In an app, File ▸ New, Open, Close and Recent Files let the document go ("Save changes?") and the
+  window goes on (`host_lite_home` back to the list); File ▸ Exit lets it go and ends VibeOffice (`VO.quit`,
+  `host_lite_quit`), as Esc on the list does; `host_new_window` refuses. `doc::app_of` reads the app from the
   window's page, not its label. The footer advertises the full suite at vibeoffice.work, as text (the device has no
   browser). The licences page goes back with Esc.
 - **Documents only.** `~/VibeOffice` holds `config.json` (the settings) and `Documents/`; nothing else is kept
   (`store.rs`: no Recent Files, previews, drafts or previous versions, and the pages make none). The web view is
   incognito, WebKit's own folder in `$XDG_RUNTIME_DIR/vibeoffice-lite`. Save As has no system dialog: `L.file.choose`
   asks for the name and type in the page, and `host_choose` puts the file in Documents (a name, no folder; a link there
-  is refused) and asks the page again before it replaces one (`exists`). Files on the command line are ignored.
+  is refused) and asks the page again before it replaces one (`exists`). A document named on the command line
+  (`vibeoffice Agreement.docx`: a file in Documents; for measuring and testing, M5's launcher names none) opens
+  instead of the list (`lite::first_page`); other arguments are ignored.
 - **Small screen.** Until the user changes them (`settings.rs`, `LITE`): the Classic look, the UI at 75 %, each app with
   its menus, document and status bar (no toolbars, rulers or task pane; Lectern's notes 24 px), Quire in Web Layout at
-  100 %. Scout stays away until asked; File ▸ Versions… is gone.
+  100 %; no toolbar shows by itself either (Quire's Reviewing toolbar for tracked changes). Nothing is checked as you
+  type: Quire's spelling and grammar would go over a whole document on the device's CPU. Scout stays away until
+  asked; File ▸ Versions… is gone.
 - **Memory.** `main()` sets, unless already set: `JSC_useJIT=false` (on the device about 30 MiB less for a 22-page
   document, opened no slower: swap, not the JIT, sets its pace), `GDK_GL=disable` (WebKit draws on the CPU: here its web
   process 111 MiB at start instead of 202) and `WEBKIT_DISABLE_DMABUF_RENDERER=1` (frames in shared memory: the app's own
-  process 11 MiB smaller). WebKit's cache model is `DocumentViewer`, so a page the window left is freed.
+  process 11 MiB smaller). WebKit's cache model is `DocumentViewer`, so a page the window left is freed. Each page
+  has a web process of its own: `host::navigate` ends the last one first (`terminate_web_process`; WebKit starts a
+  new one for the load), so the memory a document's page never gave back goes with it (JavaScriptCore doesn't
+  compact its heap): here the list after closing a 22-page document holds 48 MiB instead of 83.
 - **The keyboard** (`src/cardputer.rs`, from r86's): cage reads no input; a thread of the app reads the keyboard
   (evdev `tca8418c`, not grabbed: the launcher's held Esc still ends the app) and hands cage a virtual keyboard (a US
   keymap) and pointer. Sym symbols become the US keys of the printed symbol; Sym+F/Z/X/C move the pointer, faster while
@@ -469,8 +477,9 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
   `VIBEOFFICE_HDMI=wayland-N` names the display, to try it without the device (two nested cage compositors in Xvfb,
   the second standing in for labwc). If that desktop's compositor ends while its display is open, GDK ends the app.
 - **The package** (`cardputer/`): `launch.sh` becomes `/usr/share/APPLaunch/bin/vibeoffice`. It runs cage on the
-  panel's own DRM device (`/dev/dri/cardputer-zero-internal`, `WLR_BACKENDS=drm`, pixman, `LIBSEAT_BACKEND=noop`, `-d`:
-  no client decorations), its messages in `$XDG_RUNTIME_DIR/vibeoffice.log`; the screen goes back to the launcher when
+  panel's own DRM device (udev's `/dev/dri/cardputer-zero-internal`, resolved to the card it links to: cage's seat
+  opens devices without following links; `WLR_BACKENDS=drm`, pixman, `LIBSEAT_BACKEND=noop`, `-d`: no client
+  decorations), its messages in `$XDG_RUNTIME_DIR/vibeoffice.log`; the screen goes back to the launcher when
   it ends. The app is in `apps/vibeoffice/`, with `LICENSE`; it depends on `cage` and `libwebkit2gtk-4.1-0` (Raspberry
   Pi OS has both; the device's image has GTK 3 and libsoup 3 already).
 

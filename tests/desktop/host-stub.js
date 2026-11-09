@@ -268,9 +268,9 @@
   // the settings as they are now, at the top of common/look.js (settings.rs, Served)
   // (the lite edition's defaults: settings.rs, LITE)
   const LITE = { 'vibeoffice.look': 'classic', 'vibeoffice.uiScale': '0.75',
-    'quire.opts': '{"taskOpen":false,"startupPane":false,"ruler":false,"vruler":false,"view":"web","toolbars":{"standard":false,"formatting":false,"drawing":false}}',
+    'quire.opts': '{"taskOpen":false,"startupPane":false,"ruler":false,"vruler":false,"view":"web","spell":false,"toolbars":{"standard":false,"formatting":false,"drawing":false,"tables":false,"reviewing":false,"picture":false,"outlining":false,"headerFooter":false,"mailMerge":false,"wordart":false}}',
     'ledger.opts': '{"taskOpen":false,"toolbars":{"standard":false,"formatting":false}}',
-    'lectern.opts': '{"taskOpen":false,"startupPane":false,"layoutPaneOnNew":false,"leftOpen":false,"notesH":24,"toolbars":{"standard":false,"formatting":false,"drawing":false}}' };
+    'lectern.opts': '{"taskOpen":false,"startupPane":false,"layoutPaneOnNew":false,"leftOpen":false,"notesH":24,"spell":false,"toolbars":{"standard":false,"formatting":false,"drawing":false}}' };
   window.__VO_SETTINGS__ = Object.assign(lite ? LITE : { 'vibeoffice.look': 'paper' }, JSON.parse(sessionStorage.stubSettings || '{}'));
   // no browser storage (host.rs, NO_STORAGE): a use is recorded, and throws
   for (const [o, k] of [[window, 'localStorage'], [window, 'sessionStorage'], [window, 'indexedDB'], [window, 'caches'], [window, 'BroadcastChannel'], [navigator, 'storage'], [navigator, 'serviceWorker']]) {
