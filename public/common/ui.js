@@ -45,6 +45,8 @@
   const plainAmp = (s) => (root.VO && root.VO.i18n ? root.VO.i18n.plain(String(s || '')) : String(s || '')).replace(/&&/g, '\u0000').replace(/&(\S)/g, '$1').replace(/\u0000/g, '&');
   /** a label as shown, without its access key mark */
   const stripAmp = (s) => plainAmp(t(s));
+  /** the desktop app's lite edition (common/suite.js, VO.host.lite) */
+  const lite = () => !!(root.VO && root.VO.host && root.VO.host.lite);
   /** text as HTML, its access key underlined */
   const ampMark = (s) => L.esc(s || '').replace(/&amp;&amp;/g, '\u0000').replace(/&amp;(\S)/g, '<u>$1</u>').replace(/\u0000/g, '&amp;');
   /** a label as shown, its access key underlined */
@@ -136,7 +138,7 @@
     ui.closeMenus(depth);
     const list = (typeof items === 'function' ? items() : items).map(resolveItem).filter((x) => x && !x.hidden);
     /* a menu from inside a dialog (a drop-down button there) goes above the dialogs */
-    const el = h('div', { class: 'menu' + (opts.cls ? ' ' + opts.cls : '') + (ui.dialogOpen() ? ' over-dlg' : ''), role: 'menu', tabindex: '-1' });
+    const el = h('div', { class: 'menu' + (opts.cls ? ' ' + opts.cls : '') + (ui.dialogOpen() ? ' over-dlg' : '') + (lite() ? ' no-keys' : ''), role: 'menu', tabindex: '-1' });
     const rows = [];
     list.forEach((it) => {
       if (it.sep) { el.appendChild(h('div', { class: 'm-sep' })); return; }
@@ -191,7 +193,7 @@
       if (e.key === 'ArrowUp') { const i = usable.indexOf(active); setActive(usable[(i - 1 + usable.length) % usable.length], true); return true; }
       if (e.key === 'ArrowRight' && active && active._it.sub) { openSub(active); const sub = openStack[openStack.length - 1]; if (sub && sub.first) sub.first(); return true; }
       if (e.key === 'Enter' || e.key === ' ') { if (active) activate(active); return true; }
-      if (e.key.length === 1) {
+      if (e.key.length === 1 && !lite()) {   // the lite edition's menus choose by the arrows only (menuKey)
         const k = e.key.toLowerCase();
         const hit = usable.find((r) => r._mn === k);
         if (hit) { setActive(hit); activate(hit); return true; }
@@ -239,20 +241,25 @@
   /** after chrome that took the keyboard is done with it (a menu command, a dialog), the document gets it back */
   const keyboardLost = () => !document.activeElement || document.activeElement === document.body || !document.activeElement.isConnected;
   ui.menuOpen = () => openStack.length > 0;
+  /* the lite edition's arrow letters, the CardputerZero's F, X, Z and C without Fn (as on its start page, lite.js): in
+     a menu they move as the arrows do; no letter chooses an item there (X would be Exit), so none is underlined */
+  const LITE_ARROWS = { f: 'ArrowUp', x: 'ArrowDown', z: 'ArrowLeft', c: 'ArrowRight' };
+  const liteArrow = (e) => !e.ctrlKey && !e.altKey && !e.metaKey && lite() && LITE_ARROWS[e.key.toLowerCase()];
   /* menu keyboard routing; returns true if handled */
   ui.menuKey = (e) => {
     if (!openStack.length) return false;
     const top = openStack[openStack.length - 1];
-    if (e.key === 'Escape') {
+    const key = liteArrow(e) || e.key;
+    if (key === 'Escape') {
       if (openStack.length > 1) ui.closeMenus(openStack.length - 1); else ui.closeMenus();
       return true;
     }
-    if (e.key === 'ArrowLeft') {
+    if (key === 'ArrowLeft') {
       if (openStack.length > 1) { ui.closeMenus(openStack.length - 1); return true; }
       if (menuBarState) { menuBarState.step(-1); return true; }
     }
-    if (e.key === 'ArrowRight' && menuBarState && !(top.el._keys && top.el.querySelector('.m-item.act.has-sub'))) { menuBarState.step(1); return true; }
-    if (top.el._keys && top.el._keys(e)) return true;
+    if (key === 'ArrowRight' && menuBarState && !(top.el._keys && top.el.querySelector('.m-item.act.has-sub'))) { menuBarState.step(1); return true; }
+    if (top.el._keys && top.el._keys(key === e.key ? e : { key })) return true;
     return true; /* swallow keys while a menu is open */
   };
 

@@ -77,6 +77,25 @@ VO.i18n.whenReady(function () {
   list.addEventListener('click', (e) => { const row = e.target.closest('.doc'); if (row) open(+row.dataset.i); });
 
   /* ---------------------------------------------------------------- New and Help */
+  /* Help's lines about keys: each sentence translated whole (VO.N puts it in the catalog), {0}, {1}… its keys, drawn
+     as keys */
+  const keyLine = (text, keys) => {
+    const p = document.createElement('p');
+    for (const [i, part] of VO.t(text).split(/\{(\d)\}/).entries()) {
+      if (i % 2 === 0) { if (part) p.append(part); continue; }
+      const k = document.createElement('kbd');
+      k.translate = false;
+      k.textContent = keys[+part] || '';
+      p.append(k);
+    }
+    return p;
+  };
+  $('keys').replaceChildren(
+    keyLine(VO.N('{0} {1} (or {2} {3}) choose a document, {4} {5} a page at a time, {6} opens it.'), ['F', 'X', '↑', '↓', 'Z', 'C', 'Enter']),
+    keyLine(VO.N('{0} makes a new document. {1} quits.'), ['N', 'Esc']),
+    keyLine(VO.N('In a document: {0} or {1}+letter for the menus, {2}+{3} saves, File ▸ Close comes back here, File ▸ Exit quits.'), ['F10', 'Alt', 'Ctrl', 'S']),
+    keyLine(VO.N('In a document the arrows are {0}+{1} {2} {3} {4}; in a menu {1} {2} {3} {4} alone.'), ['Fn', 'F', 'X', 'Z', 'C']),
+    keyLine(VO.N('The pointer: {0}+{1} {2} {3} {4} move it; {0}+{5} clicks, {0}+{6} right-clicks. Tap {0} twice to keep it on.'), ['Sym', 'F', 'Z', 'X', 'C', 'Enter', 'Space']));
   let sheet = null;   // the open one
   const picks = () => [...sheet.querySelectorAll('.pick')];
   function show(el) {
@@ -92,15 +111,17 @@ VO.i18n.whenReady(function () {
   for (const b of $('new').querySelectorAll('.pick')) b.addEventListener('click', () => create(b.dataset.app));
   $('licenses').addEventListener('click', () => host.licenses().catch(failed));
 
+  /* the CardputerZero's arrow letters without Fn (F, X, Z, C: up, down, left, right): no other key here uses them */
+  const ARROWS = { f: 'ArrowUp', x: 'ArrowDown', z: 'ArrowLeft', c: 'ArrowRight' };
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
-    const k = e.key, lower = k.length === 1 ? k.toLowerCase() : k;
+    const k = ARROWS[e.key.toLowerCase()] || e.key, lower = k.length === 1 ? k.toLowerCase() : k;
     let done = true;
     if (sheet && sheet.id === 'new') {
       const p = picks(), cur = p.findIndex((b) => b.classList.contains('on'));
       const move = (i) => p.forEach((b, j) => b.classList.toggle('on', j === (i + p.length) % p.length));
-      if (k === 'ArrowDown') move(cur + 1);
-      else if (k === 'ArrowUp') move(cur - 1);
+      if (k === 'ArrowDown' || k === 'ArrowRight') move(cur + 1);
+      else if (k === 'ArrowUp' || k === 'ArrowLeft') move(cur - 1);
       else if (k === 'Enter') create(p[Math.max(0, cur)].dataset.app);
       else if (lower === 'd') create('quire');
       else if (lower === 's') create('ledger');
@@ -111,15 +132,15 @@ VO.i18n.whenReady(function () {
       const body = sheet.querySelector('.body');
       if (k === 'ArrowDown') body.scrollTop += 18;
       else if (k === 'ArrowUp') body.scrollTop -= 18;
-      else if (k === 'PageDown' || k === ' ') body.scrollTop += body.clientHeight - 18;
-      else if (k === 'PageUp') body.scrollTop -= body.clientHeight - 18;
+      else if (k === 'PageDown' || k === 'ArrowRight' || k === ' ') body.scrollTop += body.clientHeight - 18;
+      else if (k === 'PageUp' || k === 'ArrowLeft') body.scrollTop -= body.clientHeight - 18;
       else if (lower === 'l') host.licenses().catch(failed);
       else if (k === 'Escape' || k === 'F1' || lower === 'h' || k === '?') show(null);
       else done = false;
     } else if (k === 'ArrowDown') select(Math.min(at + 1, items.length - 1));
     else if (k === 'ArrowUp') select(at - 1);
-    else if (k === 'PageDown') select(Math.min(at + page(), items.length - 1));
-    else if (k === 'PageUp') select(at - page());
+    else if (k === 'PageDown' || k === 'ArrowRight') select(Math.min(at + page(), items.length - 1));
+    else if (k === 'PageUp' || k === 'ArrowLeft') select(at - page());
     else if (k === 'Home') select(0);
     else if (k === 'End') select(items.length - 1);
     else if (k === 'Enter') open(at);

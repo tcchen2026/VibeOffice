@@ -20,13 +20,42 @@ pub const START: &str = "lite.html";
 /// ~/VibeOffice/Documents (`init`).
 static DOCUMENTS: OnceLock<PathBuf> = OnceLock::new();
 
-/// The Documents folder in the edition's own (`store::Store::root`), made if missing.
+/// What a new Documents folder starts with: each app's sample, saved by the app (tools/lite-examples.mjs).
+const EXAMPLES: [(&str, &[u8]); 3] = [
+    (
+        "Welcome to Quire.docx",
+        include_bytes!("../lite-examples/Welcome to Quire.docx"),
+    ),
+    (
+        "Quarterly Sales.xlsx",
+        include_bytes!("../lite-examples/Quarterly Sales.xlsx"),
+    ),
+    (
+        "Harbor & Pine.pptx",
+        include_bytes!("../lite-examples/Harbor & Pine.pptx"),
+    ),
+];
+
+/// The Documents folder in the edition's own (`store::Store::root`).
 pub fn init(root: &Path) {
+    let _ = DOCUMENTS.set(documents_in(root));
+}
+
+/// `root`'s Documents folder; made if missing, with the examples in it (one that is there, even empty, stays as it
+/// is).
+fn documents_in(root: &Path) -> PathBuf {
     let dir = root.join("Documents");
-    if let Err(e) = std::fs::create_dir_all(&dir) {
-        eprintln!("{}: {e}", dir.display());
+    if dir.symlink_metadata().is_err() {
+        let made = std::fs::create_dir_all(&dir).and_then(|()| {
+            EXAMPLES
+                .iter()
+                .try_for_each(|(name, bytes)| std::fs::write(dir.join(name), bytes))
+        });
+        if let Err(e) = made {
+            eprintln!("{}: {e}", dir.display());
+        }
     }
-    let _ = DOCUMENTS.set(dir);
+    dir
 }
 
 fn documents() -> Result<&'static Path, String> {
@@ -97,7 +126,10 @@ fn list(dir: &Path) -> Vec<Item> {
 
 /// The window's first page: the start page, or the document named first on the command line, a file in Documents
 /// an app opens (`vibeoffice Agreement.docx`: for measuring and testing; M5's launcher names none).
-pub fn first_page(app: &AppHandle, args: impl IntoIterator<Item = std::ffi::OsString>) -> WebviewUrl {
+pub fn first_page(
+    app: &AppHandle,
+    args: impl IntoIterator<Item = std::ffi::OsString>,
+) -> WebviewUrl {
     let named = args.into_iter().next().map(|arg| {
         let name = arg.to_string_lossy().into_owned();
         let path = document(&name)?;
@@ -312,6 +344,89 @@ pub fn web_data() -> PathBuf {
         .join("vibeoffice-lite")
 }
 
+/// The page the window goes to (host::navigate, at once) or starts to load (main.rs): an app's (a document opened or
+/// made from the list) shows a note of its own until it has loaded (`loaded`), as the page itself can show nothing
+/// before its scripts have run (on the device, seconds), and a hint about the pointer keys.
+pub fn loading(window: &WebviewWindow, url: &tauri::Url) {
+    #[cfg(target_os = "linux")]
+    if types::is_app(url.path().trim_matches('/')) {
+        let w = window.clone();
+        let _ = window.run_on_main_thread(move || {
+            if let Ok(parent) = w.gtk_window() {
+                toast::show(&parent);
+            }
+        });
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = (window, url);
+}
+
+/// The page has loaded: the note goes.
+pub fn loaded(window: &WebviewWindow) {
+    #[cfg(target_os = "linux")]
+    let _ = window.run_on_main_thread(toast::hide);
+    #[cfg(not(target_os = "linux"))]
+    let _ = window;
+}
+
+/// The note while an app's page loads (`loading`): two lines in the middle of the window, in a popup of the kind a
+/// tooltip is (under Wayland part of the window's surface, not a window cage would show full screen; no focus of its
+/// own, so keys stay with the page), as the apps' toasts look (public/common/ui.css, `.toast`; the Classic look's
+/// tooltip colours).
+#[cfg(target_os = "linux")]
+mod toast {
+    use std::cell::RefCell;
+
+    use gtk::prelude::*;
+
+    const TEXT: &str =
+        "<b>Loading…</b>\n<small>Hint: Sym + F X Z C, Enter, Space for the mouse</small>";
+    const STYLE: &str = "window { background: #ffffe1; color: #000; border: 1px solid #000; }";
+
+    thread_local! {
+        static TOAST: RefCell<Option<gtk::Window>> = const { RefCell::new(None) };
+    }
+
+    pub fn show(parent: &gtk::ApplicationWindow) {
+        if TOAST.with(|t| t.borrow().is_some()) {
+            return;
+        }
+        let note = gtk::Window::new(gtk::WindowType::Popup);
+        note.set_type_hint(gtk::gdk::WindowTypeHint::Tooltip);
+        note.set_transient_for(Some(parent));
+        let css = gtk::CssProvider::new();
+        if css.load_from_data(STYLE.as_bytes()).is_ok() {
+            note.style_context()
+                .add_provider(&css, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
+        }
+        let label = gtk::Label::new(None);
+        label.set_markup(TEXT);
+        label.set_justify(gtk::Justification::Center);
+        label.set_line_wrap(true);
+        label.set_margin_top(4);
+        label.set_margin_bottom(4);
+        label.set_margin_start(8);
+        label.set_margin_end(8);
+        note.add(&label);
+        label.show();
+        // as wide as its text, at most the window's width less a little
+        let (width, height) = parent.size();
+        let w = note.preferred_width().1.min(width - 16).max(1);
+        let h = note.preferred_height_for_width(w).1;
+        note.set_size_request(w, h);
+        let (x, y) = parent.position();
+        note.move_(x + (width - w).max(0) / 2, y + (height - h).max(0) / 2);
+        note.show();
+        TOAST.with(|t| *t.borrow_mut() = Some(note));
+    }
+
+    pub fn hide() {
+        if let Some(note) = TOAST.with(|t| t.borrow_mut().take()) {
+            note.close();
+        }
+    }
+}
+
 /// The window's web view keeps no page it left (no back-forward cache) and caches little: WebKit's document viewer
 /// model. The memory goes back as the window moves between the start page and a document.
 pub fn web_view(window: &WebviewWindow) {
@@ -335,6 +450,32 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    #[test]
+    fn a_new_documents_folder_starts_with_the_examples() {
+        let root = temp("examples");
+        let dir = documents_in(&root);
+        let mut listed: Vec<_> = list(&dir).into_iter().map(|i| (i.name, i.app)).collect();
+        listed.sort();
+        assert_eq!(
+            listed,
+            [
+                ("Harbor & Pine.pptx".to_string(), "lectern"),
+                ("Quarterly Sales.xlsx".to_string(), "ledger"),
+                ("Welcome to Quire.docx".to_string(), "quire"),
+            ]
+        );
+        for (name, bytes) in EXAMPLES {
+            assert!(bytes.starts_with(b"PK\x03\x04"), "{name} is a package");
+        }
+        // a folder that is there stays as it is, emptied or not
+        for (name, _) in EXAMPLES {
+            std::fs::remove_file(dir.join(name)).unwrap();
+        }
+        documents_in(&root);
+        assert!(list(&dir).is_empty());
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

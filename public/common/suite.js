@@ -70,6 +70,8 @@
   /* the lite edition (desktop/src/lite.rs): one window, its start page (lite.html) and each app's page in turn; it
      keeps only the settings and the files in ~/VibeOffice/Documents: no Recent Files, previews or drafts */
   const lite = !!(native && native.edition === 'lite');
+  /* for its small screen's styles (common/ui.css: no status bar but its zoom buttons) */
+  if (lite) document.documentElement.classList.add('vo-lite');
   const call = (cmd, args, options) => window.__TAURI_INTERNALS__.invoke(cmd, args, options);
   /* an app page, not the Start Center (the desktop app: only the Start Center lists Recent Files) */
   const appPage = !!document.documentElement.dataset.app;

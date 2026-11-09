@@ -19,7 +19,7 @@
       if (!E.active) { if (G().guardProtect(null, true)) { fbar.blur(); G().focus(); return; } E.begin('edit', null, { surface: 'bar' }); }
       surface = fbar;
     });
-    fbar.addEventListener('keydown', (e) => { if (L.ui.menuKey(e) || L.ui.dialogKey(e)) { e.preventDefault(); return; } if (E.active) E.key(e); });
+    fbar.addEventListener('keydown', (e) => { if (L.ui.menuKey(e) || L.ui.dialogKey(e)) { e.preventDefault(); e.stopPropagation(); return; } if (E.active) E.key(e); });
     fbar.addEventListener('input', () => { if (E.active) E.onInput(); });
     fbar.addEventListener('pointerdown', () => { if (E.active && surface !== fbar) { surface = fbar; } });
     fbar.addEventListener('dblclick', () => { fbar.classList.toggle('multi'); });

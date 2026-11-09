@@ -27,7 +27,7 @@ Over plain http (Plain http, below) a yellow bar above the view says the site is
 
 Installed (display mode standalone) or in the desktop app, app pages open in a new window and the Start Center stays, as in LibreOffice (`VO.host.newWindow`); in a browser tab they open in the same tab (Back returns).
 
-The desktop app's lite edition has a start page of its own, `lite.html` (`lite.js`): its documents in a list, New and Help, for a keyboard and a 320×170 screen (docs/desktop.md, Lite edition).
+The desktop app's lite edition has a start page of its own, `lite.html` (`lite.js`): its documents in a list, New and Help, for a keyboard and a 320×170 screen (docs/desktop.md, Lite edition); there `suite.js` gives each page's `<html>` the class `vo-lite`, for that screen's styles in `common/ui.css`.
 
 ## Windows
 

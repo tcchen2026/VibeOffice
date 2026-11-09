@@ -24,7 +24,8 @@
 | `desktop/linux/` | `build.sh` (the AppImage: Linux, below), `AppRun` (its entry point: the check for WebKitGTK 4.1), `vibeoffice.desktop`, `smoke.sh` and `on-system.sh` (the CI's runs) |
 | `desktop/src/lite.rs` | the lite edition (Lite edition, below): its one window going between its start page (`public/lite.html`) and a document, the list of `~/VibeOffice/Documents`, WebKit's cache model and folder |
 | `desktop/src/cardputer.rs` | the lite edition on the CardputerZero: its keyboard, read from evdev and handed to cage as a virtual keyboard and pointer |
-| `desktop/cardputer/` | `launch.sh` (the launcher's entry point: cage on the built-in screen) and `packaging/` (the `.deb` on AppBuilder's contract: `build.sh`, the aarch64 build against a Debian sysroot; `stage.sh`; `meta.env`) |
+| `desktop/lite-examples/` | the three example documents a new lite Documents folder starts with (`tools/lite-examples.mjs`: each app's sample, saved by the app) |
+| `desktop/cardputer/` | `launch.sh` (the launcher's entry point: cage on the built-in screen), `helpers.sh` (the session's idle helpers stopped while the app runs) and `packaging/` (the `.deb` on AppBuilder's contract: `build.sh`, the aarch64 build against a Debian sysroot; `stage.sh`; `meta.env`) |
 | `desktop/release-notes.md` | the GitHub release's notes, every download (any of the workflows may create the release) |
 | `desktop/setup/` | the installer, `VibeOfficeSetup.exe`: carries the app; its dialog, manifest and version in `setup.rc` |
 | `desktop/permissions/host.toml`, `desktop/capabilities/` | which `host_*` commands each kind of window may call (Host interface, below); no Tauri core commands |
@@ -437,32 +438,46 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
 - **One window.** `main`, without a title bar, has the lite start page (`public/lite.html`, `lite.js`) or one app's
   page and its document, in turn (`src/lite.rs`): one web process at a time. The start page lists the files in
   `~/VibeOffice/Documents` that an app opens, newest first (`host_lite_list`); opens one (`host_lite_open`: the window
-  goes to `<app>/?doc&t=…`, as File ▸ Open's reload does, `doc::open_here`), makes a new document (N: `host_lite_new`),
-  shows Help (the keys, the version, the licences) and quits (Esc). It is drawn at 100 % for its screen, the apps at the
-  UI size. In an app, File ▸ New, Open, Close and Recent Files let the document go ("Save changes?") and the
-  window goes on (`host_lite_home` back to the list); File ▸ Exit lets it go and ends VibeOffice (`VO.quit`,
-  `host_lite_quit`), as Esc on the list does; `host_new_window` refuses. `doc::app_of` reads the app from the
-  window's page, not its label. The footer advertises the full suite at vibeoffice.work, as text (the device has no
-  browser). The licences page goes back with Esc.
+  goes to `<app>/?doc&t=…`, as File ▸ Open's reload does, `doc::open_here`), makes a new document (N:
+  `host_lite_new`), shows Help (the keys, the version, the licences) and quits (Esc); F and X (or the arrows) choose,
+  Z and C go a page at a time, no Fn needed. It is drawn at 100 % for its screen, the apps at the UI size. From Enter
+  until an app's page has loaded (on the device, seconds), a note in the middle of the screen says Loading…, with a
+  hint about the pointer keys (`lite::loading`, at once from `host::navigate`: native text in a GTK popup, part of the
+  window's surface, so cage doesn't show it full screen); the app's own Opening box follows. In an app, File ▸ New,
+  Open, Close and Recent Files let the document go ("Save changes?") and the window goes on (`host_lite_home` back to
+  the list); File ▸ Exit lets it go and ends VibeOffice (`VO.quit`, `host_lite_quit`), as Esc on the list does;
+  `host_new_window` refuses. `doc::app_of` reads the app from the window's page, not its label. The footer advertises
+  the full suite at vibeoffice.work, as text (the device has no browser). The licences page goes back with Esc.
 - **Documents only.** `~/VibeOffice` holds `config.json` (the settings) and `Documents/`; nothing else is kept
   (`store.rs`: no Recent Files, previews, drafts or previous versions, and the pages make none). The web view is
   incognito, WebKit's own folder in `$XDG_RUNTIME_DIR/vibeoffice-lite`. Save As has no system dialog: `L.file.choose`
   asks for the name and type in the page, and `host_choose` puts the file in Documents (a name, no folder; a link there
   is refused) and asks the page again before it replaces one (`exists`). A document named on the command line
   (`vibeoffice Agreement.docx`: a file in Documents; for measuring and testing, M5's launcher names none) opens
-  instead of the list (`lite::first_page`); other arguments are ignored.
+  instead of the list (`lite::first_page`); other arguments are ignored. A Documents folder that isn't there is made
+  with three examples in it, each app's sample saved by the app itself (`desktop/lite-examples/`, embedded in the
+  binary; `node tools/lite-examples.mjs` makes them again after a sample changes); one that is there, even empty, is
+  left as it is.
 - **Small screen.** Until the user changes them (`settings.rs`, `LITE`): the Classic look, the UI at 75 %, each app with
   its menus, document and status bar (no toolbars, rulers or task pane; Lectern's notes 24 px), Quire in Web Layout at
   100 %; no toolbar shows by itself either (Quire's Reviewing toolbar for tracked changes). Nothing is checked as you
   type: Quire's spelling and grammar would go over a whole document on the device's CPU. Scout stays away until
-  asked; File ▸ Versions… is gone.
-- **Memory.** `main()` sets, unless already set: `JSC_useJIT=false` (on the device about 30 MiB less for a 22-page
-  document, opened no slower: swap, not the JIT, sets its pace), `GDK_GL=disable` (WebKit draws on the CPU: here its web
-  process 111 MiB at start instead of 202) and `WEBKIT_DISABLE_DMABUF_RENDERER=1` (frames in shared memory: the app's own
-  process 11 MiB smaller). WebKit's cache model is `DocumentViewer`, so a page the window left is freed. Each page
-  has a web process of its own: `host::navigate` ends the last one first (`terminate_web_process`; WebKit starts a
-  new one for the load), so the memory a document's page never gave back goes with it (JavaScriptCore doesn't
-  compact its heap): here the list after closing a 22-page document holds 48 MiB instead of 83.
+  asked; File ▸ Versions… is gone. The status bar is only its zoom − and +, in the window's bottom right corner over
+  the document (`common/ui.css`; `common/suite.js` gives each page's `<html>` the class `vo-lite`). Menus choose by
+  the arrows only, so no letter is underlined in them (X would be File ▸ Exit), and F, X, Z and C move in them as the
+  arrows do (`common/ui.js`, `menuKey`); F10 and Alt+letter still open the menu bar.
+- **Memory.** `main()` sets, unless already set: `JSC_useJIT=false` (measured on the device from a fresh start, the
+  helpers stopped, one run each: a 22-page .docx fully open after 92 s with the JIT off, 107 s with only its first
+  tier and the regex JIT (`JSC_useDFGJIT=false JSC_useFTLJIT=false`, 16 MiB of code), 71 s with all of it; the page and
+  app peaked at 180, 275 and 242 MiB, MemAvailable at its lowest 79, 37 and 39 MiB; a 24-slide deck 52 and 49 s
+  either way. The JIT stays off for the memory), `GDK_GL=disable` (WebKit draws on the CPU: here its web
+  process 111 MiB at start instead of 202), `WEBKIT_DISABLE_DMABUF_RENDERER=1` (frames in shared memory: the app's own
+  process 11 MiB smaller) and `MALLOC_ARENA_MAX=2` (two malloc arenas, not one per thread: a few MiB; the app's own
+  process, which read its environment before `main()`, sets it with `mallopt`). WebKit's cache model is
+  `DocumentViewer`, so a page the window left is freed. Each page has a web process of its own: `host::navigate` ends
+  the last one first (`terminate_web_process`; WebKit starts a new one for the load), so the memory a document's page
+  never gave back goes with it (JavaScriptCore doesn't compact its heap): here the list after closing a 22-page
+  document holds 48 MiB instead of 83.
 - **The keyboard** (`src/cardputer.rs`, from r86's): cage reads no input; a thread of the app reads the keyboard
   (evdev `tca8418c`, not grabbed: the launcher's held Esc still ends the app) and hands cage a virtual keyboard (a US
   keymap) and pointer. Sym symbols become the US keys of the printed symbol; Sym+F/Z/X/C move the pointer, faster while
@@ -473,6 +488,7 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
   (`host_lite_show`, from `slideshow.js`). The desktop is the live Wayland socket in `$XDG_RUNTIME_DIR` other than
   cage's (M5's labwc); GDK opens it and the window goes over (`gtk_window_set_screen`), the keyboard with it
   (`cardputer::follow`), while the device's own screen shows a few lines of native text (Showing on HDMI, the keys).
+  Without one the show stays on the device's screen and says so for 3 s.
   That display stays open once opened: closed after a show, it took visuals the window still used, and GTK crashed.
   `VIBEOFFICE_HDMI=wayland-N` names the display, to try it without the device (two nested cage compositors in Xvfb,
   the second standing in for labwc). If that desktop's compositor ends while its display is open, GDK ends the app.
@@ -480,8 +496,15 @@ with Sym and Fn layers; Raspberry Pi OS, Debian 13). What follows holds only in 
   panel's own DRM device (udev's `/dev/dri/cardputer-zero-internal`, resolved to the card it links to: cage's seat
   opens devices without following links; `WLR_BACKENDS=drm`, pixman, `LIBSEAT_BACKEND=noop`, `-d`: no client
   decorations), its messages in `$XDG_RUNTIME_DIR/vibeoffice.log`; the screen goes back to the launcher when
-  it ends. The app is in `apps/vibeoffice/`, with `LICENSE`; it depends on `cage` and `libwebkit2gtk-4.1-0` (Raspberry
-  Pi OS has both; the device's image has GTK 3 and libsoup 3 already).
+  it ends. The app is in `apps/vibeoffice/`, with `LICENSE` and `helpers.sh`; it depends on `cage` and
+  `libwebkit2gtk-4.1-0` (Raspberry Pi OS has both; the device's image has GTK 3 and libsoup 3 already).
+- **The session's helpers wait.** Before cage, `helpers.sh stop` stops the desktop session's idle helpers: the sound
+  server and the desktop portals (systemd user units, sockets first) and the HDMI desktop's panel and file manager
+  (`wf-panel-pi`, `pcmanfm-pi`, each under `lwrespawn`, which is stopped first or it starts them again). It records
+  what ran, with each program's environment, in `$XDG_RUNTIME_DIR/vibeoffice-helpers`; a watcher in a session of its
+  own (`helpers.sh after`, `tail --pid` on cage) starts exactly that again however cage ends (Esc, Exit, the
+  launcher's held Esc, a crash). On the device that is about 35 MiB more MemAvailable and 40 MiB less in zram. labwc
+  stays: the slide show uses its HDMI desktop. No setting of the device changes.
 
 Building, on any Debian or Ubuntu machine (clang, lld, llvm-ar, apt-get, dpkg-deb; no cross gcc, no container): the
 build fetches the arm64 development packages of Debian 13 with apt run as the user (its own folders in

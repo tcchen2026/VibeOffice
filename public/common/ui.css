@@ -93,6 +93,8 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .m-head { padding: 3px 8px; font-weight: bold; color: var(--head-ink); background: var(--head-bg); border-block: 1px solid var(--head-line); }
 .combo-list .m-key { color: var(--key-ink); }
 .menu.combo-list .m-lbl { font-size: 13px; }
+/* the lite edition's menus choose by the arrows only (ui.js, menuKey): no letter underlined */
+.menu.no-keys .m-lbl u { text-decoration: none; }
 .menu.combo-list.fonts .m-item { min-height: 24px; }
 .menu.combo-list.styles .m-lbl { font-size: 11px; }
 .menu.grid-menu { padding: 3px; }
@@ -236,6 +238,11 @@ body.notips .tooltip:not(.ac-tip) { display: none !important; }
 /* a very narrow status bar (a phone, a handheld): the view and browse buttons and the zoom slider's track give way
    too (the View menu has them), so the cells keep their words */
 @container (max-width: 520px) { .statusbar .sb-group, .statusbar .sb-gap, .sb-zoom .zs-track { display: none; } }
+/* the lite edition (vo-lite, common/suite.js): no status bar, only its zoom − and + in the window's bottom right
+   corner, over the document */
+.vo-lite .statusbar { position: fixed; right: 2px; bottom: 2px; z-index: 900; height: auto; padding: 1px; container-type: normal; background: var(--tip-bg); border: 1px solid var(--chrome-line); border-radius: var(--ctl-radius); }
+.vo-lite .statusbar > :not(.sb-right), .vo-lite .statusbar .sb-right > :not(.sb-zoom), .vo-lite .sb-zoom > :not(.zs-step) { display: none; }
+.vo-lite .statusbar .sb-right { padding: 0; gap: 0; }
 
 /* floating toolbars */
 .floatbar { position: absolute; z-index: 60; background: linear-gradient(var(--tb-a), var(--tb-b)); border: 1px solid var(--tb-border); border-radius: 3px; box-shadow: 2px 2px 5px var(--shadow-c); display: flex; flex-direction: column; }

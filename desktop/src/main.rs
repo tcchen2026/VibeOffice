@@ -119,6 +119,12 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
         // The UI size (Settings), as each page starts: WebKitGTK resets the zoom on the first load. The lite
         // edition's start page is made for its screen: always 100 %.
         .on_page_load(|window, payload| {
+            // the lite edition: a few words of its own while an app's page loads (lite.rs)
+            #[cfg(feature = "lite")]
+            match payload.event() {
+                PageLoadEvent::Started => lite::loading(&window, payload.url()),
+                PageLoadEvent::Finished => lite::loaded(&window),
+            }
             if payload.event() == PageLoadEvent::Started {
                 let scale = if cfg!(feature = "lite") && payload.url().path() == "/lite.html" {
                     1.0
@@ -361,15 +367,22 @@ fn main() {
     // The lite edition (docs/desktop.md, Lite edition), for a device that swaps: JavaScriptCore without its JIT,
     // about 30 MiB less for the pages at the same speed; GTK without OpenGL, so WebKit draws on the CPU (its web
     // process half the size), and hands its frames over in shared memory, not GPU buffers (the app's own process
-    // 11 MiB smaller). Set beforehand, each stays as set (measuring).
+    // 11 MiB smaller); two malloc arenas, not one per thread, so freed memory isn't kept in many pools. Set
+    // beforehand, each stays as set (measuring).
     #[cfg(feature = "lite")]
     for (var, value) in [
         ("JSC_useJIT", "false"),
         ("GDK_GL", "disable"),
         ("WEBKIT_DISABLE_DMABUF_RENDERER", "1"),
+        ("MALLOC_ARENA_MAX", "2"),
     ] {
         if std::env::var_os(var).is_none() {
             std::env::set_var(var, value);
+            // this process read its own before main(): the same limit for it
+            #[cfg(all(target_os = "linux", target_env = "gnu"))]
+            if var == "MALLOC_ARENA_MAX" {
+                unsafe { libc::mallopt(libc::M_ARENA_MAX, 2) };
+            }
         }
     }
     // `-uninstall` ends here

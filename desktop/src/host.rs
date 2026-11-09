@@ -169,6 +169,10 @@ pub fn navigate(app: &AppHandle, window: &WebviewWindow, path: &str) -> Result<(
         .ok_or("no address for the page")?;
     app.state::<Host>()
         .expect(window.label(), Page::new(url.clone(), false));
+    // the lite edition: an app's page shows its loading note at once, not a second later once the new process has
+    // started the load (lite.rs)
+    #[cfg(feature = "lite")]
+    crate::lite::loading(window, &url);
     // the lite edition: each page in a web process of its own, so the memory the last one never gave back goes with
     // it (its page has let its document go first); WebKit starts a new process for the load
     #[cfg(all(feature = "lite", target_os = "linux"))]
