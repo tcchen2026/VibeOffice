@@ -50,7 +50,7 @@
         E.goto(E.idx + (e.deltaY > 0 ? 1 : -1));
       }
     }, { passive: false });
-    if (window.ResizeObserver) new ResizeObserver(() => { if (E.zoom === 'fit') E.layout(); else E.layout(); }).observe(E.scroller);
+    if (window.ResizeObserver) new ResizeObserver(() => E.layout()).observe(E.scroller);
     else window.addEventListener('resize', () => E.layout());
   };
 
@@ -66,12 +66,15 @@
     const cw = E.scroller.clientWidth, ch = E.scroller.clientHeight;
     if (!cw || !ch) return;
     const margin = Math.max(16, Math.min(40, cw * 0.04));
-    if (E.zoom === 'fit') E.scale = Math.max(0.05, Math.min((cw - margin * 2) / W, (ch - margin * 2) / H));
+    const fitX = (cw - margin * 2) / W, fitY = (ch - margin * 2) / H;
+    if (E.zoom === 'fit') E.scale = Math.max(0.05, Math.min(fitX, fitY));
     else E.scale = E.zoom * L.PX_PER_PT;
     const sw = W * E.scale, sh = H * E.scale;
     const canW = Math.max(cw, sw + margin * 2), canH = Math.max(ch, sh + margin * 2);
-    E.canvas.style.width = canW + 'px';
-    E.canvas.style.height = canH + 'px';
+    // clientWidth and clientHeight round to whole CSS pixels. Let CSS fill each axis that fits
+    // so a fractional pixel cannot make the scrollbars appear and trigger another fit.
+    E.canvas.style.width = E.scale <= fitX ? '100%' : canW + 'px';
+    E.canvas.style.height = E.scale <= fitY ? '100%' : canH + 'px';
     E.ox = Math.round((canW - sw) / 2); E.oy = Math.round((canH - sh) / 2);
     for (const el of [E.host, E.overlay, E.gridEl]) {
       el.style.left = E.ox + 'px'; el.style.top = E.oy + 'px';

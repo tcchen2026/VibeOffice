@@ -49,6 +49,8 @@ File ▸ Open, drag a file onto the window, or *Open a presentation* in the Gett
 Strict inputs save as standard Transitional OOXML (recorded, not shown). Same-format
 saves retain the macro, template or slideshow variant and any opening password.
 
+**Fit to Window** keeps the slide centred as the editing pane resizes, including on displays with fractional scaling. At a fixed zoom, each axis scrolls when the slide needs more room.
+
 A picture's brightness and contrast (and Washout) are drawn as PowerPoint draws them: on a grey ramp
 under 7 settings, Lectern's greys agree with PowerPoint 2016's within 1 of 255 (`L.lumFilter`, shared
 with Quire).
