@@ -681,7 +681,7 @@
     const sc = (k) => `<a:${k}><a:srgbClr val="${(c[k] || '#000000').replace('#', '').toUpperCase()}"/></a:${k}>`;
     /* the East Asian font as the theme's font for the script of the presentation's language, as PowerPoint writes it */
     const script = /^ja/i.test(textLang) ? 'Jpan' : /^ko/i.test(textLang) ? 'Hang' : /^zh-(cn|sg)/i.test(textLang) ? 'Hans' : /^zh/i.test(textLang) ? 'Hant' : null;
-    const fnt = (f, ea) => `<a:latin typeface="${X(f)}"/><a:ea typeface=""/><a:cs typeface=""/>` + (script && ea ? `<a:font script="${script}" typeface="${X(ea)}"/>` : '');
+    const fnt = (f, ea) => `<a:latin typeface="${X(f)}"/><a:ea typeface="${X(!script && ea || '')}"/><a:cs typeface=""/>` + (script && ea ? `<a:font script="${script}" typeface="${X(ea)}"/>` : '');
     const ph = '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>';
     const ln = (w) => `<a:ln w="${w}" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>`;
     /* the style matrix of L.model.FMT */
@@ -910,13 +910,17 @@
 
     /* masters & layouts */
     const masterIdList = [];
-    const layoutPartOf = new Map(); /* designId|layoutKey|lkey -> layout file number */
-    let layoutN = 0;
-    const masterN = new Map();
+    const layoutPartOf = new Map(); /* designId|layoutKey|lkey -> saved layout part */
+    // Applying a design keeps the old masters and layouts in the library. Allocate
+    // the new parts alongside them, including when the originals use nonstandard names.
+    const designPart = (dir, stem, source, mode) => {
+      if (!source || !pres.pkg?.has(source)) return freshName(dir, stem, 'xml');
+      pack.bind(source, source, mode);
+      return source;
+    };
     let firstTheme = null;
     designIds.forEach((did, mi) => {
       const d = pres.designs[did] || L.model.buildDesign('default', pres.W, pres.H);
-      const mNum = mi + 1;
       if (d.keep?.master) {
         try {
           const kept = L.designs.write(d, pres, pack, {
@@ -943,7 +947,7 @@
             if (!mi) firstTheme = kept.theme;
             masterIdList.push({ id: kept.id, rid: writer.rels(presRels.owner).add(RT('slideMaster'), K.relative(presRels.owner, kept.part), false, kept.rid) });
             for (const [key, part] of kept.layouts) layoutPartOf.set(did + '|' + key, { part });
-            masterN.set(did, mNum); return;
+            return;
           }
         } catch (error) {
           if (error.code !== 'OOXML_DESIGN_DEPENDENCY') throw error;
@@ -955,54 +959,53 @@
       if (original && used.every(key => d.keep.layouts[key])) {
         try {
           const part = writer.carry(pres.pkg, d.keep.part);
-          pack.bind(`ppt/slideMasters/slideMaster${mNum}.xml`, d.keep.part, 'opaque');
-          pack.bind(`ppt/theme/theme${mNum}.xml`, d.keep.theme, 'opaque');
+          pack.bind(d.keep.part, d.keep.part, 'opaque');
+          if (d.keep.theme) {
+            pack.bind(d.keep.theme, d.keep.theme, 'opaque');
+            if (!mi) firstTheme = writer.target(pres.pkg, d.keep.theme);
+          }
           const dep = pres.pkg.rels(pres.pkg.main).find(r => r.part === d.keep.part && K.relationshipType(r.type) === RT('slideMaster'));
           const id = Array.from(pres.pkg.xml(pres.pkg.main).getElementsByTagName('*')).find(e => e.localName === 'sldMasterId' && Array.from(e.attributes).some(a => a.localName === 'id' && a.namespaceURI?.includes('relationships') && a.value === dep?.id))?.getAttribute('id');
           const rid = writer.rels(presRels.owner).add(dep?.type || RT('slideMaster'), K.relative(presRels.owner, part), false, dep?.id);
           masterIdList.push({ id: id || writer.ids.fresh('presentation', 'sldMasterId'), rid });
           for (const key of used) layoutPartOf.set(did + '|' + key, { original: d.keep.layouts[key] });
-          masterN.set(did, mNum);
           return;
         } catch (error) {
           writer.loss({ id: 'design:' + d.keep.part, what: 'The design was converted because its original dependencies are incomplete: ' + error.message, where: d.keep.part, action: 'conversion' });
         }
       }
-      pack.bind(`ppt/slideMasters/slideMaster${mNum}.xml`, d.keep?.part);
-      pack.bind(`ppt/theme/theme${mNum}.xml`, d.keep?.theme, d.keep?.themeValues === JSON.stringify([d.colors, d.fonts]) ? 'opaque' : 'regenerated');
-      const mRels = pack.rels(`ppt/slideMasters/slideMaster${mNum}.xml`);
-      masterN.set(did, mNum);
+      const masterPart = designPart('ppt/slideMasters', 'slideMaster', d.keep?.part);
+      const themePart = designPart('ppt/theme', 'theme', d.keep?.theme, d.keep?.themeValues === JSON.stringify([d.colors, d.fonts]) ? 'opaque' : 'regenerated');
+      if (!mi) firstTheme = pack.part(themePart);
+      const mRels = pack.rels(masterPart);
       const mid = writer.ids.fresh('presentation', 'sldMasterId');
       const keys = new Set(['title', 'text', 'blank', 'titleOnly', 'content']);
       for (const s of allSlides) if (s.design === did) keys.add(s.layout + (s.lkey ? '|' + s.lkey : ''));
       const layoutIds = [];
       for (const k of keys) {
         const [key, lkey] = k.split('|');
-        const n = ++layoutN;
-        layoutPartOf.set(did + '|' + k, n);
-        pack.bind(`ppt/slideLayouts/slideLayout${n}.xml`, d.keep?.layouts?.[k]);
-        const lRels = pack.rels(`ppt/slideLayouts/slideLayout${n}.xml`);
-        lRels.add(RT('slideMaster'), `../slideMasters/slideMaster${mNum}.xml`);
-        const lctx = { rels: lRels, media: mediaSync(lRels), slideIndex, nextId: null, idOf: () => null, fieldId: fieldIds(`ppt/slideLayouts/slideLayout${n}.xml`) };
-        add(`ppt/slideLayouts/slideLayout${n}.xml`, layoutXML(d, key, lkey, lctx));
-        add(`ppt/slideLayouts/_rels/slideLayout${n}.xml.rels`, lRels.xml());
-        overrides.push([`/ppt/slideLayouts/slideLayout${n}.xml`, CT.layout]);
-        const rid = mRels.add(RT('slideLayout'), `../slideLayouts/slideLayout${n}.xml`);
+        const layoutPart = designPart('ppt/slideLayouts', 'slideLayout', d.keep?.layouts?.[k]);
+        layoutPartOf.set(did + '|' + k, { base: layoutPart });
+        const lRels = pack.rels(layoutPart);
+        lRels.add(RT('slideMaster'), K.relative(layoutPart, masterPart));
+        const lctx = { rels: lRels, media: mediaSync(lRels), slideIndex, nextId: null, idOf: () => null, fieldId: fieldIds(layoutPart) };
+        add(layoutPart, layoutXML(d, key, lkey, lctx));
+        add(K.relsPath(layoutPart), lRels.xml());
+        overrides.push(['/' + layoutPart, CT.layout]);
+        const rid = mRels.add(RT('slideLayout'), K.relative(masterPart, layoutPart));
         layoutIds.push({ id: writer.ids.fresh('presentation', 'sldLayoutId'), rid });
       }
-      const themeN = mNum;
-      mRels.add(RT('theme'), `../theme/theme${themeN}.xml`);
-      add(`ppt/theme/theme${themeN}.xml`, themeXML(d, d.name));
-      overrides.push([`/ppt/theme/theme${themeN}.xml`, CT.theme]);
-      const mctx = { rels: mRels, media: mediaSync(mRels), slideIndex, nextId: null, idOf: () => null, fieldId: fieldIds(`ppt/slideMasters/slideMaster${mNum}.xml`) };
-      add(`ppt/slideMasters/slideMaster${mNum}.xml`, masterXML(d, mctx, layoutIds));
-      add(`ppt/slideMasters/_rels/slideMaster${mNum}.xml.rels`, mRels.xml());
-      overrides.push([`/ppt/slideMasters/slideMaster${mNum}.xml`, CT.master]);
-      masterIdList.push({ id: mid, rid: presRels.add(RT('slideMaster'), `slideMasters/slideMaster${mNum}.xml`) });
+      mRels.add(RT('theme'), K.relative(masterPart, themePart));
+      add(themePart, themeXML(d, d.name));
+      overrides.push(['/' + themePart, CT.theme]);
+      const mctx = { rels: mRels, media: mediaSync(mRels), slideIndex, nextId: null, idOf: () => null, fieldId: fieldIds(masterPart) };
+      add(masterPart, masterXML(d, mctx, layoutIds));
+      add(K.relsPath(masterPart), mRels.xml());
+      overrides.push(['/' + masterPart, CT.master]);
+      masterIdList.push({ id: mid, rid: presRels.add(RT('slideMaster'), K.relative(presRels.base, masterPart)) });
     });
 
     /* notes master */
-    const notesThemeN = designIds.length + 1;
     const sourceNotesMaster = pack.originals.get('ppt/notesMasters/notesMaster1.xml');
     let keptNotesMaster = false;
     if (sourceNotesMaster) {
@@ -1010,13 +1013,14 @@
       catch (_) { /* The normal generated fallback below reports the conversion. */ }
     }
     if (!keptNotesMaster) {
-    add(`ppt/theme/theme${notesThemeN}.xml`, themeXML(pres.designs[designIds[0]] || L.model.buildDesign('default', pres.W, pres.H), 'Notes Theme'));
-    overrides.push([`/ppt/theme/theme${notesThemeN}.xml`, CT.theme]);
-    add('ppt/notesMasters/notesMaster1.xml', notesMasterXML(pres));
-    const nmRels = pack.rels('ppt/notesMasters/notesMaster1.xml');
-    nmRels.add(RT('theme'), `../theme/theme${notesThemeN}.xml`);
-    add('ppt/notesMasters/_rels/notesMaster1.xml.rels', nmRels.xml());
-    overrides.push(['/ppt/notesMasters/notesMaster1.xml', CT.notesMaster]);
+      const notesTheme = freshName('ppt/theme', 'theme', 'xml');
+      add(notesTheme, themeXML(pres.designs[designIds[0]] || L.model.buildDesign('default', pres.W, pres.H), 'Notes Theme'));
+      overrides.push(['/' + notesTheme, CT.theme]);
+      add('ppt/notesMasters/notesMaster1.xml', notesMasterXML(pres));
+      const nmRels = pack.rels('ppt/notesMasters/notesMaster1.xml');
+      nmRels.add(RT('theme'), K.relative(nmRels.base, notesTheme));
+      add('ppt/notesMasters/_rels/notesMaster1.xml.rels', nmRels.xml());
+      overrides.push(['/ppt/notesMasters/notesMaster1.xml', CT.notesMaster]);
     }
     const notesMasterRid = presRels.add(RT('notesMaster'), 'notesMasters/notesMaster1.xml');
 
@@ -1032,14 +1036,14 @@
       const d = pres.designs[s.design] || pres.designs[designIds[0]];
       const sRels = pack.rels(part);
       const lk = s.design + '|' + s.layout + (s.lkey ? '|' + s.lkey : '');
-      const ln = layoutPartOf.get(lk) || layoutPartOf.get(designIds[0] + '|text') || 1;
+      const ln = layoutPartOf.get(lk) || layoutPartOf.get(s.design + '|text') || layoutPartOf.values().next().value;
       if (ln.part) {
         const dep = pres.pkg?.rels(s.keep?.part || '').find(r => r.part === ln.part && K.relationshipType(r.type) === RT('slideLayout'));
         writer.rels(sRels.owner).add(dep?.type || RT('slideLayout'), K.relative(sRels.owner, ln.part), false, dep?.id);
       } else if (ln.original) {
         const dep = pres.pkg.rels(s.keep?.part || '').find(r => r.part === ln.original && K.relationshipType(r.type) === RT('slideLayout'));
         writer.rels(sRels.owner).add(dep?.type || RT('slideLayout'), K.relative(sRels.owner, writer.target(pres.pkg, ln.original)), false, dep?.id);
-      } else sRels.add(RT('slideLayout'), K.relative(part, `ppt/slideLayouts/slideLayout${ln}.xml`));
+      } else sRels.add(RT('slideLayout'), K.relative(part, ln.base));
       let rootId = s.keep?.rootId || '1'; writer.ids.reserve(part, 'shape', rootId);
       // Some source decks reuse the structural spTree ID for an actual shape.
       // Keep the visible shape's identity (timing may target it) and repair the root.
@@ -1049,6 +1053,7 @@
       const idMap = new Map();
       const ctx = {
         writer, frames, part, place: L.t('Slide {0}', n), rels: sRels, media: mediaSync(sRels, part), svg: svgSync(sRels, part), slideIndex, fieldId: fieldIds(part),
+        layoutFrames: ln.base && L.model.layoutFrames(s.layout, d),
         slideTarget: index => K.relative(part, slideParts[index]),
         nextId: (mid) => {
           if (idMap.has(mid)) return idMap.get(mid);

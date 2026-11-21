@@ -598,8 +598,14 @@
   M.applyDesign = function (pres, key, slides, opts) {
     const d = M.buildDesign(key, pres.W, pres.H);
     if (opts && opts.keepColors) d.colors = opts.keepColors;
-    pres.designs[d.id] = d;
     const targets = slides || pres.slides;
+    const previous = pres.designs[targets[0]?.design]?.fonts;
+    const fallback = L.locale?.get().slide?.fontEA;
+    for (const role of ['majorEA', 'minorEA']) {
+      const font = previous?.[role] || fallback;
+      if (font) d.fonts[role] = font;
+    }
+    pres.designs[d.id] = d;
     for (const s of targets) {
       const old = pres.designs[s.design];
       s.design = d.id;

@@ -130,7 +130,7 @@
       d.styles.Heading1.pPr = Object.assign({}, d.styles.Heading1.pPr, { pageBreakBefore: false, sp: { b: 24, a: 6 } });
       d.styles.Heading2.rPr = { font: 'Arial', sz: 13, b: true };
       d.styles.Normal.rPr = { font: 'Garamond', sz: 11 };
-      d.styles.Normal.pPr = { sp: { a: 8, line: 1.15, rule: 'auto' } };
+      d.styles.Normal.pPr = D.mergePPr(d.styles.Normal.pPr, { sp: { a: 8, line: 1.15, rule: 'auto' } });
       d.main.blocks = [
         P(ph('Company Name'), { jc: 'left' }, { font: 'Arial', sz: 10, caps: true, b: true }),
         P(ph('Type Report Title Here'), { style: 'Title' }),
@@ -244,10 +244,11 @@
     },
   };
   T.build = function (id) {
-    const d = D.newDoc();
+    const loc = L.locale?.get(), d = D.applyLocale(D.newDoc(), loc);
     const prev = D.doc;
     D.doc = d;
     try { if (B[id]) B[id](d); } finally { D.doc = prev; }
+    D.applyStyleLocale(d, loc);
     d.props.title = '';
     d.props.template = (LIST.find((x) => x.id === id) || {}).name || 'Normal';
     return d;

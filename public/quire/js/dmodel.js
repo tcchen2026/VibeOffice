@@ -362,18 +362,21 @@
     if (loc.charSpacing) doc.settings.charSpacing = loc.charSpacing;
     if (loc.themeLang) doc.settings.themeLang = Object.assign({}, loc.themeLang);
     if (loc.themeEA) Object.assign(doc.theme, { minorEA: loc.themeEA.minor, majorEA: loc.themeEA.major });
-    /* a built-in style with a font of its own takes the language's East Asian font beside it where that differs from
+    D.applyStyleLocale(doc, loc);
+    return doc;
+  };
+  D.applyStyleLocale = function (doc, loc) {
+    /* a style with a font of its own takes the language's East Asian font beside it where that differs from
        the text's: the theme's heading font beside Arial and Tahoma (headings, Title, Balloon Text…), as that Office's
        styles take +見出し (majorEastAsia: Japanese ＭＳ ゴシック), its body font beside the others (Courier New). In the
        corpus (tools/locale-defaults.py) Japanese themes have ＭＳ ゴシック for headings in 8 files of 9 and Balloon Text
        takes it in 3; Korean and Chinese themes have the text's font for both, so their styles get none */
-    if (loc.themeEA && loc.rPr) for (const s of Object.values(doc.styles)) {
+    if (loc?.themeEA && loc.rPr) for (const s of Object.values(doc.styles)) {
       const f = s.rPr && s.rPr.font;
       if (!f || s.rPr.fontEA) continue;
       const ea = /^(Arial|Tahoma)$/.test(f) ? loc.themeEA.major : loc.themeEA.minor;
       if (ea !== loc.rPr.fontEA) s.rPr = Object.assign({}, s.rPr, { fontEA: ea });
     }
-    return doc;
   };
 
   /* ================= property resolution ================= */

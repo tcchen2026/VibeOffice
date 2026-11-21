@@ -146,6 +146,37 @@ def note_id(value):
     return str(int(value)) if re.fullmatch(r'[+-]?\d+', value or '') else value
 
 
+def unplaced_body_placeholders(slide, layout):
+    """A body placeholder on a blank layout needs a position if its layout has no such placeholder."""
+    p, _ = split(slide.tag)
+    if layout is None or layout.get('type') != 'blank':
+        return
+    p = '{' + p + '}'
+    path = p + 'cSld/' + p + 'spTree/' + p + 'sp'
+    ph_path = p + 'nvSpPr/' + p + 'nvPr/' + p + 'ph'
+    indices = {ph.get('idx', '0') for ph in layout.findall(path + '/' + ph_path)}
+    for shape in slide.findall(path):
+        ph = shape.find(ph_path)
+        if ph is None or ph.get('type') != 'body' or ph.get('idx', '0') in indices:
+            continue
+        if shape.find(p + 'spPr/{*}xfrm') is None and any(t.text and t.text.strip() for t in shape.findall(p + 'txBody/{*}p/{*}r/{*}t')):
+            yield ph.get('idx', '0')
+
+
+def slide_layout_master_faults(master, part, rels):
+    """Each layout listed by a master must point back exclusively to that master."""
+    ns, _ = split(master.tag)
+    for entry in master.findall(f'{{{ns}}}sldLayoutIdLst/{{{ns}}}sldLayoutId'):
+        rid = next((v for k, v in entry.attrib.items() if split(k)[0] in R and split(k)[1] == 'id'), None)
+        layout = rels.get(part, {}).get(rid, {})
+        if layout.get('external') or not (layout.get('type') or '').endswith('/slideLayout'):
+            continue
+        target = layout['target']
+        owners = [r['target'] for r in rels.get(target, {}).values() if not r['external'] and (r['type'] or '').endswith('/slideMaster')]
+        if owners != [part]:
+            yield target, f'{part} lists this layout; its master relationships point to {owners}'
+
+
 def table_merge_faults(table):
     """Check DrawingML spans against the grid and the owning cell of each continuation."""
     ns = table.tag[:table.tag.index('}') + 1]
@@ -360,6 +391,14 @@ class Package:
                         for owner, rels in self.rels.items()}
         for part, root in self.xml.items():
             ns, tag = split(root.tag)
+            if ns in P and tag == 'sld':
+                layout = next((r['target'] for r in self.rels.get(part, {}).values()
+                               if not r['external'] and (r['type'] or '').endswith('/slideLayout')), None)
+                for idx in unplaced_body_placeholders(root, self.xml.get(layout)):
+                    self.issue('unplaced-body-placeholder', part, f'Placeholder {idx} has text but no position on the slide or blank layout {layout}')
+            if ns in P and tag == 'sldMaster':
+                for layout, detail in slide_layout_master_faults(root, part, self.rels):
+                    self.issue('slide-layout-master', layout, detail)
             if ns in W and tag in ('footnotes', 'endnotes'):
                 notes[part, tag] = {note_id(at(c, 'id')) for c in root if c.tag == '{' + ns + '}' + tag[:-1]
                                     and at(c, 'type') in (None, 'normal')}

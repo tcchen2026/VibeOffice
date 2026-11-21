@@ -256,7 +256,12 @@
       const fromFresh = name => { replacements['{' + N.a + '}' + name] = raw(kid(fresh, name)); };
       // Regenerated group members use the model's common coordinate space.
       // Their parent must use that same space even when its visible box is unchanged.
-      if (tag === 'grpSpPr' || ctx.inGroup || GEOMETRY.some(changed)) fromFresh('xfrm');
+      // An imported placeholder can get its entire position from its old layout.
+      // PowerPoint needs that position on the slide if the new design has no matching frame.
+      const ph = shape.ph;
+      const missingFrame = ph && ctx.layoutFrames && !['dt', 'ftr', 'sldNum'].includes(ph.type) &&
+        !ctx.layoutFrames.some(f => (f.idx || 0) === (ph.idx || 0) && f.type === ph.type);
+      if (tag === 'grpSpPr' || ctx.inGroup || GEOMETRY.some(changed) || (missingFrame && !kid(K.parse(original), 'xfrm'))) fromFresh('xfrm');
       if (changed('fill')) fillNames.split(' ').forEach(fromFresh);
       if (changed('line')) fromFresh('ln');
       if (['geom', 'adj', 'path'].some(changed)) ['prstGeom', 'custGeom'].forEach(fromFresh);

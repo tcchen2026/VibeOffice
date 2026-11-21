@@ -36,7 +36,11 @@ which Quire doesn't do), Order, Text Wrapping, Set AutoShape Defaults, Caption, 
 for the one at the caret) and New Comment; in a table, Text Direction, AutoFit and Caption. Word's Select
 Text with Similar Formatting needs a selection of several separate pieces, which Quire doesn't have.
 
+File ▸ New and Start Center templates use the selected language’s paper, line grid and text fonts. Each template keeps its own margins and heading styles.
+
 Copying a footnote, endnote or comment includes its text and formatting. Paste and Insert ▸ File give the copies their own identifiers, including within the same document. Undo removes the pasted text and its notes together. When an older file has two marks for one note, opening it gives each mark an independent copy of the available text. Word 2016 refused both damaged paste samples and opened both corrected copies with their citations. A scan of 2,867 readable Word packages found 735 footnote and endnote references, four missing footnote bodies in two documents and no repeated references.
+
+In one Insert File sample with two commented endnote references, Word 2016 printed both endnote texts. LibreOffice Writer printed only their numbers. In a comparison copy with the comment markers removed, Writer printed both texts.
 
 Find and Highlight All follow the revision view. Final hides deletions and Original hides insertions. Replace edits live text and preserves any tracked deletion between matching characters. File ▸ Print ▸ Selection prints the selected text, including its footnotes and selected portions of table cells. Document showing markup includes the revisions visible in that selection.
 

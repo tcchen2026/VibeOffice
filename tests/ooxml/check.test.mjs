@@ -400,3 +400,32 @@ test('Word note markers have one normal note of the right kind and never share i
   assert.deepEqual(await faults(fn + note('footnote','02') + en + en), ['duplicate-footnote-reference-id','duplicate-endnote-reference-id']);
   assert.deepEqual(await faults(note('footnote','0') + note('endnote','42')), ['unresolved-footnote-reference','unresolved-endnote-reference']);
 });
+
+test('a PowerPoint layout points back to exactly the master which lists it', async () => {
+  const master = id => `<p:sldMaster xmlns:p="${P}" xmlns:r="${R}"><p:sldLayoutIdLst><p:sldLayoutId id="${id}" r:id="lay"/></p:sldLayoutIdLst></p:sldMaster>`;
+  const parts = { 'one.xml': master(2147483649), 'layout.xml': `<p:sldLayout xmlns:p="${P}"/>`,
+    '_rels/one.xml.rels': rels(rel('lay', 'layout.xml', 'slideLayout')),
+    '_rels/layout.xml.rels': rels(rel('parent', 'one.xml', 'slideMaster')) };
+  const faults = async name => run('check', await pkg(name, parts)).issues.filter(i => i.code === 'slide-layout-master');
+  assert.equal((await faults('one-master')).length, 0);
+  parts['two.xml'] = master(2147483650);
+  parts['_rels/two.xml.rels'] = parts['_rels/one.xml.rels'];
+  assert.equal((await faults('wrong-layout-parent')).length, 1, 'the second master lists another master’s layout');
+  parts['_rels/layout.xml.rels'] = rels(rel('first', 'one.xml', 'slideMaster') + rel('second', 'two.xml', 'slideMaster'));
+  assert.equal((await faults('two-layout-parents')).length, 2, 'both masters claim the same layout');
+});
+
+test('a body placeholder with text on a blank PowerPoint layout has a local or inherited position', async () => {
+  const shape = (frame, text) => `<p:sp><p:nvSpPr><p:nvPr><p:ph type="body" idx="13"/></p:nvPr></p:nvSpPr><p:spPr>${frame}</p:spPr><p:txBody><a:p><a:r><a:t>${text}</a:t></a:r></a:p></p:txBody></p:sp>`;
+  const tree = content => '<p:cSld><p:spTree>' + content + '</p:spTree></p:cSld>';
+  const check = async (name, frame, layoutShape, text) => {
+    const parts = { 'slide.xml': slide(tree(shape(frame, text))), '_rels/slide.xml.rels': rels(rel('layout', 'layout.xml', 'slideLayout')),
+      'layout.xml': `<p:sldLayout type="blank" xmlns:p="${P}" xmlns:a="${A}">${tree(layoutShape)}</p:sldLayout>` };
+    return run('check', await pkg(name, parts)).issues.filter(i => i.code === 'unplaced-body-placeholder');
+  };
+  const frame = '<a:xfrm><a:off x="100" y="200"/><a:ext cx="300" cy="400"/></a:xfrm>';
+  assert.equal((await check('missing-frame', '', '', 'Delivery schedule')).length, 1);
+  assert.equal((await check('slide-frame', frame, '', 'Delivery schedule')).length, 0);
+  assert.equal((await check('layout-frame', '', shape(frame, ''), 'Delivery schedule')).length, 0);
+  assert.equal((await check('empty-placeholder', '', '', '')).length, 0);
+});

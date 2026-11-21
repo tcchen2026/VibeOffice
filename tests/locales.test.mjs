@@ -142,3 +142,111 @@ test('Lectern, Japanese: text in Japanese, the theme\'s Japanese font', async ()
   assert.match(en['ppt/presentation.xml'], /<a:defRPr lang="en-US"\/>/);
   assert.doesNotMatch(en['ppt/theme/theme1.xml'], /script="Jpan"/);
 });
+
+test('Lectern design changes keep the target slide’s East Asian fonts through a PPTX save', async () => {
+  const page = await openPage('lectern', { lang: 'ja', persistence: false, automated: true });
+  try {
+    const inspect = async () => {
+      const M = L.model;
+      const fonts = (p, i = 0) => {
+        const f = M.design(p, p.slides[i]).fonts;
+        return [f.majorEA, f.minorEA];
+      };
+      const write = async p => new Uint8Array(await (await L.pptx.write(p)).arrayBuffer());
+      const pres = M.newPresentation();
+      M.applyDesign(pres, 'meadow');
+      const bytes = await write(pres), pkg = await L.opc.open(bytes);
+      const theme = pkg.xml('ppt/theme/theme1.xml');
+      const japanese = ['majorFont', 'minorFont'].map(role => {
+        const group = theme.getElementsByTagNameNS('*', role)[0];
+        return [...group.getElementsByTagNameNS('*', 'font')].find(f => f.getAttribute('script') === 'Jpan')?.getAttribute('typeface');
+      });
+      const own = M.buildDesign('night', pres.W, pres.H);
+      Object.assign(own.fonts, { majorEA: 'Yu Gothic', minorEA: 'Yu Mincho' });
+      pres.designs[own.id] = own;
+      pres.slides.push(M.newSlide(pres, 'text', own.id));
+      const opened = await L.pptx.read(await write(pres));
+      M.applyDesign(opened, 'ocean', [opened.slides[1]]);
+      const again = await L.pptx.read(await write(opened));
+      const english = await L.pptx.read(await write(M.newPresentation({ locale: false })));
+      M.applyDesign(english, 'azure');
+      const fallback = await L.pptx.read(await write(english));
+      const others = [M.newPresentation({ design: 'night' }), ...L.templates.list().map(t => L.templates.build(t.id))];
+      await L.app.openFile(new File(['Outline\n\tTopic'], 'Outline.txt'));
+      others.push(L.pres);
+      return { design: fonts(pres), japanese, first: fonts(again), second: fonts(again, 1),
+        fallback: fonts(fallback), otherPaths: others.map(p => [p.lang, ...fonts(p)]) };
+    };
+    const result = await page.evaluate('(' + inspect + ')()');
+    const ja = ['ＭＳ Ｐゴシック', 'ＭＳ Ｐゴシック'];
+    assert.deepEqual(result.design, ja);
+    assert.deepEqual(result.japanese, ja, 'both roles in the saved theme');
+    assert.deepEqual(result.first, ja, 'unselected slide');
+    assert.deepEqual(result.second, ['Yu Gothic', 'Yu Mincho'], 'the first selected slide supplied both roles');
+    assert.deepEqual(result.fallback, ja, 'a presentation without East Asian fonts takes the UI default');
+    for (const path of result.otherPaths) assert.deepEqual(path, ['ja-JP', ...ja], 'design list, Start Center templates and text outline');
+  } finally { await page.close(); }
+});
+
+async function quireTemplates(lang) {
+  const page = await openPage('quire', { lang, persistence: false, automated: true });
+  try {
+    const inspect = async () => {
+      const { D } = L, loc = L.locale.get();
+      const saved = async doc => {
+        const pkg = await L.opc.open(await (await L.docx.write(doc)).arrayBuffer());
+        const node = (parent, name) => parent.getElementsByTagNameNS('*', name)[0];
+        const docXml = pkg.xml('word/document.xml'), settings = pkg.xml('word/settings.xml');
+        const styles = pkg.xml('word/styles.xml'), theme = pkg.xml('word/theme/theme1.xml');
+        const part = (parent, name) => { const el = node(parent, name); return el ? L.opc.raw(el) : ''; };
+        return { paper: part(docXml, 'pgSz'), grid: part(docXml, 'docGrid'), defaults: part(styles, 'docDefaults'),
+          themeLang: part(settings, 'themeFontLang'), major: part(theme, 'majorFont'), minor: part(theme, 'minorFont') };
+      };
+      const blank = await saved(D.doc), margins = d => ['mt', 'mr', 'mb', 'ml'].map(k => d.sect[k]);
+      const blankMargins = margins(D.doc);
+      const results = [];
+      for (const { id } of L.templates.list()) {
+        L.templates.create(id); // File > New, using the same builder as the Start Center
+        const d = D.doc, custom = {}, wrongHeadingFonts = [];
+        for (const [key, s] of Object.entries(d.styles)) {
+          if (!s.custom) continue;
+          const { fontEA, ...latin } = s.rPr;
+          custom[key] = { rPr: latin, pPr: s.pPr };
+          if (loc.themeEA && /^(Arial|Tahoma)$/.test(latin.font) && (fontEA || d.defaults.rPr.fontEA) !== loc.themeEA.major) wrongHeadingFonts.push(key);
+        }
+        results.push({ id, saved: await saved(d), margins: margins(d), custom, wrongHeadingFonts,
+          blocks: d.main.blocks.length, normal: d.styles.Normal });
+      }
+      return { blank, blankMargins, results };
+    };
+    return await page.evaluate('(' + inspect + ')()');
+  } finally { await page.close(); }
+}
+
+test('Quire templates save the language’s paper, grid, fonts and theme while keeping each template’s design', async () => {
+  const en = await quireTemplates('en');
+  for (const lang of ['ja', 'ko', 'zh-CN', 'zh-Hant', 'fr', 'de']) {
+    const { blank, blankMargins, results } = await quireTemplates(lang);
+    assert.match(blank.paper, /pgSz/);
+    assert.match(blank.defaults, /rFonts/);
+    assert.match(blank.themeLang, /themeFontLang/);
+    for (const entry of results) {
+      const message = lang + ' ' + entry.id, reference = en.results.find(t => t.id === entry.id);
+      assert.deepEqual(entry.saved, blank, message + ' OOXML defaults');
+      assert.deepEqual(entry.custom, reference.custom, message + ' template styles');
+      assert.deepEqual(entry.wrongHeadingFonts, [], message + ' heading fonts');
+      assert.equal(entry.blocks, reference.blocks, message + ' content');
+      const margins = [...blankMargins];
+      if (entry.id === 'letter') margins[0] = 72;
+      if (entry.id === 'letter' || entry.id === 'resume') margins[1] = margins[3] = 90;
+      if (entry.id === 'flyer') margins[0] = margins[2] = 54;
+      assert.deepEqual(entry.margins, margins, message + ' margins');
+      if (entry.id === 'report') {
+        assert.equal(entry.normal.rPr.font, 'Garamond');
+        assert.equal(entry.normal.rPr.sz, 11);
+        assert.deepEqual(entry.normal.pPr.sp, reference.normal.pPr.sp);
+        if (lang === 'ja') assert.equal(entry.normal.pPr.jc, 'both', 'Report keeps Japanese paragraph defaults');
+      }
+    }
+  }
+});

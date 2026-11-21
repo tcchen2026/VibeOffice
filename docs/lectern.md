@@ -198,6 +198,10 @@ limits described under *IntelliArt (SmartArt)*.
 
 New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.5 in), as in PowerPoint since 2013 (`L.model.DEFAULT_SIZE`). File ▸ Page Setup changes it: for example *On-screen Show (4:3)* or *On-screen Show (16:9)* (10 × 5.63 in). Pictures, shapes, charts and tables keep their proportions; placeholders reflow to the new frame. Tick *Use for new presentations* to make that size the default.
 
+Applying a design keeps the East Asian heading and body fonts from the first target slide. A missing font uses the selected UI language’s default. Each design owns its slide layouts. Text whose position came from a custom placeholder keeps its box when the new design has no matching placeholder. PowerPoint 2016 opened five saved design changes, including two PowerPoint-authored corpus decks, and printed the custom placeholder text.
+
+The package checker verifies that each listed layout points back to its master. Across 897 masters in 828 readable presentations, one incomplete file listed eleven missing layouts. A separate check of 242 slides on blank layouts found no body text missing its position in the corpus.
+
 F5, Rehearse Timings and opening a slide show start on the first visible slide. Shift+F5 starts on the current slide, including a hidden one. Ordering several shapes preserves their stacking order within each group. Find and Replace match across formatting runs, respect whole-word boundaries and skip fields. Replacements and spelling corrections keep the first matched character's formatting and hyperlink.
 
 Speaker notes show Shift+Enter as a new line in the notes pane, Notes Page, Speaker Notes dialog and printed notes. Enter starts a new paragraph. Both kinds survive editing and saving.

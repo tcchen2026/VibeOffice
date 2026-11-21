@@ -133,3 +133,53 @@ test('speaker notes draw soft breaks as separate lines and retain their DrawingM
   });
   assert.deepEqual(result, [[3,3,3,4], 'New First\u2028Second\nThird', 'New First\u2028Second\nThird\u2028Fourth', true]);
 });
+
+test('applying a design to an opened deck keeps separate master and layout parts', async () => {
+  const result = await run(async () => {
+    const M = L.model, bytes = async p => new Uint8Array(await (await L.pptx.write(p)).arrayBuffer());
+    const data = await bytes(M.newPresentation()), original = await L.opc.open(data);
+    const p = await L.pptx.read(data);
+    M.applyDesign(p, 'ocean');
+    const saved = await L.opc.open(await bytes(p));
+    const related = (pkg, part, kind) => pkg.rels(part).filter(r => r.type.endsWith('/' + kind)).map(r => r.part);
+    const masters = related(saved, saved.main, 'slideMaster'), preserved = related(original, original.main, 'slideMaster')[0];
+    const owners = masters.every(m => related(saved, m, 'slideLayout').every(l => {
+      const parents = related(saved, l, 'slideMaster');
+      return parents.length === 1 && parents[0] === m;
+    }));
+    const slide = related(saved, saved.main, 'slide')[0], layout = related(saved, slide, 'slideLayout')[0];
+    const unchanged = [preserved, ...related(original, preserved, 'slideLayout')].every(part => original.text(part) === saved.text(part));
+    return { masters: masters.length, owners, unchanged, applied: related(saved, layout, 'slideMaster')[0] !== preserved };
+  });
+  assert.deepEqual(result, { masters: 2, owners: true, unchanged: true, applied: true });
+});
+
+test('applying a design places text inherited from a custom placeholder missing in the new layout', async () => {
+  const { text, frame, expected } = await run(async () => {
+    const M = L.model, p = M.newPresentation(), s = p.slides[0];
+    s.layout = 'blank';
+    const sh = M.newTextBox(p, s, 52, 68, 245, 43);
+    sh.ph = { type: 'body', idx: 13 };
+    L.txt.setPlain(sh.tx, 'Delivery schedule');
+    s.shapes = [sh];
+    const p0 = await L.opc.open(await (await L.pptx.write(p)).arrayBuffer());
+    const slide = p0.rels(p0.main).find(r => r.type.endsWith('/slide')).part;
+    const layout = p0.rels(slide).find(r => r.type.endsWith('/slideLayout')).part;
+    const doc = p0.xml(slide), lay = p0.xml(layout);
+    const first = (root, name) => root.getElementsByTagNameNS('*', name)[0];
+    const sp = first(doc, 'sp'), layoutShape = sp.cloneNode(true);
+    first(layoutShape, 'cNvPr').setAttribute('id', '99');
+    first(lay, 'spTree').appendChild(layoutShape);
+    const xywh = xfrm => xfrm && ['x', 'y', 'cx', 'cy'].map((key, i) => xfrm.children[i < 2 ? 0 : 1].getAttribute(key));
+    const inherited = first(first(sp, 'spPr'), 'xfrm'), expected = xywh(inherited);
+    inherited.remove(); // the imported slide inherits its box only from layout placeholder 13
+    const entries = p0.names.map(name => ({ name, data: name === slide ? L.opc.serialize(doc) : name === layout ? L.opc.serialize(lay) : p0.bytes(name) }));
+    const deck = await L.pptx.read(new Uint8Array(await (await L.zip.write(entries)).arrayBuffer()));
+    M.applyDesign(deck, 'ocean');
+    const saved = await L.opc.open(await (await L.pptx.write(deck)).arrayBuffer());
+    const result = first(saved.xml(slide), 'sp');
+    return { text: first(result, 't').textContent, frame: xywh(first(first(result, 'spPr'), 'xfrm')) || null, expected };
+  });
+  assert.equal(text, 'Delivery schedule');
+  assert.deepEqual(frame, expected, 'PowerPoint needs an explicit box for this placeholder after its layout changes');
+});

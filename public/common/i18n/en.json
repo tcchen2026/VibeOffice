@@ -12528,7 +12528,7 @@
  },
  "Drop a .pptx to open it, or pictures to insert them": {
   "where": [
-   "lectern/js/app.js:1991"
+   "lectern/js/app.js:1992"
   ]
  },
  "Drop a document here or pick an app on the left side to create one.": {
@@ -12686,7 +12686,7 @@
  "Edit": {
   "where": [
    "lectern/js/dialogs.js:931",
-   "lectern/js/model.js:811",
+   "lectern/js/model.js:817",
    "ledger/js/dialogs.js:805",
    "quire/js/dialogs3.js:578"
   ]
@@ -15818,7 +15818,7 @@
  "Harbor & Pine — 2027 Expansion (sample)": {
   "where": [
    "lectern/js/app.js:1079",
-   "lectern/js/app.js:2301"
+   "lectern/js/app.js:2302"
   ]
  },
  "He&ader:": {
@@ -23115,7 +23115,7 @@
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
   "where": [
-   "lectern/js/app.js:2317"
+   "lectern/js/app.js:2318"
   ]
  },
  "Recovered the unsaved changes. Save the workbook to keep them.": {
@@ -32058,7 +32058,7 @@
  },
  "Typing": {
   "where": [
-   "lectern/js/app.js:1982",
+   "lectern/js/app.js:1983",
    "lectern/js/diagram.js:438",
    "lectern/js/diagram.js:487",
    "lectern/js/diagram.js:497"
