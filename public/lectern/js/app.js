@@ -667,7 +667,7 @@
     const pres = L.pres;
     const map = await mediaDataMap();
     const slides = pres.slides.filter((s) => !s.hidden).map((s) => inlineMedia(new XMLSerializer().serializeToString(L.render.slide(pres, s, { mode: 'thumb', index: pres.slides.indexOf(s) })), map));
-    const notes = pres.slides.filter((s) => !s.hidden).map((s) => s.notes || '');
+    const notes = pres.slides.filter((s) => !s.hidden).map((s) => T.displayNotes(s.notes));
     const title = L.esc(pres.props.title || A.fileName);
     const fonts = await L.embedFonts(slides.join(''));   // the stand-ins the slides name, inside the page
     /* the page's data as script text: JSON with every < escaped, so no note or slide can end the <script> */
@@ -1025,8 +1025,10 @@ addEventListener('resize',fit);fit();show(0);`;
     const s = E.slide();
     if (!s) return;
     const ta = h('textarea', { id: 'sn-text', rows: 10, style: 'width:100%' });
-    ta.value = s.notes || '';
-    ui.dialog({ title: 'Speaker Notes', body: h('div', { class: 'col' }, h('label', { for: 'sn-text', text: L.t('Slide {0}:', E.idx + 1) }), ta), width: 420, buttons: [{ label: 'Close', primary: true, onClick: () => { if (ta.value !== (s.notes || '')) { L.hist.push(L.N('Notes')); T.editNotes(s, ta.value); L.panes.notes.render(); } } }] });
+    let notes = s.notes || '';
+    ta.value = T.displayNotes(notes);
+    L.panes.notes.bindEditor(ta, () => notes, text => { notes = text; });
+    ui.dialog({ title: 'Speaker Notes', body: h('div', { class: 'col' }, h('label', { for: 'sn-text', text: L.t('Slide {0}:', E.idx + 1) }), ta), width: 420, buttons: [{ label: 'Close', primary: true, onClick: () => { if (notes !== (s.notes || '')) { L.hist.push(L.N('Notes')); T.editNotes(s, notes); L.panes.notes.render(); } } }] });
   };
   A.outlineToSlides = function (text, at) {
     const lines = String(text).replace(/\r/g, '').split('\n');

@@ -200,6 +200,8 @@ New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.
 
 F5, Rehearse Timings and opening a slide show start on the first visible slide. Shift+F5 starts on the current slide, including a hidden one. Ordering several shapes preserves their stacking order within each group. Find and Replace match across formatting runs, respect whole-word boundaries and skip fields. Replacements and spelling corrections keep the first matched character's formatting and hyperlink.
 
+Speaker notes show Shift+Enter as a new line in the notes pane, Notes Page, Speaker Notes dialog and printed notes. Enter starts a new paragraph. Both kinds survive editing and saving.
+
 Inserting or deleting table rows and columns adjusts merged cells in both directions. When the first cell of a merge is deleted, its heading and formatting move to the first surviving cell. A scan of 223 tables in 827 readable presentation packages found no spans outside their grids or merge continuations without owners.
 
 ## Saving

@@ -286,31 +286,48 @@
 
   /* ================= notes pane ================= */
   const NP = (P.notes = {});
-  function notesKeys(el) {
-    el.addEventListener('beforeinput', e => {
-      if (e.inputType === 'insertLineBreak') { e.preventDefault(); document.execCommand('insertText', false, '\u2028'); }
+  // A textarea draws both kinds of line break as LF. Use its pre-edit selection
+  // to retain the DrawingML kind of every untouched break, even between equal lines.
+  NP.bindEditor = function (el, get, change) {
+    let selection, soft = false;
+    el.addEventListener('keydown', e => { soft = e.key === 'Enter' && e.shiftKey; });
+    el.addEventListener('keyup', () => { soft = false; });
+    el.addEventListener('beforeinput', e => { selection = { start: el.selectionStart, end: el.selectionEnd, type: e.inputType }; });
+    el.addEventListener('input', () => {
+      const before = get() || '', display = L.txt.displayNotes(before), after = el.value;
+      let a = 0, b = display.length, end = after.length;
+      let left = selection?.start ?? b, right = selection?.end ?? 0;
+      if (selection && left === right && display.length > after.length) {
+        const removed = display.length - after.length;
+        if (selection.type.endsWith('Backward')) left = Math.max(0, left - removed);
+        if (selection.type.endsWith('Forward')) right = Math.min(b, right + removed);
+      }
+      while (a < left && a < end && display[a] === after[a]) a++;
+      while (b > a && b > right && end > a && display[b - 1] === after[end - 1]) { b--; end--; }
+      let inserted = after.slice(a, end);
+      if (soft) inserted = inserted.replace(/\n/g, '\u2028');
+      selection = null; soft = false;
+      change(before.slice(0, a) + inserted + before.slice(b));
     });
-  }
+  };
   NP.mount = function (el) {
     NP.el = el;
-    NP.ed = h('div', { class: 'notes-in', contenteditable: 'true', spellcheck: 'true', role: 'textbox', 'aria-multiline': 'true', 'aria-label': 'Speaker notes', 'data-ph': L.t('Click to add notes') });
+    NP.ed = h('textarea', { class: 'notes-in', spellcheck: 'true', 'aria-label': 'Speaker notes', placeholder: L.t('Click to add notes') });
     el.appendChild(NP.ed);
-    notesKeys(NP.ed);
-    NP.ed.addEventListener('input', () => {
+    NP.bindEditor(NP.ed, () => E().slide()?.notes, text => {
       const s = E().slide();
       if (!s || s.isMaster) return;
       L.hist.push(L.N('Notes'), 'notes:' + s.id);
-      L.txt.editNotes(s, NP.ed.innerText.replace(/\n$/, ''));
-      if (!NP.ed.textContent) NP.ed.innerHTML = '';
+      L.txt.editNotes(s, text);
     });
-    NP.ed.addEventListener('paste', (e) => { e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData && e.clipboardData.getData('text/plain')) || ''); });
     NP.ed.addEventListener('focus', () => { if (L.te.active()) L.te.end(); });
   };
   NP.render = function () {
     if (!NP.ed) return;
     const s = E().slide();
-    NP.ed.contentEditable = s && !s.isMaster ? 'true' : 'false';
-    NP.ed.textContent = s && !s.isMaster ? s.notes || '' : '';
+    NP.ed.readOnly = !s || !!s.isMaster;
+    const text = L.txt.displayNotes(s && !s.isMaster ? s.notes : '');
+    if (NP.ed.value !== text) NP.ed.value = text;
   };
 
   /* ================= Slide Sorter ================= */
@@ -399,11 +416,12 @@
     const sb = h('div', { class: 'np-slide', style: `left:${(pw - sw) / 2}px;top:${ph * 0.075}px;width:${sw}px;height:${shh}px` });
     sb.appendChild(L.render.thumb(L.pres, s, sw, { index: E().idx }));
     const ny = ph * 0.075 + shh + ph * 0.05;
-    const notes = h('div', { class: 'np-notes', contenteditable: 'true', spellcheck: 'true', style: `left:${pw * 0.1}px;top:${ny}px;width:${pw * 0.8}px;height:${ph - ny - ph * 0.08}px;font-size:${Math.max(11, pw / 48)}px`, role: 'textbox', 'aria-label': 'Notes' });
-    notes.textContent = s.notes || '';
-    notesKeys(notes);
-    notes.addEventListener('input', () => { L.hist.push(L.N('Notes'), 'notes:' + s.id); L.txt.editNotes(s, notes.innerText.replace(/\n$/, '')); });
-    notes.addEventListener('paste', (e) => { e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData && e.clipboardData.getData('text/plain')) || ''); });
+    const notes = h('textarea', { class: 'np-notes', spellcheck: 'true', style: `left:${pw * 0.1}px;top:${ny}px;width:${pw * 0.8}px;height:${ph - ny - ph * 0.08}px;font-size:${Math.max(11, pw / 48)}px`, role: 'textbox', 'aria-label': 'Notes' });
+    notes.value = L.txt.displayNotes(s.notes);
+    NP.bindEditor(notes, () => s.notes, text => {
+      L.hist.push(L.N('Notes'), 'notes:' + s.id);
+      L.txt.editNotes(s, text);
+    });
     page.append(sb, notes, h('div', { class: 'pv-hdr', style: `right:${pw * 0.05}px;bottom:${ph * 0.03}px`, text: String(E().idx + (L.pres.firstNum || 1)) }));
     NV.el.appendChild(page);
   };
@@ -453,7 +471,7 @@
       slides.forEach(([s, i], n) => {
         const p = page();
         const w = pw * 0.67; const hh = cell(p, s, i, (pw - w) / 2, ph * 0.07, w);
-        p.appendChild(h('div', { class: 'pv-text', style: `left:${pw * 0.1}px;top:${ph * 0.07 + hh + ph * 0.04}px;width:${pw * 0.8}px;height:${ph * 0.4}px;font-size:${pw / 50}px`, text: s.notes || '', translate: 'no' }));
+        p.appendChild(h('div', { class: 'pv-text', style: `left:${pw * 0.1}px;top:${ph * 0.07 + hh + ph * 0.04}px;width:${pw * 0.8}px;height:${ph * 0.4}px;font-size:${pw / 50}px`, text: L.txt.displayNotes(s.notes), translate: 'no' }));
         footer(p, n + 1);
       });
     } else if (o.what === 'outline') {

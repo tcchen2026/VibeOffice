@@ -80,6 +80,7 @@
     return { p: cur, o: endO };
   };
   // A paragraph break and a DrawingML soft break each occupy one pane character.
+  T.displayNotes = text => (text || '').replace(/\u2028/g, '\n');
   T.notesText = tx => tx.ps.map(p => T.paraText(p).replace(/\n/g, '\u2028')).join('\n');
   T.editNotes = function (slide, text) {
     const before = slide.notes || '';

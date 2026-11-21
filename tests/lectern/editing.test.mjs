@@ -90,8 +90,11 @@ test('Speaker note edits, undo and draft save retain links and rIds, paragraph l
     }
     const before = await L.pptx.read(new Uint8Array(await (await L.zip.write(entries)).arrayBuffer()));
     L.app.loadPres(before, 'Demo', { saved: true }); L.hist.clear();
-    const box = document.querySelector('.notes-in'), original = box.textContent;
-    box.textContent = original + ' reminder'; box.dispatchEvent(new Event('input'));
+    const box = document.querySelector('.notes-in'), original = before.slides[0].notes;
+    box.focus();
+    if (box.setSelectionRange) box.setSelectionRange(box.value.length, box.value.length);
+    else { const r = document.createRange(); r.selectNodeContents(box); r.collapse(false); getSelection().removeAllRanges(); getSelection().addRange(r); }
+    document.execCommand('insertText', false, ' reminder');
     L.hist.doUndo(); const undo = L.pres.slides[0].notes; L.hist.doRedo();
     const bytes = new Uint8Array(await (await __corpusHooks.snapshot(L.pres)).arrayBuffer()), pkg = await L.opc.open(bytes);
     const node = pkg.xml(note), by = name => [...node.getElementsByTagNameNS('*', name)];
@@ -101,4 +104,32 @@ test('Speaker note edits, undo and draft save retain links and rIds, paragraph l
       by('cNvPr').some(x => x.getAttribute('name') === 'Original page artwork')];
   });
   assert.deepEqual(result, ['Demo\u2028Friday', 'Demo\u2028Friday', 'Demo\u2028Friday reminder', 'rId77', 'https://example.org/demo', true, 1, true, true]);
+});
+
+test('speaker notes draw soft breaks as separate lines and retain their DrawingML kind through each editor', async () => {
+  const result = await run(async () => {
+    const pres = L.model.newPresentation(), slide = pres.slides[0], original = 'First\u2028Second\nThird';
+    slide.notes = original; L.app.loadPres(pres, 'Notes');
+    const render = el => {
+      const copy = el.cloneNode(true); copy.className = ''; copy.style.cssText = 'display:block;position:absolute;height:1px;width:300px;min-height:0;padding:0;border:0;font:12px/20px Arial;white-space:pre-wrap;';
+      if ('value' in el) copy.value = el.value;
+      document.body.append(copy); const lines = Math.round(copy.scrollHeight / 20); copy.remove(); return lines;
+    };
+    const pane = document.querySelector('.notes-in'), lines = [render(pane)];
+    L.panes.notesView.render(); lines.push(render(document.querySelector('.np-notes')));
+    L.app.speakerNotesDlg(); const ta = document.querySelector('#sn-text'); lines.push(render(ta));
+    ta.focus(); ta.setSelectionRange(0, 0); document.execCommand('insertText', false, 'New ');
+    [...ta.closest('.dlg').querySelectorAll('button')].find(b => b.textContent === 'Close').click();
+    const afterDialog = slide.notes;
+    if (!pane.setSelectionRange) return [lines, afterDialog];
+    pane.focus(); pane.setSelectionRange(pane.value.length, pane.value.length);
+    pane.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    document.execCommand('insertText', false, '\n');
+    document.execCommand('insertText', false, 'Fourth');
+    L.app.printOpts.what = 'notes'; L.panes.preview.render();
+    const preview = document.querySelector('.pv-text'); lines.push(render(preview));
+    const html = await (await L.app.buildWebPage()).text();
+    return [lines, afterDialog, slide.notes, html.includes(JSON.stringify([slide.notes.replace(/\u2028/g, '\n')]))];
+  });
+  assert.deepEqual(result, [[3,3,3,4], 'New First\u2028Second\nThird', 'New First\u2028Second\nThird\u2028Fourth', true]);
 });

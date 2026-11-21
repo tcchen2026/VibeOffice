@@ -105,8 +105,9 @@
 .draw-ghost.line { border: 0; }
 .cell-sel { position: absolute; background: rgba(0,0,0,.18); pointer-events: none; }
 .notes { flex: none; height: 92px; background: var(--surface); overflow: auto; position: relative; border-top: 1px solid var(--chrome-line); }
-.notes-in { min-height: 100%; padding: 6px 10px; font: 12px/1.35 Arial, "Arimo", sans-serif; outline: none; white-space: pre-wrap; }
-.notes-in:empty::before { content: attr(data-ph); color: var(--grid-line); }
+.notes-in, .np-notes { resize: none; border: 0; box-shadow: none; color: inherit; background: transparent; }
+.notes-in { display: block; width: 100%; height: 100%; padding: 6px 10px; font: 12px/1.35 Arial, "Arimo", sans-serif; outline: none; white-space: pre-wrap; }
+.notes-in::placeholder { color: var(--grid-line); }
 .tp-btn { min-width: 70px; }
 .tp-note { color: var(--muted); margin: 4px 0; }
 .lay-grid, .dsn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
