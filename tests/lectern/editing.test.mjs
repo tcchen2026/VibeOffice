@@ -183,3 +183,35 @@ test('applying a design places text inherited from a custom placeholder missing 
   assert.equal(text, 'Delivery schedule');
   assert.deepEqual(frame, expected, 'PowerPoint needs an explicit box for this placeholder after its layout changes');
 });
+
+test('F5 shows all slides in order when the entire show is hidden, including previous and loop', async () => {
+  const result = await run(async () => {
+    const M = L.model, p = M.newPresentation();
+    p.slides.push(M.newSlide(p, 'blank'), M.newSlide(p, 'blank'));
+    p.show.loop = true;
+    p.slides.forEach(s => { s.hidden = true; });
+    L.app.loadPres(p, 'Hidden slides', { saved: true });
+    const render = L.render.slide, seen = [];
+    L.render.slide = function (pres, slide, opt) {
+      if (opt?.mode === 'show') seen.push(opt.index);
+      return render.call(this, pres, slide, opt);
+    };
+    try {
+      L.ui.exec('showFromStart');
+      L.show.next(); L.show.prev(); L.show.next(); L.show.next(); L.show.next();
+      await L.show.end();
+      const all = seen.splice(0);
+      p.slides[1].hidden = false;
+      L.ui.exec('showFromStart'); L.show.next();
+      await L.show.end();
+      const mixed = seen.splice(0);
+      p.slides[0].hidden = false; p.slides[1].hidden = true;
+      p.show.from = 2; p.show.to = 3;
+      L.ui.exec('showFromStart'); L.show.next();
+      return { all, mixed, range: seen.slice() };
+    } finally { await L.show.end(); L.render.slide = render; }
+  });
+  assert.deepEqual(result.all, [0, 1, 0, 1, 2, 0]);
+  assert.deepEqual(result.mixed, [1, 1], 'the regular show still skips hidden slides on each pass');
+  assert.deepEqual(result.range, [1, 2], 'both hidden slides play when the visible slide is outside the selected range');
+});

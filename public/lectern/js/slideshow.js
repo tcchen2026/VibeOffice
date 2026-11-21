@@ -356,9 +356,9 @@
     const pres = L.pres;
     if (!pres.slides.length) { L.ui.msg('There are no slides to show.', { icon: 'info' }); return; }
     const order = opts.preview != null ? [opts.preview] : slideOrder();
-    const startIdx = opts.from != null ? Math.max(0, order.indexOf(opts.from)) :
-      opts.preview != null ? 0 : order.findIndex(i => !pres.slides[i].hidden);
-    if (startIdx < 0 || !order.length) return;
+    if (!order.length) return;
+    const firstVisible = order.findIndex(i => !pres.slides[i].hidden); // PowerPoint includes them all if the whole range is hidden.
+    const startIdx = Math.max(0, opts.from != null ? order.indexOf(opts.from) : firstVisible);
     if (L.te && L.te.active()) L.te.end();
     S.active = true;
     L.ui.closeMenus();
@@ -374,7 +374,7 @@
     document.body.appendChild(root);
     const sh = pres.show || {};
     st = {
-      order,
+      order, firstVisible,
       pos: 0, step: 0, steps: [], running: null, timer: 0, ink: {}, pen: null, penColor: sh.penColor || '#FF0000', history: [],
       noAnim: !!sh.noAnim, loop: !!sh.loop || !!sh.kiosk, kiosk: !!sh.kiosk, useTimings: sh.useTimings !== false, rehearse: !!opts.rehearse, preview: opts.preview != null,
       slideStart: performance.now(), times: {}, paused: false, ended: false, gotoBuf: '', blank: null, idle: 0,
@@ -691,9 +691,9 @@
     if (st.kiosk && !auto) return;
     if (st.step < st.steps.length) { runStep(st.step, autoChain); return; }
     let p = st.pos + 1;
-    while (p < st.order.length && L.pres.slides[st.order[p]].hidden && !st.preview) p++;
+    while (p < st.order.length && st.firstVisible >= 0 && L.pres.slides[st.order[p]].hidden) p++;
     if (p >= st.order.length) {
-      if (st.loop) { p = 0; while (p < st.order.length - 1 && L.pres.slides[st.order[p]].hidden) p++; showSlide(p, { transition: true }); return; }
+      if (st.loop) { showSlide(Math.max(0, st.firstVisible), { transition: true }); return; }
       if (st.rehearse) recordTime(st.pos);
       endScreen();
       return;
@@ -707,7 +707,7 @@
     if (st.running) { st.running.finishNow(); }
     if (st.step > 0) { st.step--; applyState(st.steps, st.step); return; }
     let p = st.pos - 1;
-    while (p >= 0 && L.pres.slides[st.order[p]].hidden) p--;
+    while (p >= 0 && st.firstVisible >= 0 && L.pres.slides[st.order[p]].hidden) p--;
     if (p < 0) return;
     showSlide(p, { atEnd: true });
   };

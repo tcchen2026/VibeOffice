@@ -202,7 +202,7 @@ Applying a design keeps the East Asian heading and body fonts from the first tar
 
 The package checker verifies that each listed layout points back to its master. Across 897 masters in 828 readable presentations, one incomplete file listed eleven missing layouts. A separate check of 242 slides on blank layouts found no body text missing its position in the corpus.
 
-F5, Rehearse Timings and opening a slide show start on the first visible slide. Shift+F5 starts on the current slide, including a hidden one. Ordering several shapes preserves their stacking order within each group. Find and Replace match across formatting runs, respect whole-word boundaries and skip fields. Replacements and spelling corrections keep the first matched character's formatting and hyperlink.
+F5, Rehearse Timings and opening a slide show start on the first visible slide. If every slide in the show is hidden, F5 includes them all in order, as PowerPoint 2016 does. Shift+F5 starts on the current slide, including a hidden one. Ordering several shapes preserves their stacking order within each group. Find and Replace match across formatting runs, respect whole-word boundaries and skip fields. Replacements and spelling corrections keep the first matched character's formatting and hyperlink.
 
 Speaker notes show Shift+Enter as a new line in the notes pane, Notes Page, Speaker Notes dialog and printed notes. Enter starts a new paragraph. Both kinds survive editing and saving.
 
