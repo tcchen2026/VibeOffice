@@ -166,8 +166,14 @@
       memo.set(t, out);
       return out;
     };
-    if (chart.refs) chart.refs = chart.refs.map(conv);
-    for (const s of chart.series || []) { s.nameRef = conv(s.nameRef); s.catRef = conv(s.catRef); s.valRef = conv(s.valRef); }
+    const refs = chart.refs?.map(conv);
+    const series = chart.series?.map(s => {
+      const updated = {};
+      for (const key of ['nameRef', 'catRef', 'valRef']) if (s[key] && conv(s[key]) !== s[key]) updated[key] = conv(s[key]);
+      return Object.keys(updated).length ? { ...s, ...updated } : s;
+    });
+    if (![...memo].some(([old, now]) => old !== now)) return chart;
+    return { ...chart, refs, series };
   }
   XC.adjust = (chart, fn) => mapRefs(chart, fn);
   XC.rename = (chart, from, to) => mapRefs(chart, (ast) => F.renameSheet(ast, from, to));

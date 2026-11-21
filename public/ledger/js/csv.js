@@ -99,13 +99,13 @@
     return out;
   };
   /** the most likely delimiter of a delimited text */
-  CSV.sniff = function (text) {
+  CSV.sniff = function (text, quote) {
     const sample = text.slice(0, 20000);
     const lines = CSV.parse(sample, { delims: '\u0000', quote: '' }).map((r) => r[0]).filter((l) => l && l.trim()).slice(0, 30);
     if (!lines.length) return ',';
     let best = ',', bestScore = -1;
     for (const d of [',', '\t', ';', '|']) {
-      const counts = lines.map((l) => CSV.parse(l, { delims: d }).reduce((m, r) => Math.max(m, r.length), 0));
+      const counts = lines.map((l) => CSV.parse(l, { delims: d, quote }).reduce((m, r) => Math.max(m, r.length), 0));
       const first = counts[0];
       if (first < 2) continue;
       const consistent = counts.filter((c) => c === first).length / counts.length;
@@ -208,19 +208,27 @@
     }
     return r;
   };
+  function textSettings(bytes, name, encoding, delims, quote) {
+    const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const bom = (b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf) ||
+      (b[0] === 0xff && b[1] === 0xfe) || (b[0] === 0xfe && b[1] === 0xff);
+    return { type: /\.csv$/i.test(name) ? 'csv' : 'txt', encoding, delim: delims?.[0], quote, bom };
+  }
+  function sniffQuote(text) {
+    const sample = text.slice(0, 20000);
+    // Require a complete quoted field. Apostrophes in ordinary words are data.
+    return /(?:^|[,;|\t\r\n])'(?:[^']|'')*'(?=[,;|\t\r\n]|$)/.test(sample) &&
+      !/(?:^|[,;|\t\r\n])"/.test(sample) ? "'" : '"';
+  }
   /** import bytes without UI (used for .csv and by tests) */
   CSV.importBytes = function (bytes, name, o) {
     o = o || {};
     const { text, encoding } = CSV.decode(bytes, o.encoding);
-    let rows;
-    if (o.fixed) rows = CSV.parseFixed(text, o.breaks || CSV.guessBreaks(text));
-    else {
-      const ext = (String(name || '').split('.').pop() || '').toLowerCase();
-      const delims = o.delims != null ? o.delims : ext === 'tsv' || ext === 'txt' || ext === 'tab' ? (text.indexOf('\t') >= 0 ? '\t' : CSV.sniff(text)) : CSV.sniff(text);
-      rows = CSV.parse(text, { delims, quote: o.quote === undefined ? '"' : o.quote, merge: o.merge });
-    }
+    const quote = o.quote ?? sniffQuote(text);
+    const delims = o.delims ?? (/\.(tsv|txt|tab)$/i.test(name) && text.includes('\t') ? '\t' : CSV.sniff(text, quote));
+    const rows = o.fixed ? CSV.parseFixed(text, o.breaks || CSV.guessBreaks(text)) : CSV.parse(text, { delims, quote, merge: o.merge });
     const wb = CSV.toWorkbook(rows, Object.assign({ name }, o));
-    wb.textImport = { encoding };
+    wb.textImport = textSettings(bytes, name, encoding, o.fixed ? null : delims, quote);
     return wb;
   };
 
@@ -233,7 +241,8 @@
     let enc = 'auto';
     let decoded = CSV.decode(bytes);
     const st = { fixed: false, start: 1, delims: { tab: true, semi: false, comma: false, space: false, other: false, otherCh: '' }, merge: false, quote: '"', breaks: null, formats: [], step: 1 };
-    const sn = CSV.sniff(decoded.text);
+    st.quote = sniffQuote(decoded.text);
+    const sn = CSV.sniff(decoded.text, st.quote);
     st.delims.tab = sn === '\t'; st.delims.comma = sn === ','; st.delims.semi = sn === ';'; if (sn === '|') { st.delims.other = true; st.delims.otherCh = '|'; }
     const lines = () => decoded.text.split(/\r\n|\r|\n/);
     st.fixed = !(/[\t,;|]/.test(decoded.text.slice(0, 5000))) && /  /.test(decoded.text.slice(0, 5000));
@@ -365,7 +374,7 @@
           { label: '&Finish', primary: true, onClick: () => {
             const rows = parsedRows();
             const wb = CSV.toWorkbook(rows, { name, startRow: st.start - 1, colFormats: st.formats });
-            wb.textImport = { encoding: decoded.encoding };
+            wb.textImport = textSettings(bytes, name, decoded.encoding, st.fixed ? null : delimStr(), st.quote);
             result = { wb };
           } },
         ],
@@ -413,7 +422,7 @@
     let lastR = -1, lastC = -1;
     sh.rows.forEach((row, r) => { if (!row) return; row.cells.forEach((cell, c) => { if (cell && (cell.v != null || cell.f != null) && cell.v !== '') { if (r > lastR) lastR = r; if (c > lastC) lastC = c; } }); });
     void end;
-    const needQ = new RegExp('[' + delim.replace(/[\]\\^-]/g, '\\$&') + '"\\r\\n]');
+    const quote = o.quote ?? '"';
     for (let r = 0; r <= lastR; r++) {
       const row = sh.rows[r];
       const out = [];
@@ -421,7 +430,9 @@
       for (let c = 0; c <= lastC; c++) {
         let t = row && row.cells[c] ? CSV.cellText(sh, r, c) : '';
         if (t !== '') lastNon = c;
-        if (needQ.test(t) || (o.quoteSpaces && /^\s|\s$/.test(t))) t = '"' + t.replace(/"/g, '""') + '"';
+        if (quote && (t.includes(delim) || t.includes(quote) || /[\r\n]/.test(t) || (o.quoteSpaces && /^\s|\s$/.test(t)))) {
+          t = quote + t.split(quote).join(quote + quote) + quote;
+        }
         out.push(t);
       }
       void lastNon;
@@ -431,8 +442,14 @@
   };
   CSV.write = function (wb, sh, delim, o) {
     o = o || {};
+    delim = o.delim || delim;
     const text = CSV.text(sh, delim, o);
     const bom = o.bom === false ? '' : '﻿';
+    if (o.encoding === 'utf-16le' || o.encoding === 'utf-16be') {
+      const value = bom + text, bytes = new DataView(new ArrayBuffer(value.length * 2));
+      for (let i = 0; i < value.length; i++) bytes.setUint16(i * 2, value.charCodeAt(i), o.encoding === 'utf-16le');
+      return new Blob([bytes], { type: 'text/plain;charset=' + o.encoding });
+    }
     return new Blob([bom + text], { type: delim === '\t' ? 'text/plain;charset=utf-8' : 'text/csv;charset=utf-8' });
   };
 

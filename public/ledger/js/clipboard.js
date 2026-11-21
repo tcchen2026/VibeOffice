@@ -11,13 +11,16 @@
 
   /* ------------------------------------------------------------ copy */
   /** snapshot of a range (values, formulas, styles, merges, comments) */
-  function snapshot(sh, rg) {
+  function snapshot(sh, rg, visibleOnly) {
     const rows = [];
-    const h = rg.r2 - rg.r1 + 1, w = rg.c2 - rg.c1 + 1;
-    for (let i = 0; i < h; i++) {
+    const w = rg.c2 - rg.c1 + 1, sourceRows = [], rowIndex = new Map();
+    for (let r = rg.r1; r <= rg.r2; r++) {
+      if (visibleOnly && sh.rows[r]?.filtered) continue;
+      rowIndex.set(r, rows.length);
+      sourceRows.push(r);
       const row = [];
       for (let j = 0; j < w; j++) {
-        const r = rg.r1 + i, c = rg.c1 + j;
+        const c = rg.c1 + j;
         const cell = sh.get(r, c);
         const st = LY.styleIdOf(sh, r, c, cell);
         let copy = cell ? Object.assign({}, cell) : null;
@@ -32,21 +35,35 @@
       }
       rows.push(row);
     }
+    function project(range) {
+      const hit = O.intersection(range, rg);
+      if (!hit) return null;
+      while (hit.r1 <= hit.r2 && !rowIndex.has(hit.r1)) hit.r1++;
+      while (hit.r2 >= hit.r1 && !rowIndex.has(hit.r2)) hit.r2--;
+      if (hit.r1 > hit.r2) return null;
+      return { r1: rowIndex.get(hit.r1), c1: hit.c1 - rg.c1, r2: rowIndex.get(hit.r2), c2: hit.c2 - rg.c1 };
+    }
     return {
-      rows, h, w,
-      merges: sh.merges.filter((m) => m.r1 >= rg.r1 && m.r2 <= rg.r2 && m.c1 >= rg.c1 && m.c2 <= rg.c2).map((m) => ({ r1: m.r1 - rg.r1, c1: m.c1 - rg.c1, r2: m.r2 - rg.r1, c2: m.c2 - rg.c1 })),
-      comments: Array.from(sh.comments.values()).filter((cm) => M.rangeContains(rg, cm.r, cm.c)).map((cm) => Object.assign({}, cm, { dr: cm.r - rg.r1, dc: cm.c - rg.c1 })),
-      dv: sh.dv.filter((d) => d.ranges.some((x) => M.rangesOverlap(x, rg))).map((d) => JSON.parse(JSON.stringify(d))),
+      rows, sourceRows, h: rows.length, w,
+      merges: sh.merges.filter(m => rowIndex.has(m.r1) && m.r2 <= rg.r2 && m.c1 >= rg.c1 && m.c2 <= rg.c2)
+        .map(project).filter(m => m && (m.r1 !== m.r2 || m.c1 !== m.c2)),
+      comments: Array.from(sh.comments.values()).filter(cm => rowIndex.has(cm.r) && cm.c >= rg.c1 && cm.c <= rg.c2)
+        .map(cm => ({ ...cm, dr: rowIndex.get(cm.r), dc: cm.c - rg.c1 })),
+      dv: sh.dv.flatMap(d => {
+        const ranges = d.ranges.map(project).filter(Boolean);
+        return ranges.length ? [{ ...JSON.parse(JSON.stringify(d)), ranges }] : [];
+      }),
+      links: sh.links.flatMap(link => { const ref = project(link.ref); return ref ? [{ ...link, ref }] : []; }),
       colW: Array.from({ length: Math.min(w, 256) }, (_, j) => (sh.cols[rg.c1 + j] ? Object.assign({}, sh.cols[rg.c1 + j]) : null)),
-      rowH: Array.from({ length: Math.min(h, 4096) }, (_, i) => (sh.rows[rg.r1 + i] && sh.rows[rg.r1 + i].ht != null ? { ht: sh.rows[rg.r1 + i].ht, customHeight: sh.rows[rg.r1 + i].customHeight } : null)),
+      rowH: sourceRows.map(r => sh.rows[r]?.ht),
     };
   }
   /** shown text of every cell (for other programs) */
-  function asText(sh, rg) {
+  function asText(sh, rg, cut) {
     const out = [];
     const clipped = O.clip(sh, rg);
     for (let r = rg.r1; r <= clipped.r2; r++) {
-      if (sh.rows[r] && sh.rows[r].hidden && rg.r1 !== rg.r2) continue;
+      if (cut ? sh.rows[r]?.hidden && rg.r1 !== rg.r2 : sh.rows[r]?.filtered) continue;
       const row = [];
       for (let c = rg.c1; c <= clipped.c2; c++) {
         const cell = sh.get(r, c);
@@ -61,16 +78,20 @@
     }
     return out.join('\r\n') + '\r\n';
   }
-  function asHTML(sh, rg, id) {
+  function asHTML(sh, rg, id, snap) {
     const esc = L.esc;
     const clipped = O.clip(sh, rg);
     const g = LY.geo(sh);
+    const spans = new Map(snap.merges.map(m => [M.key(snap.sourceRows[m.r1], rg.c1 + m.c1), m]));
     let html = `<html><head><meta charset="utf-8"><meta name="ledger-clip" content="${id}"></head><body><table style="border-collapse:collapse">`;
-    for (let r = rg.r1; r <= clipped.r2; r++) {
-      html += `<tr style="height:${g.rows.size(r)}px">`;
+    for (let i = 0; i < snap.h; i++) {
+      const r = snap.sourceRows[i];
+      if (r > clipped.r2) break;
+      html += `<tr style="height:${sh.rows[r]?.hidden ? M.ptToPx(sh.rows[r].ht ?? M.defaultRowPt(sh)) : g.rows.size(r)}px">`;
       for (let c = rg.c1; c <= clipped.c2; c++) {
         const m = LY.mergeAt(sh, r, c);
-        if (m && (m.r1 !== r || m.c1 !== c)) continue;
+        const span = m && spans.get(M.key(m.r1, m.c1));
+        if (span && (span.r1 !== i || span.c1 !== c - rg.c1)) continue;
         const cell = sh.get(r, c);
         const st = LY.styleOf(sh, r, c, cell);
         const v = cell ? (cell.dirty ? C.cellValue(sh, r, c) : cell.v) : null;
@@ -88,9 +109,9 @@
         else if (typeof v === 'number') css.push('text-align:right');
         const b = st.border || {};
         for (const [k, side] of [['t', 'top'], ['b', 'bottom'], ['l', 'left'], ['r', 'right']]) if (b[k]) css.push(`border-${side}:${L.render.borderWidth(b[k])}px ${b[k].style === 'double' ? 'double' : /dash|dot|hair/.test(b[k].style) ? 'dashed' : 'solid'} ${M.colorHex(sh.wb, b[k].color, '#000000')}`);
-        const span = m ? ` rowspan="${m.r2 - m.r1 + 1}" colspan="${m.c2 - m.c1 + 1}"` : '';
+        const mergeAttrs = span ? ` rowspan="${span.r2 - span.r1 + 1}" colspan="${span.c2 - span.c1 + 1}"` : '';
         const num = typeof v === 'number' ? ` x:num="${v}"` : '';
-        html += `<td${span}${num} style="${esc(css.join(';'))};width:${g.cols.size(c)}px">${esc(t).replace(/\n/g, '<br>')}</td>`;
+        html += `<td${mergeAttrs}${num} style="${esc(css.join(';'))};width:${g.cols.size(c)}px">${esc(t).replace(/\n/g, '<br>')}</td>`;
       }
       html += '</tr>';
     }
@@ -111,11 +132,11 @@
     const rg = { r1: rg0.r1, c1: rg0.c1, r2: rg0.r2 >= M.MAXR - 1 ? Math.max(rg0.r1, sh.maxR) : rg0.r2, c2: rg0.c2 >= M.MAXC - 1 ? Math.max(rg0.c1, sh.maxC) : rg0.c2 };
     if (cut && g.guardProtect(null, true)) return;
     const id = 'L' + Date.now().toString(36);
-    clip = { id, wb: sh.wb, sh, range: rg, full: rg0, cut: !!cut, snap: snapshot(sh, rg), live: true };
-    clip.text = asText(sh, rg);
+    clip = { id, wb: sh.wb, sh, range: rg, full: rg0, cut: !!cut, snap: snapshot(sh, rg, !cut), live: true };
+    clip.text = asText(sh, rg, cut);
     if (e && e.clipboardData) {
       e.clipboardData.setData('text/plain', clip.text);
-      try { e.clipboardData.setData('text/html', asHTML(sh, rg, id)); } catch (err) { /* ignore */ }
+      try { e.clipboardData.setData('text/html', asHTML(sh, rg, id, clip.snap)); } catch (err) { /* ignore */ }
     } else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(clip.text).catch(() => {});
     g.state.marquee = { sh, ranges: [rg], phase: 0 };
     clearInterval(marqueeTimer);
@@ -182,6 +203,7 @@
       return;
     }
     const snap = clip.snap;
+    if (!snap.h) return;
     let H = opts.transpose ? snap.w : snap.h, W = opts.transpose ? snap.h : snap.w;
     const dest = destFor(H, W);
     if (O.cutsArray(sh, [dest])) { L.ui.msg('You cannot change part of an array.', { icon: 'warn' }); return; }
@@ -196,7 +218,7 @@
         const i = (r - dest.r1) % H, j = (c - dest.c1) % W;
         const si = opts.transpose ? j : i, sj = opts.transpose ? i : j;
         const src = snap.rows[si] && snap.rows[si][sj];
-        const srcR = clip.range.r1 + si, srcC = clip.range.c1 + sj;
+        const srcR = snap.sourceRows[si], srcC = clip.range.c1 + sj;
         if (opts.skipBlanks && (!src || (src.v == null && src.f == null))) continue;
         const old = sh.get(r, c);
         let cell = old ? Object.assign({}, old) : { v: null };
@@ -245,40 +267,42 @@
         const empty = cell.v == null && cell.f == null && !cell.s;
         O.put(sh, r, c, empty ? null : cell);
       }
-      if (what === 'all' || what === 'formats') {
-        /* merged areas, column widths are not pasted except with "column widths" */
-        if (snap.merges.length) {
-          const add = [];
-          for (let r0 = dest.r1; r0 <= dest.r2; r0 += H) for (let c0 = dest.c1; c0 <= dest.c2; c0 += W) for (const m of snap.merges) {
-            const mm = opts.transpose ? { r1: r0 + m.c1, c1: c0 + m.r1, r2: r0 + m.c2, c2: c0 + m.r2 } : { r1: r0 + m.r1, c1: c0 + m.c1, r2: r0 + m.r2, c2: c0 + m.c2 };
-            add.push(mm);
-          }
-          O.setMerges(sh, sh.merges.filter((m) => !add.some((a) => M.rangesOverlap(a, m))).concat(add));
-        } else if (what === 'all') {
-          const keep = sh.merges.filter((m) => !(m.r1 >= dest.r1 && m.r2 <= dest.r2 && m.c1 >= dest.c1 && m.c2 <= dest.c2));
-          if (keep.length !== sh.merges.length) O.setMerges(sh, keep);
+      function place(ref, r, c) {
+        const block = opts.transpose ? { r1: ref.c1, c1: ref.r1, r2: ref.c2, c2: ref.r2 } : ref;
+        return O.intersection(O.offsetRange(block, r, c), dest);
+      }
+      const merges = [], validations = [], links = [];
+      for (let r = dest.r1; r <= dest.r2; r += H) for (let c = dest.c1; c <= dest.c2; c += W) {
+        if (what === 'all' || what === 'formats') {
+          for (const ref of snap.merges) { const m = place(ref, r, c); if (m) merges.push(m); }
+        }
+        if (what === 'all' || what === 'comments') for (const cm of snap.comments) {
+          const rr = r + (opts.transpose ? cm.dc : cm.dr), cc = c + (opts.transpose ? cm.dr : cm.dc);
+          if (M.rangeContains(dest, rr, cc)) O.setComment(sh, rr, cc, { ...L.threads.copy(cm, sh.wb), r: rr, c: cc });
+        }
+        if (what === 'all' || what === 'validation') for (const d of snap.dv) {
+          const ranges = d.ranges.map(x => place(x, r, c)).filter(Boolean);
+          if (ranges.length) validations.push({ ...L.sheetExtensions.copy(d), ranges });
+        }
+        if (what === 'all') for (const link of snap.links) {
+          const ref = place(link.ref, r, c);
+          if (ref) links.push({ ...link, ref });
+        }
+        if (what === 'all' && !opts.transpose && clip.full?.c2 === M.MAXC - 1 && clip.full.c1 === 0 && c === dest.c1) {
+          snap.rowH.forEach((ht, i) => { if (ht != null && r + i <= dest.r2) O.setRowHeight(sh, [r + i], ht); });
         }
       }
-      if (what === 'all' || what === 'comments') {
-        for (const cm of snap.comments) {
-          const r = dest.r1 + (opts.transpose ? cm.dc : cm.dr), c = dest.c1 + (opts.transpose ? cm.dr : cm.dc);
-          O.setComment(sh, r, c, Object.assign(L.threads.copy(cm, sh.wb), { r, c }));
-        }
+      if (merges.length || what === 'all') {
+        const keep = sh.merges.filter(m => what === 'all' ? !M.rangesOverlap(m, dest) : !merges.some(a => M.rangesOverlap(m, a)));
+        if (merges.length || keep.length !== sh.merges.length) O.setMerges(sh, keep.concat(merges));
       }
       if (what === 'all' || what === 'validation') {
-        if (snap.dv.length) {
-          const dv = sh.dv.slice();
-          for (const d of snap.dv) {
-            const ranges = [];
-            for (const x of d.ranges) {
-              const ov = { r1: Math.max(x.r1, clip.range.r1), c1: Math.max(x.c1, clip.range.c1), r2: Math.min(x.r2, clip.range.r2), c2: Math.min(x.c2, clip.range.c2) };
-              if (ov.r1 > ov.r2 || ov.c1 > ov.c2) continue;
-              ranges.push({ r1: dest.r1 + ov.r1 - clip.range.r1, c1: dest.c1 + ov.c1 - clip.range.c1, r2: dest.r1 + ov.r2 - clip.range.r1, c2: dest.c1 + ov.c2 - clip.range.c1 });
-            }
-            if (ranges.length) dv.push(Object.assign(L.sheetExtensions.copy(d), { ranges }));
-          }
-          O.setDV(sh, dv);
-        }
+        if (!opts.skipBlanks) O.removeRangeRules(sh, dest, 'dv');
+        if (validations.length) O.setDV(sh, sh.dv.concat(validations));
+      }
+      if (what === 'all' && !opts.link) {
+        const keep = sh.links.flatMap(link => O.subtractRange(link.ref, dest).map(ref => ({ ...link, ref })));
+        if (links.length || sh.links.some(link => M.rangesOverlap(link.ref, dest))) O.setLinks(sh, keep.concat(links));
       }
     });
     if (dest.r2 >= dest.r1) g.selectRange({ r1: dest.r1, c1: dest.c1, r2: dest.r2, c2: dest.c2 }, null, { noScroll: true });
@@ -409,7 +433,7 @@
     const wb = sh.wb;
     const dr = to.r1 - src.r1, dc = to.c1 - src.c1;
     if (copy) {
-      clip = { id: 'drag', wb, sh, range: src, cut: false, snap: snapshot(sh, src), text: '' };
+      clip = { id: 'drag', wb, sh, range: src, cut: false, snap: snapshot(sh, src, true), text: '' };
       const g = G();
       const keep = g.sel();
       const s = g.sel(); s.ranges = [Object.assign({}, to)]; s.active = 0; s.r = to.r1; s.c = to.c1;
@@ -424,24 +448,14 @@
       const sameSheet = toSheet === sh;
       const before = O.snapSheet(sh), before2 = sameSheet ? null : O.snapSheet(toSheet);
       /* formulas anywhere that point at the overwritten destination become #REF!, those pointing at src follow */
-      const destRef = { sheet: toSheet.name, r1: to.r1, c1: to.c1, r2: to.r2, c2: to.c2 };
+      const adjust = O.moveReferences(sh, src, dr, dc, toSheet, to);
       for (const s of wb.sheets) s.rows.forEach((row, r) => { if (!row) return; row.cells.forEach((cell, c) => {
-        if (!cell || cell.f == null) return;
-        if (s === sh && M.rangeContains(src, r, c)) return; /* moved cells handled below */
-        let ast = C.astOf(cell); if (!ast) return;
-        let changed = false;
-        const out = F.map(ast, (n) => {
-          if (n.t !== 'ref' && n.t !== 'area') return null;
-          const nsheet = n.sheet != null ? wb.sheetByName(n.sheet) : s;
-          if (nsheet !== toSheet || n.book != null) return null;
-          const inDest = n.t === 'ref' ? M.rangeContains(destRef, n.r, n.c) && !(nsheet === sh && M.rangeContains(src, n.r, n.c)) : false;
-          if (inDest) { changed = true; return { t: 'referr', sheet: n.sheet }; }
-          return null;
-        });
-        if (changed) ast = out;
-        const res = F.adjustMove(ast, Object.assign({ sheet: sh.name }, src), dr, dc, s.name, toSheet.name);
-        if (res.changed || changed) { if (s !== sh && s !== toSheet) wb.undo.note(s, r, c); cell.f = F.toText(res.ast, { store: true }); cell.ast = res.ast; cell._fsrc = cell.f; cell.dirty = true; }
+        if (!cell || cell.f == null || (s === sh && M.rangeContains(src, r, c))) return;
+        const ast = C.astOf(cell); if (!ast) return;
+        const res = adjust(ast, s.name);
+        if (res.changed) { if (s !== sh && s !== toSheet) wb.undo.note(s, r, c); cell.f = F.toText(res.ast, { store: true }); cell.ast = res.ast; cell._fsrc = cell.f; cell.dirty = true; }
       }); });
+      O.moveCellState(sh, src, dr, dc, toSheet, to, adjust);
       /* clear source, write destination */
       for (let r = src.r1; r <= Math.min(src.r2, sh.maxR); r++) { const row = sh.rows[r]; if (row) for (let c = src.c1; c <= Math.min(src.c2, row.cells.length - 1); c++) delete row.cells[c]; }
       for (let i = 0; i < snap.h; i++) for (let j = 0; j < snap.w; j++) {
@@ -470,7 +484,8 @@
       }
       sh.merges = sh.merges.filter((m) => !(m.r1 >= src.r1 && m.r2 <= src.r2 && m.c1 >= src.c1 && m.c2 <= src.c2));
       toSheet.merges = toSheet.merges.filter((m) => !M.rangesOverlap(m, to)).concat(snap.merges.map((m) => ({ r1: to.r1 + m.r1, c1: to.c1 + m.c1, r2: to.r1 + m.r2, c2: to.c1 + m.c2 })));
-      for (const cm of snap.comments) { sh.comments.delete(M.key(cm.r, cm.c)); }
+      for (const cm of snap.comments) sh.comments.delete(M.key(cm.r, cm.c));
+      for (const [key, cm] of toSheet.comments) if (M.rangeContains(to, cm.r, cm.c)) toSheet.comments.delete(key);
       for (const cm of snap.comments) { const r = to.r1 + cm.dr, c = to.c1 + cm.dc; toSheet.comments.set(M.key(r, c), Object.assign({}, cm, { r, c })); }
       sh.recalcBounds();
       LY.invalidate(sh); LY.touchMerges(sh); LY.invalidate(toSheet); LY.touchMerges(toSheet);

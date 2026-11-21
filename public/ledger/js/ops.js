@@ -414,6 +414,11 @@
   O.setLinks = prop('Hyperlink', (sh) => sh.links.slice(), (sh, v) => { sh.links = v.slice(); });
   O.setCF = prop('Conditional Formatting', (sh) => sh.cf.slice(), (sh, v) => { sh.cf = v.slice(); sh._cfIdx = null; if (L.cf) L.cf.reset(); });
   O.setDV = prop('Validation', (sh) => sh.dv.slice(), (sh, v) => { sh.dv = v.slice(); });
+  O.intersection = function (a, b) {
+    if (!M.rangesOverlap(a, b)) return null;
+    return { r1: Math.max(a.r1, b.r1), c1: Math.max(a.c1, b.c1), r2: Math.min(a.r2, b.r2), c2: Math.min(a.c2, b.c2) };
+  };
+  O.offsetRange = (a, dr, dc) => ({ r1: a.r1 + dr, c1: a.c1 + dc, r2: a.r2 + dr, c2: a.c2 + dc });
   /** rectangle a minus rectangle b → up to four rectangles */
   O.subtractRange = function (a, b) {
     if (!M.rangesOverlap(a, b)) return [a];
@@ -701,7 +706,17 @@
   };
 
   /* ------------------------------------------------------------ insert / delete rows & columns */
-  /** move references in every formula of the workbook (op: {sheet, axis, at, n}) */
+  function adjustCharts(sh, adjust, snapshotted) {
+    sh.drawings.forEach((d, index) => {
+      if (!d.chart || !L.xchart) return;
+      const old = d.chart, now = L.xchart.adjust(old, adjust);
+      if (now === old) return;
+      d.chart = now;
+      // A later structural undo can replace the drawing object at this position.
+      if (!snapshotted) sh.wb.undo.op(() => { sh.drawings[index].chart = old; }, () => { sh.drawings[index].chart = now; });
+    });
+  }
+  /** Move references in every formula of the workbook (op: {sheet, axis, at, n}). */
   function adjustFormulas(wb, op) {
     for (const s of wb.sheets) {
       s.rows.forEach((row, r) => {
@@ -726,7 +741,7 @@
     }
     /* chart series and validation / CF formulas on other sheets */
     for (const s of wb.sheets) {
-      for (const d of s.drawings) if (d.chart && L.xchart && L.xchart.adjust) L.xchart.adjust(d.chart, (ast) => F.adjust(ast, op, s.name));
+      adjustCharts(s, ast => F.adjust(ast, op, s.name), s.name === op.sheet);
       if (s.name === op.sheet) continue;
       const beforeCF = JSON.stringify(s.cf), beforeDV = JSON.stringify(s.dv);
       for (const v of s.dv) for (const k of ['f1', 'f2']) if (v[k]) { const t = adjText(v[k], op, s.name); if (t !== v[k]) v[k] = t; }
@@ -886,6 +901,76 @@
       a.to[k] = i; a.to[k + 'Off'] = off;
     } else if (a.editAs !== 'oneCell') mv(a.to);
   }
+  function moveReferences(sh, src, dr, dc, target, overwritten, shift) {
+    const from = { ...src, sheet: sh.name };
+    return (ast, home) => {
+      if (shift) {
+        // Inside the shifted columns/rows, a range straddling the insertion expands
+        // and a range straddling the deletion contracts, even beyond the used cells.
+        let changed = false;
+        const mapped = F.map(ast, n => {
+          if (n.t !== 'ref' && n.t !== 'area') return null;
+          const col = shift.axis === 'r', first = col ? 'c1' : 'r1', last = col ? 'c2' : 'r2';
+          if (n.kind || (n.t === 'ref' ? n[col ? 'c' : 'r'] < src[first] || n[col ? 'c' : 'r'] > src[last] :
+            n[first] < src[first] || n[last] > src[last])) return null;
+          const res = F.adjust(n, shift, home);
+          if (!res.changed) return null;
+          changed = true; return res.ast;
+        });
+        return { ast: mapped, changed };
+      }
+      let lost = false;
+      const mapped = F.map(ast, n => {
+        if (n.t !== 'ref' || n.book != null || n.sheet2 || (n.sheet || home || '').toLowerCase() !== target.name.toLowerCase()) return null;
+        if (M.rangeContains(overwritten, n.r, n.c) && !(sh === target && M.rangeContains(src, n.r, n.c))) {
+          lost = true; return { t: 'referr', sheet: n.sheet };
+        }
+        return null;
+      });
+      const res = F.adjustMove(mapped, from, dr, dc, home, target.name);
+      return { ast: res.ast, changed: lost || res.changed };
+    };
+  }
+  O.moveReferences = moveReferences;
+
+  // Partition ranges before moving any of them. In an overlapping move destination
+  // cells are overwritten only after the source metadata has been collected.
+  O.moveCellState = function (sh, src, dr, dc, target, overwritten, adjust) {
+    const same = sh === target, grid = { r1: 0, c1: 0, r2: MAXR - 1, c2: MAXC - 1 };
+    for (const key of ['links', 'cf', 'dv']) {
+      const rangesOf = item => key === 'links' ? [item.ref] : item.ranges;
+      const withRanges = (item, ranges) => key === 'links' ? ranges.map(ref => ({ ...item, ref })) : ranges.length ? [{ ...item, ranges }] : [];
+      const retained = [], transferred = [];
+      for (const item of sh[key]) {
+        let keep = [], move = [];
+        for (const ref of rangesOf(item)) {
+          keep.push(...O.subtractRange(ref, src));
+          const hit = O.intersection(ref, src);
+          if (hit) {
+            const dest = O.intersection(O.offsetRange(hit, dr, dc), grid);
+            if (dest) move.push(dest);
+          }
+        }
+        if (same && overwritten) keep = keep.flatMap(r => O.subtractRange(r, overwritten));
+        if (same) retained.push(...withRanges(item, keep.concat(move)));
+        else {
+          retained.push(...withRanges(item, keep));
+          if (move.length) transferred.push(...withRanges(keep.length && key !== 'links' ? L.sheetExtensions.copy(item) : item, move));
+        }
+      }
+      sh[key] = retained;
+      if (!same) target[key] = target[key].flatMap(item =>
+        withRanges(item, rangesOf(item).flatMap(r => O.subtractRange(r, overwritten)))).concat(transferred);
+    }
+    sh._cfIdx = target._cfIdx = null;
+    const wb = sh.wb;
+    for (const n of wb.names) {
+      let ast; try { ast = F.parse(String(n.ref).replace(/^=/, '')); } catch (_) { continue; }
+      const res = adjust(ast, wb.sheets[n.scope]?.name);
+      if (res.changed) { n.ref = F.toText(res.ast, { store: true }); n._ast = undefined; }
+    }
+    for (const sheet of wb.sheets) adjustCharts(sheet, ast => adjust(ast, sheet.name), sheet === sh || sheet === target);
+  };
   /** insert / delete cells inside a range, shifting neighbours */
   O.shiftCells = function (sh, rg, dir, insert) {
     const wb = sh.wb;
@@ -893,55 +978,35 @@
     /* implemented as a cut / paste of the block beyond the range */
     return O.structural(sh, insert ? 'Insert Cells' : 'Delete Cells', () => {
       const h = rg.r2 - rg.r1 + 1, w = rg.c2 - rg.c1 + 1;
-      if (vertical) {
-        const last = sh.maxR;
-        const src = { r1: insert ? rg.r1 : rg.r2 + 1, c1: rg.c1, r2: last, c2: rg.c2 };
-        const dr = insert ? h : -h;
-        if (src.r2 >= src.r1) moveBlock(sh, src, dr, 0, insert ? null : rg);
-        else clearBlock(sh, rg);
-        if (insert) clearBlock(sh, rg);
-        else clearBlock(sh, { r1: Math.max(rg.r1, last - h + 1), c1: rg.c1, r2: last, c2: rg.c2 });
-      } else {
-        const last = sh.maxC;
-        const src = { r1: rg.r1, c1: insert ? rg.c1 : rg.c2 + 1, r2: rg.r2, c2: last };
-        const dc = insert ? w : -w;
-        if (src.c2 >= src.c1) moveBlock(sh, src, 0, dc, insert ? null : rg);
-        else clearBlock(sh, rg);
-        if (insert) clearBlock(sh, rg);
-        else clearBlock(sh, { r1: rg.r1, c1: Math.max(rg.c1, last - w + 1), r2: rg.r2, c2: last });
-      }
+      const dr = vertical ? (insert ? h : -h) : 0, dc = vertical ? 0 : (insert ? w : -w);
+      const src = vertical ? { ...rg, r1: insert ? rg.r1 : rg.r2 + 1, r2: MAXR - 1 } :
+        { ...rg, c1: insert ? rg.c1 : rg.c2 + 1, c2: MAXC - 1 };
+      if (!insert) clearBlock(sh, rg);
+      const shift = { sheet: sh.name, axis: vertical ? 'r' : 'c', at: vertical ? rg.r1 : rg.c1, n: dr || dc };
+      moveBlock(sh, src, dr, dc, insert ? null : rg, shift);
       sh.recalcBounds();
       LY.invalidate(sh); LY.touchMerges(sh);
     });
   };
   function clearBlock(sh, rg) { for (let r = rg.r1; r <= Math.min(rg.r2, sh.maxR); r++) { const row = sh.rows[r]; if (!row) continue; for (let c = rg.c1; c <= Math.min(rg.c2, row.cells.length - 1); c++) delete row.cells[c]; } }
   /** move a block of cells by (dr, dc) within the sheet, adjusting references to it (deleted: refs to this become #REF!) */
-  function moveBlock(sh, src, dr, dc, deleted) {
+  function moveBlock(sh, src, dr, dc, deleted, shift) {
     const wb = sh.wb;
     const buf = [];
     for (let r = src.r1; r <= Math.min(src.r2, sh.maxR); r++) { const row = sh.rows[r]; if (!row) continue; for (let c = src.c1; c <= Math.min(src.c2, row.cells.length - 1); c++) if (row.cells[c]) { buf.push([r, c, row.cells[c]]); delete row.cells[c]; } }
     for (const [r, c, cell] of buf) { const nr = r + dr, nc = c + dc; if (nr < 0 || nc < 0 || nr >= MAXR || nc >= MAXC) continue; const row = sh.rowObj(nr); row.cells[nc] = cell; if (nr > sh.maxR) sh.maxR = nr; if (nc > sh.maxC) sh.maxC = nc; }
     /* references into the moved block follow it; references into the deleted range become #REF! */
-    const range = Object.assign({ sheet: sh.name }, src);
+    const adjust = moveReferences(sh, src, dr, dc, sh, deleted || O.offsetRange(src, dr, dc), shift);
     for (const s of wb.sheets) s.rows.forEach((row, r) => { if (!row) return; row.cells.forEach((cell, c) => {
       if (!cell || cell.f == null) return;
-      let ast = C.astOf(cell); if (!ast) return;
-      let changed = false;
-      if (deleted) {
-        const out = F.map(ast, (n) => {
-          if ((n.t !== 'ref' && n.t !== 'area') || !((n.sheet == null && s === sh) || (n.sheet && n.sheet.toLowerCase() === sh.name.toLowerCase()))) return null;
-          const inDel = (rr, cc) => rr >= deleted.r1 && rr <= deleted.r2 && cc >= deleted.c1 && cc <= deleted.c2;
-          if (n.t === 'ref' && inDel(n.r, n.c)) { changed = true; return { t: 'referr', sheet: n.sheet }; }
-          return null;
-        });
-        if (changed) ast = out;
-      }
-      const res = F.adjustMove(ast, range, dr, dc, s.name, null);
-      if (res.changed || changed) { if (s !== sh) wb.undo.note(s, r, c); cell.f = F.toText(res.ast, { store: true }); cell.ast = res.ast; cell._fsrc = cell.f; cell.dirty = true; }
+      const ast = C.astOf(cell); if (!ast) return;
+      const res = adjust(ast, s.name);
+      if (res.changed) { if (s !== sh) wb.undo.note(s, r, c); cell.f = F.toText(res.ast, { store: true }); cell.ast = res.ast; cell._fsrc = cell.f; cell.dirty = true; }
     }); });
+    O.moveCellState(sh, src, dr, dc, sh, deleted, adjust);
     for (const m of sh.merges) if (m.r1 >= src.r1 && m.r2 <= src.r2 && m.c1 >= src.c1 && m.c2 <= src.c2) { m.r1 += dr; m.r2 += dr; m.c1 += dc; m.c2 += dc; }
     const cm = new Map();
-    for (const v of sh.comments.values()) { const inside = M.rangeContains(src, v.r, v.c); const nv = inside ? Object.assign({}, v, { r: v.r + dr, c: v.c + dc }) : v; cm.set(M.key(nv.r, nv.c), nv); }
+    for (const v of sh.comments.values()) { if (deleted && M.rangeContains(deleted, v.r, v.c)) continue; const inside = M.rangeContains(src, v.r, v.c); const nv = inside ? Object.assign({}, v, { r: v.r + dr, c: v.c + dc }) : v; cm.set(M.key(nv.r, nv.c), nv); }
     sh.comments = cm;
     for (const cl of buf) { const cell = cl[2]; if (cell.af) cell.af = { r1: cell.af.r1 + dr, c1: cell.af.c1 + dc, r2: cell.af.r2 + dr, c2: cell.af.c2 + dc }; if (cell.am) cell.am = { r: cell.am.r + dr, c: cell.am.c + dc }; }
   }
@@ -1013,7 +1078,7 @@
           if (res.changed) { cell.f = F.toText(res.ast, { store: true }); cell.ast = res.ast; cell._fsrc = cell.f; }
         }); });
         for (const n of wb.names) { try { const a = F.parse(String(n.ref).replace(/^=/, '')); const res = F.renameSheet(a, from, to); if (res.changed) { n.ref = F.toText(res.ast, { store: true }); n._ast = undefined; } } catch (e) { /* keep */ } }
-        for (const s of wb.sheets) for (const d of s.drawings) if (d.chart && L.xchart && L.xchart.rename) L.xchart.rename(d.chart, from, to);
+        for (const s of wb.sheets) for (const d of s.drawings) if (d.chart && L.xchart && L.xchart.rename) d.chart = L.xchart.rename(d.chart, from, to);
         for (const s of wb.sheets) for (const g of s.sparklines || []) for (const it of g.items) { try { const res = F.renameSheet(F.parse(it.f), from, to); if (res.changed) it.f = F.toText(res.ast, { store: true }); } catch (e) { /* keep */ } }
         sh.name = to;
       };
@@ -1081,6 +1146,81 @@
       wb.undo.op(() => { wb.sheets.splice(wb.sheets.indexOf(copy), 1); wb.tables = wb.tables.filter((t) => t.sheet !== copy); wb.names = oldNames.map(n => ({ ...n })); }, () => { wb.sheets.splice(idx, 0, copy); wb.tables = tablesAfter; wb.names = namesAfter.map(n => ({ ...n })); });
       O.markStructural();
     });
+    return copy;
+  };
+  /** Features which the destination workbook cannot yet reproduce. */
+  O.sheetTransferWarnings = function (sheets, move) {
+    const wb = sheets[0].wb, warnings = [], names = new Set();
+    let otherSheets = false, inbound = false;
+    const selected = new Set(sheets);
+    for (const sh of wb.sheets) {
+      if (!selected.has(sh) && !move) continue;
+      sh.rows.forEach(row => row.cells.forEach(cell => {
+        if (cell?.f == null) return;
+        const ast = C.astOf(cell);
+        if (!ast) return;
+        F.walk(ast, n => {
+          if (n.book != null) return;
+          const target = wb.sheetByName(n.sheet), end = wb.sheetByName(n.sheet2);
+          if (selected.has(sh)) {
+            if (n.t === 'name' && !n.param && wb.findName(n.name, target?.index ?? sh.index)) names.add(n.name);
+            if ((target && target !== sh) || end) otherSheets = true;
+          } else if (selected.has(target) || selected.has(end)) inbound = true;
+        });
+      }));
+    }
+    if (sheets.some(sh => sh.drawings.some(d => d.chart))) warnings.push(L.t('Charts will be left out.'));
+    if (sheets.some(sh => sh.drawings.some(d => !d.chart))) warnings.push(L.t('Pictures and drawing objects will be left out.'));
+    if (wb.tables.some(t => selected.has(t.sheet))) warnings.push(L.t('Tables will become ordinary cells. Formulas that use the table names may stop working.'));
+    if (sheets.some(sh => sh.sparklines?.length)) warnings.push(L.t('Sparklines will be left out.'));
+    if (names.size) warnings.push(L.t('Formulas that use these names may stop working: {0}.', [...names].join(', ')));
+    if (otherSheets) warnings.push(L.t('Formulas that refer to other sheets in the original workbook may stop working.'));
+    if (inbound) warnings.push(L.t('Formulas in the original workbook that refer to a moved sheet will show #REF!.'));
+    return warnings;
+  };
+  O.copyToWorkbook = function (sh, wb, at) {
+    const copy = O.addSheet(wb, wb.sheetByName(sh.name) ? wb.nextSheetName(sh.name) : sh.name, at);
+    const styles = new Map(), dxfs = new Map();
+    const style = i => {
+      if (!styles.has(i)) styles.set(i, wb.styles.add(structuredClone(sh.wb.styles.get(i || 0))));
+      return styles.get(i);
+    };
+    sh.rows.forEach((row, r) => {
+      const { cells, ...props } = row;
+      const nr = copy.rowObj(r);
+      Object.assign(nr, structuredClone(props));
+      if (row.s != null) nr.s = style(row.s);
+      cells.forEach((cell, c) => {
+        if (!cell) return;
+        const { _gnode, ast, _fsrc, ...value } = cell;
+        const n = structuredClone(value);
+        if (cell.s != null) n.s = style(cell.s);
+        if (n.f != null) {
+          n.dirty = true;
+          if (copy.name !== sh.name && C.astOf(cell)) {
+            const res = F.renameSheet(C.astOf(cell), sh.name, copy.name);
+            if (res.changed) n.f = F.toText(res.ast, { store: true });
+          }
+        }
+        copy.put(r, c, n);
+      });
+    });
+    copy.cols = structuredClone(sh.cols);
+    for (const col of copy.cols) if (col?.s != null) col.s = style(col.s);
+    if (sh.colTail) {
+      copy.colTail = structuredClone(sh.colTail);
+      if (copy.colTail.o?.s != null) copy.colTail.o.s = style(copy.colTail.o.s);
+    }
+    for (const key of ['merges', 'print', 'view', 'tabColor', 'links', 'autoFilter', 'outline', 'defColW', 'baseColW', 'defRowH', 'fileDefRowH', 'zeroHeight'])
+      copy[key] = structuredClone(sh[key]);
+    if (sh.extra.formatKeep) copy.extra.formatKeep = L.opc.duplicate(sh.extra.formatKeep);
+    const ext = L.sheetExtensions.copy({ cf: sh.cf, dv: sh.dv });
+    copy.cf = ext.cf; copy.dv = ext.dv;
+    for (const cf of copy.cf) for (const rule of cf.rules) if (rule.dxf >= 0 && sh.wb.dxfs[rule.dxf]) {
+      if (!dxfs.has(rule.dxf)) dxfs.set(rule.dxf, wb.dxfs.push(structuredClone(sh.wb.dxfs[rule.dxf])) - 1);
+      rule.dxf = dxfs.get(rule.dxf);
+    }
+    for (const [key, cm] of sh.comments) copy.comments.set(key, L.threads.copy(cm, wb));
     return copy;
   };
   O.sheetProp = function (wb, sh, key, val, label) {
@@ -1158,6 +1298,18 @@
         cm.set(M.key(nv.r, nv.c), nv);
       }
       sh.comments = cm;
+      const sorted = { r1, c1, r2: rg.r2, c2: rg.c2 };
+      sh.links = sh.links.flatMap(link => {
+        const hit = O.intersection(link.ref, sorted);
+        if (!hit) return [link];
+        const { display, ...moved } = link;
+        const parts = O.subtractRange(link.ref, sorted).map(ref => ({ ...moved, ref }));
+        for (let r = hit.r1; r <= hit.r2; r++) for (let c = hit.c1; c <= hit.c2; c++) {
+          const rr = byRows ? r1 + map.get(r - r1) : r, cc = byRows ? c : c1 + map.get(c - c1);
+          parts.push({ ...moved, ref: { r1: rr, c1: cc, r2: rr, c2: cc } });
+        }
+        return parts;
+      });
       sh.sortState = { ref: Object.assign({}, rg), keys: keys.map((k) => ({ ref: byRows ? { r1, c1: rg.c1 + k.index, r2: rg.r2, c2: rg.c1 + k.index } : { r1: rg.r1 + k.index, c1, r2: rg.r1 + k.index, c2: rg.c2 }, desc: !!k.desc })), columnSort: !byRows };
       LY.invalidate(sh);
     });

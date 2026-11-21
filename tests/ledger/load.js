@@ -1,6 +1,6 @@
 /* load the engine + readers in Node */
 const path = require('path');
-const PUBLIC = path.join(__dirname, '..', '..', 'public');
+const PUBLIC = process.env.VO_TEST_PUBLIC || path.join(__dirname, '..', '..', 'public');
 require(path.join(PUBLIC, 'common', 'xml.js'));
 require(path.join(PUBLIC, 'common', 'opc.js'));
 require(path.join(PUBLIC, 'common', 'opc-order.js'));

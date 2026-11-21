@@ -418,27 +418,30 @@
     const drawList = () => { lb.textContent = ''; const tw = A().books[book].wb; lb.appendChild(list(tw.sheets.map((s, i) => [i, s.name]).concat([[tw.sheets.length, L.t('(move to end)')]]), Math.min(before, tw.sheets.length), (v) => { before = v; }, { translate: 'no' })); };
     drawList();
     ui.dialog({ title: 'Move or Copy', width: 320, body: h('div', { class: 'col' }, h('div', { text: 'Move selected sheets' }), ui.field('&To book:', ui.select(books, book, (v) => { book = +v; before = A().books[book].wb.sheets.length; drawList(); }, { translate: 'no' })), h('label', { text: '&Before sheet:' }), lb, ui.check('&Create a copy', false, (v) => { copy = v; })),
-      buttons: [{ label: 'OK', primary: true, onClick: () => tryRun(() => {
+      buttons: [{ label: 'OK', primary: true, onClick: async () => {
         const tw = A().books[book].wb;
-        if (tw === w) {
-          let at = before;
-          for (const s of sheets) { if (copy) { const c = O.copySheet(w, s, at); at = w.sheets.indexOf(c) + 1; w.active = w.sheets.indexOf(c); } else { O.moveSheet(w, s, at); at = w.sheets.indexOf(s) + 1; } }
-        } else {
-          /* another open workbook: copy the cells, styles and settings across */
-          for (const s of sheets) {
-            const ns = O.addSheet(tw, tw.sheetByName(s.name) ? tw.nextSheetName(s.name) : s.name, before);
-            const remap = new Map();
-            const sid = (i) => { if (!i) return i; if (!remap.has(i)) remap.set(i, tw.styles.add(JSON.parse(JSON.stringify(w.styles.get(i))))); return remap.get(i); };
-            s.rows.forEach((row, r) => { if (row) { const nr = ns.rowObj(r); Object.assign(nr, row, { cells: [] }); if (row.s) nr.s = sid(row.s); row.cells.forEach((cl, c) => { if (cl) { const n = Object.assign({}, cl, { s: sid(cl.s), _gnode: null }); if (n.f != null) n.dirty = true; ns.put(r, c, n); } }); } });
-            ns.cols = s.cols.map((x) => (x ? Object.assign({}, x, x.s ? { s: sid(x.s) } : {}) : x));
-            ns.merges = s.merges.map((m) => Object.assign({}, m));
-            ns.print = JSON.parse(JSON.stringify(s.print)); ns.view = JSON.parse(JSON.stringify(s.view)); ns.tabColor = s.tabColor;
-            O.recalc(tw, null, true);
-            if (!copy) O.deleteSheet(w, s);
+        if (tw !== w) {
+          if (!copy && !w.sheets.some(s => s.state === 'visible' && !sheets.includes(s))) {
+            await ui.msg('A workbook must contain at least one visible worksheet.', { icon: 'warn' });
+            return;
+          }
+          const warnings = O.sheetTransferWarnings(sheets, !copy);
+          if (warnings.length) {
+            const message = warnings.join('\n') + '\n\n' + (copy ? L.t('Continue copying to the other workbook?') : L.t('Continue moving to the other workbook?'));
+            if (await ui.msg(message, { icon: 'warn', buttons: ['Continue', 'Cancel'] }) !== 0) return;
           }
         }
-        A().renderTabs();
-      }) }, { label: 'Cancel' }] });
+        tryRun(() => {
+          let at = before;
+          if (tw === w) {
+            for (const s of sheets) { if (copy) { const c = O.copySheet(w, s, at); at = w.sheets.indexOf(c) + 1; w.active = w.sheets.indexOf(c); } else { O.moveSheet(w, s, at); at = w.sheets.indexOf(s) + 1; } }
+          } else {
+            O.tx(tw, 'Copy Sheet', () => { for (const s of sheets) O.copyToWorkbook(s, tw, at++); });
+            if (!copy) O.tx(w, 'Move Sheet', () => { for (const s of sheets) O.deleteSheet(w, s); });
+          }
+          A().renderTabs();
+        });
+      } }, { label: 'Cancel' }] });
   };
   D.unhideSheet = function () {
     const w = wb();

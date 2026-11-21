@@ -291,7 +291,7 @@
           if (r !== 0) return false;
           ui.busy(true, 'Saving...');
         }
-        blob = L.csv.write(w, sh(), type === 'csv' ? ',' : '\t');
+        blob = L.csv.write(w, sh(), type === 'csv' ? ',' : '\t', b.type === type && w.textImport?.type === type ? w.textImport : undefined);
       } else if (type === 'html') blob = L.csv.writeHTML(w);
       else if (type === 'xmlss') blob = L.xmlss.write(w);
       else if (type === 'pdf') {

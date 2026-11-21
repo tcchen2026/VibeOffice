@@ -47,6 +47,20 @@ from above or from the left; whole-row/column selections bound only the selected
 On protected sheets, fill checks every cell in that bounded selection, including blank cells
 and destinations beyond the ordinary selection probe, before making any changes.
 
+Hyperlinks follow their cells through sorting, copying, cutting, dragging and shifting cells.
+Cutting or shifting cells also moves their validation and conditional-format ranges and updates
+defined names and chart references. Undo and Redo restore chart references on every affected sheet.
+Copying a filtered range includes the rows the filter shows, including rows hidden by hand.
+
+Move or Copy to another workbook carries comments, validation, conditional formatting, hyperlinks
+and sheet defaults. Ledger asks before leaving out drawings, tables or sparklines, or transferring
+formulas that depend on names or other source sheets. Moving a sheet also warns when formulas in
+the original workbook will show `#REF!`.
+
+Saving an opened CSV or delimited text file in the same format retains its delimiter, text
+qualifier and byte-order mark. A new CSV uses commas. In semicolon-delimited data, Ledger
+continues to interpret `1,500` as the number 1500.
+
 **Entering data.** Excel's own input rules: numbers, percentages, currency, fractions (`1 1/2`),
 dates and times in the usual short forms, a leading apostrophe for text, formulas with point mode
 (click or use the arrow keys to insert references, also after F2 wherever the formula expects one; Shift+click

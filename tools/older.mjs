@@ -40,7 +40,7 @@ for (let i = 0; i < 50 && !(await listening(port)); i++) await new Promise((r) =
 const BASE = `http://127.0.0.1:${port}`;
 console.log(`older code: public/ at ${git('log', '-1', '--format=%h %s', sha)}\n  served on ${BASE}; today's tests: ${testArgs.join(' ')}\n`);
 
-const run = spawn(process.execPath, ['--test', '--test-concurrency=1', ...testArgs], { cwd: root, stdio: 'inherit', env: { ...process.env, BASE } });
+const run = spawn(process.execPath, ['--test', '--test-concurrency=1', ...testArgs], { cwd: root, stdio: 'inherit', env: { ...process.env, BASE, VO_TEST_PUBLIC: path.join(dir, 'public') } });
 const stop = () => server.kill();
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { run.kill(sig); stop(); });
 run.on('exit', (code) => { stop(); process.exit(code ?? 1); });
