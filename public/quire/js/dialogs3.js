@@ -675,19 +675,42 @@
     async function doPrint(r) {
       const w = what.value;
       if (w !== 'doc' && w !== 'markup') { printList(w); return; }
-      let pages = r.pages;
-      if (r.range === 'current') pages = [Math.max(0, LY.pageOf(E.sel.f)) + 1];
-      else if (r.range === 'selection' && E.sel && !E.collapsed()) { const [a, b] = E.range(); const p0 = LY.pageOf(a), p1 = LY.pageOf(b); pages = []; for (let i = p0; i <= p1; i++) pages.push(i + 1); }
-      if (which.value !== 'all') pages = (pages || Array.from({ length: n }, (_, i) => i + 1)).filter((i) => (which.value === 'odd' ? i % 2 === 1 : i % 2 === 0));
-      const prevMarkup = LY.opts.markup;
-      if (w === 'doc' && prevMarkup !== 'final') { LY.opts.markup = 'final'; LY.render(); }
+      const source = doc(), selection = E.sel, view = LY.view, markup = LY.opts.markup;
+      const scroll = L.$('#scroller'), top = scroll?.scrollTop, left = scroll?.scrollLeft;
+      const selected = r.range === 'selection' && selection && !E.collapsed();
+      let blob;
       try {
-        const blob = await A().buildPDF(pages);
+        let pages = r.pages;
+        if (r.range === 'current') pages = [Math.max(0, LY.pageOf(selection.f)) + 1];
+        if (selected) {
+          const [a, b] = E.range(), page = LY.pages[LY.pageOf(a)];
+          const blocks = O.copyRange(a, b, { clipTables: true }), bodies = O.copyBodies(blocks, source);
+          const temp = { ...source, ...bodies, main: { kind: 'main', blocks }, sect: L.clone(D.sectFor(source, b.p)),
+            hf: {}, watermark: null, _idxDirty: true };
+          const first = D.sections(temp)[0].sect;
+          if (page) first.pgNum = { ...first.pgNum, start: page.numVal };
+          D.doc = temp; E.sel = null;
+          pages = null;
+        }
+        if (w === 'doc') LY.opts.markup = 'final';
+        else if (markup === 'final' || markup === 'original') LY.opts.markup = markup === 'original' ? 'origMarkup' : 'markup';
+        if (selected || markup !== LY.opts.markup) { LY.view = 'print'; LY.render(); }
+        if (which.value !== 'all') pages = (pages || LY.pages.map((p, i) => i + 1)).filter(i => i % 2 === (which.value === 'odd' ? 1 : 0));
+        blob = await A().buildPDF(pages);
+      } catch (e) {
+        ui.msg(L.t('The PDF could not be created: {0}', e.message || e), { icon: 'error' });
+      } finally {
         L.ui.busy(false);
-        doc().props.printed = new Date().toISOString();
-        await L.saveFile(`${A().fileName}.pdf`, blob);
-      } catch (e) { L.ui.busy(false); ui.msg(L.t('The PDF could not be created: {0}', e.message || e), { icon: 'error' }); }
-      finally { if (LY.opts.markup !== prevMarkup) { LY.opts.markup = prevMarkup; LY.render(); E.restoreDom(true); } }
+        if (selected || markup !== LY.opts.markup || view !== LY.view) {
+          D.doc = source; E.sel = selection; LY.opts.markup = markup; LY.view = view; LY.render(); E.restoreDom(true);
+          if (scroll) { scroll.scrollTop = top; scroll.scrollLeft = left; }
+        }
+      }
+      if (blob) {
+        source.props.printed = new Date().toISOString();
+        try { await L.saveFile(A().fileName + '.pdf', blob); }
+        catch (e) { ui.msg(L.t('The PDF could not be created: {0}', e.message || e), { icon: 'error' }); }
+      }
     }
     /* the printed lists in the UI's language: style kinds and revision kinds as shown */
     const KINDS = { paragraph: L.N('Paragraph'), character: L.N('Character'), table: L.N('Table'), numbering: L.N('List'), ins: L.N('Inserted'), del: L.N('Deleted'), chg: L.N('Formatted'), pchg: L.N('Formatted'), mins: L.N('Inserted'), mdel: L.N('Deleted') };

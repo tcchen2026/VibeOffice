@@ -17,19 +17,45 @@
   /* ---------- story text with paragraph marks ---------- */
   function storyText(story) {
     D.reindex(doc());
-    const paras = story.paras || [];
-    const starts = [];
-    let s = '';
-    for (const p of paras) { starts.push(s.length); s += D.ptext(p) + '\r'; }
-    return { text: s, paras, starts };
+    const paras = story.paras || [], spans = [], byPara = new Map();
+    let text = '';
+    // Keep one mapping per visible run. A hidden run leaves different model positions
+    // on the two sides of a single visible offset.
+    for (const [i, p] of paras.entries()) {
+      const line = [];
+      byPara.set(p, line);
+      let offset = 0, gap = false;
+      const append = (str, length, deleted, mark) => {
+        const span = { p, offset, at: text.length, length, gap, deleted, mark, next: paras[i + 1] };
+        line.push(span); spans.push(span); text += str; gap = false;
+      };
+      for (const it of p.runs) {
+        const n = D.ilen(it);
+        if (!n) continue;
+        const rp = it.rPr || {}, view = LY.opts.markup;
+        if (rp.del && view === 'final' || rp.ins && view === 'original') gap = true;
+        else append(D.ptext({ runs: [it] }), n, !!rp.del, false);
+        offset += n;
+      }
+      append('\r', 1, !!p.mark?.del, true);
+    }
+    return { text, spans, byPara };
   }
-  function toPos(st, off) {
-    let lo = 0, hi = st.starts.length - 1;
-    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (st.starts[mid] <= off) lo = mid; else hi = mid - 1; }
-    const p = st.paras[lo];
-    return D.pos(p, Math.min(off - st.starts[lo], D.plen(p)));
+  function spanAt(spans, off) {
+    let lo = 0, hi = spans.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (spans[m].at <= off) lo = m; else hi = m - 1; }
+    return lo;
   }
-  function fromPos(st, pos) { const i = st.paras.indexOf(pos.p); return i < 0 ? 0 : st.starts[i] + pos.o; }
+  function toPos(span, off) {
+    if (span.mark && off > span.at) return span.next ? D.pos(span.next, 0) : D.pos(span.p, span.offset);
+    return D.pos(span.p, span.offset + off - span.at);
+  }
+  function fromPos(st, pos) {
+    const line = st.byPara.get(pos.p);
+    if (!line) return 0;
+    for (const s of line) if (pos.o <= s.offset + s.length) return s.at + Math.max(0, pos.o - s.offset);
+    return line.at(-1).at;
+  }
 
   /* ---------- pattern compilation ---------- */
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
@@ -121,9 +147,20 @@
     while ((m = re.exec(st.text))) {
       if (m[0].length === 0) { re.lastIndex++; continue; }
       if (!filter(m)) continue;
-      const a = toPos(st, m.index), b = toPos(st, m.index + m[0].length);
+      const end = m.index + m[0].length, first = spanAt(st.spans, m.index), last = spanAt(st.spans, end - 1);
+      const a = toPos(st.spans[first], m.index), b = toPos(st.spans[last], end);
+      const cuts = [];
+      if (o.replacing) {
+        let deleted = false;
+        for (let i = first; i <= last; i++) {
+          const span = st.spans[i];
+          if (span.deleted) { deleted = true; break; }
+          if (i > first && span.gap) cuts.push([toPos(st.spans[i - 1], span.at), toPos(span, span.at)]);
+        }
+        if (deleted) continue;
+      }
       if (!formatOK(o, a, b)) continue;
-      out.push({ a, b, m, s: m.index, e: m.index + m[0].length });
+      out.push({ a, b, m, cuts, s: m.index, e: end });
       if (out.length > 20000) break;
     }
     return { matches: out, st };
@@ -177,7 +214,12 @@
   function replaceHit(o, hit) {
     const text = replacementText(o, hit);
     const keepR = (() => { const it = D.itemAfter(hit.a.p, hit.a.o); return it && it.rPr ? L.clone(it.rPr) : O.inheritRPr(hit.a); })();
-    const pos = O.deleteRange(hit.a, hit.b);
+    let to = hit.b;
+    for (const [before, after] of hit.cuts.slice().reverse()) {
+      O.deleteRange(after, to);
+      to = before;
+    }
+    const pos = O.deleteRange(hit.a, to);
     if (!text && !o.replaceFormat) return pos;
     let end = pos;
     if (text) {
@@ -200,6 +242,7 @@
     return end;
   }
   FD.replaceAll = function (o) {
+    o = { ...o, replacing: true };
     let n = 0;
     E.edit('Replace All', () => {
       for (const story of storiesFor(o)) {
@@ -212,6 +255,7 @@
     return n;
   };
   FD.replaceOne = function (o) {
+    o = { ...o, replacing: true };
     /* if the selection is exactly a match, replace it; then find the next */
     if (E.sel && !E.collapsed()) {
       const story = E.story();

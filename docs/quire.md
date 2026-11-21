@@ -38,6 +38,10 @@ Text with Similar Formatting needs a selection of several separate pieces, which
 
 Copying a footnote, endnote or comment includes its text and formatting. Paste and Insert ▸ File give the copies their own identifiers, including within the same document. Undo removes the pasted text and its notes together. When an older file has two marks for one note, opening it gives each mark an independent copy of the available text. Word 2016 refused both damaged paste samples and opened both corrected copies with their citations. A scan of 2,867 readable Word packages found 735 footnote and endnote references, four missing footnote bodies in two documents and no repeated references.
 
+Find and Highlight All follow the revision view. Final hides deletions and Original hides insertions. Replace edits live text and preserves any tracked deletion between matching characters. File ▸ Print ▸ Selection prints the selected text, including its footnotes and selected portions of table cells. Document showing markup includes the revisions visible in that selection.
+
+Mail merge previews and merged documents advance to the next included recipient at a NEXT field. NEXTIF advances when its comparison succeeds. SKIPIF omits that template copy. Fields beyond the last recipient are empty. In table formulas, a cell containing `20.00%` contributes `0.2`. Word's numeric field picture `0%` appends a percent sign to the result.
+
 ## Proofing tools (offline)
 
 | Feature | How it works |

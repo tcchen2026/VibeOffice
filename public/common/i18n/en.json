@@ -1070,7 +1070,7 @@
  },
  "&Directory": {
   "where": [
-   "quire/js/mailmerge.js:279"
+   "quire/js/mailmerge.js:353"
   ]
  },
  "&Discard": {
@@ -1250,7 +1250,7 @@
  "&Envelopes": {
   "where": [
    "quire/js/dialogs3.js:415",
-   "quire/js/mailmerge.js:279"
+   "quire/js/mailmerge.js:353"
   ]
  },
  "&Envelopes and Labels...": {
@@ -1350,7 +1350,7 @@
   "where": [
    "lectern/js/dialogs.js:757",
    "ledger/js/dialogs.js:522",
-   "quire/js/find.js:331"
+   "quire/js/find.js:375"
   ]
  },
  "&Find...": {
@@ -1579,7 +1579,7 @@
  "&Go To": {
   "where": [
    "quire/js/dialogs2.js:395",
-   "quire/js/find.js:344"
+   "quire/js/find.js:388"
   ]
  },
  "&Go To...": {
@@ -1761,12 +1761,12 @@
  "&Highlight": {
   "where": [
    "quire/js/dialogs3.js:576",
-   "quire/js/find.js:384"
+   "quire/js/find.js:428"
   ]
  },
  "&Highlight all items found in:": {
   "where": [
-   "quire/js/find.js:307"
+   "quire/js/find.js:351"
   ]
  },
  "&Highlight key points": {
@@ -2076,7 +2076,7 @@
  },
  "&Letters": {
   "where": [
-   "quire/js/mailmerge.js:279"
+   "quire/js/mailmerge.js:353"
   ]
  },
  "&LettersArt": {
@@ -2316,7 +2316,7 @@
  },
  "&More >>": {
   "where": [
-   "quire/js/find.js:315"
+   "quire/js/find.js:359"
   ]
  },
  "&More AutoShapes...": {
@@ -2754,7 +2754,7 @@
  },
  "&Paste:": {
   "where": [
-   "quire/js/dialogs3.js:721"
+   "quire/js/dialogs3.js:744"
   ]
  },
  "&Pattern": {
@@ -3046,7 +3046,7 @@
   "where": [
    "lectern/js/dialogs.js:759",
    "ledger/js/dialogs.js:520",
-   "quire/js/find.js:332"
+   "quire/js/find.js:376"
   ]
  },
  "&Replace It": {
@@ -3531,7 +3531,7 @@
  "&Style...": {
   "where": [
    "ledger/js/commands.js:152",
-   "quire/js/find.js:383"
+   "quire/js/find.js:427"
   ]
  },
  "&Style:": {
@@ -4342,7 +4342,7 @@
  },
  "0 or More Characters": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "1 Spoke": {
@@ -4624,7 +4624,7 @@
  },
  "<< &Less": {
   "where": [
-   "quire/js/find.js:315"
+   "quire/js/find.js:359"
   ]
  },
  "<<Selection in Document>>": {
@@ -4725,7 +4725,7 @@
  },
  "A comment marker was removed because its comment was missing from the clipboard.": {
   "where": [
-   "quire/js/ops.js:397"
+   "quire/js/ops.js:421"
   ]
  },
  "A comment on a deleted object is now attached to its slide.": {
@@ -4897,7 +4897,7 @@
  },
  "A footnote marker was removed because its note was missing from the clipboard.": {
   "where": [
-   "quire/js/ops.js:395"
+   "quire/js/ops.js:419"
   ]
  },
  "A footnote marker was removed because the document contained no footnote for it.": {
@@ -5198,7 +5198,7 @@
  },
  "A word processor that runs entirely in your browser. Documents are read and written as Office Open XML (.docx, .docm), RTF, HTML, text and Markdown; nothing is uploaded.": {
   "where": [
-   "quire/js/dialogs3.js:729"
+   "quire/js/dialogs3.js:752"
   ]
  },
  "A workbook must contain at least one visible worksheet.": {
@@ -5630,18 +5630,18 @@
  "Address Line 1": {
   "where": [
    "quire/js/mailmerge.js:13",
-   "quire/js/mailmerge.js:155"
+   "quire/js/mailmerge.js:154"
   ]
  },
  "Address Line 2": {
   "where": [
    "quire/js/mailmerge.js:13",
-   "quire/js/mailmerge.js:156"
+   "quire/js/mailmerge.js:155"
   ]
  },
  "Address block...": {
   "where": [
-   "quire/js/mailmerge.js:289"
+   "quire/js/mailmerge.js:363"
   ]
  },
  "Address list": {
@@ -5848,7 +5848,7 @@
   "where": [
    "lectern/js/diagram.js:361",
    "ledger/js/fninfo.js:536",
-   "quire/js/find.js:311"
+   "quire/js/find.js:355"
   ]
  },
  "All Borders": {
@@ -5906,7 +5906,7 @@
  },
  "All stories (headers, notes, comments)": {
   "where": [
-   "quire/js/find.js:308"
+   "quire/js/find.js:352"
   ]
  },
  "All styles": {
@@ -6138,7 +6138,7 @@
  },
  "An endnote marker was removed because its note was missing from the clipboard.": {
   "where": [
-   "quire/js/ops.js:396"
+   "quire/js/ops.js:420"
   ]
  },
  "An endnote marker was removed because the document contained no endnote for it.": {
@@ -6227,18 +6227,18 @@
  },
  "Any Character": {
   "where": [
-   "quire/js/find.js:392",
-   "quire/js/find.js:393"
+   "quire/js/find.js:436",
+   "quire/js/find.js:437"
   ]
  },
  "Any Digit": {
   "where": [
-   "quire/js/find.js:393"
+   "quire/js/find.js:437"
   ]
  },
  "Any Letter": {
   "where": [
-   "quire/js/find.js:393"
+   "quire/js/find.js:437"
   ]
  },
  "Any value": {
@@ -7123,7 +7123,7 @@
  },
  "Beginning of Word": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "Behind Text": {
@@ -7202,7 +7202,7 @@
  "Blank Document": {
   "where": [
    "common/suite.js:342",
-   "quire/js/dialogs3.js:738"
+   "quire/js/dialogs3.js:761"
   ]
  },
  "Blank Presentation": {
@@ -7666,7 +7666,7 @@
  },
  "Browse...": {
   "where": [
-   "quire/js/mailmerge.js:287"
+   "quire/js/mailmerge.js:361"
   ]
  },
  "Browse... (use the design of another .pptx/.potx)": {
@@ -8178,8 +8178,8 @@
  },
  "Caret Character": {
   "where": [
-   "quire/js/find.js:391",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:437"
   ]
  },
  "Case &sensitive": {
@@ -8494,7 +8494,7 @@
   "where": [
    "quire/js/dialogs.js:883",
    "quire/js/dialogs3.js:61",
-   "quire/js/dialogs3.js:693"
+   "quire/js/dialogs3.js:716"
   ]
  },
  "Character formatting could not be read": {
@@ -8504,7 +8504,7 @@
  },
  "Character in Range": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "Characters (no spaces)": {
@@ -9159,7 +9159,7 @@
  },
  "Clipboard Contents": {
   "where": [
-   "quire/js/find.js:391"
+   "quire/js/find.js:435"
   ]
  },
  "Clock": {
@@ -9461,8 +9461,8 @@
  "Column Break": {
   "where": [
    "quire/js/editor.js:381",
-   "quire/js/find.js:391",
-   "quire/js/find.js:393",
+   "quire/js/find.js:435",
+   "quire/js/find.js:437",
    "quire/js/render.js:609"
   ]
  },
@@ -9471,7 +9471,7 @@
    "ledger/js/dialogs.js:347",
    "ledger/js/ops.js:514",
    "quire/js/rulers.js:269",
-   "quire/js/tables.js:1178"
+   "quire/js/tables.js:1183"
   ]
  },
  "Column break": {
@@ -9593,7 +9593,7 @@
  "Comment": {
   "where": [
    "ledger/js/dialogs.js:734",
-   "quire/js/find.js:249",
+   "quire/js/find.js:293",
    "quire/js/panes.js:107",
    "quire/js/ribbon.js:35"
   ]
@@ -9635,7 +9635,7 @@
  },
  "Comment {0}: {1}": {
   "where": [
-   "quire/js/dialogs3.js:701"
+   "quire/js/dialogs3.js:724"
   ]
  },
  "Comments": {
@@ -9672,7 +9672,7 @@
  "Company Name": {
   "where": [
    "quire/js/mailmerge.js:13",
-   "quire/js/mailmerge.js:154"
+   "quire/js/mailmerge.js:153"
   ]
  },
  "Compare": {
@@ -9712,8 +9712,8 @@
  },
  "Complete the merge": {
   "where": [
-   "quire/js/mailmerge.js:269",
-   "quire/js/mailmerge.js:294"
+   "quire/js/mailmerge.js:343",
+   "quire/js/mailmerge.js:368"
   ]
  },
  "Complimentary closing:": {
@@ -9915,13 +9915,13 @@
  "Convert Notes": {
   "where": [
    "quire/js/dialogs2.js:206",
-   "quire/js/fields.js:806"
+   "quire/js/fields.js:801"
   ]
  },
  "Convert Table to Text": {
   "where": [
    "quire/js/dialogs2.js:794",
-   "quire/js/tables.js:1002"
+   "quire/js/tables.js:1007"
   ]
  },
  "Convert Text to Columns Wizard": {
@@ -9932,7 +9932,7 @@
  "Convert Text to Table": {
   "where": [
    "quire/js/dialogs2.js:789",
-   "quire/js/tables.js:983"
+   "quire/js/tables.js:988"
   ]
  },
  "Convert all &endnotes to footnotes": {
@@ -10854,7 +10854,7 @@
  },
  "Currently, your recipients are selected from: {0} ({1} of {2})": {
   "where": [
-   "quire/js/mailmerge.js:286"
+   "quire/js/mailmerge.js:360"
   ]
  },
  "Curve": {
@@ -11663,7 +11663,7 @@
  },
  "Deleted": {
   "where": [
-   "quire/js/dialogs3.js:693",
+   "quire/js/dialogs3.js:716",
    "quire/js/review.js:389"
   ]
  },
@@ -12366,7 +12366,7 @@
    "lectern/js/slideshow.js:12",
    "lectern/js/slideshow.js:29",
    "ledger/js/dialogs.js:776",
-   "quire/js/find.js:311"
+   "quire/js/find.js:355"
   ]
  },
  "Down Arrow": {
@@ -12470,8 +12470,8 @@
   "where": [
    "quire/js/commands.js:422",
    "quire/js/ribbon.js:89",
-   "quire/js/tables.js:1243",
-   "quire/js/tables.js:1248"
+   "quire/js/tables.js:1248",
+   "quire/js/tables.js:1253"
   ]
  },
  "Draw shapes": {
@@ -12629,7 +12629,7 @@
  },
  "E-mail Message": {
   "where": [
-   "quire/js/dialogs3.js:738"
+   "quire/js/dialogs3.js:761"
   ]
  },
  "E-mail addre&ss:": {
@@ -12719,7 +12719,7 @@
  },
  "Edit Field": {
   "where": [
-   "quire/js/fields.js:469"
+   "quire/js/fields.js:464"
   ]
  },
  "Edit Hyperlink": {
@@ -12796,7 +12796,7 @@
  },
  "Edit individual letters...": {
   "where": [
-   "quire/js/mailmerge.js:294"
+   "quire/js/mailmerge.js:368"
   ]
  },
  "Edit objects": {
@@ -12806,8 +12806,8 @@
  },
  "Edit recipient list...": {
   "where": [
-   "quire/js/mailmerge.js:287",
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:361",
+   "quire/js/mailmerge.js:366"
   ]
  },
  "Edit scenarios": {
@@ -12896,8 +12896,8 @@
   "where": [
    "common/dialogs.js:14",
    "quire/js/commands.js:389",
-   "quire/js/find.js:391",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:437"
   ]
  },
  "Em Space": {
@@ -12942,8 +12942,8 @@
   "where": [
    "common/dialogs.js:14",
    "quire/js/commands.js:390",
-   "quire/js/find.js:391",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:437"
   ]
  },
  "En Space": {
@@ -12984,7 +12984,7 @@
  },
  "End of Word": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "End of document": {
@@ -13010,7 +13010,7 @@
  "Endnote": {
   "where": [
    "quire/js/dialogs2.js:243",
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Endnote number": {
@@ -13072,7 +13072,7 @@
  },
  "Enter + and − to move relative to the current location. Example: +4 will move forward four items.": {
   "where": [
-   "quire/js/find.js:326"
+   "quire/js/find.js:370"
   ]
  },
  "Enter AutoText entries here:": {
@@ -13102,47 +13102,47 @@
  },
  "Enter bookmark name:": {
   "where": [
-   "quire/js/find.js:249"
+   "quire/js/find.js:293"
   ]
  },
  "Enter comment number:": {
   "where": [
-   "quire/js/find.js:249"
+   "quire/js/find.js:293"
   ]
  },
  "Enter endnote number:": {
   "where": [
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Enter equation number:": {
   "where": [
-   "quire/js/find.js:251"
+   "quire/js/find.js:295"
   ]
  },
  "Enter field number:": {
   "where": [
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Enter footnote number:": {
   "where": [
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Enter graphic number:": {
   "where": [
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Enter heading number:": {
   "where": [
-   "quire/js/find.js:251"
+   "quire/js/find.js:295"
   ]
  },
  "Enter line number:": {
   "where": [
-   "quire/js/find.js:249"
+   "quire/js/find.js:293"
   ]
  },
  "Enter new password (optional):": {
@@ -13152,8 +13152,8 @@
  },
  "Enter page number:": {
   "where": [
-   "quire/js/find.js:249",
-   "quire/js/find.js:318"
+   "quire/js/find.js:293",
+   "quire/js/find.js:362"
   ]
  },
  "Enter page numbers and/or page ranges separated by commas. For example, 1,3,5–12": {
@@ -13168,7 +13168,7 @@
  },
  "Enter section number:": {
   "where": [
-   "quire/js/find.js:249"
+   "quire/js/find.js:293"
   ]
  },
  "Enter slide numbers and/or slide ranges separated by commas. For example, 1,3,5–12": {
@@ -13178,7 +13178,7 @@
  },
  "Enter table number:": {
   "where": [
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Enter values for each of the changing cells.": {
@@ -13252,7 +13252,7 @@
  },
  "Envelope options...": {
   "where": [
-   "quire/js/mailmerge.js:282"
+   "quire/js/mailmerge.js:356"
   ]
  },
  "Envelope si&ze:": {
@@ -13279,7 +13279,7 @@
   "where": [
    "quire/js/dialogs2.js:456",
    "quire/js/dialogs2.js:474",
-   "quire/js/find.js:251"
+   "quire/js/find.js:295"
   ]
  },
  "Equations and Formulas": {
@@ -13328,12 +13328,12 @@
   "where": [
    "quire/js/fields.js:266",
    "quire/js/fields.js:276",
-   "quire/js/fields.js:302"
+   "quire/js/fields.js:299"
   ]
  },
  "Error! No text of specified style in document.": {
   "where": [
-   "quire/js/fields.js:368",
+   "quire/js/fields.js:365",
    "quire/js/layout.js:1089",
    "quire/js/layout.js:1129"
   ]
@@ -13345,7 +13345,7 @@
  },
  "Error! Reference source not found.": {
   "where": [
-   "quire/js/fields.js:308"
+   "quire/js/fields.js:305"
   ]
  },
  "Error! Unknown document property name.": {
@@ -13519,7 +13519,7 @@
  },
  "Exclude this recipient": {
   "where": [
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:366"
   ]
  },
  "Executive": {
@@ -13594,7 +13594,7 @@
  },
  "Expression": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "Extend Selection": {
@@ -13689,7 +13689,7 @@
   "where": [
    "quire/js/dialogs.js:921",
    "quire/js/dialogs.js:925",
-   "quire/js/find.js:312"
+   "quire/js/find.js:356"
   ]
  },
  "F&ormat:": {
@@ -13809,7 +13809,7 @@
   "where": [
    "lectern/js/dialogs.js:755",
    "ledger/js/dialogs.js:514",
-   "quire/js/find.js:323"
+   "quire/js/find.js:367"
   ]
  },
  "Fi&rst page number:": {
@@ -13835,7 +13835,7 @@
  "Field": {
   "where": [
    "quire/js/dialogs2.js:158",
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Field &codes": {
@@ -13872,7 +13872,7 @@
  },
  "Fields:": {
   "where": [
-   "quire/js/mailmerge.js:170"
+   "quire/js/mailmerge.js:169"
   ]
  },
  "Fifth level": {
@@ -13895,7 +13895,7 @@
    "common/core.js:373",
    "lectern/js/dialogs.js:992",
    "ledger/js/dialogs.js:672",
-   "quire/js/dialogs3.js:716"
+   "quire/js/dialogs3.js:739"
   ]
  },
  "File &origin:": {
@@ -14071,7 +14071,7 @@
  },
  "Fin&d": {
   "where": [
-   "quire/js/find.js:342"
+   "quire/js/find.js:386"
   ]
  },
  "Final": {
@@ -14124,22 +14124,22 @@
  },
  "Find Entry": {
   "where": [
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:366"
   ]
  },
  "Find Style": {
   "where": [
-   "quire/js/find.js:383"
+   "quire/js/find.js:427"
   ]
  },
  "Find What Expression": {
   "where": [
-   "quire/js/find.js:391"
+   "quire/js/find.js:435"
   ]
  },
  "Find What Text": {
   "where": [
-   "quire/js/find.js:391"
+   "quire/js/find.js:435"
   ]
  },
  "Find a command by name": {
@@ -14149,19 +14149,19 @@
  },
  "Find a recipient...": {
   "where": [
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:366"
   ]
  },
  "Find all &word forms (English)": {
   "where": [
-   "quire/js/find.js:310"
+   "quire/js/find.js:354"
   ]
  },
  "Find and Replace": {
   "where": [
    "ledger/js/dialogs.js:517",
    "quire/js/app.js:1467",
-   "quire/js/find.js:364"
+   "quire/js/find.js:408"
   ]
  },
  "Find and replace": {
@@ -14171,7 +14171,7 @@
  },
  "Find whole words onl&y": {
   "where": [
-   "quire/js/find.js:310"
+   "quire/js/find.js:354"
   ]
  },
  "Find, Replace": {
@@ -14191,7 +14191,7 @@
  },
  "Find:": {
   "where": [
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:366"
   ]
  },
  "Finds average (arithmetic mean) for the cells specified by a given condition or criteria.": {
@@ -14251,8 +14251,8 @@
  "First Name": {
   "where": [
    "quire/js/mailmerge.js:13",
-   "quire/js/mailmerge.js:143",
-   "quire/js/mailmerge.js:153"
+   "quire/js/mailmerge.js:142",
+   "quire/js/mailmerge.js:152"
   ]
  },
  "First Page Footer": {
@@ -14598,7 +14598,7 @@
  },
  "Font color: {0}": {
   "where": [
-   "quire/js/find.js:374",
+   "quire/js/find.js:418",
    "quire/js/review.js:431"
   ]
  },
@@ -14644,7 +14644,7 @@
  "Font: {0}": {
   "where": [
    "quire/js/dialogs.js:906",
-   "quire/js/find.js:374",
+   "quire/js/find.js:418",
    "quire/js/review.js:431"
   ]
  },
@@ -14683,7 +14683,7 @@
  "Footnote": {
   "where": [
    "quire/js/dialogs2.js:243",
-   "quire/js/find.js:250"
+   "quire/js/find.js:294"
   ]
  },
  "Footnote / Endnote": {
@@ -14938,23 +14938,23 @@
  },
  "Format: {0}": {
   "where": [
-   "quire/js/find.js:306"
+   "quire/js/find.js:350"
   ]
  },
  "Formatted": {
   "where": [
-   "quire/js/dialogs3.js:693",
+   "quire/js/dialogs3.js:716",
    "quire/js/review.js:389"
   ]
  },
  "Formatted Text (RTF)": {
   "where": [
-   "quire/js/dialogs3.js:719"
+   "quire/js/dialogs3.js:742"
   ]
  },
  "Formatted text keeps fonts and formatting; unformatted text takes the formatting of the destination.": {
   "where": [
-   "quire/js/dialogs3.js:721"
+   "quire/js/dialogs3.js:744"
   ]
  },
  "Formatted: {0}": {
@@ -15335,7 +15335,7 @@
  },
  "G&o to what:": {
   "where": [
-   "quire/js/find.js:326"
+   "quire/js/find.js:370"
   ]
  },
  "G&uides": {
@@ -15445,8 +15445,8 @@
  },
  "Go &To": {
   "where": [
-   "quire/js/find.js:317",
-   "quire/js/find.js:321"
+   "quire/js/find.js:361",
+   "quire/js/find.js:365"
   ]
  },
  "Go Back": {
@@ -15585,8 +15585,8 @@
  },
  "Graphic": {
   "where": [
-   "quire/js/find.js:250",
-   "quire/js/find.js:393"
+   "quire/js/find.js:294",
+   "quire/js/find.js:437"
   ]
  },
  "Graphite": {
@@ -15644,7 +15644,7 @@
  },
  "Greeting line...": {
   "where": [
-   "quire/js/mailmerge.js:289"
+   "quire/js/mailmerge.js:363"
   ]
  },
  "Gri&d": {
@@ -15773,7 +15773,7 @@
  },
  "HTML Format": {
   "where": [
-   "quire/js/dialogs3.js:719"
+   "quire/js/dialogs3.js:742"
   ]
  },
  "Hairline": {
@@ -15893,7 +15893,7 @@
  "Heading": {
   "where": [
    "quire/js/dialogs2.js:243",
-   "quire/js/find.js:251"
+   "quire/js/find.js:295"
   ]
  },
  "Heading 1": {
@@ -16062,7 +16062,7 @@
    "quire/js/app.js:202",
    "quire/js/app.js:1445",
    "quire/js/commands.js:353",
-   "quire/js/find.js:376"
+   "quire/js/find.js:420"
   ]
  },
  "Highlight:": {
@@ -16077,7 +16077,7 @@
  },
  "Highlighting is not supported in this browser.": {
   "where": [
-   "quire/js/find.js:351"
+   "quire/js/find.js:395"
   ]
  },
  "History is a reserved name.": {
@@ -16188,7 +16188,7 @@
  },
  "How do you want to set up your letters?": {
   "where": [
-   "quire/js/mailmerge.js:281"
+   "quire/js/mailmerge.js:355"
   ]
  },
  "Hyperl&ink...": {
@@ -16602,7 +16602,7 @@
  "Insert Address Block": {
   "where": [
    "quire/js/commands.js:561",
-   "quire/js/mailmerge.js:162"
+   "quire/js/mailmerge.js:161"
   ]
  },
  "Insert AutoShape": {
@@ -16618,7 +16618,7 @@
  },
  "Insert Caption": {
   "where": [
-   "quire/js/fields.js:677",
+   "quire/js/fields.js:672",
    "quire/js/ribbon.js:52"
   ]
  },
@@ -16684,7 +16684,7 @@
  },
  "Insert Cross-reference": {
   "where": [
-   "quire/js/fields.js:736"
+   "quire/js/fields.js:731"
   ]
  },
  "Insert Date": {
@@ -16715,7 +16715,7 @@
  "Insert Endnote": {
   "where": [
    "quire/js/commands.js:293",
-   "quire/js/fields.js:773"
+   "quire/js/fields.js:768"
   ]
  },
  "Insert Equation": {
@@ -16737,7 +16737,7 @@
  "Insert Footnote": {
   "where": [
    "quire/js/commands.js:292",
-   "quire/js/fields.js:773",
+   "quire/js/fields.js:768",
    "quire/js/ribbon.js:51"
   ]
  },
@@ -16752,7 +16752,7 @@
  "Insert Greeting Line": {
   "where": [
    "quire/js/commands.js:562",
-   "quire/js/mailmerge.js:148"
+   "quire/js/mailmerge.js:147"
   ]
  },
  "Insert Hyperlink": {
@@ -16765,7 +16765,7 @@
  },
  "Insert Index": {
   "where": [
-   "quire/js/fields.js:631"
+   "quire/js/fields.js:626"
   ]
  },
  "Insert IntelliArt": {
@@ -16798,8 +16798,8 @@
  },
  "Insert Merge Field": {
   "where": [
-   "quire/js/mailmerge.js:138",
-   "quire/js/mailmerge.js:170"
+   "quire/js/mailmerge.js:137",
+   "quire/js/mailmerge.js:169"
   ]
  },
  "Insert Merge Fields": {
@@ -16911,7 +16911,7 @@
  },
  "Insert Table of Contents": {
   "where": [
-   "quire/js/fields.js:631"
+   "quire/js/fields.js:626"
   ]
  },
  "Insert Text Box": {
@@ -17026,7 +17026,7 @@
  },
  "Inserted": {
   "where": [
-   "quire/js/dialogs3.js:693",
+   "quire/js/dialogs3.js:716",
    "quire/js/review.js:389"
   ]
  },
@@ -17322,7 +17322,7 @@
  },
  "Invalid {} expression.": {
   "where": [
-   "quire/js/find.js:74"
+   "quire/js/find.js:100"
   ]
  },
  "Inverted Pyramid": {
@@ -17516,7 +17516,7 @@
  },
  "La&bels": {
   "where": [
-   "quire/js/mailmerge.js:279"
+   "quire/js/mailmerge.js:353"
   ]
  },
  "La&st cell": {
@@ -17531,7 +17531,7 @@
  },
  "Label options...": {
   "where": [
-   "quire/js/mailmerge.js:283"
+   "quire/js/mailmerge.js:357"
   ]
  },
  "Label:": {
@@ -17611,8 +17611,8 @@
  "Last Name": {
   "where": [
    "quire/js/mailmerge.js:13",
-   "quire/js/mailmerge.js:143",
-   "quire/js/mailmerge.js:153"
+   "quire/js/mailmerge.js:142",
+   "quire/js/mailmerge.js:152"
   ]
  },
  "Last Record": {
@@ -18042,7 +18042,7 @@
  },
  "Letters: send letters to a group of people. You can personalize the letter that each person receives.": {
   "where": [
-   "quire/js/mailmerge.js:279"
+   "quire/js/mailmerge.js:353"
   ]
  },
  "LettersArt": {
@@ -18502,7 +18502,7 @@
  "Lock Fields": {
   "where": [
    "quire/js/commands.js:398",
-   "quire/js/fields.js:465"
+   "quire/js/fields.js:460"
   ]
  },
  "Locked": {
@@ -18795,7 +18795,7 @@
  },
  "Main Document": {
   "where": [
-   "quire/js/find.js:308"
+   "quire/js/find.js:352"
   ]
  },
  "Main document changes and comments": {
@@ -18820,16 +18820,16 @@
  },
  "Manual Line Break": {
   "where": [
-   "quire/js/find.js:391",
-   "quire/js/find.js:392",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:436",
+   "quire/js/find.js:437"
   ]
  },
  "Manual Page Break": {
   "where": [
-   "quire/js/find.js:391",
-   "quire/js/find.js:392",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:436",
+   "quire/js/find.js:437"
   ]
  },
  "Manual hyphenation: place the insertion point inside a long word and press Ctrl+- to insert an optional hyphen.": {
@@ -18950,7 +18950,7 @@
  "Matc&h case": {
   "where": [
    "lectern/js/dialogs.js:753",
-   "quire/js/find.js:310"
+   "quire/js/find.js:354"
   ]
  },
  "Match &case": {
@@ -19104,12 +19104,12 @@
  },
  "Merged {0} record into a new document.": {
   "where": [
-   "quire/js/mailmerge.js:248"
+   "quire/js/mailmerge.js:322"
   ]
  },
  "Merged {0} records into a new document.": {
   "where": [
-   "quire/js/mailmerge.js:248"
+   "quire/js/mailmerge.js:322"
   ]
  },
  "Microsoft JhengHei": {
@@ -19329,7 +19329,7 @@
  },
  "More items...": {
   "where": [
-   "quire/js/mailmerge.js:289"
+   "quire/js/mailmerge.js:363"
   ]
  },
  "More options": {
@@ -19425,7 +19425,7 @@
  },
  "Move Table": {
   "where": [
-   "quire/js/tables.js:1472"
+   "quire/js/tables.js:1477"
   ]
  },
  "Move Table Column": {
@@ -19528,7 +19528,7 @@
  },
  "N&o Formatting": {
   "where": [
-   "quire/js/find.js:312"
+   "quire/js/find.js:356"
   ]
  },
  "N&o watermark": {
@@ -19838,9 +19838,9 @@
  },
  "Nex&t": {
   "where": [
-   "quire/js/find.js:317",
-   "quire/js/find.js:320",
-   "quire/js/find.js:321"
+   "quire/js/find.js:361",
+   "quire/js/find.js:364",
+   "quire/js/find.js:365"
   ]
  },
  "Next": {
@@ -19884,7 +19884,7 @@
  },
  "Next: {0}": {
   "where": [
-   "quire/js/mailmerge.js:275"
+   "quire/js/mailmerge.js:349"
   ]
  },
  "Night Sky": {
@@ -20019,7 +20019,7 @@
  },
  "No fields were updated.": {
   "where": [
-   "quire/js/fields.js:423"
+   "quire/js/fields.js:418"
   ]
  },
  "No header ro&w": {
@@ -20036,7 +20036,7 @@
  },
  "No index entries found.": {
   "where": [
-   "quire/js/fields.js:599"
+   "quire/js/fields.js:594"
   ]
  },
  "No invalid data on this sheet.": {
@@ -20086,12 +20086,12 @@
  },
  "No table of contents entries found.": {
   "where": [
-   "quire/js/fields.js:547"
+   "quire/js/fields.js:542"
   ]
  },
  "No table of figures entries found.": {
   "where": [
-   "quire/js/fields.js:547"
+   "quire/js/fields.js:542"
   ]
  },
  "No table was found in that file.": {
@@ -20106,7 +20106,7 @@
  },
  "No underline": {
   "where": [
-   "quire/js/find.js:374"
+   "quire/js/find.js:418"
   ]
  },
  "No unsaved versions are waiting.": {
@@ -20128,15 +20128,15 @@
   "where": [
    "common/dialogs.js:14",
    "quire/js/commands.js:388",
-   "quire/js/find.js:391",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:437"
   ]
  },
  "Nonbreaking Space": {
   "where": [
    "common/dialogs.js:15",
-   "quire/js/find.js:391",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:437"
   ]
  },
  "Nonbreaking space": {
@@ -20182,24 +20182,24 @@
  },
  "Not": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "Not Bold": {
   "where": [
    "quire/js/dialogs.js:906",
-   "quire/js/find.js:374"
+   "quire/js/find.js:418"
   ]
  },
  "Not Highlight": {
   "where": [
-   "quire/js/find.js:376"
+   "quire/js/find.js:420"
   ]
  },
  "Not Italic": {
   "where": [
    "quire/js/dialogs.js:906",
-   "quire/js/find.js:374"
+   "quire/js/find.js:418"
   ]
  },
  "Not in Dictionary": {
@@ -20234,7 +20234,7 @@
  },
  "Note Options": {
   "where": [
-   "quire/js/fields.js:800"
+   "quire/js/fields.js:795"
   ]
  },
  "Notes": {
@@ -20264,7 +20264,7 @@
  },
  "Notes can only be inserted in the main document.": {
   "where": [
-   "quire/js/fields.js:771"
+   "quire/js/fields.js:766"
   ]
  },
  "Notes without a matching slide were not kept": {
@@ -20345,7 +20345,7 @@
  },
  "Num Occurrences": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "Number": {
@@ -20649,7 +20649,7 @@
  },
  "One of the merged letters is previewed here. To preview another letter, click one of the following:": {
   "where": [
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:366"
   ]
  },
  "One, Two, Three": {
@@ -20795,8 +20795,8 @@
   "where": [
    "common/dialogs.js:14",
    "quire/js/commands.js:387",
-   "quire/js/find.js:391",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:437"
   ]
  },
  "Options": {
@@ -21446,9 +21446,9 @@
  },
  "Paragraph Mark": {
   "where": [
-   "quire/js/find.js:391",
-   "quire/js/find.js:392",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:436",
+   "quire/js/find.js:437"
   ]
  },
  "Paragraph Style:": {
@@ -21589,7 +21589,7 @@
  },
  "Paste &link:": {
   "where": [
-   "quire/js/dialogs3.js:721"
+   "quire/js/dialogs3.js:744"
   ]
  },
  "Paste &name": {
@@ -22157,7 +22157,7 @@
  },
  "Pre&vious": {
   "where": [
-   "quire/js/find.js:322"
+   "quire/js/find.js:366"
   ]
  },
  "Preferred &width:": {
@@ -22273,7 +22273,7 @@
  },
  "Preview Results": {
   "where": [
-   "quire/js/mailmerge.js:182",
+   "quire/js/mailmerge.js:256",
    "quire/js/ribbon.js:58"
   ]
  },
@@ -22289,8 +22289,8 @@
  },
  "Preview your letters": {
   "where": [
-   "quire/js/mailmerge.js:269",
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:343",
+   "quire/js/mailmerge.js:366"
   ]
  },
  "Preview:": {
@@ -22322,7 +22322,7 @@
  },
  "Previous 1 or More": {
   "where": [
-   "quire/js/find.js:392"
+   "quire/js/find.js:436"
   ]
  },
  "Previous Page": {
@@ -22353,7 +22353,7 @@
  },
  "Previous: {0}": {
   "where": [
-   "quire/js/mailmerge.js:276"
+   "quire/js/mailmerge.js:350"
   ]
  },
  "Prin&t Area": {
@@ -22452,7 +22452,7 @@
  },
  "Print... (PDF)": {
   "where": [
-   "quire/js/mailmerge.js:294"
+   "quire/js/mailmerge.js:368"
   ]
  },
  "Printed &Watermark...": {
@@ -22756,22 +22756,22 @@
  },
  "Quire found {0} item matching this criteria.": {
   "where": [
-   "quire/js/find.js:351"
+   "quire/js/find.js:395"
   ]
  },
  "Quire found {0} items matching this criteria.": {
   "where": [
-   "quire/js/find.js:351"
+   "quire/js/find.js:395"
   ]
  },
  "Quire has completed its search of the document and has made {0} replacement.": {
   "where": [
-   "quire/js/find.js:362"
+   "quire/js/find.js:406"
   ]
  },
  "Quire has completed its search of the document and has made {0} replacements.": {
   "where": [
-   "quire/js/find.js:362"
+   "quire/js/find.js:406"
   ]
  },
  "Quire has examined the document and picked the sentences most relevant to the main theme.": {
@@ -22781,18 +22781,18 @@
  },
  "Quire has finished searching the document.": {
   "where": [
-   "quire/js/find.js:361"
+   "quire/js/find.js:405"
   ]
  },
  "Quire has finished searching the document. The search item was not found.": {
   "where": [
-   "quire/js/find.js:354",
-   "quire/js/find.js:362"
+   "quire/js/find.js:398",
+   "quire/js/find.js:406"
   ]
  },
  "Quire is ready to produce your letters.": {
   "where": [
-   "quire/js/mailmerge.js:294"
+   "quire/js/mailmerge.js:368"
   ]
  },
  "Quire reached the beginning of the document.": {
@@ -22803,7 +22803,7 @@
  },
  "Quire reached the end of the document and continued from the beginning.": {
   "where": [
-   "quire/js/find.js:356"
+   "quire/js/find.js:400"
   ]
  },
  "Quire reached the end of the document.": {
@@ -22931,7 +22931,7 @@
   "where": [
    "common/dialogs.js:301",
    "ledger/js/dialogs.js:515",
-   "quire/js/find.js:343"
+   "quire/js/find.js:387"
   ]
  },
  "Re&place Fonts...": {
@@ -22942,7 +22942,7 @@
  "Re&place with:": {
   "where": [
    "lectern/js/dialogs.js:755",
-   "quire/js/find.js:327"
+   "quire/js/find.js:371"
   ]
  },
  "Re&place...": {
@@ -23085,7 +23085,7 @@
  },
  "Recipient: {0} of {1}": {
   "where": [
-   "quire/js/mailmerge.js:292"
+   "quire/js/mailmerge.js:366"
   ]
  },
  "Recommending a Strategy": {
@@ -23480,7 +23480,7 @@
   "where": [
    "lectern/js/dialogs.js:760",
    "ledger/js/dialogs.js:519",
-   "quire/js/find.js:333"
+   "quire/js/find.js:377"
   ]
  },
  "Replace &current subtotals": {
@@ -23498,7 +23498,7 @@
  "Replace All": {
   "where": [
    "lectern/js/dialogs.js:782",
-   "quire/js/find.js:204"
+   "quire/js/find.js:247"
   ]
  },
  "Replace Font": {
@@ -23513,7 +23513,7 @@
  },
  "Replace Style": {
   "where": [
-   "quire/js/find.js:383"
+   "quire/js/find.js:427"
   ]
  },
  "Replace as you type": {
@@ -23649,7 +23649,7 @@
  },
  "Resize Table": {
   "where": [
-   "quire/js/tables.js:1413"
+   "quire/js/tables.js:1418"
   ]
  },
  "Respectfully yours,": {
@@ -25678,7 +25678,7 @@
   "where": [
    "ledger/js/dialogs.js:341",
    "ledger/js/ops.js:524",
-   "quire/js/tables.js:1193"
+   "quire/js/tables.js:1198"
   ]
  },
  "Row and colu&mn headings": {
@@ -25831,7 +25831,7 @@
   "where": [
    "ledger/js/dialogs.js:148",
    "ledger/js/dialogs.js:277",
-   "quire/js/find.js:382"
+   "quire/js/find.js:426"
   ]
  },
  "Sample Text": {
@@ -25926,7 +25926,7 @@
    "common/core.js:373",
    "lectern/js/dialogs.js:992",
    "ledger/js/dialogs.js:672",
-   "quire/js/dialogs3.js:716"
+   "quire/js/dialogs3.js:739"
   ]
  },
  "Save as .&zip": {
@@ -26114,7 +26114,7 @@
  },
  "Search Options": {
   "where": [
-   "quire/js/find.js:312"
+   "quire/js/find.js:356"
   ]
  },
  "Search This Document": {
@@ -26165,7 +26165,7 @@
  },
  "Search:": {
   "where": [
-   "quire/js/find.js:312"
+   "quire/js/find.js:356"
   ]
  },
  "Searches a range or an array for a match and returns the corresponding item from a second range or array.": {
@@ -26209,7 +26209,7 @@
    "common/dialogs.js:16",
    "quire/js/app.js:440",
    "quire/js/dialogs.js:690",
-   "quire/js/find.js:249"
+   "quire/js/find.js:293"
   ]
  },
  "Section Break": {
@@ -26435,8 +26435,8 @@
  },
  "Select document type": {
   "where": [
-   "quire/js/mailmerge.js:269",
-   "quire/js/mailmerge.js:279"
+   "quire/js/mailmerge.js:343",
+   "quire/js/mailmerge.js:353"
   ]
  },
  "Select locked cells": {
@@ -26451,8 +26451,8 @@
  },
  "Select recipients": {
   "where": [
-   "quire/js/mailmerge.js:269",
-   "quire/js/mailmerge.js:285"
+   "quire/js/mailmerge.js:343",
+   "quire/js/mailmerge.js:359"
   ]
  },
  "Select some text first.": {
@@ -26468,7 +26468,7 @@
  },
  "Select starting document": {
   "where": [
-   "quire/js/mailmerge.js:281"
+   "quire/js/mailmerge.js:355"
   ]
  },
  "Select text or an object to link.": {
@@ -28026,7 +28026,7 @@
  "Sort Text": {
   "where": [
    "quire/js/dialogs2.js:751",
-   "quire/js/tables.js:794"
+   "quire/js/tables.js:801"
   ]
  },
  "Sort by": {
@@ -28061,7 +28061,7 @@
  },
  "Sounds li&ke (English)": {
   "where": [
-   "quire/js/find.js:310"
+   "quire/js/find.js:354"
   ]
  },
  "Source": {
@@ -28081,12 +28081,12 @@
  },
  "Source: (the Quire clipboard is empty — copy something first, or press Ctrl+V)": {
   "where": [
-   "quire/js/dialogs3.js:721"
+   "quire/js/dialogs3.js:744"
   ]
  },
  "Source: Quire document": {
   "where": [
-   "quire/js/dialogs3.js:721"
+   "quire/js/dialogs3.js:744"
   ]
  },
  "Source: {0}": {
@@ -28101,7 +28101,7 @@
  },
  "Sp&ecial ▾": {
   "where": [
-   "quire/js/find.js:312"
+   "quire/js/find.js:356"
   ]
  },
  "Sp&eed:": {
@@ -28253,7 +28253,7 @@
  },
  "Spelling, AutoCorrect and the thesaurus work offline, in English (U.S.) and English (U.K.).": {
   "where": [
-   "quire/js/dialogs3.js:730"
+   "quire/js/dialogs3.js:753"
   ]
  },
  "Spelling: {0}": {
@@ -28505,12 +28505,12 @@
  },
  "Start from a &template": {
   "where": [
-   "quire/js/mailmerge.js:281"
+   "quire/js/mailmerge.js:355"
   ]
  },
  "Start from existing do&cument": {
   "where": [
-   "quire/js/mailmerge.js:281"
+   "quire/js/mailmerge.js:355"
   ]
  },
  "Start import at &row:": {
@@ -28540,7 +28540,7 @@
  },
  "Starting document": {
   "where": [
-   "quire/js/mailmerge.js:269"
+   "quire/js/mailmerge.js:343"
   ]
  },
  "Startup &Task Pane": {
@@ -28628,7 +28628,7 @@
  },
  "Step {0} of 6": {
   "where": [
-   "quire/js/mailmerge.js:274"
+   "quire/js/mailmerge.js:348"
   ]
  },
  "Steps along one arrow, for a flow that keeps going.": {
@@ -28755,7 +28755,7 @@
  },
  "Style: {0}": {
   "where": [
-   "quire/js/find.js:375"
+   "quire/js/find.js:419"
   ]
  },
  "Styles": {
@@ -28966,9 +28966,9 @@
  "Syntax Error": {
   "where": [
    "quire/js/fields.js:286",
-   "quire/js/tables.js:893",
-   "quire/js/tables.js:899",
-   "quire/js/tables.js:900"
+   "quire/js/tables.js:900",
+   "quire/js/tables.js:906",
+   "quire/js/tables.js:907"
   ]
  },
  "T&able": {
@@ -29013,7 +29013,7 @@
  },
  "T&ype a new list": {
   "where": [
-   "quire/js/mailmerge.js:285"
+   "quire/js/mailmerge.js:359"
   ]
  },
  "TOC Format": {
@@ -29063,9 +29063,9 @@
  },
  "Tab Character": {
   "where": [
-   "quire/js/find.js:391",
-   "quire/js/find.js:392",
-   "quire/js/find.js:393"
+   "quire/js/find.js:435",
+   "quire/js/find.js:436",
+   "quire/js/find.js:437"
   ]
  },
  "Tab Color": {
@@ -29110,7 +29110,7 @@
   "where": [
    "quire/js/commands.js:441",
    "quire/js/dialogs2.js:639",
-   "quire/js/tables.js:1096"
+   "quire/js/tables.js:1101"
   ]
  },
  "Table Grid": {
@@ -29245,7 +29245,7 @@
  },
  "Tables with vertically merged cells cannot be sorted.": {
   "where": [
-   "quire/js/tables.js:774"
+   "quire/js/tables.js:781"
   ]
  },
  "Tabloid": {
@@ -29424,7 +29424,7 @@
   "where": [
    "lectern/js/panes.js:573",
    "ledger/js/panes.js:81",
-   "quire/js/dialogs3.js:743",
+   "quire/js/dialogs3.js:766",
    "quire/js/panes.js:86"
   ]
  },
@@ -29717,8 +29717,8 @@
  },
  "The Find What text contains a Pattern Match expression which is not valid.": {
   "where": [
-   "quire/js/find.js:66",
-   "quire/js/find.js:94"
+   "quire/js/find.js:92",
+   "quire/js/find.js:120"
   ]
  },
  "The Font boxes also list the {0} fonts installed on this computer.": {
@@ -29745,7 +29745,8 @@
   "where": [
    "lectern/js/app.js:664",
    "quire/js/app.js:1074",
-   "quire/js/dialogs3.js:689"
+   "quire/js/dialogs3.js:701",
+   "quire/js/dialogs3.js:712"
   ]
  },
  "The PDF exporter could not be loaded. Please try again.": {
@@ -30209,7 +30210,7 @@
  },
  "The merge could not be printed. {0}": {
   "where": [
-   "quire/js/mailmerge.js:264"
+   "quire/js/mailmerge.js:338"
   ]
  },
  "The metafile is too large": {
@@ -30721,7 +30722,7 @@
  },
  "There are no fields in the selection.": {
   "where": [
-   "quire/js/fields.js:407"
+   "quire/js/fields.js:402"
   ]
  },
  "There are no items of that kind in this document.": {
@@ -30741,7 +30742,7 @@
  },
  "There are no recipients selected.": {
   "where": [
-   "quire/js/mailmerge.js:241"
+   "quire/js/mailmerge.js:315"
   ]
  },
  "There are no slides to show.": {
@@ -30786,8 +30787,8 @@
  },
  "There is no table of contents in this document.": {
   "where": [
-   "quire/js/fields.js:423",
-   "quire/js/fields.js:427"
+   "quire/js/fields.js:418",
+   "quire/js/fields.js:422"
   ]
  },
  "There isn't enough space on the disk to save “{0}”. Your file hasn't changed.": {
@@ -32004,7 +32005,7 @@
  },
  "Type a new list...": {
   "where": [
-   "quire/js/mailmerge.js:287"
+   "quire/js/mailmerge.js:361"
   ]
  },
  "Type a web address (www.example.com) or the name of a file.": {
@@ -32186,12 +32187,12 @@
  },
  "Unformatted Text": {
   "where": [
-   "quire/js/dialogs3.js:719"
+   "quire/js/dialogs3.js:742"
   ]
  },
  "Unformatted Unicode Text": {
   "where": [
-   "quire/js/dialogs3.js:719"
+   "quire/js/dialogs3.js:742"
   ]
  },
  "Unfreeze Panes": {
@@ -32251,7 +32252,7 @@
  "Unlink Fields": {
   "where": [
    "quire/js/commands.js:397",
-   "quire/js/fields.js:454"
+   "quire/js/fields.js:449"
   ]
  },
  "Unlink fields": {
@@ -32262,7 +32263,7 @@
  "Unlock Fields": {
   "where": [
    "quire/js/commands.js:399",
-   "quire/js/fields.js:465"
+   "quire/js/fields.js:460"
   ]
  },
  "Unlocked": {
@@ -32366,7 +32367,7 @@
   "where": [
    "lectern/js/slideshow.js:29",
    "ledger/js/dialogs.js:776",
-   "quire/js/find.js:311"
+   "quire/js/find.js:355"
   ]
  },
  "Up Arrow": {
@@ -32416,22 +32417,22 @@
  },
  "Update Captions": {
   "where": [
-   "quire/js/fields.js:713"
+   "quire/js/fields.js:708"
   ]
  },
  "Update Field": {
   "where": [
-   "quire/js/fields.js:409"
+   "quire/js/fields.js:404"
   ]
  },
  "Update Fields": {
   "where": [
-   "quire/js/fields.js:420"
+   "quire/js/fields.js:415"
   ]
  },
  "Update Page Numbers": {
   "where": [
-   "quire/js/fields.js:667"
+   "quire/js/fields.js:662"
   ]
  },
  "Update Style": {
@@ -32523,7 +32524,7 @@
  },
  "Use an existing &list": {
   "where": [
-   "quire/js/mailmerge.js:285"
+   "quire/js/mailmerge.js:359"
   ]
  },
  "Use labels in": {
@@ -32533,7 +32534,7 @@
  },
  "Use names and addresses from a file or a database.": {
   "where": [
-   "quire/js/mailmerge.js:286"
+   "quire/js/mailmerge.js:360"
   ]
  },
  "Use of \"a\" or \"an\"": {
@@ -32574,7 +32575,7 @@
  },
  "Use the current &document": {
   "where": [
-   "quire/js/mailmerge.js:281"
+   "quire/js/mailmerge.js:355"
   ]
  },
  "Use the current selection": {
@@ -32589,7 +32590,7 @@
  },
  "Use wildcar&ds": {
   "where": [
-   "quire/js/find.js:310"
+   "quire/js/find.js:354"
   ]
  },
  "Use your browser's zoom: Ctrl and + makes everything larger, Ctrl and − smaller, Ctrl and 0 the usual size (⌘ on a Mac).": {
@@ -32960,7 +32961,7 @@
  },
  "Web Page": {
   "where": [
-   "quire/js/dialogs3.js:738"
+   "quire/js/dialogs3.js:761"
   ]
  },
  "Web Page (*.htm)": {
@@ -33033,7 +33034,7 @@
  },
  "What type of document are you working on?": {
   "where": [
-   "quire/js/mailmerge.js:279"
+   "quire/js/mailmerge.js:353"
   ]
  },
  "What would you like to do?": {
@@ -33131,7 +33132,7 @@
  },
  "White Space": {
   "where": [
-   "quire/js/find.js:393"
+   "quire/js/find.js:437"
   ]
  },
  "White marble": {
@@ -33430,13 +33431,13 @@
  },
  "Write your letter": {
   "where": [
-   "quire/js/mailmerge.js:269",
-   "quire/js/mailmerge.js:289"
+   "quire/js/mailmerge.js:343",
+   "quire/js/mailmerge.js:363"
   ]
  },
  "Write your letter now, then click a location in the document and choose one of the items below.": {
   "where": [
-   "quire/js/mailmerge.js:289"
+   "quire/js/mailmerge.js:363"
   ]
  },
  "XML Spreadsheet 2003 (*.xml)": {
@@ -33518,7 +33519,7 @@
   "where": [
    "lectern/js/dialogs.js:992",
    "ledger/js/dialogs.js:672",
-   "quire/js/dialogs3.js:715"
+   "quire/js/dialogs3.js:738"
   ]
  },
  "Your browser does not let pages read the clipboard from a menu.\nPress Ctrl+V to paste.": {
@@ -33599,7 +33600,7 @@
  "ZIP Code": {
   "where": [
    "quire/js/mailmerge.js:13",
-   "quire/js/mailmerge.js:157"
+   "quire/js/mailmerge.js:156"
   ]
  },
  "Zig zag": {
@@ -33837,7 +33838,7 @@
  },
  "heading": {
   "where": [
-   "quire/js/find.js:280"
+   "quire/js/find.js:324"
   ]
  },
  "i, ii, iii, ...": {
@@ -34177,7 +34178,7 @@
  },
  "{0} ({1}) — based on {2}": {
   "where": [
-   "quire/js/dialogs3.js:698"
+   "quire/js/dialogs3.js:721"
   ]
  },
  "{0} -Section {1}-": {

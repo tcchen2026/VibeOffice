@@ -284,10 +284,34 @@
 
   /* ---------- copy / structure ---------- */
   /** deep copy of the range as blocks (first/last paragraph partial) */
-  O.copyRange = function (a, b) {
+  O.copyRange = function (a, b, opts) {
     const d = doc();
     [a, b] = D.order(d, a, b);
     const copyP = (p, from, to) => D.para(D.sliceRuns(p, from, to), L.preserve ? L.preserve.copyParagraphProperties(p, from, to) : L.clone(p.pPr), L.clone(p.rPr));
+    if (opts?.clipTables) {
+      const selected = new Set(D.parasBetween(d, a.p, b.p));
+      const clip = blk => {
+        if (blk.t === 'p') {
+          if (!selected.has(blk)) return null;
+          const p = copyP(blk, blk === a.p ? a.o : 0, blk === b.p ? b.o : D.plen(blk));
+          if (blk.mark) p.mark = L.clone(blk.mark);
+          if (blk.sect && blk !== b.p) p.sect = L.clone(blk.sect);
+          return p;
+        }
+        if (blk.t !== 'tbl') return null;
+        const rows = [];
+        for (const row of blk.rows) {
+          const cells = row.cells.map(c => ({ ...c, blocks: c.blocks.map(clip).filter(Boolean) }));
+          if (cells.every(c => !c.blocks.length)) continue;
+          for (const c of cells) if (!c.blocks.length) c.blocks = [D.para()];
+          rows.push({ ...row, cells });
+        }
+        return rows.length ? L.clone({ ...blk, rows }) : null;
+      };
+      const first = D.topBlock(d, a.p), last = D.topBlock(d, b.p);
+      if (first?.i >= 0 && last?.i >= 0 && first.cont === last.cont)
+        return first.cont.blocks.slice(first.i, last.i + 1).map(clip).filter(Boolean);
+    }
     if (a.p === b.p) {
       const p = copyP(a.p, a.o, b.o);
       p.partial = true;

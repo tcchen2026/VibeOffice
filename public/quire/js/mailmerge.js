@@ -108,11 +108,10 @@
     ui.dialog({ title: 'Mail Merge Recipients', width: 620, body: h('div', { class: 'col' }, h('div', { text: L.t('Data source: {0}. Click a column heading to sort; clear a check box to leave a recipient out.', d.name) }), box), buttons: [{ label: 'OK', primary: true, onClick: () => { MM.order = null; refreshPane(); } }] });
   };
   MM.records = () => (MM.data ? MM.data.rows.map((r, i) => i).filter((i) => MM.data.included.has(i)) : []);
-  MM.value = function (name) {
+  MM.value = function (name, cursor) {
     const d = MM.data;
     if (!d) return '';
-    const recs = MM.records();
-    const row = d.rows[recs[L.clamp(MM.rec, 0, recs.length - 1)]];
+    const row = d.rows[cursor ? cursor.records[cursor.index] : MM.records()[MM.rec]];
     if (!row) return '';
     const k = norm(name);
     let i = d.fields.findIndex((f) => norm(f) === k);
@@ -171,16 +170,91 @@
   };
 
   /* ---------- preview ---------- */
+  const mergeCode = /^\s*(MERGEFIELD|MERGEREC|MERGESEQ|NEXT|NEXTIF|SKIPIF)\b/i;
+  // The reader keeps the original instruction runs when a condition contains a
+  // nested field. Reconstruct its code, omitting the nested field's cached result.
+  function ruleInstruction(it) {
+    if (!it.instrKeep || it.instrKeep.instr !== it.instr) return it.instr;
+    let code = '';
+    const result = [];
+    for (const fragment of it.instrKeep.runs) {
+      for (const el of L.opc.parse(fragment.xml).children) {
+        if (el.localName === 'fldChar') {
+          const type = Array.from(el.attributes).find(a => a.localName === 'fldCharType')?.value;
+          if (type === 'begin') { if (!result.includes(true)) code += '{'; result.push(false); }
+          if (type === 'separate') result[result.length - 1] = true;
+          if (type === 'end') { result.pop(); if (!result.includes(true)) code += '}'; }
+        } else if (el.localName === 'instrText' && !result.includes(true)) code += el.textContent;
+      }
+    }
+    return code;
+  }
+  function ruleMatches(it, cursor) {
+    const nested = [];
+    const code = ruleInstruction(it).replace(/\{\s*(MERGEFIELD|MERGEREC|MERGESEQ)\b([^{}]*)\}/gi, (_, type, args) => {
+      const f = L.fields.parse(type + args);
+      nested.push(f.type === 'MERGEFIELD' ? MM.value(f.args[0], cursor) : String(cursor.index + 1));
+      return '\uE000' + (nested.length - 1) + '\uE001';
+    });
+    const tokens = L.fields.tokens(code).slice(1);
+    if (tokens.length < 3) return false;
+    const operand = t => {
+      const value = t.v || '';
+      if (value.includes('\uE000')) return value.replace(/\uE000(\d+)\uE001/g, (_, n) => nested[n]);
+      if (!t.q && MM.data.fields.some(name => norm(name) === norm(value))) return MM.value(value, cursor);
+      return value;
+    };
+    const left = operand(tokens[0]), right = operand(tokens[2]), op = tokens[1].v;
+    if ([left, right].every(v => String(v).trim() && Number.isFinite(Number(v))))
+      return L.fields.compare(Number(left), op, Number(right));
+    return L.fields.compare(String(left).toLowerCase(), op, String(right).toLowerCase());
+  }
+  function mergeResult(it, cursor) {
+    const f = L.fields.parse(it.instr);
+    if (!cursor) return f.type === 'MERGEFIELD' ? '«' + (f.args[0] || '') + '»' : '';
+    if (cursor.skipped || cursor.index >= cursor.records.length) return '';
+    switch (f.type) {
+      case 'NEXT': cursor.index++; return '';
+      case 'NEXTIF': if (ruleMatches(it, cursor)) cursor.index++; return '';
+      case 'SKIPIF': cursor.skipped = ruleMatches(it, cursor); return '';
+      case 'MERGEREC': case 'MERGESEQ': return String(cursor.index + 1);
+      default: {
+        const v = MM.value(f.args[0] || '', cursor);
+        const text = (v && f.sw['\\b'] || '') + v + (v && f.sw['\\f'] || '');
+        return L.fields.applyGeneral(text, f.fmt.filter(x => !/^(MERGEFORMAT|CHARFORMAT)$/i.test(x)));
+      }
+    }
+  }
+  function previewResults(story) {
+    const cursor = MM.preview && MM.data ? { records: MM.records(), index: MM.rec } : null;
+    const results = new Map();
+    D.walk(story, (p, cont, i, st) => {
+      if (p.t !== 'p' || st !== story) return;
+      for (const it of p.runs) if (it.t === 'fb' && mergeCode.test(it.instr)) results.set(it, mergeResult(it, cursor));
+    });
+    if (cursor?.skipped) for (const it of results.keys()) results.set(it, '');
+    return results;
+  }
+  MM.previewField = function (it, pos) {
+    if (pos && it.fid != null) {
+      const values = previewResults(D.storyOf(doc(), pos.p));
+      if (values.has(it)) return values.get(it);
+    }
+    return mergeResult(it, MM.preview && MM.data ? { records: MM.records(), index: MM.rec } : null);
+  };
   function refreshFields() {
     if (!L.fields) return;
     const d = doc();
-    const list = [];
-    for (const st of D.stories(d)) D.walk(st, (b, c, i, story) => { if (b.t === 'p') for (const it of b.runs) if (it.t === 'fb' && /^\s*MERGEFIELD\b/i.test(it.instr)) list.push({ fid: it.fid, it, p: b, story }); });
+    const dirty = d.dirty, history = D.histState(), list = [];
+    for (const st of D.stories(d)) {
+      const values = previewResults(st);
+      D.walk(st, (p, cont, i, story) => {
+        if (p.t === 'p') for (const it of p.runs) if (values.has(it)) list.push({ it, story, p, value: values.get(it) });
+      });
+    }
     if (!list.length) return;
-    const dirty = d.dirty;
-    const n0 = D.hist.undo.length;
-    D.tx('Preview Results', () => { for (const fr of list) L.fields.updateField(fr); });
-    if (D.hist.undo.length > n0) D.hist.undo.pop();
+    D.tx('Preview Results', () => { for (const fr of list) L.fields.updateField(fr, { mergeValue: fr.value }); });
+    D.setHistState(history);
     d.dirty = dirty;
   }
   MM.togglePreview = function () { MM.preview = !MM.preview; refreshFields(); refreshPane(); L.ui.refresh(); };
@@ -189,7 +263,7 @@
 
   /* ---------- merging ---------- */
   /** blocks for the current record with merge fields replaced by plain text */
-  function mergedBlocks(srcBlocks) {
+  function mergedBlocks(srcBlocks, cursor) {
     const blocks = D.cloneBlocks(srcBlocks);
     D.walk({ blocks }, (b) => {
       if (b.t !== 'p') return;
@@ -197,15 +271,12 @@
       let skip = null;
       for (const it of b.runs) {
         if (skip) { if (it.t === 'fe' && it.fid === skip) skip = null; continue; }
-        if (it.t === 'fb' && /^\s*MERGEFIELD\b/i.test(it.instr)) {
-          const f = L.fields.parse(it.instr);
-          const v = MM.value(f.args[0] || '');
-          const txt = (v && f.sw['\\b'] ? f.sw['\\b'] : '') + v + (v && f.sw['\\f'] ? f.sw['\\f'] : '');
-          if (txt) out.push(D.text(L.fields.applyGeneral(txt, f.fmt.filter((x) => !/MERGEFORMAT/i.test(x))), L.clone(it.rPr || {})));
+        if (it.t === 'fb' && mergeCode.test(it.instr)) {
+          const text = mergeResult(it, cursor);
+          if (text) out.push(D.text(text, L.clone(it.rPr || {})));
           skip = it.fid;
           continue;
         }
-        if (it.t === 'fb' && /^\s*(NEXT|NEXTIF|SKIPIF|MERGEREC|MERGESEQ)\b/i.test(it.instr)) { skip = it.fid; if (/MERGEREC|MERGESEQ/i.test(it.instr)) out.push(D.text(String(MM.rec + 1), L.clone(it.rPr || {}))); continue; }
         out.push(it);
       }
       b.runs = out;
@@ -222,18 +293,21 @@
     out.styles = L.clone(src.styles); out.numbering = L.clone(src.numbering); out.defaults = L.clone(src.defaults); out.settings = L.clone(src.settings); out.settings.track = false;
     out.hf = L.clone(src.hf); out.theme = L.clone(src.theme); out.sect = L.clone(src.sect); out.props = Object.assign({}, src.props, { title: (src.props.title || A().fileName) + ' (merged)' });
     out.main.blocks = [];
-    const save = MM.rec;
-    recs.forEach((ri, k) => {
-      MM.rec = k;
-      const bl = mergedBlocks(src.main.blocks);
-      if (MM.type !== 'directory' && k < recs.length - 1) {
-        /* each letter becomes its own section */
-        const last = bl[bl.length - 1].t === 'p' ? bl[bl.length - 1] : (bl.push(D.para()), bl[bl.length - 1]);
+    const cursor = { records: recs, index: 0 };
+    while (cursor.index < recs.length) {
+      cursor.skipped = false;
+      const blocks = mergedBlocks(src.main.blocks, cursor);
+      cursor.index++;
+      if (cursor.skipped) continue;
+      if (MM.type !== 'directory' && out.main.blocks.length) {
+        // Insert the section break only once another copy is known to survive SKIPIF.
+        let last = out.main.blocks.at(-1);
+        if (last.t !== 'p') { last = D.para(); out.main.blocks.push(last); }
         last.sect = Object.assign(L.opc.duplicate(src.sect), { type: 'nextPage' });
       }
-      out.main.blocks.push(...bl);
-    });
-    MM.rec = save;
+      out.main.blocks.push(...blocks);
+    }
+    if (!out.main.blocks.length) return null;
     return out;
   };
   MM.mergeToNew = async function () {

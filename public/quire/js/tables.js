@@ -753,7 +753,14 @@
   };
 
   /* ================= sorting ================= */
-  const parseNum = (s) => { const m = /-?\(?[$€£¥]?\s*-?[\d,]*\.?\d+%?\)?/.exec(String(s).replace(/\s+/g, ' ')); if (!m) return NaN; let t = m[0]; const neg = /^\(.*\)$/.test(t) || /^-/.test(t); t = t.replace(/[()$€£¥,%\s-]/g, ''); const v = parseFloat(t); return isNaN(v) ? NaN : neg ? -v : v; };
+  const parseNum = (s, formula) => {
+    const m = /-?\(?[$€£¥]?\s*-?[\d,]*\.?\d+%?\)?/.exec(String(s).replace(/\s+/g, ' '));
+    if (!m) return NaN;
+    const token = m[0], neg = /^\(.*\)$/.test(token) || /^-/.test(token);
+    const value = parseFloat(token.replace(/[()$€£¥,%\s-]/g, ''));
+    const percent = formula && (token.includes('%') || /^\s+%/.test(m.input.slice(m.index + token.length)));
+    return (neg ? -value : value) / (percent ? 100 : 1);
+  };
   T.parseNum = parseNum;
   const cmpBy = (type, desc, caseSens) => (a, b) => {
     let r;
@@ -847,7 +854,7 @@
     const t = ci ? ci.tbl : null;
     const map = t ? R.tblMap(t) : null;
     const myC = ci ? map[ci.ri].find((m) => m.cell === ci.cell).c0 : 0;
-    const valAt = (r, c) => { if (!t || !map[r]) return NaN; const m = map[r].find((x) => x.c0 <= c && c < x.c0 + x.span); return m && !m.hidden ? parseNum(cellText(m.cell)) : NaN; };
+    const valAt = (r, c) => { if (!t || !map[r]) return NaN; const m = map[r].find((x) => x.c0 <= c && c < x.c0 + x.span); return m && !m.hidden ? parseNum(cellText(m.cell), true) : NaN; };
     const rangeVals = (arg) => {
       arg = arg.trim().toUpperCase();
       const out = [];
@@ -870,7 +877,7 @@
       MOD: (v) => v[0] % v[1], SIGN: (v) => Math.sign(v[0]), AND: (v) => (v.every(Boolean) ? 1 : 0), OR: (v) => (v.some(Boolean) ? 1 : 0), NOT: (v) => (v[0] ? 0 : 1), TRUE: () => 1, FALSE: () => 0, IF: (v) => (v[0] ? v[1] : v[2]), DEFINED: (v) => (v.length ? 1 : 0),
     };
     /* bookmark values */
-    const bm = (name) => { const r = L.fields && L.fields.bookmarkText ? L.fields.bookmarkText(name) : null; return r == null ? NaN : parseNum(r); };
+    const bm = (name) => { const r = L.fields && L.fields.bookmarkText ? L.fields.bookmarkText(name) : null; return r == null ? NaN : parseNum(r, true); };
     let src = String(expr).replace(/^\s*=\s*/, '').replace(/\\#.*$/, '').replace(/\\\*.*$/, '').trim();
     /* tokenizer + recursive descent */
     const toks = [];
@@ -924,8 +931,6 @@
     const parts = pic.split(';');
     let p = parts[0];
     if (v < 0 && parts[1]) { p = parts[1]; v = -v; } else if (v === 0 && parts[2]) p = parts[2];
-    const pct = p.includes('%');
-    if (pct) v *= 100;
     const m = /[#0][#0,]*(\.[#0]+)?/.exec(p);
     if (!m) return p;
     const dec = m[1] ? m[1].length - 1 : 0;
@@ -939,7 +944,7 @@
     while (ip.length < minInt) ip = '0' + ip;
     if (grouping) ip = ip.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     const num = ip + (fp ? '.' + fp : '');
-    return p.slice(0, m.index) + (neg && !/[(-]/.test(p) ? '-' : '') + num + p.slice(m.index + m[0].length).replace('%', pct ? '%' : '');
+    return p.slice(0, m.index) + (neg && !/[(-]/.test(p) ? '-' : '') + num + p.slice(m.index + m[0].length);
   };
   T.autoSum = function () {
     const ci = T.cur();

@@ -286,11 +286,8 @@
         } catch (e) { return '!' + (e.message || 'Syntax Error'); }
       }
       case 'IF': return ifValue(f, pos);
-      case 'MERGEFIELD': {
-        const name = f.args[0] || '';
-        if (L.mailmerge && L.mailmerge.preview && L.mailmerge.data) { const v = L.mailmerge.value(name); return fmt((f.sw['\\b'] && v ? f.sw['\\b'] : '') + v + (f.sw['\\f'] && v ? f.sw['\\f'] : '')); }
-        return '«' + name + '»';
-      }
+      case 'MERGEFIELD': case 'MERGEREC': case 'MERGESEQ': case 'NEXT': case 'NEXTIF': case 'SKIPIF':
+        return opts.mergeValue ?? L.mailmerge.previewField(opts.it || { instr }, pos);
       case 'TOC': return opts.blocks ? F.buildTOC(f) : null;
       case 'INDEX': return opts.blocks ? F.buildIndex(f) : null;
       case 'LISTNUM': case 'AUTONUM': case 'AUTONUMLGL': case 'AUTONUMOUT': return null;
@@ -368,22 +365,20 @@
     return 'Error! No text of specified style in document.';
   }
   function ifValue(f, pos) {
-    const toks = F.tokens(f.args.length ? '' : '');
-    void toks;
-    /* IF expr op expr "true" "false" (args already split) */
     const a = f.args;
     if (a.length < 3) return '';
-    const val = (s) => { const n = parseFloat(s); return isNaN(n) ? s : n; };
     const ops = ['=', '<>', '<', '>', '<=', '>='];
     let i = ops.indexOf(a[1]) >= 0 ? 1 : -1;
     let left = a[0], op = a[1], right = a[2], rest = a.slice(3);
     if (i < 0) { const m = /^(.*?)(<>|<=|>=|=|<|>)(.*)$/.exec(a[0]); if (m) { left = m[1]; op = m[2]; right = m[3]; rest = a.slice(1); } }
-    const L1 = val(left), R1 = val(right);
+    const val = s => { const n = parseFloat(s); return isNaN(n) ? s : n; };
+    return F.compare(val(left), op, val(right)) ? rest[0] || '' : rest[1] || '';
+  }
+  F.compare = function (L1, op, R1) {
     let r;
     switch (op) { case '=': r = typeof R1 === 'string' && /[*?]/.test(R1) ? new RegExp('^' + R1.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$').test(String(L1)) : L1 == R1; break; case '<>': r = L1 != R1; break; case '<': r = L1 < R1; break; case '>': r = L1 > R1; break; case '<=': r = L1 <= R1; break; case '>=': r = L1 >= R1; break; default: r = false; } /* eslint-disable-line eqeqeq */
-    void pos;
-    return r ? rest[0] || '' : rest[1] || '';
-  }
+    return r;
+  };
 
   /* ================= update ================= */
   F.updateField = function (fieldRef, opts) {
@@ -394,7 +389,7 @@
     const g = O.findField(story, it.fid);
     if (!g.begin) return false;
     const pos = D.pos(g.begin.p, g.begin.o);
-    const res = F.evaluate(it.instr, pos, { blocks: true, fid: it.fid });
+    const res = F.evaluate(it.instr, pos, { ...opts, blocks: true, fid: it.fid, it });
     if (res == null) return false;
     if (Array.isArray(res)) { O.setFieldResult(story, it.fid, res); return true; }
     /* keep the first result run's formatting (\* MERGEFORMAT behaviour) */
