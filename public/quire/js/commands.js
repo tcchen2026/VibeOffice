@@ -206,7 +206,7 @@
   L.bus.on('clip', (c) => { A.clipItems.unshift(c); A.clipItems.length = Math.min(A.clipItems.length, 24); if (L.panes && L.panes.task.current === 'clipboard') L.panes.task.show('clipboard'); });
   async function pasteCmd() {
     if (!E.sel) return;
-    if (E.clip) { E.pasteBlocks(E.clip.blocks); return; }
+    if (E.clip) { E.pasteBlocks(E.clip.blocks, { bodies: E.clip.bodies }); return; }
     try {
       if (navigator.clipboard && navigator.clipboard.readText) {
         const t = await navigator.clipboard.readText();
@@ -702,18 +702,16 @@
       else {
         const res = await L.docx.read(await L.readAsArrayBuffer(f));
         const src = res.doc;
-        A.mergeStylesFrom(src);
         blocks = src.main.blocks;
-        /* carry notes and comments along */
-        const d = doc();
+        const bodies = O.copyBodies(blocks, src);
         E.edit('Insert File', () => {
-          D.touchKey(d, 'fn'); D.touchKey(d, 'en'); D.touchKey(d, 'comments'); D.touchKey(d, 'numbering');
-          for (const k in src.fn) if (!d.fn[k]) d.fn[k] = src.fn[k];
-          for (const k in src.en) if (!d.en[k]) d.en[k] = src.en[k];
-          for (const k in src.comments) if (!d.comments[k]) d.comments[k] = src.comments[k];
-          A.mergeNumbering(src, blocks);
-          return E.sel;
+          A.mergeStylesFrom(src);
+          D.touchKey(doc(), 'numbering');
+          const related = Object.values(bodies).flatMap(store => Object.values(store).flatMap(body => body.blocks));
+          A.mergeNumbering(src, blocks.concat(related));
+          return O.insertBlocks(E.deleteSelection(), blocks, { bodies });
         });
+        return;
       }
       E.pasteBlocks(blocks);
     } catch (e) { ui.msg(L.t('The file could not be inserted. {0}', e.message || ''), { icon: 'error' }); }

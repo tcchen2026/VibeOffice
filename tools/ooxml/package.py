@@ -142,6 +142,10 @@ def short_calls(formula):
         i += 1
     return out
 
+def note_id(value):
+    return str(int(value)) if re.fullmatch(r'[+-]?\d+', value or '') else value
+
+
 def table_merge_faults(table):
     """Check DrawingML spans against the grid and the owning cell of each continuation."""
     ns = table.tag[:table.tag.index('}') + 1]
@@ -350,7 +354,15 @@ class Package:
         previews = defaultdict(list)
         frames, part_targets = set(), []
         comment_counts = {}
+        notes = {}
+        note_targets = {owner: {r['type'].rsplit('/', 1)[-1]: r['target'] for r in rels.values()
+                                if not r['external'] and r['type'].endswith(('/footnotes', '/endnotes'))}
+                        for owner, rels in self.rels.items()}
         for part, root in self.xml.items():
+            ns, tag = split(root.tag)
+            if ns in W and tag in ('footnotes', 'endnotes'):
+                notes[part, tag] = {note_id(at(c, 'id')) for c in root if c.tag == '{' + ns + '}' + tag[:-1]
+                                    and at(c, 'type') in (None, 'normal')}
             if split(root.tag)[0] in W and split(root.tag)[1] == 'comments':
                 comment_counts[part] = Counter(at(c, 'id') for c in root if split(c.tag)[1] == 'comment')
         main = next((r['target'] for r in self.rels.get('', {}).values() if r['type'].endswith('/officeDocument')), '')
@@ -497,6 +509,15 @@ class Package:
                     kind, scope = 'master-layout', 'presentation'
                 elif tag in ('bookmarkStart', 'permStart') and ns in W:
                     kind = 'bookmark' if tag == 'bookmarkStart' else 'permission'
+                elif ns in W and tag in ('footnoteReference', 'endnoteReference'):
+                    # Word 2016 refuses two markers for the same note, or a marker with no normal note.
+                    # The self marker in the note body and section separator settings are different elements.
+                    note = tag[:-len('Reference')]
+                    target = note_targets.get(part, {}).get(note + 's') or note_targets.get(main, {}).get(note + 's')
+                    ident = note_id(ident)
+                    kind, scope = note + '-reference', target or part
+                    if ident is None or ident not in notes.get((target, note + 's'), ()):
+                        self.issue('unresolved-' + kind, part, str(ident), path)
                 elif tag == 'commentReference' and ns in W:
                     kind = 'comment-reference'
                 elif tag == 'pivotCache' and ns in S:

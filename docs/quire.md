@@ -36,6 +36,8 @@ which Quire doesn't do), Order, Text Wrapping, Set AutoShape Defaults, Caption, 
 for the one at the caret) and New Comment; in a table, Text Direction, AutoFit and Caption. Word's Select
 Text with Similar Formatting needs a selection of several separate pieces, which Quire doesn't have.
 
+Copying a footnote, endnote or comment includes its text and formatting. Paste and Insert ▸ File give the copies their own identifiers, including within the same document. Undo removes the pasted text and its notes together. When an older file has two marks for one note, opening it gives each mark an independent copy of the available text. Word 2016 refused both damaged paste samples and opened both corrected copies with their citations. A scan of 2,867 readable Word packages found 735 footnote and endnote references, four missing footnote bodies in two documents and no repeated references.
+
 ## Proofing tools (offline)
 
 | Feature | How it works |

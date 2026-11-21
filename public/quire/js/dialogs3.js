@@ -722,7 +722,7 @@
       if (!clip) return;
       const v = lb.get();
       if (v === 'text' || v === 'utext') E.pasteText(clip.text);
-      else E.pasteBlocks(clip.blocks, { keepFormat: v === 'rich' || v === 'html' });
+      else E.pasteBlocks(clip.blocks, { bodies: clip.bodies, keepFormat: v === 'rich' || v === 'html' });
     } }, { label: 'Cancel' }] });
   };
   G.about = () => ui.about({ name: 'Quire', text: [

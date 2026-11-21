@@ -773,9 +773,7 @@
     E.edit(kind === 'fn' ? 'Insert Footnote' : 'Insert Endnote', () => {
       const store = kind === 'fn' ? 'fn' : 'en';
       D.touchKey(d, store);
-      let id = 1;
-      while (d[store][id] != null) id++;
-      id = String(id);
+      const id = String(D.nextNoteId(d, store));
       const refStyle = D.useStyle(d, kind === 'fn' ? 'FootnoteReference' : 'EndnoteReference');
       const textStyle = D.useStyle(d, kind === 'fn' ? 'FootnoteText' : 'EndnoteText');
       const custom = opts.mark || null;

@@ -4723,6 +4723,11 @@
    "common/legacy/xls-draw-write.js:38"
   ]
  },
+ "A comment marker was removed because its comment was missing from the clipboard.": {
+  "where": [
+   "quire/js/ops.js:397"
+  ]
+ },
  "A comment on a deleted object is now attached to its slide.": {
   "where": [
    "lectern/js/comments.js:132"
@@ -4888,6 +4893,16 @@
  "A duplicate comment on this cell was not kept": {
   "where": [
    "common/legacy/xls-comments.js:226"
+  ]
+ },
+ "A footnote marker was removed because its note was missing from the clipboard.": {
+  "where": [
+   "quire/js/ops.js:395"
+  ]
+ },
+ "A footnote marker was removed because the document contained no footnote for it.": {
+  "where": [
+   "quire/js/docx-read.js:2250"
   ]
  },
  "A form control was kept only as a drawing object": {
@@ -6119,6 +6134,16 @@
  "An encrypted picture is damaged": {
   "where": [
    "common/legacy/ppt-crypto.js:15"
+  ]
+ },
+ "An endnote marker was removed because its note was missing from the clipboard.": {
+  "where": [
+   "quire/js/ops.js:396"
+  ]
+ },
+ "An endnote marker was removed because the document contained no endnote for it.": {
+  "where": [
+   "quire/js/docx-read.js:2251"
   ]
  },
  "An invalid formatting value was replaced": {
@@ -8629,7 +8654,7 @@
  },
  "Check Box": {
   "where": [
-   "quire/js/editor.js:1079"
+   "quire/js/editor.js:1092"
   ]
  },
  "Check for updates": {
@@ -9890,7 +9915,7 @@
  "Convert Notes": {
   "where": [
    "quire/js/dialogs2.js:206",
-   "quire/js/fields.js:808"
+   "quire/js/fields.js:806"
   ]
  },
  "Convert Table to Text": {
@@ -10142,7 +10167,7 @@
  },
  "Copy Styles": {
   "where": [
-   "quire/js/commands.js:724"
+   "quire/js/commands.js:722"
   ]
  },
  "Copy Value from Above": {
@@ -12381,7 +12406,7 @@
  },
  "Drag and Drop": {
   "where": [
-   "quire/js/editor.js:925"
+   "quire/js/editor.js:938"
   ]
  },
  "Drag in the worksheet to insert the AutoShape. Press Esc to cancel.": {
@@ -16706,7 +16731,7 @@
  },
  "Insert File": {
   "where": [
-   "quire/js/commands.js:709"
+   "quire/js/commands.js:707"
   ]
  },
  "Insert Footnote": {
@@ -18340,7 +18365,7 @@
  "Link to Previous": {
   "where": [
    "quire/js/commands.js:549",
-   "quire/js/commands.js:849"
+   "quire/js/commands.js:847"
   ]
  },
  "Link to:": {
@@ -19343,7 +19368,7 @@
  "Move": {
   "where": [
    "ledger/js/clipboard.js:446",
-   "quire/js/editor.js:925"
+   "quire/js/editor.js:938"
   ]
  },
  "Move &but don't size with cells": {
@@ -20209,7 +20234,7 @@
  },
  "Note Options": {
   "where": [
-   "quire/js/fields.js:802"
+   "quire/js/fields.js:800"
   ]
  },
  "Notes": {
@@ -23619,7 +23644,7 @@
  },
  "Resize Picture": {
   "where": [
-   "quire/js/editor.js:1189"
+   "quire/js/editor.js:1202"
   ]
  },
  "Resize Table": {
@@ -26176,7 +26201,7 @@
  },
  "Second pane": {
   "where": [
-   "quire/js/commands.js:754"
+   "quire/js/commands.js:752"
   ]
  },
  "Section": {
@@ -30068,7 +30093,7 @@
  },
  "The file could not be inserted. {0}": {
   "where": [
-   "quire/js/commands.js:719"
+   "quire/js/commands.js:717"
   ]
  },
  "The file could not be saved: {0}": {

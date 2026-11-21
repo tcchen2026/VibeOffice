@@ -613,6 +613,13 @@
   };
 
   /* ================= stories, containers, index ================= */
+  // Separators are note definitions too. Some writers give the continuation separator ID 1.
+  D.nextNoteId = function (d, kind) {
+    let high = 0;
+    for (const id of Object.keys(d[kind])) high = Math.max(high, +id || 0);
+    for (const n of d.keep?.notes?.[kind] || []) high = Math.max(high, +n.id || 0);
+    return high + 1;
+  };
   D.stories = function (doc) {
     const out = [doc.main];
     for (const k in doc.hf) out.push(doc.hf[k]);
@@ -863,6 +870,15 @@
     };
     fresh(c);
     return c;
+  };
+  D.cloneStory = function (source, id) {
+    const { blocks, paras, ...meta } = source;
+    const story = { ...L.clone(meta), id, blocks: D.cloneBlocks(blocks) };
+    if (story.keep) delete story.keep.paraId;
+    D.walk(story, p => {
+      if (p.t === 'p') for (const it of p.runs) if (it.self && it.t === story.kind) it.id = id;
+    });
+    return story;
   };
   const cloneP = (p) => ({ runs: L.clone(p.runs), pPr: L.clone(p.pPr), rPr: L.clone(p.rPr), sect: p.sect ? L.clone(p.sect) : undefined, mark: p.mark ? L.clone(p.mark) : undefined });
   const restoreP = (p, s) => { p.runs = L.clone(s.runs); p.pPr = L.clone(s.pPr); p.rPr = L.clone(s.rPr); if (s.sect) p.sect = L.clone(s.sect); else delete p.sect; if (s.mark) p.mark = L.clone(s.mark); else delete p.mark; };

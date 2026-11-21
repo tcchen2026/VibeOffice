@@ -1040,8 +1040,7 @@
     const cmtIds = new Map();
     const cmtReferences = new Set();
     const fnIds = new Map(), enIds = new Map();
-    const highNote = kind => Math.max(0, ...Object.keys(kind === 'fn' ? doc.fn : doc.en).map(x => +x || 0), ...(doc.keep?.notes?.[kind] || []).map(n => +n.id || 0)) + 1;
-    let fnN = highNote('fn'), enN = highNote('en');
+    let fnN = D.nextNoteId(doc, 'fn'), enN = D.nextNoteId(doc, 'en');
     const charts = [];
     const usedPaths = new Set(), styleRefs = new Set(), paraIds = new Set();
     /** the id to write for style id: the file's own style of its name for a built-in marked sameAs (docx-read), otherwise id */

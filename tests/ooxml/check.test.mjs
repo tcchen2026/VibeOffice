@@ -383,3 +383,20 @@ test('regenerated text compares case, punctuation and order, while allowing a ru
   assert.equal(run('compare', a, b, '--policy', policy).status, 'ok');
   assert.equal(run('compare', a, c, '--policy', policy).status, 'failed');
 });
+
+test('Word note markers have one normal note of the right kind and never share its ID across active branches', async () => {
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const note = (kind, id) => '<w:' + kind + 'Reference w:id="' + id + '"/>';
+  const faults = async body => {
+    const parts = { '_rels/.rels': rels(rel('main','word/document.xml','officeDocument')),
+      'word/_rels/document.xml.rels': rels(rel('fn','notes/f.xml','footnotes') + rel('en','notes/e.xml','endnotes')),
+      'word/document.xml': '<w:document xmlns:w="' + W + '" xmlns:mc="' + MC + '"><w:body><w:p>' + body + '</w:p></w:body></w:document>' };
+    for (const [kind, name] of [['footnote','f'],['endnote','e']]) parts['word/notes/' + name + '.xml'] =
+      '<w:' + kind + 's xmlns:w="' + W + '"><w:' + kind + ' w:id="0" w:type="separator"/><w:' + kind + ' w:id="2"><w:p><w:r><w:' + kind + 'Ref/></w:r></w:p></w:' + kind + '></w:' + kind + 's>';
+    return run('check', await pkg('word-notes', parts)).issues.map(i => i.code);
+  };
+  const fn = note('footnote','2'), en = note('endnote','2');
+  assert.deepEqual(await faults('<mc:AlternateContent><mc:Choice Requires="w">' + fn + '</mc:Choice><mc:Fallback>' + fn + '</mc:Fallback></mc:AlternateContent>' + en), []);
+  assert.deepEqual(await faults(fn + note('footnote','02') + en + en), ['duplicate-footnote-reference-id','duplicate-endnote-reference-id']);
+  assert.deepEqual(await faults(note('footnote','0') + note('endnote','42')), ['unresolved-footnote-reference','unresolved-endnote-reference']);
+});

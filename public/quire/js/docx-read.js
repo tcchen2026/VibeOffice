@@ -158,6 +158,7 @@
     doc.src = { mainPath };
     try { L.opc.attach(doc, await L.opc.open(zip)); }
     catch (error) { L.opc.loss(doc, { id: 'package', what: 'Part of this file couldn\'t be read. Anything in it that VibeOffice can\'t edit itself, such as macros or embedded objects, won\'t be saved.', detail: error.message, where: mainPath, action: 'drop', notify: true }); }
+    const noteRefs = [];
     doc.keep = { media: {}, stores: storeParts };
     const propertyContext = el => ({ pkg: doc.pkg, part: xmlParts.get(el.ownerDocument || el) || mainPath });
 
@@ -1064,6 +1065,7 @@
           case 'footnoteReference': case 'endnoteReference': {
             const kind = c.localName === 'footnoteReference' ? 'fn' : 'en';
             const it = D.item(kind, { id: at(c, 'id') }, base);
+            noteRefs.push({ it, p });
             if (X.bool(at(c, 'customMarkFollows'))) { customMark = it; }
             push(it);
             break;
@@ -2230,6 +2232,23 @@
     if (/macroEnabled/.test(mainCT)) doc.hasMacros = true;
     doc.ooxmlFormat = L.opc.variant(doc.pkg, doc.isTemplate ? 'dotx' : 'docx');
     doc.keep.values = Object.fromEntries(['settings', 'theme', 'props', 'custom', 'watermark'].map(k => [k, JSON.parse(JSON.stringify(doc[k]))]));
+
+    // Older Quire saves can contain two marks sharing one note. Keep the available
+    // text as a separately editable note for each mark, including on the next save.
+    const used = { fn: new Set(), en: new Set() }, next = {}, missing = new Set();
+    for (const { it, p } of noteRefs) {
+      const kind = it.t, id = it.id, source = doc[kind][id];
+      if (!source) {
+        p.runs = p.runs.filter(r => r !== it);
+        missing.add(kind);
+      } else if (used[kind].has(id) || doc.keep.notes?.[kind]?.some(n => n.id === id)) {
+        next[kind] ??= D.nextNoteId(doc, kind);
+        it.id = String(next[kind]++);
+        doc[kind][it.id] = D.cloneStory(source, it.id);
+      } else used[kind].add(id);
+    }
+    if (missing.has('fn')) warnings.push(L.t('A footnote marker was removed because the document contained no footnote for it.'));
+    if (missing.has('en')) warnings.push(L.t('An endnote marker was removed because the document contained no endnote for it.'));
 
     /* numbering instances referenced but undefined → plain paragraphs */
     D.walk(doc.main, (b) => { if (b.t === 'p' && b.pPr.num && b.pPr.num.id && b.pPr.num.id !== '0' && !doc.numbering.nums[b.pPr.num.id]) delete b.pPr.num; });

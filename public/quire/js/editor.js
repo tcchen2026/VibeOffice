@@ -858,7 +858,7 @@
     try {
       e.clipboardData.setData('text/plain', data.text);
       e.clipboardData.setData('text/html', data.html);
-      e.clipboardData.setData('application/x-quire', JSON.stringify({ blocks: data.blocks, media: data.media, preserved: data.preserved }));
+      e.clipboardData.setData('application/x-quire', JSON.stringify({ blocks: data.blocks, media: data.media, bodies: data.bodies, preserved: data.preserved }));
     } catch (err) { /* ignore */ }
     E.clip = data;
     if (cut) E.edit(L.N('Cut'), () => E.deleteSelection({ wholeTable: true }));
@@ -871,7 +871,8 @@
     const text = O.textRange(a, b);
     const html = L.htmlio ? L.htmlio.blocksToHTML(blocks, { clipboard: true }) : L.esc(text);
     const media = {};
-    return { blocks, text, html, media, preserved: L.preserve.clipboard(blocks) };
+    const bodies = O.copyBodies(blocks, doc());
+    return { blocks, text, html, media, bodies, preserved: L.preserve.clipboard({ blocks, bodies }) };
   };
   async function onPaste(e) {
     e.preventDefault();
@@ -879,7 +880,18 @@
     const cd = e.clipboardData;
     let q = null;
     try { q = cd.getData('application/x-quire'); } catch (err) { /* ignore */ }
-    if (q) { try { const o = JSON.parse(q); const blocks = o.preserved ? await L.preserve.hydrateClipboard(L.opc.remapSources(o.blocks, L.opc.import(o.preserved))) : o.blocks; E.pasteBlocks(blocks); return; } catch (err) { /* fall through */ } }
+    if (q) {
+      try {
+        let payload = JSON.parse(q);
+        if (payload.preserved) {
+          payload = L.opc.remapSources({ blocks: payload.blocks, bodies: payload.bodies }, L.opc.import(payload.preserved));
+          const parts = Object.values(payload.bodies || {}).flatMap(store => Object.values(store).flatMap(body => body.blocks));
+          await L.preserve.hydrateClipboard(payload.blocks.concat(parts));
+        }
+        E.pasteBlocks(payload.blocks, { bodies: payload.bodies });
+        return;
+      } catch (err) { /* fall through to HTML or plain text */ }
+    }
     const files = Array.from(cd.files || []).filter((f) => /^image\//.test(f.type));
     if (files.length && L.app && L.app.insertPictureFiles) { L.app.insertPictureFiles(files); return; }
     const html = cd.getData('text/html');
@@ -894,7 +906,7 @@
     if (!blocks || !blocks.length) return;
     E.edit(L.N('Paste'), () => {
       const pos = E.deleteSelection();
-      return O.insertBlocks(pos, blocks, opts);
+      return O.insertBlocks(pos, blocks, { bodies: undefined, ...opts });
     });
     E.lastPaste = Date.now();
   };
@@ -920,6 +932,7 @@
     const d = doc();
     if (D.cmp(d, target, a) > 0 && D.cmp(d, target, b) < 0) return false;
     const blocks = O.copyRange(a, b);
+    const options = copy ? { bodies: O.copyBodies(blocks, d) } : undefined;
     const one = D.info(d, a.p).cont === D.info(d, b.p).cont;
     E.clearObjSel();
     return E.edit(copy ? 'Drag and Drop' : L.N('Move'), () => {
@@ -937,7 +950,7 @@
         O.deleteRange(a, b);
         if (tail != null) { const p = D.info(d, b.p) ? b.p : a.p; at = D.pos(p, D.plen(p) - tail); }
       }
-      return { a: at, f: O.insertBlocks(at, blocks) };
+      return { a: at, f: O.insertBlocks(at, blocks, options) };
     });
   }
   async function onDrop(e) {

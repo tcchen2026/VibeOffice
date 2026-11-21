@@ -176,10 +176,10 @@
     id: 'clipboard', title: 'Clipboard', live: true,
     render(b) {
       const items = A().clipItems || [];
-      b.append(h('div', { class: 'tp-btns' }, ui.button('Paste All', () => { for (const it of items.slice().reverse()) E.pasteBlocks(it.blocks); }, { class: 'btn small' }), ui.button('Clear All', () => { items.length = 0; TP.refresh('doc'); }, { class: 'btn small' })), h('div', { class: 'tp-note', text: L.t('{0} of 24 - Clipboard. Click an item to paste.', items.length) }));
+      b.append(h('div', { class: 'tp-btns' }, ui.button('Paste All', () => { for (const it of items.slice().reverse()) E.pasteBlocks(it.blocks, { bodies: it.bodies }); }, { class: 'btn small' }), ui.button('Clear All', () => { items.length = 0; TP.refresh('doc'); }, { class: 'btn small' })), h('div', { class: 'tp-note', text: L.t('{0} of 24 - Clipboard. Click an item to paste.', items.length) }));
       for (const it of items) {
         const el = h('button', { class: 'cb-item', type: 'button' }, h('span', { html: L.icons.get(it.blocks.some((x) => x.t === 'tbl') ? 'table' : 'font') }), h('span', { class: 'cb-t', translate: 'no' }, document.createTextNode((it.text || '').slice(0, 160) || L.t('[object]'))));
-        el.addEventListener('click', () => E.pasteBlocks(it.blocks));
+        el.addEventListener('click', () => E.pasteBlocks(it.blocks, { bodies: it.bodies }));
         b.appendChild(el);
       }
     },

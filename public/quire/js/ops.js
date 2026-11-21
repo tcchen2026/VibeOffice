@@ -321,6 +321,82 @@
     for (const p of D.parasBetween(d, a.p, b.p)) out.push(copyP(p, p === a.p ? a.o : 0, p === b.p ? b.o : D.plen(p)));
     return out;
   };
+  const noteStore = it => it.t === 'fn' || it.t === 'en' ? it.t : it.t === 'cs' || it.t === 'ce' ? 'comments' : null;
+  // Only referenced stories travel with the selection. Exclude the paragraph index,
+  // which repeats paragraphs already present in blocks.
+  O.copyBodies = function (blocks, source) {
+    const bodies = { fn: {}, en: {}, comments: {} };
+    function collect(list) {
+      D.walk({ blocks: list }, p => {
+        if (p.t !== 'p') return;
+        for (const it of p.runs) {
+          const kind = noteStore(it);
+          if (!kind || it.self || Object.hasOwn(bodies[kind], it.id) || !Object.hasOwn(source[kind], it.id)) continue;
+          const { paras, ...body } = source[kind][it.id];
+          bodies[kind][it.id] = L.clone(body);
+          collect(body.blocks);
+        }
+      });
+    }
+    collect(blocks);
+    return bodies;
+  };
+  // Called after cloning the pasted blocks and inside the insertion's transaction.
+  // Each footnote reference owns a separate body. A comment range's two ends share an ID.
+  function pasteBodies(blocks, bodies, d) {
+    const comments = new Map(), active = new Set(), missing = new Set(), next = {};
+    function copyBody(kind, old) {
+      if (kind === 'comments' && comments.has(old)) return comments.get(old);
+      const src = bodies?.[kind]?.[old], key = kind + ':' + old;
+      if (!src?.blocks || active.has(key)) { missing.add(kind); return null; }
+      next[kind] ??= D.nextNoteId(d, kind);
+      const id = String(next[kind]++);
+      const body = D.cloneStory(src, id);
+      D.touchKey(d, kind); d[kind][id] = body;
+      if (kind === 'comments') comments.set(old, id);
+      active.add(key);
+      remap(body.blocks, body);
+      active.delete(key);
+      return id;
+    }
+    function remap(list, owner) {
+      const anchors = new Map();
+      D.walk({ blocks: list }, (p, cont, i, story) => {
+        if (p.t !== 'p') return;
+        p.runs = p.runs.filter(it => {
+          const kind = noteStore(it);
+          if (!kind) return true;
+          if (it.self) {
+            if (owner?.kind !== kind) return false;
+            it.id = owner.id;
+          } else {
+            const id = copyBody(kind, String(it.id));
+            if (id == null) return false;
+            it.id = id;
+            if (kind === 'comments') {
+              if (!anchors.has(id)) anchors.set(id, { story });
+              anchors.get(id)[it.t] = true;
+            }
+          }
+          return true;
+        });
+      });
+      // Clip a comment that starts or ends outside the selection to the pasted text.
+      for (const [id, range] of anchors) {
+        if (!range.cs) D.firstPara(range.story.blocks).runs.unshift(D.item('cs', { id }));
+        if (!range.ce) D.lastPara(range.story.blocks).runs.push(D.item('ce', { id }));
+      }
+    }
+    remap(blocks);
+    for (const id of comments.values()) {
+      const body = d.comments[id];
+      if (body.parent != null) body.parent = comments.get(String(body.parent));
+    }
+    if (missing.has('fn')) L.ui.toast(L.t('A footnote marker was removed because its note was missing from the clipboard.'));
+    if (missing.has('en')) L.ui.toast(L.t('An endnote marker was removed because its note was missing from the clipboard.'));
+    if (missing.has('comments')) L.ui.toast(L.t('A comment marker was removed because its comment was missing from the clipboard.'));
+    d._idxDirty = true;
+  }
   /** plain text of a range (paragraphs separated by \r\n for clipboard) */
   O.textRange = function (a, b, sep) {
     const d = doc();
@@ -355,6 +431,7 @@
     const d = doc();
     if (!blocks.length) return pos;
     blocks = D.cloneBlocks(blocks);
+    if (opts && 'bodies' in opts) pasteBodies(blocks, opts.bodies, d);
     if (L.preserve?.controls({ main: { blocks }, hf: {}, fn: {}, en: {}, comments: {} }).records.size) { D.touchKey(d, 'keep'); d.keep = d.keep || {}; d.keep.controls = true; }
     const trk = O.tracking();
     if (trk) {
