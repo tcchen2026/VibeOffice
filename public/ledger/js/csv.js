@@ -214,17 +214,11 @@
       (b[0] === 0xff && b[1] === 0xfe) || (b[0] === 0xfe && b[1] === 0xff);
     return { type: /\.csv$/i.test(name) ? 'csv' : 'txt', encoding, delim: delims?.[0], quote, bom };
   }
-  function sniffQuote(text) {
-    const sample = text.slice(0, 20000);
-    // Require a complete quoted field. Apostrophes in ordinary words are data.
-    return /(?:^|[,;|\t\r\n])'(?:[^']|'')*'(?=[,;|\t\r\n]|$)/.test(sample) &&
-      !/(?:^|[,;|\t\r\n])"/.test(sample) ? "'" : '"';
-  }
   /** import bytes without UI (used for .csv and by tests) */
   CSV.importBytes = function (bytes, name, o) {
     o = o || {};
     const { text, encoding } = CSV.decode(bytes, o.encoding);
-    const quote = o.quote ?? sniffQuote(text);
+    const quote = o.quote ?? '"';
     const delims = o.delims ?? (/\.(tsv|txt|tab)$/i.test(name) && text.includes('\t') ? '\t' : CSV.sniff(text, quote));
     const rows = o.fixed ? CSV.parseFixed(text, o.breaks || CSV.guessBreaks(text)) : CSV.parse(text, { delims, quote, merge: o.merge });
     const wb = CSV.toWorkbook(rows, Object.assign({ name }, o));
@@ -241,7 +235,6 @@
     let enc = 'auto';
     let decoded = CSV.decode(bytes);
     const st = { fixed: false, start: 1, delims: { tab: true, semi: false, comma: false, space: false, other: false, otherCh: '' }, merge: false, quote: '"', breaks: null, formats: [], step: 1 };
-    st.quote = sniffQuote(decoded.text);
     const sn = CSV.sniff(decoded.text, st.quote);
     st.delims.tab = sn === '\t'; st.delims.comma = sn === ','; st.delims.semi = sn === ';'; if (sn === '|') { st.delims.other = true; st.delims.otherCh = '|'; }
     const lines = () => decoded.text.split(/\r\n|\r|\n/);
@@ -430,8 +423,9 @@
       for (let c = 0; c <= lastC; c++) {
         let t = row && row.cells[c] ? CSV.cellText(sh, r, c) : '';
         if (t !== '') lastNon = c;
-        if (quote && (t.includes(delim) || t.includes(quote) || /[\r\n]/.test(t) || (o.quoteSpaces && /^\s|\s$/.test(t)))) {
-          t = quote + t.split(quote).join(quote + quote) + quote;
+        const q = quote || '"';
+        if (t.includes(delim) || /[\r\n]/.test(t) || (quote && t.includes(quote)) || (o.quoteSpaces && /^\s|\s$/.test(t))) {
+          t = q + t.split(q).join(q + q) + q;
         }
         out.push(t);
       }
@@ -444,7 +438,22 @@
     o = o || {};
     delim = o.delim || delim;
     const text = CSV.text(sh, delim, o);
-    const bom = o.bom === false ? '' : '﻿';
+    let bom = o.bom === false ? '' : '\ufeff';
+    if (/^(windows-1252|cp1252|latin1|iso-8859-1|ascii)$/i.test(o.encoding)) {
+      const bytes = new Uint8Array(text.length);
+      let i = 0;
+      for (; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        if (code < 0x80 || (code >= 0xa0 && code <= 0xff)) bytes[i] = code;
+        else {
+          const index = CP1252.indexOf(text[i]);
+          if (index < 0) break;
+          bytes[i] = index + 0x80;
+        }
+      }
+      if (i === text.length && !o.bom) return new Blob([bytes], { type: 'text/plain;charset=windows-1252' });
+      bom = '\ufeff';
+    } else if (o.encoding && !/^utf-/i.test(o.encoding)) bom = '\ufeff';
     if (o.encoding === 'utf-16le' || o.encoding === 'utf-16be') {
       const value = bom + text, bytes = new DataView(new ArrayBuffer(value.length * 2));
       for (let i = 0; i < value.length; i++) bytes.setUint16(i * 2, value.charCodeAt(i), o.encoding === 'utf-16le');

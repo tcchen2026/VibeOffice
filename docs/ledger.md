@@ -53,12 +53,15 @@ defined names and chart references. Undo and Redo restore chart references on ev
 Copying a filtered range includes the rows the filter shows, including rows hidden by hand.
 
 Move or Copy to another workbook carries comments, validation, conditional formatting, hyperlinks
-and sheet defaults. Ledger asks before leaving out drawings, tables or sparklines, or transferring
+and sheet defaults. Ledger asks before leaving out drawings, tables, PivotTables, slicers, timelines or sparklines, or transferring
 formulas that depend on names or other source sheets. Moving a sheet also warns when formulas in
 the original workbook will show `#REF!`.
 
 Saving an opened CSV or delimited text file in the same format retains its delimiter, text
-qualifier and byte-order mark. A new CSV uses commas. In semicolon-delimited data, Ledger
+qualifier and byte-order mark. Double quotes are the default. The Text Import Wizard can
+select single quotes. Windows-1252 files keep their encoding when the edited text fits.
+Characters outside that encoding are saved in UTF-8 with a BOM so Excel reads them correctly.
+A new CSV uses commas. In semicolon-delimited data, Ledger
 continues to interpret `1,500` as the number 1500.
 
 **Entering data.** Excel's own input rules: numbers, percentages, currency, fractions (`1 1/2`),

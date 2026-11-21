@@ -106,7 +106,7 @@ test('Filtered clipboard compresses rows in every flavour and preserves formula 
 test('CSV and text same-format settings retain delimiter, text qualifier and BOM, including UTF-16', async () => {
   for (const [name, enc, bom] of [['stock.csv', 'utf8', ''], ['stock.txt', 'utf16le', '\ufeff']]) {
     const text = "Item;Place\r\nBolts;'North;West'\r\n";
-    const wb = L.csv.importBytes(Buffer.from(bom + text, enc), name);
+    const wb = L.csv.importBytes(Buffer.from(bom + text, enc), name, { quote: "'" });
     const bytes = await L.csv.write(wb, wb.sheets[0], name.endsWith('.csv') ? ',' : '\t', wb.textImport).arrayBuffer();
     assert.equal(Buffer.from(bytes).toString(enc), bom + text);
     const fresh = Buffer.from(await L.csv.write(wb, wb.sheets[0], ',').arrayBuffer()).toString();
@@ -131,4 +131,54 @@ test('Cross-workbook copy renews sheet-owned data and reports unsupported featur
   assert.equal(dest.dxfs[copied.cf[0].rules[0].dxf].nf, '0.00');
   assert.equal(copied.defRowH, 28); assert.equal(copied.defColW, 16); assert.equal(copied.outline.below, false);
   assert.equal(copied.comments.get(M.key(1, 1)).text, 'For review'); assert.notEqual(copied.comments.get(M.key(1, 1)), sh.comments.get(M.key(1, 1)));
+});
+test('Moved conditional and validation formulas, including thresholds on other sheets, follow their source and undo', () => {
+  const { wb, sh, other } = book();
+  for (let r = 0; r < 3; r++) sh.cell(r, 0).v = r * 5;
+  sh.cf = [{ ranges: [range('A1:A3')], rules: [{ type: 'expression', f: ['A1>5'] }] }];
+  sh.dv = [{ ranges: [range('A1:A3')], type: 'custom', f1: 'A1<100', f2: 'C1+1' }];
+  other.cf = [{ ranges: [range('B1')], rules: [{ type: 'dataBar', bar: { cfvo: [{ type: 'formula', val: 'Data!A1' }] } }] }];
+  other.dv = [{ ranges: [range('B1')], type: 'custom', f1: 'Data!C1', f2: 'Data!$A$2' }];
+  CL.moveRange(sh, range('A1:A3'), range('C1:C3'), false);
+  assert.equal(sh.cf[0].rules[0].f[0], 'C1>5'); assert.equal(sh.dv[0].f1, 'C1<100');
+  assert.match(sh.dv[0].f2, /#REF!/);
+  assert.equal(other.cf[0].rules[0].bar.cfvo[0].val, 'Data!C1');
+  assert.match(other.dv[0].f1, /#REF!/); assert.equal(other.dv[0].f2, 'Data!$C$2');
+  wb.undo.undo(); assert.equal(other.dv[0].f1, 'Data!C1'); assert.equal(other.cf[0].rules[0].bar.cfvo[0].val, 'Data!A1');
+  wb.undo.redo(); assert.equal(sh.dv[0].f1, 'C1<100');
+});
+test('Inserting inside a validation, conditional format or hyperlink expands its range in either direction', () => {
+  for (const [at, dir, area, expected] of [['A3', 'down', 'A1:A5', 'A1:A6'], ['C1', 'right', 'A1:E1', 'A1:F1']]) {
+    const { sh } = book();
+    sh.cf = [{ ranges: [range(area)], rules: [{ type: 'expression', f: ['A1>2'] }] }];
+    sh.dv = [{ type: 'custom', ranges: [range(area)], f1: 'A1<100' }];
+    sh.links = [{ ref: range(area), target: 'https://example.org' }];
+    O.shiftCells(sh, range(at), dir, true);
+    for (const entries of [sh.cf, sh.dv, sh.links]) assert.deepEqual(refs(entries), [expected]);
+  }
+});
+test('Insert Cells above a conditional format shifts the formula with its first cell', () => {
+  const { sh } = book();
+  sh.cf = [{ ranges: [range('A2:A4')], rules: [{ type: 'expression', f: ['A2>2'] }] }];
+  O.shiftCells(sh, range('A1'), 'down', true);
+  assert.deepEqual(refs(sh.cf), ['A3:A5']); assert.equal(sh.cf[0].rules[0].f[0], 'A3>2');
+});
+test('Windows-1252 CSV preserves every representable byte and uses a UTF-8 BOM for new Unicode text', async () => {
+  const input = Buffer.concat([Buffer.from('Name;Ort\r\nMüller;Köln\r\nEuro;', 'latin1'), Buffer.from([0x80, 0x91, 0x92, 13, 10])]);
+  const wb = L.csv.importBytes(input, 'kunden.csv'), sh = wb.sheets[0];
+  const save = async () => Buffer.from(await L.csv.write(wb, sh, ',', wb.textImport).arrayBuffer());
+  assert.deepEqual(await save(), input);
+  sh.cell(1, 0).v = '東京'; const bytes = await save(); assert.deepEqual([...bytes.subarray(0, 3)], [239, 187, 191]); assert.ok(bytes.toString().includes('東京;Köln'));
+});
+test('Automatic CSV import keeps apostrophes as data and a qualifier-free export protects delimiters', () => {
+  const text = "id,note\r\n1,'N/A'\r\n2,'Tis the season, said Bob\r\n3,plain\r\n";
+  const sh = L.csv.importBytes(Buffer.from(text), 'notes.csv').sheets[0];
+  assert.equal(sh.maxR, 3); assert.equal(sh.val(1, 1), "'N/A'"); assert.equal(sh.val(2, 1), "'Tis the season");
+  sh.cell(3, 1).v = 'use "a,b"'; assert.ok(L.csv.text(sh, ',', { quote: '' }).includes('"use ""a,b"""'));
+});
+test('Cross-workbook warnings identify sheet-owned PivotTables and slicers', () => {
+  const { wb, sh, other } = book();
+  wb.extra.pivots = { tables: [{ sheet: sh.id, name: 'Orders' }] }; sh.drawings = [{ slicerKeep: {} }];
+  assert.deepEqual(O.sheetTransferWarnings([other], false), []);
+  const message = O.sheetTransferWarnings([sh], false).join(' '); assert.match(message, /PivotTables/); assert.match(message, /Slicers/);
 });

@@ -746,7 +746,7 @@
  },
  "&Comma": {
   "where": [
-   "ledger/js/csv.js:343",
+   "ledger/js/csv.js:336",
    "ledger/js/dialogs2.js:246"
   ]
  },
@@ -936,7 +936,7 @@
  },
  "&Date:": {
   "where": [
-   "ledger/js/csv.js:357",
+   "ledger/js/csv.js:350",
    "ledger/js/dialogs2.js:109"
   ]
  },
@@ -1024,7 +1024,7 @@
  },
  "&Delimited": {
   "where": [
-   "ledger/js/csv.js:320"
+   "ledger/js/csv.js:313"
   ]
  },
  "&Delimited - Characters such as commas or tabs separate each field.": {
@@ -1363,7 +1363,7 @@
  "&Finish": {
   "where": [
    "lectern/js/app.js:1696",
-   "ledger/js/csv.js:374",
+   "ledger/js/csv.js:367",
    "ledger/js/dialogs2.js:258",
    "ledger/js/dialogs2.js:835"
   ]
@@ -1555,7 +1555,7 @@
  },
  "&General": {
   "where": [
-   "ledger/js/csv.js:355",
+   "ledger/js/csv.js:348",
    "ledger/js/dialogs2.js:249"
   ]
  },
@@ -2442,7 +2442,7 @@
  },
  "&Next >": {
   "where": [
-   "ledger/js/csv.js:373",
+   "ledger/js/csv.js:366",
    "ledger/js/xchart.js:437"
   ]
  },
@@ -2623,7 +2623,7 @@
  },
  "&Other:": {
   "where": [
-   "ledger/js/csv.js:341",
+   "ledger/js/csv.js:334",
    "ledger/js/dialogs2.js:246",
    "quire/js/dialogs2.js:792"
   ]
@@ -3401,7 +3401,7 @@
  },
  "&Space": {
   "where": [
-   "ledger/js/csv.js:343",
+   "ledger/js/csv.js:336",
    "ledger/js/dialogs2.js:246"
   ]
  },
@@ -3601,7 +3601,7 @@
  },
  "&Tab": {
   "where": [
-   "ledger/js/csv.js:343",
+   "ledger/js/csv.js:336",
    "ledger/js/dialogs2.js:246"
   ]
  },
@@ -3659,7 +3659,7 @@
  },
  "&Text": {
   "where": [
-   "ledger/js/csv.js:356",
+   "ledger/js/csv.js:349",
    "ledger/js/dialogs2.js:249"
   ]
  },
@@ -4322,12 +4322,12 @@
  },
  "- Characters such as commas or tabs separate each field.": {
   "where": [
-   "ledger/js/csv.js:320"
+   "ledger/js/csv.js:313"
   ]
  },
  "- Fields are aligned in columns with spaces between each field.": {
   "where": [
-   "ledger/js/csv.js:321"
+   "ledger/js/csv.js:314"
   ]
  },
  "- PAGE -": {
@@ -4613,7 +4613,7 @@
  },
  "< &Back": {
   "where": [
-   "ledger/js/csv.js:372",
+   "ledger/js/csv.js:365",
    "ledger/js/xchart.js:436"
   ]
  },
@@ -5061,17 +5061,17 @@
  },
  "A sheet name cannot begin or end with an apostrophe.": {
   "where": [
-   "ledger/js/ops.js:1061"
+   "ledger/js/ops.js:1097"
   ]
  },
  "A sheet name cannot contain any of these characters:  : \\ / ? * [ ]": {
   "where": [
-   "ledger/js/ops.js:1060"
+   "ledger/js/ops.js:1096"
   ]
  },
  "A sheet name must be 1 to 31 characters long.": {
   "where": [
-   "ledger/js/ops.js:1059"
+   "ledger/js/ops.js:1095"
   ]
  },
  "A slicer or timeline you edited will be saved as a plain shape and will no longer filter data.": {
@@ -5189,7 +5189,7 @@
  "A workbook must contain at least one visible worksheet.": {
   "where": [
    "ledger/js/dialogs.js:425",
-   "ledger/js/ops.js:1032"
+   "ledger/js/ops.js:1068"
   ]
  },
  "A workbook must contain at least one visible worksheet.\n\nTo hide, delete, or move the selected sheet(s), you must first insert a new sheet or unhide a sheet that is already hidden.": {
@@ -6664,7 +6664,7 @@
  },
  "AutoFill": {
   "where": [
-   "ledger/js/ops.js:1464"
+   "ledger/js/ops.js:1505"
   ]
  },
  "AutoFill and series": {
@@ -8073,7 +8073,7 @@
  },
  "Cannot rename a sheet to the same name as another sheet, a referenced object library or a workbook referenced by Visual Basic.": {
   "where": [
-   "ledger/js/ops.js:1064"
+   "ledger/js/ops.js:1100"
   ]
  },
  "Canvas": {
@@ -8619,7 +8619,7 @@
  },
  "Charts will be left out.": {
   "where": [
-   "ledger/js/ops.js:1172"
+   "ledger/js/ops.js:1208"
   ]
  },
  "Check &grammar": {
@@ -8802,12 +8802,12 @@
  },
  "Chinese Simplified (GB18030)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Chinese Traditional (Big5)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Choose AutoShapes on the Drawing toolbar, then drag on the slide. Hold Shift for perfect squares, circles and 15° angles; hold Ctrl to draw from the center. Yellow diamonds adjust a shape's proportions; the green dot rotates.": {
@@ -9456,7 +9456,7 @@
  },
  "Column data format": {
   "where": [
-   "ledger/js/csv.js:361",
+   "ledger/js/csv.js:354",
    "ledger/js/dialogs2.js:257"
   ]
  },
@@ -10132,7 +10132,7 @@
  "Copy Sheet": {
   "where": [
    "ledger/js/dialogs.js:439",
-   "ledger/js/ops.js:1109"
+   "ledger/js/ops.js:1145"
   ]
  },
  "Copy Style": {
@@ -10998,7 +10998,7 @@
  },
  "Cyrillic (Windows)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "D&esign:": {
@@ -11521,7 +11521,7 @@
  },
  "Delete Cells": {
   "where": [
-   "ledger/js/ops.js:979",
+   "ledger/js/ops.js:1015",
    "quire/js/dialogs2.js:595",
    "quire/js/tables.js:347"
   ]
@@ -11588,7 +11588,7 @@
  "Delete Sheet": {
   "where": [
    "ledger/js/app.js:522",
-   "ledger/js/ops.js:1033"
+   "ledger/js/ops.js:1069"
   ]
  },
  "Delete Slide": {
@@ -11644,7 +11644,7 @@
  },
  "Delimiters": {
   "where": [
-   "ledger/js/csv.js:342"
+   "ledger/js/csv.js:335"
   ]
  },
  "Delivery address:": {
@@ -11734,7 +11734,7 @@
  },
  "Detect automatically ({0})": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Dia&gonal down": {
@@ -12061,7 +12061,7 @@
  },
  "Do not import column (s&kip)": {
   "where": [
-   "ledger/js/csv.js:359",
+   "ledger/js/csv.js:352",
    "ledger/js/dialogs2.js:249"
   ]
  },
@@ -13875,7 +13875,7 @@
  },
  "File &origin:": {
   "where": [
-   "ledger/js/csv.js:325"
+   "ledger/js/csv.js:318"
   ]
  },
  "File Searc&h...": {
@@ -14298,7 +14298,7 @@
  },
  "Fixed &width": {
   "where": [
-   "ledger/js/csv.js:321"
+   "ledger/js/csv.js:314"
   ]
  },
  "Fixed &width - Fields are aligned in columns with spaces between each field.": {
@@ -15049,12 +15049,12 @@
  },
  "Formulas in the original workbook that refer to a moved sheet will show #REF!.": {
   "where": [
-   "ledger/js/ops.js:1178"
+   "ledger/js/ops.js:1219"
   ]
  },
  "Formulas that refer to other sheets in the original workbook may stop working.": {
   "where": [
-   "ledger/js/ops.js:1177"
+   "ledger/js/ops.js:1218"
   ]
  },
  "Formulas that refer to other workbooks use the values Excel saved with this file. Break Link replaces those formulas with their values.": {
@@ -15064,7 +15064,7 @@
  },
  "Formulas that use these names may stop working: {0}.": {
   "where": [
-   "ledger/js/ops.js:1176"
+   "ledger/js/ops.js:1217"
   ]
  },
  "Formulas:": {
@@ -15359,7 +15359,7 @@
  "General|number format": {
   "where": [
    "ledger/js/commands.js:183",
-   "ledger/js/csv.js:296",
+   "ledger/js/csv.js:289",
    "ledger/js/dialogs.js:30"
   ]
  },
@@ -16057,7 +16057,7 @@
  },
  "History is a reserved name.": {
   "where": [
-   "ledger/js/ops.js:1062"
+   "ledger/js/ops.js:1098"
   ]
  },
  "Home": {
@@ -16233,7 +16233,7 @@
  },
  "If this is correct, choose Next, or choose the data type that best describes your data.": {
   "where": [
-   "ledger/js/csv.js:318"
+   "ledger/js/csv.js:311"
   ]
  },
  "Ignore &Internet and file addresses": {
@@ -16599,7 +16599,7 @@
  },
  "Insert Cells": {
   "where": [
-   "ledger/js/ops.js:979",
+   "ledger/js/ops.js:1015",
    "quire/js/dialogs2.js:591",
    "quire/js/tables.js:307"
   ]
@@ -16911,7 +16911,7 @@
  },
  "Insert Worksheet": {
   "where": [
-   "ledger/js/ops.js:1018"
+   "ledger/js/ops.js:1054"
   ]
  },
  "Insert as &hyperlink": {
@@ -17370,7 +17370,7 @@
  },
  "Japanese (Shift-JIS)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Jewel": {
@@ -17471,7 +17471,7 @@
  },
  "Korean (EUC-KR)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "L&anguage:": {
@@ -18652,7 +18652,7 @@
  },
  "MS-DOS (OEM 866)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Ma&ximum:": {
@@ -19385,7 +19385,7 @@
  "Move Sheet": {
   "where": [
    "ledger/js/dialogs.js:440",
-   "ledger/js/ops.js:1093"
+   "ledger/js/ops.js:1129"
   ]
  },
  "Move Slide": {
@@ -20839,7 +20839,7 @@
  },
  "Original data type": {
   "where": [
-   "ledger/js/csv.js:319",
+   "ledger/js/csv.js:312",
    "ledger/js/dialogs2.js:252"
   ]
  },
@@ -21880,7 +21880,7 @@
  },
  "Pictures and drawing objects will be left out.": {
   "where": [
-   "ledger/js/ops.js:1173"
+   "ledger/js/ops.js:1209"
   ]
  },
  "Pictures in album:": {
@@ -21939,6 +21939,11 @@
  "PivotTables were replaced with their saved cells": {
   "where": [
    "common/legacy/xls-write.js:395"
+  ]
+ },
+ "PivotTables will become ordinary cells.": {
+  "where": [
+   "ledger/js/ops.js:1211"
   ]
  },
  "Pixel Mosaic": {
@@ -22254,7 +22259,7 @@
  },
  "Preview of selected data:": {
   "where": [
-   "ledger/js/csv.js:255"
+   "ledger/js/csv.js:248"
   ]
  },
  "Preview your letters": {
@@ -23394,7 +23399,7 @@
  },
  "Rename Sheet": {
   "where": [
-   "ledger/js/ops.js:1072"
+   "ledger/js/ops.js:1108"
   ]
  },
  "Rename Style": {
@@ -23443,7 +23448,7 @@
    "lectern/js/dialogs.js:205",
    "lectern/js/dialogs.js:745",
    "lectern/js/dialogs.js:750",
-   "ledger/js/ops.js:1574"
+   "ledger/js/ops.js:1615"
   ]
  },
  "Replace &All": {
@@ -26066,7 +26071,7 @@
  },
  "Se&micolon": {
   "where": [
-   "ledger/js/csv.js:343",
+   "ledger/js/csv.js:336",
    "ledger/js/dialogs2.js:246"
   ]
  },
@@ -26582,7 +26587,7 @@
  "Series": {
   "where": [
    "ledger/js/dialogs.js:608",
-   "ledger/js/ops.js:1502"
+   "ledger/js/ops.js:1543"
   ]
  },
  "Series in": {
@@ -27294,7 +27299,7 @@
  },
  "Skip Column": {
   "where": [
-   "ledger/js/csv.js:296"
+   "ledger/js/csv.js:289"
   ]
  },
  "Sky Blue": {
@@ -27332,6 +27337,11 @@
  "Sli&de Sorter": {
   "where": [
    "lectern/js/commands.js:53"
+  ]
+ },
+ "Slicers will be left out.": {
+  "where": [
+   "ledger/js/ops.js:1214"
   ]
  },
  "Slide": {
@@ -27951,7 +27961,7 @@
   "where": [
    "ledger/js/dialogs.js:877",
    "ledger/js/dialogs2.js:76",
-   "ledger/js/ops.js:1258",
+   "ledger/js/ops.js:1299",
    "ledger/js/ribbon.js:65"
   ]
  },
@@ -28124,7 +28134,7 @@
  },
  "Sparklines will be left out.": {
   "where": [
-   "ledger/js/ops.js:1175"
+   "ledger/js/ops.js:1216"
   ]
  },
  "Speaker Notes": {
@@ -28480,7 +28490,7 @@
  },
  "Start import at &row:": {
   "where": [
-   "ledger/js/csv.js:325"
+   "ledger/js/csv.js:318"
   ]
  },
  "Start new col&umn": {
@@ -29205,7 +29215,7 @@
  },
  "Tables will become ordinary cells. Formulas that use the table names may stop working.": {
   "where": [
-   "ledger/js/ops.js:1174"
+   "ledger/js/ops.js:1210"
   ]
  },
  "Tables with vertically merged cells cannot be sorted.": {
@@ -29443,7 +29453,7 @@
  },
  "Text &qualifier:": {
   "where": [
-   "ledger/js/csv.js:345",
+   "ledger/js/csv.js:338",
    "ledger/js/dialogs2.js:257"
   ]
  },
@@ -29491,10 +29501,10 @@
  },
  "Text Import Wizard - Step {0} of {1}": {
   "where": [
-   "ledger/js/csv.js:315",
-   "ledger/js/csv.js:329",
-   "ledger/js/csv.js:349",
-   "ledger/js/csv.js:369"
+   "ledger/js/csv.js:308",
+   "ledger/js/csv.js:322",
+   "ledger/js/csv.js:342",
+   "ledger/js/csv.js:362"
   ]
  },
  "Text Layouts": {
@@ -29650,7 +29660,7 @@
  },
  "Text|number format": {
   "where": [
-   "ledger/js/csv.js:296",
+   "ledger/js/csv.js:289",
    "ledger/js/dialogs.js:30"
   ]
  },
@@ -29731,12 +29741,12 @@
  },
  "The Text Wizard has determined that your data is Delimited.": {
   "where": [
-   "ledger/js/csv.js:317"
+   "ledger/js/csv.js:310"
   ]
  },
  "The Text Wizard has determined that your data is Fixed Width.": {
   "where": [
-   "ledger/js/csv.js:317"
+   "ledger/js/csv.js:310"
   ]
  },
  "The Word document has too much text": {
@@ -31169,7 +31179,7 @@
  },
  "This operation requires the merged cells to be identically sized.": {
   "where": [
-   "ledger/js/ops.js:1257"
+   "ledger/js/ops.js:1298"
   ]
  },
  "This page is VibeOffice Lite's, for small devices. The full VibeOffice is at vibeoffice.work.": {
@@ -31220,17 +31230,17 @@
  },
  "This screen lets you select each column and set the Data Format. 'General' converts numeric values to numbers, date values to dates, and all remaining values to text.": {
   "where": [
-   "ledger/js/csv.js:351"
+   "ledger/js/csv.js:344"
   ]
  },
  "This screen lets you set field widths (column breaks). Lines with arrows signify a column break. To CREATE a break line, click at the desired position. To DELETE a break line, click on it.": {
   "where": [
-   "ledger/js/csv.js:333"
+   "ledger/js/csv.js:326"
   ]
  },
  "This screen lets you set the delimiters your data contains. You can see how your text is affected in the preview below.": {
   "where": [
-   "ledger/js/csv.js:337"
+   "ledger/js/csv.js:330"
   ]
  },
  "This section": {
@@ -31362,6 +31372,11 @@
  "Timecard": {
   "where": [
    "ledger/js/panes.js:260"
+  ]
+ },
+ "Timeline filters will be left out.": {
+  "where": [
+   "ledger/js/ops.js:1215"
   ]
  },
  "Times New Roman": {
@@ -31881,7 +31896,7 @@
  },
  "Treat consecutive delimiters as &one": {
   "where": [
-   "ledger/js/csv.js:344",
+   "ledger/js/csv.js:337",
    "ledger/js/dialogs2.js:257"
   ]
  },
@@ -32180,17 +32195,17 @@
  },
  "Unicode (UTF-16 BE)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Unicode (UTF-16 LE)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Unicode (UTF-8)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Unicode character {0}": {
@@ -32983,7 +32998,7 @@
  },
  "Western European (ISO)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "What Ledger can do": {
@@ -33179,7 +33194,7 @@
  },
  "Windows (ANSI)": {
   "where": [
-   "ledger/js/csv.js:324"
+   "ledger/js/csv.js:317"
   ]
  },
  "Wipe": {
@@ -34449,7 +34464,7 @@
  },
  "{none}": {
   "where": [
-   "ledger/js/csv.js:345",
+   "ledger/js/csv.js:338",
    "ledger/js/dialogs2.js:257"
   ]
  },

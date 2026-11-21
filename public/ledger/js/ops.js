@@ -745,7 +745,7 @@
       if (s.name === op.sheet) continue;
       const beforeCF = JSON.stringify(s.cf), beforeDV = JSON.stringify(s.dv);
       for (const v of s.dv) for (const k of ['f1', 'f2']) if (v[k]) { const t = adjText(v[k], op, s.name); if (t !== v[k]) v[k] = t; }
-      for (const cf of s.cf) for (const rule of cf.rules) adjustRule(rule, op, s.name);
+      for (const cf of s.cf) for (const rule of cf.rules) adjustRule(rule, text => adjText(text, op, s.name));
       const afterCF = JSON.stringify(s.cf), afterDV = JSON.stringify(s.dv);
       if (beforeCF !== afterCF || beforeDV !== afterDV) {
         const put = (cf, dv) => { s.cf = JSON.parse(cf); s.dv = JSON.parse(dv); s._cfIdx = null; };
@@ -768,10 +768,10 @@
   function adjText(text, op, home) {
     try { const a = F.parse(String(text).replace(/^=/, '')); const r = F.adjust(a, op, home); return r.changed ? F.toText(r.ast, { store: true }) : text; } catch (e) { return text; }
   }
-  function adjustRule(rule, op, home) {
-    if (rule.f) rule.f = rule.f.map(x => adjText(x, op, home));
+  function adjustRule(rule, convert) {
+    if (rule.f) rule.f = rule.f.map(convert);
     for (const property of ['bar', 'icons', 'scale']) for (const value of rule[property]?.cfvo || []) {
-      if (value.type === 'formula' && value.val != null) value.val = adjText(value.val, op, home);
+      if (value.type === 'formula' && value.val != null) value.val = convert(value.val);
     }
   }
   /** shift a range for an insert / delete; null when it disappears */
@@ -849,7 +849,7 @@
       sh.rows.forEach((row) => { if (!row) return; row.cells.forEach((cl) => { if (cl && cl.am) { const p = shiftRange({ r1: cl.am.r, c1: cl.am.c, r2: cl.am.r, c2: cl.am.c }, axis, at, n); if (p) cl.am = { r: p.r1, c: p.c1 }; } }); });
       /* ranges hanging off the sheet */
       sh.merges = sh.merges.map((m) => shiftRange(m, axis, at, n)).filter((m) => m && (m.r1 !== m.r2 || m.c1 !== m.c2));
-      for (const cf of sh.cf) { cf.ranges = cf.ranges.map((g) => shiftRange(g, axis, at, n)).filter(Boolean); for (const rule of cf.rules) adjustRule(rule, op, sh.name); }
+      for (const cf of sh.cf) { cf.ranges = cf.ranges.map((g) => shiftRange(g, axis, at, n)).filter(Boolean); for (const rule of cf.rules) adjustRule(rule, text => adjText(text, op, sh.name)); }
       sh.cf = sh.cf.filter((cf) => cf.ranges.length);
       for (const v of sh.dv) { v.ranges = v.ranges.map((g) => shiftRange(g, axis, at, n)).filter(Boolean); for (const k of ['f1', 'f2']) if (v[k]) v[k] = adjText(v[k], op, sh.name); }
       sh.dv = sh.dv.filter((v) => v.ranges.length);
@@ -933,36 +933,72 @@
   }
   O.moveReferences = moveReferences;
 
-  // Partition ranges before moving any of them. In an overlapping move destination
-  // cells are overwritten only after the source metadata has been collected.
-  O.moveCellState = function (sh, src, dr, dc, target, overwritten, adjust) {
+  // Relative CF and validation formulas are stored against the first range. If the
+  // original anchor was cut away, evaluate at the first surviving source cell before
+  // mapping its references. Explicit references into either edited sheet follow too.
+  function movedRule(item, key, ranges, origin, from, to, adjust, duplicate) {
+    if (!ranges.length) return [];
+    if (key === 'links') return ranges.map(ref => ({ ...item, ref }));
+    const first = item.ranges[0];
+    const convert = text => {
+      let ast; try { ast = F.parse(String(text).replace(/^=/, '')); } catch (_) { return text; }
+      const dr = origin.r1 - first.r1, dc = origin.c1 - first.c1;
+      if (dr || dc) ast = F.shift(ast, dr, dc);
+      const res = adjust(ast, from.name);
+      if (!res.changed && !dr && !dc && from === to) return text;
+      // adjustMove qualified the moved references. Other unqualified references
+      // still point to their original sheet when the rule moves across sheets.
+      const result = from === to ? res.ast : F.map(res.ast, n => !n.sheet && !n.book && (n.t === 'ref' || n.t === 'area') ? { ...n, sheet: from.name } : null);
+      return F.toText(result, { store: true });
+    };
+    const copy = duplicate ? L.sheetExtensions.copy(item) : structuredClone(item);
+    if (key === 'cf') copy.rules.forEach(rule => adjustRule(rule, convert));
+    else for (const prop of ['f1', 'f2']) if (copy[prop] != null) copy[prop] = convert(copy[prop]);
+    copy.ranges = ranges;
+    return [copy];
+  }
+  O.moveCellState = function (sh, src, dr, dc, target, overwritten, adjust, shift) {
     const same = sh === target, grid = { r1: 0, c1: 0, r2: MAXR - 1, c2: MAXC - 1 };
+    const strip = shift && (dr ? { ...src, r1: 0 } : { ...src, c1: 0 });
     for (const key of ['links', 'cf', 'dv']) {
       const rangesOf = item => key === 'links' ? [item.ref] : item.ranges;
-      const withRanges = (item, ranges) => key === 'links' ? ranges.map(ref => ({ ...item, ref })) : ranges.length ? [{ ...item, ranges }] : [];
       const retained = [], transferred = [];
       for (const item of sh[key]) {
-        let keep = [], move = [];
+        let keep = [], move = [], origin;
         for (const ref of rangesOf(item)) {
-          keep.push(...O.subtractRange(ref, src));
-          const hit = O.intersection(ref, src);
-          if (hit) {
-            const dest = O.intersection(O.offsetRange(hit, dr, dc), grid);
-            if (dest) move.push(dest);
+          if (shift && (dr ? ref.r2 : ref.c2) < shift.at) { keep.push(ref); continue; }
+          keep.push(...O.subtractRange(ref, strip || src));
+          const hit = O.intersection(ref, strip || src);
+          if (!hit) continue;
+          const dest = shift ? shiftRange(hit, shift.axis, shift.at, shift.n) : O.intersection(O.offsetRange(hit, dr, dc), grid);
+          if (!dest) continue;
+          if (!origin) {
+            origin = { ...hit };
+            if (shift?.n < 0) {
+              const coord = dr ? 'r1' : 'c1';
+              if (origin[coord] >= shift.at) origin[coord] = Math.max(origin[coord], shift.at - shift.n);
+            }
           }
+          move.push(dest);
         }
-        if (same && overwritten) keep = keep.flatMap(r => O.subtractRange(r, overwritten));
-        if (same) retained.push(...withRanges(item, keep.concat(move)));
-        else {
-          retained.push(...withRanges(item, keep));
-          if (move.length) transferred.push(...withRanges(keep.length && key !== 'links' ? L.sheetExtensions.copy(item) : item, move));
-        }
+        if (!shift && same && overwritten) keep = keep.flatMap(r => O.subtractRange(r, overwritten));
+        retained.push(...movedRule(item, key, keep, keep[0], sh, sh, adjust));
+        (same ? retained : transferred).push(...movedRule(item, key, move, origin, sh, target, adjust, !!keep.length));
       }
       sh[key] = retained;
-      if (!same) target[key] = target[key].flatMap(item =>
-        withRanges(item, rangesOf(item).flatMap(r => O.subtractRange(r, overwritten)))).concat(transferred);
+      if (!same) target[key] = target[key].flatMap(item => {
+        const keep = rangesOf(item).flatMap(r => O.subtractRange(r, overwritten));
+        return movedRule(item, key, keep, keep[0], target, target, adjust);
+      }).concat(transferred);
+      if (key === 'links') continue;
+      for (const other of sh.wb.sheets) {
+        if (other === sh || other === target || !other[key].length) continue;
+        const next = other[key].flatMap(item => movedRule(item, key, item.ranges, item.ranges[0], other, other, adjust));
+        if (JSON.stringify(next) !== JSON.stringify(other[key])) (key === 'cf' ? O.setCF : O.setDV)(other, next);
+      }
     }
     sh._cfIdx = target._cfIdx = null;
+    L.cf?.reset();
     const wb = sh.wb;
     for (const n of wb.names) {
       let ast; try { ast = F.parse(String(n.ref).replace(/^=/, '')); } catch (_) { continue; }
@@ -1003,7 +1039,7 @@
       const res = adjust(ast, s.name);
       if (res.changed) { if (s !== sh) wb.undo.note(s, r, c); cell.f = F.toText(res.ast, { store: true }); cell.ast = res.ast; cell._fsrc = cell.f; cell.dirty = true; }
     }); });
-    O.moveCellState(sh, src, dr, dc, sh, deleted, adjust);
+    O.moveCellState(sh, src, dr, dc, sh, deleted, adjust, shift);
     for (const m of sh.merges) if (m.r1 >= src.r1 && m.r2 <= src.r2 && m.c1 >= src.c1 && m.c2 <= src.c2) { m.r1 += dr; m.r2 += dr; m.c1 += dc; m.c2 += dc; }
     const cm = new Map();
     for (const v of sh.comments.values()) { if (deleted && M.rangeContains(deleted, v.r, v.c)) continue; const inside = M.rangeContains(src, v.r, v.c); const nv = inside ? Object.assign({}, v, { r: v.r + dr, c: v.c + dc }) : v; cm.set(M.key(nv.r, nv.c), nv); }
@@ -1170,8 +1206,13 @@
       }));
     }
     if (sheets.some(sh => sh.drawings.some(d => d.chart))) warnings.push(L.t('Charts will be left out.'));
-    if (sheets.some(sh => sh.drawings.some(d => !d.chart))) warnings.push(L.t('Pictures and drawing objects will be left out.'));
+    if (sheets.some(sh => sh.drawings.some(d => !d.chart && !d.slicerKeep))) warnings.push(L.t('Pictures and drawing objects will be left out.'));
     if (wb.tables.some(t => selected.has(t.sheet))) warnings.push(L.t('Tables will become ordinary cells. Formulas that use the table names may stop working.'));
+    if (wb.extra.pivots?.tables.some(t => !t.omit && sheets.some(sh => sh.id === t.sheet))) warnings.push(L.t('PivotTables will become ordinary cells.'));
+    const filters = sheets.flatMap(sh => sh.drawings.map(d => d.slicerKeep).filter(Boolean));
+    const timeline = v => /\/timeline$/.test(v.rel?.type || '');
+    if (filters.some(f => !f.views?.length || f.views.some(v => !timeline(v)))) warnings.push(L.t('Slicers will be left out.'));
+    if (filters.some(f => f.views?.some(timeline))) warnings.push(L.t('Timeline filters will be left out.'));
     if (sheets.some(sh => sh.sparklines?.length)) warnings.push(L.t('Sparklines will be left out.'));
     if (names.size) warnings.push(L.t('Formulas that use these names may stop working: {0}.', [...names].join(', ')));
     if (otherSheets) warnings.push(L.t('Formulas that refer to other sheets in the original workbook may stop working.'));
