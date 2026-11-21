@@ -63,6 +63,19 @@ test('PowerPoint graphic frames cannot carry DrawingML rotation or flips', async
   const bad = run('check', await pkg('rotated-frame', { 'slide.xml': frame(' rot="60000" flipH="0" flipV="1"') }));
   assert(bad.issues.some(i => i.code === 'graphic-frame-orientation'));
 });
+test('DrawingML table spans fit the grid and horizontal and vertical continuations have an owner', async () => {
+  const faults = async (name, attrs) => {
+    const rows = attrs.map(row => '<a:tr>' + row.map(a => '<a:tc ' + a + '/>').join('') + '</a:tr>');
+    const tbl = '<a:tbl><a:tblGrid><a:gridCol/><a:gridCol/></a:tblGrid>' + rows.join('') + '</a:tbl>';
+    const result = run('check', await pkg(name, { 'slide.xml': slide(tbl) }));
+    return result.issues.filter(i => i.code.startsWith('table-merge')).map(i => i.code);
+  };
+  assert.deepEqual(await faults('square-merge', [['gridSpan="2" rowSpan="2"', 'hMerge="1" rowSpan="2"'], ['vMerge="1" gridSpan="2"', 'hMerge="1" vMerge="1"']]), []);
+  assert.deepEqual(await faults('wide-merge', [['gridSpan="3"', '']]), ['table-merge-span']);
+  assert.deepEqual(await faults('tall-merge', [['rowSpan="2"', '']]), ['table-merge-span']);
+  assert.deepEqual(await faults('unowned', [['hMerge="1"', 'vMerge="true"']]), ['table-merge-owner', 'table-merge-owner']);
+});
+
 test('PowerPoint table style lists name their default style even when it is built in', async () => {
   const styles = attr => ({ 'ppt/tableStyles.xml': `<a:tblStyleLst xmlns:a="${A}"${attr}/>` });
   assert.equal(run('check', await pkg('table-style-default', styles(' def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"'))).status, 'ok');

@@ -79,6 +79,47 @@
     T.normalize(p);
     return { p: cur, o: endO };
   };
+  // A paragraph break and a DrawingML soft break each occupy one pane character.
+  T.notesText = tx => tx.ps.map(p => T.paraText(p).replace(/\n/g, '\u2028')).join('\n');
+  T.editNotes = function (slide, text) {
+    const before = slide.notes || '';
+    if (before === text) return;
+    const tx = slide.notesTx ||= { ps: before.split('\n').map(line => T.para(line.replace(/\u2028/g, '\n'))) };
+    let start = 0, end = before.length, tail = text.length;
+    while (start < end && start < tail && before[start] === text[start]) start++;
+    while (end > start && tail > start && before[end - 1] === text[tail - 1]) { end--; tail--; }
+    const position = n => {
+      const lines = before.slice(0, n).split('\n');
+      return { p: lines.length - 1, o: lines.at(-1).length };
+    };
+    const from = position(start), to = position(end);
+    // Typing in the middle of a field edits its displayed result as plain text.
+    for (const pos of [from, to]) {
+      let off = 0;
+      for (const r of tx.ps[pos.p].rs) {
+        if (r.fld && pos.o > off && pos.o < off + r.t.length) { delete r.fld; delete r.noteField; }
+        off += r.t.length;
+      }
+    }
+    const props = T.propsAt(tx, from);
+    let offset = 0;
+    for (const run of tx.ps[from.p].rs) {
+      if (from.o > offset && from.o < offset + run.t.length && run.link) props.link = run.link;
+      offset += run.t.length;
+    }
+    T.deleteRange(tx, { p0: from.p, o0: from.o, p1: to.p, o1: to.o });
+    // insertAt handles paragraph breaks. Insert each soft break as a run character.
+    let pos = from;
+    const chunks = text.slice(start, tail).split('\u2028');
+    chunks.forEach((chunk, i) => {
+      if (i) {
+        const p = tx.ps[pos.p]; p.rs.splice(T.splitAt(p, pos.o), 0, { ...props, t: '\n' });
+        pos = { p: pos.p, o: pos.o + 1 };
+      }
+      pos = T.insertAt(tx, pos, chunk, props);
+    });
+    slide.notes = text;
+  };
   T.splitPara = (tx, pos) => {
     const p = tx.ps[pos.p];
     const props = T.propsAt(tx, pos);

@@ -431,7 +431,7 @@
       if (pres.repaired) {
         const lost = pres.repaired.parts.filter((p) => /slides\/slide\d+\.xml$/.test(p)).length;
         ui.msg(L.t('{0} found a problem with content in {1} and repaired the presentation.', L.APP, file.name) + '\n' + (lost > 1 ? L.t('{0} slides could not be recovered.', lost) : lost ? L.t('1 slide could not be recovered.') : L.t('Check the slides before you save over the original.')), { icon: 'warn' });
-      } else if (/\.pps[xm]?$/i.test(file.name)) L.show.start({ from: 0 });
+      } else if (/\.pps[xm]?$/i.test(file.name)) L.show.start();
     } catch (e) {
       ui.busy(false);
       console.error(e);
@@ -1026,7 +1026,7 @@ addEventListener('resize',fit);fit();show(0);`;
     if (!s) return;
     const ta = h('textarea', { id: 'sn-text', rows: 10, style: 'width:100%' });
     ta.value = s.notes || '';
-    ui.dialog({ title: 'Speaker Notes', body: h('div', { class: 'col' }, h('label', { for: 'sn-text', text: L.t('Slide {0}:', E.idx + 1) }), ta), width: 420, buttons: [{ label: 'Close', primary: true, onClick: () => { if (ta.value !== (s.notes || '')) { L.hist.push(L.N('Notes')); s.notes = ta.value; L.panes.notes.render(); } } }] });
+    ui.dialog({ title: 'Speaker Notes', body: h('div', { class: 'col' }, h('label', { for: 'sn-text', text: L.t('Slide {0}:', E.idx + 1) }), ta), width: 420, buttons: [{ label: 'Close', primary: true, onClick: () => { if (ta.value !== (s.notes || '')) { L.hist.push(L.N('Notes')); T.editNotes(s, ta.value); L.panes.notes.render(); } } }] });
   };
   A.outlineToSlides = function (text, at) {
     const lines = String(text).replace(/\r/g, '').split('\n');
@@ -1156,13 +1156,19 @@ addEventListener('resize',fit);fit();show(0);`;
     const shapes = E.selected();
     if (!shapes.length) return;
     E.commit(L.N('Order'), () => {
-      for (const sh of op === 'front' || op === 'forward' ? shapes.slice().reverse() : shapes) {
-        const f = E.find(sh.id);
-        const list = f.list;
-        const i = list.indexOf(sh);
-        list.splice(i, 1);
-        const j = op === 'front' ? list.length : op === 'back' ? 0 : op === 'forward' ? Math.min(list.length, i + 1) : Math.max(0, i - 1);
-        list.splice(j, 0, sh);
+      const chosen = new Set(shapes);
+      const lists = new Set(shapes.map(sh => E.find(sh.id).list));
+      for (const list of lists) {
+        if (op === 'front' || op === 'back') {
+          const selected = list.filter(sh => chosen.has(sh)), rest = list.filter(sh => !chosen.has(sh));
+          list.splice(0, list.length, ...(op === 'front' ? rest.concat(selected) : selected.concat(rest)));
+        } else {
+          const step = op === 'forward' ? 1 : -1;
+          for (let i = step === 1 ? list.length - 2 : 1; i >= 0 && i < list.length; i -= step) {
+            const j = i + step;
+            if (chosen.has(list[i]) && !chosen.has(list[j])) [list[i], list[j]] = [list[j], list[i]];
+          }
+        }
       }
     });
   };
@@ -1466,12 +1472,9 @@ addEventListener('resize',fit);fit();show(0);`;
     else if (TE.active() && TE.state.cell) { [r0, c0] = TE.state.cell; r1 = r0; c1 = c0; }
     return { sh, r0, c0, r1, c1, editing: TE.active() };
   }
-  const cloneCell = (c) => { const n = L.clone(c); n.tx.ps = [{ lvl: 0, pp: L.clone((c.tx.ps[0] && c.tx.ps[0].pp) || {}), rs: [], end: c.tx.ps[0] && c.tx.ps[0].rs[0] ? T.runProps(c.tx.ps[0].rs[0]) : (c.tx.ps[0] && c.tx.ps[0].end) || { sz: 18 } }]; delete n.gs; delete n.rs; delete n.hm; delete n.vm; return n; };
   A.tableAddRow = function (sh, at, below) {
-    const src = sh.tbl.rows[at];
-    const row = { h: src.h, cells: src.cells.map(cloneCell) };
-    sh.tbl.rows.splice(below ? at + 1 : at, 0, row);
-    sh.h += row.h;
+    M.editTableAxis(sh.tbl, 'row', below ? at + 1 : at, 1, at);
+    sh.h = sh.tbl.rows.reduce((sum, row) => sum + row.h, 0);
   };
   A.tableCmd = function (op, arg) {
     const c = tableCtx();
@@ -1482,21 +1485,13 @@ addEventListener('resize',fit);fit();show(0);`;
     L.hist.push(L.N('Table'));
     const t = sh.tbl;
     switch (op) {
-      case 'rowAbove': for (let i = c.r0; i <= c.r1; i++) A.tableAddRow(sh, c.r0, false); break;
-      case 'rowBelow': for (let i = c.r0; i <= c.r1; i++) A.tableAddRow(sh, c.r1, true); break;
-      case 'colLeft': case 'colRight': {
-        const n = c.c1 - c.c0 + 1;
-        for (let k = 0; k < n; k++) {
-          const at = op === 'colLeft' ? c.c0 : c.c1 + 1;
-          const src = op === 'colLeft' ? c.c0 : c.c1;
-          t.cols.splice(at, 0, t.cols[src]);
-          sh.w += t.cols[src];
-          for (const r of t.rows) r.cells.splice(at, 0, cloneCell(r.cells[src]));
-        }
+      case 'rowAbove': case 'rowBelow': case 'deleteRows':
+        M.editTableAxis(t, 'row', op === 'rowBelow' ? c.r1 + 1 : c.r0, (op === 'deleteRows' ? -1 : 1) * (c.r1 - c.r0 + 1), op === 'rowBelow' ? c.r1 : c.r0);
         break;
-      }
-      case 'deleteRows': t.rows.splice(c.r0, c.r1 - c.r0 + 1); break;
-      case 'deleteCols': { const n = c.c1 - c.c0 + 1; sh.w -= t.cols.slice(c.c0, c.c1 + 1).reduce((a, b) => a + b, 0); t.cols.splice(c.c0, n); for (const r of t.rows) r.cells.splice(c.c0, n); break; }
+      case 'colLeft': case 'colRight': case 'deleteCols':
+        M.editTableAxis(t, 'col', op === 'colRight' ? c.c1 + 1 : c.c0, (op === 'deleteCols' ? -1 : 1) * (c.c1 - c.c0 + 1), op === 'colRight' ? c.c1 : c.c0);
+        sh.w = t.cols.reduce((sum, w) => sum + w, 0);
+        break;
       case 'merge': {
         const tl = t.rows[c.r0].cells[c.c0];
         for (let r = c.r0; r <= c.r1; r++) for (let q = c.c0; q <= c.c1; q++) {

@@ -198,6 +198,10 @@ limits described under *IntelliArt (SmartArt)*.
 
 New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.5 in), as in PowerPoint since 2013 (`L.model.DEFAULT_SIZE`). File ▸ Page Setup changes it: for example *On-screen Show (4:3)* or *On-screen Show (16:9)* (10 × 5.63 in). Pictures, shapes, charts and tables keep their proportions; placeholders reflow to the new frame. Tick *Use for new presentations* to make that size the default.
 
+F5, Rehearse Timings and opening a slide show start on the first visible slide. Shift+F5 starts on the current slide, including a hidden one. Ordering several shapes preserves their stacking order within each group. Find and Replace match across formatting runs, respect whole-word boundaries and skip fields. Replacements and spelling corrections keep the first matched character's formatting and hyperlink.
+
+Inserting or deleting table rows and columns adjusts merged cells in both directions. When the first cell of a merge is deleted, its heading and formatting move to the first surviving cell. A scan of 223 tables in 827 readable presentation packages found no spans outside their grids or merge continuations without owners.
+
 ## Saving
 
 * **.pptx** — standard PresentationML. Exports pass the OOXML schema validator and open in LibreOffice and python-pptx; they are meant for PowerPoint 2007 and later, Keynote and Google Slides. With a password to open, the file is encrypted.
@@ -321,7 +325,7 @@ dependencies too; generic unreferenced-part notices fall from 375 to 58 in the e
 unrelated losses still reported.
 
 Documented exceptions are damaged or missing source dependencies, signatures invalidated by a save,
-Strict-to-Transitional conversion, edited chart/opaque-frame content, and edited notes-page formatting.
+Strict-to-Transitional conversion, and edits to imported charts and opaque slide frames.
 Form-control or field markup that requires conversion is also reported. The full-corpus LibreOffice
 results are above. The **15 PowerPoint batch-4 samples rebuilt from `56de065`** pass package/SDK
 and LibreOffice with expected counts. Their previous-writer differences are reviewed, and the user
@@ -359,7 +363,7 @@ graphic-frame transforms removes three signatures from the preceding scan. Focus
 |---|---|
 | Edit slide text | Keep unrelated package parts, custom-property types/pids and unedited notes |
 | Duplicate a slide | Copy its notes page and redirect its backlink |
-| Edit notes text | Regenerate the notes page and report its formatting conversion |
+| Edit notes text | Edit the body paragraphs in place. Untouched links, fields, paragraph levels, soft breaks, notes-page artwork and relationships survive edits, Undo and draft recovery |
 | Leave a design unchanged, unused, or delete its last slide | Retain its original master, every layout and theme |
 | Insert a slide using a missing layout | Generate that layout under the selected master; reserve its structural shape ID before assigning placeholders |
 | Change colors or fonts | Update only changed color slots or Latin font entries; keep theme effects, other scripts and layouts |

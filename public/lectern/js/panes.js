@@ -286,15 +286,21 @@
 
   /* ================= notes pane ================= */
   const NP = (P.notes = {});
+  function notesKeys(el) {
+    el.addEventListener('beforeinput', e => {
+      if (e.inputType === 'insertLineBreak') { e.preventDefault(); document.execCommand('insertText', false, '\u2028'); }
+    });
+  }
   NP.mount = function (el) {
     NP.el = el;
     NP.ed = h('div', { class: 'notes-in', contenteditable: 'true', spellcheck: 'true', role: 'textbox', 'aria-multiline': 'true', 'aria-label': 'Speaker notes', 'data-ph': L.t('Click to add notes') });
     el.appendChild(NP.ed);
+    notesKeys(NP.ed);
     NP.ed.addEventListener('input', () => {
       const s = E().slide();
       if (!s || s.isMaster) return;
       L.hist.push(L.N('Notes'), 'notes:' + s.id);
-      s.notes = NP.ed.innerText.replace(/\n$/, '');
+      L.txt.editNotes(s, NP.ed.innerText.replace(/\n$/, ''));
       if (!NP.ed.textContent) NP.ed.innerHTML = '';
     });
     NP.ed.addEventListener('paste', (e) => { e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData && e.clipboardData.getData('text/plain')) || ''); });
@@ -395,7 +401,8 @@
     const ny = ph * 0.075 + shh + ph * 0.05;
     const notes = h('div', { class: 'np-notes', contenteditable: 'true', spellcheck: 'true', style: `left:${pw * 0.1}px;top:${ny}px;width:${pw * 0.8}px;height:${ph - ny - ph * 0.08}px;font-size:${Math.max(11, pw / 48)}px`, role: 'textbox', 'aria-label': 'Notes' });
     notes.textContent = s.notes || '';
-    notes.addEventListener('input', () => { L.hist.push(L.N('Notes'), 'notes:' + s.id); s.notes = notes.innerText.replace(/\n$/, ''); });
+    notesKeys(notes);
+    notes.addEventListener('input', () => { L.hist.push(L.N('Notes'), 'notes:' + s.id); L.txt.editNotes(s, notes.innerText.replace(/\n$/, '')); });
     notes.addEventListener('paste', (e) => { e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData && e.clipboardData.getData('text/plain')) || ''); });
     page.append(sb, notes, h('div', { class: 'pv-hdr', style: `right:${pw * 0.05}px;bottom:${ph * 0.03}px`, text: String(E().idx + (L.pres.firstNum || 1)) }));
     NV.el.appendChild(page);

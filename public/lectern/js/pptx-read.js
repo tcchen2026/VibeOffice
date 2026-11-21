@@ -306,7 +306,9 @@
           const t = kid(c, 't');
           const type = at(c, 'type') || '';
           const rp = runProps(kid(c, 'rPr'), ctx);
-          if (type === 'slidenum' || /^datetime/.test(type)) para.rs.push(Object.assign({ t: t ? t.textContent : '', fld: type }, rp));
+          if (ctx.notes) {
+            para.rs.push({ ...rp, t: t?.textContent || '', fld: type, noteField: K.fragment(K.parse(K.raw(c)), { pkg: ctx.pkg, part: ctx.partPath }) });
+          } else if (type === 'slidenum' || /^datetime/.test(type)) para.rs.push(Object.assign({ t: t ? t.textContent : '', fld: type }, rp));
           else para.rs.push(Object.assign({ t: t ? t.textContent : '' }, rp));
         } else if (isMath(c)) {
           const rp = runProps(desc(c, 'rPr'), ctx); delete rp.keep;
@@ -1677,7 +1679,14 @@
         const nx = await xml(nr.target);
         if (nx) {
           const body = kids(desc(nx, 'spTree')).find((s) => { const ph = phOf(s); return ph && (ph.type === 'body' || (ph.type === 'obj' && ph.idx === 1)); });
-          if (body) { const tb = kid(body, 'txBody'); if (tb) slide.notes = kids(tb, 'p').map((p) => descAll(p, 't').map((t) => t.textContent).join('')).join('\n').replace(/\s+$/, ''); }
+          const tb = body && kid(body, 'txBody');
+          if (tb) {
+            const nc = mkCtx(nr.target, await rels(nr.target), design, master.theme);
+            nc.notes = true;
+            slide.notesTx = { ps: paragraphs(tb, nc) };
+            slide.notesTx.ps.forEach((p, i) => { p.noteIndex = i; p.noteText = L.txt.paraText(p); });
+            slide.notes = L.txt.notesText(slide.notesTx);
+          }
         }
       }
       /* transition */

@@ -174,7 +174,7 @@
  "&All": {
   "where": [
    "common/dialogs.js:347",
-   "lectern/js/dialogs.js:883",
+   "lectern/js/dialogs.js:911",
    "ledger/js/commands.js:64",
    "ledger/js/dialogs.js:593"
   ]
@@ -201,7 +201,7 @@
  },
  "&Amount:": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1121"
   ]
  },
  "&And": {
@@ -244,7 +244,7 @@
  },
  "&Arrow": {
   "where": [
-   "lectern/js/slideshow.js:898",
+   "lectern/js/slideshow.js:899",
    "ledger/js/commands.js:127",
    "quire/js/commands.js:499"
   ]
@@ -300,7 +300,7 @@
  },
  "&AutoCorrect as you type": {
   "where": [
-   "lectern/js/dialogs.js:903"
+   "lectern/js/dialogs.js:931"
   ]
  },
  "&AutoFit": {
@@ -360,7 +360,7 @@
  },
  "&Available formats:": {
   "where": [
-   "lectern/js/dialogs.js:864"
+   "lectern/js/dialogs.js:892"
   ]
  },
  "&Average": {
@@ -397,7 +397,7 @@
  },
  "&Ballpoint Pen": {
   "where": [
-   "lectern/js/slideshow.js:899"
+   "lectern/js/slideshow.js:900"
   ]
  },
  "&Bar": {
@@ -441,7 +441,7 @@
  },
  "&Black Screen": {
   "where": [
-   "lectern/js/slideshow.js:916"
+   "lectern/js/slideshow.js:917"
   ]
  },
  "&Black and white": {
@@ -672,7 +672,7 @@
  "&Close": {
   "where": [
    "lectern/js/commands.js:25",
-   "lectern/js/panes.js:427",
+   "lectern/js/panes.js:434",
    "ledger/js/commands.js:29",
    "ledger/js/print.js:593"
   ]
@@ -694,7 +694,7 @@
  },
  "&Color:": {
   "where": [
-   "lectern/js/app.js:1589",
+   "lectern/js/app.js:1584",
    "lectern/js/dialogs.js:91",
    "lectern/js/dialogs.js:140",
    "lectern/js/dialogs.js:141"
@@ -816,7 +816,7 @@
  },
  "&Create": {
   "where": [
-   "lectern/js/dialogs.js:1049",
+   "lectern/js/dialogs.js:1077",
    "ledger/js/dialogs2.js:398"
   ]
  },
@@ -926,7 +926,7 @@
  },
  "&Date last updated": {
   "where": [
-   "lectern/js/app.js:1693"
+   "lectern/js/app.js:1688"
   ]
  },
  "&Date line:": {
@@ -978,7 +978,7 @@
  },
  "&Delay:": {
   "where": [
-   "lectern/js/dialogs.js:1094"
+   "lectern/js/dialogs.js:1122"
   ]
  },
  "&Delete": {
@@ -1065,7 +1065,7 @@
  },
  "&Direction:": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1121"
   ]
  },
  "&Directory": {
@@ -1075,12 +1075,12 @@
  },
  "&Discard": {
   "where": [
-   "lectern/js/slideshow.js:759"
+   "lectern/js/slideshow.js:760"
   ]
  },
  "&Display grid on screen": {
   "where": [
-   "lectern/js/dialogs.js:981"
+   "lectern/js/dialogs.js:1009"
   ]
  },
  "&Do not check spelling or grammar": {
@@ -1170,14 +1170,14 @@
  },
  "&Edit Hyperlink...": {
   "where": [
-   "lectern/js/app.js:1857",
+   "lectern/js/app.js:1852",
    "ledger/js/app.js:876",
    "quire/js/app.js:1236"
   ]
  },
  "&Edit Text": {
   "where": [
-   "lectern/js/app.js:1851"
+   "lectern/js/app.js:1846"
   ]
  },
  "&Edit Wrap Points": {
@@ -1192,7 +1192,7 @@
  },
  "&Effect Options...": {
   "where": [
-   "lectern/js/panes.js:812"
+   "lectern/js/panes.js:819"
   ]
  },
  "&Emboss": {
@@ -1208,7 +1208,7 @@
  },
  "&End Show": {
   "where": [
-   "lectern/js/slideshow.js:920"
+   "lectern/js/slideshow.js:921"
   ]
  },
  "&End date:": {
@@ -1229,7 +1229,7 @@
  },
  "&End with black slide": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:929"
   ]
  },
  "&Endnotes:": {
@@ -1244,7 +1244,7 @@
  },
  "&Entrance": {
   "where": [
-   "lectern/js/panes.js:763"
+   "lectern/js/panes.js:770"
   ]
  },
  "&Envelopes": {
@@ -1265,7 +1265,7 @@
  },
  "&Eraser": {
   "where": [
-   "lectern/js/slideshow.js:904"
+   "lectern/js/slideshow.js:905"
   ]
  },
  "&Error Checking...": {
@@ -1310,7 +1310,7 @@
  },
  "&Felt Tip Pen": {
   "where": [
-   "lectern/js/slideshow.js:900"
+   "lectern/js/slideshow.js:901"
   ]
  },
  "&Field shading:": {
@@ -1333,7 +1333,7 @@
  },
  "&File/Disk...": {
   "where": [
-   "lectern/js/dialogs.js:1042"
+   "lectern/js/dialogs.js:1070"
   ]
  },
  "&Filter": {
@@ -1348,7 +1348,7 @@
  },
  "&Find Next": {
   "where": [
-   "lectern/js/dialogs.js:739",
+   "lectern/js/dialogs.js:757",
    "ledger/js/dialogs.js:522",
    "quire/js/find.js:331"
   ]
@@ -1362,7 +1362,7 @@
  },
  "&Finish": {
   "where": [
-   "lectern/js/app.js:1696",
+   "lectern/js/app.js:1691",
    "ledger/js/csv.js:367",
    "ledger/js/dialogs2.js:258",
    "ledger/js/dialogs2.js:835"
@@ -1375,7 +1375,7 @@
  },
  "&Fit": {
   "where": [
-   "lectern/js/dialogs.js:969"
+   "lectern/js/dialogs.js:997"
   ]
  },
  "&Fit selection": {
@@ -1421,7 +1421,7 @@
   "where": [
    "common/dialogs.js:99",
    "lectern/js/dialogs.js:86",
-   "lectern/js/dialogs.js:1026",
+   "lectern/js/dialogs.js:1054",
    "ledger/js/dialogs.js:197"
   ]
  },
@@ -1432,7 +1432,7 @@
  },
  "&Footer:": {
   "where": [
-   "lectern/js/app.js:1695",
+   "lectern/js/app.js:1690",
    "ledger/js/dialogs3.js:393",
    "ledger/js/dialogs3.js:401",
    "quire/js/dialogs.js:690"
@@ -1530,7 +1530,7 @@
  },
  "&From:": {
   "where": [
-   "lectern/js/dialogs.js:883"
+   "lectern/js/dialogs.js:911"
   ]
  },
  "&Full page of the same label": {
@@ -1590,7 +1590,7 @@
  },
  "&Go to Slide": {
   "where": [
-   "lectern/js/slideshow.js:914"
+   "lectern/js/slideshow.js:915"
   ]
  },
  "&Go to:": {
@@ -1653,7 +1653,7 @@
  },
  "&Group text:": {
   "where": [
-   "lectern/js/dialogs.js:1095"
+   "lectern/js/dialogs.js:1123"
   ]
  },
  "&Group...": {
@@ -1663,7 +1663,7 @@
  },
  "&Grouping": {
   "where": [
-   "lectern/js/app.js:1853"
+   "lectern/js/app.js:1848"
   ]
  },
  "&Growth": {
@@ -1709,7 +1709,7 @@
  },
  "&Help": {
   "where": [
-   "lectern/js/slideshow.js:918",
+   "lectern/js/slideshow.js:919",
    "ledger/js/print.js:594"
   ]
  },
@@ -1776,7 +1776,7 @@
  },
  "&Highlighter": {
   "where": [
-   "lectern/js/slideshow.js:901"
+   "lectern/js/slideshow.js:902"
   ]
  },
  "&Home": {
@@ -1815,7 +1815,7 @@
  },
  "&Hyperlink to:": {
   "where": [
-   "lectern/js/dialogs.js:837"
+   "lectern/js/dialogs.js:865"
   ]
  },
  "&Hyperlinks": {
@@ -1889,7 +1889,7 @@
   "where": [
    "common/dialogs.js:107",
    "lectern/js/app.js:74",
-   "lectern/js/dialogs.js:1077",
+   "lectern/js/dialogs.js:1105",
    "lectern/js/ribbon.js:36"
   ]
  },
@@ -1949,7 +1949,7 @@
  },
  "&Keep": {
   "where": [
-   "lectern/js/slideshow.js:759"
+   "lectern/js/slideshow.js:760"
   ]
  },
  "&Keep lines together": {
@@ -1959,7 +1959,7 @@
  },
  "&Keep source formatting": {
   "where": [
-   "lectern/js/dialogs.js:1071"
+   "lectern/js/dialogs.js:1099"
   ]
  },
  "&Kerning for fonts:": {
@@ -2170,7 +2170,7 @@
  },
  "&Loop continuously until 'Esc'": {
   "where": [
-   "lectern/js/dialogs.js:881"
+   "lectern/js/dialogs.js:909"
   ]
  },
  "&Loose": {
@@ -2227,7 +2227,7 @@
  },
  "&Manually": {
   "where": [
-   "lectern/js/dialogs.js:885"
+   "lectern/js/dialogs.js:913"
   ]
  },
  "&Many pages": {
@@ -2264,7 +2264,7 @@
  },
  "&Maximum number of undos:": {
   "where": [
-   "lectern/js/dialogs.js:903"
+   "lectern/js/dialogs.js:931"
   ]
  },
  "&Measurement units:": {
@@ -2386,7 +2386,7 @@
   "where": [
    "common/dialogs.js:394",
    "common/dialogs.js:458",
-   "lectern/js/dialogs.js:902",
+   "lectern/js/dialogs.js:930",
    "quire/js/dialogs.js:924"
   ]
  },
@@ -2435,7 +2435,7 @@
  },
  "&Next": {
   "where": [
-   "lectern/js/slideshow.js:911",
+   "lectern/js/slideshow.js:912",
    "ledger/js/dialogs3.js:364",
    "ledger/js/print.js:584"
   ]
@@ -2460,7 +2460,7 @@
   "where": [
    "common/core.js:388",
    "lectern/js/app.js:362",
-   "lectern/js/slideshow.js:764",
+   "lectern/js/slideshow.js:765",
    "ledger/js/app.js:113"
   ]
  },
@@ -2471,7 +2471,7 @@
  },
  "&None": {
   "where": [
-   "lectern/js/dialogs.js:837",
+   "lectern/js/dialogs.js:865",
    "ledger/js/app.js:668",
    "ledger/js/dialogs.js:766",
    "quire/js/dialogs.js:753"
@@ -2595,7 +2595,7 @@
  "&Order": {
   "where": [
    "lectern/js/app.js:157",
-   "lectern/js/app.js:1853",
+   "lectern/js/app.js:1848",
    "quire/js/app.js:400",
    "quire/js/app.js:1208"
   ]
@@ -2739,12 +2739,12 @@
  },
  "&Paste as Lectern objects": {
   "where": [
-   "lectern/js/app.js:1808"
+   "lectern/js/app.js:1803"
   ]
  },
  "&Paste as slides": {
   "where": [
-   "lectern/js/app.js:1808"
+   "lectern/js/app.js:1803"
   ]
  },
  "&Paste...": {
@@ -2770,7 +2770,7 @@
  },
  "&Pause": {
   "where": [
-   "lectern/js/slideshow.js:916"
+   "lectern/js/slideshow.js:917"
   ]
  },
  "&Percent Style": {
@@ -2785,7 +2785,7 @@
  },
  "&Percent:": {
   "where": [
-   "lectern/js/dialogs.js:972"
+   "lectern/js/dialogs.js:1000"
   ]
  },
  "&Permission": {
@@ -2803,7 +2803,7 @@
  },
  "&Picture layout:": {
   "where": [
-   "lectern/js/dialogs.js:1048"
+   "lectern/js/dialogs.js:1076"
   ]
  },
  "&PivotTable and PivotChart Report...": {
@@ -2813,7 +2813,7 @@
  },
  "&Popup menu on right mouse click": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:929"
   ]
  },
  "&Portrait": {
@@ -2845,12 +2845,12 @@
  },
  "&Presented by a speaker (full screen)": {
   "where": [
-   "lectern/js/dialogs.js:880"
+   "lectern/js/dialogs.js:908"
   ]
  },
  "&Previous": {
   "where": [
-   "lectern/js/slideshow.js:912",
+   "lectern/js/slideshow.js:913",
    "ledger/js/dialogs3.js:364",
    "ledger/js/print.js:585"
   ]
@@ -2873,7 +2873,7 @@
  "&Print...": {
   "where": [
    "lectern/js/commands.js:31",
-   "lectern/js/panes.js:418",
+   "lectern/js/panes.js:425",
    "ledger/js/commands.js:39",
    "ledger/js/dialogs3.js:427"
   ]
@@ -2910,7 +2910,7 @@
  },
  "&Reapply Master Style": {
   "where": [
-   "lectern/js/panes.js:641"
+   "lectern/js/panes.js:648"
   ]
  },
  "&Recently used file list": {
@@ -2995,7 +2995,7 @@
  },
  "&Remove": {
   "where": [
-   "lectern/js/panes.js:812"
+   "lectern/js/panes.js:819"
   ]
  },
  "&Remove All": {
@@ -3039,12 +3039,12 @@
  },
  "&Repeat:": {
   "where": [
-   "lectern/js/dialogs.js:1094"
+   "lectern/js/dialogs.js:1122"
   ]
  },
  "&Replace": {
   "where": [
-   "lectern/js/dialogs.js:741",
+   "lectern/js/dialogs.js:759",
    "ledger/js/dialogs.js:520",
    "quire/js/find.js:332"
   ]
@@ -3083,7 +3083,7 @@
  },
  "&Resume": {
   "where": [
-   "lectern/js/slideshow.js:916"
+   "lectern/js/slideshow.js:917"
   ]
  },
  "&Retry": {
@@ -3189,7 +3189,7 @@
   "where": [
    "common/core.js:374",
    "lectern/js/commands.js:26",
-   "lectern/js/dialogs.js:964",
+   "lectern/js/dialogs.js:992",
    "ledger/js/commands.js:30"
   ]
  },
@@ -3203,7 +3203,7 @@
  },
  "&Screen": {
   "where": [
-   "lectern/js/slideshow.js:916"
+   "lectern/js/slideshow.js:917"
   ]
  },
  "&Search commands": {
@@ -3344,12 +3344,12 @@
    "lectern/js/dialogs.js:88",
    "lectern/js/dialogs.js:140",
    "lectern/js/dialogs.js:141",
-   "lectern/js/dialogs.js:1026"
+   "lectern/js/dialogs.js:1054"
   ]
  },
  "&Slide Layout task pane when inserting new slides": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:929"
   ]
  },
  "&Slide Master": {
@@ -3379,7 +3379,7 @@
  },
  "&Snap objects to grid": {
   "where": [
-   "lectern/js/dialogs.js:979",
+   "lectern/js/dialogs.js:1007",
    "quire/js/dialogs3.js:177"
   ]
  },
@@ -3494,7 +3494,7 @@
  },
  "&Start:": {
   "where": [
-   "lectern/js/dialogs.js:1094"
+   "lectern/js/dialogs.js:1122"
   ]
  },
  "&Startup Task Pane": {
@@ -3536,7 +3536,7 @@
  },
  "&Style:": {
   "where": [
-   "lectern/js/app.js:1589",
+   "lectern/js/app.js:1584",
    "lectern/js/dialogs.js:404"
   ]
  },
@@ -3618,7 +3618,7 @@
  },
  "&Table": {
   "where": [
-   "lectern/js/app.js:1852",
+   "lectern/js/app.js:1847",
    "quire/js/commands.js:430",
    "quire/js/commands.js:434",
    "quire/js/dialogs2.js:686"
@@ -3686,7 +3686,7 @@
  },
  "&Text:": {
   "where": [
-   "lectern/js/dialogs.js:1026",
+   "lectern/js/dialogs.js:1054",
    "quire/js/dialogs.js:820",
    "quire/js/dialogs2.js:562"
   ]
@@ -3723,7 +3723,7 @@
  },
  "&Timing...": {
   "where": [
-   "lectern/js/panes.js:812"
+   "lectern/js/panes.js:819"
   ]
  },
  "&Title Case": {
@@ -3735,7 +3735,7 @@
  "&Title:": {
   "where": [
    "common/dialogs.js:403",
-   "lectern/js/app.js:1695",
+   "lectern/js/app.js:1690",
    "ledger/js/dialogs2.js:120",
    "ledger/js/dialogs2.js:124"
   ]
@@ -3899,7 +3899,7 @@
  },
  "&Update automatically": {
   "where": [
-   "lectern/js/dialogs.js:862",
+   "lectern/js/dialogs.js:890",
    "quire/js/dialogs2.js:118"
   ]
  },
@@ -3935,7 +3935,7 @@
  },
  "&Using timings, if present": {
   "where": [
-   "lectern/js/dialogs.js:885"
+   "lectern/js/dialogs.js:913"
   ]
  },
  "&Value": {
@@ -3978,7 +3978,7 @@
  },
  "&Vertical ruler": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:929"
   ]
  },
  "&Vertical scroll bar": {
@@ -4051,7 +4051,7 @@
  },
  "&White Screen": {
   "where": [
-   "lectern/js/slideshow.js:916"
+   "lectern/js/slideshow.js:917"
   ]
  },
  "&Whole page": {
@@ -4071,7 +4071,7 @@
  },
  "&Width:": {
   "where": [
-   "lectern/js/app.js:1589",
+   "lectern/js/app.js:1584",
    "lectern/js/dialogs.js:560",
    "quire/js/dialogs.js:343",
    "quire/js/dialogs3.js:98"
@@ -4130,7 +4130,7 @@
   "where": [
    "common/core.js:388",
    "lectern/js/app.js:362",
-   "lectern/js/slideshow.js:764",
+   "lectern/js/slideshow.js:765",
    "ledger/js/app.js:113"
   ]
  },
@@ -4279,8 +4279,8 @@
  "(none)": {
   "where": [
    "common/dialogs.js:432",
-   "lectern/js/dialogs.js:1088",
-   "lectern/js/slideshow.js:914",
+   "lectern/js/dialogs.js:1116",
+   "lectern/js/slideshow.js:915",
    "ledger/js/dialogs2.js:64"
   ]
  },
@@ -4362,12 +4362,12 @@
  },
  "1 picture": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1067"
   ]
  },
  "1 picture with title": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1067"
   ]
  },
  "1 slide could not be recovered.": {
@@ -4377,7 +4377,7 @@
  },
  "1 slide: {0}": {
   "where": [
-   "lectern/js/app.js:1738"
+   "lectern/js/app.js:1733"
   ]
  },
  "1. Formatting restrictions": {
@@ -4468,12 +4468,12 @@
  },
  "2 pictures": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1067"
   ]
  },
  "2 pictures with title": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1067"
   ]
  },
  "2. Editing restrictions": {
@@ -4548,12 +4548,12 @@
  },
  "4 pictures": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1067"
   ]
  },
  "4 pictures with title": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1067"
   ]
  },
  "4-Point Star": {
@@ -4990,7 +4990,7 @@
  },
  "A picture fill on a shape of this IntelliArt is saved as the diagram's colour.": {
   "where": [
-   "lectern/js/pptx-write.js:394"
+   "lectern/js/pptx-write.js:395"
   ]
  },
  "A picture is not in the .md file and shows as a box. Open a .zip holding the file and its pictures to see them.": {
@@ -5031,7 +5031,7 @@
  },
  "A presentation editor that runs entirely in your browser. Presentations are read and written as Office Open XML (.pptx, .pptm); nothing is uploaded.": {
   "where": [
-   "lectern/js/dialogs.js:1127"
+   "lectern/js/dialogs.js:1155"
   ]
  },
  "A presentation object is missing": {
@@ -5463,13 +5463,13 @@
  },
  "Action Settings": {
   "where": [
-   "lectern/js/dialogs.js:842",
-   "lectern/js/dialogs.js:846"
+   "lectern/js/dialogs.js:870",
+   "lectern/js/dialogs.js:874"
   ]
  },
  "Action on click": {
   "where": [
-   "lectern/js/dialogs.js:840"
+   "lectern/js/dialogs.js:868"
   ]
  },
  "Action|filter": {
@@ -5515,8 +5515,8 @@
  "Add Effect": {
   "where": [
    "lectern/js/app.js:898",
-   "lectern/js/panes.js:779",
-   "lectern/js/panes.js:782"
+   "lectern/js/panes.js:786",
+   "lectern/js/panes.js:789"
   ]
  },
  "Add Envelope": {
@@ -5573,13 +5573,13 @@
  },
  "Add Text": {
   "where": [
-   "lectern/js/textedit.js:339",
+   "lectern/js/textedit.js:380",
    "quire/js/drawing.js:704"
   ]
  },
  "Add at least one picture.": {
   "where": [
-   "lectern/js/dialogs.js:1049"
+   "lectern/js/dialogs.js:1077"
   ]
  },
  "Add subtotal to:": {
@@ -5589,7 +5589,7 @@
  },
  "Add text": {
   "where": [
-   "lectern/js/panes.js:555"
+   "lectern/js/panes.js:562"
   ]
  },
  "Add-&Ins...": {
@@ -5663,12 +5663,12 @@
  },
  "Advance slide": {
   "where": [
-   "lectern/js/panes.js:857"
+   "lectern/js/panes.js:864"
   ]
  },
  "Advance slides": {
   "where": [
-   "lectern/js/dialogs.js:888"
+   "lectern/js/dialogs.js:916"
   ]
  },
  "Advanced Animation": {
@@ -5695,8 +5695,8 @@
  },
  "After Previous": {
   "where": [
-   "lectern/js/dialogs.js:1085",
-   "lectern/js/panes.js:788"
+   "lectern/js/dialogs.js:1113",
+   "lectern/js/panes.js:795"
   ]
  },
  "After paragraph": {
@@ -5716,12 +5716,12 @@
  },
  "Album Content": {
   "where": [
-   "lectern/js/dialogs.js:1047"
+   "lectern/js/dialogs.js:1075"
   ]
  },
  "Album Layout": {
   "where": [
-   "lectern/js/dialogs.js:1048"
+   "lectern/js/dialogs.js:1076"
   ]
  },
  "Ali&gnment": {
@@ -5741,7 +5741,7 @@
  },
  "Align": {
   "where": [
-   "lectern/js/app.js:1175",
+   "lectern/js/app.js:1181",
    "lectern/js/ribbon.js:90",
    "lectern/js/ribbon.js:98",
    "ledger/js/commands.js:160"
@@ -5817,7 +5817,7 @@
  },
  "Alignment": {
   "where": [
-   "lectern/js/app.js:1295",
+   "lectern/js/app.js:1301",
    "lectern/js/ribbon.js:118",
    "ledger/js/dialogs.js:282",
    "ledger/js/dialogs2.js:577"
@@ -6148,7 +6148,7 @@
  },
  "Animate your slides": {
   "where": [
-   "lectern/js/panes.js:538"
+   "lectern/js/panes.js:545"
   ]
  },
  "Animated text effects are kept in the file; they display as plain text, as in later versions of Word.": {
@@ -6163,7 +6163,7 @@
  },
  "Animation": {
   "where": [
-   "lectern/js/panes.js:560",
+   "lectern/js/panes.js:567",
    "lectern/js/ribbon.js:55"
   ]
  },
@@ -6179,9 +6179,9 @@
  },
  "Animation Schemes": {
   "where": [
-   "lectern/js/panes.js:671",
-   "lectern/js/panes.js:704",
-   "lectern/js/panes.js:741",
+   "lectern/js/panes.js:678",
+   "lectern/js/panes.js:711",
+   "lectern/js/panes.js:748",
    "lectern/js/ribbon.js:55"
   ]
  },
@@ -6223,13 +6223,13 @@
  },
  "Appear": {
   "where": [
-   "lectern/js/panes.js:723",
+   "lectern/js/panes.js:730",
    "lectern/js/slideshow.js:17"
   ]
  },
  "Appear and dim": {
   "where": [
-   "lectern/js/panes.js:723"
+   "lectern/js/panes.js:730"
   ]
  },
  "Appends arrays horizontally and in sequence.": {
@@ -6276,7 +6276,7 @@
   "where": [
    "lectern/js/app.js:795",
    "lectern/js/app.js:838",
-   "lectern/js/panes.js:679"
+   "lectern/js/panes.js:686"
   ]
  },
  "Apply Names": {
@@ -6292,12 +6292,12 @@
  },
  "Apply a color scheme:": {
   "where": [
-   "lectern/js/panes.js:715"
+   "lectern/js/panes.js:722"
   ]
  },
  "Apply a design template": {
   "where": [
-   "lectern/js/panes.js:538"
+   "lectern/js/panes.js:545"
   ]
  },
  "Apply as you type": {
@@ -6312,7 +6312,7 @@
  },
  "Apply slide layout:": {
   "where": [
-   "lectern/js/panes.js:632"
+   "lectern/js/panes.js:639"
   ]
  },
  "Apply special formats to": {
@@ -6333,7 +6333,7 @@
  },
  "Apply this color scheme": {
   "where": [
-   "lectern/js/panes.js:709"
+   "lectern/js/panes.js:716"
   ]
  },
  "Apply to &All": {
@@ -6344,29 +6344,29 @@
  },
  "Apply to &All Slides": {
   "where": [
-   "lectern/js/panes.js:688",
-   "lectern/js/panes.js:691",
-   "lectern/js/panes.js:712"
+   "lectern/js/panes.js:695",
+   "lectern/js/panes.js:698",
+   "lectern/js/panes.js:719"
   ]
  },
  "Apply to &Selected Slides": {
   "where": [
-   "lectern/js/panes.js:641",
-   "lectern/js/panes.js:688",
-   "lectern/js/panes.js:691",
-   "lectern/js/panes.js:712"
+   "lectern/js/panes.js:648",
+   "lectern/js/panes.js:695",
+   "lectern/js/panes.js:698",
+   "lectern/js/panes.js:719"
   ]
  },
  "Apply to All Slides": {
   "where": [
-   "lectern/js/panes.js:751",
-   "lectern/js/panes.js:858"
+   "lectern/js/panes.js:758",
+   "lectern/js/panes.js:865"
   ]
  },
  "Apply to selected slides:": {
   "where": [
-   "lectern/js/panes.js:750",
-   "lectern/js/panes.js:855"
+   "lectern/js/panes.js:757",
+   "lectern/js/panes.js:862"
   ]
  },
  "Apply to:": {
@@ -6425,8 +6425,8 @@
  "Arial Black": {
   "where": [
    "common/core.js:769",
-   "lectern/js/dialogs.js:999",
-   "lectern/js/dialogs.js:1018",
+   "lectern/js/dialogs.js:1027",
+   "lectern/js/dialogs.js:1046",
    "quire/js/dialogs.js:838"
   ]
  },
@@ -6461,7 +6461,7 @@
  },
  "Arrow keys": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "ledger/js/panes.js:133"
   ]
  },
@@ -6479,7 +6479,7 @@
  },
  "As One Object": {
   "where": [
-   "lectern/js/dialogs.js:1090"
+   "lectern/js/dialogs.js:1118"
   ]
  },
  "As displayed on sheet": {
@@ -6524,7 +6524,7 @@
  },
  "Ascend": {
   "where": [
-   "lectern/js/panes.js:729",
+   "lectern/js/panes.js:736",
    "lectern/js/slideshow.js:20"
   ]
  },
@@ -6636,7 +6636,7 @@
  },
  "AutoContent Wizard": {
   "where": [
-   "lectern/js/app.js:1695"
+   "lectern/js/app.js:1690"
   ]
  },
  "AutoCorr&ect": {
@@ -6646,7 +6646,7 @@
  },
  "AutoCorrect": {
   "where": [
-   "lectern/js/dialogs.js:927",
+   "lectern/js/dialogs.js:955",
    "ledger/js/dialogs.js:823"
   ]
  },
@@ -6657,7 +6657,7 @@
  },
  "AutoCorrect: English (U.S.)": {
   "where": [
-   "lectern/js/dialogs.js:934",
+   "lectern/js/dialogs.js:962",
    "ledger/js/dialogs.js:823",
    "quire/js/dialogs3.js:548"
   ]
@@ -6745,9 +6745,9 @@
  },
  "AutoPreview": {
   "where": [
-   "lectern/js/panes.js:753",
-   "lectern/js/panes.js:822",
-   "lectern/js/panes.js:860"
+   "lectern/js/panes.js:760",
+   "lectern/js/panes.js:829",
+   "lectern/js/panes.js:867"
   ]
  },
  "AutoRecover keeps a copy in this browser only; it is offered when Quire opens after an unexpected close.": {
@@ -6763,7 +6763,7 @@
  },
  "AutoShape defaults set": {
   "where": [
-   "lectern/js/app.js:1225"
+   "lectern/js/app.js:1231"
   ]
  },
  "AutoShapes": {
@@ -6834,7 +6834,7 @@
  },
  "Automatically after": {
   "where": [
-   "lectern/js/panes.js:854"
+   "lectern/js/panes.js:861"
   ]
  },
  "Automatically resi&ze to fit contents": {
@@ -6844,7 +6844,7 @@
  },
  "Available For Use": {
   "where": [
-   "lectern/js/panes.js:694"
+   "lectern/js/panes.js:701"
   ]
  },
  "Available formats:": {
@@ -6958,7 +6958,7 @@
  },
  "Back": {
   "where": [
-   "lectern/js/panes.js:484",
+   "lectern/js/panes.js:491",
    "ledger/js/panes.js:17",
    "lite.js:122",
    "quire/js/panes.js:18"
@@ -7159,7 +7159,7 @@
  "Black": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:902",
+   "lectern/js/slideshow.js:903",
    "quire/js/app.js:187"
   ]
  },
@@ -7197,7 +7197,7 @@
  },
  "Blank presentation": {
   "where": [
-   "lectern/js/panes.js:547"
+   "lectern/js/panes.js:554"
   ]
  },
  "Blank workbook": {
@@ -7212,7 +7212,7 @@
  },
  "Blinds": {
   "where": [
-   "lectern/js/panes.js:727",
+   "lectern/js/panes.js:734",
    "lectern/js/slideshow.js:17",
    "lectern/js/slideshow.js:24"
   ]
@@ -7263,7 +7263,7 @@
  "Blue": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:902",
+   "lectern/js/slideshow.js:903",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
   ]
@@ -7297,7 +7297,7 @@
  },
  "Bold": {
   "where": [
-   "lectern/js/app.js:1285",
+   "lectern/js/app.js:1291",
    "lectern/js/commands.js:111",
    "lectern/js/dialogs.js:66",
    "ledger/js/dialogs.js:180"
@@ -7313,7 +7313,7 @@
  },
  "Bold, Italic, Underline": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "quire/js/panes.js:107"
   ]
  },
@@ -7419,8 +7419,8 @@
  "Borders": {
   "where": [
    "lectern/js/app.js:205",
-   "lectern/js/app.js:1551",
-   "lectern/js/app.js:1589",
+   "lectern/js/app.js:1546",
+   "lectern/js/app.js:1584",
    "lectern/js/ribbon.js:111"
   ]
  },
@@ -7438,7 +7438,7 @@
  "Bottom": {
   "where": [
    "common/charts.js:397",
-   "lectern/js/app.js:1588",
+   "lectern/js/app.js:1583",
    "lectern/js/dialogs.js:445",
    "ledger/js/dialogs.js:154"
   ]
@@ -7504,12 +7504,12 @@
  },
  "Box out": {
   "where": [
-   "lectern/js/panes.js:735"
+   "lectern/js/panes.js:742"
   ]
  },
  "Brainstorming Session": {
   "where": [
-   "lectern/js/app.js:1682"
+   "lectern/js/app.js:1677"
   ]
  },
  "Brass": {
@@ -7552,7 +7552,7 @@
  },
  "Brightness": {
   "where": [
-   "lectern/js/app.js:1410",
+   "lectern/js/app.js:1416",
    "quire/js/app.js:432"
   ]
  },
@@ -7646,12 +7646,12 @@
  },
  "Browse... (use the design of another .pptx/.potx)": {
   "where": [
-   "lectern/js/panes.js:695"
+   "lectern/js/panes.js:702"
   ]
  },
  "Browsed at a &kiosk (full screen)": {
   "where": [
-   "lectern/js/dialogs.js:880"
+   "lectern/js/dialogs.js:908"
   ]
  },
  "Bubble": {
@@ -7701,7 +7701,7 @@
  },
  "Bullet text": {
   "where": [
-   "lectern/js/panes.js:662"
+   "lectern/js/panes.js:669"
   ]
  },
  "Bulleted": {
@@ -7711,7 +7711,7 @@
  },
  "Bullets": {
   "where": [
-   "lectern/js/app.js:1316",
+   "lectern/js/app.js:1322",
    "lectern/js/commands.js:122",
    "quire/js/commands.js:43",
    "quire/js/commands.js:365"
@@ -7747,7 +7747,7 @@
  },
  "By 1st Level Paragraphs": {
   "where": [
-   "lectern/js/dialogs.js:1090"
+   "lectern/js/dialogs.js:1118"
   ]
  },
  "By Columns": {
@@ -8100,8 +8100,8 @@
  },
  "Capitalize first letter of &sentences": {
   "where": [
-   "lectern/js/dialogs.js:903",
-   "lectern/js/dialogs.js:929",
+   "lectern/js/dialogs.js:931",
+   "lectern/js/dialogs.js:957",
    "ledger/js/dialogs.js:824",
    "quire/js/dialogs3.js:544"
   ]
@@ -8143,7 +8143,7 @@
  },
  "Captions &below ALL pictures": {
   "where": [
-   "lectern/js/dialogs.js:1041"
+   "lectern/js/dialogs.js:1069"
   ]
  },
  "Captions inserted with Insert ▸ Reference ▸ Caption are collected here.": {
@@ -8184,7 +8184,7 @@
  },
  "Caution: If you lose or forget the password, it cannot be recovered.": {
   "where": [
-   "lectern/js/dialogs.js:913",
+   "lectern/js/dialogs.js:941",
    "ledger/js/dialogs.js:668",
    "ledger/js/dialogs.js:893",
    "quire/js/dialogs3.js:596"
@@ -8317,7 +8317,7 @@
  },
  "Center, Left, Right, Justify": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Centered": {
@@ -8361,7 +8361,7 @@
  },
  "Change AutoShape": {
   "where": [
-   "lectern/js/app.js:1228"
+   "lectern/js/app.js:1234"
   ]
  },
  "Change Cas&e...": {
@@ -8409,7 +8409,7 @@
  },
  "Change case": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "quire/js/panes.js:107"
   ]
  },
@@ -8505,8 +8505,8 @@
  "Chart": {
   "where": [
    "common/charts.js:440",
-   "lectern/js/app.js:1605",
-   "lectern/js/app.js:1607",
+   "lectern/js/app.js:1600",
+   "lectern/js/app.js:1602",
    "lectern/js/ribbon.js:40"
   ]
  },
@@ -8654,7 +8654,7 @@
  },
  "Check spelling as you &type": {
   "where": [
-   "lectern/js/dialogs.js:904"
+   "lectern/js/dialogs.js:932"
   ]
  },
  "Check spelling as you t&ype": {
@@ -8674,7 +8674,7 @@
  },
  "Checkerboard": {
   "where": [
-   "lectern/js/panes.js:733",
+   "lectern/js/panes.js:740",
    "lectern/js/slideshow.js:17",
    "lectern/js/slideshow.js:24"
   ]
@@ -8812,7 +8812,7 @@
  },
  "Choose AutoShapes on the Drawing toolbar, then drag on the slide. Hold Shift for perfect squares, circles and 15° angles; hold Ctrl to draw from the center. Yellow diamonds adjust a shape's proportions; the green dot rotates.": {
   "where": [
-   "lectern/js/panes.js:557"
+   "lectern/js/panes.js:564"
   ]
  },
  "Choose Blank or a template:": {
@@ -8929,7 +8929,7 @@
  "Clear": {
   "where": [
    "lectern/js/app.js:1085",
-   "lectern/js/textedit.js:805",
+   "lectern/js/textedit.js:846",
    "ledger/js/ops.js:232",
    "ledger/js/ribbon.js:39"
   ]
@@ -8941,7 +8941,7 @@
  },
  "Clear All": {
   "where": [
-   "lectern/js/panes.js:600",
+   "lectern/js/panes.js:607",
    "ledger/js/panes.js:157",
    "quire/js/panes.js:179"
   ]
@@ -9007,7 +9007,7 @@
  },
  "Click a button to apply borders:": {
   "where": [
-   "lectern/js/app.js:1589"
+   "lectern/js/app.js:1584"
   ]
  },
  "Click a cell and type, then press Enter (moves down), Tab (moves right) or an arrow key. F2 edits the active cell; Alt+Enter starts a new line inside a cell. Ctrl+Enter fills the typed entry into every selected cell. Numbers, dates (3/14/2026, 14-Mar), times (9:30 AM), percentages (12%) and currency ($1,200) are recognised and formatted automatically. Start an entry with an apostrophe to keep it as text.": {
@@ -9027,17 +9027,17 @@
  },
  "Click a clip to insert it on the current slide.": {
   "where": [
-   "lectern/js/panes.js:593"
+   "lectern/js/panes.js:600"
   ]
  },
  "Click a placeholder (\"Click to add title\") and type. Use the Text Box tool on the Drawing toolbar to add text anywhere. Click a box once to start typing; drag its border to move it.": {
   "where": [
-   "lectern/js/panes.js:555"
+   "lectern/js/panes.js:562"
   ]
  },
  "Click an object or select text to apply the formatting.": {
   "where": [
-   "lectern/js/app.js:1361"
+   "lectern/js/app.js:1367"
   ]
  },
  "Click here to reload": {
@@ -9062,7 +9062,7 @@
  },
  "Click the color in the picture you want to make transparent.": {
   "where": [
-   "lectern/js/app.js:1415"
+   "lectern/js/app.js:1421"
   ]
  },
  "Click to add first slide": {
@@ -9072,7 +9072,7 @@
  },
  "Click to add notes": {
   "where": [
-   "lectern/js/panes.js:291"
+   "lectern/js/panes.js:296"
   ]
  },
  "Click to add points; double-click to finish": {
@@ -9119,14 +9119,14 @@
  },
  "Clip Art": {
   "where": [
-   "lectern/js/panes.js:593",
+   "lectern/js/panes.js:600",
    "ledger/js/panes.js:145",
    "quire/js/panes.js:168"
   ]
  },
  "Clipboard": {
   "where": [
-   "lectern/js/panes.js:597",
+   "lectern/js/panes.js:604",
    "lectern/js/ribbon.js:20",
    "ledger/js/panes.js:154",
    "ledger/js/ribbon.js:21"
@@ -9189,7 +9189,7 @@
  },
  "Close task pane": {
   "where": [
-   "lectern/js/panes.js:488",
+   "lectern/js/panes.js:495",
    "ledger/js/panes.js:19",
    "quire/js/panes.js:22"
   ]
@@ -9306,8 +9306,8 @@
  "Color": {
   "where": [
    "lectern/js/app.js:201",
-   "lectern/js/dialogs.js:1105",
-   "lectern/js/panes.js:424",
+   "lectern/js/dialogs.js:1133",
+   "lectern/js/panes.js:431",
    "lectern/js/ribbon.js:103"
   ]
  },
@@ -9331,14 +9331,14 @@
  },
  "Color Schemes": {
   "where": [
-   "lectern/js/panes.js:671",
-   "lectern/js/panes.js:704",
-   "lectern/js/panes.js:741"
+   "lectern/js/panes.js:678",
+   "lectern/js/panes.js:711",
+   "lectern/js/panes.js:748"
   ]
  },
  "Color scheme {0}": {
   "where": [
-   "lectern/js/panes.js:709"
+   "lectern/js/panes.js:716"
   ]
  },
  "Color/Grayscale": {
@@ -9349,7 +9349,7 @@
  },
  "Color/gra&yscale:": {
   "where": [
-   "lectern/js/dialogs.js:1115"
+   "lectern/js/dialogs.js:1143"
   ]
  },
  "Color:": {
@@ -9772,7 +9772,7 @@
  },
  "Confirm Password": {
   "where": [
-   "lectern/js/dialogs.js:913",
+   "lectern/js/dialogs.js:941",
    "ledger/js/dialogs.js:668",
    "ledger/js/dialogs.js:893",
    "quire/js/dialogs3.js:596"
@@ -9780,7 +9780,7 @@
  },
  "Confirmation password is not identical.": {
   "where": [
-   "lectern/js/dialogs.js:913",
+   "lectern/js/dialogs.js:941",
    "ledger/js/dialogs.js:668",
    "ledger/js/dialogs.js:893"
   ]
@@ -9826,7 +9826,7 @@
  },
  "Content Layouts:": {
   "where": [
-   "lectern/js/panes.js:628"
+   "lectern/js/panes.js:635"
   ]
  },
  "Content Placeholder": {
@@ -9883,7 +9883,7 @@
  },
  "Contrast": {
   "where": [
-   "lectern/js/app.js:1410",
+   "lectern/js/app.js:1416",
    "quire/js/app.js:432"
   ]
  },
@@ -10177,7 +10177,7 @@
  },
  "Correct TWo INitial CApitals": {
   "where": [
-   "lectern/js/dialogs.js:928",
+   "lectern/js/dialogs.js:956",
    "ledger/js/dialogs.js:824"
   ]
  },
@@ -10344,7 +10344,7 @@
  },
  "Create a new presentation...": {
   "where": [
-   "lectern/js/panes.js:537"
+   "lectern/js/panes.js:544"
   ]
  },
  "Create a new workbook...": {
@@ -10379,7 +10379,7 @@
  },
  "Created:": {
   "where": [
-   "lectern/js/dialogs.js:945",
+   "lectern/js/dialogs.js:973",
    "ledger/js/dialogs.js:694",
    "quire/js/dialogs3.js:629",
    "quire/js/dialogs3.js:632"
@@ -10554,7 +10554,7 @@
  },
  "Ctrl+B / I / U": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "quire/js/panes.js:107"
   ]
  },
@@ -10570,7 +10570,7 @@
  },
  "Ctrl+E / L / R / J": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Ctrl+End": {
@@ -10585,7 +10585,7 @@
  },
  "Ctrl+F / Ctrl+H": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Ctrl+F / H": {
@@ -10615,7 +10615,7 @@
  },
  "Ctrl+G / Ctrl+Shift+G": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Ctrl+K": {
@@ -10640,7 +10640,7 @@
  },
  "Ctrl+N / Ctrl+O / Ctrl+S": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Ctrl+N / O / S / P": {
@@ -10716,14 +10716,14 @@
  },
  "Ctrl+X / C / V": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "ledger/js/panes.js:130",
    "quire/js/panes.js:107"
   ]
  },
  "Ctrl+Z / Ctrl+Y": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "ledger/js/panes.js:129",
    "quire/js/panes.js:107"
   ]
@@ -10814,12 +10814,12 @@
  },
  "Current color scheme": {
   "where": [
-   "lectern/js/panes.js:709"
+   "lectern/js/panes.js:716"
   ]
  },
  "Current scheme": {
   "where": [
-   "lectern/js/panes.js:709"
+   "lectern/js/panes.js:716"
   ]
  },
  "Current value:": {
@@ -10864,7 +10864,7 @@
  },
  "Custom Animation": {
   "where": [
-   "lectern/js/panes.js:769"
+   "lectern/js/panes.js:776"
   ]
  },
  "Custom AutoFilter": {
@@ -10879,7 +10879,7 @@
  },
  "Custom animation is available in Normal view.": {
   "where": [
-   "lectern/js/panes.js:776"
+   "lectern/js/panes.js:783"
   ]
  },
  "Custom keyboard shortcuts were not kept": {
@@ -10956,7 +10956,7 @@
  },
  "Cut, Copy, Paste": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "ledger/js/panes.js:130",
    "quire/js/panes.js:107"
   ]
@@ -11003,7 +11003,7 @@
  },
  "D&esign:": {
   "where": [
-   "lectern/js/app.js:1695"
+   "lectern/js/app.js:1690"
   ]
  },
  "D&estination:": {
@@ -11295,7 +11295,7 @@
  },
  "Date and Time": {
   "where": [
-   "lectern/js/dialogs.js:864",
+   "lectern/js/dialogs.js:892",
    "quire/js/dialogs2.js:119",
    "quire/js/dialogs2.js:128"
   ]
@@ -11375,7 +11375,7 @@
  },
  "Decrease Font Size": {
   "where": [
-   "lectern/js/app.js:1302",
+   "lectern/js/app.js:1308",
    "lectern/js/commands.js:120",
    "ledger/js/commands.js:122"
   ]
@@ -11659,7 +11659,7 @@
  },
  "Demote": {
   "where": [
-   "lectern/js/app.js:1319",
+   "lectern/js/app.js:1325",
    "lectern/js/diagram.js:419",
    "lectern/js/diagram.js:633",
    "quire/js/commands.js:530"
@@ -11667,7 +11667,7 @@
  },
  "Demote / Promote; next object": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Demote to Body Text": {
@@ -11688,7 +11688,7 @@
  },
  "Descend": {
   "where": [
-   "lectern/js/panes.js:729",
+   "lectern/js/panes.js:736",
    "lectern/js/slideshow.js:20"
   ]
  },
@@ -11717,14 +11717,14 @@
  },
  "Design Templates": {
   "where": [
-   "lectern/js/panes.js:671",
-   "lectern/js/panes.js:704",
-   "lectern/js/panes.js:741"
+   "lectern/js/panes.js:678",
+   "lectern/js/panes.js:711",
+   "lectern/js/panes.js:748"
   ]
  },
  "Design templates": {
   "where": [
-   "lectern/js/panes.js:559"
+   "lectern/js/panes.js:566"
   ]
  },
  "Detect &language automatically": {
@@ -11820,7 +11820,7 @@
  "Diamond": {
   "where": [
    "common/geometry.js:22",
-   "lectern/js/panes.js:735",
+   "lectern/js/panes.js:742",
    "lectern/js/slideshow.js:18",
    "lectern/js/slideshow.js:25"
   ]
@@ -11868,7 +11868,7 @@
  },
  "Direction:": {
   "where": [
-   "lectern/js/panes.js:791"
+   "lectern/js/panes.js:798"
   ]
  },
  "Disable": {
@@ -11908,7 +11908,7 @@
  },
  "Display drawing &guides on screen": {
   "where": [
-   "lectern/js/dialogs.js:981"
+   "lectern/js/dialogs.js:1009"
   ]
  },
  "Display for Review": {
@@ -11939,7 +11939,7 @@
  },
  "Dissolve in": {
   "where": [
-   "lectern/js/panes.js:726"
+   "lectern/js/panes.js:733"
   ]
  },
  "Distance from te&xt:": {
@@ -11964,7 +11964,7 @@
  },
  "Distribute": {
   "where": [
-   "lectern/js/app.js:1194"
+   "lectern/js/app.js:1200"
   ]
  },
  "Distribute &Horizontally": {
@@ -12092,7 +12092,7 @@
  },
  "Do you want to keep your ink annotations?": {
   "where": [
-   "lectern/js/slideshow.js:759"
+   "lectern/js/slideshow.js:760"
   ]
  },
  "Do you want to replace the contents of the destination cells?": {
@@ -12150,7 +12150,7 @@
  },
  "Document Recovery": {
   "where": [
-   "lectern/js/panes.js:528",
+   "lectern/js/panes.js:535",
    "ledger/js/panes.js:61",
    "quire/js/panes.js:66"
   ]
@@ -12451,7 +12451,7 @@
  },
  "Draw shapes": {
   "where": [
-   "lectern/js/panes.js:557"
+   "lectern/js/panes.js:564"
   ]
  },
  "Drawing": {
@@ -12503,7 +12503,7 @@
  },
  "Drop a .pptx to open it, or pictures to insert them": {
   "where": [
-   "lectern/js/app.js:1994"
+   "lectern/js/app.js:1989"
   ]
  },
  "Drop a document here or pick an app on the left side to create one.": {
@@ -12540,7 +12540,7 @@
   "where": [
    "lectern/js/app.js:1102",
    "lectern/js/editor.js:572",
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Duplicate Slide": {
@@ -12555,7 +12555,7 @@
  },
  "E&mphasis": {
   "where": [
-   "lectern/js/panes.js:764"
+   "lectern/js/panes.js:771"
   ]
  },
  "E&nd size:": {
@@ -12565,7 +12565,7 @@
  },
  "E&rase All Ink on Slide": {
   "where": [
-   "lectern/js/slideshow.js:905"
+   "lectern/js/slideshow.js:906"
   ]
  },
  "E&xisting File or Web Page": {
@@ -12576,7 +12576,7 @@
  "E&xit": {
   "where": [
    "lectern/js/commands.js:34",
-   "lectern/js/panes.js:765",
+   "lectern/js/panes.js:772",
    "ledger/js/commands.js:44",
    "quire/js/commands.js:240"
   ]
@@ -12660,15 +12660,15 @@
  },
  "Edit": {
   "where": [
-   "lectern/js/dialogs.js:903",
-   "lectern/js/model.js:768",
+   "lectern/js/dialogs.js:931",
+   "lectern/js/model.js:811",
    "ledger/js/dialogs.js:805",
    "quire/js/dialogs3.js:578"
   ]
  },
  "Edit Chart Data...": {
   "where": [
-   "lectern/js/app.js:1607"
+   "lectern/js/app.js:1602"
   ]
  },
  "Edit Co&mment": {
@@ -12683,7 +12683,7 @@
  },
  "Edit Color Schemes...": {
   "where": [
-   "lectern/js/panes.js:715"
+   "lectern/js/panes.js:722"
   ]
  },
  "Edit Comment": {
@@ -12710,8 +12710,8 @@
  },
  "Edit LettersArt Text": {
   "where": [
-   "lectern/js/app.js:1629",
-   "lectern/js/dialogs.js:1026",
+   "lectern/js/app.js:1624",
+   "lectern/js/dialogs.js:1054",
    "quire/js/dialogs2.js:562"
   ]
  },
@@ -12819,12 +12819,12 @@
  },
  "Effect": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1121"
   ]
  },
  "Effect Options": {
   "where": [
-   "lectern/js/panes.js:823"
+   "lectern/js/panes.js:830"
   ]
  },
  "Effects": {
@@ -12948,8 +12948,8 @@
  },
  "End Show": {
   "where": [
-   "lectern/js/dialogs.js:800",
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:828",
+   "lectern/js/dialogs.js:861"
   ]
  },
  "End mode jump": {
@@ -12974,7 +12974,7 @@
  },
  "End of slide show, click to exit.": {
   "where": [
-   "lectern/js/slideshow.js:724"
+   "lectern/js/slideshow.js:725"
   ]
  },
  "End, Arrow": {
@@ -13020,7 +13020,7 @@
  },
  "English (U.K.)": {
   "where": [
-   "lectern/js/dialogs.js:703",
+   "lectern/js/dialogs.js:721",
    "ledger/js/dialogs.js:795",
    "ledger/js/spell.js:106",
    "quire/js/app.js:513"
@@ -13029,7 +13029,7 @@
  "English (U.S.)": {
   "where": [
    "lectern/js/app.js:279",
-   "lectern/js/dialogs.js:703",
+   "lectern/js/dialogs.js:721",
    "ledger/js/dialogs.js:795",
    "ledger/js/spell.js:106"
   ]
@@ -13489,7 +13489,7 @@
  },
  "Exciting": {
   "where": [
-   "lectern/js/panes.js:732"
+   "lectern/js/panes.js:739"
   ]
  },
  "Exclude this recipient": {
@@ -13505,12 +13505,12 @@
  },
  "Exit Edit Text": {
   "where": [
-   "lectern/js/app.js:1857"
+   "lectern/js/app.js:1852"
   ]
  },
  "Expand": {
   "where": [
-   "lectern/js/panes.js:730",
+   "lectern/js/panes.js:737",
    "lectern/js/slideshow.js:20",
    "quire/js/commands.js:534"
   ]
@@ -13705,7 +13705,7 @@
  },
  "F5 / Shift+F5": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "F9 / Alt+F9": {
@@ -13741,27 +13741,27 @@
  },
  "Fade in all": {
   "where": [
-   "lectern/js/panes.js:724"
+   "lectern/js/panes.js:731"
   ]
  },
  "Fade in one by one": {
   "where": [
-   "lectern/js/panes.js:724"
+   "lectern/js/panes.js:731"
   ]
  },
  "Faded wipe": {
   "where": [
-   "lectern/js/panes.js:725"
+   "lectern/js/panes.js:732"
   ]
  },
  "Faded zoom": {
   "where": [
-   "lectern/js/panes.js:725"
+   "lectern/js/panes.js:732"
   ]
  },
  "Fast": {
   "where": [
-   "lectern/js/panes.js:850",
+   "lectern/js/panes.js:857",
    "lectern/js/slideshow.js:99"
   ]
  },
@@ -13782,7 +13782,7 @@
  },
  "Fi&nd what:": {
   "where": [
-   "lectern/js/dialogs.js:737",
+   "lectern/js/dialogs.js:755",
    "ledger/js/dialogs.js:514",
    "quire/js/find.js:323"
   ]
@@ -13868,7 +13868,7 @@
  "File &name:": {
   "where": [
    "common/core.js:373",
-   "lectern/js/dialogs.js:964",
+   "lectern/js/dialogs.js:992",
    "ledger/js/dialogs.js:672",
    "quire/js/dialogs3.js:716"
   ]
@@ -13890,7 +13890,7 @@
  },
  "File encryption settings for this document": {
   "where": [
-   "lectern/js/dialogs.js:905"
+   "lectern/js/dialogs.js:933"
   ]
  },
  "File encryption settings for this workbook": {
@@ -13910,7 +13910,7 @@
  },
  "File ▸ Open reads .pptx, .ppsx and .potx files. File ▸ Save writes a .pptx that opens in PowerPoint, Keynote, Google Slides and LibreOffice. Save As also offers .ppsx, .potx, a single-file web page, a PNG of the current slide and a text outline.": {
   "where": [
-   "lectern/js/panes.js:562"
+   "lectern/js/panes.js:569"
   ]
  },
  "File ▸ Page Setup sets orientation, scaling (fit to N pages), paper size, margins, centering, headers and footers (&[Page], &[Pages], &[Date], &[File], &[Tab]), print area, rows to repeat and gridlines. View ▸ Page Break Preview shows the pages; Insert ▸ Page Break adds manual breaks. File ▸ Print and Print Preview produce a PDF you can print anywhere.": {
@@ -13930,7 +13930,7 @@
  },
  "Files": {
   "where": [
-   "lectern/js/panes.js:562",
+   "lectern/js/panes.js:569",
    "ledger/js/panes.js:72",
    "quire/js/panes.js:104"
   ]
@@ -13942,7 +13942,7 @@
  },
  "Fill": {
   "where": [
-   "lectern/js/app.js:1589",
+   "lectern/js/app.js:1584",
    "lectern/js/dialogs.js:402",
    "lectern/js/dialogs.js:403",
    "ledger/js/dialogs.js:153"
@@ -13955,7 +13955,7 @@
  },
  "Fill &color:": {
   "where": [
-   "lectern/js/app.js:1589"
+   "lectern/js/app.js:1584"
   ]
  },
  "Fill Across Worksheets": {
@@ -13967,8 +13967,8 @@
  "Fill Color": {
   "where": [
    "lectern/js/app.js:206",
-   "lectern/js/app.js:1239",
-   "lectern/js/app.js:1574",
+   "lectern/js/app.js:1245",
+   "lectern/js/app.js:1569",
    "lectern/js/commands.js:128"
   ]
  },
@@ -14068,7 +14068,7 @@
  },
  "Find": {
   "where": [
-   "lectern/js/dialogs.js:745",
+   "lectern/js/dialogs.js:763",
    "quire/js/panes.js:691"
   ]
  },
@@ -14089,12 +14089,12 @@
  },
  "Find &whole words only": {
   "where": [
-   "lectern/js/dialogs.js:735"
+   "lectern/js/dialogs.js:753"
   ]
  },
  "Find / Replace": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Find Entry": {
@@ -14247,8 +14247,8 @@
  },
  "First Slide": {
   "where": [
-   "lectern/js/dialogs.js:798",
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:826",
+   "lectern/js/dialogs.js:861"
   ]
  },
  "First capital": {
@@ -14293,7 +14293,7 @@
  },
  "Fit to slide": {
   "where": [
-   "lectern/js/dialogs.js:1039"
+   "lectern/js/dialogs.js:1067"
   ]
  },
  "Fixed &width": {
@@ -14318,7 +14318,7 @@
  },
  "Flip": {
   "where": [
-   "lectern/js/app.js:1203",
+   "lectern/js/app.js:1209",
    "quire/js/commands.js:518",
    "quire/js/commands.js:519"
   ]
@@ -14493,7 +14493,7 @@
  },
  "Fly in": {
   "where": [
-   "lectern/js/panes.js:733"
+   "lectern/js/panes.js:740"
   ]
  },
  "Fo&nt": {
@@ -14529,7 +14529,7 @@
  "Font": {
   "where": [
    "lectern/js/app.js:183",
-   "lectern/js/app.js:1279",
+   "lectern/js/app.js:1285",
    "lectern/js/dialogs.js:96",
    "lectern/js/dialogs.js:103"
   ]
@@ -14541,7 +14541,7 @@
  },
  "Font Color": {
   "where": [
-   "lectern/js/app.js:1277",
+   "lectern/js/app.js:1283",
    "lectern/js/commands.js:127",
    "ledger/js/app.js:1039",
    "ledger/js/commands.js:179"
@@ -14550,7 +14550,7 @@
  "Font Size": {
   "where": [
    "lectern/js/app.js:184",
-   "lectern/js/app.js:1280",
+   "lectern/js/app.js:1286",
    "ledger/js/app.js:584",
    "ledger/js/app.js:1307"
   ]
@@ -14579,7 +14579,7 @@
  },
  "Font dialog": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "quire/js/panes.js:107"
   ]
  },
@@ -14647,7 +14647,7 @@
  },
  "Footer (optional)": {
   "where": [
-   "lectern/js/app.js:1691"
+   "lectern/js/app.js:1686"
   ]
  },
  "Footer Placeholder": {
@@ -14821,8 +14821,8 @@
  },
  "Format Paragraph": {
   "where": [
-   "lectern/js/textedit.js:728",
-   "lectern/js/textedit.js:885"
+   "lectern/js/textedit.js:769",
+   "lectern/js/textedit.js:926"
   ]
  },
  "Format Picture": {
@@ -14850,7 +14850,7 @@
  },
  "Format Table": {
   "where": [
-   "lectern/js/app.js:1590",
+   "lectern/js/app.js:1585",
    "lectern/js/dialogs.js:386"
   ]
  },
@@ -14888,7 +14888,7 @@
  },
  "Format text": {
   "where": [
-   "lectern/js/panes.js:556"
+   "lectern/js/panes.js:563"
   ]
  },
  "Format ▸ Cells (Ctrl+1) has Number, Alignment, Font, Border, Patterns and Protection tabs. Custom number formats use Excel codes such as #,##0.00;[Red](#,##0.00), 0%, d-mmm-yy, [h]:mm and \"text\"@. The Formatting toolbar sets fonts, alignment, Merge and Center, currency, percent, comma style, decimals, indents, borders, fill and font colours. The Format Painter copies formats.": {
@@ -14908,7 +14908,7 @@
  },
  "Format ▸ Slide Design shows the design gallery. Color Schemes and Animation Schemes are linked at the top of that pane.": {
   "where": [
-   "lectern/js/panes.js:559"
+   "lectern/js/panes.js:566"
   ]
  },
  "Format: {0}": {
@@ -15074,7 +15074,7 @@
  },
  "Forward": {
   "where": [
-   "lectern/js/panes.js:485",
+   "lectern/js/panes.js:492",
    "ledger/js/panes.js:17",
    "quire/js/panes.js:19"
   ]
@@ -15091,7 +15091,7 @@
  },
  "Fra&me slides": {
   "where": [
-   "lectern/js/dialogs.js:1106"
+   "lectern/js/dialogs.js:1134"
   ]
  },
  "Fraction": {
@@ -15106,12 +15106,12 @@
  },
  "Frame s&hape:": {
   "where": [
-   "lectern/js/dialogs.js:1048"
+   "lectern/js/dialogs.js:1076"
   ]
  },
  "Frame slides": {
   "where": [
-   "lectern/js/panes.js:425"
+   "lectern/js/panes.js:432"
   ]
  },
  "Franklin Gothic Medium": {
@@ -15159,7 +15159,7 @@
  },
  "From AutoContent wizard...": {
   "where": [
-   "lectern/js/panes.js:547"
+   "lectern/js/panes.js:554"
   ]
  },
  "From Beginning": {
@@ -15228,7 +15228,7 @@
  },
  "From design template": {
   "where": [
-   "lectern/js/panes.js:547"
+   "lectern/js/panes.js:554"
   ]
  },
  "From edge: &Header:": {
@@ -15243,7 +15243,7 @@
  },
  "From existing presentation...": {
   "where": [
-   "lectern/js/panes.js:547"
+   "lectern/js/panes.js:554"
   ]
  },
  "From existing workbook...": {
@@ -15326,7 +15326,7 @@
  "General": {
   "where": [
    "common/dialogs.js:429",
-   "lectern/js/dialogs.js:902",
+   "lectern/js/dialogs.js:930",
    "ledger/js/dialogs.js:153",
    "ledger/js/dialogs.js:387"
   ]
@@ -15380,7 +15380,7 @@
  },
  "Get around": {
   "where": [
-   "lectern/js/panes.js:554"
+   "lectern/js/panes.js:561"
   ]
  },
  "Get started": {
@@ -15390,7 +15390,7 @@
  },
  "Getting Started": {
   "where": [
-   "lectern/js/panes.js:530",
+   "lectern/js/panes.js:537",
    "ledger/js/panes.js:63",
    "quire/js/panes.js:68"
   ]
@@ -15413,7 +15413,7 @@
  "Go": {
   "where": [
    "common/clipart.js:69",
-   "lectern/js/panes.js:536",
+   "lectern/js/panes.js:543",
    "ledger/js/panes.js:69",
    "quire/js/panes.js:74"
   ]
@@ -15472,7 +15472,7 @@
  },
  "Go to slide {0}": {
   "where": [
-   "lectern/js/slideshow.js:975"
+   "lectern/js/slideshow.js:976"
   ]
  },
  "Goal Seek": {
@@ -15500,7 +15500,7 @@
   "where": [
    "common/ui.js:1172",
    "lectern/js/dialogs.js:235",
-   "lectern/js/slideshow.js:902",
+   "lectern/js/slideshow.js:903",
    "quire/js/dialogs3.js:147"
   ]
  },
@@ -15594,8 +15594,8 @@
  "Grayscale": {
   "where": [
    "lectern/js/dialogs.js:430",
-   "lectern/js/dialogs.js:1105",
-   "lectern/js/panes.js:424",
+   "lectern/js/dialogs.js:1133",
+   "lectern/js/panes.js:431",
    "quire/js/dialogs3.js:85"
   ]
  },
@@ -15607,7 +15607,7 @@
  "Green": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:902",
+   "lectern/js/slideshow.js:903",
    "quire/js/app.js:187",
    "quire/js/dialogs3.js:570"
   ]
@@ -15629,12 +15629,12 @@
  },
  "Grid and Guides": {
   "where": [
-   "lectern/js/dialogs.js:982"
+   "lectern/js/dialogs.js:1010"
   ]
  },
  "Grid settings": {
   "where": [
-   "lectern/js/dialogs.js:982",
+   "lectern/js/dialogs.js:1010",
    "quire/js/dialogs3.js:179"
   ]
  },
@@ -15664,12 +15664,12 @@
  },
  "Group / Ungroup": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Grow / Shrink font": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "quire/js/panes.js:107"
   ]
  },
@@ -15695,7 +15695,7 @@
  },
  "Guide settings": {
   "where": [
-   "lectern/js/dialogs.js:982"
+   "lectern/js/dialogs.js:1010"
   ]
  },
  "Gutter pos&ition:": {
@@ -15763,8 +15763,8 @@
  },
  "Handouts": {
   "where": [
-   "lectern/js/dialogs.js:1103",
-   "lectern/js/panes.js:421"
+   "lectern/js/dialogs.js:1131",
+   "lectern/js/panes.js:428"
   ]
  },
  "Handwriting in a comment was not kept": {
@@ -15793,7 +15793,7 @@
  "Harbor & Pine — 2027 Expansion (sample)": {
   "where": [
    "lectern/js/app.js:1077",
-   "lectern/js/app.js:2304"
+   "lectern/js/app.js:2299"
   ]
  },
  "He&ader:": {
@@ -15977,7 +15977,7 @@
  },
  "Hidden slides:": {
   "where": [
-   "lectern/js/dialogs.js:946"
+   "lectern/js/dialogs.js:974"
   ]
  },
  "Hide": {
@@ -16062,7 +16062,7 @@
  },
  "Home": {
   "where": [
-   "lectern/js/panes.js:486",
+   "lectern/js/panes.js:493",
    "ledger/js/panes.js:17",
    "quire/js/panes.js:20"
   ]
@@ -16176,9 +16176,9 @@
  "Hyperlink": {
   "where": [
    "common/ui.js:741",
-   "lectern/js/dialogs.js:808",
-   "lectern/js/dialogs.js:809",
-   "lectern/js/dialogs.js:810"
+   "lectern/js/dialogs.js:836",
+   "lectern/js/dialogs.js:837",
+   "lectern/js/dialogs.js:838"
   ]
  },
  "Hyperlinks were not kept": {
@@ -16444,7 +16444,7 @@
  },
  "Increase Font Size": {
   "where": [
-   "lectern/js/app.js:1302",
+   "lectern/js/app.js:1308",
    "lectern/js/commands.js:119",
    "ledger/js/commands.js:121"
   ]
@@ -16533,12 +16533,12 @@
  },
  "Ink &Color": {
   "where": [
-   "lectern/js/slideshow.js:902"
+   "lectern/js/slideshow.js:903"
   ]
  },
  "Ink Annotations": {
   "where": [
-   "lectern/js/slideshow.js:779"
+   "lectern/js/slideshow.js:780"
   ]
  },
  "Input Message": {
@@ -16561,12 +16561,12 @@
  },
  "Insert &All": {
   "where": [
-   "lectern/js/dialogs.js:1077"
+   "lectern/js/dialogs.js:1105"
   ]
  },
  "Insert &New Slide": {
   "where": [
-   "lectern/js/panes.js:641"
+   "lectern/js/panes.js:648"
   ]
  },
  "Insert &reference to:": {
@@ -16606,7 +16606,7 @@
  },
  "Insert Chart": {
   "where": [
-   "lectern/js/app.js:1599",
+   "lectern/js/app.js:1594",
    "lectern/js/commands.js:91",
    "lectern/js/render.js:599",
    "ledger/js/xchart.js:459"
@@ -16664,7 +16664,7 @@
  },
  "Insert Date": {
   "where": [
-   "lectern/js/app.js:1337",
+   "lectern/js/app.js:1343",
    "ledger/js/commands.js:260",
    "quire/js/commands.js:380",
    "quire/js/commands.js:546"
@@ -16672,7 +16672,7 @@
  },
  "Insert Date and Time": {
   "where": [
-   "lectern/js/dialogs.js:869",
+   "lectern/js/dialogs.js:897",
    "quire/js/dialogs2.js:121"
   ]
  },
@@ -16760,7 +16760,7 @@
  },
  "Insert LettersArt": {
   "where": [
-   "lectern/js/app.js:1618",
+   "lectern/js/app.js:1613",
    "lectern/js/commands.js:87",
    "quire/js/commands.js:300",
    "quire/js/dialogs2.js:548"
@@ -16810,7 +16810,7 @@
  },
  "Insert Picture": {
   "where": [
-   "lectern/js/app.js:1377",
+   "lectern/js/app.js:1383",
    "lectern/js/commands.js:85",
    "lectern/js/render.js:599",
    "ledger/js/app.js:1348"
@@ -16818,7 +16818,7 @@
  },
  "Insert Row": {
   "where": [
-   "lectern/js/textedit.js:824",
+   "lectern/js/textedit.js:865",
    "ledger/js/ops.js:799"
   ]
  },
@@ -16856,7 +16856,7 @@
  },
  "Insert Slide Number": {
   "where": [
-   "lectern/js/app.js:1337"
+   "lectern/js/app.js:1343"
   ]
  },
  "Insert Slides": {
@@ -16871,16 +16871,16 @@
  },
  "Insert Symbol": {
   "where": [
-   "lectern/js/dialogs.js:856",
+   "lectern/js/dialogs.js:884",
    "quire/js/dialogs2.js:179",
    "quire/js/dialogs2.js:180"
   ]
  },
  "Insert Table": {
   "where": [
-   "lectern/js/app.js:1449",
+   "lectern/js/app.js:1455",
    "lectern/js/commands.js:92",
-   "lectern/js/dialogs.js:772",
+   "lectern/js/dialogs.js:800",
    "lectern/js/render.js:599"
   ]
  },
@@ -16891,7 +16891,7 @@
  },
  "Insert Text Box": {
   "where": [
-   "lectern/js/app.js:1347",
+   "lectern/js/app.js:1353",
    "ledger/js/drawing.js:635",
    "quire/js/drawtool.js:80"
   ]
@@ -16951,7 +16951,7 @@
  },
  "Insert picture from:": {
   "where": [
-   "lectern/js/dialogs.js:1047"
+   "lectern/js/dialogs.js:1075"
   ]
  },
  "Insert rows": {
@@ -17317,7 +17317,7 @@
  },
  "Italic": {
   "where": [
-   "lectern/js/app.js:1285",
+   "lectern/js/app.js:1291",
    "lectern/js/commands.js:112",
    "lectern/js/dialogs.js:66",
    "ledger/js/dialogs.js:180"
@@ -17446,13 +17446,13 @@
  },
  "Keyboard Shortcuts": {
   "where": [
-   "lectern/js/panes.js:590",
+   "lectern/js/panes.js:597",
    "ledger/js/panes.js:141"
   ]
  },
  "Keyboard shortcuts": {
   "where": [
-   "lectern/js/panes.js:581",
+   "lectern/js/panes.js:588",
    "ledger/js/panes.js:71",
    "ledger/js/panes.js:117",
    "quire/js/panes.js:122"
@@ -17460,7 +17460,7 @@
  },
  "Keyboard shortcuts and help": {
   "where": [
-   "lectern/js/panes.js:538",
+   "lectern/js/panes.js:545",
    "quire/js/panes.js:76"
   ]
  },
@@ -17580,7 +17580,7 @@
  },
  "Last &Viewed": {
   "where": [
-   "lectern/js/slideshow.js:913"
+   "lectern/js/slideshow.js:914"
   ]
  },
  "Last Name": {
@@ -17597,14 +17597,14 @@
  },
  "Last Slide": {
   "where": [
-   "lectern/js/dialogs.js:798",
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:826",
+   "lectern/js/dialogs.js:861"
   ]
  },
  "Last Slide Viewed": {
   "where": [
-   "lectern/js/dialogs.js:799",
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:827",
+   "lectern/js/dialogs.js:861"
   ]
  },
  "Last co&lumn": {
@@ -17710,7 +17710,7 @@
  },
  "Learn": {
   "where": [
-   "lectern/js/panes.js:538",
+   "lectern/js/panes.js:545",
    "ledger/js/panes.js:71",
    "quire/js/panes.js:76"
   ]
@@ -17722,7 +17722,7 @@
  },
  "Lectern": {
   "where": [
-   "lectern/js/panes.js:535",
+   "lectern/js/panes.js:542",
    "index.html:251",
    "index.html:287",
    "lectern/index.html:9"
@@ -17736,7 +17736,7 @@
  "Lectern Help": {
   "where": [
    "lectern/js/commands.js:154",
-   "lectern/js/panes.js:569"
+   "lectern/js/panes.js:576"
   ]
  },
  "Lectern presentation editor": {
@@ -18023,7 +18023,7 @@
  "LettersArt": {
   "where": [
    "lectern/js/app.js:209",
-   "lectern/js/dialogs.js:1008",
+   "lectern/js/dialogs.js:1036",
    "lectern/js/render.js:585",
    "lectern/js/ribbon.js:42"
   ]
@@ -18046,7 +18046,7 @@
  "LettersArt Gallery": {
   "where": [
    "lectern/js/commands.js:228",
-   "lectern/js/dialogs.js:1014",
+   "lectern/js/dialogs.js:1042",
    "quire/js/commands.js:524",
    "quire/js/dialogs2.js:539"
   ]
@@ -18065,7 +18065,7 @@
  },
  "LettersArt Style": {
   "where": [
-   "lectern/js/app.js:1633"
+   "lectern/js/app.js:1628"
   ]
  },
  "LettersArt Styles": {
@@ -18086,7 +18086,7 @@
  },
  "LettersArt style {0}": {
   "where": [
-   "lectern/js/dialogs.js:1007",
+   "lectern/js/dialogs.js:1035",
    "quire/js/dialogs2.js:532"
   ]
  },
@@ -18238,7 +18238,7 @@
  },
  "Line Color": {
   "where": [
-   "lectern/js/app.js:1252",
+   "lectern/js/app.js:1258",
    "lectern/js/commands.js:129",
    "quire/js/app.js:413",
    "quire/js/commands.js:504"
@@ -18261,7 +18261,7 @@
   "where": [
    "lectern/js/app.js:201",
    "lectern/js/app.js:232",
-   "lectern/js/app.js:1264",
+   "lectern/js/app.js:1270",
    "lectern/js/ribbon.js:97"
   ]
  },
@@ -18451,7 +18451,7 @@
  },
  "Loading the dictionary...": {
   "where": [
-   "lectern/js/dialogs.js:652",
+   "lectern/js/dialogs.js:672",
    "ledger/js/spell.js:71",
    "ledger/js/spell.js:127",
    "quire/js/spell.js:312"
@@ -18924,7 +18924,7 @@
  },
  "Matc&h case": {
   "where": [
-   "lectern/js/dialogs.js:735",
+   "lectern/js/dialogs.js:753",
    "quire/js/find.js:310"
   ]
  },
@@ -18993,7 +18993,7 @@
  "Medium": {
   "where": [
    "lectern/js/dialogs.js:56",
-   "lectern/js/panes.js:850",
+   "lectern/js/panes.js:857",
    "lectern/js/slideshow.js:99",
    "ledger/js/dialogs.js:213"
   ]
@@ -19124,7 +19124,7 @@
  },
  "Middle": {
   "where": [
-   "lectern/js/app.js:1588",
+   "lectern/js/app.js:1583",
    "lectern/js/dialogs.js:445"
   ]
  },
@@ -19192,7 +19192,7 @@
  },
  "Moderate": {
   "where": [
-   "lectern/js/panes.js:728"
+   "lectern/js/panes.js:735"
   ]
  },
  "Moderate Effect": {
@@ -19214,7 +19214,7 @@
  },
  "Modify Effect": {
   "where": [
-   "lectern/js/panes.js:786"
+   "lectern/js/panes.js:793"
   ]
  },
  "Modify Style": {
@@ -19226,17 +19226,17 @@
  },
  "Modify effect": {
   "where": [
-   "lectern/js/panes.js:791"
+   "lectern/js/panes.js:798"
   ]
  },
  "Modify transition": {
   "where": [
-   "lectern/js/panes.js:856"
+   "lectern/js/panes.js:863"
   ]
  },
  "Modify: {0}": {
   "where": [
-   "lectern/js/panes.js:791"
+   "lectern/js/panes.js:798"
   ]
  },
  "Monarch (3 7/8 x 7 1/2 in)": {
@@ -19314,7 +19314,7 @@
  },
  "More...": {
   "where": [
-   "lectern/js/panes.js:537",
+   "lectern/js/panes.js:544",
    "ledger/js/panes.js:70",
    "quire/js/panes.js:75"
   ]
@@ -19332,12 +19332,12 @@
  },
  "Motion &Paths": {
   "where": [
-   "lectern/js/panes.js:766"
+   "lectern/js/panes.js:773"
   ]
  },
  "Mouse Click": {
   "where": [
-   "lectern/js/dialogs.js:840"
+   "lectern/js/dialogs.js:868"
   ]
  },
  "Move": {
@@ -19379,7 +19379,7 @@
  },
  "Move Paragraph": {
   "where": [
-   "lectern/js/app.js:1329"
+   "lectern/js/app.js:1335"
   ]
  },
  "Move Sheet": {
@@ -19418,7 +19418,7 @@
  },
  "Move down": {
   "where": [
-   "lectern/js/panes.js:820"
+   "lectern/js/panes.js:827"
   ]
  },
  "Move one cell": {
@@ -19458,7 +19458,7 @@
  },
  "Move up": {
   "where": [
-   "lectern/js/panes.js:820"
+   "lectern/js/panes.js:827"
   ]
  },
  "Movies and sounds are not supported in this edition. Pictures, charts, tables and diagrams are available from the Insert menu.": {
@@ -19613,7 +19613,7 @@
  "New": {
   "where": [
    "lectern/js/commands.js:23",
-   "lectern/js/panes.js:547",
+   "lectern/js/panes.js:554",
    "ledger/js/commands.js:26",
    "ledger/js/panes.js:80"
   ]
@@ -19673,7 +19673,7 @@
  "New Presentation": {
   "where": [
    "common/suite.js:683",
-   "lectern/js/panes.js:544"
+   "lectern/js/panes.js:551"
   ]
  },
  "New Record": {
@@ -19777,7 +19777,7 @@
  },
  "New slide": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "New spreadsheet from “{0}”": {
@@ -19787,7 +19787,7 @@
  },
  "New, Open, Save": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "New, Open, Save, Print": {
@@ -19820,8 +19820,8 @@
  },
  "Next": {
   "where": [
-   "lectern/js/slideshow.js:368",
-   "lectern/js/slideshow.js:982",
+   "lectern/js/slideshow.js:372",
+   "lectern/js/slideshow.js:983",
    "quire/js/commands.js:479",
    "quire/js/commands.js:574"
   ]
@@ -19848,8 +19848,8 @@
  },
  "Next Slide": {
   "where": [
-   "lectern/js/dialogs.js:798",
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:826",
+   "lectern/js/dialogs.js:861"
   ]
  },
  "Next sheet": {
@@ -19880,7 +19880,7 @@
  },
  "No Animation": {
   "where": [
-   "lectern/js/panes.js:722"
+   "lectern/js/panes.js:729"
   ]
  },
  "No Border": {
@@ -19924,7 +19924,7 @@
  },
  "No HDMI screen: connect one to present there.": {
   "where": [
-   "lectern/js/slideshow.js:397"
+   "lectern/js/slideshow.js:398"
   ]
  },
  "No Line": {
@@ -20076,7 +20076,7 @@
  },
  "No topics match. Try a different word.": {
   "where": [
-   "lectern/js/panes.js:582"
+   "lectern/js/panes.js:589"
   ]
  },
  "No underline": {
@@ -20215,9 +20215,9 @@
  "Notes": {
   "where": [
    "lectern/js/app.js:1029",
-   "lectern/js/panes.js:296",
-   "lectern/js/panes.js:396",
-   "lectern/js/panes.js:398"
+   "lectern/js/panes.js:302",
+   "lectern/js/panes.js:402",
+   "lectern/js/panes.js:405"
   ]
  },
  "Notes &Page": {
@@ -20227,14 +20227,14 @@
  },
  "Notes Page": {
   "where": [
-   "lectern/js/panes.js:383",
+   "lectern/js/panes.js:389",
    "lectern/js/ribbon.js:66"
   ]
  },
  "Notes Pages": {
   "where": [
-   "lectern/js/dialogs.js:1103",
-   "lectern/js/panes.js:421"
+   "lectern/js/dialogs.js:1131",
+   "lectern/js/panes.js:428"
   ]
  },
  "Notes can only be inserted in the main document.": {
@@ -20249,7 +20249,7 @@
  },
  "Notes:": {
   "where": [
-   "lectern/js/dialogs.js:946"
+   "lectern/js/dialogs.js:974"
   ]
  },
  "Nothing": {
@@ -20269,7 +20269,7 @@
  },
  "Nothing to print.": {
   "where": [
-   "lectern/js/panes.js:477"
+   "lectern/js/panes.js:484"
   ]
  },
  "Noto Sans CJK SC": {
@@ -20304,13 +20304,13 @@
  },
  "Nudge": {
   "where": [
-   "lectern/js/app.js:1214",
+   "lectern/js/app.js:1220",
    "quire/js/drawing.js:606"
   ]
  },
  "Nudge (Ctrl for fine nudge)": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Null Error": {
@@ -20369,7 +20369,7 @@
  },
  "Number of &columns:": {
   "where": [
-   "lectern/js/dialogs.js:772",
+   "lectern/js/dialogs.js:800",
    "quire/js/dialogs2.js:577",
    "quire/js/dialogs2.js:600",
    "quire/js/dialogs2.js:789"
@@ -20377,7 +20377,7 @@
  },
  "Number of &rows:": {
   "where": [
-   "lectern/js/dialogs.js:772",
+   "lectern/js/dialogs.js:800",
    "quire/js/dialogs2.js:577",
    "quire/js/dialogs2.js:600"
   ]
@@ -20409,7 +20409,7 @@
  },
  "Numbering": {
   "where": [
-   "lectern/js/app.js:1316",
+   "lectern/js/app.js:1322",
    "lectern/js/commands.js:121",
    "quire/js/commands.js:43",
    "quire/js/commands.js:105"
@@ -20588,13 +20588,13 @@
  },
  "On Click": {
   "where": [
-   "lectern/js/dialogs.js:1085",
-   "lectern/js/panes.js:788"
+   "lectern/js/dialogs.js:1113",
+   "lectern/js/panes.js:795"
   ]
  },
  "On mouse click": {
   "where": [
-   "lectern/js/panes.js:852"
+   "lectern/js/panes.js:859"
   ]
  },
  "On my computer...": {
@@ -20661,7 +20661,7 @@
   "where": [
    "common/suite.js:140",
    "lectern/js/commands.js:24",
-   "lectern/js/panes.js:537",
+   "lectern/js/panes.js:544",
    "ledger/js/panes.js:70"
   ]
  },
@@ -20732,7 +20732,7 @@
   "where": [
    "lectern/js/app.js:407",
    "lectern/js/app.js:420",
-   "lectern/js/dialogs.js:1056",
+   "lectern/js/dialogs.js:1084",
    "ledger/js/app.js:154"
   ]
  },
@@ -20776,7 +20776,7 @@
  },
  "Options": {
   "where": [
-   "lectern/js/dialogs.js:917",
+   "lectern/js/dialogs.js:945",
    "ledger/js/dialogs.js:807",
    "quire/js/dialogs.js:758",
    "quire/js/dialogs2.js:223"
@@ -20886,7 +20886,7 @@
  },
  "Other Layouts:": {
   "where": [
-   "lectern/js/panes.js:628"
+   "lectern/js/panes.js:635"
   ]
  },
  "Out": {
@@ -20944,8 +20944,8 @@
  },
  "Outline View": {
   "where": [
-   "lectern/js/dialogs.js:1103",
-   "lectern/js/panes.js:421"
+   "lectern/js/dialogs.js:1131",
+   "lectern/js/panes.js:428"
   ]
  },
  "Outline border / remove borders": {
@@ -21059,7 +21059,7 @@
  },
  "P&en color:": {
   "where": [
-   "lectern/js/dialogs.js:887"
+   "lectern/js/dialogs.js:915"
   ]
  },
  "P&icture": {
@@ -21081,7 +21081,7 @@
  },
  "P&ointer Options": {
   "where": [
-   "lectern/js/slideshow.js:917"
+   "lectern/js/slideshow.js:918"
   ]
  },
  "P&ortrait": {
@@ -21253,7 +21253,7 @@
  },
  "Page Up / Page Down": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Page Up|key": {
@@ -21496,7 +21496,7 @@
  },
  "Part of this file couldn't be read. Anything in it that VibeOffice can't edit itself, such as macros or embedded objects, won't be saved.": {
   "where": [
-   "lectern/js/pptx-read.js:569"
+   "lectern/js/pptx-read.js:571"
   ]
  },
  "Part of this file is damaged. Whatever couldn't be read from it won't be saved.": {
@@ -21512,7 +21512,7 @@
  },
  "Password to &open:": {
   "where": [
-   "lectern/js/dialogs.js:905",
+   "lectern/js/dialogs.js:933",
    "ledger/js/dialogs.js:665",
    "ledger/js/dialogs.js:802"
   ]
@@ -21534,10 +21534,10 @@
  },
  "Paste": {
   "where": [
-   "lectern/js/app.js:1762",
-   "lectern/js/app.js:1776",
-   "lectern/js/app.js:1779",
-   "lectern/js/app.js:1796"
+   "lectern/js/app.js:1757",
+   "lectern/js/app.js:1771",
+   "lectern/js/app.js:1774",
+   "lectern/js/app.js:1791"
   ]
  },
  "Paste &Link": {
@@ -21574,7 +21574,7 @@
  },
  "Paste All": {
   "where": [
-   "lectern/js/panes.js:600",
+   "lectern/js/panes.js:607",
    "ledger/js/panes.js:157",
    "quire/js/panes.js:179"
   ]
@@ -21596,12 +21596,12 @@
  },
  "Paste Slides": {
   "where": [
-   "lectern/js/app.js:1767"
+   "lectern/js/app.js:1762"
   ]
  },
  "Paste Special": {
   "where": [
-   "lectern/js/app.js:1809",
+   "lectern/js/app.js:1804",
    "ledger/js/clipboard.js:212",
    "ledger/js/dialogs.js:596",
    "ledger/js/panes.js:130"
@@ -21615,7 +21615,7 @@
  },
  "Paste as &Unformatted Text": {
   "where": [
-   "lectern/js/app.js:1808"
+   "lectern/js/app.js:1803"
   ]
  },
  "Paste as Hyperlink": {
@@ -21677,7 +21677,7 @@
  },
  "Pause": {
   "where": [
-   "lectern/js/slideshow.js:983"
+   "lectern/js/slideshow.js:984"
   ]
  },
  "Peacock": {
@@ -21697,7 +21697,7 @@
  },
  "Peek in": {
   "where": [
-   "lectern/js/panes.js:731"
+   "lectern/js/panes.js:738"
   ]
  },
  "Pen Weight": {
@@ -21717,7 +21717,7 @@
  },
  "Per page:": {
   "where": [
-   "lectern/js/panes.js:422"
+   "lectern/js/panes.js:429"
   ]
  },
  "Percen&t:": {
@@ -21773,14 +21773,14 @@
  },
  "Photo Album": {
   "where": [
-   "lectern/js/app.js:1640",
-   "lectern/js/app.js:1642",
-   "lectern/js/dialogs.js:1049"
+   "lectern/js/app.js:1635",
+   "lectern/js/app.js:1637",
+   "lectern/js/dialogs.js:1077"
   ]
  },
  "Photo album...": {
   "where": [
-   "lectern/js/panes.js:547"
+   "lectern/js/panes.js:554"
   ]
  },
  "Picas": {
@@ -21839,7 +21839,7 @@
  },
  "Picture Color": {
   "where": [
-   "lectern/js/app.js:1409",
+   "lectern/js/app.js:1415",
    "quire/js/app.js:431"
   ]
  },
@@ -21885,17 +21885,17 @@
  },
  "Pictures in album:": {
   "where": [
-   "lectern/js/dialogs.js:1047"
+   "lectern/js/dialogs.js:1075"
   ]
  },
  "Pictures, tables and charts": {
   "where": [
-   "lectern/js/panes.js:558"
+   "lectern/js/panes.js:565"
   ]
  },
  "Pictures:": {
   "where": [
-   "lectern/js/dialogs.js:946"
+   "lectern/js/dialogs.js:974"
   ]
  },
  "Pie": {
@@ -22010,7 +22010,7 @@
  "Plus": {
   "where": [
    "common/geometry.js:144",
-   "lectern/js/panes.js:734",
+   "lectern/js/panes.js:741",
    "lectern/js/slideshow.js:19",
    "lectern/js/slideshow.js:26"
   ]
@@ -22022,7 +22022,7 @@
  },
  "Pointer options": {
   "where": [
-   "lectern/js/slideshow.js:366"
+   "lectern/js/slideshow.js:370"
   ]
  },
  "Points": {
@@ -22153,7 +22153,7 @@
  },
  "Presentation": {
   "where": [
-   "lectern/js/dialogs.js:943",
+   "lectern/js/dialogs.js:971",
    "lite.html:67"
   ]
  },
@@ -22191,17 +22191,17 @@
  },
  "Presentation title": {
   "where": [
-   "lectern/js/app.js:1690"
+   "lectern/js/app.js:1685"
   ]
  },
  "Presentation type:": {
   "where": [
-   "lectern/js/app.js:1695"
+   "lectern/js/app.js:1690"
   ]
  },
  "Presentation: {0}": {
   "where": [
-   "lectern/js/dialogs.js:1077"
+   "lectern/js/dialogs.js:1105"
   ]
  },
  "Presentations": {
@@ -22235,7 +22235,7 @@
  },
  "Press F5 to start from the first slide or Shift+F5 from the current slide. Click, Space or → advances; ← goes back; B blacks the screen; Ctrl+P switches to the pen; Esc ends the show.": {
   "where": [
-   "lectern/js/panes.js:561"
+   "lectern/js/panes.js:568"
   ]
  },
  "Preview": {
@@ -22270,7 +22270,7 @@
  },
  "Preview:": {
   "where": [
-   "lectern/js/dialogs.js:1047"
+   "lectern/js/dialogs.js:1075"
   ]
  },
  "Preview: Page {0} of {1}": {
@@ -22280,7 +22280,7 @@
  },
  "Previous": {
   "where": [
-   "lectern/js/slideshow.js:365",
+   "lectern/js/slideshow.js:369",
    "quire/js/commands.js:478",
    "quire/js/commands.js:573"
   ]
@@ -22292,7 +22292,7 @@
  },
  "Previous / next slide": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Previous 1 or More": {
@@ -22317,8 +22317,8 @@
  },
  "Previous Slide": {
   "where": [
-   "lectern/js/dialogs.js:798",
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:826",
+   "lectern/js/dialogs.js:861"
   ]
  },
  "Previous sheet": {
@@ -22351,7 +22351,7 @@
  },
  "Print &hidden slides": {
   "where": [
-   "lectern/js/dialogs.js:1107"
+   "lectern/js/dialogs.js:1135"
   ]
  },
  "Print &quality:": {
@@ -22361,7 +22361,7 @@
  },
  "Print &what:": {
   "where": [
-   "lectern/js/dialogs.js:1115",
+   "lectern/js/dialogs.js:1143",
    "quire/js/dialogs3.js:671"
   ]
  },
@@ -22395,14 +22395,14 @@
  "Print Preview": {
   "where": [
    "lectern/js/commands.js:30",
-   "lectern/js/panes.js:407",
+   "lectern/js/panes.js:414",
    "ledger/js/print.js:576",
    "quire/js/dialogs2.js:292"
   ]
  },
  "Print What:": {
   "where": [
-   "lectern/js/panes.js:420"
+   "lectern/js/panes.js:427"
   ]
  },
  "Print and Web Layout options": {
@@ -22490,7 +22490,7 @@
  },
  "Project Overview": {
   "where": [
-   "lectern/js/app.js:1680"
+   "lectern/js/app.js:1675"
   ]
  },
  "Project Status Report": {
@@ -22505,7 +22505,7 @@
  },
  "Promote": {
   "where": [
-   "lectern/js/app.js:1319",
+   "lectern/js/app.js:1325",
    "lectern/js/diagram.js:419",
    "lectern/js/diagram.js:632",
    "quire/js/commands.js:529"
@@ -22537,7 +22537,7 @@
  },
  "Properties": {
   "where": [
-   "lectern/js/dialogs.js:949",
+   "lectern/js/dialogs.js:977",
    "ledger/js/dialogs.js:704",
    "ledger/js/drawing.js:528",
    "quire/js/dialogs.js:924"
@@ -22633,13 +22633,13 @@
  },
  "Pure Black and White": {
   "where": [
-   "lectern/js/dialogs.js:1105",
-   "lectern/js/panes.js:424"
+   "lectern/js/dialogs.js:1133",
+   "lectern/js/panes.js:431"
   ]
  },
  "Purple": {
   "where": [
-   "lectern/js/slideshow.js:902"
+   "lectern/js/slideshow.js:903"
   ]
  },
  "Push Down": {
@@ -22894,12 +22894,12 @@
  },
  "Random bars": {
   "where": [
-   "lectern/js/panes.js:726"
+   "lectern/js/panes.js:733"
   ]
  },
  "Re&move": {
   "where": [
-   "lectern/js/dialogs.js:1043"
+   "lectern/js/dialogs.js:1071"
   ]
  },
  "Re&place": {
@@ -22916,13 +22916,13 @@
  },
  "Re&place with:": {
   "where": [
-   "lectern/js/dialogs.js:737",
+   "lectern/js/dialogs.js:755",
    "quire/js/find.js:327"
   ]
  },
  "Re&place...": {
   "where": [
-   "lectern/js/dialogs.js:743"
+   "lectern/js/dialogs.js:761"
   ]
  },
  "Re&set": {
@@ -22944,7 +22944,7 @@
  },
  "Re-Order": {
   "where": [
-   "lectern/js/panes.js:820"
+   "lectern/js/panes.js:827"
   ]
  },
  "Read": {
@@ -23030,7 +23030,7 @@
  },
  "Recently used file &list": {
   "where": [
-   "lectern/js/dialogs.js:902"
+   "lectern/js/dialogs.js:930"
   ]
  },
  "Recently used symbols:": {
@@ -23065,7 +23065,7 @@
  },
  "Recommending a Strategy": {
   "where": [
-   "lectern/js/app.js:1679"
+   "lectern/js/app.js:1674"
   ]
  },
  "Record macro": {
@@ -23090,7 +23090,7 @@
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
   "where": [
-   "lectern/js/app.js:2320"
+   "lectern/js/app.js:2315"
   ]
  },
  "Recovered the unsaved changes. Save the workbook to keep them.": {
@@ -23102,7 +23102,7 @@
   "where": [
    "common/geometry.js:15",
    "lectern/js/commands.js:164",
-   "lectern/js/dialogs.js:1040",
+   "lectern/js/dialogs.js:1068",
    "ledger/js/commands.js:128"
   ]
  },
@@ -23119,7 +23119,7 @@
  "Red": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:902",
+   "lectern/js/slideshow.js:903",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
   ]
@@ -23151,7 +23151,7 @@
  },
  "Reenter password to open:": {
   "where": [
-   "lectern/js/dialogs.js:913",
+   "lectern/js/dialogs.js:941",
    "quire/js/dialogs3.js:596"
   ]
  },
@@ -23239,14 +23239,14 @@
  },
  "Rehearsal": {
   "where": [
-   "lectern/js/slideshow.js:981"
+   "lectern/js/slideshow.js:982"
   ]
  },
  "Rehearse Timings": {
   "where": [
    "lectern/js/commands.js:145",
    "lectern/js/ribbon.js:52",
-   "lectern/js/slideshow.js:766"
+   "lectern/js/slideshow.js:767"
   ]
  },
  "Reject": {
@@ -23301,7 +23301,7 @@
  },
  "Remove": {
   "where": [
-   "lectern/js/panes.js:784"
+   "lectern/js/panes.js:791"
   ]
  },
  "Remove &All Arrows": {
@@ -23326,14 +23326,14 @@
  },
  "Remove Effect": {
   "where": [
-   "lectern/js/panes.js:784",
-   "lectern/js/panes.js:812"
+   "lectern/js/panes.js:791",
+   "lectern/js/panes.js:819"
   ]
  },
  "Remove Hyperlink": {
   "where": [
-   "lectern/js/dialogs.js:788",
-   "lectern/js/dialogs.js:789",
+   "lectern/js/dialogs.js:816",
+   "lectern/js/dialogs.js:817",
    "quire/js/commands.js:610"
   ]
  },
@@ -23409,12 +23409,12 @@
  },
  "Reorder Effects": {
   "where": [
-   "lectern/js/panes.js:818"
+   "lectern/js/panes.js:825"
   ]
  },
  "Repeat": {
   "where": [
-   "lectern/js/slideshow.js:985",
+   "lectern/js/slideshow.js:986",
    "ledger/js/commands.js:268"
   ]
  },
@@ -23446,14 +23446,14 @@
  "Replace": {
   "where": [
    "lectern/js/dialogs.js:205",
-   "lectern/js/dialogs.js:745",
-   "lectern/js/dialogs.js:750",
+   "lectern/js/dialogs.js:763",
+   "lectern/js/dialogs.js:769",
    "ledger/js/ops.js:1615"
   ]
  },
  "Replace &All": {
   "where": [
-   "lectern/js/dialogs.js:742",
+   "lectern/js/dialogs.js:760",
    "ledger/js/dialogs.js:519",
    "quire/js/find.js:333"
   ]
@@ -23465,14 +23465,14 @@
  },
  "Replace &text as you type": {
   "where": [
-   "lectern/js/dialogs.js:931",
+   "lectern/js/dialogs.js:959",
    "ledger/js/dialogs.js:824",
    "quire/js/dialogs3.js:544"
   ]
  },
  "Replace All": {
   "where": [
-   "lectern/js/dialogs.js:760",
+   "lectern/js/dialogs.js:782",
    "quire/js/find.js:204"
   ]
  },
@@ -23498,12 +23498,12 @@
  },
  "Replace straight &quotes with smart quotes": {
   "where": [
-   "lectern/js/dialogs.js:903"
+   "lectern/js/dialogs.js:931"
   ]
  },
  "Replace straight quotes with smart quotes": {
   "where": [
-   "lectern/js/dialogs.js:930"
+   "lectern/js/dialogs.js:958"
   ]
  },
  "Replaces existing text with new text in a text string.": {
@@ -23594,7 +23594,7 @@
  },
  "Reset Picture": {
   "where": [
-   "lectern/js/app.js:1411",
+   "lectern/js/app.js:1417",
    "lectern/js/commands.js:200",
    "quire/js/commands.js:496"
   ]
@@ -25497,7 +25497,7 @@
  },
  "Rotate": {
   "where": [
-   "lectern/js/app.js:1202",
+   "lectern/js/app.js:1208",
    "lectern/js/editor.js:635",
    "quire/js/commands.js:495",
    "quire/js/commands.js:516"
@@ -25566,7 +25566,7 @@
  "Rounded Rectangle": {
   "where": [
    "common/geometry.js:16",
-   "lectern/js/dialogs.js:1040"
+   "lectern/js/dialogs.js:1068"
   ]
  },
  "Rounded Rectangular Callout": {
@@ -25832,7 +25832,7 @@
  },
  "Sample: café expansion plan": {
   "where": [
-   "lectern/js/panes.js:548"
+   "lectern/js/panes.js:555"
   ]
  },
  "Sand": {
@@ -25877,7 +25877,7 @@
   "where": [
    "common/core.js:329",
    "common/core.js:367",
-   "lectern/js/dialogs.js:964",
+   "lectern/js/dialogs.js:992",
    "ledger/js/dialogs.js:672"
   ]
  },
@@ -25899,7 +25899,7 @@
  "Save as &type:": {
   "where": [
    "common/core.js:373",
-   "lectern/js/dialogs.js:964",
+   "lectern/js/dialogs.js:992",
    "ledger/js/dialogs.js:672",
    "quire/js/dialogs3.js:716"
   ]
@@ -25911,7 +25911,7 @@
  },
  "Save as P&DF...": {
   "where": [
-   "lectern/js/panes.js:426"
+   "lectern/js/panes.js:433"
   ]
  },
  "Save as PDF": {
@@ -26082,7 +26082,7 @@
  },
  "Search": {
   "where": [
-   "lectern/js/panes.js:571",
+   "lectern/js/panes.js:578",
    "ledger/js/panes.js:106",
    "quire/js/panes.js:111"
   ]
@@ -26121,14 +26121,14 @@
  "Search for:": {
   "where": [
    "common/clipart.js:69",
-   "lectern/js/panes.js:536",
+   "lectern/js/panes.js:543",
    "ledger/js/panes.js:69",
    "quire/js/panes.js:74"
   ]
  },
  "Search help": {
   "where": [
-   "lectern/js/panes.js:532",
+   "lectern/js/panes.js:539",
    "ledger/js/panes.js:65",
    "quire/js/panes.js:70"
   ]
@@ -26171,7 +26171,7 @@
  },
  "Second line": {
   "where": [
-   "lectern/js/panes.js:662"
+   "lectern/js/panes.js:669"
   ]
  },
  "Second pane": {
@@ -26250,7 +26250,7 @@
  },
  "Security": {
   "where": [
-   "lectern/js/dialogs.js:905",
+   "lectern/js/dialogs.js:933",
    "ledger/js/dialogs.js:805",
    "quire/js/dialogs3.js:581"
   ]
@@ -26328,7 +26328,7 @@
  },
  "Select a LettersArt style:": {
   "where": [
-   "lectern/js/dialogs.js:1014",
+   "lectern/js/dialogs.js:1042",
    "quire/js/dialogs2.js:539"
   ]
  },
@@ -26364,7 +26364,7 @@
  },
  "Select all": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "quire/js/panes.js:107"
   ]
  },
@@ -26375,22 +26375,22 @@
  },
  "Select an element of the slide, then click \"Add Effect\" to add animation.": {
   "where": [
-   "lectern/js/panes.js:817"
+   "lectern/js/panes.js:824"
   ]
  },
  "Select an object first.": {
   "where": [
-   "lectern/js/dialogs.js:830"
+   "lectern/js/dialogs.js:858"
   ]
  },
  "Select an object on the slide first, then choose an effect.": {
   "where": [
-   "lectern/js/panes.js:780"
+   "lectern/js/panes.js:787"
   ]
  },
  "Select at least one slide.": {
   "where": [
-   "lectern/js/dialogs.js:1074"
+   "lectern/js/dialogs.js:1102"
   ]
  },
  "Select column / row": {
@@ -26448,7 +26448,7 @@
  },
  "Select text or an object to link.": {
   "where": [
-   "lectern/js/dialogs.js:796"
+   "lectern/js/dialogs.js:824"
   ]
  },
  "Select text to highlight. Press Esc to stop.": {
@@ -26458,7 +26458,7 @@
  },
  "Select text, then use the Formatting toolbar or Format ▸ Font. Bullets and numbering live under Format ▸ Bullets and Numbering. Press Tab at the start of a bullet to demote it.": {
   "where": [
-   "lectern/js/panes.js:556"
+   "lectern/js/panes.js:563"
   ]
  },
  "Select the current array": {
@@ -26523,7 +26523,7 @@
  },
  "Selling a Product or Service": {
   "where": [
-   "lectern/js/app.js:1684"
+   "lectern/js/app.js:1679"
   ]
  },
  "Semi-block": {
@@ -26623,7 +26623,7 @@
  },
  "Set Transparent Color": {
   "where": [
-   "lectern/js/app.js:1437",
+   "lectern/js/app.js:1443",
    "lectern/js/commands.js:201"
   ]
  },
@@ -26634,7 +26634,7 @@
  },
  "Set Up Show": {
   "where": [
-   "lectern/js/dialogs.js:889"
+   "lectern/js/dialogs.js:917"
   ]
  },
  "Set Up Slide Show": {
@@ -26649,7 +26649,7 @@
  },
  "Settings": {
   "where": [
-   "lectern/js/dialogs.js:1093",
+   "lectern/js/dialogs.js:1121",
    "ledger/js/dialogs2.js:135",
    "ledger/js/dialogs2.js:397",
    "index.html:264"
@@ -26685,8 +26685,8 @@
  },
  "Shadow": {
   "where": [
-   "lectern/js/app.js:1274",
-   "lectern/js/app.js:1285",
+   "lectern/js/app.js:1280",
+   "lectern/js/app.js:1291",
    "lectern/js/commands.js:115",
    "lectern/js/ribbon.js:89"
   ]
@@ -26894,7 +26894,7 @@
  },
  "Show": {
   "where": [
-   "lectern/js/dialogs.js:901",
+   "lectern/js/dialogs.js:929",
    "lectern/js/ribbon.js:68",
    "ledger/js/dialogs.js:765",
    "ledger/js/filter.js:366"
@@ -27038,12 +27038,12 @@
  },
  "Show options": {
   "where": [
-   "lectern/js/dialogs.js:887"
+   "lectern/js/dialogs.js:915"
   ]
  },
  "Show popup menu &button": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:929"
   ]
  },
  "Show rows where:": {
@@ -27058,7 +27058,7 @@
  },
  "Show slides": {
   "where": [
-   "lectern/js/dialogs.js:888"
+   "lectern/js/dialogs.js:916"
   ]
  },
  "Show the &Assistant": {
@@ -27073,7 +27073,7 @@
  },
  "Show type": {
   "where": [
-   "lectern/js/dialogs.js:887"
+   "lectern/js/dialogs.js:915"
   ]
  },
  "Show values": {
@@ -27083,12 +27083,12 @@
  },
  "Show when inserting new slides": {
   "where": [
-   "lectern/js/panes.js:646"
+   "lectern/js/panes.js:653"
   ]
  },
  "Show without &animation": {
   "where": [
-   "lectern/js/dialogs.js:881"
+   "lectern/js/dialogs.js:909"
   ]
  },
  "Show/Hide Co&mment": {
@@ -27181,12 +27181,12 @@
  },
  "Simple Frame, Black": {
   "where": [
-   "lectern/js/dialogs.js:1040"
+   "lectern/js/dialogs.js:1068"
   ]
  },
  "Simple Frame, White": {
   "where": [
-   "lectern/js/dialogs.js:1040"
+   "lectern/js/dialogs.js:1068"
   ]
  },
  "Sincerely yours,": {
@@ -27347,7 +27347,7 @@
  "Slide": {
   "where": [
    "lectern/js/dialogs.js:593",
-   "lectern/js/dialogs.js:1068"
+   "lectern/js/dialogs.js:1096"
   ]
  },
  "Slide &Layout...": {
@@ -27362,7 +27362,7 @@
  },
  "Slide &number": {
   "where": [
-   "lectern/js/app.js:1693",
+   "lectern/js/app.js:1688",
    "lectern/js/dialogs.js:586"
   ]
  },
@@ -27374,28 +27374,28 @@
  "Slide Design": {
   "where": [
    "lectern/js/commands.js:103",
-   "lectern/js/panes.js:669"
+   "lectern/js/panes.js:676"
   ]
  },
  "Slide Design - Animation Schemes": {
   "where": [
-   "lectern/js/panes.js:739"
+   "lectern/js/panes.js:746"
   ]
  },
  "Slide Design - Color Schemes": {
   "where": [
-   "lectern/js/panes.js:702"
+   "lectern/js/panes.js:709"
   ]
  },
  "Slide Finder": {
   "where": [
-   "lectern/js/dialogs.js:1077"
+   "lectern/js/dialogs.js:1105"
   ]
  },
  "Slide Layout": {
   "where": [
    "lectern/js/app.js:786",
-   "lectern/js/panes.js:630"
+   "lectern/js/panes.js:637"
   ]
  },
  "Slide Master": {
@@ -27428,10 +27428,10 @@
  },
  "Slide Show": {
   "where": [
-   "lectern/js/panes.js:752",
-   "lectern/js/panes.js:821",
-   "lectern/js/panes.js:859",
-   "lectern/js/slideshow.js:361"
+   "lectern/js/panes.js:759",
+   "lectern/js/panes.js:828",
+   "lectern/js/panes.js:866",
+   "lectern/js/slideshow.js:365"
   ]
  },
  "Slide Show (from start)": {
@@ -27441,12 +27441,12 @@
  },
  "Slide Show Help": {
   "where": [
-   "lectern/js/slideshow.js:936"
+   "lectern/js/slideshow.js:937"
   ]
  },
  "Slide Show Help\n\nN, Enter, Page Down, Right Arrow, Down Arrow or Spacebar: next animation or slide\nP, Page Up, Left Arrow, Up Arrow or Backspace: previous animation or slide\nNumber + Enter: go to that slide\nB or Period: black / unblack screen\nW or Comma: white / unwhite screen\nS or Plus: stop or restart automatic show\nEsc, Ctrl+Break or Hyphen: end slide show\nE: erase drawing on screen\nCtrl+P: pen  ·  Ctrl+A: arrow  ·  Ctrl+E: eraser  ·  Ctrl+H: hide pointer\nHome: first slide  ·  End: last slide": {
   "where": [
-   "lectern/js/slideshow.js:936"
+   "lectern/js/slideshow.js:937"
   ]
  },
  "Slide Show from current slide": {
@@ -27461,7 +27461,7 @@
  },
  "Slide Show ▸ Custom Animation. Select an object, choose Add Effect, then set Start, Direction and Speed. Use By 1st Level Paragraphs (Effect Options ▸ Text Animation) to build bullets one at a time.": {
   "where": [
-   "lectern/js/panes.js:560"
+   "lectern/js/panes.js:567"
   ]
  },
  "Slide Size": {
@@ -27473,7 +27473,7 @@
   "where": [
    "lectern/js/app.js:215",
    "lectern/js/app.js:292",
-   "lectern/js/panes.js:313",
+   "lectern/js/panes.js:319",
    "lectern/js/ribbon.js:66"
   ]
  },
@@ -27484,15 +27484,15 @@
  },
  "Slide Titles": {
   "where": [
-   "lectern/js/dialogs.js:801",
-   "lectern/js/dialogs.js:947"
+   "lectern/js/dialogs.js:829",
+   "lectern/js/dialogs.js:975"
   ]
  },
  "Slide Transition": {
   "where": [
    "lectern/js/app.js:882",
    "lectern/js/commands.js:149",
-   "lectern/js/panes.js:829"
+   "lectern/js/panes.js:836"
   ]
  },
  "Slide comments": {
@@ -27507,23 +27507,23 @@
  },
  "Slide show": {
   "where": [
-   "lectern/js/dialogs.js:901",
-   "lectern/js/panes.js:561"
+   "lectern/js/dialogs.js:929",
+   "lectern/js/panes.js:568"
   ]
  },
  "Slide show from start / current": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Slide show menu": {
   "where": [
-   "lectern/js/slideshow.js:367"
+   "lectern/js/slideshow.js:371"
   ]
  },
  "Slide shows play in the browser, and presentations export to PDF, PNG pictures and web pages.": {
   "where": [
-   "lectern/js/dialogs.js:1128"
+   "lectern/js/dialogs.js:1156"
   ]
  },
  "Slide transitions and automatic advance settings were not kept": {
@@ -27533,9 +27533,9 @@
  },
  "Slide {0}": {
   "where": [
-   "lectern/js/dialogs.js:801",
-   "lectern/js/dialogs.js:835",
-   "lectern/js/dialogs.js:947",
+   "lectern/js/dialogs.js:829",
+   "lectern/js/dialogs.js:863",
+   "lectern/js/dialogs.js:975",
    "lectern/js/frames.js:161"
   ]
  },
@@ -27551,14 +27551,14 @@
  },
  "Slide...": {
   "where": [
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:861"
   ]
  },
  "Slides": {
   "where": [
    "common/dialogs.js:363",
    "lectern/js/dialogs.js:561",
-   "lectern/js/dialogs.js:1103",
+   "lectern/js/dialogs.js:1131",
    "lectern/js/panes.js:17"
   ]
  },
@@ -27579,17 +27579,17 @@
  },
  "Slides per page:": {
   "where": [
-   "lectern/js/dialogs.js:1115"
+   "lectern/js/dialogs.js:1143"
   ]
  },
  "Slides:": {
   "where": [
-   "lectern/js/dialogs.js:946"
+   "lectern/js/dialogs.js:974"
   ]
  },
  "Slow": {
   "where": [
-   "lectern/js/panes.js:850",
+   "lectern/js/panes.js:857",
    "lectern/js/slideshow.js:99"
   ]
  },
@@ -27636,7 +27636,7 @@
  },
  "Snap to": {
   "where": [
-   "lectern/js/dialogs.js:982"
+   "lectern/js/dialogs.js:1010"
   ]
  },
  "Snip Diagonal Corner Rectangle": {
@@ -27671,7 +27671,7 @@
  },
  "Soft Shadow": {
   "where": [
-   "lectern/js/dialogs.js:1040"
+   "lectern/js/dialogs.js:1068"
   ]
  },
  "Solid": {
@@ -28031,7 +28031,7 @@
  },
  "Sound:": {
   "where": [
-   "lectern/js/panes.js:856"
+   "lectern/js/panes.js:863"
   ]
  },
  "Sounds li&ke (English)": {
@@ -28066,7 +28066,7 @@
  },
  "Source: {0}": {
   "where": [
-   "lectern/js/app.js:1808"
+   "lectern/js/app.js:1803"
   ]
  },
  "South": {
@@ -28081,12 +28081,12 @@
  },
  "Sp&eed:": {
   "where": [
-   "lectern/js/dialogs.js:1094"
+   "lectern/js/dialogs.js:1122"
   ]
  },
  "Spac&ing:": {
   "where": [
-   "lectern/js/dialogs.js:982"
+   "lectern/js/dialogs.js:1010"
   ]
  },
  "Space": {
@@ -28145,7 +28145,7 @@
  },
  "Speaker notes": {
   "where": [
-   "lectern/js/panes.js:291"
+   "lectern/js/panes.js:296"
   ]
  },
  "Special": {
@@ -28160,16 +28160,16 @@
  },
  "Speed:": {
   "where": [
-   "lectern/js/panes.js:791",
-   "lectern/js/panes.js:856"
+   "lectern/js/panes.js:798",
+   "lectern/js/panes.js:863"
   ]
  },
  "Spelling": {
   "where": [
    "lectern/js/commands.js:136",
-   "lectern/js/dialogs.js:651",
-   "lectern/js/dialogs.js:653",
-   "lectern/js/dialogs.js:680"
+   "lectern/js/dialogs.js:671",
+   "lectern/js/dialogs.js:673",
+   "lectern/js/dialogs.js:700"
   ]
  },
  "Spelling & Grammar": {
@@ -28198,7 +28198,7 @@
  },
  "Spelling and Style": {
   "where": [
-   "lectern/js/dialogs.js:904"
+   "lectern/js/dialogs.js:932"
   ]
  },
  "Spelling and grammar are checked as you type. Click to stop.": {
@@ -28223,7 +28223,7 @@
  },
  "Spelling suggestions come from your browser. Hold Shift while right-clicking a word to see them.": {
   "where": [
-   "lectern/js/dialogs.js:904"
+   "lectern/js/dialogs.js:932"
   ]
  },
  "Spelling, AutoCorrect and the thesaurus work offline, in English (U.S.) and English (U.K.).": {
@@ -28233,7 +28233,7 @@
  },
  "Spelling: {0}": {
   "where": [
-   "lectern/js/dialogs.js:705",
+   "lectern/js/dialogs.js:723",
    "ledger/js/spell.js:111"
   ]
  },
@@ -28254,7 +28254,7 @@
  },
  "Spinner": {
   "where": [
-   "lectern/js/panes.js:731",
+   "lectern/js/panes.js:738",
    "lectern/js/slideshow.js:20"
   ]
  },
@@ -28271,7 +28271,7 @@
  },
  "Split Cell divides a merged cell back into its original cells. Select a merged cell first.": {
   "where": [
-   "lectern/js/app.js:1519"
+   "lectern/js/app.js:1514"
   ]
  },
  "Split Cells": {
@@ -28439,12 +28439,12 @@
  },
  "Start &After Previous": {
   "where": [
-   "lectern/js/panes.js:811"
+   "lectern/js/panes.js:818"
   ]
  },
  "Start &With Previous": {
   "where": [
-   "lectern/js/panes.js:810"
+   "lectern/js/panes.js:817"
   ]
  },
  "Start &at:": {
@@ -28465,7 +28465,7 @@
  },
  "Start On &Click": {
   "where": [
-   "lectern/js/panes.js:809"
+   "lectern/js/panes.js:816"
   ]
  },
  "Start Slide Show": {
@@ -28510,7 +28510,7 @@
  },
  "Start:": {
   "where": [
-   "lectern/js/panes.js:791"
+   "lectern/js/panes.js:798"
   ]
  },
  "Starting document": {
@@ -28520,12 +28520,12 @@
  },
  "Startup &Task Pane": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:929"
   ]
  },
  "Stat&us bar": {
   "where": [
-   "lectern/js/dialogs.js:901"
+   "lectern/js/dialogs.js:929"
   ]
  },
  "Statement": {
@@ -28566,7 +28566,7 @@
  },
  "Status Report": {
   "where": [
-   "lectern/js/app.js:1681"
+   "lectern/js/app.js:1676"
   ]
  },
  "Status: Ready — the pages are saved as a PDF that you can print from any viewer.": {
@@ -28657,7 +28657,7 @@
  },
  "Strikethrough": {
   "where": [
-   "lectern/js/app.js:1285",
+   "lectern/js/app.js:1291",
    "lectern/js/commands.js:114",
    "quire/js/commands.js:334",
    "quire/js/review.js:429"
@@ -28794,7 +28794,7 @@
  },
  "Subscript": {
   "where": [
-   "lectern/js/app.js:1291",
+   "lectern/js/app.js:1297",
    "lectern/js/commands.js:117",
    "quire/js/commands.js:335",
    "quire/js/panes.js:482"
@@ -28807,7 +28807,7 @@
  },
  "Subtle": {
   "where": [
-   "lectern/js/panes.js:722"
+   "lectern/js/panes.js:729"
   ]
  },
  "Subtle Effect": {
@@ -28901,7 +28901,7 @@
  },
  "Superscript": {
   "where": [
-   "lectern/js/app.js:1291",
+   "lectern/js/app.js:1297",
    "lectern/js/commands.js:116",
    "quire/js/commands.js:336",
    "quire/js/panes.js:482"
@@ -29032,7 +29032,7 @@
  },
  "Tab / Shift+Tab": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "quire/js/panes.js:107"
   ]
  },
@@ -29066,7 +29066,7 @@
  "Table": {
   "where": [
    "lectern/js/app.js:207",
-   "lectern/js/app.js:1482",
+   "lectern/js/app.js:1485",
    "lectern/js/ribbon.js:38",
    "lectern/js/ribbon.js:114"
   ]
@@ -29285,7 +29285,7 @@
  },
  "Task pane": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "ledger/js/panes.js:137"
   ]
  },
@@ -29296,7 +29296,7 @@
  },
  "Task pane f&ollows the selected object": {
   "where": [
-   "lectern/js/dialogs.js:901",
+   "lectern/js/dialogs.js:929",
    "ledger/js/dialogs.js:765",
    "quire/js/dialogs3.js:576"
   ]
@@ -29310,7 +29310,7 @@
  },
  "Te&xt Direction": {
   "where": [
-   "lectern/js/app.js:1852"
+   "lectern/js/app.js:1847"
   ]
  },
  "Te&xt Direction...": {
@@ -29397,7 +29397,7 @@
  },
  "Templates": {
   "where": [
-   "lectern/js/panes.js:548",
+   "lectern/js/panes.js:555",
    "ledger/js/panes.js:81",
    "quire/js/dialogs3.js:743",
    "quire/js/panes.js:86"
@@ -29436,14 +29436,14 @@
  "Text": {
   "where": [
    "common/dialogs.js:408",
-   "lectern/js/dialogs.js:903",
+   "lectern/js/dialogs.js:931",
    "lectern/js/ribbon.js:42",
    "lectern/js/ribbon.js:123"
   ]
  },
  "Text &alignment:": {
   "where": [
-   "lectern/js/app.js:1589"
+   "lectern/js/app.js:1584"
   ]
  },
  "Text &anchor point:": {
@@ -29469,7 +29469,7 @@
  },
  "Text Animation": {
   "where": [
-   "lectern/js/dialogs.js:1095"
+   "lectern/js/dialogs.js:1123"
   ]
  },
  "Text B&ox...": {
@@ -29480,7 +29480,7 @@
  },
  "Text Box": {
   "where": [
-   "lectern/js/app.js:1589",
+   "lectern/js/app.js:1584",
    "lectern/js/commands.js:89",
    "lectern/js/dialogs.js:459",
    "lectern/js/ribbon.js:42"
@@ -29517,7 +29517,7 @@
  },
  "Text Layouts:": {
   "where": [
-   "lectern/js/panes.js:628"
+   "lectern/js/panes.js:635"
   ]
  },
  "Text Pane": {
@@ -29564,7 +29564,7 @@
  },
  "Text and Content Layouts:": {
   "where": [
-   "lectern/js/panes.js:628"
+   "lectern/js/panes.js:635"
   ]
  },
  "Text and lines": {
@@ -30375,12 +30375,12 @@
  },
  "The presentation is encrypted (AES-256) the next time you save it as a PowerPoint file, the way PowerPoint 2007 and later do. Leave the box empty to save it without a password. If you lose or forget the password, it cannot be recovered.": {
   "where": [
-   "lectern/js/dialogs.js:905"
+   "lectern/js/dialogs.js:933"
   ]
  },
  "The presentation is not in English, so it was not checked.": {
   "where": [
-   "lectern/js/dialogs.js:651"
+   "lectern/js/dialogs.js:671"
   ]
  },
  "The presentation page size is outside the supported range": {
@@ -30410,7 +30410,7 @@
  },
  "The search item wasn't found.": {
   "where": [
-   "lectern/js/dialogs.js:742"
+   "lectern/js/dialogs.js:760"
   ]
  },
  "The selected border style can be applied by clicking the presets, preview diagram or the buttons above.": {
@@ -30509,13 +30509,13 @@
  "The spelling check is complete.": {
   "where": [
    "common/dialogs.js:232",
-   "lectern/js/dialogs.js:680",
-   "lectern/js/dialogs.js:706"
+   "lectern/js/dialogs.js:700",
+   "lectern/js/dialogs.js:724"
   ]
  },
  "The spelling dictionary could not be loaded ({0}).": {
   "where": [
-   "lectern/js/dialogs.js:653",
+   "lectern/js/dialogs.js:673",
    "ledger/js/spell.js:72",
    "ledger/js/spell.js:128"
   ]
@@ -30557,7 +30557,7 @@
  },
  "The total time for the slide show was {0}. Do you want to keep the new slide timings?": {
   "where": [
-   "lectern/js/slideshow.js:764"
+   "lectern/js/slideshow.js:765"
   ]
  },
  "The value doesn't match the type you chose. Type a date.": {
@@ -31058,7 +31058,7 @@
  },
  "This effect has no direction settings.": {
   "where": [
-   "lectern/js/dialogs.js:1093"
+   "lectern/js/dialogs.js:1121"
   ]
  },
  "This embedded object will be saved as a picture, because it was edited here.": {
@@ -31073,7 +31073,7 @@
  },
  "This file does not contain a PowerPoint presentation.": {
   "where": [
-   "lectern/js/pptx-read.js:560"
+   "lectern/js/pptx-read.js:562"
   ]
  },
  "This file has no Excel workbook stream": {
@@ -31189,7 +31189,7 @@
  },
  "This picture cannot be edited.": {
   "where": [
-   "lectern/js/app.js:1431"
+   "lectern/js/app.js:1437"
   ]
  },
  "This picture format cannot be converted yet": {
@@ -31220,7 +31220,7 @@
  },
  "This presentation is encrypted with a method that is not supported (only the AES encryption of PowerPoint 2007 and later is).": {
   "where": [
-   "lectern/js/pptx-read.js:474"
+   "lectern/js/pptx-read.js:476"
   ]
  },
  "This punctuation mark is repeated.": {
@@ -31383,13 +31383,13 @@
   "where": [
    "common/core.js:681",
    "common/core.js:770",
-   "lectern/js/dialogs.js:999",
+   "lectern/js/dialogs.js:1027",
    "quire/js/dialogs.js:126"
   ]
  },
  "Timing": {
   "where": [
-   "lectern/js/dialogs.js:1094",
+   "lectern/js/dialogs.js:1122",
    "lectern/js/ribbon.js:52"
   ]
  },
@@ -31407,7 +31407,7 @@
  "Title": {
   "where": [
    "lectern/js/model.js:501",
-   "lectern/js/panes.js:660"
+   "lectern/js/panes.js:667"
   ]
  },
  "Title Master": {
@@ -31544,7 +31544,7 @@
  },
  "To print, save these pages as a PDF and print the PDF.": {
   "where": [
-   "lectern/js/panes.js:428"
+   "lectern/js/panes.js:435"
   ]
  },
  "To restrict editing instead, use Tools ▸ Protect Document.": {
@@ -31581,7 +31581,7 @@
  "To:": {
   "where": [
    "common/dialogs.js:361",
-   "lectern/js/dialogs.js:888"
+   "lectern/js/dialogs.js:916"
   ]
  },
  "Today's date": {
@@ -31596,7 +31596,7 @@
  },
  "Toggle between text and object selection": {
   "where": [
-   "lectern/js/panes.js:564"
+   "lectern/js/panes.js:571"
   ]
  },
  "Too many BIFF records": {
@@ -31705,7 +31705,7 @@
  "Top": {
   "where": [
    "common/charts.js:397",
-   "lectern/js/app.js:1588",
+   "lectern/js/app.js:1583",
    "lectern/js/dialogs.js:445",
    "ledger/js/dialogs.js:154"
   ]
@@ -31848,7 +31848,7 @@
  },
  "Training": {
   "where": [
-   "lectern/js/app.js:1683"
+   "lectern/js/app.js:1678"
   ]
  },
  "Transition": {
@@ -31875,7 +31875,7 @@
  },
  "Transitions are set in Normal or Slide Sorter view.": {
   "where": [
-   "lectern/js/panes.js:836"
+   "lectern/js/panes.js:843"
   ]
  },
  "Transparency": {
@@ -31903,7 +31903,7 @@
  "Trebuchet MS": {
   "where": [
    "common/core.js:770",
-   "lectern/js/dialogs.js:999",
+   "lectern/js/dialogs.js:1027",
    "lectern/js/model.js:86",
    "lectern/js/model.js:163"
   ]
@@ -32032,7 +32032,7 @@
  },
  "Typing": {
   "where": [
-   "lectern/js/app.js:1985",
+   "lectern/js/app.js:1980",
    "lectern/js/diagram.js:438",
    "lectern/js/diagram.js:487",
    "lectern/js/diagram.js:497"
@@ -32055,7 +32055,7 @@
  },
  "URL...": {
   "where": [
-   "lectern/js/dialogs.js:833"
+   "lectern/js/dialogs.js:861"
   ]
  },
  "Un&freeze Panes": {
@@ -32110,7 +32110,7 @@
  },
  "Underline": {
   "where": [
-   "lectern/js/app.js:1285",
+   "lectern/js/app.js:1291",
    "lectern/js/commands.js:113",
    "quire/js/commands.js:331",
    "quire/js/commands.js:332"
@@ -32134,13 +32134,13 @@
  },
  "Undo": {
   "where": [
-   "lectern/js/dialogs.js:903",
+   "lectern/js/dialogs.js:931",
    "quire/js/commands.js:243"
   ]
  },
  "Undo / Redo": {
   "where": [
-   "lectern/js/panes.js:564",
+   "lectern/js/panes.js:571",
    "ledger/js/panes.js:129"
   ]
  },
@@ -32334,7 +32334,7 @@
  },
  "Untitled": {
   "where": [
-   "lectern/js/app.js:1738"
+   "lectern/js/app.js:1733"
   ]
  },
  "Up": {
@@ -32539,12 +32539,12 @@
  },
  "Use the Insert menu or the icons inside a content placeholder. Double-click a chart to edit its datasheet. Double-click a picture to crop or recolor it.": {
   "where": [
-   "lectern/js/panes.js:558"
+   "lectern/js/panes.js:565"
   ]
  },
  "Use the Slides tab on the left to move between slides; drag thumbnails to reorder. The Outline tab lets you type titles and bullets — press Tab to demote and Shift+Tab to promote. Enter on a title line starts a new slide.": {
   "where": [
-   "lectern/js/panes.js:554"
+   "lectern/js/panes.js:561"
   ]
  },
  "Use the current &document": {
@@ -32574,7 +32574,7 @@
  },
  "Used in This Presentation": {
   "where": [
-   "lectern/js/panes.js:682"
+   "lectern/js/panes.js:689"
   ]
  },
  "User &name:": {
@@ -32590,7 +32590,7 @@
  },
  "User information": {
   "where": [
-   "lectern/js/dialogs.js:902"
+   "lectern/js/dialogs.js:930"
   ]
  },
  "V&ery Loose": {
@@ -32806,7 +32806,7 @@
  },
  "View": {
   "where": [
-   "lectern/js/dialogs.js:901",
+   "lectern/js/dialogs.js:929",
    "lectern/js/ribbon.js:65",
    "ledger/js/dialogs.js:805",
    "quire/js/dialogs3.js:576"
@@ -32824,7 +32824,7 @@
  },
  "View the sample presentation": {
   "where": [
-   "lectern/js/panes.js:537"
+   "lectern/js/panes.js:544"
   ]
  },
  "View ▸ Header and Footer (or double-click the top or bottom of a page). The Header and Footer toolbar inserts page numbers, the number of pages, date and time, switches between header and footer and links or unlinks sections. Insert ▸ Page Numbers adds a numbered frame for you.": {
@@ -33038,7 +33038,7 @@
  },
  "Wheel": {
   "where": [
-   "lectern/js/panes.js:734",
+   "lectern/js/panes.js:741",
    "lectern/js/slideshow.js:20",
    "lectern/js/slideshow.js:27"
   ]
@@ -33096,7 +33096,7 @@
  "White": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:902"
+   "lectern/js/slideshow.js:903"
   ]
  },
  "White Outline": {
@@ -33199,7 +33199,7 @@
  },
  "Wipe": {
   "where": [
-   "lectern/js/panes.js:727",
+   "lectern/js/panes.js:734",
    "lectern/js/slideshow.js:20",
    "lectern/js/slideshow.js:27"
   ]
@@ -33231,8 +33231,8 @@
  },
  "With Previous": {
   "where": [
-   "lectern/js/dialogs.js:1085",
-   "lectern/js/panes.js:788"
+   "lectern/js/dialogs.js:1113",
+   "lectern/js/panes.js:795"
   ]
  },
  "Word 2003 layout positions tables by their cell margins and keeps legacy spacing rules; later versions align tables with the text.": {
@@ -33304,7 +33304,7 @@
  },
  "Words:": {
   "where": [
-   "lectern/js/dialogs.js:946",
+   "lectern/js/dialogs.js:974",
    "quire/js/dialogs3.js:633"
   ]
  },
@@ -33483,15 +33483,15 @@
  },
  "Your Text Here": {
   "where": [
-   "lectern/js/app.js:1611",
-   "lectern/js/dialogs.js:1022",
+   "lectern/js/app.js:1606",
+   "lectern/js/dialogs.js:1050",
    "quire/js/dialogs2.js:542",
    "quire/js/dialogs2.js:554"
   ]
  },
  "Your browser asks where to save the file, or saves it to the Downloads folder.": {
   "where": [
-   "lectern/js/dialogs.js:964",
+   "lectern/js/dialogs.js:992",
    "ledger/js/dialogs.js:672",
    "quire/js/dialogs3.js:715"
   ]
@@ -33596,8 +33596,8 @@
   "where": [
    "common/ui.js:525",
    "lectern/js/app.js:185",
-   "lectern/js/dialogs.js:973",
-   "lectern/js/panes.js:730"
+   "lectern/js/dialogs.js:1001",
+   "lectern/js/panes.js:737"
   ]
  },
  "Zoom In": {
@@ -33649,7 +33649,7 @@
  },
  "Zoom to": {
   "where": [
-   "lectern/js/dialogs.js:972",
+   "lectern/js/dialogs.js:1000",
    "quire/js/dialogs3.js:661"
   ]
  },
@@ -33660,7 +33660,7 @@
  },
  "[No Sound]": {
   "where": [
-   "lectern/js/panes.js:851"
+   "lectern/js/panes.js:858"
   ]
  },
  "[Text]": {
@@ -34142,7 +34142,7 @@
  },
  "{0} ({1} seconds)": {
   "where": [
-   "lectern/js/dialogs.js:1087"
+   "lectern/js/dialogs.js:1115"
   ]
  },
  "{0} ({1} x {2} in)": {
@@ -34224,7 +34224,7 @@
  },
  "{0} could not be opened: {1}": {
   "where": [
-   "lectern/js/dialogs.js:1058"
+   "lectern/js/dialogs.js:1086"
   ]
  },
  "{0} doesn't save “{1}”.": {
@@ -34259,17 +34259,17 @@
  },
  "{0} has finished searching the presentation and made 1 replacement.": {
   "where": [
-   "lectern/js/dialogs.js:742"
+   "lectern/js/dialogs.js:760"
   ]
  },
  "{0} has finished searching the presentation and made {1} replacements.": {
   "where": [
-   "lectern/js/dialogs.js:742"
+   "lectern/js/dialogs.js:760"
   ]
  },
  "{0} has finished searching the presentation. The search item wasn't found.": {
   "where": [
-   "lectern/js/dialogs.js:738"
+   "lectern/js/dialogs.js:756"
   ]
  },
  "{0} hasn't kept any earlier versions of “{1}”. It keeps the version a save replaces, for 30 days.": {
@@ -34344,7 +34344,7 @@
  },
  "{0} objects: {1}": {
   "where": [
-   "lectern/js/app.js:1728"
+   "lectern/js/app.js:1723"
   ]
  },
  "{0} of 24 - Clipboard. Click an item to paste.": {
@@ -34355,7 +34355,7 @@
  },
  "{0} of 24 — Click an item to paste.": {
   "where": [
-   "lectern/js/panes.js:600"
+   "lectern/js/panes.js:607"
   ]
  },
  "{0} of {1}": {
@@ -34393,13 +34393,13 @@
   "where": [
    "lectern/js/app.js:128",
    "lectern/js/app.js:203",
-   "lectern/js/app.js:1584",
+   "lectern/js/app.js:1579",
    "quire/js/app.js:418"
   ]
  },
  "{0} seconds": {
   "where": [
-   "lectern/js/dialogs.js:1086"
+   "lectern/js/dialogs.js:1114"
   ]
  },
  "{0} slides could not be recovered.": {
@@ -34409,7 +34409,7 @@
  },
  "{0} slides: {1}": {
   "where": [
-   "lectern/js/app.js:1738"
+   "lectern/js/app.js:1733"
   ]
  },
  "{0} toolbar": {
@@ -34515,9 +34515,9 @@
  },
  "▶ Play": {
   "where": [
-   "lectern/js/panes.js:752",
-   "lectern/js/panes.js:821",
-   "lectern/js/panes.js:859"
+   "lectern/js/panes.js:759",
+   "lectern/js/panes.js:828",
+   "lectern/js/panes.js:866"
   ]
  },
  "◄ Back": {

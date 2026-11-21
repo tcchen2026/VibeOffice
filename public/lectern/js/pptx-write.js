@@ -199,6 +199,7 @@
       x += pPrXML(p.pp || {}, 'a:pPr', p.lvl || 0, ctx, design, false) || '';
       for (const r of p.rs) {
         const props = L.txt.runProps(r);
+        if (r.fld && r.noteField) { x += ctx.writer.emit(r.noteField, ctx.part); continue; }
         if (r.fld === 'math' && r.keep?.math) { x += L.properties.emit(r.keep.math, ctx) || `<a:r>${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:r>`; continue; }
         if (r.fld) { x += `<a:fld id="${ctx.fieldId ? ctx.fieldId() : K.guid()}" type="${X(r.fld)}">${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:fld>`; continue; }
         const parts = String(r.t).split('\n');
@@ -755,8 +756,43 @@
     void W; void H;
     return HEAD + `<p:notesMaster ${NSDECL}><p:cSld><p:bg><p:bgRef idx="1001"><a:schemeClr val="bg1"/></p:bgRef></p:bg><p:spTree>${GRP}${img}${body}</p:spTree></p:cSld>${CLRMAP}<p:notesStyle>${lvl}</p:notesStyle></p:notesMaster>`;
   }
-  function notesXML(pres, text) {
-    const paras = String(text).split('\n').map((t) => (t ? `<a:p><a:r><a:rPr lang="${X(textLang)}" dirty="0"/><a:t>${X(t)}</a:t></a:r></a:p>` : `<a:p><a:endParaRPr lang="${X(textLang)}" dirty="0"/></a:p>`)).join('');
+  // The original notes page owns its slide image, page furniture and relationships.
+  // Replace only the paragraphs of its body placeholder. Unedited paragraphs retain
+  // their complete XML, including paragraph defaults and fields with their Office IDs.
+  function editedNotesXML(pkg, slide, ctx, design) {
+    const source = slide.keep.notes.part, xml = pkg.text(source), root = K.parse(xml);
+    const shapes = Array.from(root.getElementsByTagNameNS('*', 'sp'));
+    const body = shapes.find(sp => {
+      const ph = sp.getElementsByTagNameNS('*', 'ph')[0];
+      return ph && (ph.getAttribute('type') === 'body' || (ph.getAttribute('type') || 'obj') === 'obj' && ph.getAttribute('idx') === '1');
+    });
+    const tx = body && Array.from(body.children).find(el => el.localName === 'txBody');
+    const paras = tx ? Array.from(tx.children).filter(el => el.localName === 'p') : [];
+    const text = slide.notesTx.ps.map(p => {
+      if (paras[p.noteIndex] && p.noteText === L.txt.paraText(p)) return K.raw(paras[p.noteIndex]);
+      return parasXML([p], ctx, design).replace('<a:p>', '<a:p ' + NSDECL + '>');
+    }).join('');
+    if (!paras.length) {
+      const tree = root.getElementsByTagNameNS('*', 'spTree')[0], parent = tx || body || tree;
+      if (!parent) return null;
+      let extra = text;
+      if (!tx) extra = '<p:txBody ' + NSDECL + '><a:bodyPr/><a:lstStyle/>' + text + '</p:txBody>';
+      if (!body) {
+        const ids = new Set(Array.from(tree.getElementsByTagNameNS('*', 'cNvPr'), e => +e.getAttribute('id')));
+        let id = 1; while (ids.has(id)) id++;
+        extra = '<p:sp ' + NSDECL + '><p:nvSpPr><p:cNvPr id="' + id + '" name="Notes Placeholder"/><p:cNvSpPr/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr/>' + extra + '</p:sp>';
+      }
+      const pos = L.xmlTree.source.get(parent);
+      const ext = Array.from(parent.children).find(e => e.localName === 'extLst');
+      if (xml[pos.openEnd - 2] === '/') return K.patch(xml, [{ start: pos.openEnd - 2, end: pos.openEnd, value: '>' + extra + '</' + parent.nodeName + '>' }]);
+      const at = ext ? L.xmlTree.source.get(ext).start : xml.lastIndexOf('</', pos.end - 1);
+      return K.patch(xml, [{ start: at, end: at, value: extra }]);
+    }
+    const changes = paras.map((p, i) => ({ ...L.xmlTree.source.get(p), value: i ? '' : text }));
+    return K.patch(xml, changes);
+  }
+  function notesXML(pres, text, rich) {
+    const paras = rich || String(text).split('\n').map((t) => (t ? `<a:p><a:r><a:rPr lang="${X(textLang)}" dirty="0"/><a:t>${X(t)}</a:t></a:r></a:p>` : `<a:p><a:endParaRPr lang="${X(textLang)}" dirty="0"/></a:p>`)).join('');
     return HEAD + `<p:notes ${NSDECL}><p:cSld><p:spTree>${GRP}<p:sp><p:nvSpPr><p:cNvPr id="2" name="Slide Image Placeholder 1"/><p:cNvSpPr><a:spLocks noGrp="1" noRot="1" noChangeAspect="1"/></p:cNvSpPr><p:nvPr><p:ph type="sldImg"/></p:nvPr></p:nvSpPr><p:spPr/></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="Notes Placeholder 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>${paras || '<a:p><a:endParaRPr lang="en-US"/></a:p>'}</p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:notes>`;
   }
 
@@ -1053,21 +1089,41 @@
       if (s.hideMaster) attrs.push('showMasterSp="0"');
       const xml = L.properties.finishSlide(s, ctx, HEAD + `<p:sld ${NSDECL}${attrs.length ? ' ' + attrs.join(' ') : ''}><p:cSld>${s.bg ? bgXML(s.bg, ctx, d) : ''}<p:spTree>${GRP.replace('id="1"', 'id="' + rootId + '"')}${tree}</p:spTree>${ctx.controls?.length ? '<p:controls>' + ctx.controls.join('') + '</p:controls>' : ''}${comments.creation}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${transition}${timing}${comments.ext}</p:sld>`);
       if (s.notes && s.notes.trim() || s.keep?.notes) {
-        if (s.keep?.copy && s.keep.notes?.text === s.notes && pres.pkg?.has(s.keep.notes.part)) {
-          const target = pack.part(`ppt/notesSlides/notesSlide${n}.xml`);
-          writer.copyPart(pres.pkg, s.keep.notes.part, target, { [s.keep.part]: part });
-          sRels.add(RT('notesSlide'), K.relative(part, `ppt/notesSlides/notesSlide${n}.xml`));
+        const base = `ppt/notesSlides/notesSlide${n}.xml`, original = s.keep?.notes?.part;
+        const source = original && K.package(s.keep.source), unchanged = s.keep?.notes?.text === s.notes;
+        if (s.keep?.copy && unchanged && source?.has(original)) {
+          writer.copyPart(source, original, pack.part(base), { [s.keep.part]: part });
         } else {
-        if (s.keep?.notes && s.keep.notes.text !== s.notes) writer.loss({ id: 'notes-edit:' + s.id, what: 'Editing these notes replaces their original notes-page formatting.', where: s.keep.notes.part, action: 'conversion' });
-        pack.bind(`ppt/notesSlides/notesSlide${n}.xml`, s.keep?.notes?.part, s.keep?.notes?.text === s.notes ? 'opaque' : 'regenerated');
-        const nRels = pack.rels(`ppt/notesSlides/notesSlide${n}.xml`);
-        nRels.add(RT('notesMaster'), '../notesMasters/notesMaster1.xml');
-        nRels.add(RT('slide'), K.relative(`ppt/notesSlides/notesSlide${n}.xml`, part));
-        add(`ppt/notesSlides/notesSlide${n}.xml`, notesXML(pres, s.notes));
-        add(`ppt/notesSlides/_rels/notesSlide${n}.xml.rels`, nRels.xml());
-        overrides.push([`/ppt/notesSlides/notesSlide${n}.xml`, CT.notes]);
-        sRels.add(RT('notesSlide'), K.relative(part, `ppt/notesSlides/notesSlide${n}.xml`));
+          if (!s.keep?.copy && source === pres.pkg) pack.bind(base, original, unchanged ? 'opaque' : 'regenerated');
+          const rels = pack.rels(base);
+          let notes;
+          let noteSlide = s;
+          if (!unchanged && (!s.notesTx || L.txt.notesText(s.notesTx) !== (s.notes || ''))) {
+            const tx = s.notesTx ? L.clone(s.notesTx) : { ps: [L.txt.para('')] };
+            noteSlide = { ...s, notesTx: tx, notes: L.txt.notesText(tx) };
+            L.txt.editNotes(noteSlide, s.notes || '');
+          }
+          if (source?.has(original) && !unchanged) {
+            // The page XML can refer to a drawing, a link or any other original rId.
+            const bag = writer.rels(rels.owner);
+            for (const rel of source.rels(original)) {
+              const target = rel.external ? rel.target : rel.part === s.keep.part ? part : writer.carry(source, rel.part);
+              if (target) bag.add(rel.type, rel.external ? target : K.relative(rels.owner, target) + (rel.fragment || ''), rel.external, rel.id);
+            }
+            const nc = { ...ctx, part: rels.owner, rels, slideTarget: i => K.relative(base, slideParts[i]), media: mediaSync(rels, base) };
+            notes = editedNotesXML(source, noteSlide, nc, d);
+          }
+          if (!notes) {
+            rels.add(RT('notesMaster'), '../notesMasters/notesMaster1.xml');
+            rels.add(RT('slide'), K.relative(base, part));
+            const nc = { ...ctx, part: rels.owner, rels, media: mediaSync(rels, base), slideTarget: i => K.relative(base, slideParts[i]) };
+            notes = notesXML(pres, s.notes, !unchanged && s.notesTx ? parasXML(noteSlide.notesTx.ps, nc, d) : null);
+          }
+          add(base, notes);
+          add(K.relsPath(base), rels.xml());
+          overrides.push(['/' + base, CT.notes]);
         }
+        sRels.add(RT('notesSlide'), K.relative(part, base));
       }
       add(part, xml);
       add(K.relsPath(part), sRels.xml());

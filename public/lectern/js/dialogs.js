@@ -601,12 +601,35 @@
 
   /* ---------- Find / Replace ---------- */
   const findState = { what: '', with: '', mc: false, ww: false, pos: null };
+  function searchPattern(fs) {
+    const flags = fs.mc ? 'g' : 'gi';
+    const esc = fs.what.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(fs.ww ? `\\b${esc}\\b` : esc, flags);
+  }
+  function paragraphMatches(p, re) {
+    const fields = [];
+    let offset = 0;
+    for (const r of p.rs) {
+      const end = offset + r.t.length;
+      if (r.fld) fields.push([offset, end]);
+      offset = end;
+    }
+    return Array.from(L.txt.paraText(p).matchAll(re)).filter(m =>
+      !fields.some(([a, b]) => m.index < b && m.index + m[0].length > a));
+  }
+  function replaceMatch(tx, pi, start, end, text) {
+    const p = tx.ps[pi];
+    let offset = 0;
+    const first = p.rs.find(r => (offset += r.t.length) > start);
+    if (!first) return;
+    const props = L.txt.runProps(first);
+    L.txt.deleteRange(tx, { p0: pi, o0: start, p1: pi, o1: end });
+    return L.txt.insertAt(tx, { p: pi, o: start }, text, props);
+  }
   function findNext(fs) {
     const slides = L.pres.slides;
     if (!slides.length || !fs.what) return false;
-    const flags = fs.mc ? 'g' : 'gi';
-    const esc = fs.what.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(fs.ww ? `\\b${esc}\\b` : esc, flags);
+    const re = searchPattern(fs);
     const startSlide = E().idx;
     let after = fs.pos;
     if (L.te.active()) { const s = L.te.getSel(); const t = L.te.target(); if (s && t) after = { slide: E().idx, sid: t.sh.id, cell: L.te.state.cell, p: Math.max(s.p0, s.p1), o: Math.max(s.o1, s.o0) }; }
@@ -622,11 +645,8 @@
       for (const t of targets) {
         if (!passed) { if (t.sh.id === after.sid && String(t.cell) === String(after.cell)) passed = 'here'; else continue; }
         for (let pi = 0; pi < t.tx.ps.length; pi++) {
-          const text = L.txt.paraText(t.tx.ps[pi]);
-          re.lastIndex = 0;
-          let m;
-          while ((m = re.exec(text))) {
-            if (passed === 'here' && (pi < after.p || (pi === after.p && m.index < after.o))) { if (!m[0].length) re.lastIndex++; continue; }
+          for (const m of paragraphMatches(t.tx.ps[pi], re)) {
+            if (passed === 'here' && (pi < after.p || (pi === after.p && m.index < after.o))) continue;
             fs.pos = { slide: si, sid: t.sh.id, cell: t.cell, p: pi, o: m.index + m[0].length };
             if (L.app.view !== 'normal') L.app.setView('normal');
             if (E().idx !== si) E().goto(si);
@@ -692,9 +712,7 @@
       if (!t) return;
       select(cur);
       L.hist.push(L.N('Spelling'));
-      const props = L.txt.propsAt(t.tx, { p: cur.pi, o: cur.a + 1 });
-      L.txt.deleteRange(t.tx, { p0: cur.pi, o0: cur.a, p1: cur.pi, o1: cur.b });
-      L.txt.insertAt(t.tx, { p: cur.pi, o: cur.a }, to, props);
+      replaceMatch(t.tx, cur.pi, cur.a, cur.b, to);
       L.te.rerender({ p0: cur.pi, o0: cur.a + to.length, p1: cur.pi, o1: cur.a + to.length });
       E().touched();
       const d = to.length - (cur.b - cur.a);
@@ -745,20 +763,30 @@
     ui.dialog({ title: replace ? 'Replace' : 'Find', body, width: 440, buttons: btns });
     function doReplaceOne() {
       if (L.te.active()) {
-        const sel = L.te.selectedText();
-        const match = findState.mc ? sel === findState.what : sel.toLowerCase() === findState.what.toLowerCase();
-        if (match && sel) { L.hist.push(L.N('Replace')); L.te.insertText(findState.with); }
+        const sel = L.txt.norm(L.te.currentSel()), tx = L.te.target().tx;
+        if (findState.what && sel.p0 === sel.p1 && paragraphMatches(tx.ps[sel.p0], searchPattern(findState)).some(m =>
+          m.index === sel.o0 && m.index + m[0].length === sel.o1)) {
+          L.hist.push(L.N('Replace'));
+          const pos = replaceMatch(tx, sel.p0, sel.o0, sel.o1, findState.with);
+          L.te.rerender({ p0: pos.p, o0: pos.o, p1: pos.p, o1: pos.o });
+          E().touched();
+        }
       }
       if (!findNext(findState)) notFound();
     }
     function replaceAll() {
       if (!findState.what) return 0;
       if (L.te.active()) L.te.end();
-      const esc = findState.what.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const re = new RegExp(findState.ww ? `\\b${esc}\\b` : esc, findState.mc ? 'g' : 'gi');
+      const re = searchPattern(findState);
       let n = 0;
       L.hist.push('Replace All');
-      const fix = (tx) => { for (const p of tx.ps) for (const r of p.rs) { if (r.fld) continue; r.t = r.t.replace(re, () => { n++; return findState.with; }); } };
+      const fix = tx => {
+        for (let pi = tx.ps.length - 1; pi >= 0; pi--) {
+          for (const m of paragraphMatches(tx.ps[pi], re).reverse()) {
+            replaceMatch(tx, pi, m.index, m.index + m[0].length, findState.with); n++;
+          }
+        }
+      };
       for (const s of L.pres.slides) M.walk(s.shapes, (sh) => { if (sh.tx) fix(sh.tx); if (sh.tbl) sh.tbl.rows.forEach((r) => r.cells.forEach((c) => fix(c.tx))); if (sh.wa) sh.wa.text = sh.wa.text.replace(re, () => { n++; return findState.with; }); });
       if (!n) L.hist.undo.pop();
       E().render(); L.bus.emit('slides-changed');

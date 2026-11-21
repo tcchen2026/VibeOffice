@@ -664,6 +664,49 @@
   M.newImage = function (slide, media, x, y, w, h) {
     return { id: L.uid('s'), type: 'image', name: 'Picture ' + (slide.shapes.length + 1), geom: 'rect', x, y, w, h, rot: 0, media, crop: { l: 0, t: 0, r: 0, b: 0 }, line: { t: 'none' }, lockAspect: true, img: {} };
   };
+  /** Insert or delete table rows/columns. Project each intersected merged rectangle onto
+   * the new grid, keeping the cell which owns its contents and formatting. */
+  M.editTableAxis = function (table, axis, at, count, template) {
+    const rows = table.rows, cols = table.cols, vertical = axis === 'row';
+    const spans = [];
+    rows.forEach((row, r) => row.cells.forEach((cell, c) => {
+      if (cell.hm || cell.vm || !(cell.gs > 1 || cell.rs > 1)) return;
+      const first = vertical ? r : c, size = (vertical ? cell.rs : cell.gs) || 1, end = first + size;
+      if (count > 0 ? at <= first || at >= end : at >= end || at - count <= first) return;
+      const left = Math.max(0, Math.min(at, end) - first), right = Math.max(0, end - Math.max(first, at - count));
+      const length = count > 0 ? size + count : left + right;
+      if (!length) return;
+      const start = Math.min(first, at);
+      spans.push({ owner: cell, r: vertical ? start : r, c: vertical ? c : start,
+        h: vertical ? length : cell.rs || 1, w: vertical ? cell.gs || 1 : length });
+    }));
+    function blank(cell) {
+      const n = L.clone(cell), p = cell.tx.ps[0];
+      n.tx.ps = [T.para('', p?.pp, p?.rs[0] ? T.runProps(p.rs[0]) : p?.end || { sz: 18 })];
+      delete n.gs; delete n.rs; delete n.hm; delete n.vm;
+      return n;
+    }
+    if (vertical) {
+      const src = rows[template];
+      rows.splice(at, Math.max(0, -count), ...Array.from({ length: Math.max(0, count) }, () => ({ h: src.h, cells: src.cells.map(blank) })));
+    } else {
+      cols.splice(at, Math.max(0, -count), ...Array(Math.max(0, count)).fill(cols[template]));
+      for (const row of rows) {
+        const src = row.cells[template];
+        row.cells.splice(at, Math.max(0, -count), ...Array.from({ length: Math.max(0, count) }, () => blank(src)));
+      }
+    }
+    for (const { owner, r, c, h, w } of spans) {
+      rows[r].cells[c] = owner;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const cell = rows[r + y]?.cells[c + x];
+        if (!cell) continue;
+        delete cell.gs; delete cell.rs; delete cell.hm; delete cell.vm;
+        if (x) cell.hm = true; else if (w > 1) cell.gs = w;
+        if (y) cell.vm = true; else if (h > 1) cell.rs = h;
+      }
+    }
+  };
   M.newTable = function (pres, slide, rows, cols, x, y, w) {
     const d = M.design(pres, slide);
     const cw = w / cols, rh = 0;

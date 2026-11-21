@@ -355,6 +355,10 @@
     if (S.active) return;
     const pres = L.pres;
     if (!pres.slides.length) { L.ui.msg('There are no slides to show.', { icon: 'info' }); return; }
+    const order = opts.preview != null ? [opts.preview] : slideOrder();
+    const startIdx = opts.from != null ? Math.max(0, order.indexOf(opts.from)) :
+      opts.preview != null ? 0 : order.findIndex(i => !pres.slides[i].hidden);
+    if (startIdx < 0 || !order.length) return;
     if (L.te && L.te.active()) L.te.end();
     S.active = true;
     L.ui.closeMenus();
@@ -370,14 +374,11 @@
     document.body.appendChild(root);
     const sh = pres.show || {};
     st = {
-      order: opts.preview != null ? [opts.preview] : slideOrder(),
+      order,
       pos: 0, step: 0, steps: [], running: null, timer: 0, ink: {}, pen: null, penColor: sh.penColor || '#FF0000', history: [],
       noAnim: !!sh.noAnim, loop: !!sh.loop || !!sh.kiosk, kiosk: !!sh.kiosk, useTimings: sh.useTimings !== false, rehearse: !!opts.rehearse, preview: opts.preview != null,
       slideStart: performance.now(), times: {}, paused: false, ended: false, gotoBuf: '', blank: null, idle: 0,
     };
-    let startIdx = opts.from != null ? st.order.indexOf(opts.from) : 0;
-    if (startIdx < 0) startIdx = 0;
-    if (opts.from == null) while (startIdx < st.order.length - 1 && pres.slides[st.order[startIdx]].hidden) startIdx++;
     if (st.rehearse) buildRehearse();
     layout();
     window.addEventListener('resize', layout);

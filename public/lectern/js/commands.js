@@ -139,10 +139,10 @@
   C('optionsDlg', { label: '&Options...', run: () => L.dlg.options() });
 
   /* ---------- Slide Show ---------- */
-  C('showFromStart', { label: '&View Show', icon: 'slideshowStart', key: 'F5', tip: 'Slide Show (from start)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: 0 }) });
+  C('showFromStart', { label: '&View Show', icon: 'slideshowStart', key: 'F5', tip: 'Slide Show (from start)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start() });
   C('showFromCurrent', { label: 'Slide Show from current slide', icon: 'slideshowCurrent', key: 'Shift+F5', tip: 'Slide Show from current slide (Shift+F5)', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: A().view === 'master' ? 0 : E().idx }) });
   C('setupShow', { label: '&Set Up Show...', icon: 'setupShow', run: () => L.dlg.setupShow() });
-  C('rehearse', { label: '&Rehearse Timings', icon: 'rehearse', tip: 'Rehearse Timings', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ from: 0, rehearse: true }) });
+  C('rehearse', { label: '&Rehearse Timings', icon: 'rehearse', tip: 'Rehearse Timings', enabled: () => L.pres.slides.length > 0, run: () => L.show.start({ rehearse: true }) });
   C('actionSettings', { label: 'Act&ion Settings...', icon: 'actionSettings', enabled: hasSel, run: () => L.dlg.actionSettings() });
   C('animSchemes', { label: 'Animatio&n Schemes...', run: () => L.panes.task.show('animSchemes') });
   C('customAnim', { label: 'Custo&m Animation...', icon: 'animation', run: () => L.panes.task.show('customAnim') });

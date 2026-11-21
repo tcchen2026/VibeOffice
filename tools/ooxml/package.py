@@ -142,6 +142,34 @@ def short_calls(formula):
         i += 1
     return out
 
+def table_merge_faults(table):
+    """Check DrawingML spans against the grid and the owning cell of each continuation."""
+    ns = table.tag[:table.tag.index('}') + 1]
+    grid = table.find(ns + 'tblGrid')
+    width = len(grid.findall(ns + 'gridCol')) if grid is not None else 0
+    rows = [row.findall(ns + 'tc') for row in table.findall(ns + 'tr')]
+    owners = {}
+    for r, row in enumerate(rows):
+        for c, cell in enumerate(row):
+            hm = cell.get('hMerge') in ('1', 'true')
+            vm = cell.get('vMerge') in ('1', 'true')
+            try:
+                h, w = int(cell.get('rowSpan', 1)), int(cell.get('gridSpan', 1))
+            except ValueError:
+                h = w = 0
+            if h < 1 or w < 1 or c + w > width or r + h > len(rows):
+                yield 'table-merge-span', f'Cell ({r+1},{c+1}) spans {h} rows and {w} columns in a {len(rows)} by {width} grid.'
+                continue
+            if hm or vm:
+                owner = owners.get((r, c))
+                if not owner or (hm and owner[1] >= c) or (vm and owner[0] >= r):
+                    yield 'table-merge-owner', f'Merge continuation at ({r+1},{c+1}) has no owning cell.'
+            elif h > 1 or w > 1:
+                for y in range(r, r + h):
+                    for x in range(c, min(len(rows[y]), c + w)):
+                        owners[y, x] = r, c
+
+
 def split(tag):
     if tag.startswith('{'):
         return tuple(tag[1:].split('}', 1))
@@ -332,6 +360,9 @@ class Package:
             for el, path, branches in walk(root):
                 ns, tag = split(el.tag)
                 parent = parents.get(el)
+                if ns in A and tag == 'tbl':
+                    for code, detail in table_merge_faults(el):
+                        self.issue(code, part, detail, path)
                 # PowerPoint 2016 refuses a table style list without its required
                 # default, even if every table names an embedded style explicitly.
                 if ns in A and tag == 'tblStyleLst' and 'def' not in el.attrib:
