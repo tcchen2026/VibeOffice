@@ -263,21 +263,24 @@ test('With the Slides pane holding the keyboard, Format ▸ Background… closed
   u.clean();
 }));
 
-test('Editing the speaker notes, Print (Ctrl+P) closed with Esc gives the keyboard back to the notes, the caret where it was', () => lectern(async (u) => {
-  await setup(u, '');
-  await u.click(await u.el('.notes-in'));
-  await u.key('End');
-  await u.type(' more');
-  const notes = await u.evaluate('L.ed.slide().notes');
-  assert.ok(notes.endsWith(' more'), 'setup: typed into the notes');
-  await u.key('p', { ctrl: true }); await pause(300);
-  assert.equal(await u.evaluate('L.ui.dialogOpen()'), true, 'setup: the Print dialog is open');
-  await u.esc(); await pause(200);
-  assert.equal(await u.focused(), 'notes-in', 'the notes have the keyboard');
-  await u.type('X');
-  assert.equal(await u.evaluate('L.ed.slide().notes'), notes + 'X', 'typing goes on where it was');
-  u.clean();
-}));
+for (const [view, editor] of [['normal', 'notes-in'], ['notes', 'np-notes']]) {
+  test(`Editing the speaker notes, Print closes with Esc and restores the caret in the ${view} view`, () => lectern(async (u) => {
+    await setup(u, '');
+    if (view === 'notes') await u.evaluate("L.app.setView('notes')");
+    await u.click(await u.el('.' + editor));
+    await u.key('End');
+    await u.type(' more');
+    const notes = await u.evaluate('L.ed.slide().notes');
+    assert.ok(notes.endsWith(' more'), 'setup: typed into the notes');
+    await u.key('p', { ctrl: true }); await pause(300);
+    assert.equal(await u.evaluate('L.ui.dialogOpen()'), true, 'setup: the Print dialog is open');
+    await u.esc(); await pause(200);
+    assert.equal(await u.focused(), editor, 'the notes have the keyboard');
+    await u.type('X');
+    assert.equal(await u.evaluate('L.ed.slide().notes'), notes + 'X', 'typing goes on where it was');
+    u.clean();
+  }));
+}
 
 /* ---------- Phase 4: one owner per piece of state ---------- */
 

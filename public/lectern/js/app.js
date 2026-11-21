@@ -1886,7 +1886,8 @@ addEventListener('resize',fit);fit();show(0);`;
     const k = keyName(e);
     const tgt = e.target;
     const inInput = tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT');
-    if (inInput) { if (k === 'Escape') { tgt.blur(); E.refocus(); } return; }
+    const inNotes = tgt?.matches?.('.notes-in, .np-notes');
+    if (inInput && !inNotes) { if (k === 'Escape') { tgt.blur(); E.refocus(); } return; }
     if (L.panes.preview.el.classList.contains('on') && k === 'Escape') { A.setView(A.prevView || 'normal'); return; }
     const cmd = SHORTCUTS[k];
     /* text editing */
@@ -1896,7 +1897,7 @@ addEventListener('resize',fit);fit();show(0);`;
       if (k === 'Ctrl+A') return;
       return;
     }
-    const otherEditable = tgt && tgt.isContentEditable;
+    const otherEditable = inNotes || (tgt && tgt.isContentEditable);
     if (otherEditable) {
       if (cmd && ['save', 'open', 'new', 'print', 'undo', 'redo', 'showFromStart', 'showFromCurrent', 'help', 'newSlide', 'taskPane', 'saveAs'].includes(cmd) && !(L.panes.left.tab === 'outline' && (cmd === 'undo' || cmd === 'redo'))) { e.preventDefault(); ui.exec(cmd); }
       return;
