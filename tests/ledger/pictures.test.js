@@ -1,11 +1,11 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 require('../../public/ledger/js/layout.js');
 require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops, output = process.env.PICTURE_RESULTS, results = [];
-const file = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'excel', 'openxml-sdk__97ec4a7d7ff8__Photo Formats - CGM-O12-XL-Pictures.xlsx');
+const file = path.join(process.env.VO_CORPORA || '/work/corpora', 'excel', 'openxml-sdk__97ec4a7d7ff8__Photo Formats - CGM-O12-XL-Pictures.xlsx');
 const elements = el => [el, ...el.getElementsByTagName('*')];
 const pictures = pkg => pkg.names.filter(n => /^xl\/drawings\/drawing\d+\.xml$/.test(n)).sort().flatMap(n => elements(pkg.xml(n)).filter(e => e.localName === 'pic'));
 const child = (el, tag) => el.children.find(e => e.localName === tag);

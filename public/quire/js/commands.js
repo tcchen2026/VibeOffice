@@ -222,7 +222,7 @@
   C('new', { label: '&New...', menuLabel: '&New...', icon: 'new', key: 'Ctrl+N', tip: 'New Blank Document', run: (arg, ev) => { if (ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) A.newDocument(); else if (window.VO) VO.newDialog('quire', (id) => (id ? L.templates.create(id) : A.newDocument())); else pane('new')(); } });
   C('newBlank', { label: '&Blank document', icon: 'new', run: () => A.newDocument() });
   C('open', { label: '&Open...', icon: 'open', key: 'Ctrl+O', run: () => A.openDialog() });
-  C('close', { label: '&Close', icon: 'close', run: () => A.closeDocument() });
+  C('close', { label: '&Close', run: () => A.closeDocument() });
   C('save', { label: '&Save', icon: 'save', key: 'Ctrl+S', enabled: () => !!D.doc, run: () => A.save() });
   C('saveAs', { label: 'Save &As...', key: 'F12', run: () => A.saveAs() });
   C('saveWeb', { label: 'Save as Web Pa&ge...', icon: 'webPage', run: () => A.exportAs('html') });
@@ -231,7 +231,7 @@
   C('pageSetup', { label: 'Page Set&up...', icon: 'pageSetup', run: dlg('pageSetup') });
   C('printPreview', { label: 'Print Pre&view', icon: 'preview', key: 'Ctrl+F2', checked: () => A.view === 'preview', run: () => A.setView(A.view === 'preview' ? A.prevView || 'print' : 'preview') });
   C('print', { label: '&Print...', icon: 'print', key: 'Ctrl+P', tip: 'Print', run: (arg, ev) => { if (ev && ev.currentTarget && ev.currentTarget.closest && ev.currentTarget.closest('.toolbar')) A.printPDF(); else dlg('print')(); } });
-  C('exportPDF', { label: '&PDF Document...', icon: 'print', run: () => A.printPDF() });
+  C('exportPDF', { label: 'Export to &PDF...', icon: 'print', run: () => A.printPDF() });
   C('sendMail', { label: '&Mail Recipient (as Attachment)...', icon: 'mail', tip: 'E-mail', run: async () => { await A.exportAs('docx'); A.status('Saved a copy to attach to your e-mail message.', 6000); } });
   C('permission', { label: '&Permission', icon: 'permission', tip: 'Permission (Unrestricted Access)', run: pane('protect') });
   C('properties', { label: 'Propert&ies', icon: 'properties', run: dlg('properties') });
@@ -240,9 +240,9 @@
   C('exitApp', { label: 'E&xit', run: async () => { for (;;) { const last = A.docs.length <= 1; if (!(await A.closeDocument())) return; if (last) break; } if (window.VO) VO.exit(); } });
 
   /* ================= Edit ================= */
-  C('undo', { get label() { return D.canUndo() ? L.t('&Undo {0}', L.t(D.undoLabel())) : "&Can't Undo"; }, tip: 'Undo', icon: 'undo', key: 'Ctrl+Z', enabled: () => D.canUndo() && !viewing(), run: () => { D.undo(); } });
-  C('redo', { get label() { return D.canRedo() ? L.t('&Redo {0}', L.t(D.redoLabel())) : "&Repeat"; }, tip: 'Redo', icon: 'redo', key: 'Ctrl+Y', enabled: () => D.canRedo() && !viewing(), run: () => { D.redo(); } });
-  C('cut', { label: 'Cu&t', icon: 'cut', key: 'Ctrl+X', enabled: () => canEdit() && (hasSel() || objSel()), run: () => { E.focus(); if (!clip()) { const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } } E.edit(L.N('Cut'), () => E.deleteSelection()); } });
+  C('undo', { get label() { return D.canUndo() ? L.t('&Undo {0}', L.t(D.undoLabel())) : "Can't &Undo"; }, tip: 'Undo', icon: 'undo', key: 'Ctrl+Z', enabled: () => D.canUndo() && !viewing(), run: () => { D.undo(); } });
+  C('redo', { get label() { return D.canRedo() ? L.t('&Redo {0}', L.t(D.redoLabel())) : "Can't &Repeat"; }, tip: 'Redo', icon: 'redo', key: 'Ctrl+Y', enabled: () => D.canRedo() && !viewing(), run: () => { D.redo(); } });
+  C('cut', { label: 'Cu&t', icon: 'cut', key: 'Ctrl+X', enabled: () => canEdit() && (hasSel() || objSel()), run: () => { E.focus(); if (!clip()) { const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } } E.edit(L.N('Cut'), () => E.deleteSelection({ wholeTable: true })); } });
   C('copy', { label: '&Copy', icon: 'copy', key: 'Ctrl+C', enabled: () => hasSel() || objSel(), run: () => { E.focus(); const d = E.copyData(); if (d) { E.clip = d; L.bus.emit('clip', d); } clip(); } });
   C('officeClipboard', { label: 'Office Clip&board...', icon: 'clipboard', run: pane('clipboard') });
   C('paste', { label: '&Paste', icon: 'paste', key: 'Ctrl+V', enabled: () => canEdit(), run: () => pasteCmd() });
@@ -274,6 +274,10 @@
   C('markup', { label: '&Markup', checked: () => LY.opts.markup !== 'final' && LY.opts.markup !== 'original' && LY.opts.showComments, run: () => { const on = !(LY.opts.markup !== 'final' && LY.opts.markup !== 'original' && LY.opts.showComments); LY.opts.markup = on ? 'markup' : 'final'; LY.opts.showComments = on; LY.render(); E.restoreDom(true); } });
   C('fullScreen', { label: 'F&ull Screen', icon: 'fullScreen', checked: () => L.$('#app').classList.contains('fullscreen'), run: () => A.toggleFullScreen() });
   C('zoomDlg', { label: '&Zoom...', icon: 'zoom', run: dlg('zoom') });
+  C('zoom100', { label: '&100%', icon: 'zoom100', tip: 'Zoom the document to 100%', run: () => A.zoomTo('100%', { focus: false }) });
+  C('zoomOnePage', { label: '&One Page', icon: 'onePage', tip: 'Zoom so a whole page fits in the window', run: () => A.zoomTo('Whole Page', { focus: false }) });
+  C('zoomMultiPage', { label: '&Multiple Pages', icon: 'multiPage', tip: 'Zoom so two pages fit in the window', run: () => A.zoomTo('Two Pages', { focus: false }) });
+  C('zoomPageWidth', { label: 'Page &Width', icon: 'zoomPageWidth', tip: 'Zoom so the page is as wide as the window', run: () => A.zoomTo('Page Width', { focus: false }) });
   C('showMarks', { label: 'Show/Hide ¶', icon: 'showMarks', key: 'Ctrl+*', tip: 'Show/Hide ¶', checked: () => !!LY.opts.showMarks, run: () => { LY.opts.showMarks = !LY.opts.showMarks; LY.root.classList.toggle('marks', LY.opts.showMarks); LY.render(); E.restoreDom(true); } });
   C('gridlines', { label: 'Show &Gridlines', icon: 'grid', checked: () => LY.root && LY.root.classList.contains('gridlines'), run: () => { LY.root.classList.toggle('gridlines'); A.opts.gridlines = LY.root.classList.contains('gridlines'); A.saveOpts(); } });
 
@@ -507,12 +511,15 @@
   C('sendBehindText', order('Send Behind T&ext', (it) => { it.float.behind = true; it.float.wrap = 'behind'; }));
   C('groupObj', { label: '&Group', icon: 'group', enabled: () => false, run: () => {} });
   C('ungroupObj', { label: '&Ungroup', icon: 'ungroup', enabled: () => canEdit() && selectedObjIs((it) => it.t === 'group'), run: () => A.ungroup() });
+  C('regroupObj', { label: 'Reg&roup', enabled: () => canEdit() && !!A.regroupable(), run: () => A.regroup() });
   for (const [k, dir, lbl] of [['nudgeUp', 'ArrowUp', '&Up'], ['nudgeDown', 'ArrowDown', '&Down'], ['nudgeLeft', 'ArrowLeft', '&Left'], ['nudgeRight', 'ArrowRight', '&Right']]) C(k, { label: lbl, enabled: () => canEdit() && floatSel(), run: () => L.drawing.nudge(dir, 1) });
   C('rotateLeft', { label: 'Rotate &Left 90°', icon: 'rotateL', enabled: () => canEdit() && objSel(), run: () => L.drawing.modifySelected(L.N('Rotate'), (it) => { it.rot = (((it.rot || 0) - 90) % 360 + 360) % 360 || undefined; }) });
   C('rotateRight', { label: 'Rotate &Right 90°', icon: 'rotateR', enabled: () => canEdit() && objSel(), run: () => L.drawing.modifySelected(L.N('Rotate'), (it) => { it.rot = ((it.rot || 0) + 90) % 360 || undefined; }) });
   C('flipH', { label: 'Flip &Horizontal', icon: 'flipH', enabled: () => canEdit() && selectedObjIs((it) => it.t === 'shape' || it.t === 'img'), run: () => L.drawing.modifySelected(L.N('Flip'), (it) => { it.flipH = !it.flipH || undefined; }) });
   C('flipV', { label: 'Flip &Vertical', icon: 'flipV', enabled: () => canEdit() && selectedObjIs((it) => it.t === 'shape' || it.t === 'img'), run: () => L.drawing.modifySelected(L.N('Flip'), (it) => { it.flipV = !it.flipV || undefined; }) });
   C('setDefaults', { label: 'Set AutoShape &Defaults', enabled: () => selectedObjIs((it) => it.t === 'shape'), run: () => { const it = L.drawing.selectedItem(); A.shapeDefaults = { fill: L.clone(it.fill), line: L.clone(it.line), shadow: it.shadow ? L.clone(it.shadow) : undefined }; A.status('New AutoShapes will use these settings.'); } });
+  /* Word's Add Text / Edit Text: the caret into the selected shape's text */
+  C('shapeText', { get label() { const it = L.drawing && L.drawing.selectedItem(); return it && it.tb ? 'Edit Te&xt' : 'Add Te&xt'; }, enabled: () => canEdit() && selectedObjIs((it) => L.drawing.takesText(it)), run: () => L.drawing.editText() });
   C('wordartEdit', { label: 'Edit Te&xt...', enabled: () => canEdit() && selectedObjIs((it) => !!it.wordart), run: () => L.dlg.wordart(true) });
   C('wordartGallery', { label: 'LettersArt Gallery', icon: 'waGallery', enabled: () => canEdit() && selectedObjIs((it) => !!it.wordart), run: () => L.dlg.wordart('gallery') });
 
@@ -541,8 +548,8 @@
   C('hfShowText', { label: 'Show/Hide Document Text', icon: 'showDocText', enabled: hfOnly, checked: () => LY.root && LY.root.classList.contains('hidebody'), run: () => LY.root.classList.toggle('hidebody') });
   C('hfLinkPrev', { label: 'Link to Previous', icon: 'linkPrev', enabled: () => hfOnly() && A.hfSectionIndex() > 0, checked: () => hfOnly() && A.hfLinked(), run: () => A.hfToggleLink() });
   C('hfSwitch', { label: 'Switch Between Header and Footer', icon: 'hfSwitch', enabled: hfOnly, run: () => A.hfSwitch() });
-  C('hfPrev', { label: 'Show Previous', icon: 'showPrev', enabled: hfOnly, run: () => A.hfStep(-1) });
-  C('hfNext', { label: 'Show Next', icon: 'showNext', enabled: hfOnly, run: () => A.hfStep(1) });
+  C('hfPrev', { label: 'Show Previous', icon: 'showPrevHF', enabled: hfOnly, run: () => A.hfStep(-1) });
+  C('hfNext', { label: 'Show Next', icon: 'showNextHF', enabled: hfOnly, run: () => A.hfStep(1) });
   C('hfClose', { label: 'Close Header and Footer', enabled: hfOnly, run: () => A.closeHeaderFooter() });
 
   /* ================= Mail Merge toolbar ================= */
@@ -556,8 +563,8 @@
   C('mmInsertField', { label: 'Insert Merge Fields', icon: 'mmField', enabled: () => canEdit() && hasData(), run: mm('fieldDialog') });
   C('mmViewData', { label: 'View Merged Data', icon: 'mmView', enabled: hasData, checked: () => !!(L.mailmerge && L.mailmerge.preview), run: mm('togglePreview') });
   C('mmFirst', { label: 'First Record', icon: 'first', enabled: hasData, run: mm('go', 0) });
-  C('mmPrev', { label: 'Previous Record', icon: 'showPrev', enabled: hasData, run: mm('step', -1) });
-  C('mmNext', { label: 'Next Record', icon: 'showNext', enabled: hasData, run: mm('step', 1) });
+  C('mmPrev', { label: 'Previous Record', icon: 'prevRecord', enabled: hasData, run: mm('step', -1) });
+  C('mmNext', { label: 'Next Record', icon: 'nextRecord', enabled: hasData, run: mm('step', 1) });
   C('mmLast', { label: 'Last Record', icon: 'last', enabled: hasData, run: mm('go', -1) });
   C('mmMergeNew', { label: 'Merge to New Document', icon: 'mmMergeNew', enabled: hasData, run: mm('mergeToNew') });
   C('mmMergePrint', { label: 'Merge to Printer', icon: 'mmMergePrint', enabled: hasData, run: mm('mergeToPDF') });
@@ -646,9 +653,43 @@
         return c;
       });
       os.p.runs.splice(i, 1, ...kids);
+      A.lastUngroup = { doc: D.doc, p: os.p, group: it, kids };
       return D.pos(os.p, os.o);
     });
     E.clearObjSel();
+  };
+  /** the shapes ungrouped last, while one of them is selected and all are still there, placed as Ungroup left them
+      (anchored in the same paragraph, positioned from the group's own reference) */
+  A.regroupable = function () {
+    const g = A.lastUngroup, it = L.drawing && L.drawing.selectedItem();
+    if (!g || g.doc !== D.doc || !it || !g.kids.includes(it)) return null;
+    const same = (a, b) => !!a && !!b && a.rel === b.rel;
+    return g.kids.every((k) => g.p.runs.includes(k) && k.float && same(k.float.posH, g.group.float && g.group.float.posH) && same(k.float.posV, g.group.float && g.group.float.posV)) ? g : null;
+  };
+  /** Word's Regroup: the shapes ungrouped last back in one group, around where they are now */
+  A.regroup = function () {
+    const g = A.regroupable();
+    if (!g) return;
+    let o = 0;
+    E.edit(L.N('Regroup'), () => {
+      D.touch(g.p);
+      const x0 = Math.min(...g.kids.map((k) => k.float.posH.off)), y0 = Math.min(...g.kids.map((k) => k.float.posV.off));
+      const x1 = Math.max(...g.kids.map((k) => k.float.posH.off + k.w)), y1 = Math.max(...g.kids.map((k) => k.float.posV.off + k.h));
+      const grp = Object.assign(L.clone(Object.assign({}, g.group, { kids: [] })), { w: L.round(x1 - x0, 2), h: L.round(y1 - y0, 2) });
+      grp.float.posH = Object.assign({}, grp.float.posH, { off: L.round(x0, 2) });
+      grp.float.posV = Object.assign({}, grp.float.posV, { off: L.round(y0, 2) });
+      grp.kids = g.kids.map((k) => { const c = L.clone(k); delete c.float; c.x = L.round(k.float.posH.off - x0, 2); c.y = L.round(k.float.posV.off - y0, 2); return c; });
+      const i = Math.min(...g.kids.map((k) => g.p.runs.indexOf(k)));
+      g.p.runs = g.p.runs.filter((r) => !g.kids.includes(r));
+      g.p.runs.splice(i, 0, grp);
+      for (let j = 0; j < i; j++) o += D.ilen(g.p.runs[j]);
+      return D.pos(g.p, o);
+    });
+    A.lastUngroup = null;
+    setTimeout(() => {
+      const wrap = Array.from(LY.root.querySelectorAll('.flt')).find((x) => +x.dataset.pid === g.p.id && +x.dataset.o === o);
+      if (wrap) L.drawing.select(wrap, { p: g.p, o });
+    }, 30);
   };
   A.insertFileDialog = async function () {
     const files = await L.pickFiles('.docx,.docm,.dotx,.txt,.htm,.html');
@@ -712,7 +753,7 @@
       if (!pane2) {
         pane2 = L.h('div', { id: 'split2', class: 'split2', 'aria-label': 'Second pane' });
         const bar = L.h('div', { class: 'splitter h', id: 'split2-bar', role: 'separator' });
-        L.$('#center').insertBefore(bar, L.$('#viewbar'));
+        L.$('#center').insertBefore(bar, L.$('#revpane'));
         L.$('#center').insertBefore(pane2, bar);
         bar.addEventListener('pointerdown', (e) => {
           if (e.button !== 0) return;

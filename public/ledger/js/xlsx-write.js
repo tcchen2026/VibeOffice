@@ -526,6 +526,12 @@
       '<x14:sparklines>' + s.items.map((i) => `<x14:sparkline><xm:f>${esc(i.f)}</xm:f><xm:sqref>${esc(i.sqref)}</xm:sqref></x14:sparkline>`).join('') + '</x14:sparklines></x14:sparklineGroup>', state, owner)).join('');
     return `<extLst>${cfx}<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"><x14:sparklineGroups xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">${g}</x14:sparklineGroups></ext></extLst>`;
   }
+  /** a worksheet's or chart sheet's headers and footers (print settings p) */
+  function headerFooterXml(p) {
+    const hf = [['oddHeader', p.header], ['oddFooter', p.footer], ['evenHeader', p.diffOddEven && p.evenHeader], ['evenFooter', p.diffOddEven && p.evenFooter], ['firstHeader', p.diffFirst && p.firstHeader], ['firstFooter', p.diffFirst && p.firstFooter]].filter(([, v]) => v);
+    if (hf.length || p.diffFirst || p.diffOddEven || p.hfScale === false || p.hfAlign === false) return `<headerFooter${attrs({ differentOddEven: p.diffOddEven ? '1' : undefined, differentFirst: p.diffFirst ? '1' : undefined, scaleWithDoc: p.hfScale === false ? '0' : undefined, alignWithMargins: p.hfAlign === false ? '0' : undefined })}>` + hf.map(([k, v]) => `<${k}>${escX(v)}</${k}>`).join('') + '</headerFooter>';
+    return '';
+  }
   function printXml(sh, writer, owner) {
     const p = sh.print;
     let s = '';
@@ -533,8 +539,7 @@
     const m = p.margins || {};
     s += `<pageMargins left="${m.l != null ? m.l : 0.75}" right="${m.r != null ? m.r : 0.75}" top="${m.t != null ? m.t : 1}" bottom="${m.b != null ? m.b : 1}" header="${m.header != null ? m.header : 0.5}" footer="${m.footer != null ? m.footer : 0.5}"/>`;
     s += L.preserve.pageSetupXML(sh, writer, owner);
-    const hf = [['oddHeader', p.header], ['oddFooter', p.footer], ['evenHeader', p.diffOddEven && p.evenHeader], ['evenFooter', p.diffOddEven && p.evenFooter], ['firstHeader', p.diffFirst && p.firstHeader], ['firstFooter', p.diffFirst && p.firstFooter]].filter(([, v]) => v);
-    if (hf.length || p.diffFirst || p.diffOddEven) s += `<headerFooter${attrs({ differentOddEven: p.diffOddEven ? '1' : undefined, differentFirst: p.diffFirst ? '1' : undefined, scaleWithDoc: p.hfScale === false ? '0' : undefined, alignWithMargins: p.hfAlign === false ? '0' : undefined })}>` + hf.map(([k, v]) => `<${k}>${escX(v)}</${k}>`).join('') + '</headerFooter>';
+    s += headerFooterXml(p);
     const rb = (p.rowBreaks || []).filter((b) => b > 0), cb = (p.colBreaks || []).filter((b) => b > 0);
     if (rb.length) s += `<rowBreaks count="${rb.length}" manualBreakCount="${rb.length}">` + rb.map((b) => `<brk id="${b}" max="16383" man="1"/>`).join('') + '</rowBreaks>';
     if (cb.length) s += `<colBreaks count="${cb.length}" manualBreakCount="${cb.length}">` + cb.map((b) => `<brk id="${b}" max="1048575" man="1"/>`).join('') + '</colBreaks>';
@@ -646,15 +651,48 @@
     return { w: Math.max(1, x2 - x1), h: Math.max(1, y2 - y1) };
   }
   function shapeXml(d, id, sz) {
-    const fill = d.fill === null || d.fill === 'none' ? '<a:noFill/>' : `<a:solidFill><a:srgbClr val="${String(d.fill || '#FFFFFF').replace('#', '').toUpperCase()}"/></a:solidFill>`;
-    const ln = d.line === null || d.line === 'none' ? '<a:ln><a:noFill/></a:ln>' : `<a:ln w="${Math.round((d.lineW || 0.75) * EMU)}"><a:solidFill><a:srgbClr val="${String(d.line || '#000000').replace('#', '').toUpperCase()}"/></a:solidFill></a:ln>`;
+    /* the file's own spPr: its fill and line while the user set none (theme colours, gradients, a line's shade), and
+       its effects (Ledger edits none) */
+    const orig = d.xml && d.tag !== 'grpSp' ? (d.xml.match(/<xdr:spPr\b[^>]*>([\s\S]*?)<\/xdr:spPr>/) || [])[1] : null;
+    const pick = (re) => (orig && (orig.match(re) || [])[0]) || '';
+    const oXfrm = pick(/<a:xfrm\b[^>]*\/>|<a:xfrm\b[\s\S]*?<\/a:xfrm>/), oGeom = pick(/<a:(?:prstGeom|custGeom)\b[\s\S]*?<\/a:(?:prstGeom|custGeom)>|<a:prstGeom\b[^>]*\/>/);
+    const oLn = pick(/<a:ln\b[^>]*\/>|<a:ln\b[\s\S]*?<\/a:ln>/);
+    const oFill = orig ? ((orig.split(/<a:ln\b/)[0].match(/<a:(noFill|solidFill|gradFill|blipFill|pattFill|grpFill)\b(?:[^>]*\/>|[\s\S]*?<\/a:\1>)/) || [])[0] || '') : '';
+    const oRest = orig ? [oXfrm, oGeom, oFill, oLn].reduce((s, x) => (x ? s.replace(x, '') : s), orig) : '';
+    const fill0 = d.fill === null || d.fill === 'none' ? '<a:noFill/>' : `<a:solidFill><a:srgbClr val="${String(d.fill || '#FFFFFF').replace('#', '').toUpperCase()}"/></a:solidFill>`;
+    /* arrowheads after the fill, as CT_LineProperties orders them */
+    const end = (tag, e) => (e && e.type && e.type !== 'none' ? `<a:${tag} type="${esc(e.type)}"${e.w && e.w !== 'med' ? ` w="${esc(e.w)}"` : ''}${e.len && e.len !== 'med' ? ` len="${esc(e.len)}"` : ''}/>` : '');
+    const ln0 = d.line === null || d.line === 'none' ? '<a:ln><a:noFill/></a:ln>' : `<a:ln w="${Math.round((d.lineW || 0.75) * EMU)}"><a:solidFill><a:srgbClr val="${String(d.line || '#000000').replace('#', '').toUpperCase()}"/></a:solidFill>${end('headEnd', d.head)}${end('tailEnd', d.tail)}</a:ln>`;
+    const fill = orig && !d.ownFill ? oFill : fill0, ln = orig && !d.ownLine ? oLn : ln0;
+    /* a preset with its adjustments; a freeform keeps the geometry it came with (there is no "custom" preset) */
+    const cust = d.geom === 'custom' && d.xml ? (d.xml.match(/<a:custGeom\b[\s\S]*?<\/a:custGeom>/) || [])[0] : null;
+    const gds = Object.entries(d.adj || {}).map(([k, v]) => `<a:gd name="${esc(k)}" fmla="val ${Math.round(v)}"/>`).join('');
+    const geom = cust || `<a:prstGeom prst="${esc(d.geom && d.geom !== 'custom' ? d.geom : 'rect')}">${gds ? `<a:avLst>${gds}</a:avLst>` : '<a:avLst/>'}</a:prstGeom>`;
     const paras = String(d.text || '').split('\n');
     const f = d.font || {};
-    const rpr = `<a:rPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"${f.b ? ' b="1"' : ''}${f.i ? ' i="1"' : ''}>${f.color ? `<a:solidFill><a:srgbClr val="${String(f.color).replace('#', '').toUpperCase()}"/></a:solidFill>` : '<a:solidFill><a:srgbClr val="000000"/></a:solidFill>'}<a:latin typeface="${esc(f.name || 'Arial')}"/></a:rPr>`;
-    const body = d.text != null && d.text !== '' ? `<xdr:txBody><a:bodyPr vertOverflow="clip" wrap="square" rtlCol="0" anchor="${d.vAlign || 't'}"/><a:lstStyle/>` + paras.map((p) => `<a:p><a:pPr algn="${d.align || 'l'}"/>${p ? `<a:r>${rpr}<a:t>${escT(p)}</a:t></a:r>` : `<a:endParaRPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"/>`}</a:p>`).join('') + '</xdr:txBody>'
-      : '<xdr:txBody><a:bodyPr vertOverflow="clip" wrap="square" rtlCol="0" anchor="t"/><a:lstStyle/><a:p><a:endParaRPr lang="en-US" sz="1100"/></a:p></xdr:txBody>';
+    /* a run's own properties (a kept run inherits the rest from the shape's style, as it did); typed text: the shape's font */
+    const rprOf = (r) => {
+      const kids = (r.color ? `<a:solidFill><a:srgbClr val="${String(r.color).replace('#', '').toUpperCase()}"/></a:solidFill>` : '') + (r.font ? `<a:latin typeface="${esc(r.font)}"/>` : '');
+      const head = `<a:rPr lang="${esc(r.lang || 'en-US')}"${r.sz ? ` sz="${Math.round(r.sz * 100)}"` : ''}${r.b ? ' b="1"' : ''}${r.i ? ' i="1"' : ''}${r.u ? ' u="sng"' : ''}`;
+      return kids ? `${head}>${kids}</a:rPr>` : `${head}/>`;
+    };
+    const rpr = rprOf({ sz: f.sz || 10, b: f.b, i: f.i, color: f.color || '#000000', font: f.name || 'Arial' });
+    /* the text body as it came (kept upright in a rotated shape, its direction and insets) */
+    const ins = (d.ins || []).map((v, i) => (v == null ? '' : ` ${['lIns', 'tIns', 'rIns', 'bIns'][i]}="${Math.round(v)}"`)).join('');
+    const own = d.xml && d.tag !== 'grpSp' && (d.xml.match(/<a:bodyPr\b[^>]*\/>|<a:bodyPr\b[^>]*>[\s\S]*?<\/a:bodyPr>/) || [])[0];   // Ledger edits none of it
+    const bodyPr = (anchor) => own || `<a:bodyPr vertOverflow="clip"${d.vert ? ` vert="${esc(d.vert)}"` : ''} wrap="square"${ins} rtlCol="0" anchor="${anchor}"${d.upright ? ' upright="1"' : ''}/>`;
+    /* its paragraphs and runs while the text is the one it came with; typed text takes the shape's one font */
+    const kept = d.paras && d.paras.map((q) => q.runs.map((r) => r.t).join('')).join('\n') === String(d.text || '');
+    const body = kept ? `<xdr:txBody>${bodyPr(d.vAlign || 't')}<a:lstStyle/>` + d.paras.map((q) => `<a:p><a:pPr algn="${esc(q.algn || 'l')}"/>${q.runs.filter((r) => r.t).map((r) => (r.t === '\n' ? `<a:br>${rprOf(r)}</a:br>` : `<a:r>${rprOf(r)}<a:t>${escT(r.t)}</a:t></a:r>`)).join('') || `<a:endParaRPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"/>`}</a:p>`).join('') + '</xdr:txBody>'
+      : d.text != null && d.text !== '' ? `<xdr:txBody>${bodyPr(d.vAlign || 't')}<a:lstStyle/>` + paras.map((p) => `<a:p><a:pPr algn="${d.align || 'l'}"/>${p ? `<a:r>${rpr}<a:t>${escT(p)}</a:t></a:r>` : `<a:endParaRPr lang="en-US" sz="${Math.round((f.sz || 10) * 100)}"/>`}</a:p>`).join('') + '</xdr:txBody>'
+      : `<xdr:txBody>${bodyPr('t')}<a:lstStyle/><a:p><a:endParaRPr lang="en-US" sz="1100"/></a:p></xdr:txBody>`;
+    /* the shape's style (theme colours its text and anything it doesn't set itself take) */
+    const style = (d.xml && d.tag !== 'grpSp' && (d.xml.match(/<xdr:style>[\s\S]*?<\/xdr:style>/) || [])[0]) || '';
+    /* a shape turned a quarter (45°–135°, 225°–315°): its anchor holds it turned, its own size is the other way round */
+    const turn = (((d.rot || 0) % 360) + 360) % 360, quarter = (turn >= 45 && turn < 135) || (turn >= 225 && turn < 315);
+    const ew = quarter ? sz.h : sz.w, eh = quarter ? sz.w : sz.h;
     return `<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="${id}" name="${esc(d.name || 'Shape ' + id)}"/><xdr:cNvSpPr${d.txBox ? ' txBox="1"' : ''}/></xdr:nvSpPr>` +
-      `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}><a:off x="0" y="0"/><a:ext cx="${emu(sz.w)}" cy="${emu(sz.h)}"/></a:xfrm><a:prstGeom prst="${esc(d.geom || 'rect')}"><a:avLst/></a:prstGeom>${fill}${ln}</xdr:spPr>${body}</xdr:sp>`;
+      `<xdr:spPr><a:xfrm${d.rot ? ` rot="${Math.round(d.rot * 60000)}"` : ''}${d.flipH ? ' flipH="1"' : ''}${d.flipV ? ' flipV="1"' : ''}><a:off x="0" y="0"/><a:ext cx="${emu(ew)}" cy="${emu(eh)}"/></a:xfrm>${geom}${fill}${ln}${oRest}</xdr:spPr>${style}${body}</xdr:sp>`;
   }
   /** the chart part for a chart drawing */
   function chartPartXml(d, wb) {
@@ -696,6 +734,7 @@
     };
     const files = [];
     const keptEmitted = new Set(), diagramParts = new Map(); // kept objects written, private diagram parts (keptXml)
+    const creationIds = new Set(); // charts' creation IDs written
     const overrides = new Map();
     const defaults = new Map([['rels', 'application/vnd.openxmlformats-package.relationships+xml'], ['xml', 'application/xml']]);
     const add = (name, data, ct) => { files.push({ name, data }); if (ct) overrides.set('/' + name, ct); };
@@ -748,9 +787,11 @@
       const objects = L.sheetObjects.begin(sh, pack, pack.part(part), idmaps.get(sh));
       L.tableKeep.sheet(sh, pack, pack.part(part));
       if (sh.kind === 'chartsheet') {
-        let body = HDR + `<chartsheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}">` + (sh.tabColor ? `<sheetPr>${colorEl('tabColor', sh.tabColor)}</sheetPr>` : '') + `<sheetViews><sheetView${si === wb.active ? ' tabSelected="1"' : ''}${sh.view.zoom && sh.view.zoom !== 100 ? ` zoomScale="${Math.round(sh.view.zoom)}"` : ''}${sh.view.zoomToFit ? ' zoomToFit="1"' : ''} workbookViewId="0"/></sheetViews>`;
+        const prA = attrs({ codeName: sh.codeName, published: sh.extra.published }), prIn = sh.tabColor ? colorEl('tabColor', sh.tabColor) : '';
+        let body = HDR + `<chartsheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}">` + (prA || prIn ? `<sheetPr${prA}${prIn ? '>' + prIn + '</sheetPr>' : '/>'}` : '') + `<sheetViews><sheetView${si === wb.active ? ' tabSelected="1"' : ''}${sh.view.zoom && sh.view.zoom !== 100 ? ` zoomScale="${Math.round(sh.view.zoom)}"` : ''}${sh.view.zoomToFit ? ' zoomToFit="1"' : ''} workbookViewId="0"/></sheetViews>`;
+        if (sh.extra.chartProtection) body += `<sheetProtection${attrs(sh.extra.chartProtection)}/>`;
         const m = sh.print.margins;
-        body += `<pageMargins left="${m.l}" right="${m.r}" top="${m.t}" bottom="${m.b}" header="${m.header}" footer="${m.footer}"/>` + L.preserve.pageSetupXML(sh, pack.writer, pack.part(part));
+        body += `<pageMargins left="${m.l}" right="${m.r}" top="${m.t}" bottom="${m.b}" header="${m.header}" footer="${m.footer}"/>` + L.preserve.pageSetupXML(sh, pack.writer, pack.part(part)) + headerFooterXml(sh.print);
         const dr = await drawingPart(sh, rels, objects);
         if (dr) body += `<drawing r:id="${dr}"/>`;
         body += '</chartsheet>';
@@ -946,7 +987,14 @@
           }
           rid = drels.add('chart', '../charts/' + cPart.split('/').pop());
           }
-          obj = `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${id}" name="${nameAttr}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="${NS_C}"><c:chart xmlns:c="${NS_C}" xmlns:r="${NS_R}" r:id="${rid}"/></a:graphicData></a:graphic></xdr:graphicFrame>`;
+          /* the frame's own settings as they came (a creation ID once, should a copied sheet repeat it) */
+          const fr = d.frame || {}, cid = fr.creationId && !creationIds.has(fr.creationId) ? fr.creationId : null;
+          if (cid) creationIds.add(cid);
+          const cNvIn = (d.link ? `<a:hlinkClick xmlns:r="${NS_R}" r:id="${drels.add('hyperlink', d.link, true)}"/>` : '') +
+            (cid ? `<a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"><a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="${esc(cid)}"/></a:ext></a:extLst>` : '');
+          const cNvPr = `<xdr:cNvPr id="${id}" name="${nameAttr}"${attrs({ descr: d.descr, title: fr.title, hidden: d.hidden ? '1' : undefined })}${cNvIn ? '>' + cNvIn + '</xdr:cNvPr>' : '/>'}`;
+          const locks = fr.locks ? `<xdr:cNvGraphicFramePr><a:graphicFrameLocks${attrs(fr.locks)}/></xdr:cNvGraphicFramePr>` : '<xdr:cNvGraphicFramePr/>';
+          obj = `<xdr:graphicFrame${attrs({ macro: fr.macro ?? '', fPublished: fr.published })}><xdr:nvGraphicFramePr>${cNvPr}${locks}</xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="${NS_C}"><c:chart xmlns:c="${NS_C}" xmlns:r="${NS_R}" r:id="${rid}"/></a:graphicData></a:graphic></xdr:graphicFrame>`;
         } else {
           if (d.xml && !d.dirty) {
             const source = K.package(d.keep?.source);

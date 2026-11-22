@@ -217,8 +217,10 @@
     /* a selection being dragged stays in the story it started in (body, a header, a text box…) */
     const anchor = !s.isCollapsed && isEditableNode(s.anchorNode) ? LY.domToPos(s.anchorNode, s.anchorOffset) : null;
     const story = anchor ? D.storyOf(doc(), anchor.p) : null;
+    /* in a text box's (or a shape's) text area, away from its lines: the nearest of its own */
+    const under = !story && document.elementFromPoint(pt.x, pt.y), tbx = under && under.closest && under.closest('.tbx');
     let frag = null, bd = Infinity, below = false, level = false, box = null;
-    for (const f of LY.root.querySelectorAll(story ? '.p' : '.pg-body .p, .pg-hdr .p, .pg-ftr .p')) {
+    for (const f of (tbx || LY.root).querySelectorAll(story || tbx ? '.p' : '.pg-body .p, .pg-hdr .p, .pg-ftr .p')) {
       if (story) { const q = D.byId(doc(), +f.dataset.pid); if (!q || D.storyOf(doc(), q) !== story) continue; }
       const fr = f.getBoundingClientRect();
       if (!fr.height) continue;
@@ -298,10 +300,12 @@
     }
     return false;
   };
-  /** delete the current selection (if any) and return the caret position */
-  E.deleteSelection = function () {
+  /** delete the current selection (if any) and return the caret position; o.wholeTable (Cut, Backspace): a whole
+   *  table selected goes, as in Word, where Delete empties its cells */
+  E.deleteSelection = function (o) {
     if (E.collapsed()) return E.sel.f;
     const [a, b] = E.range();
+    if (E.cellSel && o && o.wholeTable && !O.tracking()) { const r = removeTable(); if (r) return r; }
     if (E.cellSel) { const r = clearCells(); if (r) return r; }
     if (E.rowSel && !O.tracking()) return deleteRowSel(a, b);   /* tracked, the text is marked deleted as any (rows can't be) */
     const pos = O.deleteRange(a, b);
@@ -321,6 +325,13 @@
     d._idxDirty = true;
     O.repairFields(D.storyOf(d, pos.p));
     return pos;
+  }
+  /* every cell of a table selected: the table itself goes (tracked, its cells are emptied as before) */
+  function removeTable() {
+    const t = E.cellSel && E.cellSel.tbl;
+    if (!t || !L.tables.wholeSelected()) return null;
+    E.cellSel = null;
+    return O.removeBlock(t);
   }
   function clearCells() {
     const cs = E.cellSel;
@@ -396,7 +407,7 @@
   E.backspace = function (word) {
     if (!E.sel) return;
     const d = doc();
-    if (!E.collapsed()) { E.edit(L.N('Delete'), () => E.deleteSelection()); return; }
+    if (!E.collapsed()) { E.edit(L.N('Delete'), () => E.deleteSelection({ wholeTable: true })); return; }
     const pos = E.sel.f;
     const p = pos.p;
     if (pos.o === 0) {
@@ -575,8 +586,8 @@
     const ctx = LY.tblCtx(pos.p);
     return D.rProps(doc(), pos.p, it && !D.isMarker(it) ? it : null, ctx);
   }
-  /** is a run property uniform over the selection? returns value or undefined when mixed */
-  E.uniformRun = function (key) {
+  /** is a run property uniform over the selection? returns its value, or `mixed` (default undefined) when it varies */
+  E.uniformRun = function (key, mixed) {
     if (!E.sel || E.collapsed()) return E.curRun()[key];
     const [a, b] = E.range();
     const d = doc();
@@ -590,7 +601,7 @@
         const s0 = pos; pos += n;
         if (!n || pos <= s || s0 >= e) continue;
         const v = D.rProps(d, p, it, ctx)[key];
-        if (first) { val = v; first = false; } else if (JSON.stringify(v) !== JSON.stringify(val)) return undefined;
+        if (first) { val = v; first = false; } else if (JSON.stringify(v) !== JSON.stringify(val)) return mixed;
       }
     }
     return first ? E.curRun()[key] : val;
@@ -833,8 +844,8 @@
     if (alt && shift && (k === 'ArrowLeft' || k === 'ArrowRight')) { e.preventDefault(); L.ui.exec(k === 'ArrowLeft' ? 'promote' : 'demote'); return; }
     /* objects: arrow keys nudge floating objects */
     if (E.objSel && E.objSel.float && /^Arrow/.test(k) && L.drawing) { e.preventDefault(); L.drawing.nudge(k, ctrl ? 1 : 7.2); return; }
-    /* typing over a selected floating object does nothing */
-    if (k.length === 1 && !ctrl && !alt && E.objSel && E.objSel.float) { e.preventDefault(); return; }
+    /* typing on a selected floating shape goes into its text (Word); over another floating object it does nothing */
+    if (k.length === 1 && !ctrl && !alt && E.objSel && E.objSel.float) { e.preventDefault(); const c = L.ui.cmds.shapeText; if (c && c.enabled()) L.drawing.editText(k); return; }
   }
 
   /* ---------- clipboard ---------- */
@@ -850,7 +861,7 @@
       e.clipboardData.setData('application/x-quire', JSON.stringify({ blocks: data.blocks, media: data.media, preserved: data.preserved }));
     } catch (err) { /* ignore */ }
     E.clip = data;
-    if (cut) E.edit(L.N('Cut'), () => E.deleteSelection());
+    if (cut) E.edit(L.N('Cut'), () => E.deleteSelection({ wholeTable: true }));
   }
   E.copyData = function () {
     if (!E.sel) return null;
@@ -1124,6 +1135,8 @@
     const sc = LY.scroller;
     const box = document.createElement('div');
     box.className = 'obj-handles';
+    /* a right-click on a handle: the object's menu, as anywhere else on it */
+    box.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); if (L.app && L.app.contextMenu) L.app.contextMenu(ev); });
     const place = () => {
       const r = target.getBoundingClientRect(), sr = sc.getBoundingClientRect();
       box.style.left = r.left - sr.left + sc.scrollLeft + 'px';

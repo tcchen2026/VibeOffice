@@ -37,6 +37,110 @@ MODERN_COMMENTS = '{http://schemas.microsoft.com/office/word/2012/wordml}comment
 # each preset shape's adjustment names, from the generated schema facts the apps use
 _ORDER = (Path(__file__).resolve().parents[2] / 'public/common/opc-order.js').read_text()
 PRESET_ADJUST = {k: [n for n, _ in v] for k, v in json.loads(_ORDER[_ORDER.index('= {') + 2:_ORDER.rindex('; })')]).get('presetAdjust', {}).items()}
+# each built-in worksheet function's fewest operands (Apache POI's table, as the Excel 97-2003 importer uses it); the
+# BIFF maxima don't bind OOXML
+_FUNCTIONS = (Path(__file__).resolve().parents[2] / 'public/common/legacy/xls-functions.js').read_text()
+FUNCTION_MIN = {name: low for name, low, _ in json.loads(_FUNCTIONS[_FUNCTIONS.index('freeze({') + 7:_FUNCTIONS.index('});', _FUNCTIONS.index('freeze({')) + 1]).values()}
+
+# DrawingML's automatic numbering schemes (ECMA-376 dml-main.xsd, ST_TextAutonumberScheme)
+AUTONUM = set('''alphaLcParenBoth alphaUcParenBoth alphaLcParenR alphaUcParenR alphaLcPeriod alphaUcPeriod arabicParenBoth
+arabicParenR arabicPeriod arabicPlain romanLcParenBoth romanUcParenBoth romanLcParenR romanUcParenR romanLcPeriod romanUcPeriod
+circleNumDbPlain circleNumWdBlackPlain circleNumWdWhitePlain arabicDbPeriod arabicDbPlain ea1ChsPeriod ea1ChsPlain ea1ChtPeriod
+ea1ChtPlain ea1JpnChsDbPeriod ea1JpnKorPlain ea1JpnKorPeriod arabic1Minus arabic2Minus hebrew2Minus thaiAlphaPeriod
+thaiAlphaParenR thaiAlphaParenBoth thaiNumPeriod thaiNumParenR thaiNumParenBoth hindiAlphaPeriod hindiNumPeriod
+hindiNumParenR hindiAlpha1Period'''.split())
+EXTENDED = {'http://schemas.openxmlformats.org/officeDocument/2006/extended-properties', 'http://purl.oclc.org/ooxml/officeDocument/extendedProperties'}
+
+
+def in_range(value, low, high):
+    return value is not None and re.fullmatch(r'[+-]?\d+', value.strip()) is not None and low <= int(value) <= high
+
+
+TABLE_URI = ('http://schemas.openxmlformats.org/drawingml/2006/table', 'http://purl.oclc.org/ooxml/drawingml/table')
+
+
+def name_fault(name):
+    """why Excel refuses a defined name, or None (I24 C3: Office controls; a name that merely looks like a cell, such as
+    C1244, opens and is not flagged)"""
+    if not name or len(name.encode('utf-16-le')) // 2 > 255:
+        return 'length'
+    if name.upper() in ('TRUE', 'FALSE', 'R', 'C', 'RC'):
+        return 'reserved'
+    m = re.match(r'([RrCc])(\d+)\D', name)  # C1244_suffix; C000_V opens (0 is no index)
+    if m and 1 <= int(m.group(2)) <= (1048576 if m.group(1) in 'Rr' else 16384):
+        return 'R1C1 index followed by other characters'
+    for i, ch in enumerate(name):
+        o = ord(ch)
+        if o < 0x20 or 0x7f <= o <= 0x9f or ch in '\u00a6\u00a9\u00bb':
+            return f'character U+{o:04X}'
+        if o < 0x80 and not (ch.isalpha() or ch in '_\\' or (i and (ch.isdigit() or ch in '.?'))):
+            return f'character {ch!r}' + (' first' if i == 0 else '')
+    return None
+
+
+def bare_reference(formula):
+    """a name defined as nothing but an A1 cell or area with no sheet qualifier and no bang (V200, $B$2:$C$3), which
+    Office refuses (I24 C3; MS-OE376 3.2.3.1.4). A reference inside a longer expression isn't flagged: LibreOffice
+    writes SUM(OFFSET($B$1,...)) and that case wasn't measured."""
+    def cell(m):
+        col = 0
+        for c in m.group(1).upper():
+            col = col * 26 + ord(c) - 64
+        return col <= 16384 and 1 <= int(m.group(2)) <= 1048576
+    text = formula.strip()
+    parts = text.split(':')
+    if len(parts) > 2:
+        return None
+    for part in parts:
+        m = re.fullmatch(r'\$?([A-Za-z]{1,3})\$?(\d+)', part.strip())
+        if not m or not cell(m):
+            return None
+    return text
+
+
+def short_calls(formula):
+    """(name, operands, needed) for each call of a built-in with fewer operands than it needs: strings, quoted
+    sheet names, array constants and structured references are skipped, so their commas don't count"""
+    out, frames, i, n = [], [], 0, len(formula)
+    while i < n:
+        ch = formula[i]
+        if ch in '"\'':
+            j = i + 1
+            while j < n and not (formula[j] == ch and (j + 1 >= n or formula[j + 1] != ch)):
+                j += 2 if formula[j] == ch else 1
+            if frames:
+                frames[-1][2] = True
+            i = j + 1
+            continue
+        if ch in '{[':
+            close, depth, j = '}' if ch == '{' else ']', 0, i
+            while j < n:
+                depth += formula[j] == ch
+                depth -= formula[j] == close
+                j += 1
+                if not depth:
+                    break
+            if frames:
+                frames[-1][2] = True
+            i = j
+            continue
+        if ch == '(':
+            m = re.search(r'([A-Za-z_][A-Za-z0-9_.]*)$', formula[:i])
+            name = re.sub(r'(?i)^_(?:xlfn|xll|xlws)\.', '', m.group(1)).upper() if m else None
+            frames.append([name, 0, False])
+        elif ch == ')' and frames:
+            name, commas, content = frames.pop()
+            operands = commas + 1 if commas or content else 0
+            if name in FUNCTION_MIN and operands < FUNCTION_MIN[name]:
+                out.append((name, operands, FUNCTION_MIN[name]))
+            if frames:
+                frames[-1][2] = True
+        elif ch == ',' and frames:
+            frames[-1][1] += 1
+        elif not ch.isspace() and frames:
+            frames[-1][2] = True
+        i += 1
+    return out
 
 def split(tag):
     if tag.startswith('{'):
@@ -222,11 +326,93 @@ class Package:
             if split(root.tag)[0] in W and split(root.tag)[1] == 'comments':
                 comment_counts[part] = Counter(at(c, 'id') for c in root if split(c.tag)[1] == 'comment')
         main = next((r['target'] for r in self.rels.get('', {}).values() if r['type'].endswith('/officeDocument')), '')
+        word = re.search(r'wordprocessingml\.(document|template)\.main|ms-word\.', self.types.get(main) or '') is not None
         for part, root in self.xml.items():
             parents = {child: parent for parent in root.iter() for child in parent}
             for el, path, branches in walk(root):
                 ns, tag = split(el.tag)
                 parent = parents.get(el)
+                # PowerPoint 2016 refuses a table style list without its required
+                # default, even if every table names an embedded style explicitly.
+                if ns in A and tag == 'tblStyleLst' and 'def' not in el.attrib:
+                    self.issue('table-style-default', part, 'Table style list needs its default style ID (a built-in style need not be embedded).', path)
+                # Excel 2016 refuses a cell's text of more than 32,767 characters (32,768 refused, 32,767
+                # opens; I24 C1): a shared or inline string with its runs joined, phonetic text not
+                # counted, _xHHHH_ decoded once, in UTF-16 units as Excel counts; a formula's cached string too
+                if ns in S and (tag in ('si', 'is') or (tag == 'v' and parent is not None and split(parent.tag)[1] == 'c' and at(parent, 't') == 'str')):
+                    if tag == 'v':
+                        text = el.text or ''
+                    else:
+                        text = ''.join(t.text or '' for t in el.iter() if split(t.tag)[1] == 't' and split(parents.get(t).tag)[1] != 'rPh')
+                    units = len(re.sub(r'_x([0-9A-Fa-f]{4})_', lambda m: chr(int(m.group(1), 16)), text).encode('utf-16-le', 'surrogatepass')) // 2
+                    if units > 32767:
+                        self.issue('cell-text-too-long', part, f'{units} characters (Excel opens at most 32,767)', path)
+                # Excel 2016 refuses an external link whose cache set holds no sheet (I24 C2: removing only the
+                # empty element opens the same file)
+                if ns in S and tag == 'sheetDataSet' and not any(split(c.tag)[1] == 'sheetData' for c in el):
+                    self.issue('external-empty-sheet-data-set', part, 'externalBook/sheetDataSet without sheetData', path)
+                # ... and a built-in called with fewer operands than it needs (I24 C2: SUMIF with one, in any case or
+                # prefix; the same call to an unknown name opens)
+                if ns in S and tag in ('f', 'definedName', 'formula', 'formula1', 'formula2') and el.text:
+                    for name, operands, needed in short_calls(el.text):
+                        self.issue('function-missing-operands', part, f'{name} with {operands} of its {needed} required operands', path)
+                # ... a workbook's defined name Excel can't take, and a name defined by a cell of no sheet (Office opens
+                # !V200 and Sheet1!V200, not V200; I24 C3)
+                if ns in S and tag == 'definedName' and (self.types.get(part) or '').endswith('.main+xml'):
+                    fault = name_fault(at(el, 'name') or '')
+                    if fault:
+                        self.issue('defined-name-invalid', part, (at(el, 'name') or '') + ': ' + fault, path)
+                    ref = bare_reference(el.text or '')
+                    if ref:
+                        self.issue('defined-name-current-sheet-reference', part, (at(el, 'name') or '') + ': ' + ref, path)
+                # ... and an Excel 4 macro function (GET.CELL) in a defined name of a workbook that can't hold macros
+                # (I24 C2: removing only that name opens the file)
+                if ns in S and tag == 'definedName' and el.text and 'macroEnabled' not in (self.types.get(part) or '') \
+                        and re.search(r'(?i)(?<![\w.])(?:_xlfn\.)?GET\.CELL\s*\(', el.text):
+                    self.issue('xlm-name-in-plain-workbook', part, (at(el, 'name') or '') + ': GET.CELL', path)
+                # PowerPoint 2016 refuses (I24 D2, each with a control that opens): a DrawingML font's charset or
+                # pitchFamily outside a signed byte (binary Office's 128 is -128 here) ...
+                if ns in A and tag in ('latin', 'ea', 'cs', 'sym', 'buFont'):
+                    for name in ('charset', 'pitchFamily'):
+                        if el.get(name) is not None and not in_range(el.get(name), -128, 127):
+                            self.issue('drawingml-font-byte', part, f'{tag} {name}="{el.get(name)}"', path)
+                # ... a presentation transform's extent past a 32-bit integer ...
+                if ns in A and tag in ('ext', 'chExt') and part.startswith('ppt/') and parent is not None and split(parent.tag)[1] == 'xfrm':
+                    for name in ('cx', 'cy'):
+                        if not in_range(el.get(name), 0, 2147483647):
+                            self.issue('drawingml-transform-extent', part, f'{tag} {name}="{el.get(name)}"', path)
+                # ... an automatic numbering scheme DrawingML doesn't name (POI's arabicParenRight for arabicParenR) ...
+                if ns in A and tag == 'buAutoNum' and el.get('type') not in AUTONUM:
+                    self.issue('drawingml-numbering-scheme', part, f'type="{el.get("type")}"', path)
+                # ... and an editing time past the extended properties' integer
+                if ns in EXTENDED and tag == 'TotalTime' and not in_range(el.text, -2147483648, 2147483647):
+                    self.issue('extended-property-total-time', part, (el.text or '').strip(), path)
+                # Word 2016 offers a converter for a newer version instead of opening a document whose AppVersion
+                # carries a producer build after the dot (11.6568, 12.0999; I24 E2): 12.0300 and 16.0300 open, values
+                # between weren't measured, and Excel and PowerPoint write such minors (16.0300, 15.0033)
+                if ns in EXTENDED and tag == 'AppVersion' and word:
+                    m = re.fullmatch(r'\d{1,2}\.(\d{4})', (el.text or '').strip())
+                    if m and int(m.group(1)) >= 999:
+                        self.issue('word-app-version-build', part, (el.text or '').strip(), path)
+                # What PowerPoint refuses in a converted presentation's drawings (I24 D3, one-object controls): a table
+                # in a graphic frame of another type, a connector with a custom geometry (the same geometry opens on
+                # a shape), a group that is a placeholder ...
+                if ns in A and tag == 'graphicData' and el.find('{' + ns + '}tbl') is not None and el.get('uri') not in TABLE_URI:
+                    self.issue('drawingml-table-uri', part, f'uri="{el.get("uri")}"', path)
+                grand = parents.get(parent) if parent is not None else None
+                if ns in A and tag == 'custGeom' and parent is not None and split(parent.tag)[1] == 'spPr' \
+                        and grand is not None and split(grand.tag)[0] in P and split(grand.tag)[1] == 'cxnSp':
+                    self.issue('presentation-connector-custom-geometry', part, 'a connector with a custom geometry', path)
+                if ns in P and tag == 'ph' and parent is not None and split(parent.tag)[1] == 'nvPr' \
+                        and grand is not None and split(grand.tag)[1] == 'nvGrpSpPr':
+                    self.issue('presentation-group-placeholder', part, f'type="{el.get("type") or "obj"}" idx="{el.get("idx") or 0}"', path)
+                # ... and a slide master's text box with no text body: it opens, but every slide on that master prints
+                # only its background (notes slides with one weren't measured, so they aren't flagged)
+                if ns in P and tag == 'sp' and (self.types.get(part) or '').endswith('slideMaster+xml') \
+                        and el.find('{' + ns + '}txBody') is None:
+                    box = el.find('{' + ns + '}nvSpPr/{' + ns + '}cNvSpPr')
+                    if box is not None and box.get('txBox') in ('1', 'true'):
+                        self.issue('presentation-master-textbox-body', part, 'a text box with no text body', path)
                 if ns in A and tag == 'graphicData' and el.get('uri') == 'urn:vibeoffice:test:unread':
                     # Batch 7: our unguarded synthetic frame repairs in Office,
                     # even in its original fixture. Do not reject unfamiliar

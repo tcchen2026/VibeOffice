@@ -284,6 +284,23 @@
     TE.lastSel = sel;
   };
   TE.currentSel = () => TE.getSel() || TE.lastSel || (TE.target() ? T.allRange(TE.target().tx) : null);
+  const rangeOf = (sel) => {
+    const root = TE.state && TE.state.root;
+    if (!root || !sel) return null;
+    const [an, ao] = toPoint(root, { p: sel.p0, o: sel.o0 }), [bn, bo] = toPoint(root, { p: sel.p1, o: sel.o1 });
+    const r = document.createRange();
+    try { r.setStart(an, ao); r.setEnd(bn, bo); } catch (e) { return null; }
+    return r;
+  };
+  /** where a part of the text being edited is on the screen (the Spelling dialog moves off it) */
+  TE.rangeRect = (sel) => { const r = rangeOf(sel); return r ? r.getBoundingClientRect() : null; };
+  /** a part of the text being edited shown selected while the keyboard is in a dialog (Spelling's), which the page's
+   *  own selection can't be; null clears it */
+  TE.mark = function (sel) {
+    if (typeof CSS === 'undefined' || !CSS.highlights || typeof Highlight !== 'function') return;
+    const r = rangeOf(sel);
+    if (r) CSS.highlights.set('lectern-mark', new Highlight(r)); else CSS.highlights.delete('lectern-mark');
+  };
 
   /* ---------- session ---------- */
   TE.active = () => !!TE.state;
@@ -399,6 +416,7 @@
   TE.end = function () {
     const st = TE.state;
     if (!st) return;
+    TE.mark(null);
     const t = TE.target();
     TE.sync();
     TE.detach(true);
@@ -586,16 +604,16 @@
     TE.insertText(text.replace(/\r\n?/g, '\n').replace(/\t/g, '\t'));
   }
 
-  /* ---------- AutoCorrect ---------- */
-  const AC = {
-    '(c)': '©', '(r)': '®', '(tm)': '™', '(e)': '€', '...': '…', '-->': '→', '<--': '←', '==>': '⇒', '<==': '⇐', '<=>': '⇔', ':)': '☺', ':(': '☹',
-    teh: 'the', adn: 'and', taht: 'that', recieve: 'receive', seperate: 'separate', occured: 'occurred', definately: 'definitely', wich: 'which', thier: 'their',
-    becuase: 'because', accomodate: 'accommodate', acheive: 'achieve', beleive: 'believe', calender: 'calendar', goverment: 'government', untill: 'until', tommorow: 'tomorrow',
-    i: 'I', "dont": "don't", "doesnt": "doesn't", "cant": "can't", "wont": "won't", "isnt": "isn't", "didnt": "didn't",
-  };
-  TE.AUTOCORRECT = AC;
+  /* ---------- AutoCorrect: the replacement list of common/spell.js, with the user's entries (kept as a setting) ---------- */
+  const AC = (L.autocorrect = {});
+  let LIST = null;
+  AC.list = () => L.spell.autocorrectList();
+  AC.reload = () => { LIST = AC.list(); };
+  AC.setEntry = (from, to) => { L.spell.setAutocorrectEntry(from, to); AC.reload(); };
+  /* Options › Edit's AutoCorrect as you type turns all of it off; the AutoCorrect dialog each part */
   function autocorrect(typed) {
     if (!(L.app && L.app.opts.autocorrect)) return;
+    const o = L.app.opts;
     const s = window.getSelection();
     if (!s.rangeCount || !s.isCollapsed) return;
     const node = s.anchorNode;
@@ -607,10 +625,11 @@
     const word = m[1];
     let rep = null;
     const lower = word.toLowerCase();
-    if (AC[word] != null) rep = AC[word];
-    else if (AC[lower] != null && /^[a-z]/.test(word)) rep = AC[lower];
-    else if (/^[A-Z]{2}[a-z]{2,}$/.test(word)) rep = word[0] + word.slice(1).toLowerCase();
-    else if (L.app.opts.capSentence && /^[a-z]/.test(word)) {
+    if (!LIST) AC.reload();
+    if (o.acReplace !== false && LIST.has(word)) rep = LIST.get(word);
+    else if (o.acReplace !== false && LIST.has(lower) && /^[a-z]/.test(word)) rep = LIST.get(lower);
+    else if (o.twoCaps !== false && /^[A-Z]{2}[a-z]{2,}$/.test(word)) rep = word[0] + word.slice(1).toLowerCase();
+    else if (o.capSentence && /^[a-z]/.test(word)) {
       const t = TE.target();
       const sel = TE.getSel();
       if (t && sel) {

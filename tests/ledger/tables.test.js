@@ -1,10 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} }; require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops, output = process.env.QUERY_RESULTS, results = [];
-const dir = process.env.EXCEL_CORPUS || path.join(os.homedir(), 'corpora', 'excel');
+const dir = process.env.EXCEL_CORPUS || '/work/corpora/excel';
 const files = { basic: 'openxml-sdk__a5ef25d2c713__QueryTable.xlsx', ids: 'libreoffice__3ee733eedc60__tdf141547.xlsx',
   empty: 'libreoffice__35d821135eaa__TableEmptyHeaders.xlsx', range: 'libreoffice__a278bf3eff36__tdf166712.xlsx' };
 const all = tree => [tree, ...tree.getElementsByTagName('*')], queryParts = pkg => pkg.names.filter(n => /^xl\/queryTables\/[^/]+\.xml$/.test(n));

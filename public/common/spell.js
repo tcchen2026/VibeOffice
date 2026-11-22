@@ -1,6 +1,6 @@
 /* VibeOffice — the spelling engine shared by Quire and Ledger: the offline word lists (common/dict/,
  * Hunspell/SCOWL-derived, ranked by frequency), checking, suggestions by edit distance, the custom dictionary
- * and Ignore All. Each app has its own spelling UI on top (Quire: underlines, grammar and its dialog;
+ * and Ignore All, and AutoCorrect's replacement list. Each app has its own spelling UI on top (Quire: underlines, grammar and its dialog;
  * Ledger: Tools ▸ Spelling); an app that draws underlines sets SP.refreshSoon to redraw them.
  */
 (function (root) {
@@ -196,5 +196,22 @@
     list.set('i', 'I');
     for (const [k, v] of LOANWORDS) if (!list.has(k)) list.set(k, v);
     return list;
+  };
+  /** AutoCorrect's replacement list: the defaults less the entries an app leaves out (drop), with the user's additions
+   *  and deletions (the app's setting 'acList': { add: [[from, to]], del: [from] }) */
+  SP.autocorrectList = function (drop) {
+    const list = SP.autocorrectDefaults();
+    for (const k of drop || []) list.delete(k);
+    const user = L.store.get('acList', null);
+    if (user) { for (const k of user.del || []) list.delete(k); for (const [k, v] of user.add || []) list.set(k, v); }
+    return list;
+  };
+  /** an entry added or changed (to), or deleted (to == null) */
+  SP.setAutocorrectEntry = function (from, to) {
+    const u = L.store.get('acList', { add: [], del: [] });
+    u.add = (u.add || []).filter((x) => x[0] !== from);
+    u.del = (u.del || []).filter((x) => x !== from);
+    if (to != null) u.add.push([from, to]); else if (SP.autocorrectDefaults().has(from)) u.del.push(from);
+    L.store.set('acList', u);
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -37,16 +37,26 @@
     if (/^b/.test(a)) y += bh - h; else if (!/^t/.test(a)) y += (bh - h) / 2;
     return { x, y, w, h, flip: o.flip || 'none' };
   };
+  /** a gradient's stops in order, in their colours, blended as Office blends them (L.color.lightStops) */
+  const gradStops = (fill, design) => L.color.lightStops((fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => ({ p: st.p, c: R.col(st.c, design), a: st.a })));
+  /** a linear gradient's angle in a box as CSS. Office runs it from corner to corner, as CSS does; a scaled one is
+      drawn in the unit square and stretched with it to the box, so its colours change across the box's diagonal at
+      45° (PowerPoint 2016's PDFs: LibreOffice's tdf105739 on a wide slide) */
+  const cssAngle = (fill, box) => {
+    const a = ((fill.ang || 0) * Math.PI) / 180;
+    if (fill.scaled === false || !box || !box.w || !box.h) return (fill.ang || 0) + 90;
+    return (Math.atan2(box.h * Math.cos(a), -box.w * Math.sin(a)) * 180) / Math.PI;
+  };
   R.fillCSS = function (fill, design, box) {
     if (fill && fill.t === 'bg') fill = R.curBg || { t: 'solid', c: 'bg1' };
     if (!fill || fill.t === 'none') return 'transparent';
     if (fill.t === 'solid') return L.color.rgba(R.col(fill.c, design), fill.a);
     if (fill.t === 'grad') {
-      const stops = (fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => `${L.color.rgba(R.col(st.c, design), st.a)} ${L.round(st.p * 100, 1)}%`).join(', ');
+      const stops = gradStops(fill, design).map((st) => `${L.color.rgba(st.c, st.a)} ${L.round(st.p * 100, 2)}%`).join(', ');
       const at = fill.focus ? `${L.round(fill.focus[0] * 100, 2)}% ${L.round(fill.focus[1] * 100, 2)}%` : '50% 50%';
       if (fill.path === 'circle' || fill.path === 'shape') return `radial-gradient(circle farthest-side at ${at}, ${stops})`;
       if (fill.path === 'rect') return `radial-gradient(ellipse farthest-corner at ${at}, ${stops})`;
-      return `linear-gradient(${L.round((fill.ang || 0) + 90, 2)}deg, ${stops})`;
+      return `linear-gradient(${L.round(cssAngle(fill, box), 2)}deg, ${stops})`;
     }
     if (fill.t === 'img') {
       const u = L.media.url(fill.media);
@@ -71,15 +81,17 @@
         const far = Math.max(fx, 1 - fx, fy, 1 - fy);
         g = s('radialGradient', { id, cx: L.round(fx * 100, 2) + '%', cy: L.round(fy * 100, 2) + '%', r: L.round((fill.path === 'rect' ? Math.hypot(Math.max(fx, 1 - fx), Math.max(fy, 1 - fy)) : far) * 100, 2) + '%' });
       }
-      else {
-        /* gradient vector in bounding-box space spanning the whole box (PowerPoint 'scaled' gradients) */
+      else if (fill.scaled === false && box && box.w && box.h) {
+        /* the angle in the shape's own space, the vector long enough to reach its corners */
         const a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a);
-        const k = Math.abs(c) + Math.abs(si);
-        const dx = c * k, dy = si * k;
+        const len = Math.abs(box.w * c) + Math.abs(box.h * si);
+        g = s('linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1: L.round(box.w / 2 - (c * len) / 2, 3), y1: L.round(box.h / 2 - (si * len) / 2, 3), x2: L.round(box.w / 2 + (c * len) / 2, 3), y2: L.round(box.h / 2 + (si * len) / 2, 3) });
+      } else {
+        /* scaled: drawn in the unit square of the box, from corner to corner (cssAngle) */
+        const a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a), k = Math.abs(c) + Math.abs(si), dx = c * k, dy = si * k;
         g = s('linearGradient', { id, gradientUnits: 'objectBoundingBox', x1: L.round(0.5 - dx / 2, 4), y1: L.round(0.5 - dy / 2, 4), x2: L.round(0.5 + dx / 2, 4), y2: L.round(0.5 + dy / 2, 4) });
-        void box;
       }
-      for (const st of (fill.stops || []).slice().sort((a, b) => a.p - b.p)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': R.col(st.c, design), 'stop-opacity': st.a == null ? 1 : st.a }));
+      for (const st of gradStops(fill, design)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': st.c, 'stop-opacity': st.a == null ? 1 : L.round(st.a, 3) }));
       defs.appendChild(g);
       return { paint: `url(#${id})`, opacity: 1 };
     }
@@ -122,27 +134,7 @@
     solid: null, sysDot: [1, 1], sysDash: [3, 1], dot: [1, 2], dash: [4, 3], dashDot: [4, 3, 1, 3], lgDash: [8, 3], lgDashDot: [8, 3, 1, 3], lgDashDotDot: [8, 3, 1, 3, 1, 3], sysDashDot: [3, 1, 1, 1], sysDashDotDot: [3, 1, 1, 1, 1, 1],
   };
   R.dashArray = (dash, w) => { const d = R.DASH[dash]; return d ? d.map((v) => L.round(v * Math.max(w, 0.75), 2)).join(' ') : null; };
-  function marker(defs, end, color, lw, isHead) {
-    if (!end || !end.type || end.type === 'none') return null;
-    const id = nid('mk');
-    const sz = { sm: 2, med: 3, lg: 5 };
-    /* hairlines still get legible heads (PowerPoint sizes heads as if the line were at least ~2pt) */
-    const k = Math.max(lw || 0.75, 2) / Math.max(lw || 0.75, 0.1);
-    const mw = (sz[end.w || 'med'] || 3) * k, ml = (sz[end.len || 'med'] || 3) * k;
-    const m = s('marker', { id, viewBox: '0 0 10 10', refX: end.type === 'arrow' ? 9 : end.type === 'oval' || end.type === 'diamond' ? 5 : 8, refY: 5, markerWidth: ml, markerHeight: mw, orient: isHead ? 'auto-start-reverse' : 'auto', markerUnits: 'strokeWidth' });
-    let shape;
-    switch (end.type) {
-      case 'stealth': shape = s('path', { d: 'M0,0 L10,5 L0,10 L3,5 Z', fill: color }); break;
-      case 'diamond': shape = s('path', { d: 'M0,5 L5,0 L10,5 L5,10 Z', fill: color }); break;
-      case 'oval': shape = s('circle', { cx: 5, cy: 5, r: 4.5, fill: color }); break;
-      case 'arrow': shape = s('path', { d: 'M1,1 L9,5 L1,9', fill: 'none', stroke: color, 'stroke-width': 1.6, 'stroke-linejoin': 'miter' }); break;
-      default: shape = s('path', { d: 'M0,0 L10,5 L0,10 Z', fill: color });
-    }
-    m.appendChild(shape);
-    defs.appendChild(m);
-    void lw;
-    return `url(#${id})`;
-  }
+  const marker = (defs, end, color, lw, isHead) => L.geom.marker(defs, end, color, lw, isHead);   // common/geometry.js
   R.shadowCSS = (sh, design) => {
     if (!sh) return '';
     const c = L.color.rgba(R.col(sh.c || '#000000', design), sh.a == null ? 0.5 : sh.a);
@@ -179,10 +171,12 @@
     }
   }
   R.numberText = numberText;
-  function lineHeight(ps, scale) {
+  /* reduce: Shrink text on overflow's line spacing reduction, which PowerPoint takes off the percentage (90% less
+     20% is 70%, not 72%) */
+  function lineHeight(ps, scale, reduce) {
     const ls = ps.lnSpc || { pct: 100 };
     if (ls.pts != null) return { css: `${L.round(ls.pts * scale, 2)}px`, factor: null };
-    const f = Math.max(0.3, ((ls.pct == null ? 100 : ls.pct) / 100) * 1.2);
+    const f = Math.max(0.3, ((ls.pct == null ? 100 : ls.pct) / 100 - (reduce || 0)) * 1.2);
     return { css: String(L.round(f, 3)), factor: f };
   }
   function spacing(sp, sz) {
@@ -219,8 +213,8 @@
     if (rp.emb) shadows.push(`-1px -1px 0 rgba(255,255,255,0.7), 1px 1px 0 rgba(0,0,0,0.4)`);
     if (shadows.length) st.textShadow = shadows.join(',');
     if (rp.hl) st.backgroundColor = R.col(rp.hl, design);
-    if (rp.fill && rp.fill.t === 'grad') {
-      st.backgroundImage = R.fillCSS(rp.fill, design);
+    if (rp.fill && (rp.fill.t === 'grad' || rp.fill.t === 'img')) {
+      st.background = R.fillCSS(rp.fill, design);
       st.webkitBackgroundClip = 'text'; st.backgroundClip = 'text'; st.color = 'transparent';
     } else if (rp.fill && rp.fill.t === 'solid') st.color = L.color.rgba(R.col(rp.fill.c, design), rp.fill.a);
     else if (rp.fill && rp.fill.t === 'none') st.color = 'transparent';
@@ -238,17 +232,35 @@
     const parts = String(text).split('\n');
     parts.forEach((t, i) => { if (i) el.appendChild(h('br')); if (t) el.appendChild(document.createTextNode(t)); });
   }
+  const mathTrees = new WeakMap();
+  function appendMath(el, fragment) {
+    let root = mathTrees.get(fragment);
+    if (!root) { root = L.opc.parse(fragment.xml); mathTrees.set(fragment, root); }
+    const mathNS = 'http://schemas.openxmlformats.org/officeDocument/2006/math';
+    const add = (node, parent) => {
+      if (node.namespaceURI === mathNS && node.localName === 't') { appendText(parent, node.textContent); return; }
+      if (node.namespaceURI === mathNS && ['sup', 'sub'].includes(node.localName)) { const child = h(node.localName); parent.appendChild(child); parent = child; }
+      for (const child of node.children) add(child, parent);
+    };
+    add(root, el);
+  }
   /**
    * Render paragraphs into a container. Returns the container.
    * opts: {scale, prompt(string), editMode}
    */
   R.paragraphs = function (sh, tx, design, ctx, container, opts) {
     opts = opts || {};
-    const scale = (tx.fontScale || 1) * (opts.scale || 1);
+    /* Shrink text on overflow (normAutofit) scales the font sizes, which PowerPoint rounds to whole points (36 pt at
+       92.5% is drawn at 33 pt, 18 pt at 92.5% at 17), and reduces the line spacing; indents and spacing given in
+       points stay as they are (PowerPoint 2016, TextFittingComparisonWithMSO_3) */
+    const fit = tx.fontScale || 1, zoom = opts.scale || 1, scale = fit * zoom;
+    const size = (sz) => (fit < 1 ? Math.max(1, Math.round(sz * fit)) : sz) * zoom;
+    const space = (sp, fsz) => (sp && sp.pts != null ? sp.pts * zoom : spacing(sp, fsz));
     const lnRed = tx.lnSpcRed || 0;
     const counters = [];
     const prevNum = [];
     const paras = opts.promptParas || tx.ps;
+    let before = 0;   // the space after the paragraph before
     paras.forEach((p, pi) => {
       const ps = L.style.para(sh, p, design);
       const el = h('p', { class: 'pa' });
@@ -257,17 +269,19 @@
       if (p.pp && Object.keys(p.pp).length) el.dataset.pp = JSON.stringify(p.pp);
       const text = L.txt.paraText(p);
       const firstRun = p.rs[0] ? L.style.run(ps, p.rs[0]) : L.style.run(ps, p.end || {});
-      const fsz = (firstRun.sz || 18) * scale;
+      const fsz = size(firstRun.sz || 18);
       el.style.textAlign = ALIGN[ps.algn] || 'left';
-      el.style.paddingLeft = L.round((ps.marL || 0) * scale, 2) + 'px';
-      el.style.textIndent = L.round((ps.indent || 0) * scale, 2) + 'px';
+      el.style.paddingLeft = L.round((ps.marL || 0) * zoom, 2) + 'px';
+      el.style.textIndent = L.round((ps.indent || 0) * zoom, 2) + 'px';
       el.style.fontSize = L.round(fsz, 2) + 'px';
       el.style.fontFamily = L.fontStack(L.style.font(firstRun.font, design), L.style.fontEA(firstRun.fontEA, design));
-      const lh = lineHeight(ps, scale);
-      el.style.lineHeight = lh.factor ? String(L.round(lh.factor * (1 - lnRed), 3)) : lh.css;
-      if (pi > 0) el.style.marginTop = L.round(spacing(ps.spcBef, fsz / scale) * scale, 2) + 'px';
-      const after = spacing(ps.spcAft, fsz / scale) * scale;
-      if (after) el.style.marginBottom = L.round(after, 2) + 'px';
+      el.style.lineHeight = lineHeight(ps, scale, lnRed).css;
+      /* space after a paragraph and before the next add up, as PowerPoint spaces them (margins of blocks would
+         collapse to the larger): the next paragraph takes both */
+      const gap = (pi > 0 ? space(ps.spcBef, fsz) : 0) + before;
+      if (gap) el.style.marginTop = L.round(gap, 2) + 'px';
+      before = space(ps.spcAft, fsz);
+      if (before && pi === paras.length - 1) el.style.marginBottom = L.round(before, 2) + 'px';
       /* bullets & numbering */
       const lvl = p.lvl || 0;
       counters.length = Math.max(counters.length, lvl + 1);
@@ -275,6 +289,7 @@
       const bu = ps.bu || { t: 'none' };
       let bullet = null;
       if (bu.t === 'char' && bu.ch) bullet = L.mapSymbolChar(bu.ch, bu.font);
+      if (bu.t === 'blip') { const u = bu.media && L.media.url(bu.media); bullet = u ? '\u00a0' : '\u25a0'; if (u) { el.classList.add('bu-img'); el.style.setProperty('--bu-img', 'url("' + u + '")'); } }
       if (bu.t === 'num') {
         const sch = bu.scheme || 'arabicPeriod';
         counters[lvl] = prevNum[lvl] === sch && counters[lvl] ? counters[lvl] + 1 : bu.start || 1;
@@ -286,7 +301,7 @@
         const bc = bu.c ? R.col(bu.c, design) : R.col(firstRun.color || 'tx1', design);
         el.style.setProperty('--bu-c', bc);
         el.style.setProperty('--bu-s', L.round(fsz * (bu.sz || 1), 2) + 'px');
-        el.style.setProperty('--bu-w', L.round(Math.max(-(ps.indent || 0) * scale, fsz * 0.55), 2) + 'px');
+        el.style.setProperty('--bu-w', L.round(Math.max(-(ps.indent || 0) * zoom, fsz * 0.55), 2) + 'px');
         if (bu.font && !/wingdings|symbol/i.test(bu.font)) el.style.setProperty('--bu-f', L.fontStack(bu.font));
       }
       if (!text.length) el.classList.add('empty');
@@ -298,11 +313,13 @@
           const rp = L.style.run(ps, r);
           const sp = h('span', { class: 'r' });
           const own = L.txt.runProps(r);
+          if (r.fld === 'math') own.keep = r.keep;
           if (Object.keys(own).length) sp.dataset.r = JSON.stringify(own);
           if (r.fld) { sp.dataset.fld = r.fld; sp.contentEditable = 'false'; }
-          R.runStyle(sp, rp, design, ctx, scale);
+          R.runStyle(sp, rp, design, ctx, size(rp.sz || 18) / (rp.sz || 18));
           if (r.link) sp.dataset.link = JSON.stringify(r.link);
-          appendText(sp, r.fld ? fieldText(r, ctx) : r.t);
+          if (r.fld === 'math' && r.keep?.math) appendMath(sp, r.keep.math);
+          else appendText(sp, r.fld ? fieldText(r, ctx) : r.t);
           el.appendChild(sp);
         }
         if (/\n$/.test(L.txt.paraText(p))) el.appendChild(h('br'));
@@ -341,6 +358,38 @@
     R.paragraphs(sh, tx, design, ctx, inner, opts);
     outer.appendChild(inner);
     return outer;
+  };
+
+  /** a text body bent by its warp (bodyPr's prstTxWarp, L.geom.warp), as SVG glyphs over the whole shape; null for a
+      warp we don't know. The text body itself stays under it, hidden, for editing. Drawn again once fonts it waits
+      for have loaded. */
+  R.warpedText = function (sh, tx, design, ctx) {
+    const fit = tx.fontScale || 1, size = (sz) => (fit < 1 ? Math.max(1, Math.round(sz * fit)) : sz);
+    /* lines: each paragraph's runs, split where a line break is */
+    const lines = [];
+    for (const p of tx.ps) {
+      const ps = L.style.para(sh, p, design), end = L.style.run(ps, p.end || {}), lh = lineHeight(ps, 1, tx.lnSpcRed);
+      let cur = [];
+      const flush = () => { const sz = Math.max(size(end.sz || 18), ...cur.map((r) => r.size)); lines.push({ runs: cur, algn: ps.algn || 'l', size: sz, pitch: lh.factor ? sz * lh.factor : parseFloat(lh.css) }); cur = []; };
+      for (const r of p.rs) {
+        const rp = L.style.run(ps, r), run = { size: size(rp.sz || 18), family: L.fontStack(L.style.font(rp.font, design), L.style.fontEA(rp.fontEA, design)), bold: !!rp.b, italic: !!rp.i, rp };
+        run.paint = { fill: rp.fill && rp.fill.t !== 'solid' ? rp.fill : { t: 'solid', c: rp.fill ? rp.fill.c : rp.link ? 'hlink' : rp.color || 'tx1', a: rp.fill ? rp.fill.a : undefined }, ln: rp.ln && rp.ln.t !== 'none' && rp.ln.c ? rp.ln : null };
+        String(r.fld ? fieldText(r, ctx) : r.t || '').split('\n').forEach((t, i) => { if (i) flush(); if (t) cur.push(Object.assign({}, run, { text: rp.cap === 'all' ? t.toUpperCase() : t })); });
+      }
+      flush();
+    }
+    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
+    const svg = L.geom.warpSVG(tx.warp, tx.warpAdj, w, hh, lines, ({ fill, ln }, defs) => {
+      const out = { fill: null, stroke: null };
+      if (fill.t === 'solid') Object.assign(out, { fill: R.col(fill.c, design), fillOpacity: fill.a });
+      else if (fill.t !== 'none') { const p = R.svgPaint(fill, design, defs, { w, h: hh }); Object.assign(out, { fill: p.paint, fillOpacity: p.opacity }); }
+      if (ln) Object.assign(out, { stroke: R.col(ln.c, design), strokeWidth: Math.max(0.25, ln.w == null ? 0.75 : ln.w), strokeOpacity: ln.a });
+      return out;
+    });
+    if (!svg) return null;
+    const r0 = lines.find((ln) => ln.runs.length), rp0 = r0 && r0.runs[0].rp;
+    if (rp0 && rp0.shd) svg.style.filter = R.shadowCSS(rp0.shdX || { dx: 2, dy: 2, blur: 2, c: '#000000', a: 0.35 }, design);
+    return svg;
   };
 
   /* ---------- shapes ---------- */
@@ -428,9 +477,9 @@
     const im = sh.img || {};
     if (im.mode === 'gray') f.push('grayscale(1)');
     if (im.mode === 'bw') f.push('grayscale(1) contrast(12)');
-    if (im.mode === 'wash') f.push('brightness(1.55) contrast(0.32)');
-    if (im.bright) f.push(`brightness(${L.round(1 + im.bright, 3)})`);
-    if (im.contrast) f.push(`contrast(${L.round(1 + im.contrast, 3)})`);
+    // brightness and contrast as PowerPoint draws them; Washout is bright 70%, contrast -70%
+    const lum = im.mode === 'wash' ? L.lumFilter(0.7, -0.7) : L.lumFilter(im.bright, im.contrast);
+    if (lum) f.push(lum.css);
     if (f.length) img.style.filter = f.join(' ');
     if (im.alpha != null && im.alpha < 1) img.style.opacity = im.alpha;
     if (sh.flipH || sh.flipV) img.style.transform = `scale(${sh.flipH ? -1 : 1},${sh.flipV ? -1 : 1})`;
@@ -448,6 +497,7 @@
         wrap.appendChild(h('div', { class: 'pic-missing', text: ext && ext !== 'png' ? L.t('Picture (.{0})', ext) : L.t('Picture') }));
       }, { once: true });
       wrap.appendChild(img);
+      if (lum) wrap.appendChild(lum.defs);
     }
     if (sh.geom && sh.geom !== 'rect') {
       const parts = L.geom.parts(sh, sh.w, sh.h).filter((p) => p.fill !== 'none');
@@ -461,6 +511,7 @@
   function tableEl(sh, design, ctx, opts) {
     const t = sh.tbl;
     const tbl = h('table', { class: 'tbl' });
+    if (t.rtl) tbl.style.direction = 'rtl';
     tbl.style.width = L.round(t.cols.reduce((a, b) => a + b, 0), 2) + 'px';
     const cg = h('colgroup');
     for (const w of t.cols) cg.appendChild(h('col', { style: `width:${L.round(w, 2)}px` }));
@@ -477,18 +528,44 @@
       row.cells.forEach((cell, ci) => {
         if (cell.hm || cell.vm) return;
         const td = h('td');
+        // Column order is independent of the text direction of each paragraph.
+        if (t.rtl) td.style.direction = 'ltr';
         td.dataset.r = ri; td.dataset.c = ci;
         if (cell.gs > 1) td.colSpan = cell.gs;
         if (cell.rs > 1) td.rowSpan = cell.rs;
         const ins = (cell.tx && cell.tx.ins) || [7.2, 3.6, 7.2, 3.6];
         td.style.padding = `${L.round(ins[1], 2)}px ${L.round(ins[2], 2)}px ${L.round(ins[3], 2)}px ${L.round(ins[0], 2)}px`;
         td.style.verticalAlign = cell.tx && cell.tx.anchor === 'ctr' ? 'middle' : cell.tx && cell.tx.anchor === 'b' ? 'bottom' : 'top';
-        td.style.background = R.fillCSS(cell.fill, design);
-        const bd = cell.bd || {};
+        const paint = L.properties.cellPaint(cell, design);
+        td.style.background = R.fillCSS(paint.fill, design);
+        const bd = paint.bd;
         td.style.borderLeft = bdCSS(bd.l); td.style.borderRight = bdCSS(bd.r); td.style.borderTop = bdCSS(bd.t); td.style.borderBottom = bdCSS(bd.b);
-        const inner = h('div', { class: 'txi' });
-        R.paragraphs(sh, cell.tx || L.txt.body(), design, ctx, inner, {});
-        td.appendChild(inner);
+        const tx = cell.tx || L.txt.body();
+        if (tx.vert && tx.vert !== 'horz') {
+          const w = t.cols.slice(ci, ci + (cell.gs || 1)).reduce((a, b) => a + b, 0);
+          const ch = t.rows.slice(ri, ri + (cell.rs || 1)).reduce((a, r) => a + r.h, 0);
+          td.style.padding = '0';
+          td.style.position = 'relative';
+          const body = R.textBody(sh, tx, design, ctx, [0, 0, w, ch], {});
+          /* the text runs along the cell as tall as its rows grew (a file's row heights are often less than that), so
+             the frame takes the cell's own size: a box filling the cell, measured in its container units */
+          const box = h('div', { class: 'tc-vert' });
+          box.style.cssText = 'position:absolute;inset:0;container-type:size';
+          const across = `(100cqw - ${L.round(ins[0] + ins[2], 2)}px)`, along = `(100cqh - ${L.round(ins[1] + ins[3], 2)}px)`;
+          if (tx.vert === 'vert' || tx.vert === 'vert270') {
+            Object.assign(body.style, { left: `calc(${L.round(ins[0], 2)}px + (${across} - ${along}) / 2)`, top: `calc(${L.round(ins[1], 2)}px + (${along} - ${across}) / 2)`, width: `calc${along}`, height: `calc${across}` });
+          } else {
+            // Browser vertical writing approximates Office's stacked/East Asian modes.
+            Object.assign(body.style, { transform: '', left: ins[0] + 'px', top: ins[1] + 'px', width: `calc${across}`, height: `calc${along}`, writingMode: tx.vert === 'mongolianVert' ? 'vertical-lr' : 'vertical-rl' });
+            if (/^wordArtVert/.test(tx.vert)) body.style.textOrientation = 'upright';
+          }
+          box.appendChild(body);
+          td.appendChild(box);
+        } else {
+          const inner = h('div', { class: 'txi' });
+          R.paragraphs(sh, tx, design, ctx, inner, {});
+          td.appendChild(inner);
+        }
         tr.appendChild(td);
       });
       tbl.appendChild(tr);
@@ -502,66 +579,16 @@
     ['textPlain', 'Plain Text'], ['textArchUp', 'Arch Up'], ['textArchDown', 'Arch Down'], ['textCircle', L.N('Circle')], ['textWave1', L.N('Wave')],
     ['textSlantUp', 'Slant Up'], ['textSlantDown', 'Slant Down'], ['textTriangle', 'Triangle Up'], ['textChevron', 'Chevron Up'], ['textCanUp', 'Can Up'],
   ];
-  function warpPoints(warp, w, hh, fs) {
-    const pts = [];
-    const N = 64;
-    const m = fs * 0.15;
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      switch (warp) {
-        case 'textArchUp': { const a = Math.PI - t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), hh - m - Math.sin(a) * (hh - fs - m)]); break; }
-        case 'textArchDown': { const a = Math.PI + t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), fs + m - Math.sin(a) * (hh - fs - m * 2)]); break; }
-        case 'textCircle': { const a = Math.PI + t * Math.PI * 2 * 0.98; pts.push([w / 2 + Math.cos(a) * (w / 2 - fs), hh / 2 + Math.sin(a) * (hh / 2 - fs)]); break; }
-        case 'textWave1': pts.push([m + t * (w - 2 * m), hh / 2 + fs / 3 + Math.sin(t * Math.PI * 2) * (hh / 2 - fs * 0.8)]); break;
-        case 'textSlantUp': pts.push([m + t * (w - 2 * m), hh - m - t * (hh - fs - m)]); break;
-        case 'textSlantDown': pts.push([m + t * (w - 2 * m), fs + t * (hh - fs - m)]); break;
-        case 'textTriangle': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh - m - t * 2 * (hh - fs - m) : fs + (t - 0.5) * 2 * (hh - fs - m)]); break;
-        case 'textChevron': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh * 0.75 - t * 2 * hh * 0.35 : hh * 0.4 + (t - 0.5) * 2 * hh * 0.35]); break;
-        case 'textCanUp': { pts.push([m + t * (w - 2 * m), hh * 0.85 - Math.sin(t * Math.PI) * hh * 0.25]); break; }
-        default: pts.push([t * w, hh / 2]);
-      }
-    }
-    return pts;
-  }
+  /** Lectern's own LettersArt: its text set in lines at the size it is saved with (pptx-write.js), bent by its warp
+      as a text body's is (R.warpedText) */
   R.wordart = function (sh, design, ctx) {
     const wa = sh.wa || { text: 'LettersArt' };
-    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
-    const svg = s('svg', { class: 'wa', width: L.round(w, 2), height: L.round(hh, 2), viewBox: `0 0 ${L.round(w, 3)} ${L.round(hh, 3)}`, preserveAspectRatio: 'none', overflow: 'visible' });
-    const defs = s('defs');
-    svg.appendChild(defs);
-    const fill = R.svgPaint(wa.fill || { t: 'solid', c: 'accent1' }, design, defs, { w, h: hh });
-    const ln = wa.line && wa.line.t !== 'none' && wa.line.c ? wa.line : null;
     const lines = String(wa.text || '').split('\n');
-    const family = L.fontStack(wa.font || 'Arial Black');
-    const common = { 'font-family': family, 'font-weight': wa.b ? 700 : 400, 'font-style': wa.i ? 'italic' : 'normal', fill: fill.paint, 'fill-opacity': fill.opacity };
-    if (ln) Object.assign(common, { stroke: R.col(ln.c, design), 'stroke-width': Math.max(0.25, ln.w || 0.75), 'paint-order': 'stroke', 'stroke-linejoin': 'round' });
-    if (wa.shadow) svg.style.filter = R.shadowCSS(wa.shadow, design);
-    if (wa.cap) svg.style.textTransform = 'uppercase';
-    if (wa.spc) common['letter-spacing'] = wa.spc;
-    const warp = wa.warp || 'textPlain';
-    if (warp === 'textPlain' || !lines.length || lines.length > 1) {
-      const lh = hh / lines.length;
-      lines.forEach((t, i) => {
-        const fs = lh * 0.86;
-        const txt = s('text', Object.assign({ x: 0, y: L.round(i * lh + lh * 0.8, 2), 'font-size': L.round(fs, 2), textLength: L.round(w, 2), lengthAdjust: 'spacingAndGlyphs' }, common));
-        txt.textContent = t || ' ';
-        if (wa.vert) { txt.setAttribute('writing-mode', 'tb'); }
-        svg.appendChild(txt);
-      });
-      return svg;
-    }
-    const fs = Math.min(hh * (warp === 'textCircle' ? 0.2 : 0.42), (w / Math.max(lines[0].length, 1)) * 1.4);
-    const pts = warpPoints(warp, w, hh, fs);
-    let len = 0;
-    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    const id = nid('wp');
-    defs.appendChild(s('path', { id, d: 'M' + pts.map((p) => L.round(p[0], 2) + ',' + L.round(p[1], 2)).join(' L') }));
-    const txt = s('text', Object.assign({ 'font-size': L.round(fs, 2) }, common));
-    const tp = s('textPath', { href: '#' + id, textLength: L.round(len * 0.98, 2), lengthAdjust: 'spacingAndGlyphs', startOffset: L.round(len * 0.01, 2) });
-    tp.textContent = lines[0];
-    txt.appendChild(tp);
-    svg.appendChild(txt);
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    const rp = { sz: Math.max(8, Math.round((sh.h / Math.max(lines.length, 1)) * 0.75 * 2) / 2), font: wa.font || 'Arial Black', b: !!wa.b, i: !!wa.i, fill: wa.fill || { t: 'solid', c: 'accent1' },
+      ln: wa.line && wa.line.t !== 'none' ? wa.line : undefined, spc: wa.spc, cap: wa.cap, shd: !!wa.shadow, shdX: wa.shadow || undefined };
+    const tx = { warp: wa.warp || 'textPlain', ps: lines.map((t) => ({ lvl: 0, pp: { algn: wa.algn || 'ctr' }, rs: t ? [Object.assign({ t }, rp)] : [], end: rp })) };
+    const svg = R.warpedText(sh, tx, design, ctx) || s('svg', { class: 'warp', width: 1, height: 1 });
+    svg.classList.add('wa');
     return svg;
   };
 
@@ -617,9 +644,9 @@
       }
       default: {
         const hasGeom = (sh.fill && sh.fill.t !== 'none') || (sh.line && sh.line.t !== 'none' && sh.line.c) || (sh.geom && sh.geom !== 'rect' && sh.type === 'shape');
-        /* an empty placeholder is only an editing aid: thumbnails, the slide show and printouts leave it out */
-        const emptyPh = sh.ph && (!sh.tx || L.txt.isEmpty(sh.tx)) && ctx.mode !== 'edit' && !opts.deco;
-        if (hasGeom && !emptyPh) el.appendChild(geomSVG(sh, design, ctx, { interactive }));
+        /* an empty placeholder shows its fill and outline everywhere, as PowerPoint 2016 prints a title bar left
+           empty (LibreOffice's empty-title-placeholder); only its prompt is an editing aid */
+        if (hasGeom) el.appendChild(geomSVG(sh, design, ctx, { interactive }));
         if (sh.tx) {
           const empty = L.txt.isEmpty(sh.tx);
           const rect = L.geom.textRect(sh);
@@ -627,6 +654,9 @@
             const tb = R.textBody(sh, sh.tx, design, ctx, rect, {});
             if (sh.shadow && !hasGeom) tb.style.filter = R.shadowCSS(sh.shadow, design);
             el.appendChild(tb);
+            /* text bent by a warp: drawn bent, its text body kept under it for editing */
+            const bent = !empty && sh.tx.warp && R.warpedText(sh, sh.tx, design, ctx);
+            if (bent) { el.classList.add('warped'); el.appendChild(bent); }
           }
           if (empty && (sh.ph || (sh.sa && sh.sa.role === 'node')) && ctx.mode === 'edit' && ctx.prompts !== false) {
             const ptype = sh.ph ? sh.ph.type : null;

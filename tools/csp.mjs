@@ -33,7 +33,7 @@ export const POLICY = [
 const META = `<meta http-equiv="Content-Security-Policy" content="${POLICY}">`;
 const FOUND = /<meta http-equiv="Content-Security-Policy" content="[^"]*">/g;
 /** the pages, and the sources other tools build pages from */
-export const PAGES = ['public/index.html', 'public/quire/index.html', 'public/lectern/index.html', 'public/ledger/index.html', 'public/oss-licenses.html',
+export const PAGES = ['public/index.html', 'public/lite.html', 'public/quire/index.html', 'public/lectern/index.html', 'public/ledger/index.html', 'public/oss-licenses.html',
   'public/updater/index.html'];
 export const SOURCES = ['tools/ledger/build/template.html', 'tools/oss-licenses.py'];
 

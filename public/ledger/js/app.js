@@ -136,7 +136,7 @@
   /* ------------------------------------------------------------ open */
   A.openDialog = async function (accept) {
     if (window.VO && VO.oneDocument) return VO.openDialog();
-    const files = await L.pickFiles(accept || '.xlsx,.xlsm,.xltx,.xltm,.csv,.txt,.tsv,.prn,.xml', true);
+    const files = await L.pickFiles(accept || '.xlsx,.xlsm,.xltx,.xltm,.xls,.xlt,.csv,.txt,.tsv,.prn,.xml', true);
     if (files.length) A.openFiles(files);
   };
   /** the type Ledger saves a file of these kinds as, where it is (A.openFile; a recovered draft, VO.attach's open) */
@@ -147,14 +147,14 @@
     }
   };
   A.openFile = async function (file, password, opts) {
-    if (!password && window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
+    if (password == null && window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
     opts = opts || {};
     const name = file.name || 'Book.xlsx';
     const ext = (name.split('.').pop() || '').toLowerCase();
     ui.busy(true, L.t('Opening {0}...', name));
     try {
       const bytes = new Uint8Array(await L.readAsArrayBuffer(file));
-      let w, type = 'xlsx';
+      let w, type = 'xlsx', converted = null;
       if ((opts.wizard || /^(csv|txt|tsv|prn)$/.test(ext)) && !(bytes[0] === 0x50 && bytes[1] === 0x4b) && !(bytes[0] === 0xd0 && bytes[1] === 0xcf)) {
         ui.busy(false);
         const res = await L.csv.importDialog(bytes, name, { wizard: opts.wizard });
@@ -166,8 +166,15 @@
         w = await L.xmlss.read(bytes);
         type = 'xmlss';
       } else {
-        try { w = await L.xlsxRead.read(bytes, { password }); }
-        catch (e) {
+        try {
+          try { w = await L.xlsxRead.read(bytes, { password }); }
+          catch (e) {
+            /* an Excel 97-2003 workbook: read as the .xlsx Excel would write for it (common/legacy/import.js) */
+            if (e.code !== 'xls') throw e;
+            converted = await L.legacyImport.convert(bytes, name, 'xls', { password });
+            w = await L.xlsxRead.read(converted.pkg);
+          }
+        } catch (e) {
           if (e.code === 'badpassword') {
             /* as Excel: say so and cancel the open; File ▸ Open again to retry */
             ui.busy(false);
@@ -180,10 +187,9 @@
             if (pw == null) return;
             return A.openFile(file, pw, opts);
           }
-          if (e.code === 'xls') { ui.busy(false); if (L.xls && L.xls.read) { w = await L.xls.read(bytes); type = 'xls'; } else throw Object.assign(new Error(L.t("'{0}' is a binary Excel 97–2003 workbook (.xls). Ledger opens .xlsx, .xlsm, .csv and XML Spreadsheet 2003 files. Open it in Excel or LibreOffice and save it as .xlsx first.", name)), { code: 'xls' }); }
-          else throw e;
+          throw e;
         }
-        type = w.ooxmlFormat || (w.macroEnabled ? 'xlsm' : 'xlsx');
+        type = converted ? 'xls' : w.ooxmlFormat || (w.macroEnabled ? 'xlsm' : 'xlsx');   // a converted workbook's Save asks for an .xlsx name
         if (w.repaired) ui.toast('This file was damaged; Ledger repaired what it could.');
       }
       A.prepare(w);
@@ -191,6 +197,8 @@
       if (password) b.password = password;
       if (window.VO && file.name) VO.opened(file, b);
       updateTitle();
+      const note = converted && L.legacyImport.notice(converted, name);
+      if (note) { ui.busy(false); await ui.msg(note, { icon: 'warn' }); }
     } finally { ui.busy(false); }
   };
   /** after loading: dependency graph, values that were never calculated, row heights */
@@ -254,7 +262,7 @@
   /* ------------------------------------------------------------ save */
   /* what Ledger saves, for the desktop app's Save dialog (L.file): the workbook types are saves, the rest exports
      (a CSV or text file Ledger opened is saved where it is) */
-  L.file.types = [{ id: 'xlsx', label: L.N('Microsoft Office Excel Workbook (*.xlsx)'), ext: ['xlsx'] }, { id: 'xlsm', label: L.N('Excel Macro-Enabled Workbook (*.xlsm)'), ext: ['xlsm'] },
+  L.file.types = [{ id: 'xlsx', label: L.N('Excel Workbook (*.xlsx)'), ext: ['xlsx'] }, { id: 'xlsm', label: L.N('Excel Macro-Enabled Workbook (*.xlsm)'), ext: ['xlsm'] },
     { id: 'xltx', label: L.N('Template (*.xltx)'), ext: ['xltx'] }, { id: 'xltm', label: L.N('Macro-Enabled Template (*.xltm)'), ext: ['xltm'] },
     { id: 'xmlss', label: L.N('XML Spreadsheet 2003 (*.xml)'), ext: ['xml'] }, { id: 'csv', label: L.N('CSV (Comma delimited) (*.csv)'), ext: ['csv'] },
     { id: 'txt', label: L.N('Text (Tab delimited) (*.txt)'), ext: ['txt'] }, { id: 'html', label: L.N('Web Page (*.htm)'), ext: ['htm', 'html'] }, { id: 'pdf', label: L.N('PDF (*.pdf)'), ext: ['pdf'] }];
@@ -321,6 +329,7 @@
   };
 
   /* ------------------------------------------------------------ undo */
+  A.historyMenu = (r, kind) => { const u = wb().undo; ui.historyMenu(r, kind, L.editor.active ? [] : (kind === 'undo' ? u.stack : u.redoStack).map((t) => t.label).reverse()); };
   A.undo = function () {
     if (L.editor.active) { L.editor.cancel(); return; }
     const w = wb();
@@ -529,7 +538,7 @@
   function buildMenus() {
     const recent = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['exportPDF', 'exportCSV'] }, 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', 'exportPDF', 'exportCSV', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'F&ill', sub: ['fillDown', 'fillRight', 'fillUp', 'fillLeft', 'fillAcross', 'fillSeries', 'fillJustify'] },
@@ -543,7 +552,7 @@
       {
         label: '&Insert', items: () => ['insertCells', 'insertRows', 'insertCols', 'insertSheet', 'insertChart', 'insertSymbol', 'insertPageBreak', '-', 'insertFunction',
           { label: '&Name', sub: ['nameDefine', 'pasteName', 'nameCreate', 'nameApply'] }, 'insertComment', '-',
-          { label: '&Picture', icon: 'picture', sub: ['insertClipArt', 'insertPicture', '-', 'insertShape', 'insertTextBox'] }, 'hyperlink'],
+          { label: '&Picture', icon: 'picture', sub: ['insertClipArt', 'insertPicture', '-', { label: '&AutoShapes', icon: 'autoshapes', run: () => L.drawing.autoShapesMenu() }, 'insertTextBox'] }, 'hyperlink'],
       },
       {
         label: 'F&ormat', items: () => ['formatCells', { label: '&Row', sub: ['rowHeight', 'rowAutofit', 'rowHide', 'rowUnhide'] }, { label: '&Column', sub: ['colWidth', 'colAutofit', 'colHide', 'colUnhide', 'colStandard'] },
@@ -559,8 +568,8 @@
           { label: '&Group and Outline', sub: ['hideDetail', 'showDetail', '-', 'groupRows', 'ungroupRows', 'autoOutline', 'clearOutline', '-', 'outlineSettings'] }, '-', 'pivotTable',
           { label: 'Import External &Data', sub: ['importText'] }, '-', { label: '&List', sub: ['createList', 'totalRow', 'convertToRange'] }, '-', 'refreshData'],
       },
-      { label: '&Window', items: () => ['newWindow', 'arrangeWindows', '-', 'splitWindow', 'freezePanes', '-', ...(window.VO && VO.oneDocument ? VO.windowItems() : A.books.map((b, i) => ({ label: `&${i + 1} ${b.name.replace(/&/g, '&&')}`, raw: true, radio: true, checked: () => i === A.cur, run: () => A.switchBook(i) })))] },
-      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'keyboardHelp', 'functionsHelp', '-', 'about'] },
+      { label: '&Window', items: () => ['newWindow', 'arrangeWindows', '-', 'splitWindow', 'freezePanes', '-', ...(window.VO && VO.oneDocument ? VO.windowItems() : A.books.map((b, i) => ({ label: `&${i + 1} ${b.name.replace(/&/g, '&&')}`, raw: true, checked: () => i === A.cur, run: () => A.switchBook(i) })))] },
+      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'gettingStarted', 'keyboardHelp', 'functionsHelp', '-', 'about'] },
     ];
     const row = L.$('#menurow');
     A.menuBar = ui.menuBar(row, menus);
@@ -571,9 +580,9 @@
   const TB = {};
   /* the toolbars' boxes and buttons with menus, also used by the ribbon (js/ribbon.js): each call makes a new one */
   A.parts = {
-    font: (o) => ui.combo(Object.assign({ id: 'fontname', width: 128, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.fontSections({ major: wb().theme?.major, minor: wb().theme?.minor }), preview: (v) => `font-family:${LY.fontStack(v)}`, note: L.fontNote, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; L.addRecentFont(v); O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, L.N('Font')); G().paint(); } }, o)),
-    size: (o) => ui.combo(Object.assign({ id: 'fontsize', width: 42, tip: 'Font Size', value: () => String((curStyle().font || {}).sz || 10), options: () => L.SIZE_LIST, onChange: (v) => { const n = parseFloat(v); if (!(n >= 1 && n <= 409)) { ui.msg('The number must be between 1 and 409.', { icon: 'warn' }); return; } if (G().guardProtect('formatCells')) return; O.format(sh(), G().ranges(), { font: { sz: n } }, 'Font Size'); O.tx(wb(), L.N('AutoFit'), () => { for (const r of A.selRows()) O.autoRow(sh(), r); }); G().paint(); } }, o)),
-    zoom: (o) => ui.combo(Object.assign({ id: 'zoombox', width: 52, tip: 'Zoom', value: () => (sh().view.zoom || 100) + '%', options: () => ['200%', '100%', '75%', '50%', '25%', { value: 'Selection', label: L.t('Selection') }], onChange: (v) => { if (/^sel/i.test(v)) { A.zoomToSelection(); return; } const n = parseInt(v, 10); if (n >= 10 && n <= 400) G().setZoom(n); else ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); } }, o)),
+    font: (o) => ui.combo(Object.assign({ id: 'fontname', width: 136, tip: 'Font', value: () => { const st = curStyle(); return LY.fontName(wb(), st.font || {}); }, options: () => L.fontSections({ major: wb().theme?.major, minor: wb().theme?.minor }), preview: (v) => `font-family:${LY.fontStack(v)}`, note: L.fontNote, listCls: 'fonts', onChange: (v) => { if (G().guardProtect('formatCells')) return; L.addRecentFont(v); O.format(sh(), G().ranges(), { font: { name: v, scheme: undefined } }, L.N('Font')); G().paint(); } }, o)),
+    size: (o) => ui.combo(Object.assign({ id: 'fontsize', width: 44, tip: 'Font Size', value: () => String((curStyle().font || {}).sz || 10), options: () => L.SIZE_LIST, onChange: (v) => A.setFontSize(parseFloat(v)) }, o)),
+    zoom: (o) => ui.combo(Object.assign({ id: 'zoombox', width: 64, tip: 'Zoom', value: () => (sh().view.zoom || 100) + '%', options: () => ['200%', '100%', '75%', '50%', '25%', { value: 'Selection', label: L.t('Selection') }], onChange: (v) => { if (/^sel/i.test(v)) { A.zoomToSelection(); return; } const n = parseInt(v, 10); if (n >= 10 && n <= 400) G().setZoom(n); else ui.msg('Enter a number between 10 and 400.', { icon: 'warn' }); } }, o)),
   };
   A.menus = {
     autoSum: (at) => ui.openMenu([
@@ -592,19 +601,23 @@
     const fillSplit = ui.tbSplit('fillColorApply', A.menus.fill);
     const fontSplit = ui.tbSplit('fontColorApply', A.menus.fontColor);
     const borderSplit = ui.tbSplit('bordersApply', A.menus.borders);
-    TB.standard = ui.toolbar('standard', 'Standard', ['newBook', 'open', 'save', '|', 'printQuick', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'formatPainter', '|', 'undo', 'redo', '|', 'hyperlink', sumSplit, 'sortAsc', 'sortDesc', '|', 'chartWizard', ui.tbButton('tb_drawing', { icon: 'drawing' }), zoomCombo, '|', 'help']);
+    TB.standard = ui.toolbar('standard', 'Standard', ['newBook', 'open', 'save', '|', 'printQuick', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'formatPainter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'hyperlink', sumSplit, 'sortAsc', 'sortDesc', '|', 'chartWizard', ui.tbButton('tb_drawing', { icon: 'drawing' }), '|', zoomCombo, '|', 'help']);
     TB.formatting = ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, '|', 'bold', 'italic', 'underline', '|', 'alignLeft', 'alignCenter', 'alignRight', 'mergeCenter', '|', 'currencyStyle', 'percentStyle', 'commaStyle', 'incDecimal', 'decDecimal', '|', 'decIndent', 'incIndent', '|', borderSplit, fillSplit, fontSplit]);
     TB.borders = ui.toolbar('borders', 'Borders', [ui.tbSplit('bordersApply', A.menus.borders), ui.tbButton('borderNone', { icon: 'bordersNone' }), ui.tbButton('borderOutline', { icon: 'bordersOut' })]);
     TB.auditing = ui.toolbar('auditing', 'Formula Auditing', ['traceError', '|', 'tracePrecedents', 'traceDependents', 'removeArrows', '|', 'insertComment', 'validation', 'circleInvalid', 'clearCircles', '|', 'watchWindow', 'evaluateFormula']);
     TB.reviewing = ui.toolbar('reviewing', 'Reviewing', ['insertComment', 'showHideComment', 'deleteComment', '|', 'showComments']);
     TB.list = ui.toolbar('list', 'List', [ui.tbDrop('&List', null, (at) => ui.openMenu(['insertRows', 'insertCols', '-', 'sortDlg', 'autoFilter', '-', 'totalRow', 'convertToRange'], at)), 'totalRow']);
     TB.chart = ui.toolbar('chart', 'Chart', [ui.tbDrop('Chart Type', 'chart', (at) => L.chartWizard && L.chartWizard.typeMenu(at)), ui.tbButton('formatObject', { label: 'Format' })]);
-    TB.drawing = ui.toolbar('drawing', 'Drawing', [ui.tbDrop('D&raw', 'draw', A.menus.draw), '|',
-      ui.tbButton('insertShape', { icon: 'rect' }), ui.tbButton('insertTextBox'), ui.tbButton('insertPicture'), '|', ui.tbButton('fillColorApply')]);
-    const row1 = h('div', { class: 'tb-row' }), row2 = h('div', { class: 'tb-row' });
-    row1.append(TB.standard, TB.formatting);
-    row2.append(TB.borders, TB.auditing, TB.reviewing, TB.list, TB.chart, TB.drawing);
-    host.append(row1, row2);
+    const asBtn = ui.tbDrop('A&utoShapes', null, (r) => L.drawing.autoShapesMenu(r), 'AutoShapes');
+    asBtn.dataset.as = '';
+    TB.drawing = ui.toolbar('drawing', 'Drawing', [ui.tbDrop('D&raw', 'draw', A.menus.draw), '|', asBtn,
+      'drawLine', 'drawArrow', 'drawRect', 'drawOval', ui.tbButton('insertTextBox'), '|', 'insertClipArt', ui.tbButton('insertPicture'), '|', ui.tbButton('fillColorApply')]);
+    const row1 = h('div', { class: 'tb-row' }, TB.standard), row2 = h('div', { class: 'tb-row' }, TB.formatting);
+    const row3 = h('div', { class: 'tb-row' }, TB.borders, TB.auditing, TB.reviewing, TB.list, TB.chart);
+    L.$('#drawrow').appendChild(TB.drawing);   /* docked above the status bar, as in Office 2003 */
+    host.append(h('div', { class: 'tb-pair' }, row1, row2), row3);
+    A.tbRows = [row1, row2, row3];
+    ui.toolbarPrefs(A.opts);
     A.updateToolbars();
   }
   function borderPalette(el) {
@@ -629,8 +642,8 @@
   A.toggleToolbar = (id, force) => { const cur = A.toolbarVisible(id); A.opts.toolbars[id] = force != null ? force : !cur; A.updateToolbars(); A.saveOpts(); };
   A.updateToolbars = function () {
     for (const id in TB) { const v = A.toolbarVisible(id); TB[id].hidden = !v; }
-    const r2 = TB.borders && TB.borders.parentElement;
-    if (r2) r2.hidden = !Array.from(r2.children).some((x) => !x.hidden);
+    for (const r of A.tbRows || []) r.hidden = Array.from(r.children).every((x) => x.hidden);
+    if (TB.drawing) L.$('#drawrow').hidden = TB.drawing.hidden;
     ui.refresh();
   };
   const curStyle = () => { const s = G().sel(); return LY.styleOf(sh(), s.r, s.c, sh().get(s.r, s.c)); };
@@ -645,7 +658,10 @@
     sbCalc.addEventListener('contextmenu', (e) => { e.preventDefault(); calcMenu(e); });
     sbCalc.addEventListener('click', (e) => calcMenu(e));
     sb.append(sbMode, sbText, sbCalc);
-    for (const k of [L.N('CAPS'), L.N('NUM'), L.N('SCRL'), L.N('END')]) { sbInd[k] = h('div', { class: 'sb-cell ind off', text: k }); sb.appendChild(sbInd[k]); }
+    for (const k of [L.N('CAPS'), L.N('NUM'), L.N('SCRL'), L.N('END')]) { sbInd[k] = h('div', { class: 'sb-cell ind off opt', text: k }); sb.appendChild(sbInd[k]); }
+    // the right end, as in the other apps (ui.js): view buttons and the zoom slider of the active sheet
+    sb.appendChild(h('div', { class: 'sb-right' }, ui.statusGroup(['viewNormal', 'viewPageBreak']),
+      ui.zoomSlider({ min: 10, max: 400, value: () => sh().view.zoom || 100, set: (p) => G().setZoom(p), dialog: 'zoomDlg' }), ui.paneToggle('taskPane')));
     document.addEventListener('keydown', (e) => { if (e.getModifierState) { sbInd.CAPS.classList.toggle('off', !e.getModifierState('CapsLock')); sbInd.NUM.classList.toggle('off', !e.getModifierState('NumLock')); sbInd.SCRL.classList.toggle('off', !e.getModifierState('ScrollLock')); G().scrollLock = e.getModifierState('ScrollLock'); } }, true);
   }
   function calcMenu(e) {
@@ -1285,12 +1301,27 @@
     L.dlg.comment(r, c, cm);
   };
 
+  A.setFontSize = (n) => {
+    if (!(n >= 1 && n <= 409)) { ui.msg('The number must be between 1 and 409.', { icon: 'warn' }); return; }
+    if (G().guardProtect('formatCells')) return;
+    O.format(sh(), G().ranges(), { font: { sz: n } }, 'Font Size');
+    O.tx(wb(), L.N('AutoFit'), () => { for (const r of A.selRows()) O.autoRow(sh(), r); });
+    G().paint();
+  };
+  /** Home ▸ Increase / Decrease Font Size: the next size in the Font Size list, as Excel */
+  A.stepFont = (d) => {
+    const cur = (curStyle().font || {}).sz || 11, list = L.SIZE_LIST.filter(Number.isInteger);
+    A.setFontSize(d > 0 ? list.find((x) => x > cur) || Math.min(409, cur + 10) : [...list].reverse().find((x) => x < cur) || Math.max(1, cur - 1));
+  };
+
   /* pictures */
   A.insertPicture = async function () {
     const files = await L.pickFiles('image/*,.emf,.wmf', true);
     for (const f of files) await A.insertPictureFile(f);
   };
-  A.insertPictureFile = async function (file) {
+  /** a clip from the Clip Art pane (common/clipart.js), an inch and a third across at the active cell */
+  A.insertClipArt = async (it) => A.insertPictureFile(new File([await L.clipart.toPNG(it, 512)], it.name + '.png', { type: 'image/png' }), 128);
+  A.insertPictureFile = async function (file, maxPx) {
     if (G().guardProtect('objects')) return;
     const w = wb(), shx = sh(), s = G().sel();
     const bytes = new Uint8Array(await L.readAsArrayBuffer(file));
@@ -1312,7 +1343,7 @@
     const id = 'img' + (w.media.size + 1) + '_' + Date.now().toString(36);
     w.media.set(id, { bytes: data, ext, type, name: file.name.replace(/\.svg$/i, '.png') });
     const dims = await new Promise((res) => { const url = URL.createObjectURL(new Blob([bytes], { type: file.type || L.extToMime(ext) })); const im = new Image(); im.onload = () => { res({ w: im.naturalWidth, h: im.naturalHeight }); URL.revokeObjectURL(url); }; im.onerror = () => res({ w: 200, h: 150 }); im.src = url; });
-    const scale = Math.min(1, 480 / dims.w, 360 / dims.h);
+    const scale = Math.min(1, (maxPx || 480) / dims.w, (maxPx || 360) / dims.h);
     const d = { kind: 'image', media: id, name: 'Picture ' + (shx.drawings.length + 1), id: shx.drawings.length + 2, anchor: { type: 'one', from: { r: s.r, c: s.c, rOff: 0, cOff: 0 }, w: dims.w * scale * 0.75, h: dims.h * scale * 0.75 } };
     O.tx(w, 'Insert Picture', () => O.setDrawings(shx, shx.drawings.concat([d])));
     G().selectObject(d);
@@ -1430,7 +1461,7 @@
       const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
       if (!files.length) return;
       e.preventDefault();
-      const books = files.filter((f) => /\.(xlsx|xlsm|xltx|xltm|csv|txt|tsv|prn|xml|xls)$/i.test(f.name));
+      const books = files.filter((f) => /\.(xlsx|xlsm|xltx|xltm|csv|txt|tsv|prn|xml|xls|xlt)$/i.test(f.name));
       if (books.length) A.openFiles(books);
       const imgs = files.filter((f) => /^image\//.test(f.type));
       for (const f of imgs) A.insertPictureFile(f);
@@ -1481,8 +1512,11 @@
     buildTabNav();
     buildNameBox();
     if (L.panes) L.panes.task.mount(L.$('#taskpane'));
-    /* the open task pane follows the selected object to its tool set (common/ribbon.js) */
-    if (L.panes) L.ribbonUI.follow({ task: L.panes.task, sets: { chart: true, picture: true, drawing: true }, on: () => A.opts.paneFollows !== false });
+    /* the task pane follows the selected object to its tool set, opening and closing itself (common/ribbon.js) */
+    const taskPref = { get: () => A.opts.taskOpen, set: (v) => { A.opts.taskOpen = v; A.saveOpts(); } };
+    if (L.panes) L.ribbonUI.follow({ task: L.panes.task, sets: { chart: true, picture: true, drawing: true }, on: () => A.opts.paneFollows !== false, open: () => A.toggleTask(true), close: () => A.toggleTask(false), pref: taskPref,
+      room: () => L.$('#vscroll').getBoundingClientRect().left,
+      target: () => { const el = L.$('.gobj.sel'); return el ? el.getBoundingClientRect() : null; } });
     A.addBook(w, (tpl ? tpl.name.replace(/\s+/g, '') : 'Book') + untitled, { type: 'xlsx', untitled: true });
     setupDrop();
     L.bus.on('selection', () => { updateStatus(); ui.refresh(); A.updateToolbars(); });

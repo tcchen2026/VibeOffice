@@ -32,7 +32,11 @@
       const kidsEl = Array.from(ac.children);
       const fb = kidsEl.find((c) => c.localName === 'Fallback');
       const ch = kidsEl.find((c) => c.localName === 'Choice');
-      const pick = fb && fb.children.length ? fb : ch || fb;
+      // Equations are now retained as atoms. Prefer their supported a14 branch
+      // inside a diagram point instead of the old picture-only fallback.
+      const mathChoice = kidsEl.find(c => c.localName === 'Choice' && hasMath(c) &&
+        (c.getAttribute('Requires') || '').trim().split(/\s+/).every(p => c.lookupNamespaceURI(p) === 'http://schemas.microsoft.com/office/drawing/2010/main'));
+      const pick = mathChoice || (fb && fb.children.length ? fb : ch || fb);
       if (pick?.children.length) ac.replaceWith(...Array.from(pick.childNodes));
       else if (!['spTree', 'grpSp'].includes(ac.parentNode.localName)) ac.remove();
     }
@@ -111,6 +115,8 @@
         const stops = kids(kid(el, 'gsLst'), 'gs').map((g) => { const c = colorOf(g, ctx) || { c: '#000000', a: 1 }; return { p: num(g, 'pos', 0) / 100000, c: c.c, a: c.a }; });
         const lin = kid(el, 'lin'), p = kid(el, 'path');
         const f = { t: 'grad', stops: stops.length ? stops : [{ p: 0, c: '#FFFFFF', a: 1 }, { p: 1, c: '#000000', a: 1 }], ang: lin ? num(lin, 'ang', 0) / 60000 : 90, path: p ? (at(p, 'path') === 'rect' ? 'rect' : at(p, 'path') === 'shape' ? 'shape' : 'circle') : 'lin' };
+        /* an angle in the shape's own space, not stretched with it to the box (scaled="0" or none) */
+        if (lin && !bool(at(lin, 'scaled'))) f.scaled = false;
         /* path gradients radiate from the focus rectangle (insets from the edges, in %) */
         const ftr = p && kid(p, 'fillToRect');
         if (ftr) {
@@ -160,7 +166,14 @@
     if (f) {
       if (f.t === 'none') return { t: 'none', w: ln.w };
       if (f.t === 'solid') { ln.c = f.c; ln.a = f.a; }
-      else if (f.t === 'grad') ln.c = f.stops[0].c;
+      else if (f.t === 'grad' && f.stops.length) {
+        /* drawn in one colour, the first stop's, as opaque as the stops are on average: a gradient of clear stops
+           is no line at all (LibreOffice's tdf149588_transparentSolidFill) */
+        const first = f.stops.reduce((a, b) => (b.p < a.p ? b : a), f.stops[0]);
+        ln.c = first.c;
+        const a = f.stops.reduce((sum, g) => sum + (g.a == null ? 1 : g.a), 0) / f.stops.length;
+        if (a < 1) ln.a = L.round(a, 3);
+      }
       else if (f.t === 'patt') ln.c = f.fg;
     } else if (base && base.t === 'none') return { t: 'none', w: ln.w };
     const dash = kid(el, 'prstDash');
@@ -180,6 +193,9 @@
   }
 
   /* ---------- text ---------- */
+  const MATH_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/math';
+  const isMath = e => e?.localName === 'm' && e.namespaceURI === 'http://schemas.microsoft.com/office/drawing/2010/main';
+  const hasMath = e => !!e && Array.from(e.getElementsByTagName('*')).some(isMath);
   const fontName = (f) => (!f ? undefined : f === '+mj-lt' || f === '+mj-ea' || f === '+mj-cs' ? '+mj' : f === '+mn-lt' || f === '+mn-ea' || f === '+mn-cs' ? '+mn' : f);
   function runProps(rPr, ctx) {
     const r = {};
@@ -198,6 +214,7 @@
         case 'gradFill': r.fill = fill(c, ctx); if (r.fill && r.fill.stops[0]) r.color = r.fill.stops[0].c; break;
         case 'noFill': r.fill = { t: 'none' }; break;
         case 'pattFill': { const f = fill(c, ctx); r.color = f.fg; break; }
+        case 'blipFill': { const f = fill(c, ctx); if (f && f.t === 'img') r.fill = f; break; }   // text filled with a picture
         case 'ln': { const l = line(c, ctx); if (l && l.t !== 'none') r.ln = l; break; }
         case 'effectLst': { const s = shadow(c, ctx); if (s) { r.shd = true; r.shdX = s; } break; }
         case 'highlight': { const v = colorOf(c, ctx); if (v) r.hl = v.c; break; }
@@ -235,7 +252,7 @@
         case 'buNone': bu = { t: 'none' }; break;
         case 'buChar': bu = { t: 'char', ch: at(c, 'char') || '•' }; break;
         case 'buAutoNum': bu = { t: 'num', scheme: at(c, 'type') || 'arabicPeriod', start: num(c, 'startAt', 1) }; break;
-        case 'buBlip': bu = { t: 'char', ch: '■' }; break;
+        case 'buBlip': { const b = kid(c, 'blip'), id = b ? ctx.media(rid(b, 'embed')) : null; bu = id ? { t: 'blip', media: id } : { t: 'char', ch: '■' }; break; }
         case 'buClr': { const v = colorOf(c, ctx); if (v) extra.c = v.c; break; }
         case 'buSzPct': extra.sz = num(c, 'val', 100000) / 100000; break;
         case 'buFont': extra.font = at(c, 'typeface'); break;
@@ -291,6 +308,10 @@
           const rp = runProps(kid(c, 'rPr'), ctx);
           if (type === 'slidenum' || /^datetime/.test(type)) para.rs.push(Object.assign({ t: t ? t.textContent : '', fld: type }, rp));
           else para.rs.push(Object.assign({ t: t ? t.textContent : '' }, rp));
+        } else if (isMath(c)) {
+          const rp = runProps(desc(c, 'rPr'), ctx); delete rp.keep;
+          para.rs.push({ ...rp, t: Array.from(c.getElementsByTagNameNS(MATH_NS, 't')).map(t => t.textContent).join(''), fld: 'math',
+            keep: { math: K.fragment(K.parse(K.raw(c)), { pkg: ctx.pkg, part: ctx.partPath }) } });
         } else if (c.localName === 'endParaRPr') {
           const rp = runProps(c, ctx);
           delete rp.link;
@@ -312,14 +333,20 @@
     if (at(bp, 'anchorCtr') != null) o.anchorCtr = bool(at(bp, 'anchorCtr'));
     if (at(bp, 'wrap')) o.wrap = at(bp, 'wrap') !== 'none';
     if (at(bp, 'vert') && at(bp, 'vert') !== 'horz') o.vert = at(bp, 'vert') === 'vert270' ? 'vert270' : 'vert'; else if (at(bp, 'vert') === 'horz') delete o.vert;
-    if (at(bp, 'numCol') && +at(bp, 'numCol') > 1) { o.cols = +at(bp, 'numCol'); o.colGap = pt(num(bp, 'spcCol', 0)); }
+    /* numCol="1" on a slide undoes its layout's columns (LibreOffice's tdf140852) */
+    if (at(bp, 'numCol')) { o.cols = Math.max(1, +at(bp, 'numCol') || 1); if (o.cols > 1) o.colGap = pt(num(bp, 'spcCol', 0)); else delete o.colGap; }
     if (at(bp, 'rot')) o.rot = num(bp, 'rot', 0) / 60000;
     const na = kid(bp, 'normAutofit'), sa = kid(bp, 'spAutoFit'), noa = kid(bp, 'noAutofit');
     if (na) { o.autofit = 'norm'; o.fontScale = at(na, 'fontScale') ? +at(na, 'fontScale') / 100000 : undefined; o.lnSpcRed = at(na, 'lnSpcReduction') ? +at(na, 'lnSpcReduction') / 100000 : undefined; if (!o.fontScale) delete o.fontScale; if (!o.lnSpcRed) delete o.lnSpcRed; }
     else if (sa) o.autofit = 'shape';
     else if (noa) o.autofit = 'none';
     const warp = kid(bp, 'prstTxWarp');
-    if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') o.warp = at(warp, 'prst');
+    if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') {
+      o.warp = at(warp, 'prst');
+      const adj = {};
+      for (const gd of kids(kid(warp, 'avLst'))) { const m = /^val\s+(-?\d+)/.exec(at(gd, 'fmla') || ''); if (m && at(gd, 'name')) adj[at(gd, 'name')] = +m[1]; }
+      if (Object.keys(adj).length) o.warpAdj = adj; else delete o.warpAdj;
+    } else if (warp) { delete o.warp; delete o.warpAdj; }
     if (bool(at(bp, 'fromWordArt'))) o.fromWordArt = true;
     return o;
   }
@@ -417,327 +444,11 @@
     return { geom: 'rect' };
   }
 
-  /* ---------- charts (c:chartSpace → chart model v2, drawn by L.chart.render) ---------- */
-  const CHART_TYPES = /^(bar|bar3D|line|line3D|pie|pie3D|ofPie|doughnut|area|area3D|scatter|radar|bubble|stock|surface|surface3D)Chart$/;
-  const autoSeriesColor = (i, n, style, design) => L.chart.autoColor(i, n, style, design);
-  function chartModel(cx, ctx) {
-    const chart = kid(cx, 'chart');
-    const plot = kid(chart, 'plotArea');
-    if (!plot) return null;
-    const cctx = Object.assign({}, ctx, { keepScheme: false, media: () => null, link: () => null, phClr: null });
-    const design = ctx.design;
-    const style = num(kid(cx, 'style'), 'val', 2);
-    const yes = (el, d) => { if (!el) return d; const v = at(el, 'val'); return v == null ? true : v === '1' || v === 'true'; };
-    const val = (el, n) => at(kid(el, n), 'val');
-    const nval = (el, n, d) => { const v = val(el, n); return v == null || v === '' || isNaN(+v) ? d : +v; };
-    const fillOf = (sp) => (sp ? fillIn(sp, cctx) : undefined);
-    /* a line without its own colour or width keeps Office's automatic one (c and w left out) */
-    const lineOf = (sp) => {
-      const ln = sp && kid(sp, 'ln');
-      if (!ln) return undefined;
-      const l = line(ln, cctx, {});
-      if (l && l.t !== 'none') { if (!fillIn(ln, cctx)) delete l.c; if (at(ln, 'w') == null) delete l.w; }
-      return l;
-    };
-    const textOf = (tx) => {
-      if (!tx) return null;
-      const o = {};
-      const d = path(tx, 'p', 'pPr', 'defRPr') || (kid(tx, 'p') && desc(kid(tx, 'p'), 'rPr'));
-      if (d) { const r = runProps(d, cctx); if (r.sz) o.sz = r.sz; if (r.b != null) o.b = r.b; if (r.i != null) o.i = r.i; if (r.color) o.color = r.color; if (r.font) o.font = r.font; }
-      const bp = kid(tx, 'bodyPr');
-      if (bp && at(bp, 'rot') != null && +at(bp, 'rot') !== -60000000) o.rot = +at(bp, 'rot') / 60000;
-      if (bp && /^(vert|vert270|wordArtVert|eaVert)$/.test(at(bp, 'vert') || '')) o.rot = at(bp, 'vert') === 'vert270' ? -90 : 90;
-      return o;
-    };
-    const richText = (el) => {
-      const rich = el && path(el, 'tx', 'rich');
-      if (!rich) return null;
-      const lines = kids(rich, 'p').map((p) => kids(p).filter((r) => r.localName === 'r' || r.localName === 'fld').map((r) => (kid(r, 't') || { textContent: '' }).textContent).join(''));
-      const t = textOf(rich) || {};
-      const r1 = desc(rich, 'r') && kid(desc(rich, 'r'), 'rPr');
-      if (r1) { const r = runProps(r1, cctx); if (r.sz) t.sz = r.sz; if (r.b != null) t.b = r.b; if (r.i != null) t.i = r.i; if (r.color) t.color = r.color; if (r.font) t.font = r.font; }
-      return { text: lines.join('\n'), tx: t };
-    };
-    /* cached values of a reference or literal: strings, numbers (null when absent) and the format code */
-    const cacheOf = (el) => {
-      if (!el) return null;
-      const ml = desc(el, 'multiLvlStrCache');
-      const cache = ml || desc(el, 'numCache') || desc(el, 'strCache') || desc(el, 'numLit') || desc(el, 'strLit');
-      if (!cache) { const v = kid(el, 'v') || desc(el, 'v'); return v ? { str: [v.textContent], num: [+v.textContent], fmt: null, isNum: false } : null; }
-      const isNum = /^num/.test(cache.localName);
-      const lvl = ml ? kid(cache, 'lvl') || cache : cache;
-      const pts = kids(lvl, 'pt');
-      let n = num(kid(cache, 'ptCount'), 'val', 0);
-      for (const p of pts) n = Math.max(n, num(p, 'idx', 0) + 1);
-      const str = new Array(n).fill(''), nums = new Array(n).fill(null);
-      const fmt = (kid(cache, 'formatCode') || { textContent: '' }).textContent || null;
-      for (const p of pts) {
-        const i = num(p, 'idx', 0), t = (kid(p, 'v') || { textContent: '' }).textContent;
-        str[i] = t;
-        const x = parseFloat(t);
-        nums[i] = t !== '' && isFinite(x) ? x : null;
-        if (isNum && at(p, 'formatCode')) (str.fmts = str.fmts || [])[i] = at(p, 'formatCode');
-      }
-      /* the outer levels of a multi-level category axis, innermost first */
-      let outer = null;
-      if (ml) outer = kids(cache, 'lvl').slice(1).map((lv) => { const a = new Array(n).fill(null); for (const p of kids(lv, 'pt')) a[num(p, 'idx', 0)] = (kid(p, 'v') || { textContent: '' }).textContent; return a; });
-      return { str, num: nums, fmt: fmt && fmt !== 'General' ? fmt : null, isNum, outer };
-    };
-    const fmtCat = (c) => {
-      if (!c) return [];
-      if (c.isNum && c.fmt && L.numfmt) return c.num.map((v, i) => (v == null ? c.str[i] : L.numfmt.text((c.str.fmts && c.str.fmts[i]) || c.fmt, v)));
-      return c.str.slice();
-    };
-    const lblsOf = (el, inherit) => {
-      if (!el) return inherit || null;
-      if (yes(kid(el, 'delete'), false)) return { del: true };
-      const o = Object.assign({}, inherit && !inherit.del ? inherit : {});
-      delete o.pts;
-      for (const k of ['showVal', 'showPercent', 'showCatName', 'showSerName', 'showLegendKey', 'showBubbleSize']) { const e = kid(el, k); if (e) o[k] = yes(e, false); }
-      if (val(el, 'dLblPos')) o.pos = val(el, 'dLblPos');
-      const nf = kid(el, 'numFmt');
-      if (nf && at(nf, 'formatCode') && at(nf, 'sourceLinked') !== '1') o.fmt = at(nf, 'formatCode');
-      if (kid(el, 'separator')) o.sep = kid(el, 'separator').textContent;
-      const rng = kids(path(el, 'extLst')).map((x) => kid(x, 'showDataLabelsRange')).find(Boolean);
-      if (rng) o.showRange = yes(rng, false);
-      const tx = textOf(kid(el, 'txPr')); if (tx) o.tx = tx;
-      const sp = kid(el, 'spPr');
-      if (sp) { const f = fillOf(sp), l = lineOf(sp); if (f && f.t !== 'none') o.fill = f; if (l && l.t !== 'none') o.line = l; }
-      for (const d of kids(el, 'dLbl')) {
-        const i = nval(d, 'idx', -1);
-        if (i < 0) continue;
-        o.pts = o.pts || {};
-        if (yes(kid(d, 'delete'), false)) { o.pts[i] = { del: true }; continue; }
-        const one = lblsOf(d, o);
-        /* custom label text; fields ([VALUE], [SERIES NAME], [CELLRANGE]…) are filled in when drawn */
-        const rich = path(d, 'tx', 'rich');
-        if (rich) {
-          const runs = [];
-          kids(rich, 'p').forEach((p, pi) => {
-            if (pi) runs.push('\n');
-            for (const r of kids(p)) {
-              if (r.localName === 'r') runs.push((kid(r, 't') || { textContent: '' }).textContent);
-              else if (r.localName === 'fld') { const ty = String(at(r, 'type') || '').toUpperCase(); runs.push(/^(VALUE|SERIESNAME|CATEGORYNAME|PERCENTAGE|XVALUE|YVALUE|BUBBLESIZE|CELLRANGE)$/.test(ty) ? '\u0001' + ty + '\u0001' : (kid(r, 't') || { textContent: '' }).textContent); }
-            }
-          });
-          one.text = runs.join('');
-          const r1 = desc(rich, 'rPr') || path(rich, 'p', 'pPr', 'defRPr');
-          if (r1) { const rp = runProps(r1, cctx); one.tx = Object.assign({}, one.tx || {}); if (rp.sz) one.tx.sz = rp.sz; if (rp.b != null) one.tx.b = rp.b; if (rp.i != null) one.tx.i = rp.i; if (rp.color) one.tx.color = rp.color; }
-        }
-        o.pts[i] = one;
-      }
-      return o;
-    };
-    const markerOf = (m) => {
-      if (!m) return null;
-      const o = {};
-      if (val(m, 'symbol')) o.sym = val(m, 'symbol');
-      if (val(m, 'size')) o.size = +val(m, 'size');
-      const sp = kid(m, 'spPr');
-      if (sp) { const f = fillOf(sp), l = lineOf(sp); if (f) o.fill = f; if (l) o.line = l; }
-      return o;
-    };
-    /* axes by id */
-    const axes = new Map();
-    for (const a of kids(plot)) {
-      if (!/^(valAx|catAx|dateAx|serAx)$/.test(a.localName)) continue;
-      const o = { kind: a.localName === 'valAx' ? 'val' : a.localName === 'serAx' ? 'ser' : 'cat', id: val(a, 'axId'), cross: val(a, 'crossAx'), date: a.localName === 'dateAx' };
-      o.del = yes(kid(a, 'delete'), false);
-      o.pos = val(a, 'axPos') || 'b';
-      const scl = kid(a, 'scaling');
-      if (scl) {
-        if (val(scl, 'orientation') === 'maxMin') o.rev = true;
-        if (val(scl, 'min') != null) o.min = nval(scl, 'min');
-        if (val(scl, 'max') != null) o.max = nval(scl, 'max');
-        if (val(scl, 'logBase') != null) o.log = nval(scl, 'logBase', 10);
-      }
-      if (val(a, 'majorUnit') != null) o.major = nval(a, 'majorUnit');
-      const nf = kid(a, 'numFmt');
-      if (nf && at(nf, 'formatCode')) { o.fmt = at(nf, 'formatCode'); o.linked = at(nf, 'sourceLinked') === '1'; }
-      const gl = kid(a, 'majorGridlines');
-      if (gl) { const l = lineOf(kid(gl, 'spPr')); o.grid = l || {}; }
-      const gm = kid(a, 'minorGridlines');
-      if (gm) { const l = lineOf(kid(gm, 'spPr')); o.minorGrid = l || {}; }
-      o.tick = val(a, 'majorTickMark') || 'cross';
-      o.lblPos = val(a, 'tickLblPos') || 'nextTo';
-      o.crosses = val(a, 'crosses') || (kid(a, 'crossesAt') ? 'at' : 'autoZero');
-      if (kid(a, 'crossesAt')) o.crossesAt = nval(a, 'crossesAt', 0);
-      if (val(a, 'crossBetween')) o.between = val(a, 'crossBetween') !== 'midCat';
-      const sp = kid(a, 'spPr');
-      const l = lineOf(sp); if (l) o.line = l;
-      const tx = textOf(kid(a, 'txPr')); if (tx) o.tx = tx;
-      if (val(a, 'tickLblSkip')) o.skip = nval(a, 'tickLblSkip', 1);
-      const t = kid(a, 'title');
-      if (t) { const rt = richText(t); o.title = rt ? rt.text : a.localName === 'valAx' ? 'Axis Title' : 'Axis Title'; o.titleTx = (rt && rt.tx) || textOf(kid(t, 'txPr')) || {}; }
-      const du = kid(a, 'dispUnits');
-      if (du) { const bu = val(du, 'builtInUnit'); const U = { hundreds: 1e2, thousands: 1e3, tenThousands: 1e4, hundredThousands: 1e5, millions: 1e6, tenMillions: 1e7, hundredMillions: 1e8, billions: 1e9, trillions: 1e12 }; o.unit = U[bu] || nval(du, 'custUnit', 1); }
-      axes.set(o.id, o);
-    }
-    /* chart groups */
-    const groups = [];
-    const series = [];
-    let catCache = null;
-    for (const ct of kids(plot).filter((c) => CHART_TYPES.test(c.localName))) {
-      const ln = ct.localName.replace(/3D|Chart$/g, '').replace('Chart', '');
-      let type = { bar: 'bar', line: 'line', pie: 'pie', ofPie: 'pie', doughnut: 'doughnut', area: 'area', scatter: 'scatter', radar: 'radar', bubble: 'bubble', stock: 'stock', surface: 'area' }[ln] || 'bar';
-      const g = { type, d3: /3D/.test(ct.localName) };
-      g.grouping = val(ct, 'grouping') || (type === 'line' || type === 'area' ? 'standard' : 'clustered');
-      if (type === 'bar') {
-        g.dir = val(ct, 'barDir') || 'col';
-        /* 3-D "standard" columns stand in rows one behind the other */
-        if (g.grouping === 'standard') { g.grouping = 'clustered'; if (g.d3) g.deep = true; }
-        g.gap = nval(ct, 'gapWidth', 150);
-        g.overlap = /stacked/i.test(g.grouping) ? 100 : nval(ct, 'overlap', 0);
-      }
-      g.vary = yes(kid(ct, 'varyColors'), type === 'pie' || type === 'doughnut');
-      if (type === 'pie' || type === 'doughnut') { g.firstAng = nval(ct, 'firstSliceAng', 0); g.hole = type === 'doughnut' ? nval(ct, 'holeSize', 50) : 0; }
-      if (type === 'scatter') g.scatterStyle = val(ct, 'scatterStyle') || 'marker';
-      if (type === 'radar') g.radarStyle = val(ct, 'radarStyle') || 'standard';
-      if (type === 'bubble') { g.bubbleScale = nval(ct, 'bubbleScale', 100); g.sizeArea = val(ct, 'sizeRepresents') !== 'w'; }
-      if (type === 'line' || type === 'stock') { g.marker = yes(kid(ct, 'marker'), true); if (kid(ct, 'hiLowLines')) g.hiLow = lineOf(kid(kid(ct, 'hiLowLines'), 'spPr')) || {}; if (kid(ct, 'dropLines')) g.drop = lineOf(kid(kid(ct, 'dropLines'), 'spPr')) || {}; if (kid(ct, 'upDownBars')) g.upDown = true; }
-      const ax = kids(ct, 'axId').map((e) => at(e, 'val'));
-      g.axIds = ax;
-      const gl = lblsOf(kid(ct, 'dLbls'), null);
-      g.si = [];
-      for (const s of kids(ct, 'ser')) {
-        const i = series.length;
-        const sr = { g: groups.length, idx: nval(s, 'idx', i), order: nval(s, 'order', i) };
-        const tx = kid(s, 'tx');
-        const nc = cacheOf(tx);
-        sr.name = (nc && nc.str[0]) || (tx && kid(tx, 'v') ? kid(tx, 'v').textContent : '') || 'Series ' + (sr.idx + 1);
-        const cEl = kid(s, 'cat') || kid(s, 'xVal');
-        const cc = cacheOf(cEl);
-        if (cc && (!catCache || cc.str.length > catCache.str.length)) catCache = cc;
-        if (kid(s, 'xVal')) sr.xs = cc ? (cc.isNum ? cc.num.slice() : cc.str.map((_, k) => k + 1)) : null;
-        const vc = cacheOf(kid(s, 'val') || kid(s, 'yVal'));
-        sr.vals = vc ? vc.num.slice() : [];
-        if (vc && vc.fmt) sr.fmt = vc.fmt;
-        if (type === 'bubble') { const bc = cacheOf(kid(s, 'bubbleSize')); sr.sizes = bc ? bc.num.slice() : sr.vals.map(() => 1); }
-        const sp = kid(s, 'spPr');
-        const f = fillOf(sp), l = lineOf(sp);
-        if (f) sr.fill = f;
-        if (l) sr.line = l;
-        const mk = markerOf(kid(s, 'marker')); if (mk) sr.marker = mk;
-        if (kid(s, 'smooth')) sr.smooth = yes(kid(s, 'smooth'), false);
-        if (kid(s, 'explosion')) sr.expl = nval(s, 'explosion', 0);
-        if (yes(kid(s, 'invertIfNegative'), false)) sr.invNeg = true;
-        for (const dp of kids(s, 'dPt')) {
-          const k = nval(dp, 'idx', -1);
-          if (k < 0) continue;
-          const o = {};
-          const dsp = kid(dp, 'spPr');
-          const df = fillOf(dsp), dl = lineOf(dsp);
-          if (df) o.fill = df; if (dl) o.line = dl;
-          if (kid(dp, 'explosion')) o.expl = nval(dp, 'explosion', 0);
-          const dm = markerOf(kid(dp, 'marker')); if (dm) o.marker = dm;
-          (sr.pts = sr.pts || {})[k] = o;
-        }
-        const sl = lblsOf(kid(s, 'dLbls'), gl);
-        /* labels taken from a cell range (Office 2013 "Value From Cells") */
-        const dr = desc(s, 'dlblRangeCache');
-        if (sl && dr) { const rc = cacheOf(dr.parentNode); if (rc) sl.range = rc.str; }
-        if (sl && !sl.del && (sl.showVal || sl.showPercent || sl.showCatName || sl.showSerName || sl.showBubbleSize || sl.pts)) sr.lbl = sl;
-        /* the colour that stands for the series: legend, datasheet, editing */
-        const solid = (x) => (x && x.t === 'solid' ? x.c : x && x.t === 'grad' && x.stops[0] ? x.stops[0].c : x && x.t === 'patt' ? x.fg : null);
-        const lineType = type === 'line' || type === 'scatter' || type === 'radar' && g.radarStyle !== 'filled' || type === 'stock';
-        sr.color = (lineType ? (l && l.t !== 'none' && l.c && l.c[0] === '#' ? l.c : null) || solid(mk && mk.fill) : solid(f)) || null;
-        g.si.push(i);
-        series.push(sr);
-      }
-      groups.push(g);
-    }
-    if (!groups.length) return null;
-    /* secondary axes: a group whose value axis is not the first group's */
-    /* XY charts list the horizontal value axis first */
-    const isXY = (g) => g.type === 'scatter' || g.type === 'bubble';
-    const valAxOf = (g) => (isXY(g) ? axes.get(g.axIds[1]) || null : g.axIds.map((id) => axes.get(id)).find((a) => a && a.kind === 'val') || null);
-    const catAxOf = (g) => (isXY(g) ? axes.get(g.axIds[0]) || null : g.axIds.map((id) => axes.get(id)).find((a) => a && a.kind === 'cat') || null);
-    const v1 = valAxOf(groups[0]), c1 = catAxOf(groups[0]);
-    let v2 = null, c2 = null;
-    for (const g of groups) {
-      const va = valAxOf(g);
-      if (va && v1 && va !== v1) { g.sec = true; v2 = va; c2 = catAxOf(g); }
-    }
-    const nSer = series.length;
-    /* colours left to Office's automatic choice */
-    for (const sr of series) {
-      const auto = autoSeriesColor(sr.idx, Math.max(nSer, sr.idx + 1), style, design);
-      if (!sr.color) sr.color = auto;
-      sr.auto = auto;
-    }
-    const cats = catCache ? fmtCat(catCache) : (series[0] ? series[0].vals.map((_, i) => String(i + 1)) : []);
-    const main = groups[0];
-    const m = { v: 2, style, groups, series, cats };
-    if (catCache && catCache.outer && catCache.outer.length) m.catOuter = catCache.outer;
-    if (catCache && catCache.isNum) m.catNums = catCache.num.slice();
-    /* legacy fields: chart type, datasheet and editing */
-    const k = main.type;
-    if (k === 'bar') m.kind = main.dir === 'bar' ? (main.grouping === 'percentStacked' ? 'barPct' : main.grouping === 'stacked' ? 'barStacked' : 'bar') : main.grouping === 'percentStacked' ? 'colPct' : main.grouping === 'stacked' ? 'colStacked' : 'col';
-    else if (k === 'line' || k === 'stock') m.kind = series.some((s) => s.g === 0 && (!s.marker || s.marker.sym !== 'none')) && main.marker !== false ? 'lineMarkers' : 'line';
-    else if (k === 'area') m.kind = main.grouping === 'percentStacked' ? 'areaPct' : main.grouping === 'stacked' ? 'areaStacked' : 'area';
-    else if (k === 'pie') m.kind = 'pie';
-    else if (k === 'doughnut') m.kind = 'doughnut';
-    else if (k === 'radar') m.kind = main.radarStyle === 'filled' ? 'radarFilled' : 'radar';
-    else if (k === 'bubble') m.kind = 'bubble';
-    else m.kind = 'scatter';
-    for (const sr of series) if (sr.g !== 0) sr.overlay = groups[sr.g].type === 'line' || groups[sr.g].type === 'scatter' ? (sr.line && sr.line.t === 'none' ? 'markers' : sr.marker && sr.marker.sym === 'none' ? 'line' : 'lineMarkers') : groups[sr.g].type;
-    m.ax = {};
-    if (c1) m.ax.c = c1; if (v1) m.ax.v = v1; if (v2) m.ax.v2 = v2; if (c2 && c2 !== c1) m.ax.c2 = c2;
-    m.gridY = !!(v1 && v1.grid);
-    if (c1 && c1.grid) m.gridX = true;
-    /* text: chart-wide default, title, legend */
-    const tx0 = textOf(kid(cx, 'txPr')) || {};
-    m.fsz = tx0.sz || 10; if (tx0.font) m.font = tx0.font; if (tx0.color) m.textColor = tx0.color; if (tx0.b) m.bold = true;
-    const title = kid(chart, 'title');
-    const autoDel = yes(kid(chart, 'autoTitleDeleted'), false);
-    m.title = '';
-    if (title) {
-      const rt = richText(title);
-      m.title = rt ? rt.text : series.length === 1 ? series[0].name : 'Chart Title';
-      m.titleTx = (rt && rt.tx) || textOf(kid(title, 'txPr')) || {};
-      if (yes(kid(title, 'overlay'), false)) m.titleOverlay = true;
-      const tsp = kid(title, 'spPr'); if (tsp) { const f = fillOf(tsp), l = lineOf(tsp); if (f && f.t !== 'none') m.titleFill = f; if (l && l.t !== 'none') m.titleLine = l; }
-    } else if (!autoDel && series.length === 1) { m.title = series[0].name; m.titleTx = {}; } /* Office's automatic title for a single series */
-    const leg = kid(chart, 'legend');
-    m.legend = 'none';
-    if (leg) {
-      m.legend = val(leg, 'legendPos') || 'r';
-      const lt = textOf(kid(leg, 'txPr')); if (lt) m.legendTx = lt;
-      if (yes(kid(leg, 'overlay'), false)) m.legendOverlay = true;
-      const lsp = kid(leg, 'spPr'); if (lsp) { const f = fillOf(lsp), l = lineOf(lsp); if (f && f.t !== 'none') m.legendFill = f; if (l && l.t !== 'none') m.legendLine = l; }
-      const del = kids(leg, 'legendEntry').filter((e) => yes(kid(e, 'delete'), false)).map((e) => nval(e, 'idx', -1));
-      if (del.length) m.legendDel = del;
-      const ml = path(leg, 'layout', 'manualLayout');
-      if (ml && val(ml, 'x') != null && val(ml, 'w') != null) m.legendBox = { x: nval(ml, 'x', 0), y: nval(ml, 'y', 0), w: nval(ml, 'w', 0), h: nval(ml, 'h', 0), edge: (val(ml, 'xMode') || 'factor') === 'edge' };
-    }
-    /* chart area and plot area */
-    const csp = kid(cx, 'spPr');
-    if (csp) { const f = fillOf(csp), l = lineOf(csp); if (f && f.t !== 'none') m.bg = f; if (l && l.t !== 'none') m.border = l; }
-    const psp = kid(plot, 'spPr');
-    if (psp) { const f = fillOf(psp), l = lineOf(psp); if (f && f.t !== 'none') m.plotBg = f; if (l && l.t !== 'none') m.plotBorder = l; }
-    const pml = path(plot, 'layout', 'manualLayout');
-    if (pml && val(pml, 'w') != null && val(pml, 'h') != null) m.plotBox = { x: nval(pml, 'x', 0), y: nval(pml, 'y', 0), w: nval(pml, 'w', 1), h: nval(pml, 'h', 1), inner: val(pml, 'layoutTarget') === 'inner', edge: (val(pml, 'xMode') || 'factor') === 'edge' };
-    if (val(chart, 'dispBlanksAs')) m.blanks = val(chart, 'dispBlanksAs');
-    /* 3-D charts: the view angles and the walls */
-    if (groups.some((g) => g.d3)) {
-      const v3 = kid(chart, 'view3D');
-      m.view3D = { rotX: nval(v3, 'rotX', groups[0].type === 'pie' ? 30 : 15), rotY: nval(v3, 'rotY', groups[0].type === 'pie' ? 0 : 20), depth: nval(v3, 'depthPercent', 100), rAng: yes(kid(v3, 'rAngAx'), false) };
-      const wall = (n) => { const w = kid(chart, n); const sp = w && kid(w, 'spPr'); if (!sp) return null; const f = fillOf(sp), l = lineOf(sp); return { fill: f, line: l }; };
-      m.walls = { back: wall('backWall'), side: wall('sideWall'), floor: wall('floor') };
-    }
-    /* legacy summary fields */
-    const anyLbl = series.find((s) => s.lbl);
-    m.labels = !!anyLbl;
-    const fmt1 = series[0] && series[0].fmt;
-    if (anyLbl && anyLbl.lbl.fmt) m.numFmt = anyLbl.lbl.fmt; else if (fmt1) m.numFmt = fmt1;
-    if (v1 && v1.fmt && (!v1.linked || !fmt1) && v1.fmt !== 'General') m.axisFmt = v1.fmt; else if (v1 && v1.linked && fmt1) m.axisFmt = fmt1;
-    if (c1 && c1.tx && c1.tx.rot != null) m.catRot = c1.tx.rot;
-    if (k === 'pie' || k === 'doughnut') {
-      const s0 = series.find((s) => s.g === 0);
-      if (s0) m.pieColors = cats.map((_, i) => { const p = s0.pts && s0.pts[i]; const f = p && p.fill; return f && f.t === 'solid' ? f.c : main.vary ? autoSeriesColor(i, cats.length, style, design) : s0.color; });
-    }
-    return m;
-  }
+  /* ---------- charts (c:chartSpace → chart model v2: common/chart-read.js, drawn by common/chart-draw.js) ---------- */
+  const DML = { kid, kids, at, num, path, desc, fillIn, line, runProps };
+  const chartModel = (cx, ctx) => L.chart.read(cx, DML, ctx);
+  /* Lectern's colours (theme names through the slide's design), fills, dashes and theme fonts for chart drawings */
+  L.chart.paint = { col: L.render.col, svgPaint: L.render.svgPaint, dashArray: L.render.dashArray, font: (f, design) => L.style.font(f, design) };
 
   /* ---------- reader ---------- */
   async function read(buffer, opts) {
@@ -745,7 +456,15 @@
     let zip;
     let password = null;
     try { zip = await L.zip.read(buffer); } catch (e) {
-      if (e && e.code === 'ole' && !e.encrypted) e.message = L.N('This is an older binary PowerPoint 97–2003 file (.ppt) with a .pptx name. Save it as .pptx in PowerPoint, Keynote, Google Slides or LibreOffice first.');
+      /* a PowerPoint 97-2003 presentation: read as the .pptx PowerPoint would write for it (common/legacy/import.js) */
+      if (e && e.code === 'ole' && !e.encrypted && L.legacyImport && !opts.converted) {
+        const converted = await L.legacyImport.convert(e.bytes, opts.name, 'ppt', { password: opts.password });
+        const pres = await read(converted.pkg.buffer.slice(converted.pkg.byteOffset, converted.pkg.byteOffset + converted.pkg.byteLength), Object.assign({}, opts, { converted: true }));
+        pres.converted = converted;
+        /* a password to open (not Office's default one) stays with the presentation, as PowerPoint keeps it on Save As */
+        if (opts.password) pres.password = opts.password;
+        return pres;
+      }
       if (!(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
       /* a presentation with a password to open: decrypt it here, in the browser */
       if (!opts.password) { const err = new Error('This presentation is password-protected.'); err.code = 'password'; throw err; }
@@ -830,10 +549,12 @@
     const presX = await xml(presPath);
     /* table style definitions (PowerPoint embeds every style a table uses) */
     const tblStyles = new Map();
+    let tableStylesPath;
     {
       const pr = await rels(presPath);
       const tsRel = Object.values(pr || {}).find((r) => r.type === 'tableStyles');
-      const tsX = await xml(tsRel ? tsRel.target : 'ppt/tableStyles.xml');
+      tableStylesPath = tsRel ? tsRel.target : 'ppt/tableStyles.xml';
+      const tsX = await xml(tableStylesPath);
       if (tsX) for (const st of kids(tsX, 'tblStyle')) tblStyles.set((at(st, 'styleId') || '').toUpperCase(), st);
     }
     if (!presX || presX.localName !== 'presentation') throw new Error(L.N('This file does not contain a PowerPoint presentation.'));
@@ -885,7 +606,7 @@
     const layouts = new Map(); /* layout path → info */
     async function loadTheme(p) {
       const t = await xml(p);
-      const theme = { colors: Object.assign({}, L.model.COLOR_SCHEMES[0]), fonts: { major: 'Arial', minor: 'Arial' }, fills: [], lines: [], bgFills: [], name: t ? at(t, 'name') : 'Theme' };
+      const theme = { colors: Object.assign({}, L.model.COLOR_SCHEMES[0]), fonts: { major: 'Arial', minor: 'Arial' }, fills: [], lines: [], bgFills: [], effects: [], name: t ? at(t, 'name') : 'Theme' };
       if (!t) return theme;
       theme.rels = await rels(p);
       const cs = desc(t, 'clrScheme');
@@ -906,6 +627,7 @@
         theme.fills = kids(kid(fm, 'fillStyleLst'));
         theme.lines = kids(kid(fm, 'lnStyleLst'));
         theme.bgFills = kids(kid(fm, 'bgFillStyleLst'));
+        theme.effects = kids(kid(fm, 'effectStyleLst'));
       }
       return theme;
     }
@@ -1108,9 +830,13 @@
         const idx = num(fr, 'idx', 1);
         const el = idx >= 1001 ? ctx.theme.bgFills[idx - 1001] : ctx.theme.fills[idx - 1];
         out.fill = el ? fill(el, themeCtx(ctx, ctx.theme, c)) : c ? { t: 'solid', c: c.c, a: c.a } : undefined;
-        if (out.fill && out.fill.t === 'grad' && c) out.fill = { t: 'solid', c: c.c, a: c.a };
       }
-      void er;
+      /* the theme's effect style: its shadow (Office 2007's Moderate and Intense effects, PowerPoint 2016 draws them) */
+      if (er && num(er, 'idx', 0) > 0) {
+        const es = (ctx.theme.effects || [])[num(er, 'idx', 1) - 1];
+        const shd = es && shadow(kid(es, 'effectLst'), Object.assign({}, ctx, { phClr: colorOf(er, ctx) }));
+        if (shd) out.shadow = shd;
+      }
       if (fo) {
         const c = colorOf(fo, ctx);
         out.fontColor = c ? c.c : undefined;
@@ -1134,6 +860,9 @@
             const models = Array.isArray(s) ? s : [s];
             for (const shape of models) L.preserve.shape(shape, source.map.get(String(shape.numId)), el, pkg, ctx.partPath);
             L.frames.attach(models, el, raw, tree, pkg, ctx.partPath);
+          }
+          if (at(el, 'modelId') && /\/diagram$/.test(el.namespaceURI)) for (const shape of Array.isArray(s) ? s : [s]) {
+            shape.keep ||= {}; shape.keep.diagramPoint = at(el, 'modelId');
           }
           if (Array.isArray(s)) out.push(...s); else out.push(s);
         } catch (e) { console.warn('shape skipped', e); }
@@ -1260,7 +989,7 @@
         sh.geom = g.geom; if (g.adj) sh.adj = g.adj; if (g.path) sh.path = g.path;
         sh.line = line(spPr && kid(spPr, 'ln'), ctx, refs.line ? refs.line : { t: 'none' }) || { t: 'none' };
         const ef = spPr && kid(spPr, 'effectLst');
-        const shd = shadow(ef, ctx); if (shd) sh.shadow = shd;
+        const shd = ef ? shadow(ef, ctx) : refs.shadow; if (shd) sh.shadow = shd;
         if (ph) sh.ph = ph;
         if (!mid) sh.missingLabel = sh.linkUrl ? 'Linked picture: ' + decodeURIComponent(String(sh.linkUrl).split(/[\\/]/).pop() || '') : 'Picture';
         return sh;
@@ -1310,8 +1039,10 @@
         }
         return Object.assign(base, { type: 'shape', geom: 'rect', fill: { t: 'solid', c: '#F2F2F2', a: 1 }, line: { c: '#A6A6A6', w: 0.75, dash: 'dash' }, tx: L.txt.body([L.txt.para('Embedded object', { algn: 'ctr' }, { sz: 12, color: '#7F7F7F' })], { anchor: 'ctr' }) });
       }
-      /* sp & cxnSp */
-      const g = geometry(spPr);
+      /* sp & cxnSp; a placeholder without geometry of its own takes its layout's, else its master's (a picture
+         placeholder cut to a custom shape: LibreOffice's custgeom-placeholder) */
+      const ownGeom = (p) => p && (kid(p, 'prstGeom') || kid(p, 'custGeom'));
+      const g = geometry(ownGeom(spPr) ? spPr : ph && lay && ownGeom(lay.spPr) ? lay.spPr : ph && mas && ownGeom(mas.spPr) ? mas.spPr : spPr);
       const isLine = ln === 'cxnSp' || ['line', 'straightConnector1', 'bentConnector2', 'bentConnector3', 'bentConnector4', 'bentConnector5', 'curvedConnector2', 'curvedConnector3', 'curvedConnector4', 'curvedConnector5'].includes(g.geom);
       if (isLine) {
         const lnEl = spPr && kid(spPr, 'ln');
@@ -1326,7 +1057,7 @@
           L.geom.setLineEnds(sh, p1, p2);
         }
         const ef = spPr && kid(spPr, 'effectLst');
-        const shd = shadow(ef, ctx); if (shd) sh.shadow = shd;
+        const shd = ef ? shadow(ef, ctx) : refs.shadow; if (shd) sh.shadow = shd;
         return sh;
       }
       const txBody = kid(el, 'txBody');
@@ -1348,7 +1079,7 @@
       if (refs.line) lnBase = refs.line;
       sh.line = line(spPr && kid(spPr, 'ln'), ctx, lnBase) || { t: 'none' };
       const ef = spPr && kid(spPr, 'effectLst');
-      const shd = shadow(ef, ctx); if (shd) sh.shadow = shd;
+      const shd = ef ? shadow(ef, ctx) : refs.shadow; if (shd) sh.shadow = shd;
       if (ph) sh.ph = ph;
       if (txBody || ph) {
         let bp = {};
@@ -1374,19 +1105,16 @@
           }
         }
         delete tx.fromWordArt;
-        const warp = tx.warp;
-        delete tx.warp;
         /* placeholder frames: title anchors default to the master */
         sh.tx = tx;
-        if (warp && bp.fromWordArt !== false && tx.ps.length <= 3 && !ph) {
-          /* WordArt */
-          const r0 = (tx.ps[0] && tx.ps[0].rs[0]) || {};
-          const fl = r0.fill || (r0.color ? { t: 'solid', c: r0.color, a: 1 } : { t: 'solid', c: 'accent1', a: 1 });
-          sh.type = 'wordart';
-          sh.wa = { text: L.txt.plain(tx), font: L.style.font(r0.font || (lstX && lstX[0] && lstX[0].rPr && lstX[0].rPr.font) || '+mj', ctx.design), b: !!r0.b, i: !!r0.i, fill: fl, line: r0.ln || { t: 'none' }, shadow: r0.shd ? { c: '#000000', a: 0.4, dx: 2, dy: 2, blur: 2 } : null, warp, algn: (tx.ps[0] && tx.ps[0].pp && tx.ps[0].pp.algn) || 'ctr' };
-          delete sh.tx;
-          sh.fill = { t: 'none' }; sh.line = { t: 'none' };
-          return sh;
+        /* a SmartArt drawing's shape has a text box of its own (dsp:txXfrm, in the drawing's coordinates), turned by its
+           own rot on top of the shape's: rot 180 in a shape turned 180 is upright text */
+        const txf = ln === 'sp' && xfrmOf(kid(el, 'txXfrm'));
+        if (txf && txf.w > 0 && txf.h > 0) {
+          const r = map({ x: txf.x, y: txf.y, w: txf.w, h: txf.h });
+          const [cx, cy] = L.rotPt(r.x + r.w / 2, r.y + r.h / 2, sh.x + sh.w / 2, sh.y + sh.h / 2, -(sh.rot || 0));
+          sh.txRect = [cx - sh.x - r.w / 2, cy - sh.y - r.h / 2, cx - sh.x + r.w / 2, cy - sh.y + r.h / 2].map((v) => L.round(v, 3));
+          if (txf.rot) tx.rot = (tx.rot || 0) + txf.rot;
         }
       }
       return sh;
@@ -1485,8 +1213,12 @@
         for (const k of ['l', 'r', 't', 'b']) if (!cell.own.bd.includes(k) && bd[k]) cell.bd[k] = L.clone(bd[k]);
         if (tx.color || tx.b != null || tx.i != null) {
           for (const p of cell.tx.ps) {
-            for (const run of p.rs) { if (run.color == null && tx.color) run.color = tx.color; if (run.b == null && tx.b != null) run.b = tx.b; if (run.i == null && tx.i != null) run.i = tx.i; }
+            for (const run of p.rs) {
+              if (!run.keep) L.properties.capture(run, K.parse('<a:rPr xmlns:a="' + K.NS.a + '"/>'), ctx, 'run');
+              if (run.color == null && tx.color) run.color = tx.color; if (run.b == null && tx.b != null) run.b = tx.b; if (run.i == null && tx.i != null) run.i = tx.i;
+            }
             const e = Object.assign({}, p.end || {});
+            if (!e.keep) L.properties.capture(e, K.parse('<a:endParaRPr xmlns:a="' + K.NS.a + '"/>'), ctx, 'run');
             if (e.color == null && tx.color) e.color = tx.color; if (e.b == null && tx.b != null) e.b = tx.b;
             p.end = e;
           }
@@ -1498,16 +1230,20 @@
       const tp = kid(tbl, 'tblPr');
       const styled = !!(tp && kid(tp, 'tableStyleId'));
       const firstRow = bool(at(tp, 'firstRow')), bandRow = bool(at(tp, 'bandRow')), firstCol = bool(at(tp, 'firstCol'));
-      const cols = kids(kid(tbl, 'tblGrid'), 'gridCol').map((g) => L.round(pt(num(g, 'w', 0)), 3));
+      const gridEMU = kids(kid(tbl, 'tblGrid'), 'gridCol').map(g => num(g, 'w', 0));
+      const cols = gridEMU.map(pt);
       const rows = kids(tbl, 'tr').map((tr, ri) => ({
-        h: L.round(pt(num(tr, 'h', 0)), 3),
+        h: pt(num(tr, 'h', 0)),
+        keep: { height: { pt: pt(num(tr, 'h', 0)), emu: num(tr, 'h', 0) } },
         cells: kids(tr, 'tc').map((tc, ci) => {
           const txb = kid(tc, 'txBody');
           const pr = kid(tc, 'tcPr');
           const tx = Object.assign({ anchor: 't', wrap: true, autofit: 'none', ins: [7.2, 3.6, 7.2, 3.6] }, bodyPr(txb ? kid(txb, 'bodyPr') : null, {}));
           if (pr) {
-            tx.ins = [pr.hasAttribute('marL') ? pt(num(pr, 'marL', 91440)) : 7.2, pr.hasAttribute('marT') ? pt(num(pr, 'marT', 45720)) : 3.6, pr.hasAttribute('marR') ? pt(num(pr, 'marR', 91440)) : 7.2, pr.hasAttribute('marB') ? pt(num(pr, 'marB', 45720)) : 3.6].map((v) => L.round(v, 3));
+            tx.ins = [pr.hasAttribute('marL') ? pt(num(pr, 'marL', 91440)) : 7.2, pr.hasAttribute('marT') ? pt(num(pr, 'marT', 45720)) : 3.6, pr.hasAttribute('marR') ? pt(num(pr, 'marR', 91440)) : 7.2, pr.hasAttribute('marB') ? pt(num(pr, 'marB', 45720)) : 3.6];
             if (at(pr, 'anchor')) tx.anchor = { t: 't', ctr: 'ctr', b: 'b' }[at(pr, 'anchor')] || 't';
+            // Table text direction belongs to tcPr, not the text body's bodyPr.
+            if (pr.hasAttribute('vert')) tx.vert = at(pr, 'vert');
           }
           tx.ps = txb ? paragraphs(txb, ctx) : [L.txt.para('')];
           const cell = { tx, fill: { t: 'none' }, bd: {} };
@@ -1519,6 +1255,8 @@
           if (bool(at(tc, 'hMerge'))) cell.hm = true;
           if (bool(at(tc, 'vMerge'))) cell.vm = true;
           cell.own = { fill: !!f, bd: Object.keys(cell.bd) };
+          L.properties.capture(cell, pr || K.parse('<a:tcPr xmlns:a="' + K.NS.a + '"/>'), ctx, 'cell');
+          if (cell.keep && ctx.clrMapOvr) cell.keep.colorMap = { ...ctx.clrMapOvr };
           return cell;
         }),
       }));
@@ -1526,6 +1264,14 @@
       if (styled) applyTableStyle(rows, cols.length, (at(kid(tp, 'tableStyleId'), 'val') || kid(tp, 'tableStyleId').textContent || '').trim().toUpperCase(), { firstRow, lastRow, firstCol, lastCol, bandRow, bandCol }, ctx);
       for (const r of rows) for (const c of r.cells) delete c.own;
       const t = Object.assign(base, { type: 'table', tbl: { cols, rows, firstRow, bandRow } });
+      if (tp?.hasAttribute('rtl')) t.tbl.rtl = bool(at(tp, 'rtl'));
+      for (const name of ['lastRow', 'firstCol', 'lastCol', 'bandCol']) if (tp?.hasAttribute(name)) t.tbl[name] = bool(at(tp, name));
+      if (styled) t.tbl.styleId = (at(kid(tp, 'tableStyleId'), 'val') || kid(tp, 'tableStyleId').textContent || '').trim();
+      L.properties.capture(t.tbl, tp, ctx, 'table');
+      t.tbl.keep ||= {};
+      t.tbl.keep.gridWidths = gridEMU.map((emu, i) => ({ emu, pt: cols[i] }));
+      const definition = tblStyles.get(t.tbl.styleId?.toUpperCase());
+      if (definition && t.tbl.keep) t.tbl.keep.styleDefinition = K.fragment(definition, { pkg, part: tableStylesPath });
       const sumW = cols.reduce((a, b) => a + b, 0);
       if (sumW > 0) t.w = sumW;
       const sumH = rows.reduce((a, r) => a + r.h, 0);
@@ -1585,18 +1331,34 @@
     }
 
     async function smartArtFrom(gd, base, ctx) {
-      const relIds = kids(gd).find((c) => c.localName === 'relIds');
+      let relIds = kids(gd).find((c) => c.localName === 'relIds');
       if (!relIds) return null;
-      const dm = ctx.rels[rid(relIds, 'dm')];
-      let drawingPath = null, sa = null;
+      let dm = ctx.rels[rid(relIds, 'dm')];
+      // Office's a14 Choice may hold the equation while its old-version Fallback
+      // points to a picture-only data model. Use the math-bearing source for text.
+      const alternate = K.alternate(gd);
+      if (alternate) for (const candidate of descAll(K.parse(alternate.xml), 'relIds')) {
+        const data = ctx.rels[rid(candidate, 'dm')];
+        if (data && hasMath(await xml(data.target))) { relIds = candidate; dm = data; break; }
+      }
+      let drawingPath = null, sa = null, dataTree = null;
       const withSa = (g) => { if (g && sa) g.sa = sa; return g; };
+      /* saved without its drawing (PowerPoint 2007 wrote none; empty in some files): a layout we have is laid out by
+         our engine, as it would be once edited here; any other with the rough layouts of smartArtFromData */
+      const undrawn = async () => {
+        if (sa && sa.office && L.diagram && L.smartart && ctx.design) {
+          try { return L.diagram.relayout(Object.assign(base, { type: 'group', kids: [], name: base.name || 'Diagram', sa }), ctx.design); } catch (e) { console.warn('IntelliArt layout', e); }
+        }
+        return withSa(await smartArtFromData(relIds, base, ctx));
+      };
       if (dm) {
         const dx = await xml(dm.target);
+        dataTree = dx;
         /* a diagram Lectern wrote (our layout ids): editable again as SmartArt (js/diagram.js) */
         if (dx && L.saIO) try { sa = L.saIO.read(dx); } catch (e) { sa = null; }
         /* an item's own formatting: its point's fill and outline, its text's colour, bold and italic */
         /* a shape filled with a picture: not something our layouts carry, so the diagram stays as it came */
-        if (sa && sa.points.some(([pt]) => desc(pt, 'blipFill'))) sa = null;
+        if (sa && (hasMath(dx) || sa.points.some(([pt]) => desc(pt, 'blipFill')))) sa = null;
         if (sa) for (const [pt, item] of sa.points) {
           const sp = kid(pt, 'spPr'), f = {};
           const fe = sp && kids(sp).find((c) => /Fill$/.test(c.localName));
@@ -1615,17 +1377,30 @@
         if (ext && at(ext, 'relId') && ctx.rels[at(ext, 'relId')]) drawingPath = ctx.rels[at(ext, 'relId')].target;
       }
       if (!drawingPath) { const r = Object.values(ctx.rels).find((x) => x.type === 'diagramDrawing'); if (r) drawingPath = r.target; }
-      if (!drawingPath) return withSa(await smartArtFromData(relIds, base, ctx));
+      if (!drawingPath) return undrawn();
       const dx = await xml(drawingPath);
+      if (hasMath(dx)) sa = null; // item text is plain; equations stay in the opaque group's runs
       const tree = dx && desc(dx, 'spTree');
-      if (!tree) return withSa(await smartArtFromData(relIds, base, ctx));
+      if (!tree) return undrawn();
       const dRels = await rels(drawingPath);
       const dctx = Object.assign({}, ctx, { rels: dRels, partPath: drawingPath, map: (b) => ({ x: base.x + b.x, y: base.y + b.y, w: b.w, h: b.h }), layout: null, pendingMedia: ctx.pendingMedia });
       dctx.media = (id) => { const r = dRels[id]; if (!r || r.external) return null; const m = mediaCache.get(r.target); if (m) return m; ctx.pendingMedia.add(r.target); return '__pending__:' + r.target; };
       const kidsS = await shapesFrom(tree, dctx, {});
-      /* dsp shapes may carry a separate text frame */
-      for (const sp of kids(tree, 'sp')) void sp;
-      if (!kidsS.length) return withSa(await smartArtFromData(relIds, base, ctx));
+      // The data is authoritative when an older drawing cache has no equation.
+      // Office's presOf/presAssocID links identify its text shape; never match by text or position.
+      if (hasMath(dataTree)) {
+        const points = new Map(descAll(dataTree, 'pt').map(p => [at(p, 'modelId'), p]));
+        const links = new Map(descAll(dataTree, 'cxn').filter(c => at(c, 'type') === 'presOf').map(c => [at(c, 'destId'), at(c, 'srcId')]));
+        const mctx = { ...ctx, partPath: dm.target, rels: await rels(dm.target) };
+        L.model.walk(kidsS, shape => {
+          const id = shape.keep?.diagramPoint, point = points.get(id);
+          const source = points.get(at(kid(point, 'prSet'), 'presAssocID') || links.get(id)) || point;
+          const text = kid(source, 't');
+          if (shape.tx && hasMath(text) && !shape.tx.ps.some(p => p.rs.some(r => r.fld === 'math'))) shape.tx.ps = paragraphs(text, mctx);
+          return true;
+        });
+      }
+      if (!kidsS.length) return undrawn();
       const g = Object.assign(base, { type: 'group', kids: kidsS, name: base.name || 'Diagram' });
       if (sa) g.sa = sa;
       return g;
@@ -1648,7 +1423,8 @@
         if (type !== 'node' && type !== 'doc') continue;
         const tEl = kid(p, 't');
         const text = tEl ? kids(tEl, 'p').map((ap) => descAll(ap, 't').map((t) => t.textContent).join('')).join(' ').trim() : '';
-        pts.set(at(p, 'modelId'), { id: at(p, 'modelId'), type, text, kids: [] });
+        const ps = hasMath(tEl) ? paragraphs(tEl, { ...ctx, partPath: dmRel.target, rels: await rels(dmRel.target) }) : null;
+        pts.set(at(p, 'modelId'), { id: at(p, 'modelId'), type, text, ps, kids: [] });
       }
       const parent = new Map();
       for (const c of descAll(dm, 'cxn')) {
@@ -1699,9 +1475,12 @@
       const pending = [];
       const box = (x, y, bw, bh, text, sub, geom, o) => {
         o = o || {};
+        const rich = text?.ps, subRich = (sub || []).map(t => t?.ps);
+        text = text && typeof text === 'object' ? text.text : text;
+        sub = (sub || []).map(t => typeof t === 'object' ? t.text : t);
         const sh = { id: L.uid('s'), name: 'Diagram shape', type: 'shape', geom: geom || 'roundRect', x: X + x, y: Y + y, w: bw, h: bh, rot: 0, fill: o.fill || fillOf(o.i || 0), line: o.noLine ? { t: 'none' } : { c: lineC, w: 1.5 } };
         if (geom === 'roundRect' || !geom) sh.adj = { adj: 10000 };
-        pending.push({ sh, text, sub: sub || [], role: o.role || 'node', color: o.color || textC, w: bw * (o.textW || 1), h: o.textH || bh, algn: o.algn || 'ctr', anchor: o.anchor || 'ctr' });
+        pending.push({ sh, text, rich, sub, subRich, role: o.role || 'node', color: o.color || textC, w: bw * (o.textW || 1), h: o.textH || bh, algn: o.algn || 'ctr', anchor: o.anchor || 'ctr' });
         out.push(sh);
         return sh;
       };
@@ -1709,11 +1488,11 @@
       const connector = (x1, y1, x2, y2) => out.push({ id: L.uid('s'), name: 'Diagram connector', type: 'line', geom: 'line', x: X + Math.min(x1, x2), y: Y + Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1), rot: 0, flipH: x2 < x1, fill: { t: 'none' }, line: { c: fills.length ? fills[0].c : 'accent1', w: 1.5 } });
       const light = (i) => ({ t: 'solid', c: L.color.lighten(L.model.resolveColor(fillOf(i).c, ctx.design), 0.8), a: 1 });
       const n = tops.length;
-      const kidsText = (p) => p.kids.map((k) => k.text);
+      const kidsText = p => p.kids;
       const fam = kind.replace(/^.*\//, '').replace(/#.*$/, '');
       if (/chevron/.test(fam)) {
         const bw = W / (n - (n - 1) * 0.15), bh = Math.min(H, bw * 0.45), y = (H - bh) / 2;
-        tops.forEach((p, i) => box(i * bw * 0.85, y, bw, bh, p.text, kidsText(p), i === 0 && !/chevron2/.test(fam) ? 'homePlate' : 'chevron', { i, textW: 0.7 }));
+        tops.forEach((p, i) => box(i * bw * 0.85, y, bw, bh, p, kidsText(p), i === 0 && !/chevron2/.test(fam) ? 'homePlate' : 'chevron', { i, textW: 0.7 }));
       } else if (/^(hlist|lprocess|hprocess)/.test(fam)) {
         /* columns: a heading box with the children below it */
         const gap = Math.min(W / (n * 8), 16), bw = (W - gap * (n - 1)) / n;
@@ -1722,12 +1501,12 @@
           const x = i * (bw + gap);
           if (grouped) {
             const kidsP = p.kids, hh = H * 0.2, ch = (H - hh - gap * (kidsP.length + 1)) / Math.max(1, kidsP.length);
-            box(x, 0, bw, H, p.text, null, 'roundRect', { i, fill: light(i), color: 'dk1', role: 'head', anchor: 't', textH: hh });
-            kidsP.forEach((k, j) => box(x + bw * 0.1, hh + gap + j * (ch + gap), bw * 0.8, ch, k.text, null, 'roundRect', { i, role: 'child' }));
+            box(x, 0, bw, H, p, null, 'roundRect', { i, fill: light(i), color: 'dk1', role: 'head', anchor: 't', textH: hh });
+            kidsP.forEach((k, j) => box(x + bw * 0.1, hh + gap + j * (ch + gap), bw * 0.8, ch, k, null, 'roundRect', { i, role: 'child' }));
           } else {
             /* the body box is drawn even when it has no text, as Office does */
             const hh = H * 0.2;
-            box(x, 0, bw, hh, p.text, null, 'rect', { i, role: 'head' });
+            box(x, 0, bw, hh, p, null, 'rect', { i, role: 'head' });
             box(x, hh, bw, H - hh, '', kidsText(p), 'rect', { i, fill: light(i), color: 'dk1', role: 'child', algn: 'l', anchor: 't', noLine: true });
           }
         });
@@ -1738,36 +1517,36 @@
           const y = i * (bh + gap);
           if (/^vlist5/.test(fam)) {
             const hw = W * 0.3;
-            box(0, y, hw, bh, p.text, null, 'roundRect', { i, role: 'head' });
+            box(0, y, hw, bh, p, null, 'roundRect', { i, role: 'head' });
             if (p.kids.length) box(hw, y + bh * 0.08, W - hw, bh * 0.84, '', kidsText(p), 'rect', { i, fill: light(i), color: 'dk1', role: 'child', algn: 'l' });
           } else {
             const hh = p.kids.length ? bh * 0.45 : bh;
-            box(0, y, W, hh, p.text, null, 'roundRect', { i, role: 'head', algn: 'l' });
+            box(0, y, W, hh, p, null, 'roundRect', { i, role: 'head', algn: 'l' });
             if (p.kids.length) box(W * 0.03, y + hh, W * 0.97, bh - hh, '', kidsText(p), 'rect', { i, fill: { t: 'none' }, noLine: true, color: 'dk1', role: 'child', algn: 'l', anchor: 't' });
           }
         });
       } else if (/process|arrow/.test(fam)) {
         const gap = Math.min(W / (n * 4), 40), bw = (W - gap * (n - 1)) / n, bh = Math.min(H, bw * 0.75), y = (H - bh) / 2;
-        tops.forEach((p, i) => { box(i * (bw + gap), y, bw, bh, p.text, kidsText(p), 'roundRect', { i }); if (i < n - 1) arrow(i * (bw + gap) + bw + gap * 0.15, H / 2 - gap * 0.35, gap * 0.7, gap * 0.7); });
+        tops.forEach((p, i) => { box(i * (bw + gap), y, bw, bh, p, kidsText(p), 'roundRect', { i }); if (i < n - 1) arrow(i * (bw + gap) + bw + gap * 0.15, H / 2 - gap * 0.35, gap * 0.7, gap * 0.7); });
       } else if (/cycle|radial|target/.test(fam)) {
         const r = Math.min(W, H) / 2, bw = Math.min(r * 0.8, (2 * Math.PI * r * 0.55) / n), bh = bw * 0.6;
-        tops.forEach((p, i) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; box(W / 2 + (r - bw / 2) * Math.cos(a) - bw / 2, H / 2 + (r - bh / 2) * Math.sin(a) - bh / 2, bw, bh, p.text, null, 'ellipse', { i }); });
+        tops.forEach((p, i) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; box(W / 2 + (r - bw / 2) * Math.cos(a) - bw / 2, H / 2 + (r - bh / 2) * Math.sin(a) - bh / 2, bw, bh, p, null, 'ellipse', { i }); });
       } else if (/hierarchy|orgchart/.test(fam)) {
         const levels = [];
         const pos = new Map();
         const walk = (p, d) => { (levels[d] = levels[d] || []).push(p); for (const k of p.kids) walk(k, d + 1); };
         for (const t of tops) walk(t, 0);
         const lh = H / levels.length;
-        levels.forEach((row, d) => { const bw = Math.min((W / row.length) * 0.85, W * 0.3), gap = (W - bw * row.length) / (row.length + 1); row.forEach((p, i) => { const x = gap + i * (bw + gap), y = d * lh + lh * 0.12; box(x, y, bw, lh * 0.7, p.text, null, 'rect', { i: d, role: 'node' }); pos.set(p, { cx: x + bw / 2, top: y, bottom: y + lh * 0.7 }); }); });
+        levels.forEach((row, d) => { const bw = Math.min((W / row.length) * 0.85, W * 0.3), gap = (W - bw * row.length) / (row.length + 1); row.forEach((p, i) => { const x = gap + i * (bw + gap), y = d * lh + lh * 0.12; box(x, y, bw, lh * 0.7, p, null, 'rect', { i: d, role: 'node' }); pos.set(p, { cx: x + bw / 2, top: y, bottom: y + lh * 0.7 }); }); });
         /* connectors: down from the parent, across, and down to each child */
         for (const [p, pp] of pos) for (const k of p.kids) { const kp = pos.get(k); if (!kp) continue; const mid = (pp.bottom + kp.top) / 2; connector(pp.cx, pp.bottom, pp.cx, mid); connector(pp.cx, mid, kp.cx, mid); connector(kp.cx, mid, kp.cx, kp.top); }
         out.unshift(...out.splice(out.length - [...pos].reduce((a, [p]) => a + p.kids.filter((k) => pos.has(k)).length * 3, 0)));
       } else if (/pyramid/.test(fam)) {
         const bh = H / n;
-        tops.forEach((p, i) => { const bw = W * (i + 1) / n; box((W - bw) / 2, i * bh, bw, bh * 0.94, p.text, kidsText(p), 'rect', { i }); });
+        tops.forEach((p, i) => { const bw = W * (i + 1) / n; box((W - bw) / 2, i * bh, bw, bh * 0.94, p, kidsText(p), 'rect', { i }); });
       } else if (/matrix/.test(fam)) {
         const cols = 2, rows = Math.ceil(n / 2), gap = Math.min(W, H) * 0.04, bw = (W - gap) / cols, bh = (H - gap * (rows - 1)) / rows;
-        tops.forEach((p, i) => box((i % cols) * (bw + gap), Math.floor(i / cols) * (bh + gap), bw, bh, p.text, kidsText(p), 'roundRect', { i, algn: p.kids.length ? 'l' : 'ctr' }));
+        tops.forEach((p, i) => box((i % cols) * (bw + gap), Math.floor(i / cols) * (bh + gap), bw, bh, p, kidsText(p), 'roundRect', { i, algn: p.kids.length ? 'l' : 'ctr' }));
       } else if (/^(default|blist|snake)/.test(fam) || (!/^vlist/.test(fam) && n > 3 && tops.every((p) => !p.kids.length))) {
         /* Basic Block List: rows of 3:2 boxes, the last row centred */
         let best = null;
@@ -1781,11 +1560,11 @@
         tops.forEach((p, i) => {
           const r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols), c = i % cols;
           const left0 = (W - (inRow * bw + (inRow - 1) * gx)) / 2;
-          box(left0 + c * (bw + gx), top0 + r * (bh + gy), bw, bh, p.text, kidsText(p), 'rect', { i, algn: p.kids.length ? 'l' : 'ctr' });
+          box(left0 + c * (bw + gx), top0 + r * (bh + gy), bw, bh, p, kidsText(p), 'rect', { i, algn: p.kids.length ? 'l' : 'ctr' });
         });
       } else {
         const gap = Math.min(H / (n * 6), 8), bh = (H - gap * (n - 1)) / n;
-        tops.forEach((p, i) => box(0, i * (bh + gap), W, bh, p.text, kidsText(p), 'roundRect', { i }));
+        tops.forEach((p, i) => box(0, i * (bh + gap), W, bh, p, kidsText(p), 'roundRect', { i }));
       }
       /* the diagram's own background and outline (dgm:bg, dgm:whole) */
       const dbg = kid(dm, 'bg'), dwhole = kid(dm, 'whole');
@@ -1799,8 +1578,12 @@
       for (const it of pending) {
         const sz = Math.round(sizes.get(it.role) * 2) / 2;
         const lines = [];
-        if (it.text) lines.push(L.txt.para(it.text, { algn: it.algn }, { sz, color: it.color }));
-        for (const t of it.sub) lines.push(L.txt.para(t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, { sz: Math.round(sz * (it.text ? 0.85 : 1) * 2) / 2, color: it.color }));
+        if (it.rich) lines.push(...L.clone(it.rich));
+        else if (it.text) lines.push(L.txt.para(it.text, { algn: it.algn }, { sz, color: it.color }));
+        for (const [i, t] of it.sub.entries()) {
+          if (it.subRich[i]) lines.push(...L.clone(it.subRich[i]));
+          else lines.push(L.txt.para(t, { algn: 'l', marL: sz * 0.9, indent: -sz * 0.9, bu: { t: 'char', ch: '•' } }, { sz: Math.round(sz * (it.text ? 0.85 : 1) * 2) / 2, color: it.color }));
+        }
         if (!lines.length) lines.push(L.txt.para('', { algn: 'ctr' }, { color: it.color }));
         it.sh.tx = L.txt.body(lines, { anchor: it.anchor === 't' ? 't' : 'ctr', ins: [5, 4, 5, 4] });
       }
@@ -1826,7 +1609,14 @@
       const mRel = Object.values(presRels).find((r) => r.type === 'slideMaster');
       const master = lay ? lay.master : mRel ? await loadMaster(mRel.target) : null;
       if (!master) throw new Error('slide has no master');
-      const design = master.design;
+      /* a slide with colours of its own (a theme override, as PowerPoint writes for a slide whose colour scheme
+         differs from its master's, and for every such slide of a 97-2003 file it converts) */
+      let themeOverride = null;
+      const tovRel = Object.values(sr).find((r) => r.type === 'themeOverride' && !r.external);
+      if (tovRel) {
+        try { const tx = await xml(tovRel.target); if (tx && desc(tx, 'clrScheme')) themeOverride = (await loadTheme(tovRel.target)).colors; } catch (e) { /* the master's colours */ }
+      }
+      const design = themeOverride ? Object.assign({}, master.design, { colors: Object.assign({}, master.design.colors, themeOverride) }) : master.design;
       const ctx = mkCtx(sp, sr, design, master.theme);
       ctx.layout = lay;
       const ovr = path(sx, 'clrMapOvr', 'overrideClrMapping');
@@ -1837,6 +1627,10 @@
         id: L.uid('sl'), layout: 'blank', design: design.id, shapes: [], notes: '',
         trans: { type: 'none', spd: 'fast', click: true, after: null }, anims: [], hidden: at(sx, 'show') === '0',
       };
+      if (themeOverride) slide.themeOverride = themeOverride;
+      /* the slide's own colour mapping (a dark slide in a light deck: bg1 → dk1) holds for all it shows, the master's
+         background and shapes too (M.design) */
+      if (ctx.clrMapOvr) slide.clrMap = Object.assign({}, ctx.clrMapOvr);
       if (lay) {
         slide.layout = LAYOUT_MAP[lay.type] || (lay.phs.some((x) => x.ph.type === 'ctrTitle') ? 'title' : lay.phs.some((x) => x.ph.type === 'title') ? (lay.phs.length > 1 ? 'text' : 'titleOnly') : 'blank');
         if (lay.lkey) slide.lkey = lay.lkey;

@@ -869,7 +869,8 @@
   let endMode = false;
   G.endMode = () => endMode;
   function onKey(e) {
-    if (L.ui.menuKey(e) || L.ui.dialogKey(e)) { e.preventDefault(); return; }
+    // taken here, the key goes no further: the page's own handler (app.js) would move the menu a second time
+    if (L.ui.menuKey(e) || L.ui.dialogKey(e)) { e.preventDefault(); e.stopPropagation(); return; }
     const ed = L.editor;
     if (ed.active) { ed.key(e); return; }
     if (e.isComposing) return;

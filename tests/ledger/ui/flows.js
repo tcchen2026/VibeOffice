@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const OUT = process.argv[2] || '/tmp/shots/ui';
-const CORPUS = path.join(process.env.VO_CORPORA || path.join(require('os').homedir(), 'corpora'), 'excel');   // tools/corpora.sh
+const CORPUS = path.join(process.env.VO_CORPORA || '/work/corpora', 'excel');   // tools/corpora.sh
 fs.mkdirSync(OUT, { recursive: true });
 let pass = 0, fail = 0;
 const ok = (cond, name, info) => { process.stderr.write('.'); if (cond) { pass++; console.log('PASS', name); } else { fail++; console.log('FAIL', name, info === undefined ? '' : JSON.stringify(info).slice(0, 300)); } };

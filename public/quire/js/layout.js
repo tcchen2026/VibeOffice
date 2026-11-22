@@ -222,17 +222,24 @@
       const b = blocks[st.bi];
       if (b.t === 'tbl') {
         /* "page break before" on the first paragraph of the table's first cell breaks before the table (Word) */
-        if (!st.sub && !frame.empty && frame.kind === 'col' && !ctx.inCell) {
-          const c0 = b.rows[0] && b.rows[0].cells[0];
-          const p0 = c0 && c0.blocks && c0.blocks[0];
-          if (p0 && p0.t === 'p') {
-            const { sp } = R.tblProps(d, b);
-            const cs = R.cellStyle(d, b, sp, 0, 0, b.rows.length, b.grid.length || 1);
-            if (D.pProps(d, p0, { tblRPr: D.mergeRPr(sp.rPr, cs.rPr), tblPPr: D.mergePPr(sp.pPr, cs.pPr) }).pageBreakBefore) return { st, stop: 'page', pbb: true };
-          }
+        if (!st.sub && !frame.empty && frame.kind === 'col' && !ctx.inCell && rowLead(d, b, 0).pageBreakBefore) return { st, stop: 'page', pbb: true };
+        /* a floating table (w:tblpPr) stands beside the text, which wraps around it */
+        const fl = b.tblPr && b.tblPr.float;
+        if (fl && !ctx.inTextBox && (frame.kind === 'col' || frame.kind === 'flow' || frame.kind === 'hf')) {
+          const fr = placeFloatTable(frame, b, ctx, fl, st.sub);
+          if (fr.placed) { frame.empty = false; frame.chain = []; }
+          if (fr.done) { st = { bi: st.bi + 1, sub: null }; continue; }
+          if (!fr.placed && !frame.empty) return keepChainBreak(frame, st, ctx);
+          return { st: { bi: st.bi, sub: fr.placed ? fr.sub : st.sub }, stop: 'full' };
         }
         const res = placeTable(frame, b, st.sub, ctx);
-        if (res.placed) { frame.empty = false; frame.chain = []; }
+        if (res.placed) {
+          frame.empty = false;
+          /* a table whose last row keeps with the next paragraph (its first cell's first paragraph does) stays in a
+             chain of such paragraphs, which Word moves together (it doesn't move a chain from the top of a page) */
+          if (res.done && frame.kind === 'col' && !ctx.inCell && b.rows.length && rowLead(d, b, b.rows.length - 1).keepNext) frame.chain.push({ bi: st.bi, el: frame.el.lastElementChild, sub: st.sub ? -1 : 0 });
+          else frame.chain = [];
+        }
         if (res.done) { st = { bi: st.bi + 1, sub: null }; continue; }
         if (!res.placed && !frame.empty) return keepChainBreak(frame, { bi: st.bi, sub: res.sub }, ctx);
         return { st: { bi: st.bi, sub: res.sub }, stop: 'full' };
@@ -262,9 +269,13 @@
       }
       if (frame.kind === 'flow') brk = -1;
       const segEnd = brk >= 0 ? brk + 1 : n;
-      const prevP = st.bi > 0 && blocks[st.bi - 1].t === 'p' ? blocks[st.bi - 1] : null;
-      const nextP = st.bi + 1 < blocks.length && blocks[st.bi + 1].t === 'p' ? blocks[st.bi + 1] : null;
-      const fctx = Object.assign({}, ctx, { prev: prevP, next: nextP, atTop: frame.empty && frame.natural && o === 0, frameEmpty: frame.empty && !ctx.inCell, openCmts: LY.openFor(p), fieldStack: LY.openMap ? LY.openMap.get('f' + p.id) : null, firstInCell: st.bi === 0, lastInCell: st.bi === blocks.length - 1, prevTbl: st.bi > 0 && blocks[st.bi - 1].t === 'tbl' });
+      /* (a section break that takes no room stands between no neighbours) */
+      const pi = R.bareSectBreak(d, blocks[st.bi - 1], ctx.view) ? st.bi - 2 : st.bi - 1;
+      const ni = R.bareSectBreak(d, blocks[st.bi + 1], ctx.view) ? st.bi + 2 : st.bi + 1;
+      const prevP = pi >= 0 && blocks[pi].t === 'p' ? blocks[pi] : null;
+      const nextP = ni < blocks.length && blocks[ni].t === 'p' ? blocks[ni] : null;
+      /* (spacing collapses across a continuous section break too: the new section's first column follows the text above) */
+      const fctx = Object.assign({}, ctx, { prev: prevP, next: nextP, atTop: frame.empty && frame.natural && o === 0, frameEmpty: frame.empty && !ctx.inCell && !frame.follows, openCmts: LY.openFor(p), fieldStack: LY.openMap ? LY.openMap.get('f' + p.id) : null, firstInCell: st.bi === 0, lastInCell: st.bi === blocks.length - 1, prevTbl: pi >= 0 && blocks[pi].t === 'tbl' });
       let frag = R.para(p, o, segEnd, fctx);
       frame.el.appendChild(frag);
       postPara(frag, p, fctx, frame);
@@ -366,7 +377,21 @@
         const nh = frame.notes ? frame.notes.measure(frag) : 0;
         const bt = bottomOf(frag, frame.top, scale);
         const ls = bt - (parseFloat(frag.style.paddingBottom) || 0);
-        if (ls - slackOf(lines[k - 1]) <= frame.limit - nh + 0.5 || (k === 1 && frame.empty)) {
+        const fitsWhole = ls - slackOf(lines[k - 1]) <= frame.limit - nh + 0.5;
+        /* a footnote referenced in the last line placed (or in the first, which may not stand alone at the foot of a
+           page) that doesn't fit below it goes on to the next page, and the page ends there (Word) */
+        if (!fitsWhole && frame.notes && frame.kind === 'col' && frame.lastCol && !ctx.inCell) {
+          const id = frame.notes.lastPending(), ref = id && frag.querySelector(`.nref[data-note="fn:${id}"]`);
+          const at = ref ? (ref.getBoundingClientRect().top + ref.getBoundingClientRect().bottom) / 2 : null;
+          const lineOf = (j) => lines[j] && at != null && (at - frame.top) / scale >= lines[j].top - 0.5 && (at - frame.top) / scale <= lines[j].bottom + 0.5;
+          if ((lineOf(k - 1) || (k === 2 && widow && lineOf(0))) && frame.notes.split(frame.limit - (ls - slackOf(lines[k - 1])))) {
+            frame.notes.commit(frag);
+            frame.empty = false;
+            frame.chain = [];
+            return { st: cut >= n ? { bi: st.bi + 1, sub: null } : { bi: st.bi, sub: cut }, stop: 'full' };
+          }
+        }
+        if (fitsWhole || (k === 1 && frame.empty)) {
           if (frame.notes) frame.notes.commit(frag);
           frame.empty = false;
           frame.chain = [];
@@ -392,8 +417,7 @@
     if (j === st.bi) j = st.bi + 1;
     /* frames placed relative to the page or margin (the default when no anchor is given), and frames
        with wrap="none" (text runs through them: page numbers in footers), sit outside the text flow */
-    /* (with no anchor the position counts from the page, but a frame with no vertical position at all stays in the text) */
-    const vPage = fp.vAnchor === 'page' || fp.vAnchor === 'margin' || (!fp.vAnchor && (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline')));
+    const vPage = frameOnPage(fp);
     if ((fp.wrap === 'none' || vPage) && frame.kind !== 'cell' && !ctx.inTextBox) return placeFrameAbs(frame, blocks, st, j, ctx, fp, fp.wrap !== 'none' && fp.wrap !== 'through' && frame.kind === 'col');
     const box = el('div', 'frm');
     const css = [];
@@ -430,45 +454,117 @@
     return { placed: true, next: j };
   }
   function placeFrameAbs(frame, blocks, st, j, ctx, fp, exclude) {
-    const wrap = el('div', 'frm-anchor');
-    wrap.style.cssText = 'position:relative;height:0;margin:0;padding:0;overflow:visible';
-    const box = el('div', 'frm frm-abs');
-    const css = ['position:absolute', 'z-index:2', fp.w ? `width:${px(fp.w)}px` : 'width:max-content'];
+    const css = [fp.w ? `width:${px(fp.w)}px` : 'width:max-content'];
     if (fp.h && fp.hRule === 'exact') css.push(`height:${px(fp.h)}px`, 'overflow:hidden');
     else if (fp.h) css.push(`min-height:${px(fp.h)}px`);
-    box.style.cssText = css.join(';');
+    const hs = px(fp.hSpace || 0), vs = px(fp.vSpace || 0);
+    absBox(frame, ctx, fp, exclude, { l: hs, r: hs, t: vs, b: vs }, 'frm frm-abs', css, (box) => {
+      for (let k = st.bi; k < j; k++) {
+        const p = blocks[k];
+        if (p.t !== 'p') continue;
+        const fctx = Object.assign({}, ctx, { prev: k > st.bi ? blocks[k - 1] : null, next: k + 1 < j ? blocks[k + 1] : null, openCmts: LY.openFor(p), inFrame: true });
+        const fr = R.para(p, 0, null, fctx);
+        box.appendChild(fr);
+        postPara(fr, p, fctx, frame);
+      }
+    });
+    return { placed: true, next: j };
+  }
+  /** an out-of-flow box (a page- or margin-anchored frame or floating table): absolute in a zero-height anchor where
+   *  it stands in the text, positioned by LY.posAbsFrame; with exclude, an empty float of its size (and its distances
+   *  from the text, sp: px) keeps the text clear. fill(box) puts its content in */
+  function absBox(frame, ctx, fp, exclude, sp, cls, css, fill) {
+    const wrap = el('div', 'frm-anchor');
+    wrap.style.cssText = 'position:relative;height:0;margin:0;padding:0;overflow:visible';
+    const box = el('div', cls);
+    box.style.cssText = ['position:absolute', 'z-index:2'].concat(css).join(';');
     wrap.appendChild(box);
     frame.el.appendChild(wrap);
-    for (let k = st.bi; k < j; k++) {
-      const p = blocks[k];
-      if (p.t !== 'p') continue;
-      const fctx = Object.assign({}, ctx, { prev: k > st.bi ? blocks[k - 1] : null, next: k + 1 < j ? blocks[k + 1] : null, openCmts: LY.openFor(p), inFrame: true });
-      const fr = R.para(p, 0, null, fctx);
-      box.appendChild(fr);
-      postPara(fr, p, fctx, frame);
-    }
     wrap._fp = fp;
     wrap._page = ctx.page || frame.page || null;
+    /* (fill may place the empty box first, to know how much room it has) */
+    fill(box, wrap);
     LY.posAbsFrame(wrap);
     if (exclude) {
-      /* keep the text clear of the frame: an empty float of its size, pushed down to its top */
+      /* keep the text clear of the box: an empty float of its size, pushed down to its top */
       const y = parseFloat(box.style.top) || 0, x = parseFloat(box.style.left) || 0;
       const bw = box.offsetWidth, bh = box.offsetHeight, colW = frame.el.clientWidth || frame.width || 0;
-      const vs = px(fp.vSpace || 0), hs = px(fp.hSpace || 0);
-      const top = y - vs, h = bh + vs * 2;
+      const top = y - sp.t, h = bh + sp.t + sp.b;
       const band = Math.max(0, top >= 0 ? h : h + top);
       if (band > 0) {
         const full = fp.wrap === 'notBeside' || bw >= colW * 0.66;
         const left = x + bw / 2 < colW / 2;
         const side = full || left ? 'left' : 'right';
-        const sp = el('div', 'fl-sp', `float:${side};clear:both;width:0;height:${Math.max(0, top)}px`);
+        const sp0 = el('div', 'fl-sp', `float:${side};clear:both;width:0;height:${Math.max(0, top)}px`);
         const ph = el('div', 'frm-excl', full ? `float:left;clear:both;width:100%;height:${band}px` : left
-          ? `float:left;clear:left;width:${Math.max(0, x) + bw + hs}px;height:${band}px`
-          : `float:right;clear:right;width:${Math.max(0, colW - x) + hs}px;height:${band}px`);
-        wrap.append(sp, ph);
+          ? `float:left;clear:left;width:${Math.max(0, x) + bw + sp.r}px;height:${band}px`
+          : `float:right;clear:right;width:${Math.max(0, colW - x) + sp.l}px;height:${band}px`);
+        wrap.append(sp0, ph);
       }
     }
-    return { placed: true, next: j };
+    return wrap;
+  }
+  /** a floating table's rows into box, from sub, as far as limit (px below the box's top): {placed, done, sub} as
+   *  placeTable; on an empty page at least one row */
+  function floatRows(box, frame, t, ctx, sub, limit, empty) {
+    const top = box.getBoundingClientRect().top;
+    const res = placeTable({ el: box, kind: 'col', limit, top, empty, page: frame.page, width: frame.width || frame.el.clientWidth, chain: [] }, t, sub, ctx);
+    const tbl = box.querySelector(':scope > table.tbl');
+    /* its place comes from its anchors, not from its alignment or indent */
+    if (tbl) tbl.style.marginLeft = tbl.style.marginRight = '0';
+    return res;
+  }
+  const gridWidth = (t, ctx) => px(t.grid && t.grid.length ? t.grid.reduce((a, b) => a + b, 0) : ctx.width ? ctx.width / PX : 432);
+  /**
+   * A floating table (w:tblpPr) placed from its anchors as Word does: horizontally from the text column unless
+   * horzAnchor says margin or page, vertically from the margin unless vertAnchor says text or page (Word leaves
+   * those defaults out); an alignment (tblpXSpec, tblpYSpec) wins over the offset, which may be negative.
+   * Text-anchored, it floats where it stands in the text, which wraps around it, as far as its distances from the
+   * text (leftFromText…); page- or margin-anchored, it stands where its anchors put it and the text keeps clear.
+   * One that runs past the bottom of the page goes on at the top of the next one, the text beside each part; the
+   * rows that don't fit on a page with text above them take the table to the next page.
+   */
+  function placeFloatTable(frame, t, ctx, f, sub) {
+    const pg = ctx.page || frame.page || null;
+    const sp = { l: px(f.l || 0), r: px(f.r || 0), t: px(f.t || 0), b: px(f.b || 0) };
+    const scale = LY.scale();
+    const room = (box) => (frame.limit === Infinity ? Infinity : frame.limit - (box.getBoundingClientRect().top - frame.top) / scale);
+    const w = gridWidth(t, ctx);
+    /* in files of Word 2010 and before, the cells' text (not the border) stands at the offset, as for tables in the text */
+    const shift = !f.xAlign && (ctx.doc.settings.compat || 11) < 15 ? R.tblProps(ctx.doc, t).tp.cellMar.l || 0 : 0;
+    if (!sub && f.vAnchor !== 'text' && pg && pg.el && frame.kind !== 'flow') {
+      const fp = { x: (f.x || 0) - shift, y: f.y, xAlign: f.xAlign, yAlign: f.yAlign, hAnchor: f.hAnchor || 'text', vAnchor: f.vAnchor || 'margin' };
+      /* where its anchors put it, on this page whatever room there is; aligned to the middle or bottom, it isn't split */
+      const sized = f.yAlign && f.yAlign !== 'top' && f.yAlign !== 'inside' && f.yAlign !== 'inline';
+      let res = null;
+      /* (its width set first, so its place is known before its rows, and the pictures in them, are laid out) */
+      absBox(frame, ctx, fp, frame.kind === 'col', sp, 'frm-abs tbl-abs', [`width:${w}px`], (box, wrap) => {
+        if (!sized) LY.posAbsFrame(wrap);
+        res = floatRows(box, frame, t, ctx, null, sized ? Infinity : room(box), true);
+      });
+      return { placed: true, done: res.done, sub: res.sub };
+    }
+    const colW = frame.width || frame.el.clientWidth;
+    /* the horizontal anchor's left edge (px from the column's) and width */
+    let x0 = 0, aw = colW;
+    if (pg && pg.el && pg.el.isConnected && (f.hAnchor === 'margin' || f.hAnchor === 'page')) {
+      const s = LY.scale(), colLeft = (frame.el.getBoundingClientRect().left - pg.el.getBoundingClientRect().left) / s;
+      if (f.hAnchor === 'page') { x0 = -colLeft; aw = pg.W; } else { x0 = pg.bodyLeft - colLeft; aw = pg.bodyW; }
+    }
+    const xa = { left: 0, inside: 0, center: (aw - w) / 2, right: aw - w, outside: aw - w };
+    const left = x0 + (f.xAlign && xa[f.xAlign] != null ? xa[f.xAlign] : px((f.x || 0) - shift));
+    /* the text goes beside it on the side with more room */
+    const onRight = left + w / 2 > colW / 2;
+    /* (a part continued from the page before starts at the top) */
+    /* (above the paragraphs it stands among, whose boxes run under it: a click on it is a click in its cells) */
+    const css = ['position:relative', 'z-index:1', `float:${onRight ? 'right' : 'left'}`, `clear:${onRight ? 'right' : 'left'}`, `width:${w}px`,
+      onRight ? `margin-right:${L.round(colW - left - w, 2)}px;margin-left:${sp.l}px` : `margin-left:${L.round(left, 2)}px;margin-right:${sp.r}px`,
+      `margin-top:${sub ? 0 : L.round(px(f.y || 0), 2)}px`, `margin-bottom:${sp.b}px`];
+    const box = el('div', 'tbl-float', css.join(';'));
+    frame.el.appendChild(box);
+    const res = floatRows(box, frame, t, ctx, sub, room(box), frame.empty);
+    if (!res.placed) { box.remove(); return { placed: false }; }
+    return res;
   }
   /** position an out-of-flow frame from its anchors (re-run when its container shifts) */
   LY.posAbsFrame = function (wrap) {
@@ -486,7 +582,7 @@
     const xa = { left: 0, inside: 0, center: (aw - bw) / 2, right: aw - bw, outside: aw - bw };
     const x = ax0 + (fp.xAlign && xa[fp.xAlign] != null ? xa[fp.xAlign] : fp.x ? px(fp.x) : 0);
     let y;
-    if (pr && (fp.vAnchor === 'page' || fp.vAnchor === 'margin' || (!fp.vAnchor && (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline'))))) {
+    if (pr && frameOnPage(fp)) {
       const s = pg.sect || {};
       let ay0 = (pr.top - wr.top) / scale, ah = pg.H;
       if (fp.vAnchor === 'margin') { const mt = px(Math.abs(s.mt || 0)), mb = px(Math.abs(s.mb || 0)); ay0 += mt; ah = pg.H - mt - mb; }
@@ -496,7 +592,33 @@
     box.style.left = L.round(x, 2) + 'px';
     box.style.top = L.round(y, 2) + 'px';
   };
+  /* a frame placed on the page or margin, out of the text flow. With no anchor the position counts from the page,
+     but a frame with no vertical position at all stays in the text, whatever its anchor: a Word 97-2003 frame at
+     vertical position 0 ("in line"), saved without w:y, stands beside its own paragraph in Word (I24 E3); Word
+     writes w:y="1" when it means the top */
+  const frameOnPage = (fp) => (typeof fp.y === 'number' || (fp.yAlign && fp.yAlign !== 'inline'))
+    ? fp.vAnchor !== 'text' : false;
   const fixAbsFrames = (root) => { for (const w of root.querySelectorAll('.frm-anchor')) LY.posAbsFrame(w); };
+  /** an object in line with text that is wider than its line ends the paragraph sticking out past the right edge, as
+      in Word: the caret's filler after it (R.fillRuns) stays on its line instead of taking a line of its own */
+  function hangWide(zw) {
+    const obj = zw.previousSibling;
+    if (!obj || obj.nodeType !== 1 || !(obj.classList.contains('img') || obj.classList.contains('shp'))) return;
+    const o = obj.getBoundingClientRect(), z = zw.getBoundingClientRect();
+    if (z.top < o.bottom - 1) return;
+    const pc = zw.parentNode, right = pc.getBoundingClientRect().right - parseFloat(getComputedStyle(pc).paddingRight || 0);
+    const over = (o.right - right) / LY.scale();
+    if (over > 0) obj.style.marginRight = (parseFloat(obj.style.marginRight) || 0) - over - 1 + 'px';
+  }
+  /** the properties of a table row's first paragraph (its first cell's), which Word reads for the row's page breaks */
+  function rowLead(d, t, ri) {
+    const c0 = t.rows[ri] && t.rows[ri].cells[0];
+    const p0 = c0 && c0.blocks && c0.blocks[0];
+    if (!p0 || p0.t !== 'p') return {};
+    const { sp } = R.tblProps(d, t);
+    const cs = R.cellStyle(d, t, sp, ri, 0, t.rows.length, t.grid.length || 1);
+    return D.pProps(d, p0, { tblRPr: D.mergeRPr(sp.rPr, cs.rPr), tblPPr: D.mergePPr(sp.pPr, cs.pPr) });
+  }
   /** move trailing keep-with-next paragraphs to the next frame along with the block that did not fit */
   function keepChainBreak(frame, st, ctx) {
     const ch = frame.chain || [];
@@ -514,6 +636,8 @@
   }
   /** after inserting a paragraph fragment: tabs, floats */
   function postPara(frag, p, ctx, frame) {
+    const zw = frag.firstChild && frag.firstChild.querySelector(':scope > .zw');
+    if (zw) hangWide(zw);
     if (frag.querySelector('.tb')) {
       const colRect = frame.el.getBoundingClientRect();
       frag._tabs = { p, ctx, frame };
@@ -664,6 +788,8 @@
     const map = R.tblMap(t);
     const startRow = sub ? sub.r : 0;
     let cellStates = sub ? sub.cells : null;
+    /* (the page's notes: footnotes referenced in a table that stands in a column of the page) */
+    const notes = frame.kind === 'col' && !ctx.inCell ? frame.notes : null;
     frame.el.appendChild(shell.tbl);
     const nRows = t.rows.length;
     /* repeated header rows */
@@ -691,27 +817,40 @@
       const rr = renderRow(t, ri, map[ri], shell, ctx, firstOnFrame ? cellStates : null, null, firstOnFrame && ri > 0 && frame.kind === 'col' && sub, rowspanCut);
       shell.tb.appendChild(rr.tr);
       fillRow(rr.tr, t, ri, null);
-      if (lim === Infinity) { placedRows++; continue; }
+      /* footnotes referenced in the row's cells go to the page's notes, which take their room from the page */
+      const nh = notes ? notes.measure(rr.tr) : 0;
+      if (lim === Infinity) { if (notes) notes.commit(); placedRows++; continue; }
       const bt = bottomOf(rr.tr, frame.top, scale);
       /* rowspans extending below: measure the bottom of the whole group */
-      if (bt <= lim + 0.5) { placedRows++; continue; }
+      if (bt <= lim - nh + 0.5) { if (notes) notes.commit(); placedRows++; continue; }
+      /* a footnote of the row's that doesn't fit below it goes on to the next page, and the page ends after the row
+         (Word, as for a paragraph) */
+      if (notes && frame.lastCol && notes.lastPending() && bt <= lim - notes.height() + 0.5 && notes.split(lim - bt)) {
+        notes.commit();
+        placedRows++;
+        return ri + 1 < nRows ? { done: false, placed: true, sub: { r: ri + 1, cells: null } } : { done: true, placed: true, sub: null };
+      }
+      if (notes) notes.rollback();
       /* row does not fit */
       const trPr = t.rows[ri].trPr || {};
       const canSplit = !trPr.cantSplit && !trPr.header;
       const trTop = (rr.tr.getBoundingClientRect().top - frame.top) / scale;
       rr.tr.remove();
       if (canSplit && map[ri].every((m) => m.rowspan === 1)) {
-        const avail = lim - trTop - 1;
+        const avail = lim - (notes ? notes.height() : 0) - trTop - 1;
         if (avail > 8) {
           const r2 = renderRow(t, ri, map[ri], shell, ctx, firstOnFrame ? cellStates : null, avail, firstOnFrame && ri > 0, rowspanCut);
           shell.tb.appendChild(r2.tr);
           const f2 = fillRow(r2.tr, t, ri, avail);
+          const nh2 = notes ? notes.measure(r2.tr) : 0;
           const bt2 = bottomOf(r2.tr, frame.top, scale);
-          if (f2.anyContent && (bt2 <= lim + 2 || frame.empty && placedRows === 0)) {
+          if (f2.anyContent && (bt2 <= lim - nh2 + 2 || frame.empty && placedRows === 0)) {
+            if (notes) notes.commit();
             if (!f2.anyRemaining) { placedRows++; continue; }
             r2.tr.classList.add('split');
             return { done: false, placed: true, sub: { r: ri, cells: f2.rem } };
           }
+          if (notes) notes.rollback();
           r2.tr.remove();
         }
       }
@@ -720,6 +859,7 @@
         const r3 = renderRow(t, ri, map[ri], shell, ctx, cellStates, null, ri > 0 && !!sub, rowspanCut);
         shell.tb.appendChild(r3.tr);
         fillRow(r3.tr, t, ri, null);
+        if (notes) { notes.measure(r3.tr); notes.commit(); }
         placedRows++;
         if (ri + 1 < nRows) return { done: false, placed: true, sub: { r: ri + 1, cells: null } };
         continue;
@@ -729,6 +869,7 @@
       while (back > startRow && map[back].some((m) => m.cell.tcPr.vMerge === 'continue')) back--;
       if (back !== ri && back > startRow) {
         const trs = Array.from(shell.tb.children).filter((x) => +x.dataset.ri >= back && !x.classList.contains('rep'));
+        if (notes && trs.length) notes.removeFrom(trs[0]);
         for (const x of trs) x.remove();
         placedRows -= ri - back;
         ri = back;
@@ -741,7 +882,7 @@
 
   /* ================= footnote areas ================= */
   /** per-page footnote collector: measures/commits notes referenced by fragments */
-  function noteArea(page, ctx) {
+  function noteArea(page, ctx, carry) {
     const area = el('div', 'pg-fn');
     area.style.cssText = `left:${page.bodyLeft}px;width:${page.bodyW}px;bottom:${page.bodyBottomGap}px`;
     page.el.appendChild(area);
@@ -749,7 +890,23 @@
     let pending = [];
     let committedH = 0;
     let pendingH = 0;
+    /* a note that goes on to the next page ({ id, st }: where its rest starts), as Word continues a footnote that
+       doesn't fit below its reference; carried in from the page before, it comes first, under a full-width line */
+    let carryOut = null, splitPending = false;
     const cache = new Map();
+    /** the line above the notes (cont: above a note continued from the page before), as the file's separator
+        paragraph draws it, so it takes as much room as in Word */
+    /* (the file's separator paragraph takes the room Word gives it; Quire's own line, a little more) */
+    const gap = ((doc().noteSep || {}).fn || {}).separator ? 0 : 6;
+    /* (to the fraction of a pixel: a rounded height decides whether a note's last line fits) */
+    const areaH = () => area.getBoundingClientRect().height / LY.scale();
+    const separator = (cont) => {
+      const story = ((doc().noteSep || {}).fn || {})[cont ? 'continuationSeparator' : 'separator'];
+      const box = el('div', story ? 'fnsep-box' : 'fnsep-line' + (cont ? ' cont' : ''));
+      box.contentEditable = 'false';
+      if (story) LY.flow({ el: box, limit: Infinity, top: 0, empty: true, kind: 'note' }, story.blocks, { bi: 0, sub: null }, story.blocks.length, Object.assign({}, ctx, { story, grid: 0 }));
+      return box;
+    };
     const renderNote = (id) => {
       const note = doc().fn[id];
       const box = el('div', 'fnote');
@@ -759,6 +916,32 @@
       LY.flow(fr, note.blocks, { bi: 0, sub: null }, note.blocks.length, Object.assign({}, ctx, { story: note, noteOwner: id, grid: 0 }));
       return box;
     };
+    /** part of a note from st, in at most limit px: { box, st, done }; laid out in a hidden box at the page's top (the
+        area grows upwards from the foot of the page, which would move the lines being measured) */
+    const renderPart = (id, st, limit) => {
+      const note = doc().fn[id];
+      const host = el('div', 'pg-fn');
+      host.style.cssText = `left:${page.bodyLeft}px;width:${page.bodyW}px;top:0;visibility:hidden`;
+      page.el.appendChild(host);
+      const box = el('div', 'fnote');
+      box.dataset.fn = id;
+      host.appendChild(box);
+      const fr = { el: box, limit, top: box.getBoundingClientRect().top, empty: true, kind: 'note' };
+      const res = LY.flow(fr, note.blocks, st, note.blocks.length, Object.assign({}, ctx, { story: note, noteOwner: id, grid: 0 }));
+      const h = box.getBoundingClientRect().height / LY.scale();
+      host.remove();
+      return { box, st: res.st, done: res.stop === 'done', h };
+    };
+    if (carry && doc().fn[carry.id]) {
+      area.appendChild(separator(true));
+      /* (a note longer than a page leaves room for a few lines of text) */
+      const part = renderPart(carry.id, carry.st, Math.max(48, page.bodyH - 48));
+      part.box.classList.add('cont');
+      area.appendChild(part.box);
+      committed.push({ id: carry.id, box: part.box, cont: true });
+      if (!part.done) carryOut = { id: carry.id, st: part.st };
+      committedH = areaH() + gap;
+    }
     const api = {
       area,
       /** height needed (px) if fragment's notes were added */
@@ -770,25 +953,55 @@
         for (const r of refs) {
           const id = r.dataset.note.slice(3);
           if (committed.some((c) => c.id === id) || pending.some((c) => c.id === id)) continue;
+          /* (no note goes below one that goes on to the next page) */
+          if (carryOut) return Infinity;
           let box = cache.get(id);
           if (!box) { box = renderNote(id); cache.set(id, box); }
-          if (!area.childNodes.length) { const sep = el('div', 'fnsep-line'); sep.contentEditable = 'false'; area.appendChild(sep); }
+          if (!area.childNodes.length) area.appendChild(separator(false));
           area.appendChild(box);
           pending.push({ id, box });
         }
-        pendingH = area.offsetHeight + 6;
+        pendingH = areaH() + gap;
         return pendingH;
       },
-      commit() { committed = committed.concat(pending); pending = []; committedH = committed.length ? area.offsetHeight + 6 : 0; },
-      rollback() { for (const pnd of pending) pnd.box.remove(); pending = []; if (!committed.length) area.textContent = ''; },
+      /** the note of the last reference measured goes on to the next page, so that the notes take at most avail px: as
+          Word does when it doesn't fit below its reference, if a line of it does and it may be split there */
+      split(avail) {
+        const last = pending[pending.length - 1], note = last && doc().fn[last.id];
+        if (!note || carryOut) return false;
+        last.box.remove();
+        const room = avail - (areaH() + gap);
+        /* (the flow lets a line run half a pixel over: not past the room) */
+        const part = room > 8 ? renderPart(last.id, { bi: 0, sub: null }, room - 0.5) : null;
+        const p0 = note.blocks[0];
+        if (!part || part.done || !part.box.firstChild || part.h > room + 0.5
+          || (part.st.bi === 0 && p0 && p0.t === 'p' && D.pProps(doc(), p0).keepLines)) { area.appendChild(last.box); return false; }
+        area.appendChild(part.box);
+        last.box = part.box;
+        carryOut = { id: last.id, st: part.st };
+        splitPending = true;
+        pendingH = areaH() + gap;
+        return true;
+      },
+      /** the note of the last reference measured */
+      lastPending: () => (pending.length ? pending[pending.length - 1].id : null),
+      /** the note going on to the next page, and where its rest starts */
+      carry: () => carryOut,
+      commit() { committed = committed.concat(pending); pending = []; splitPending = false; committedH = committed.length ? areaH() + gap : 0; },
+      rollback() {
+        for (const pnd of pending) pnd.box.remove();
+        pending = [];
+        if (splitPending) { carryOut = null; splitPending = false; }
+        if (!committed.length) area.textContent = '';
+      },
       removeFrom(fragEl) {
         /* drop notes referenced by fragments being moved off this page */
         const ids = new Set();
         let e = fragEl;
         while (e) { for (const r of e.querySelectorAll ? e.querySelectorAll('.nref[data-note^="fn:"]') : []) ids.add(r.dataset.note.slice(3)); e = e.nextElementSibling; }
-        committed = committed.filter((c) => { if (ids.has(c.id)) { c.box.remove(); return false; } return true; });
+        committed = committed.filter((c) => { if (ids.has(c.id) && !c.cont) { c.box.remove(); if (carryOut && carryOut.id === c.id) carryOut = null; return false; } return true; });
         if (!committed.length) area.textContent = '';
-        committedH = committed.length ? area.offsetHeight + 6 : 0;
+        committedH = committed.length ? areaH() + gap : 0;
       },
       height: () => committedH,
     };
@@ -830,10 +1043,16 @@
     const hctx = Object.assign({}, ctx, { story, dyn: (ty, fmt, instr) => LY.dynField(ty, fmt, page, instr), openCmts: null, page, hf: true, grid: 0 });
     LY.flow(fr, story.blocks, { bi: 0, sub: null }, story.blocks.length, hctx);
     fixAbsFrames(container);
-    /* a footer grows upwards from its bottom edge, so the paragraphs after a float's anchor moved it up: a float
-       placed from its paragraph (or line) follows it */
-    const z = LY.scale(), pgTop = page.el.getBoundingClientRect().top;
-    for (const frag of container.querySelectorAll('.p')) {
+    /* a footer grows upwards from its bottom edge, so the paragraphs after a float's anchor moved it up */
+    followAnchors(container, page.el);
+    return container.offsetHeight;
+  }
+  /** a float placed from its paragraph (or line) follows the paragraph when it moved after the float was placed: a
+      footer growing upwards, a cell's content centred while the cell was still short (Word places the float from
+      where the paragraph ends up), a page's vertical alignment */
+  function followAnchors(root, pageEl) {
+    const z = LY.scale(), pgTop = pageEl.getBoundingClientRect().top;
+    for (const frag of root.querySelectorAll('.p')) {
       if (!frag._floats) continue;
       const dy = (frag.getBoundingClientRect().top - pgTop) / z;
       for (const w of frag._floats) {
@@ -845,7 +1064,6 @@
         w.style.top = pos.y + 'px';
       }
     }
-    return container.offsetHeight;
   }
   LY.dynField = function (ty, fmt, page, instr) {
     if (!page) return '1';
@@ -887,6 +1105,7 @@
       if (!spans.length) return null;
       return (fromEnd ? spans[spans.length - 1] : spans[0]).join('').trim() || null;
     };
+    /* a paragraph in the style is a hit even when empty: Word then shows nothing */
     const hit = (q, from, to, fromEnd) => (isChar ? charHit(q, from, to == null ? D.plen(q) : to, fromEnd) : paraHit(q) ? D.plainText(q).trim() : null);
     let frags = Array.from(page.body.querySelectorAll('.p[data-pid]')).filter((e) => !e.closest('.shp, .frm-abs'));
     if (last) frags = frags.reverse();
@@ -895,7 +1114,7 @@
       if (!q) continue;
       const tt = parseFloat(e.dataset.to);
       const r = hit(q, +e.dataset.from || 0, isFinite(tt) ? tt : null, last);
-      if (r) return r;
+      if (r != null) return r;
     }
     /* not on this page: search back from its start, then forward from its end */
     D.reindex(d);
@@ -904,9 +1123,9 @@
     const firstQ = firstE && D.byId(d, +firstE.dataset.pid), lastQ = lastE && D.byId(d, +lastE.dataset.pid);
     /* the part of the page's first paragraph that lies on earlier pages comes first */
     if (firstQ && isChar && +firstE.dataset.from > 0) { const r = charHit(firstQ, 0, +firstE.dataset.from, true); if (r) return r; }
-    for (let q = firstQ && D.prevPara(d, firstQ); q; q = D.prevPara(d, q)) { const r = hit(q, 0, null, true); if (r) return r; }
+    for (let q = firstQ && D.prevPara(d, firstQ); q; q = D.prevPara(d, q)) { const r = hit(q, 0, null, true); if (r != null) return r; }
     if (lastQ && isChar) { const tt = parseFloat(lastE.dataset.to); if (isFinite(tt) && tt < D.plen(lastQ)) { const r = charHit(lastQ, tt, D.plen(lastQ), false); if (r) return r; } }
-    for (let q = lastQ && D.nextPara(d, lastQ); q; q = D.nextPara(d, q)) { const r = hit(q, 0, null, false); if (r) return r; }
+    for (let q = lastQ && D.nextPara(d, lastQ); q; q = D.nextPara(d, q)) { const r = hit(q, 0, null, false); if (r != null) return r; }
     return 'Error! No text of specified style in document.';
   };
   /** create a page DOM for section index si */
@@ -919,8 +1138,8 @@
     pg.dataset.pg = pageIdx;
     const d = doc();
     if (d.bg && LY.opts.printBg !== false) pg.style.background = '#' + d.bg;
-    const mirror = d.settings.mirror && numVal % 2 === 0;
-    const ml = px(mirror ? sect.mr : sect.ml) + (mirror ? 0 : px(sect.gutter || 0)), mr = px(mirror ? sect.ml : sect.mr) + (mirror ? px(sect.gutter || 0) : 0);
+    const mirror = d.settings.mirror && numVal % 2 === 0, gut = px(D.sideGutter(d, sect));
+    const ml = px(mirror ? sect.mr : sect.ml) + (mirror ? 0 : gut), mr = px(mirror ? sect.ml : sect.mr) + (mirror ? gut : 0);
     const page = { el: pg, si, sect, idx: pageIdx, numVal, numFmt: (sect.pgNum && sect.pgNum.fmt) || 'decimal', W, H, bodyLeft: ml, bodyW: W - ml - mr, firstOfSection };
     page.type = pageType(sect, firstOfSection, numVal);
     /* header & footer */
@@ -943,7 +1162,8 @@
     LY.root.insertBefore(pg, LY.insertAnchor && LY.insertAnchor.isConnected ? LY.insertAnchor : null);
     const hh = renderHF(hdr, hdrStory, ctx, page);
     const fh = renderHF(ftr, ftrStory, ctx, page);
-    let top = px(sect.mt), bottomGap = px(sect.mb);
+    /* (a gutter at the top of the page adds to the top margin, as in Word) */
+    let top = px(sect.mt) + (sect.mt >= 0 ? px((sect.gutter || 0) - D.sideGutter(d, sect)) : 0), bottomGap = px(sect.mb);
     if (sect.mt >= 0 && hh && px(sect.hdr) + hh > top) top = px(sect.hdr) + hh;
     if (sect.mb >= 0 && fh && px(sect.ftr) + fh > bottomGap) bottomGap = px(sect.ftr) + fh;
     top = Math.abs(top); bottomGap = Math.abs(bottomGap);
@@ -1013,15 +1233,17 @@
   function frameFor(page, region, ci, ctx, natural) {
     const f = region.frames[ci];
     const sc = LY.scale();
-    const fr = { el: f.el, limit: page.bodyH - region.y, top: f.el.getBoundingClientRect().top, empty: !f.el.firstChild, natural, kind: 'col', page, width: f.w, notes: page.notes };
+    const fr = { el: f.el, limit: page.bodyH - region.y, top: f.el.getBoundingClientRect().top, empty: !f.el.firstChild, natural, kind: 'col', page, width: f.w, notes: page.notes, follows: ci === 0 && region.y > 0, lastCol: ci === region.frames.length - 1 };
     if (!fr.empty) fr.top = f.el.getBoundingClientRect().top;
     void sc;
     void ctx;
     return fr;
   }
+  /** where a region's text ends (layout px from the body's top), to the fraction of a pixel */
   function regionBottom(region) {
+    const sc = LY.scale();
     let m = 0;
-    for (const f of region.frames) { const last = f.el.lastElementChild; if (last) m = Math.max(m, last.offsetTop + last.offsetHeight); }
+    for (const f of region.frames) { const last = f.el.lastElementChild; if (last) m = Math.max(m, (last.getBoundingClientRect().bottom - f.el.getBoundingClientRect().top) / sc); }
     return region.y + m;
   }
   /** balance a multi-column region (before a continuous section break) */
@@ -1086,10 +1308,12 @@
     else LY.insertAnchor = resyncCandidates.length ? resyncCandidates[0].el : null;
     LY.pages = keep;
     let page = null, region = null;
+    const carried = () => { const prev = LY.pages[LY.pages.length - 1]; return (prev && prev.notes && prev.notes.carry()) || null; };
     const startPage = (natural) => {
+      const noteCarry = carried();
       page = newPage(sections, si, pageIdx, numVal, firstOfSection, ctx);
-      page.start = { block: blocks[st.bi], sub: st.sub, si, numVal, firstOfSection };
-      page.notes = d.fn && Object.keys(d.fn).length ? noteArea(page, ctx) : null;
+      page.start = { block: blocks[st.bi], sub: st.sub, si, numVal, firstOfSection, noteCarry };
+      page.notes = d.fn && Object.keys(d.fn).length ? noteArea(page, ctx, noteCarry) : null;
       LY.pages.push(page);
       region = newRegion(page, sections[si].sect, 0);
       region.natural = natural;
@@ -1147,7 +1371,7 @@
           if (type === 'nextColumn' && region.ci + 1 < region.frames.length && (nsect.cols || {}).n === (sec.sect.cols || {}).n) { region.ci++; continue; }
           /* balance columns of the region that just ended */
           if (region.frames.length > 1) balance(page, region, blocks, regionStartState(region, page, blocks), sec.to, ctx);
-          const y = regionBottom(region) + 1;
+          const y = regionBottom(region);
           if (y >= page.bodyH - 12) { if (sn != null) numVal = sn; firstOfSection = true; startPage(false); continue; }
           region = newRegion(page, nsect, y);
           region.natural = false;
@@ -1171,7 +1395,7 @@
       /* new page; try to resync with the previous layout */
       const nextStart = { block: blocks[st.bi], sub: st.sub };
       if (fromPage && LY.resyncOK) {
-        const old = resyncCandidates.find((op) => op.idx === pageIdx && op.start && op.start.block === nextStart.block && JSON.stringify(op.start.sub) === JSON.stringify(nextStart.sub) && op.start.si === si && op.start.numVal === numVal);
+        const old = resyncCandidates.find((op) => op.idx === pageIdx && op.start && op.start.block === nextStart.block && JSON.stringify(op.start.sub) === JSON.stringify(nextStart.sub) && op.start.si === si && op.start.numVal === numVal && JSON.stringify(op.start.noteCarry || null) === JSON.stringify(carried()));
         if (old && LY.resyncOK(old, blocks.indexOf(old.start.block))) {
           for (const op of resyncCandidates) { if (op.idx >= old.idx) LY.pages.push(op); else op.el.remove(); }
           resynced = true;
@@ -1183,6 +1407,8 @@
       startPage(res.stop === 'full' || !!res.pbb || (d.settings && d.settings.compat) >= 15);
     }
     if (!resynced) for (const op of resyncCandidates) op.el.remove();
+    /* a footnote still going on at the end of the text: its rest on pages of their own */
+    if (!resynced) { si = sections.length - 1; for (let k = 0; k < 200 && carried(); k++) startPage(false); }
     LY.insertAnchor = null;
     /* endnotes after the last block */
     if (!resynced && d.en && Object.keys(d.en).length) {
@@ -1220,6 +1446,11 @@
     }
     for (const p of LY.pages) p.el.classList.toggle('vcenter', false);
     applyVAlign();
+    for (const p of LY.pages) {
+      /* a float whose paragraph was laid out again (a table cell measured, then drawn) goes with the copy it came from */
+      for (const w of p.el.querySelectorAll(':scope > .pg-float > .flt')) if (w._frag && !w._frag.isConnected) w.remove();
+      for (const r of p.regions || []) followAnchors(r.el, p.el);
+    }
     clipColumnPictures();
     LY.layoutMs = performance.now() - t0;
     LY.fitSizer();
@@ -1339,7 +1570,7 @@
     LY.pages = [];
     const sect = d.sect;
     const box = el('div', 'flow ' + LY.view);
-    const w = LY.view === 'web' ? Math.max(200, (LY.scroller.clientWidth - 40) / LY.zoom) : px(sect.pgW - sect.ml - sect.mr - (sect.gutter || 0));
+    const w = LY.view === 'web' ? Math.max(200, (LY.scroller.clientWidth - 40) / LY.zoom) : px(D.textWidth(d, sect));
     box.style.width = w + 'px';
     if (LY.view === 'web' && d.bg) box.style.background = '#' + d.bg;
     LY.root.appendChild(box);

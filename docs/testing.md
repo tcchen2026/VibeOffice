@@ -34,6 +34,8 @@ Plain http: `node --test tests/insecure.test.mjs` checks that only the shared he
 
 Templates: `node tools/templates.mjs` opens every template (`<app>/?template=<id>`) and fails on a script error or a missing preview; look at the new previews in the Create File view.
 
+Preset shapes: `common/presets.js` (written by `python3 -I tools/shapes/presets.py` from Apache OpenOffice's copy of the standard's definitions, three slips there mended) is drawn by `common/geometry.js`. `node tools/shapes/deck.mjs` writes `tmp/shapes/shapes.pptx`, every preset (176 without the lines and connectors) at its default adjustments in a wide and a tall cell; save it as PDF from PowerPoint, then `python3 -I tools/shapes/masks.py office.pdf` writes where PowerPoint paints each one (`tests/shapes/powerpoint.json`, for `node --test tests/shapes.test.mjs`), and `python3 -I tools/shapes/compare.py office.pdf ours/` scores screenshots of our slides (`ours/shapes__N.png`, 1920 px wide) against it. PowerPoint 2016 (2026-11-07): every preset within 1.3% of PowerPoint's painted pixels in both cells (Corner Tabs the most); the hand-made drawings before differed by more than 5% in 51 presets. Text warps likewise: `python3 -I tools/shapes/warp-deck.py` writes `tmp/shapes/warps.pptx` over the shapes deck (each of the 40 warps in one, two and three lines, small and long text, and variants of insets, anchoring and alignment; cell names in `tmp/shapes/warps.txt`), and `python3 -I tools/shapes/compare.py office.pdf ours/ - warps` scores `ours/warps__N.png` (`W=1920 node tools/lectern-pictures.mjs`) against PowerPoint's PDF of it: 15% on average (2026-11-07; `node --test tests/text-warps.test.mjs`).
+
 Pattern fills: the preset bitmaps in `common/geometry.js` are PowerPoint's. `node tools/patterns/deck.mjs` writes `tmp/patterns/patterns.pptx` (each of the 54 presets in a labelled rectangle); save it as PDF from PowerPoint and `python3 tools/patterns/read-pdf.py patterns.pdf` prints the tiles, the form of `tests/patterns.powerpoint.json` (`node --test tests/patterns.test.mjs`). Ledger's cell patterns (`js/render.js`) likewise: `node tools/patterns/sheet.mjs` writes `tmp/patterns/cellpatterns.xlsx` (the 17 patterns), Excel saves it as PDF, and `read-pdf.py --cells` prints the tiles, `tests/patterns.excel-mac.json` (from Excel for Mac, which draws them at double size; the test applies the rule in `render.js` that brings them to single pixels).
 
 Line grids: Quire's line height on a document line grid (`R.gridLine` in `quire/js/render.js`) follows Word. `python3 tools/linegrid.py make` writes `tmp/linegrid/linegrid.docx`, one labelled paragraph per case (English and Chinese text at sizes either side of the pitch, several line spacings, 15.6pt and 18pt grids); save it as PDF from Word and `python3 tools/linegrid.py read linegrid.pdf` prints the distance between the lines of each case, in points, and the line each page starts with: `tests/from-issues/11/word.json`, from Word for Mac's PDF of `linegrid.docx` there. `grid-spacing.test.mjs` checks `R.gridLine` against it and `render.test.mjs` the document as Quire draws it, line spacing and page breaks (a second). LibreOffice draws these differently from Word (issue #11), so its PDF only checks the tool.
@@ -95,8 +97,11 @@ another tab and back. Two runs at once each need a Chromium of their own: `CDP=h
   exactly what was there, any other ending changed and recorded nothing. A new drag adds its `matrix(…)` there, and a
   new mode goes into the lists of both files: what broke in review broke only in a mode no test had on.
 - `focus.test.mjs`: the keyboard back to the document, in each app and in the Classic and Paper 2016 looks: dialogs
-  from a shortcut, a toolbar or ribbon button and the context menu, closed with Esc, Cancel and OK; menu-bar commands;
-  the ribbon's tabs; presses on chrome without a control (toolbars, grips, the status bar, the ribbon's tab strip).
+  from a shortcut, a toolbar or ribbon button and the context menu, closed with Esc, Cancel and OK; a dialog's access
+  key with Alt (Zoom's 200%); menu-bar commands;
+  the ribbon's tabs; presses on chrome without a control (toolbars, grips, the status bar, the ribbon's tab strip);
+  the status bar's zoom slider dragged, dragged and cancelled with Esc, and its + clicked (a view control: no gestures
+  test, as a zoom makes no undo step).
   After each, the element that had the keyboard has it again, with the same selection. Then the same in each app's
   modes (Classic): Quire with Track Changes, a header being edited, Outline view; Ledger with frozen panes, the second
   sheet, 150 %; Lectern with the speaker notes being edited, the Slides pane holding the keyboard, a slide with a
@@ -155,17 +160,24 @@ text isn't ours is compared without storing it):
 
 - a Word-saved 19-page walkthrough against Word's PDF of it (`tests/quire/lines/walkthrough-word.json`): pages start
   where Word's do, and two lines that follow each other in both are as far apart as in Word, within 0.75pt. The
-  document and the PDF stay out of git, in `~/corpora/word-ref/` (`fluent-walkthrough.docx`, `fluent-walkthrough.word.pdf`;
+  document and the PDF stay out of git, in `/work/corpora/word-ref/` (`fluent-walkthrough.docx`, `fluent-walkthrough.word.pdf`;
   or the folder named in `QUIRE_WORD_REF`); without them that part is skipped;
 - `tests/quire/lines/linecases.docx` (`python3 tools/linecases.py make`), one case per paragraph between marker lines,
   against LibreOffice's PDF of it (`soffice --headless --convert-to pdf`, then `python3 tools/linecases.py read PDF
   tests/quire/lines/linecases-lo.json`): the cases LibreOffice draws as Word does are asserted, the others recorded.
 
 Page counts across the corpus: `node tools/quire-pages.mjs OUT.jsonl [--jobs 4]` opens every Word-saved `.docx` in
-`~/corpora/word` (Microsoft Office Word with `<Pages>` in docProps/app.xml) and records Quire's page count beside
+`/work/corpora/word` (Microsoft Office Word with `<Pages>` in docProps/app.xml) and records Quire's page count beside
 Word's; `--compare BEFORE.jsonl AFTER.jsonl` lists what a change moved, and every file it moved away from Word's count.
 For the "before", serve the last commit's site on a port of its own (`git archive HEAD public | tar -x -C
 tmp/pages-before`, `python3 tools/serve.py 8771 tmp/pages-before/public`) and run with `BASE=http://127.0.0.1:8771`.
+
+Pages as drawn, against Word: `node tools/quire-pictures.mjs docs.json out/ [nameFilter]` (docs.json `[{ "name",
+"file" }]`) opens each document in Print Layout at 100% and takes a picture of every page as Quire draws it (`<name>__<page>.png`,
+816 px for a Letter page; no corner marks or window around it); `python3 -I tools/lectern-vs-powerpoint.py wordDir out/
+cmp/` scores each against Word 2016's PDF of the document from the Office test API (`<name>/file/office.pdf`) and
+writes the pairs side by side, worst first. A page count unlike Word's shows as "height" or "no Lectern slide" rows.
+Before and after a change: render twice, the "before" with `BASE` as above.
 
 ## From issues: tests/from-issues/
 
@@ -216,11 +228,15 @@ The engine and the file readers and writers load in Node through `load.js` (the 
 
 ## Lectern: tests/lectern/
 
-`corpus.js` opens real decks in Chromium (open, render every slide, save, reopen, compare), `summarize.js` sums up its results, `ui-features.js` drives the password dialog, Tools ▸ Options ▸ Security and the chart dialog, `chartedit.js` writes every chart for validation, `decrypt.py` checks encrypted saves independently, `loss-audit.py` counts what a save loses (features and words, original against saved copy; standard-library Python), `viscompare.py` / `triptych.py` / `stack.py` compare renderings. They need Playwright; how to run them is in docs/lectern.md.
+`corpus.js` opens real decks in Chromium (open, render every slide, save, reopen, compare), `summarize.js` sums up its results, `ui-features.js` drives the password dialog, Tools ▸ Options ▸ Security and the chart dialog, `chartedit.js` writes every chart for validation, `decrypt.py` checks encrypted saves independently, `loss-audit.py` counts what a save loses (features and words, original against saved copy; standard-library Python), `viscompare.py` / `triptych.py` / `stack.py` compare renderings. Against PowerPoint: `node tools/lectern-pictures.mjs decks.json out/` takes a picture of each slide as Lectern draws it, and `python3 -I tools/lectern-vs-powerpoint.py officeDir out/ cmp/` scores each against PowerPoint 2016's PDF of the deck (from the Office test API) and writes the pairs side by side, worst first. They need Playwright; how to run them is in docs/lectern.md.
 
 ## Corpora
 
 The compatibility numbers in each app's doc come from public test corpora (LibreOffice, Apache POI, Open XML SDK, XlsxWriter, ClosedXML and others; see the app docs for the list). They are not checked in; download them outside the repo and point the per-file scripts at the folder.
+
+The local corpus root is `/work/corpora`. The test and tool defaults use it; existing overrides
+(`VO_CORPORA`, `CORPORA`, `EXCEL_CORPUS`, `LEDGER_FEATURES`, `QUIRE_WORD_REF` and command-line paths)
+still take precedence.
 
 ## Lossless same-format save: reproducible baseline
 
@@ -262,20 +278,24 @@ an idle queue and stop the task `VibeOffice Office 2016 Test API`; run `install.
 
 ### Corpus drivers
 
-`sh tools/corpora.sh ~/corpora` fetches the pinned LibreOffice, Apache POI and Open XML SDK revisions
+`sh tools/corpora.sh /work/corpora` fetches the pinned LibreOffice, Apache POI and Open XML SDK revisions
 listed in `tools/ooxml/corpora.py`. It resumes interrupted fetches, refuses dirty or unrelated checkouts,
 and never deletes an existing corpus. `manifest.json` records source, commit, original path, size and
 SHA-256. `word/`, `excel/` and `powerpoint/` contain collision-resistant symlinks. Fixtures stay outside
 the repository. A source name after the directory selects just that source.
+`sh tools/corpora.sh /work/corpora legacy` adds the Office 97-2003 files (`.doc`, `.xls`, `.ppt` and their
+templates) from the same pinned POI and LibreOffice trees into `legacy-word/`, `legacy-excel/` and
+`legacy-powerpoint/`, each checked against its Git blob hash; `node tools/legacy/measure.mjs --out DIR
+[--hostile]` runs the legacy importers over them (and truncated and bit-flipped copies) in bounded workers.
 
 The corpus drivers record every file and scenario as `ok`, `failed` or `excluded`, with the input hash
 and an error/reason. Here, `ok` means the requested operation and reread completed; it does **not** mean
 the file was lossless. Independent comparisons and Office acceptance are separate checks.
 
 ```sh
-node tests/quire/corpus.mjs ~/corpora/word /tmp/quire.jsonl --save /tmp/lossless/quire
-node tests/ledger/corpus.js ~/corpora/excel /tmp/ledger.jsonl --save /tmp/lossless/ledger
-node tests/lectern/corpus.js ~/corpora/powerpoint /tmp/lectern.jsonl --lossless --save /tmp/lossless/lectern
+node tests/quire/corpus.mjs /work/corpora/word /tmp/quire.jsonl --save /tmp/lossless/quire
+node tests/ledger/corpus.js /work/corpora/excel /tmp/ledger.jsonl --save /tmp/lossless/ledger
+node tests/lectern/corpus.js /work/corpora/powerpoint /tmp/lectern.jsonl --lossless --save /tmp/lossless/lectern
 ```
 
 Default scenarios are `save` and `repeat` (save, reopen, save again). `--edit` selects separate text,
@@ -291,7 +311,7 @@ own tabs. Ledger uses isolated Node workers with a per-file timeout. The older L
 without these switches remains available and still requires Playwright.
 
 Quire history regressions run with `node --test tests/quire/history.test.js`. The real-file check
-`node tests/quire/history.mjs ~/corpora/word/libreoffice__9b899b6707be__chart-size.docx`
+`node tests/quire/history.mjs /work/corpora/word/libreoffice__9b899b6707be__chart-size.docx`
 checks original chart bytes after editing, undo, redo, copying and whole-document snapshot restore.
 
 `tools/ooxml/check.mjs FILE...` uses an independent strict Python XML/ZIP reader to check content types,
@@ -312,7 +332,7 @@ isolated previous writer to reproduce the same edits for the required save-to-sa
 Use an empty output directory. Original sources stay outside the batch. A generated batch is pending
 Office review even when SDK and LibreOffice checks pass.
 
-`python3 tools/ooxml/conventions.py ~/corpora/powerpoint SAVED_DIR [--out report.json]` lists markup our
+`python3 tools/ooxml/conventions.py /work/corpora/powerpoint SAVED_DIR [--out report.json]` lists markup our
 saved files contain that no Office-authored original in the corpus does: attributes, child elements,
 child order, enumerated values, preset adjustment sets, content-type forms, relationship types. Markup
 already in a file's own original is not counted. It finds Office-rejected output the SDK accepts (the
@@ -357,7 +377,7 @@ the frozen current and previous writers before handing these files to Office.
 The archive stays outside git; its SHA-256 is recorded in the generated file. Regenerate with:
 
 ```sh
-python3 tools/ooxml/schema-order.py ~/corpora/ecma-376/part4.zip public/common/opc-order.js ~/corpora/ecma-376/part1.zip
+python3 tools/ooxml/schema-order.py /work/corpora/ecma-376/part4.zip public/common/opc-order.js /work/corpora/ecma-376/part1.zip
 ```
 
 `tools/ooxml/compare.mjs ORIGINAL SAVED [--policy policy.json]` defaults to exact part-byte preservation.
@@ -387,7 +407,7 @@ embedded objects sharing one preview (`shared-vml-preview`), two spreadsheet VML
 graphic frame (`animation-part-target`). None occurs in the 4,697 pinned originals.
 
 Ledger's `pivots.test.js` and `threads.test.js` use the pinned public inputs (`VO_CORPORA` overrides
-`~/corpora`). `PIVOT_RESULTS=DIR` / `THREAD_RESULTS=DIR` retain the emitted edit/history states and
+`/work/corpora`). `PIVOT_RESULTS=DIR` / `THREAD_RESULTS=DIR` retain the emitted edit/history states and
 their source paths for package/SDK comparisons. Pivot source fixtures are generated automatically from
 the pinned input into `PIVOT_RESULTS/fixtures` (or a temporary directory); `PIVOT_FIXTURES` overrides
 that destination. They do not depend on an earlier results directory. The thread test also authors a mention/no-legacy-note
@@ -398,17 +418,17 @@ must survive, including edits around both ends of a mentioned name and later cli
 `objects.test.js` uses `OBJECT_RESULTS=DIR` to retain controls/OLE/VML edit states from the same corpus.
 `node tests/ledger/objects-ui.mjs INPUT.xlsx OUTPUT` checks object paste into another workbook,
 undo/redo and actual draft recovery, including the dependent payload bytes.
-`sh tools/corpora.sh ~/corpora ledger-features` fetches three supplemental slicer/timeline workbooks
+`sh tools/corpora.sh /work/corpora ledger-features` fetches three supplemental slicer/timeline workbooks
 at fixed commits and SHA-256 hashes without changing the main corpus manifest. `slicers.test.js`
 uses them (`LEDGER_FEATURES` overrides their directory); `SLICER_RESULTS=DIR` retains edit states.
 `node tests/ledger/slicers-ui.mjs INPUT.xlsx OUTPUT` exercises real drawing copy/paste, undo/redo
 and draft recovery. The supplemental sources and hashes are recorded in `ledger-features/manifest.json`.
 `extensions.test.js` uses `EXTENSION_RESULTS=DIR` for extended bars, validation, sparklines and unknown
-worksheet extension edit/history saves (`EXCEL_CORPUS` overrides `~/corpora/excel`).
+worksheet extension edit/history saves (`EXCEL_CORPUS` overrides `/work/corpora/excel`).
 `node tests/ledger/extensions-ui.mjs INPUT.xlsx OUTPUT` checks an extended bar through edits,
 sheet copy, undo/redo and actual draft recovery.
 `tables.test.js` uses `QUERY_RESULTS=DIR` for query-table edits, column identities, copies and
-history saves (`EXCEL_CORPUS` overrides `~/corpora/excel`).
+history saves (`EXCEL_CORPUS` overrides `/work/corpora/excel`).
 `node tests/ledger/tables-ui.mjs INPUT.xlsx OUTPUT` checks inserted query columns, sheet
 copy, scoped names, undo/redo and actual draft recovery.
 `recovery.test.js` covers readable cells in damaged packages and unchanged mixed date/text filters.
@@ -521,7 +541,7 @@ The scenario filter retains other recorded cases so corrections need not repeat 
 
 `node tests/lectern/membership.mjs OUTPUT_DIR` uses pinned presentation inputs for section and
 custom-show insertion, copy, move, deletion, large IDs, empty sections, undo/redo and actual suite
-draft recovery (`VO_CORPORA` overrides `~/corpora`). It retains every saved state and a draft screenshot.
+draft recovery (`VO_CORPORA` overrides `/work/corpora`). It retains every saved state and a draft screenshot.
 Use its `results.jsonl` with `tools/ooxml/validate.py` for package/SDK and LibreOffice comparison.
 
 `node tests/lectern/media.mjs FILE_OR_LIST OUTDIR` opens authored video/audio decks in Chromium.
@@ -558,7 +578,7 @@ inventory parses transition/run-effect elements and text as XML: namespace hoist
 properties and escaped apostrophes must not appear as feature or word loss. Edited SmartArt previews
 are intentional conversions and must be matched with their recorded loss entries.
 
-`python3 tests/ledger/pivot-fixtures.py ~/corpora/excel OUTDIR` authors the two pivot source kinds
+`python3 tests/ledger/pivot-fixtures.py /work/corpora/excel OUTDIR` authors the two pivot source kinds
 absent from the pinned inventory: a defined-name source and a two-area consolidation source. It keeps
 all unchanged package parts byte-identical, records source/output hashes and changed parts, and
 requires an empty destination. Consolidation input cells, cached records and displayed output agree.
@@ -569,22 +589,22 @@ edit behavior. Use them alongside the public range, table, external-source and s
 
 `node --test tests/quire/*.test.js` covers control boundaries and locks, independent property
 replacement, alternatives, range/object identity and history. `node tests/quire/controls.mjs
-~/corpora/word OUTDIR` edits authored bound-text, date and checkbox controls, emitting before/edit/undo/
-copy/draft/recovered files. `node tests/quire/objects.mjs ~/corpora/word OUTDIR` transfers authored
+/work/corpora/word OUTDIR` edits authored bound-text, date and checkbox controls, emitting before/edit/undo/
+copy/draft/recovered files. `node tests/quire/objects.mjs /work/corpora/word OUTDIR` transfers authored
 OLE/SmartArt objects between browser tabs, edits converted content, undoes it and recovers a draft.
-`node tests/quire/sections.mjs ~/corpora/word OUTDIR` checks section XML, absent defaults,
+`node tests/quire/sections.mjs /work/corpora/word OUTDIR` checks section XML, absent defaults,
 header relationships and alternatives through actual saves, margin edits, undo/redo and draft recovery.
 Its generated fixture also exercises the page-number dialog, section insertion, page setup/columns
 forward at new and existing boundaries, multi-column index insertion and merged letters. Add
 `--fixture` to run only these focused cases, including copied revision IDs through history and drafts.
 It writes the original and each saved state for package/SDK and external rendering comparisons.
 
-`node tests/quire/picture-bullets.mjs ~/corpora/word OUTDIR` exercises the public SDK picture-bullet
+`node tests/quire/picture-bullets.mjs /work/corpora/word OUTDIR` exercises the public SDK picture-bullet
 fixture through the list dialog, symbol conversion, undo/redo, actual draft recovery and an import
 with colliding source IDs. It compares retained definition XML and image bytes and checks unused
 definitions after all list references have been removed.
 
-`node tests/quire/numbering.mjs ~/corpora/word OUTDIR` exercises the public custom-format and
+`node tests/quire/numbering.mjs /work/corpora/word OUTDIR` exercises the public custom-format and
 style-linked numbering fixtures through list commands, independent copies, repeated imports,
 undo/redo and actual draft recovery. An optional final `custom` or `style` selects one fixture.
 The loss audit also inventories picture bullets, list identities/templates, legacy settings and
@@ -602,11 +622,11 @@ flips, single-member alternative orientation and comment-extension order. The br
 copying, deletion, history and recovery. The package checker additionally rejects orientation on
 PowerPoint graphic-frame transforms and inconsistent ActiveX worksheet/VML names.
 
-`node tests/quire/recovered-breaks.mjs ~/corpora/word OUTDIR` checks the public malformed-break
+`node tests/quire/recovered-breaks.mjs /work/corpora/word OUTDIR` checks the public malformed-break
 fixture through text edits, deletion, undo/redo and actual draft recovery. It verifies valid saved
 break placement and that the Compatibility Checker follows surviving recovered content.
 
-`node tests/quire/drawing-properties.mjs ~/corpora/word OUTDIR` checks authored picture/shape
+`node tests/quire/drawing-properties.mjs /work/corpora/word OUTDIR` checks authored picture/shape
 properties and watermarks, plus generated row/cell alternatives with populated and empty choices.
 It writes originals and every edit/history/draft state, checking that deletion cannot restore hidden
 table content and that original watermark elements remain byte-identical before editing.
@@ -615,12 +635,12 @@ The Office batch generator supports Quire edits `picture-properties`, `shape-sha
 and `watermark`, so review copies and previous-writer comparisons use the same scripted edits.
 
 Current results belong in the app docs. Preserve complete run commands, hashes, previous-writer
-comparisons, initial failures, corrections and historical tables in `~/corpora/results/<run>/README.md`.
+comparisons, initial failures, corrections and historical tables in `/work/corpora/results/<run>/README.md`.
 A full run should use a frozen writer revision, served on a separate port while development continues.
 The browser harness disables persistence in its own tabs, captures loss metadata after snapshot, and
 checks the recovered document. Locked content-control edits are explicit exclusions, not undo failures.
 
-`python3 tools/ooxml/samples.py ~/corpora /tmp/lossless tmp/lossless/baseline`
+`python3 tools/ooxml/samples.py /work/corpora /tmp/lossless tmp/lossless/baseline`
 selects small independently authored files for each carried-feature test, copies original/saved/edited
 variants where available, and writes a manifest. It refuses to replace differing handoff files.
 Use a new destination for each implementation stage. Record actual Word/Excel/PowerPoint repair
@@ -634,3 +654,66 @@ timing IDs; from the built-in sample it also writes the deck without slide 6 and
 text targets, validates each package, and writes hashes and a pending PowerPoint result per copy.
 Only slide6.xml changes in the four isolated variants. PowerPoint results are a manual gate:
 schema validity and LibreOffice opening do not prove that the repair problem has been fixed.
+
+## PDF export
+
+`node --test tests/pdf.test.mjs` checks the PDF writer with Poppler (`pdftotext`,
+`pdffonts`, `pdftoppm`) and PDFium (`python3 -I` with `pypdfium2` installed). It checks
+Unicode extraction, rotated and single-character words, selection bounds, links,
+bookmarks, deterministic IDs and xref offsets. The generated font paints no pixels,
+even in visible text mode. No installed font files enter the PDF text layer.
+
+`node --test tests/pdf-raster.test.mjs` checks the three apps in Chromium: embedded
+page-picture fonts, 300 dpi and the 40 MP cap, exact JPEG equality when batching
+pages, local SVG paint references, and encoding without an idle JPEG callback.
+Set `CDP` and `BASE` to use a separate browser and server. Check selection, copy and
+a second-page search in the native PDF viewer as well; Poppler alone missed a
+zero-width text-object rejection in PDFium.
+
+`node --test tests/quire/pdf.test.mjs` measures the DOM collector in Chromium and
+extracts real Quire exports with Poppler. It covers styled word pieces, line breaks,
+CJK, zoom, columns, tables, clipping, hidden decorations, transparent warped-text
+bodies, SVG, MathML, tabs, mixed Arabic punctuation and lazy loading. The sample
+retains spaces, headers, footers and notes; an exact-height cell excludes hidden text.
+For corpus checks, compare extracted words with original OOXML text and Office/LO
+PDFs, keeping generated labels and fields separate from content losses. Compare
+page JPEG bytes and rendered pixels against the preceding export path, and time
+a long document. Reader heuristics can join narrow spaces or reorder equations:
+record those separately and check native selection/copy as well as extraction.
+
+`node --test tests/lectern/pdf.test.mjs` checks detached slide export and live
+handout, notes and outline pages, including hidden slides, paper sizes and cleanup
+after a failed collection. Rotation checks use independent matrix coordinates for
+45/90-degree boxes, nested scaling, a rotated parent and a centre origin. Clipping
+is measured in the rotated ancestor's plane; repeated LettersArt SVG slices stay
+out while the transparent source body copies once. Poppler's raw extractor splits
+diagonal letters, so PDFium also checks the complete phrase and its space. Compare
+corpus page JPEGs and rendered pixels against the previous exporter, and check
+rotated search, mouse selection and clipboard text in Chromium's native viewer.
+
+`node --test tests/ledger/pdf.test.mjs` checks the canvas recorder and real Ledger
+PDFs: native pixels stay unchanged, text alignment and all six baselines follow
+independent canvas metrics, and rotation, scaling, `maxWidth`, rectangle clips and
+child-canvas crops keep their geometry. Unicode clips retain whole graphemes.
+Worksheet checks cover formatted values, wrapping, overflow, shrink-to-fit,
+hidden cells/rows, headers/footers, repeated print titles and SVG chart labels.
+The recorder follows the print renderer's rectangular clips; curved paths are not
+measured. Compare original workbooks with Excel/LibreOffice, record image equality
+against the prior exporter, and exercise native Find, mouse selection and copy.
+
+`node --test tests/pdf-links.test.mjs` checks all three apps' PDF navigation:
+wrapped and clipped link areas, rotated shapes, split-paragraph bookmark offsets,
+heading levels, document language, slide actions, handout/notes/outline destinations,
+merged cells, named ranges, repeated titles and top-level `HYPERLINK` formulas.
+Hostile links from each app reach the shared writer: script and data schemes,
+including mixed case and embedded ASCII controls, produce no PDF annotation;
+web, mail, FTP, file and relative targets retain their spelling.
+Partial exports remap page indexes and omit targets outside the output. For a
+navigation change, inspect annotations and outlines with an independent PDF reader;
+click links and sidebar bookmarks in native Chromium and Firefox using local-only
+targets. Compare Office and LibreOffice PDFs, including relative file links and
+two or three unusual producer/metadata controls in each Office round. Verify that
+page JPEGs, rendered pixels and extracted text stay unchanged, and time a long
+document and a large workbook. Fix the writer's date to check byte determinism.
+Preview checks wait for the view's queued repaint before exporting. None of these
+checks use the browser's print or print-to-PDF paths.

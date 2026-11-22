@@ -201,6 +201,8 @@
     const useCP = s.align & 1;
     const p = useCP ? this.pt(s.x, s.y) : this.pt(x, y);
     const face = f.face || 'Arial';
+    // the Symbol font's Greek letters and signs (Equation Editor's θ is q in Symbol), one character for one
+    if (/^symbol$/i.test(face) && L.mapSymbolChar) str = str.replace(/[\u0020-\u00ff\uf020-\uf0ff]/g, (c) => L.mapSymbolChar(c, 'Symbol'));
     this.withClip(() => {
       g.save();
       g.font = `${f.i ? 'italic ' : ''}${f.w >= 600 ? 'bold ' : ''}${size}px ${L.fontStack ? L.fontStack(face) : '"' + face + '", sans-serif'}`;
@@ -291,11 +293,13 @@
   /* ---------- WMF ---------- */
   function renderWMF(u8, maxPx) {
     const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
-    let p = 0, bbox = null, inch = 1440;
+    let p = 0, bbox = null, inch = 1440, placeable = false;
     if (dv.getUint32(0, true) === 0x9ac6cdd7) {
-      bbox = [dv.getInt16(6, true), dv.getInt16(8, true), dv.getInt16(10, true), dv.getInt16(12, true)];
+      const b = [dv.getInt16(6, true), dv.getInt16(8, true), dv.getInt16(10, true), dv.getInt16(12, true)];
       inch = dv.getUint16(14, true) || 1440;
       p = 22;
+      /* bounds with no width or height (some writers leave 32767s) say nothing: the window sizes it, as without */
+      if (b[2] !== b[0] && b[3] !== b[1]) { bbox = b; placeable = true; }
     }
     const hdrWords = dv.getUint16(p + 2, true);
     const nObjects = dv.getUint16(p + 10, true);
@@ -311,7 +315,6 @@
     }
     if (!bbox) bbox = win ? [org[0], org[1], org[0] + win[0], org[1] + win[1]] : [0, 0, 1000, 1000];
     const bw = Math.abs(bbox[2] - bbox[0]) || 1, bh = Math.abs(bbox[3] - bbox[1]) || 1;
-    const placeable = p === 22 + hdrWords * 2;
     /* without a placeable header there is no physical size: treat logical units as pixels */
     const natW = placeable ? (bw / inch) * 96 : bw, natH = placeable ? (bh / inch) * 96 : bh;
     const k = placeable ? Math.min(maxPx / Math.max(natW, natH), 4) || 1 : maxPx / Math.max(natW, natH) || 1;

@@ -2,6 +2,7 @@
  * dialogs, form controls, status bar. Colours, fonts and shadows come from the look settings in looks.css,
  * loaded first; each app's own CSS comes after this file and wins. */
 [hidden] { display: none !important; }
+input[type=checkbox], input[type=radio], input[type=range], progress { accent-color: var(--check); }
 html, body { height: 100%; }
 body { margin: 0; background: var(--dock-b); color: var(--ink); font: var(--ui-size)/1.25 var(--ui-font); overflow: hidden; }
 * { box-sizing: border-box; }
@@ -34,12 +35,26 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .cs-none { padding-left: 28px; }
 .toolbars { display: flex; flex-direction: column; gap: 0; padding: 0 2px 2px; }
 .tb-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 2px 3px; min-height: 26px; }
+/* Customize ▸ Options ▸ two rows off: the Standard and Formatting rows (a .tb-pair) share one row, each cut short
+   with its Toolbar Options (») when they don't fit */
+/* the Drawing toolbar's row above the status bar */
+.drawrow { flex: none; padding: 1px 2px 2px; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-top: 1px solid var(--chrome-line); overflow-x: auto; scrollbar-width: none; }
+.drawrow::-webkit-scrollbar { display: none; }
+.tb-pair { display: contents; }
+.toolbars.one-row .tb-pair { display: flex; flex-wrap: nowrap; align-items: stretch; gap: 2px 3px; min-height: 26px; }
+.toolbars.one-row .tb-pair .toolbar { flex: 0 1 auto; min-width: 48px; }
+.toolbars.one-row .tb-pair > .tb-row { display: contents; }
+body.notips .tooltip:not(.ac-tip) { display: none !important; }
 .toolbar { display: inline-flex; align-items: center; height: 26px; padding: 0 2px 0 0; border-radius: 3px; border-bottom: 1px solid var(--tb-border); border-right: 1px solid var(--tb-edge);
   background: linear-gradient(var(--tb-a), var(--tb-b) 50%, var(--tb-c)); max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; flex: none; }
 .toolbar::-webkit-scrollbar { display: none; }
 .tb-grip { flex: none; width: 7px; height: 18px; margin: 0 2px 0 3px; background: radial-gradient(circle at 1px 1px, var(--grip) 0.8px, transparent 1px) 0 0 / 4px 4px, radial-gradient(circle at 2px 2px, var(--grip-hi) 0.8px, transparent 1px) 0 0 / 4px 4px; }
 .tb-sep { flex: none; width: 2px; height: 18px; margin: 0 3px; border-left: 1px solid var(--sep-dark); border-right: 1px solid var(--sep-light); }
 .tb-end { flex: none; width: 2px; }
+.tb-more { position: sticky; right: 0; flex: none; align-self: stretch; margin-left: auto; width: 13px; padding: 0; border: 0; border-radius: 0 3px 3px 0; color: var(--ink); background: linear-gradient(var(--tb-a), var(--tb-b) 50%, var(--tb-c)); font-weight: bold; line-height: 1; }
+.tb-more:hover, .tb-more.open { background: linear-gradient(var(--hot-a), var(--hot-b)); }
+.tb-pop { position: fixed; z-index: 900; height: auto; max-width: 300px; flex-wrap: wrap; overflow: visible; padding: 2px; border: 1px solid var(--menu-border); box-shadow: 2px 2px 3px var(--shadow-c); }
+.tb-pop > .tb-sep:first-child { display: none; }
 .tb-btn { flex: none; display: inline-flex; align-items: center; gap: 3px; height: 22px; min-width: 23px; padding: 0 3px; border: 1px solid transparent; background: none; border-radius: 0; cursor: default; justify-content: center; }
 .tb-btn .ico { display: block; flex: none; }
 .tb-btn.with-label { padding: 0 5px 0 3px; }
@@ -78,6 +93,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .m-head { padding: 3px 8px; font-weight: bold; color: var(--head-ink); background: var(--head-bg); border-block: 1px solid var(--head-line); }
 .combo-list .m-key { color: var(--key-ink); }
 .menu.combo-list .m-lbl { font-size: 13px; }
+/* the lite edition's menus choose by the arrows only (ui.js, menuKey): no letter underlined */
+.menu.no-keys .m-lbl u { text-decoration: none; }
 .menu.combo-list.fonts .m-item { min-height: 24px; }
 .menu.combo-list.styles .m-lbl { font-size: 11px; }
 .menu.grid-menu { padding: 3px; }
@@ -117,6 +134,9 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .splitter.h { height: 5px; cursor: row-resize; background: linear-gradient(var(--tb-a), var(--tb-c)); border-top: 1px solid var(--chrome-line); }
 
 .taskpane { flex: none; width: 262px; display: flex; flex-direction: column; background: linear-gradient(var(--pane-a), var(--pane-b)); border-left: 1px solid var(--chrome-line); min-height: 0; }
+/* opened by a selected object (RB.follow, common/ribbon.js): over the document's right edge, beside its scroll bar */
+.taskpane.over { position: absolute; top: 0; bottom: 0; z-index: 45; box-shadow: -3px 0 8px var(--tip-shadow-c); }
+:has(> .taskpane.over) { position: relative; }
 .tp-head { flex: none; display: flex; align-items: center; gap: 2px; padding: 3px 4px; background: linear-gradient(var(--tb-a), var(--tb-b) 50%, var(--tb-c)); border-bottom: 1px solid var(--tb-border); }
 .tp-nav { width: 18px; height: 18px; border: 1px solid transparent; background: none; padding: 0; display: flex; align-items: center; justify-content: center; }
 .tp-nav:not(:disabled):hover { background: var(--menu-hot); border-color: var(--hot-border); }
@@ -148,6 +168,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .rf-tree { background: var(--surface); border: 1px solid var(--box-line); padding: 4px; font-size: 11px; }
 .rf-tree h5 { margin: 6px 0 2px; font-size: 11px; color: var(--pane-ink); }
 .rf-tree div { padding-left: 12px; color: var(--ink-2); }
+.tp-brand { gap: 8px; align-items: center; }
+.tp-brand b { color: var(--brand-ink); font-size: 13px; }
 .clip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
 .clip-it { border: 1px solid var(--card-line); background: var(--surface); padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: default; }
 .clip-it:hover { border-color: var(--hot-border); background: var(--menu-hot); }
@@ -162,6 +184,14 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .kbd-table { width: 100%; border-collapse: collapse; }
 .kbd-table td { padding: 2px 3px; border-bottom: 1px solid var(--row-line); vertical-align: top; }
 .kbd-table td:first-child { white-space: nowrap; font-weight: bold; color: var(--ink-key); }
+.cz-list { background: var(--surface); border: 1px solid var(--field-border); height: 200px; overflow: auto; padding: 2px 4px; display: flex; flex-direction: column; gap: 1px; }
+.cz-box { background: var(--surface); border: 1px solid var(--field-border); height: 226px; overflow: auto; outline: none; }
+.cz-box:focus-visible { box-shadow: 0 0 0 1px var(--sel) inset; }
+.cz-cmds th { position: sticky; top: 0; text-align: left; font-weight: normal; padding: 2px 3px; background: var(--th-bg); border-bottom: 1px solid var(--th-line); }
+.cz-cmds td:first-child { font-weight: normal; color: inherit; white-space: normal; }
+.cz-cmds td:last-child { color: var(--muted); white-space: nowrap; }
+.cz-cmds tr { cursor: default; }
+.cz-cmds tr.on td { background: var(--sel); color: var(--sel-ink); }
 .search-hit { background: var(--surface); border: 1px solid var(--card-line); padding: 4px 6px; margin-bottom: 4px; cursor: pointer; line-height: 1.35; }
 .search-hit:hover { border-color: var(--hot-border); background: var(--menu-hot); }
 .search-hit b { background: var(--find-hit); font-weight: normal; }
@@ -173,8 +203,46 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .sb-cell.flag.on { color: var(--ink); }
 .sb-cell.act { cursor: default; }
 .sb-cell.act:hover { background: var(--menu-hot); }
+/* the Undo/Redo drop-down (ui.historyMenu) */
+.hist-menu { background: var(--surface); }
+.hist-list { max-height: 260px; overflow: auto; min-width: 180px; }
+.hist-list button.on { background: var(--sel); color: var(--sel-ink); }
 .sb-spell { display: inline-flex; align-items: center; }
 .sb-spell.off svg { filter: grayscale(1); opacity: .5; }
+/* the right end, the same in every app: view buttons, then the zoom slider (ui.statusGroup, ui.zoomSlider); the
+   information cells to its left give way first when the window is narrow */
+.statusbar { container-type: inline-size; }
+.statusbar > .sb-cell:not(.grow) { flex: 0 1 auto; min-width: 0; }
+/* a narrow window drops the cells an app marks optional (opt) before any cell is cut short */
+@container (max-width: 960px) { .statusbar > .sb-cell.opt { display: none; } }
+.statusbar .sb-right { flex: none; margin-left: auto; display: flex; align-items: center; gap: 8px; padding-left: 8px; height: 100%; }
+.statusbar .sb-group { display: flex; align-items: center; gap: 1px; }
+.statusbar .sb-group .tb-btn { height: 18px; min-width: 20px; padding: 0 1px; }
+.statusbar .sb-gap { width: 6px; }
+.sb-zoom { display: flex; align-items: center; gap: 1px; color: var(--ink); }
+.sb-zoom .zs-step { width: 18px; height: 18px; padding: 0; border: 1px solid transparent; border-radius: var(--ctl-radius); background: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; }
+.sb-zoom .zs-step:hover, .sb-zoom .zs-pct:hover { background: var(--menu-hot); border-color: var(--hot-border); }
+.sb-zoom .zs-track { position: relative; width: 104px; height: 18px; margin: 0 5px; touch-action: none; }
+.sb-zoom .zs-track::before { content: ''; position: absolute; left: 0; right: 0; top: 8px; height: 1px; background: var(--muted); }
+.sb-zoom .zs-track::after { content: ''; position: absolute; left: 50%; top: 5px; width: 1px; height: 7px; background: var(--muted); }
+.sb-zoom .zs-thumb { position: absolute; top: 3px; width: 5px; height: 12px; margin-left: -3px; background: var(--ink); border-radius: 1px; z-index: 1; }
+.sb-zoom .zs-track:hover .zs-thumb, .sb-zoom.dragging .zs-thumb { background: var(--sel); }
+.sb-zoom .zs-pct { min-width: 42px; height: 18px; padding: 0 4px; border: 1px solid transparent; border-radius: var(--ctl-radius); background: none; color: inherit; font: inherit; text-align: right; }
+.sb-zoom .tb-btn { height: 18px; min-width: 20px; margin-left: 2px; }
+/* the task pane's way in and out, at the status bar's right end (ui.paneToggle) */
+.statusbar .sb-pane { width: 18px; height: 18px; padding: 0; border: 1px solid transparent; border-radius: var(--ctl-radius); background: none; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
+.statusbar .sb-pane:hover { background: var(--menu-hot); border-color: var(--hot-border); }
+.sb-zoom.dis { color: var(--dis-ink); }
+.sb-zoom.dis .zs-thumb { background: var(--dis-ink); }
+.sb-zoom.dis .zs-step, .sb-zoom.dis .zs-pct, .sb-zoom.dis .zs-track { pointer-events: none; }
+/* a very narrow status bar (a phone, a handheld): the view and browse buttons and the zoom slider's track give way
+   too (the View menu has them), so the cells keep their words */
+@container (max-width: 520px) { .statusbar .sb-group, .statusbar .sb-gap, .sb-zoom .zs-track { display: none; } }
+/* the lite edition (vo-lite, common/suite.js): no status bar, only its zoom − and + in the window's bottom right
+   corner, over the document */
+.vo-lite .statusbar { position: fixed; right: 2px; bottom: 2px; z-index: 900; height: auto; padding: 1px; container-type: normal; background: var(--tip-bg); border: 1px solid var(--chrome-line); border-radius: var(--ctl-radius); }
+.vo-lite .statusbar > :not(.sb-right), .vo-lite .statusbar .sb-right > :not(.sb-zoom), .vo-lite .sb-zoom > :not(.zs-step) { display: none; }
+.vo-lite .statusbar .sb-right { padding: 0; gap: 0; }
 
 /* floating toolbars */
 .floatbar { position: absolute; z-index: 60; background: linear-gradient(var(--tb-a), var(--tb-b)); border: 1px solid var(--tb-border); border-radius: 3px; box-shadow: 2px 2px 5px var(--shadow-c); display: flex; flex-direction: column; }
@@ -251,13 +319,50 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .listbox { background: var(--surface); border: 1px solid var(--field-border); min-height: 80px; max-height: 220px; overflow: auto; }
 .listbox .li { display: flex; align-items: center; gap: 4px; padding: 1px 4px; cursor: default; white-space: nowrap; }
 .listbox .li.on { background: var(--sel); color: var(--sel-ink); }
+.listbox .li-note { margin-left: auto; padding-left: 16px; color: var(--muted); }
+.listbox .li.on .li-note { color: inherit; }
+.listbox .li-dim { padding: 1px 4px; color: var(--muted); }
+.listbox .li-c1 { flex: none; width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.listbox .li-c2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Print (common/dialogs.js): the range and an app's group beside it share the row's height */
+.pr-row { gap: 10px; align-items: stretch; flex-wrap: nowrap; }
+.pr-row > .grp { flex: 1; min-width: 0; }
+/* AutoCorrect's entries (common/dialogs.js): the list's two columns under the Replace and With boxes */
+.ac-boxes { display: grid; grid-template-columns: 120px 1fr; gap: 2px 6px; }
+.ac-boxes input { width: 100%; box-sizing: border-box; }
+.ac-list .li-c1 { width: 117px; }
+.ac-btns { justify-content: flex-end; margin-top: 0; }
+.ac-btns .btn { min-width: 76px; }
+.sg-side { width: 140px; flex: none; }
+.sg-gap { height: 16px; }
 .listbox .li-group { padding: 2px 4px; background: var(--group-bg); color: var(--ink-3); font-weight: bold; }
 .listbox-in { width: 100%; }
+.listbox { outline: none; }
+.listbox:focus-visible { box-shadow: 0 0 0 1px var(--sel) inset; }
 
-.sym-grid { display: grid; grid-template-columns: repeat(16, 26px); max-height: 230px; overflow: auto; border: 1px solid var(--grid-line); background: var(--surface); }
+/* Insert Hyperlink (common/dialogs.js): the Link to bar of big buttons, the kind's fields beside it */
+.hl-dlg #hl-disp { flex: 1; min-width: 0; }
+.hl-cap { color: var(--ink-3); }
+.hl-bar { display: flex; flex-direction: column; gap: 2px; width: 108px; flex: 1; padding: 2px; background: var(--surface); border: 1px solid var(--field-border); }
+.hl-kind { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border: 1px solid transparent; background: none; color: var(--ink); text-align: center; white-space: normal; line-height: 1.2; cursor: default; }
+.hl-kind:hover { background: var(--menu-hot); border-color: var(--hot-border); }
+.hl-kind.on { background: var(--sel-soft); border-color: var(--sel); }
+.hl-pane { flex: 1; min-width: 0; min-height: 250px; padding-top: 18px; }
+.hl-pane input[type=text] { width: 100%; }
+.hl-f { gap: 2px; margin-bottom: 8px; }
+.sy-name { flex: 1; min-height: 16px; }
+/* File ▸ Properties (common/dialogs.js) */
+.pr-summary textarea { width: 100%; }
+.pr-summary .field > input { flex: 1 1 140px; min-width: 0; }
+.pr-table { border-collapse: collapse; }
+.pr-table td { padding: 2px 12px 2px 0; vertical-align: top; }
+.pr-table td:first-child { white-space: nowrap; color: var(--ink-3); }
+.pr-contents { max-height: 240px; overflow: auto; }
+.pr-item { padding-left: 14px; }
+.sym-grid { display: grid; grid-template-columns: repeat(16, minmax(24px, 1fr)); max-height: 230px; overflow: auto; border: 1px solid var(--grid-line); background: var(--surface); }
 .sym-grid button { height: 26px; border: 0; border-right: 1px solid var(--grid-line-2); border-bottom: 1px solid var(--grid-line-2); background: var(--surface); padding: 0; font-size: 16px; }
 .sym-grid button.on { background: var(--sel); color: var(--sel-ink); }
-.sym-recent { display: grid; grid-template-columns: repeat(16, 26px); border: 1px solid var(--grid-line); background: var(--surface); }
+.sym-recent { display: grid; grid-template-columns: repeat(16, minmax(24px, 1fr)); border: 1px solid var(--grid-line); background: var(--surface); }
 .sym-recent button { height: 26px; border: 0; border-right: 1px solid var(--grid-line-2); background: var(--surface); padding: 0; font-size: 16px; }
 .bd-preview { width: 150px; height: 150px; background: var(--surface); border: 1px solid var(--field-border); position: relative; }
 .bd-preview .bd-box { position: absolute; left: 22px; top: 22px; right: 22px; bottom: 22px; }
@@ -311,7 +416,8 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .options-tabs .tabs-head { row-gap: 0; }
 .options-tabs .tabs-body { min-height: 300px; }
 .cpk { display: inline-flex; align-items: center; gap: 4px; height: 21px; min-width: 120px; padding: 0 4px; border: 1px solid var(--field-border); background: var(--surface); cursor: default; }
-.cpk-sw { width: 26px; height: 11px; border: 1px solid #555; flex: none; background: #fff; }
+.cpk-sw { width: 26px; height: 11px; border: 1px solid var(--swatch-line); flex: none; background: var(--surface); }
+.cpk-sw.none { background: repeating-linear-gradient(45deg, #fff 0 3px, #ddd 3px 6px); }
 .cpk-l { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .wc-table { border-collapse: collapse; min-width: 240px; }
@@ -357,8 +463,9 @@ input, select, textarea { font: inherit; color: var(--ink); }
 .rb-launch { position: absolute; right: 0; bottom: 2px; width: 14px; height: 14px; padding: 0; border: 1px solid transparent; background: none; color: var(--rb-label-ink); display: flex; align-items: center; justify-content: center; }
 .rb-launch:hover { background: var(--menu-hot); border-color: var(--hot-border); }
 .tb-btn.rb-medium { justify-content: flex-start; padding: 0 5px 0 3px; }
-.tb-btn.rb-large, .tb-split.rb-large > .tb-btn { flex-direction: column; justify-content: flex-start; height: 62px; min-width: 44px; padding: 3px 4px 0; gap: 3px; }
-.tb-btn.rb-large .tb-lbl, .tb-split.rb-large .tb-lbl { max-width: 62px; white-space: normal; text-align: center; line-height: 1.15; }
+.tb-btn.rb-large, .tb-split.rb-large > .tb-btn { flex-direction: column; justify-content: flex-start; height: 66px; min-width: 44px; padding: 3px 4px 0; gap: 3px; }
+/* two lines at most (Page Break Preview, From Current Slide), never over the group's name */
+.tb-btn.rb-large .tb-lbl, .tb-split.rb-large .tb-lbl { max-width: 76px; white-space: normal; text-align: center; line-height: 1.15; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; flex: none; }
 .tb-btn.rb-large.tb-drop { position: relative; padding-bottom: 8px; }
 .tb-btn.rb-large.tb-drop .dd-arrow { margin: 0; }
 .tb-split.rb-large { flex-direction: column; }

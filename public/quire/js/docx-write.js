@@ -424,7 +424,9 @@
         let ff = '';
         if (it.ff) {
           const f = it.ff;
-          let inner = `<w:name w:val="${X(f.name || '')}"/><w:enabled/><w:calcOnExit w:val="0"/>`;
+          let inner = `<w:name w:val="${X(f.name || '')}"/>${f.label != null ? `<w:label w:val="${f.label}"/>` : ''}${f.tabIndex != null ? `<w:tabIndex w:val="${f.tabIndex}"/>` : ''}` +
+            `<w:enabled${f.disabled ? ' w:val="0"' : ''}/><w:calcOnExit w:val="${f.calcOnExit ? 1 : 0}"/>` +
+            (f.entryMacro != null ? `<w:entryMacro w:val="${X(f.entryMacro)}"/>` : '') + (f.exitMacro != null ? `<w:exitMacro w:val="${X(f.exitMacro)}"/>` : '');
           if (f.help) inner += `<w:helpText w:type="text" w:val="${X(f.help)}"/>`;
           if (f.status) inner += `<w:statusText w:type="text" w:val="${X(f.status)}"/>`;
           if (f.type === 'checkbox') inner += `<w:checkBox>${f.size ? `<w:size w:val="${hp(f.size)}"/>` : '<w:sizeAuto/>'}<w:default w:val="${f.def ? 1 : 0}"/>${f.checked !== f.def ? `<w:checked w:val="${f.checked ? 1 : 0}"/>` : ''}</w:checkBox>`;
@@ -552,7 +554,7 @@
     let eff = '';
     if (it.gray) eff += '<a:grayscl/>';
     if (it.bw) eff += '<a:biLevel thresh="50000"/>';
-    const bright = it.washout ? 0.7 : it.bright, contrast = it.washout ? -0.75 : it.contrast;
+    const bright = it.washout ? 0.7 : it.bright, contrast = it.washout ? -0.7 : it.contrast;   // Word's Washout
     if (bright || contrast) eff += `<a:lum${bright ? ` bright="${Math.round(bright * 100000)}"` : ''}${contrast ? ` contrast="${Math.round(contrast * 100000)}"` : ''}/>`;
     if (it.alpha != null && it.alpha < 1) eff += `<a:alphaModFix amt="${Math.round(it.alpha * 100000)}"/>`;
     const blip = rid ? `<a:blip r:embed="${rid}"${eff ? `>${eff}</a:blip>` : '/>'}` : '<a:blip/>';
@@ -572,7 +574,7 @@
     else if (it.tbLink) txbx = `<wps:linkedTxbx id="${X(String(it.tbLink.id))}" seq="${it.tbLink.seq | 0}"/>`;
     let shadow = '';
     if (it.shadow) { const sh = it.shadow; const dx = sh.dx == null ? 3 : sh.dx, dy = sh.dy == null ? 3 : sh.dy; shadow = `<a:effectLst><a:outerShdw blurRad="${emu(sh.blur || 0)}" dist="${emu(Math.hypot(dx, dy))}" dir="${Math.round(((((Math.atan2(dy, dx) * 180) / Math.PI) + 360) % 360) * 60000)}" algn="tl" rotWithShape="0">${clr(sh.c || '#000000', sh.a == null ? 0.5 : sh.a)}</a:outerShdw></a:effectLst>`; }
-    const warp = it.wordart || it.warp ? `<a:prstTxWarp prst="${it.warp || (it.wordart && it.wordart.warp) || 'textPlain'}"><a:avLst/></a:prstTxWarp>` : '';
+    const warp = it.wordart || it.warp ? `<a:prstTxWarp prst="${X(it.warp || (it.wordart && it.wordart.warp) || 'textPlain')}"><a:avLst>${Object.entries(it.warpAdj || {}).map(([k, v]) => `<a:gd name="${X(k)}" fmla="val ${Math.round(v)}"/>`).join('')}</a:avLst></a:prstTxWarp>` : '';
     let wa = '';
     const isWA = !!(it.wordart && !it.tb);
     if (isWA) {
@@ -594,7 +596,7 @@
     }
     const shapeFill = isWA ? '<a:noFill/>' : isLine ? '<a:noFill/>' : fillXML(it.fill || { t: 'none' }, ctx);
     const shapeLine = isWA ? '<a:ln><a:noFill/></a:ln>' : lineXML(it.line || { t: 'none' });
-    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb ? 'Text Box ' : isWA ? 'LettersArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${it.tb || it.tbLink || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${it.autofit && !isWA ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
+    return `<wps:wsp><wps:cNvPr id="${id}" name="${X(it.name || (it.tb && it.txBox !== false ? 'Text Box ' : isWA ? 'LettersArt ' : 'Shape ') + id)}"/><wps:cNvSpPr${((it.tb || it.tbLink) && it.txBox !== false) || isWA ? ' txBox="1"' : ''}/><wps:spPr>${xfrmXML(it, x, y)}${geomXML(it)}${shapeFill}${shapeLine}${isWA ? '' : shadow}</wps:spPr>${txbx || wa}<wps:bodyPr rot="0" vert="${it.vert || 'horz'}" wrap="${it.noWrap || isWA ? 'none' : 'square'}" lIns="${emu(isWA ? 0 : ins.l)}" tIns="${emu(isWA ? 0 : ins.t)}" rIns="${emu(isWA ? 0 : ins.r)}" bIns="${emu(isWA ? 0 : ins.b)}" anchor="${it.anchor || (isWA ? 'ctr' : 't')}" anchorCtr="0"${isWA ? ' fromWordArt="1"' : ''}>${warp}${it.autofit && !isWA ? '<a:spAutoFit/>' : '<a:noAutofit/>'}</wps:bodyPr></wps:wsp>`;
   }
   function groupXML(g, ctx, x, y, id, nested) {
     let kids = '';
@@ -637,7 +639,7 @@
     const ins = k.ins || { l: 7.2, t: 3.6, r: 7.2, b: 3.6 };
     const isLine = k.geom === 'line' || L.geom.isLine(k.geom);
     const text = k.tb && k.tb.blocks ? `<a:txSp><a:txBody><a:bodyPr wrap="square" lIns="${emu(ins.l)}" tIns="${emu(ins.t)}" rIns="${emu(ins.r)}" bIns="${emu(ins.b)}" anchor="${k.anchor || 't'}"/><a:lstStyle/>${dmlParasXML(k.tb.blocks)}</a:txBody><a:useSpRect/></a:txSp>` : '';
-    return `<a:sp><a:nvSpPr><a:cNvPr id="${id}" name="${X(k.name || 'Shape ' + id)}"/><a:cNvSpPr${k.tb ? ' txBox="1"' : ''}/></a:nvSpPr><a:spPr>${xfrmXML(k, k.x, k.y)}${geomXML(k)}${isLine ? '<a:noFill/>' : fillXML(k.fill || { t: 'none' }, ctx)}${lineXML(k.line || { t: 'none' })}</a:spPr>${text}</a:sp>`;
+    return `<a:sp><a:nvSpPr><a:cNvPr id="${id}" name="${X(k.name || 'Shape ' + id)}"/><a:cNvSpPr${k.tb && k.txBox !== false ? ' txBox="1"' : ''}/></a:nvSpPr><a:spPr>${xfrmXML(k, k.x, k.y)}${geomXML(k)}${isLine ? '<a:noFill/>' : fillXML(k.fill || { t: 'none' }, ctx)}${lineXML(k.line || { t: 'none' })}</a:spPr>${text}</a:sp>`;
   }
   function lockedCanvasXML(it, ctx) {
     const kids = it.t === 'group' ? (it.kids || []).map((k) => canvasKidXML(k, ctx, ctx.docPrId())).join('') : canvasKidXML(Object.assign({}, it, { x: 0, y: 0 }), ctx, ctx.docPrId());
@@ -652,7 +654,8 @@
     else if (it.t === 'shape') graphic = `<a:graphicData uri="${NS.wps}">${shapeXML(it, ctx, 0, 0, id)}</a:graphicData>`;
     else if (it.t === 'group') graphic = `<a:graphicData uri="${NS.wpg}">${groupXML(it, ctx, 0, 0, id, false)}</a:graphicData>`;
     else if (it.t === 'chart') { const rid = ctx.chart(it); graphic = `<a:graphicData uri="${NS.c}"><c:chart xmlns:c="${NS.c}" r:id="${rid}"/></a:graphicData>`; }
-    const ext = `<wp:extent cx="${Math.max(0, emu(it.w))}" cy="${Math.max(0, emu(it.h))}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>`;
+    const e = it.eff || { l: 0, t: 0, r: 0, b: 0 };
+    const ext = `<wp:extent cx="${Math.max(0, emu(it.w))}" cy="${Math.max(0, emu(it.h))}"/><wp:effectExtent l="${emu(e.l)}" t="${emu(e.t)}" r="${emu(e.r)}" b="${emu(e.b)}"/>`;
     const docPr = `<wp:docPr id="${id}" name="${X(it.name || (it.t === 'img' ? 'Picture ' : it.t === 'chart' ? 'Chart ' : 'Shape ') + id)}"${it.alt ? ` descr="${X(it.alt)}"` : ''}${it.title ? ` title="${X(it.title)}"` : ''}${it.hidden ? ' hidden="1"' : ''}>${it.link && it.link.url ? `<a:hlinkClick xmlns:a="${NS.a}" r:id="${ctx.rels.add(RT('hyperlink'), it.link.url, true)}"/>` : ''}</wp:docPr>`;
     const lock = it.t === 'img' ? `<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="${NS.a}" noChangeAspect="1"/></wp:cNvGraphicFramePr>` : '<wp:cNvGraphicFramePr/>';
     const graphicEl = `<a:graphic xmlns:a="${NS.a}">${graphic}</a:graphic>`;
@@ -958,10 +961,19 @@
       `<Template>${X(p.template || 'Normal.dotm')}</Template><TotalTime>0</TotalTime><Pages>${stats.pages}</Pages><Words>${stats.words}</Words><Characters>${stats.charsNoSp}</Characters><Application>Quire</Application><DocSecurity>0</DocSecurity><Lines>${stats.lines}</Lines><Paragraphs>${stats.paras}</Paragraphs><ScaleCrop>false</ScaleCrop>` +
       (p.manager ? `<Manager>${X(p.manager)}</Manager>` : '') + `<Company>${X(p.company || '')}</Company><LinksUpToDate>false</LinksUpToDate><CharactersWithSpaces>${stats.chars}</CharactersWithSpaces><SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged><AppVersion>11.0000</AppVersion></Properties>`;
   }
+  /** a custom property's value as Word writes it: a string read from the file is text; one set in File ▸ Properties
+   *  is { type: 'text' | 'number' | 'bool' | 'date', v } (unchanged ones keep the file's own XML, opc.js customProperties) */
+  function customValue(v) {
+    if (!v || typeof v !== 'object') return `<vt:lpwstr>${X(v == null ? '' : v)}</vt:lpwstr>`;
+    if (v.type === 'number') { const n = Number(v.v); return Number.isInteger(n) && Math.abs(n) < 2 ** 31 ? `<vt:i4>${n}</vt:i4>` : `<vt:r8>${isFinite(n) ? n : 0}</vt:r8>`; }
+    if (v.type === 'bool') return `<vt:bool>${v.v ? 'true' : 'false'}</vt:bool>`;
+    if (v.type === 'date') { const d = new Date(v.v); if (!isNaN(d)) return `<vt:filetime>${d.toISOString().replace(/\.\d{3}Z$/, 'Z')}</vt:filetime>`; }
+    return `<vt:lpwstr>${X(v.v == null ? '' : v.v)}</vt:lpwstr>`;
+  }
   function customXML(doc) {
     const keys = Object.keys(doc.custom || {});
     return HEAD + '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
-      keys.map((k, i) => `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${i + 2}" name="${X(k)}"><vt:lpwstr>${X(doc.custom[k])}</vt:lpwstr></property>`).join('') + '</Properties>';
+      keys.map((k, i) => `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${i + 2}" name="${X(k)}">${customValue(doc.custom[k])}</property>`).join('') + '</Properties>';
   }
   /** VML text/picture watermark for headers */
   function watermarkXML(wm, ctx) {

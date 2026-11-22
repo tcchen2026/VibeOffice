@@ -6,7 +6,7 @@ import zipfile
 
 ap = argparse.ArgumentParser()
 ap.add_argument('output', type=Path)
-ap.add_argument('--corpus', type=Path, default=Path.home() / 'corpora/powerpoint')
+ap.add_argument('--corpus', type=Path, default=Path('/work/corpora/powerpoint'))
 a = ap.parse_args()
 a.output.mkdir(parents=True, exist_ok=True)
 with zipfile.ZipFile(a.corpus / 'openxml-sdk__254c9ac4ef06__Of16-03.pptx') as z:

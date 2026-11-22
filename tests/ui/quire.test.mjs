@@ -310,19 +310,19 @@ test('Q9 a right-click in a table cell, the caret outside the table: the first m
 }));
 
 const PIC = ['First paragraph of text.', 'Picture here and text after it.', 'Third paragraph with words.'];
-test('Q10 a right-click on a picture, selected or not, selects it (handles shown) and offers Picture…', () => inQuire(PARAS(PIC) + PICTURE(1, 5), async (u) => {
+test('Q10 a right-click on a picture, selected or not, selects it (handles shown) and offers Format Picture…', () => inQuire(PARAS(PIC) + PICTURE(1, 5), async (u) => {
   const handles = () => u.evaluate(`document.querySelectorAll('.obj-handles').length`);
   const pic = await u.el('#pages .img');
   await u.click(pic);
   assert.equal(await handles(), 1, 'a click selects the picture');
   await u.rightClick(pic);
   assert.equal(await handles(), 1, 'a selected picture keeps its handles');
-  assert.ok((await u.menuItems()).includes('Picture...'), 'the menu has Picture...');
+  assert.ok((await u.menuItems()).includes('Format Picture...'), 'the menu has Format Picture...');
   await u.esc();
   await u.click(await atB(u, 0, 3));
   await u.rightClick(pic);
   assert.equal(await handles(), 1, 'an unselected picture is selected by the right-click');
-  assert.ok((await u.menuItems()).includes('Picture...'), 'the menu has Picture...');
+  assert.ok((await u.menuItems()).includes('Format Picture...'), 'the menu has Format Picture...');
   await u.esc();
 }));
 
@@ -579,6 +579,157 @@ test('a table\'s column border: a drag sets the widths; a click or Esc leaves th
   assert.deepEqual(await undoLabels(u), ['Column Width']);
 }));
 
+test('a table\'s move handle: over the table; a click selects it, a drag floats it where it is dropped, Esc leaves it, a right-click opens its menu', () => inQuire(PARAS(['First paragraph of text.', 'Second paragraph.', 'Third paragraph, long enough to go on beside a narrow table that was moved over here by its handle.']) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];', async (u) => {
+  const tbl = () => u.el('#pages table.tbl');
+  const float = () => u.evaluate(`JSON.stringify(L.D.doc.main.blocks.find((b) => b.t === 'tbl').tblPr.float || null)`).then(JSON.parse);
+  let t0 = await tbl();
+  await u.move({ x: t0.l + 20, y: t0.t + 8 });
+  let h = await u.el('.tbl-move');
+  assert.ok(h && h.r <= t0.l + 1 && h.b <= t0.t + 1, 'the handle shows outside its top left corner');
+  await u.click({ x: h.x, y: h.y });
+  assert.equal(await u.evaluate(`L.ed.cellSel ? L.ed.cellSel.cells.length : 0`), 4, 'a click selects every cell');
+  assert.equal(await undoSteps(u), 0);
+  await u.press({ x: h.x, y: h.y }); await u.glide({ x: h.x, y: h.y }, { x: h.x + 120, y: h.y + 90 }); await u.esc(); await u.release({ x: h.x + 120, y: h.y + 90 });
+  assert.equal(await float(), null, 'Esc: still in the text');
+  assert.equal(await u.evaluate(`document.querySelectorAll('.tbl-ghost').length`), 0, 'no outline left');
+  assert.equal(await undoSteps(u), 0);
+  await u.move({ x: t0.l + 20, y: t0.t + 8 });
+  h = await u.el('.tbl-move');
+  await u.drag({ x: h.x, y: h.y }, { x: h.x + 150, y: h.y + 60 });
+  const f = await float();
+  assert.ok(f && f.vAnchor === 'text' && f.hAnchor === 'margin' && f.l === 9 && f.r === 9, `floating as Word makes it (${JSON.stringify(f)})`);
+  const t1 = await tbl();
+  assert.ok(Math.abs(t1.l - t0.l - 150) <= 2 && Math.abs(t1.t - t0.t - 60) <= 2, `where it was dropped (${t1.l - t0.l}, ${t1.t - t0.t})`);
+  assert.deepEqual(await undoLabels(u), ['Move Table']);
+  const xml = await u.evaluate(`(async () => { const pk = await L.opc.open(new Uint8Array(await (await L.docx.write(L.D.doc)).arrayBuffer())); return (pk.text('word/document.xml').match(/<w:tblpPr[^>]*>/) || [''])[0]; })()`);
+  assert.match(xml, /^<w:tblpPr w:leftFromText="180" w:rightFromText="180" w:vertAnchor="text" w:horzAnchor="margin" w:tblpX="\d+" w:tblpY="-?\d+"\/>$/, 'saved as Word writes a dragged table');
+  await u.move({ x: t1.l + 20, y: t1.t + 8 });
+  h = await u.el('.tbl-move');
+  await u.rightClick({ x: h.x, y: h.y });
+  assert.ok((await u.menuItems()).some((x) => /Table Properties/.test(x)), 'the table\'s menu');
+  await u.esc();
+  await u.key('z', { ctrl: true });
+  assert.equal(await float(), null, 'Undo: back in the text');
+  t0 = await tbl();
+  assert.ok(Math.abs(t0.l - (t1.l - 150)) <= 2, 'where it was');
+}));
+
+test('a table\'s resize square: a drag scales its columns and rows, one undo step; a click or Esc changes nothing', () => inQuire(PARAS(['First paragraph of text.', 'Second paragraph.']) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];', async (u) => {
+  const state = () => u.evaluate(`(() => { const t = L.D.doc.main.blocks[1]; return JSON.stringify({ grid: t.grid, h: t.rows.map((r) => r.trPr.h || null) }); })()`).then(JSON.parse);
+  const s0 = await state(), t0 = await u.el('#pages table.tbl');
+  await u.move({ x: t0.l + 20, y: t0.t + 8 });
+  let q = await u.el('.tbl-size');
+  assert.ok(q && q.l >= t0.r - 1 && q.t >= t0.b - 1, 'the square shows at its bottom right corner');
+  await u.click({ x: q.x, y: q.y });
+  assert.deepEqual(await state(), s0, 'a click changes nothing');
+  await u.move({ x: t0.l + 20, y: t0.t + 8 }); q = await u.el('.tbl-size');
+  await u.press({ x: q.x, y: q.y }); await u.glide({ x: q.x, y: q.y }, { x: q.x + 60, y: q.y + 40 }); await u.esc(); await u.release({ x: q.x + 60, y: q.y + 40 });
+  assert.deepEqual(await state(), s0, 'Esc: no change');
+  assert.equal(await u.evaluate(`document.querySelectorAll('.tbl-ghost').length`), 0, 'no outline left');
+  await u.move({ x: t0.l + 20, y: t0.t + 8 }); q = await u.el('.tbl-size');
+  await u.drag({ x: q.x, y: q.y }, { x: q.x + 60, y: q.y + 40 });
+  const s1 = await state(), t1 = await u.el('#pages table.tbl');
+  const pt = 60 / (await u.evaluate('L.layout.zoom') * 96 / 72);
+  assert.ok(Math.abs(s1.grid[0] - s1.grid[1]) < 0.1 && Math.abs(s1.grid[0] + s1.grid[1] - 180 - pt) < 1, `the columns ${pt.toFixed(1)} pt wider together, alike (${s1.grid})`);
+  assert.ok(s1.h.every((h) => h > 0), `the rows given heights (${s1.h})`);
+  assert.ok(Math.abs(t1.r - t0.r - 60) <= 2 && Math.abs(t1.b - t0.b - 40) <= 3, `as large as dragged (${t1.r - t0.r}, ${t1.b - t0.b})`);
+  assert.deepEqual(await undoLabels(u), ['Resize Table']);
+}));
+
+test('a whole table selected by its handle: Ctrl+X cuts the table and Ctrl+V puts it back, Backspace deletes it, Delete empties its cells (Word)', async () => {
+  const doc = PARAS(['First paragraph.', 'Second paragraph.']) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];';
+  const select = async (u) => { const t = await u.el('#pages table.tbl'); await u.move({ x: t.l + 20, y: t.t + 8 }); const h = await u.el('.tbl-move'); await u.click({ x: h.x, y: h.y }); };
+  const FULL = [[['cell 00 text', 'cell 01 text'], ['cell 10 text', 'cell 11 text']]], EMPTY = [[['', ''], ['', '']]];
+  await inQuire(doc, async (u) => {
+    await select(u);
+    await u.key('x', { ctrl: true });
+    assert.deepEqual(await body(u), ['First paragraph.', 'Second paragraph.'], 'Ctrl+X: the table is gone');
+    assert.deepEqual(await undoLabels(u), ['Cut']);
+    await u.key('v', { ctrl: true });
+    assert.deepEqual((await body(u)).filter((b) => Array.isArray(b)), FULL, 'Ctrl+V: the table again, with its text');
+  });
+  await inQuire(doc, async (u) => {
+    await select(u);
+    await u.key('Backspace');
+    assert.deepEqual(await body(u), ['First paragraph.', 'Second paragraph.'], 'Backspace: the table is gone');
+    await u.key('z', { ctrl: true });
+    assert.deepEqual((await body(u))[1], FULL[0], 'Undo: back, with its text');
+  });
+  await inQuire(doc, async (u) => {
+    await select(u);
+    await u.key('Delete');
+    assert.deepEqual(await body(u), ['First paragraph.', EMPTY[0], 'Second paragraph.'], 'Delete: the cells are emptied, the table stays');
+  });
+  await inQuire(doc, async (u) => {
+    const a = await u.el('#pages td[data-cid]');
+    await u.drag({ x: a.l + 4, y: a.y }, { x: a.r - 4, y: a.y });
+    await u.key('x', { ctrl: true });
+    assert.equal((await body(u)).filter((b) => Array.isArray(b)).length, 1, 'part of it: the table stays');
+  });
+});
+
+test('the task pane follows the selection: a shape opens Drawing Tools though the pane was closed, the text closes it again, a whole table shows Table Tools; its menu lists every tool panel', () => inQuire(PARAS(SHAPE_DOC) + SHAPE(1) + TABLE(1) + 'd.main.blocks[1].grid = [90, 90];', async (u) => {
+  const pane = () => u.evaluate(`JSON.stringify({ open: !L.panes.task.el.hidden, current: L.panes.task.current, saved: L.app.opts.taskOpen })`).then(JSON.parse);
+  if ((await pane()).open) await u.click(await u.el('#taskpane [aria-label="Close task pane"]'));
+  const text = await atB(u, 0, 5);
+  const shape = await u.el('#pages .flt');
+  await u.click({ x: shape.x, y: shape.y });
+  assert.deepEqual(await pane(), { open: true, current: 'tools-drawing', saved: false }, 'a shape: Drawing Tools, the pane left closed for next time');
+  await u.click(text);
+  assert.equal((await pane()).open, false, 'the text: closed again');
+  const t = await u.el('#pages table.tbl');
+  await u.move({ x: t.l + 20, y: t.t + 8 });
+  const h = await u.el('.tbl-move');
+  await u.click({ x: h.x, y: h.y });
+  assert.deepEqual(await pane(), { open: true, current: 'tools-table', saved: false }, 'the whole table: Table Tools');
+  await u.click(await u.el('#taskpane .tp-title'));
+  const rows = await u.evaluate(`[...document.querySelectorAll('.menu .m-item')].map((r) => r.querySelector('.m-lbl').textContent + (r.classList.contains('dis') ? ' (greyed)' : ''))`);
+  for (const x of ['Getting Started', 'Styles and Formatting', 'Table Tools', 'Picture Tools (greyed)', 'Drawing Tools (greyed)']) assert.ok(rows.includes(x), `the menu lists ${x}: ${rows.join(', ')}`);
+  await u.esc();
+  await u.click(text);
+  assert.equal((await pane()).open, false);
+  await u.evaluate('L.app.opts.paneFollows = false');
+  await u.click({ x: shape.x, y: shape.y });
+  assert.equal((await pane()).open, false, 'with the option off, the pane stays closed');
+}));
+
+
+test('editing the header opens the task pane on Header & Footer Tools, though it was closed; back in the body it closes again', () => inQuire(PARAS(['First paragraph of the body.', 'Second paragraph.']) + HEADER, async (u) => {
+  const pane = () => u.evaluate(`JSON.stringify({ open: !L.panes.task.el.hidden, current: L.panes.task.current, saved: L.app.opts.taskOpen })`).then(JSON.parse);
+  if ((await pane()).open) await u.click(await u.el('#taskpane [aria-label="Close task pane"]'));
+  await u.dblclick(await u.el('#pages .pg-hdr'));
+  assert.equal(await u.evaluate('!!L.layout.hfEdit'), true, 'setup: editing the header');
+  assert.deepEqual(await pane(), { open: true, current: 'tools-headerFooter', saved: false });
+  await u.dblclick(await atB(u, 0, 5));
+  assert.equal(await u.evaluate('!!L.layout.hfEdit'), false, 'setup: back in the body');
+  assert.equal((await pane()).open, false);
+}));
+
+test('text in a shape: a right-click on a handle offers Add Text, then typing goes in; typing on a selected shape adds to its text; a click in a box\'s empty space puts the caret in it', () => inQuire(PARAS(SHAPE_DOC) + SHAPE(1), async (u) => {
+  const shapeText = () => u.evaluate(`(() => { const it = L.D.doc.main.blocks[1].runs.find((r) => r.t === 'shape'); return it.tb ? it.tb.blocks.map((p) => L.D.ptext(p)).join('/') : null; })()`);
+  const inShape = () => u.evaluate(`(() => { const it = L.D.doc.main.blocks[1].runs.find((r) => r.t === 'shape'); return !!(it.tb && L.ed.sel && it.tb.blocks.includes(L.ed.sel.f.p)); })()`);
+  let sh = await u.el('#pages .flt');
+  await u.click({ x: sh.x, y: sh.y });
+  const h = await u.el('.obj-handles .oh-se');
+  await u.rightClick({ x: h.x, y: h.y });
+  assert.ok((await u.menuItems()).includes('Add Text'), 'the shape\'s menu, on its handle');
+  await u.pick('Add Text');
+  await u.key('H'); await u.key('i');
+  assert.equal(await shapeText(), 'Hi');
+  assert.equal(await inShape(), true, 'the caret in its text');
+  await u.click(await atB(u, 0, 5));
+  sh = await u.el('#pages .flt');
+  await u.click({ x: sh.l + 2, y: sh.y });   // its border selects it
+  assert.equal(await u.evaluate('!!L.ed.objSel'), true, 'setup: the shape is selected');
+  await u.key('!'); await u.key('?');
+  assert.equal(await shapeText(), 'Hi!?', 'typing on the selected shape goes to the end of its text');
+  assert.deepEqual(await body(u), SHAPE_DOC.map((s, i) => (i === 1 ? '\ufffc' : '') + s), 'nothing typed into the page');
+  await u.click(await atB(u, 0, 5));
+  const area = await u.el('#pages .flt .tbx');
+  await u.click({ x: area.x, y: area.b - 3 });   // its text area, below the line
+  assert.equal(await inShape(), true, 'a click in the empty part of its text area puts the caret in its text');
+  assert.deepEqual(await undoLabels(u), ['Add Text', 'Typing', 'Typing'], 'one step for each run of typing');
+}));
 
 test('the toolbar\'s Insert Table grid: a move over 2 × 3 and a click insert that table', () => inQuire(PARAS(['First paragraph.', 'Second paragraph.']), async (u) => {
   await u.click(await u.el('.tb-drop[data-tip="Insert Table"]'));

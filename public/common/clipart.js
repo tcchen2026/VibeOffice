@@ -1,4 +1,4 @@
-/* VibeOffice — built-in clip art (original vector drawings, 64×64), used by Quire and Lectern. */
+/* VibeOffice — built-in clip art (original vector drawings, 64×64) and the Clip Art task pane's body. */
 (function (root) {
   'use strict';
   const N = (s) => s;   // a clip's name: UI text, translated where it is shown (common/i18n.js)
@@ -47,6 +47,28 @@
       c.width = size; c.height = size;
       c.getContext('2d').drawImage(img, 0, 0, size, size);
       return new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
+    },
+    /** the Clip Art task pane's body b (each app registers the pane): a search box and the clips; a click calls
+     *  insert(clip); note says where the clip goes */
+    pane(b, insert, note) {
+      const { h, ui } = L;
+      const q = h('input', { type: 'text', id: 'ca-q', value: L.clipart.query || '', placeholder: 'e.g. people, growth, time', style: 'flex:1;min-width:0' });
+      const grid = h('div', { class: 'clip-grid' });
+      const draw = () => {
+        L.clear(grid);
+        const list = L.clipart.search(q.value);
+        for (const it of list) {
+          const el = h('button', { class: 'clip-it', type: 'button', 'data-tip': it.name, 'aria-label': it.name }, h('img', { src: L.clipart.url(it), alt: '' }), h('span', { text: it.name }));
+          el.addEventListener('click', () => insert(it));
+          grid.appendChild(el);
+        }
+        if (!list.length) grid.appendChild(h('div', { class: 'tp-note', text: 'No clips match. Try "people", "chart", "nature" or "office".' }));
+      };
+      q.addEventListener('input', () => { L.clipart.query = q.value; draw(); });
+      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') draw(); e.stopPropagation(); });
+      b.append(h('div', { class: 'tp-sec' }, h('label', { class: 'tp-h', for: 'ca-q', text: 'Search for:' }), h('div', { class: 'tp-row' }, q, ui.button('Go', draw, { class: 'btn small' }))),
+        h('div', { class: 'tp-sec' }, grid), h('div', { class: 'tp-note', text: note }));
+      draw();
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

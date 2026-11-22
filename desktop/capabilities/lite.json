@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "lite",
+  "description": "The lite edition's one window (main): its start page and each app's page in turn (src/lite.rs); only in the lite build, whose TAURI_CONFIG enables it instead of start and apps",
+  "windows": ["main"],
+  "permissions": ["app-window", "lite"]
+}

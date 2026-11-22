@@ -533,41 +533,23 @@
   G.autocorrect = function (tab) {
     const o = A().opts;
     const ac = L.autocorrect;
-    const chk = (k, l, def) => ui.check(l, o[k] !== undefined ? o[k] !== false : def !== false, (v) => { o[k] = v; A().saveOpts(); });
-    const from = h('input', { type: 'text', id: 'ac-from', style: 'width:110px' }), to = h('input', { type: 'text', id: 'ac-to', style: 'flex:1;min-width:0' });
-    const list = G.listBox([], null, { height: 150, translate: 'no', onChange: (v) => { from.value = v; to.value = ac.list().get(v) || ''; } });
-    const fill = () => { const m = ac.list(); list.setItems(Array.from(m.keys()).sort((a, b) => a.localeCompare(b)).map((k) => ({ value: k, label: `${k}  →  ${m.get(k)}` }))); };
-    fill();
-    from.addEventListener('input', () => { const m = ac.list(); if (m.has(from.value)) to.value = m.get(from.value); });
+    /* the options apply on OK, as Word's; the entries (common ui.autocorrectEntries) and AutoText at once */
+    const pend = {};
+    const chk = (k, l, def) => ui.check(l, o[k] !== undefined ? o[k] !== false : def !== false, (v) => { pend[k] = v; });
     const exc = () => { const ta = h('textarea', { rows: 10, style: 'width:100%' }); ta.value = ac.exceptions().join('\n'); ui.dialog({ title: 'AutoCorrect Exceptions', width: 300, body: h('div', { class: 'col' }, h('div', { text: "Don't capitalize after:" }), ta), buttons: [{ label: 'OK', primary: true, onClick: () => ac.setExceptions(ta.value.split(/\s+/).filter(Boolean)) }, { label: 'Cancel' }] }); };
     const atName = h('input', { type: 'text', id: 'at-name', style: 'width:100%' });
     const atList = G.listBox(L.store.get('autoText', []).map((x) => x.name), null, { height: 120, translate: 'no', onChange: (v) => { const e = L.store.get('autoText', []).find((x) => x.name === v); atName.value = v; atPv.textContent = e ? e.text : ''; } });
     const atPv = h('div', { class: 'tp-box', style: 'min-height:40px;white-space:pre-wrap', translate: 'no' });
     const tabs = ui.tabs([
-      { label: '&AutoCorrect', body: h('div', { class: 'col' }, chk('acButtons', 'Show Auto&Correct Options buttons'), chk('twoCaps', 'Correct TWo INitial &CApitals'), chk('capSentence', 'Capitalize first letter of &sentences'), chk('capCells', 'Capitalize first letter of table &cells'), chk('capDays', 'Capitalize &names of days'), chk('capsLock', 'Correct accidental usage of cAPS &LOCK key'), ui.button('&Exceptions...', exc, { class: 'btn small' }), chk('autocorrect', 'Replace &text as you type'), G.row(G.f('&Replace:', from), G.f('&With:', to)), list, h('div', { class: 'tp-btns' }, ui.button('&Add', () => { if (!from.value) return; ac.setEntry(from.value, to.value); fill(); }, { class: 'btn small' }), ui.button('&Delete', () => { if (!from.value) return; ac.setEntry(from.value, null); fill(); from.value = ''; to.value = ''; }, { class: 'btn small' }))) },
+      { label: '&AutoCorrect', body: h('div', { class: 'col' }, chk('acButtons', 'Show Auto&Correct Options buttons'), chk('twoCaps', 'Correct TWo INitial &CApitals'), chk('capSentence', 'Capitalize first letter of &sentences'), chk('capCells', 'Capitalize first letter of table &cells'), chk('capDays', 'Capitalize &names of days'), chk('capsLock', 'Correct accidental usage of cAPS &LOCK key'), ui.button('&Exceptions...', exc, { class: 'btn small' }), chk('autocorrect', 'Replace &text as you type'), ui.autocorrectEntries(ac)) },
       { label: 'AutoFormat As You T&ype', body: h('div', { class: 'col' }, ui.group('Replace as you type', chk('smartQuotes', L.N('"&Straight quotes" with “smart quotes”')), chk('ordinals', '&Ordinals (1st) with superscript'), chk('fractions', '&Fractions (1/2) with fraction character (½)'), chk('dashes', '&Hyphens (--) with dash (—)'), chk('autoFormat', L.N('*&Bold* and _italic_ with real formatting')), chk('autoUrl', '&Internet and network paths with hyperlinks')), ui.group('Apply as you type', chk('autoBullets', 'Automatic b&ulleted lists'), chk('autoBorders', 'Border &lines'), chk('autoTables', '&Tables'), chk('autoNumbers', 'Automatic &numbered lists'), chk('autoHeadings', 'Built-in Heading st&yles', false))) },
       { label: 'Auto&Text', body: h('div', { class: 'col' }, chk('autoComplete', 'Show &AutoComplete suggestions'), h('label', { for: 'at-name', text: 'Enter AutoText entries here:' }), atName, atList, h('div', { class: 'cd-cap', text: 'Preview' }), atPv, h('div', { class: 'tp-btns' }, ui.button('&Add', () => { const t = E.sel && !E.collapsed() ? O.textRange(...E.range(), '\n') : ''; if (!t) { ui.msg('Select the text you want to store as AutoText first.', { icon: 'info' }); return; } const n = atName.value.trim() || t.slice(0, 32); ac.addAutoText(n, t); atList.setItems(L.store.get('autoText', []).map((x) => x.name)); }, { class: 'btn small' }), ui.button('&Delete', () => { ac.deleteAutoText(atName.value); atList.setItems(L.store.get('autoText', []).map((x) => x.name)); atPv.textContent = ''; }, { class: 'btn small' }), ui.button('&Insert', () => { const e = L.store.get('autoText', []).find((x) => x.name === atName.value); if (e) E.insertTextAt(e.text, L.N('AutoText')); }, { class: 'btn small' }))) },
     ], tab === 'autotext' ? 2 : tab === 'format' ? 1 : 0);
-    ui.dialog({ title: 'AutoCorrect: English (U.S.)', width: 460, body: tabs, buttons: [{ label: 'OK', primary: true }, { label: 'Cancel' }] });
+    ui.dialog({ title: 'AutoCorrect: English (U.S.)', width: 460, body: tabs, buttons: [{ label: 'OK', primary: true, onClick: () => { Object.assign(o, pend); A().saveOpts(); } }, { label: 'Cancel' }] });
   };
 
   /* ================= Customize ================= */
-  G.customize = function () {
-    const tbs = ['standard', 'formatting', 'drawing', 'tables', 'reviewing', 'picture', 'outlining', 'headerFooter', 'mailMerge', 'wordart'].map((k) => ui.check(ui.cmds['tb_' + k].label, A().tbShown(k), () => A().toggleToolbar(k)));
-    const cmds = Object.values(ui.cmds).filter((c) => c.label && !c.id.startsWith('tb_')).sort((a, b) => ui.stripAmp(a.label).localeCompare(ui.stripAmp(b.label)));
-    /* the commands' names as shown (stripAmp translates them) and their keys */
-    const cmdList = G.listBox(cmds.map((c) => ({ value: c.id, label: ui.stripAmp(c.menuLabel || c.label) + (c.key ? '   ' + ui.keyText(c.key) : '') })), null, { height: 220, translate: 'no' });
-    const keys = h('table', { class: 'kbd-table', translate: 'no' });
-    for (const [k, id] of Object.entries(A().SHORTCUTS).sort((a, b) => a[1].localeCompare(b[1]))) { const c = ui.cmds[id]; if (c) keys.appendChild(h('tr', null, h('td', null, document.createTextNode(ui.keyText(k))), h('td', null, document.createTextNode(ui.stripAmp(c.menuLabel || c.label))))); }
-    const o = A().opts;
-    ui.dialog({ title: 'Customize', width: 460, body: ui.tabs([
-      { label: 'Tool&bars', body: h('div', { class: 'col' }, ...tbs) },
-      { label: '&Commands', body: h('div', { class: 'col' }, h('div', { class: 'tp-note', text: 'All Quire commands. Double-click one to run it.' }), cmdList), onShow: () => {} },
-      { label: '&Options', body: h('div', { class: 'col' }, ui.check('Show Standard and Formatting toolbars on two rows', true, null), ui.check('Always show full menus', true, null), ui.check('Show Scree&nTips on toolbars', o.screenTips !== false, (v) => { o.screenTips = v; A().saveOpts(); document.body.classList.toggle('notips', !v); }), ui.check('Show shortcut &keys in ScreenTips', true, null)) },
-      { label: '&Keyboard', body: h('div', { style: 'max-height:300px;overflow:auto' }, keys) },
-    ]), buttons: [{ label: 'Close', primary: true }] });
-    cmdList.querySelector('.listbox').addEventListener('dblclick', () => { const id = cmdList.get(); if (id) ui.exec(id); });
-  };
+  G.customize = () => ui.customize({ toolbars: ['standard', 'formatting', 'drawing', 'tables', 'reviewing', 'picture', 'outlining', 'headerFooter', 'mailMerge', 'wordart'], opts: A().opts, save: () => A().saveOpts(), shortcuts: A().SHORTCUTS });
 
   /* ================= Options ================= */
   G.options = function (tab) {
@@ -591,16 +573,16 @@
     const autoRec = G.num(o.autoSaveMin || 10, { min: 1, max: 120, id: 'op-asr' });
     const look = ui.lookField();
     const tabs = ui.tabs([
-      { label: 'View', body: h('div', { class: 'col' }, ui.group('Show', h('div', { class: 'grid2' }, opt('startupPane', 'Startup Task Pane', true), opt('paneFollows', 'Task pane follows the selected object', true), opt('highlightShow', L.N('Highlight'), true), lyo('showBookmarks', L.N('Bookmarks')), opt('statusBar', 'Status bar', true), opt('screenTips', L.N('ScreenTips'), true), lyo('fieldCodes', 'Field codes'), opt('smartTags', 'Smart tags', false), opt('animText', 'Animated text', false)), G.f('Field shading:', fieldShade)), ui.group('Formatting marks', h('div', { class: 'grid2' }, lyo('showMarks', L.N('All')), lyo('showHidden', 'Hidden text'))), ui.group('Print and Web Layout options', h('div', { class: 'grid2' }, lyo('textBoundaries', 'Text boundaries'), opt('vruler', 'Vertical ruler (Print view only)', true), opt('whiteSpace', 'White space between pages (Print view only)', true)))) },
-      { label: 'General', body: h('div', { class: 'col' }, look && look.el, opt('bgRepag', 'Background repagination', true), opt('blueBg', 'Blue background, white text', false), opt('sound', 'Provide feedback with sound', false), G.row(opt('recentOn', 'Recently used file list:', true), recentN, h('span', { text: 'entries' })), G.f('Measurement units:', units, 'wide')) },
-      { label: 'Edit', body: h('div', { class: 'col' }, ui.group('Editing options', opt('typingReplaces', 'Typing replaces selection', true), opt('dragDrop', 'Drag-and-drop text editing', true), opt('ctrlClick', 'Use CTRL + Click to follow hyperlink', true), opt('smartPara', 'Use smart paragraph selection', true), chk('Overtype mode', () => E.overtype, (v) => { E.overtype = v; }), opt('smartCut', 'Smart cut and paste', true)), ui.group('Cut and paste options', opt('pasteOptions', 'Show Paste Options buttons', true))) },
-      { label: 'Print', body: h('div', { class: 'col' }, ui.group('Printing options', opt('updateFieldsOnPrint', 'Update fields', false), opt('printBg', 'Background colors and images', true)), ui.group('Include with document', opt('printProps', 'Document properties', false), opt('printCodes', 'Field codes', false), opt('printHidden', 'Hidden text', false), opt('printDrawings', 'Drawing objects', true))) },
-      { label: 'Save', body: h('div', { class: 'col' }, opt('promptProps', 'Prompt for document properties', false), G.row(opt('autoRecover', 'Save AutoRecover info every:', true), autoRec, h('span', { text: 'minutes' })), h('div', { class: 'tp-note', text: 'AutoRecover keeps a copy in this browser only; it is offered when Quire opens after an unexpected close.' }), G.f('Save Word files as:', ui.select([['docx', 'Word Document (*.docx)'], ['dotx', 'Word Template (*.dotx)']], 'docx', null, { id: 'op-fmt' }), 'wide')) },
-      { label: 'Security', body: h('div', { class: 'col' }, ui.group('Privacy options', opt('removePersonal', 'Remove personal information from file properties on save', false), opt('warnTracked', 'Warn before printing, saving or sending a file that contains tracked changes or comments', false)), ui.group('File encryption options for this document', h('div', { class: 'col' }, h('label', { for: 'op-pw', text: 'Password to open:' }), pwInp, h('div', { class: 'tp-note', text: 'Saved .docx files are encrypted with AES-256, as Word 2010 and later do. Passwords are case-sensitive; if you forget it, the document cannot be recovered.' }))), h('div', { class: 'tp-note', text: 'To restrict editing instead, use Tools ▸ Protect Document.' })) },
-      { label: 'Spelling & Grammar', body: h('div', { class: 'col' }, ui.group('Spelling', opt('spell', 'Check spelling as you type', true), chk('Hide spelling and grammar errors in this document', () => !!(L.spell && L.spell.hidden), (v) => { if (L.spell) L.spell.hidden = v; }), opt('ignoreUpper', 'Ignore words in UPPERCASE', true), opt('ignoreNum', 'Ignore words with numbers', true), opt('ignoreUrl', 'Ignore Internet and file addresses', true), ui.button('Custom Dictionaries...', () => { const ta = h('textarea', { rows: 12, style: 'width:100%' }); ta.value = L.store.get('customDict', []).join('\n'); ui.dialog({ title: 'CUSTOM.DIC', width: 300, body: ta, buttons: [{ label: 'OK', primary: true, onClick: () => { L.store.set('customDict', ta.value.split(/\s+/).filter(Boolean).map((x) => x.toLowerCase())); if (L.spell) L.spell.reloadCustom(); } }, { label: 'Cancel' }] }); }, { class: 'btn small' })), ui.group('Grammar', opt('grammarAsType', 'Check grammar as you type', true), opt('grammar', 'Check grammar with spelling', true), ui.button('Readability Statistics...', () => { const r = L.spell.readability(); ui.msg(L.t('Words: {0}\nCharacters: {1}\nParagraphs: {2}\nSentences: {3}\n\nSentences per Paragraph: {4}\nWords per Sentence: {5}\nCharacters per Word: {6}\n\nPassive Sentences: {7}%\nFlesch Reading Ease: {8}\nFlesch-Kincaid Grade Level: {9}', r.words, r.chars, r.paras, r.sentences, r.sPerPara, r.wPerS, r.cPerW, r.passive, r.ease, r.grade), { icon: 'info', title: 'Readability Statistics' }); }, { class: 'btn small' })), ui.button('Recheck Document', () => { if (L.spell) { L.spell.ignoredOnce.clear(); L.spell.refreshSoon(0); } }, { class: 'btn small' })) },
-      { label: 'Track Changes', body: h('div', { class: 'col' }, ui.group('Markup', G.f('Insertions color:', insColor, 'wide')), ui.group('Balloons', G.f('Use Balloons (Print and Web Layout):', balloons, 'wide'))) },
-      { label: 'User Information', body: h('div', { class: 'col' }, G.f('Name:', uname, 'wide'), G.f('Initials:', uinit, 'wide'), h('label', { for: 'op-ua', text: 'Mailing address:' }), uaddr) },
-      { label: 'Compatibility', body: h('div', { class: 'col' }, G.f('Lay out this document as if created in:', compat, 'wide'), h('div', { class: 'tp-note', text: 'Word 2003 layout positions tables by their cell margins and keeps legacy spacing rules; later versions align tables with the text.' })) },
+      { label: 'View', body: h('div', { class: 'col' }, ui.group('Show', h('div', { class: 'grid2' }, opt('startupPane', '&Startup Task Pane', true), opt('paneFollows', 'Task pane f&ollows the selected object', true), opt('highlightShow', L.N('&Highlight'), true), lyo('showBookmarks', L.N('Boo&kmarks')), opt('statusBar', 'St&atus bar', true), opt('screenTips', L.N('Scr&eenTips'), true), lyo('fieldCodes', 'Field &codes'), opt('smartTags', 'S&mart tags', false), opt('animText', 'A&nimated text', false)), G.f('&Field shading:', fieldShade)), ui.group('Formatting marks', h('div', { class: 'grid2' }, lyo('showMarks', L.N('A&ll')), lyo('showHidden', 'H&idden text'))), ui.group('Print and Web Layout options', h('div', { class: 'grid2' }, lyo('textBoundaries', 'Te&xt boundaries'), opt('vruler', 'Vertical r&uler (Print view only)', true), opt('whiteSpace', 'White space bet&ween pages (Print view only)', true)))) },
+      { label: 'General', body: h('div', { class: 'col' }, look && look.el, opt('bgRepag', 'Back&ground repagination', true), opt('blueBg', '&Blue background, white text', false), opt('sound', 'Provide feedback with so&und', false), G.row(opt('recentOn', '&Recently used file list:', true), recentN, h('span', { text: 'entries' })), G.f('&Measurement units:', units, 'wide')) },
+      { label: 'Edit', body: h('div', { class: 'col' }, ui.group('Editing options', opt('typingReplaces', '&Typing replaces selection', true), opt('dragDrop', 'Drag-and-&drop text editing', true), opt('ctrlClick', 'Use CTRL + Click to &follow hyperlink', true), opt('smartPara', 'Use smart paragraph se&lection', true), chk('&Overtype mode', () => E.overtype, (v) => { E.overtype = v; }), opt('smartCut', '&Smart cut and paste', true)), ui.group('Cut and paste options', opt('pasteOptions', 'Show &Paste Options buttons', true))) },
+      { label: 'Print', body: h('div', { class: 'col' }, ui.group('Printing options', opt('updateFieldsOnPrint', 'Update &fields', false), opt('printBg', '&Background colors and images', true)), ui.group('Include with document', opt('printProps', 'Document &properties', false), opt('printCodes', 'Field &codes', false), opt('printHidden', '&Hidden text', false), opt('printDrawings', '&Drawing objects', true))) },
+      { label: 'Save', body: h('div', { class: 'col' }, opt('promptProps', 'Prom&pt for document properties', false), G.row(opt('autoRecover', 'Save &AutoRecover info every:', true), autoRec, h('span', { text: 'minutes' })), h('div', { class: 'tp-note', text: 'AutoRecover keeps a copy in this browser only; it is offered when Quire opens after an unexpected close.' }), G.f('Save &Word files as:', ui.select([['docx', 'Word Document (*.docx)'], ['dotx', 'Word Template (*.dotx)']], 'docx', null, { id: 'op-fmt' }), 'wide')) },
+      { label: 'Security', body: h('div', { class: 'col' }, ui.group('Privacy options', opt('removePersonal', 'Remove personal &information from file properties on save', false), opt('warnTracked', 'Warn before printing, saving or sending a file that contains &tracked changes or comments', false)), ui.group('File encryption options for this document', h('div', { class: 'col' }, h('label', { for: 'op-pw', text: 'Password to open:' }), pwInp, h('div', { class: 'tp-note', text: 'Saved .docx files are encrypted with AES-256, as Word 2010 and later do. Passwords are case-sensitive; if you forget it, the document cannot be recovered.' }))), h('div', { class: 'tp-note', text: 'To restrict editing instead, use Tools ▸ Protect Document.' })) },
+      { label: 'Spelling & Grammar', body: h('div', { class: 'col' }, ui.group('Spelling', opt('spell', 'Check spelling as you t&ype', true), chk('&Hide spelling and grammar errors in this document', () => !!(L.spell && L.spell.hidden), (v) => { if (L.spell) L.spell.hidden = v; }), opt('ignoreUpper', 'Ignore words in &UPPERCASE', true), opt('ignoreNum', 'Ignore words with num&bers', true), opt('ignoreUrl', 'Ignore Internet and &file addresses', true), ui.button('&Custom Dictionaries...', () => { const ta = h('textarea', { rows: 12, style: 'width:100%' }); ta.value = L.store.get('customDict', []).join('\n'); ui.dialog({ title: 'CUSTOM.DIC', width: 300, body: ta, buttons: [{ label: 'OK', primary: true, onClick: () => { L.store.set('customDict', ta.value.split(/\s+/).filter(Boolean).map((x) => x.toLowerCase())); if (L.spell) L.spell.reloadCustom(); } }, { label: 'Cancel' }] }); }, { class: 'btn small' })), ui.group('Grammar', opt('grammarAsType', 'Check grammar as you type', true), opt('grammar', 'Check grammar with spelling', true), ui.button('Readability Statistics...', () => { const r = L.spell.readability(); ui.msg(L.t('Words: {0}\nCharacters: {1}\nParagraphs: {2}\nSentences: {3}\n\nSentences per Paragraph: {4}\nWords per Sentence: {5}\nCharacters per Word: {6}\n\nPassive Sentences: {7}%\nFlesch Reading Ease: {8}\nFlesch-Kincaid Grade Level: {9}', r.words, r.chars, r.paras, r.sentences, r.sPerPara, r.wPerS, r.cPerW, r.passive, r.ease, r.grade), { icon: 'info', title: 'Readability Statistics' }); }, { class: 'btn small' })), ui.button('Recheck Document', () => { if (L.spell) { L.spell.ignoredOnce.clear(); L.spell.refreshSoon(0); } }, { class: 'btn small' })) },
+      { label: 'Track Changes', body: h('div', { class: 'col' }, ui.group('Markup', G.f('&Insertions color:', insColor, 'wide')), ui.group('Balloons', G.f('Use &Balloons (Print and Web Layout):', balloons, 'wide'))) },
+      { label: 'User Information', body: h('div', { class: 'col' }, G.f('&Name:', uname, 'wide'), G.f('&Initials:', uinit, 'wide'), h('label', { for: 'op-ua', text: 'Mailing address:' }), uaddr) },
+      { label: 'Compatibility', body: h('div', { class: 'col' }, G.f('&Lay out this document as if created in:', compat, 'wide'), h('div', { class: 'tp-note', text: 'Word 2003 layout positions tables by their cell margins and keeps legacy spacing rules; later versions align tables with the text.' })) },
     ], { view: 0, general: 1, edit: 2, print: 3, save: 4, security: 5, spelling: 6, track: 7, user: 8, compat: 9 }[tab] || 0);
     tabs.classList.add('options-tabs');
     ui.dialog({ title: 'Options', width: 560, body: tabs, buttons: [{ label: 'OK', primary: true, onClick: () => {
@@ -633,45 +615,41 @@
   };
 
   /* ================= Properties ================= */
+  /** File ▸ Properties (common ui.propertiesDialog); custom properties keep { type, v } (docx-write customValue) */
   G.properties = function () {
     const d = doc();
     const p = d.props;
     const st = D.stats(D.allParas(d));
-    const fld = (k, l) => { const inp = h('input', { type: 'text', id: 'pr-' + k, value: p[k] || '', style: 'width:100%' }); return { k, inp, el: G.f(l, inp, 'wide') }; };
-    const fields = [fld('title', '&Title:'), fld('subject', '&Subject:'), fld('creator', '&Author:'), fld('manager', '&Manager:'), fld('company', 'C&ompany:'), fld('category', 'Cat&egory:'), fld('keywords', '&Keywords:')];
-    const comments = h('textarea', { rows: 3, id: 'pr-desc', style: 'width:100%' });
-    comments.value = p.description || '';
-    const hb = fld('hyperlinkBase', '&Hyperlink base:');
-    const fmt = (s) => (s ? new Date(s).toLocaleString() : '');
-    const statT = h('table', { class: 'wc-table' });
-    for (const [k, v] of [['Pages:', LY.pages.length || 1], ['Paragraphs:', st.paras], ['Lines:', A().docStats().lines], ['Words:', st.words], ['Characters:', st.charsNoSp], ['Characters (with spaces):', st.chars]]) statT.appendChild(h('tr', null, h('td', { text: k }), h('td', { text: Number(v).toLocaleString() })));
-    const heads = h('div', { class: 'tp-box', style: 'max-height:200px;overflow:auto' });
+    const fmt = (x) => (x ? new Date(x).toLocaleString() : '');
     D.reindex(d);
-    heads.setAttribute('translate', 'no');   // the document's own headings
-    for (const q of d.main.paras) { const lv = D.headingLevel(d, q); if (lv) heads.appendChild(h('div', { style: `padding-left:${(lv - 1) * 12}px` }, document.createTextNode(D.plainText(q).trim()))); }
-    if (!heads.childNodes.length) heads.textContent = L.t('(no headings)');
-    /* custom */
-    const cName = h('input', { type: 'text', id: 'pr-cn', list: 'pr-cnl', style: 'width:100%' });
-    const cnl = h('datalist', { id: 'pr-cnl' }, ...['Checked by', 'Client', 'Date completed', 'Department', 'Destination', 'Disposition', 'Division', 'Document number', 'Editor', 'Forward to', 'Group', 'Language', 'Mailstop', 'Matter', 'Office', 'Owner', 'Project', 'Publisher', 'Purpose', 'Received from', 'Recorded by', 'Recorded date', 'Reference', 'Source', 'Status', 'Telephone number', 'Typist'].map((x) => h('option', { value: x })));
-    const cType = ui.select([['text', 'Text'], ['date', 'Date'], ['number', 'Number'], ['bool', 'Yes or no']], 'text', null, { id: 'pr-ct' });
-    const cVal = h('input', { type: 'text', id: 'pr-cv', style: 'width:100%' });
-    const custom = Object.assign({}, d.custom || {});
-    const cList = G.listBox([], null, { height: 110, translate: 'no', onChange: (v) => { const c = custom[v]; cName.value = v; cVal.value = c && c.v != null ? c.v : c; cType.value = (c && c.type) || 'text'; } });
-    const fillC = () => cList.setItems(Object.keys(custom).map((k) => ({ value: k, label: `${k}: ${custom[k] && custom[k].v != null ? custom[k].v : custom[k]}` })));
-    fillC();
-    /* a label and its value as shown (translated where it is set, else the document's own) */
-    const prop = ([a, b]) => h('tr', null, h('td', { text: a }), h('td', { translate: 'no' }, document.createTextNode(b)));
-    const tabs = ui.tabs([
-      { label: 'General', body: h('div', { class: 'col' }, h('div', { class: 'row', style: 'align-items:center' }, h('span', { html: L.icons.get('new') }), h('b', { translate: 'no' }, document.createTextNode(A().fileName + '.docx'))), h('table', { class: 'wc-table' }, ...[['Type:', L.t('Microsoft Word Document')], ['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last printed:', fmt(p.printed)]].map(prop))) },
-      { label: 'Summary', body: h('div', { class: 'col' }, ...fields.map((f) => f.el), h('label', { for: 'pr-desc', html: ui.ampHTML('Co&mments:') }), comments, hb.el, h('div', { class: 'tp-note', text: L.t('Template: {0}', p.template || 'Normal') })) },
-      { label: 'Statistics', body: h('div', { class: 'col' }, h('table', { class: 'wc-table' }, ...[['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last saved by:', p.lastModifiedBy || ''], ['Revision number:', String(p.revision || 1)], ['Total editing time:', L.t('{0} Minutes', p.totalTime || 0)]].map(prop)), h('div', { class: 'cd-cap', text: 'Statistics:' }), statT) },
-      { label: 'Contents', body: h('div', { class: 'col' }, h('div', { text: 'Document contents:' }), heads) },
-      { label: 'Custom', body: h('div', { class: 'col' }, cnl, G.f('&Name:', cName, 'wide'), G.f('&Type:', cType, 'wide'), G.f('&Value:', cVal, 'wide'), h('div', { class: 'tp-btns' }, ui.button('&Add', () => { if (!cName.value.trim()) return; custom[cName.value.trim()] = { type: cType.value, v: cType.value === 'number' ? +cVal.value : cType.value === 'bool' ? /^(y|yes|true|1)$/i.test(cVal.value) : cVal.value }; fillC(); }, { class: 'btn small' }), ui.button('&Delete', () => { delete custom[cName.value.trim()]; fillC(); }, { class: 'btn small' })), h('label', { text: 'Properties:' }), cList) },
-    ], 1);
-    ui.dialog({ title: L.t('{0} Properties', A().fileName), width: 420, body: tabs, buttons: [{ label: 'OK', primary: true, onClick: () => {
-      E.edit('Properties', () => { D.touchKey(d, 'props'); D.touchKey(d, 'custom'); for (const f of fields) d.props[f.k] = f.inp.value; d.props.description = comments.value; d.props.hyperlinkBase = hb.inp.value || undefined; d.custom = custom; return E.sel; });
-      A().updateTitle();
-    } }, { label: 'Cancel' }] });
+    const heads = d.main.paras.map((q) => [D.headingLevel(d, q), q]).filter(([lv]) => lv).map(([lv, q]) => '  '.repeat(lv - 1) + D.plainText(q).trim());
+    const TYPE_OF = { text: 'text', date: 'date', number: 'number', bool: 'bool' };
+    ui.propertiesDialog({
+      name: A().fileName, icon: 'new',
+      general: [['Type:', L.t('Microsoft Word Document')], ['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last printed:', fmt(p.printed || p.lastPrinted)]],
+      fields: { title: p.title, subject: p.subject, author: p.creator, manager: p.manager, company: p.company, category: p.category, keywords: p.keywords, comments: p.description },
+      template: p.template || 'Normal',
+      statistics: [['Created:', fmt(p.created)], ['Modified:', fmt(p.modified)], ['Last saved by:', p.lastModifiedBy || ''], ['Revision number:', String(p.revision || 1)]],
+      counts: [['Pages:', LY.pages.length || 1], ['Paragraphs:', st.paras], ['Lines:', A().docStats().lines], ['Words:', st.words], ['Characters:', st.charsNoSp], ['Characters (with spaces):', st.chars]],
+      contents: [[L.t('Headings'), heads]],
+      custom: Object.entries(d.custom || {}).map(([name, v]) => (v && typeof v === 'object' ? { name, type: TYPE_OF[v.type] || 'text', value: v.v, kept: true } : { name, type: 'text', value: v == null ? '' : String(v), kept: true })),
+      apply: ({ fields, custom }) => {
+        const KEY = { author: 'creator', comments: 'description' };
+        E.edit('Properties', () => {
+          D.touchKey(d, 'props');
+          for (const [k, v] of Object.entries(fields)) d.props[KEY[k] || k] = v;
+          if (custom) {
+            D.touchKey(d, 'custom');
+            /* an unchanged property keeps what was read (and the file's XML); a new or changed one its type */
+            const old = d.custom || {};
+            d.custom = {};
+            for (const c of custom) d.custom[c.name] = c.kept ? old[c.name] : { type: c.type, v: c.value };
+          }
+          return E.sel;
+        });
+        A().updateTitle();
+      },
+    });
   };
 
   /* ================= Zoom ================= */
@@ -683,30 +661,23 @@
     ui.dialog({ title: 'Zoom', width: 360, body: G.row(ui.group('Zoom to', r), h('div', { class: 'col' }, G.f('Percen&t:', pct), h('div', { class: 'cd-cap', text: 'Preview' }), pv)), buttons: [{ label: 'OK', primary: true, onClick: () => { const v = r.get(); if (v === 'pw') A().zoomTo('Page Width'); else if (v === 'tw') A().zoomTo('Text Width'); else if (v === 'wp') A().zoomTo('Whole Page'); else if (v === 'many') A().zoomTo('Two Pages'); else A().zoomTo(pct.get() + '%'); } }, { label: 'Cancel' }] });
   };
 
-  /* ================= Print (to PDF) ================= */
+  /* ================= Print (to PDF; common ui.printDialog) ================= */
   G.print = function () {
     const n = LY.pages.length || 1;
-    const range = G.radios('pr-r', [['all', '&All'], ['current', 'Curr&ent page'], ['selection', '&Selection'], ['pages', 'Pa&ges:']], 'all');
-    const pagesIn = h('input', { type: 'text', id: 'pr-pages', style: 'width:150px' });
-    pagesIn.addEventListener('focus', () => range.set('pages'));
     const what = ui.select([['doc', 'Document'], ['markup', 'Document showing markup'], ['props', 'Document properties'], ['list', 'List of markup'], ['styles', 'Styles'], ['autotext', 'AutoText entries'], ['keys', 'Key assignments']], 'doc', null, { id: 'pr-what' });
     const which = ui.select([['all', 'All pages in range'], ['odd', 'Odd pages'], ['even', 'Even pages']], 'all', null, { id: 'pr-which' });
-    const perSheet = ui.select([[1, '1 page'], [2, '2 pages'], [4, '4 pages'], [6, '6 pages'], [8, '8 pages'], [16, '16 pages']], 1, null, { id: 'pr-pps' });
-    const copies = G.num(1, { min: 1, max: 99, id: 'pr-copies' });
-    ui.dialog({
-      title: 'Print', width: 470,
-      body: h('div', { class: 'col' }, ui.group('Printer', G.f('&Name:', ui.select([['pdf', 'Save as PDF (Quire)']], 'pdf', null, { id: 'pr-printer' }), 'wide'), h('div', { class: 'tp-note', text: 'Status: Ready — the pages are saved as a PDF that you can print from any viewer.' })), G.row(ui.group('Page range', range, pagesIn, h('div', { class: 'tp-note', text: 'Enter page numbers and/or page ranges separated by commas. For example, 1,3,5–12' })), ui.group('Copies', G.f('Number of &copies:', copies))), G.row(G.f('Print &what:', what, 'wide'), G.f('P&rint:', which)), ui.group('Zoom', G.f('Pages per s&heet:', perSheet, 'wide'))),
-      buttons: [{ label: '&Options...', onClick: () => { G.options('print'); return false; } }, { label: 'OK', primary: true, onClick: () => { doPrint(); } }, { label: 'Cancel' }],
-      onOpen: (el) => el.querySelector('.dlg-foot .btn').classList.add('left'),
+    ui.printDialog({
+      count: n, current: true, selection: !!(E.sel && !E.collapsed()),
+      what: h('div', { class: 'col' }, G.f('Print &what:', what, 'wide'), G.f('P&rint:', which, 'wide')),
+      options: () => G.options('print'),
+      print: (r) => { doPrint(r); },
     });
-    async function doPrint() {
+    async function doPrint(r) {
       const w = what.value;
       if (w !== 'doc' && w !== 'markup') { printList(w); return; }
-      let pages = null;
-      const rv = range.get();
-      if (rv === 'current') pages = [Math.max(0, LY.pageOf(E.sel.f)) + 1];
-      else if (rv === 'selection' && E.sel && !E.collapsed()) { const [a, b] = E.range(); const p0 = LY.pageOf(a), p1 = LY.pageOf(b); pages = []; for (let i = p0; i <= p1; i++) pages.push(i + 1); }
-      else if (rv === 'pages') { pages = []; for (const part of pagesIn.value.split(',')) { const m = /^\s*(\d+)\s*(?:[-–]\s*(\d+))?\s*$/.exec(part); if (m) { const a = +m[1], b = m[2] ? +m[2] : a; for (let i = a; i <= b; i++) if (i >= 1 && i <= n) pages.push(i); } } }
+      let pages = r.pages;
+      if (r.range === 'current') pages = [Math.max(0, LY.pageOf(E.sel.f)) + 1];
+      else if (r.range === 'selection' && E.sel && !E.collapsed()) { const [a, b] = E.range(); const p0 = LY.pageOf(a), p1 = LY.pageOf(b); pages = []; for (let i = p0; i <= p1; i++) pages.push(i + 1); }
       if (which.value !== 'all') pages = (pages || Array.from({ length: n }, (_, i) => i + 1)).filter((i) => (which.value === 'odd' ? i % 2 === 1 : i % 2 === 0));
       const prevMarkup = LY.opts.markup;
       if (w === 'doc' && prevMarkup !== 'final') { LY.opts.markup = 'final'; LY.render(); }

@@ -1,10 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} }; require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops, output = process.env.PAGE_SETUP_RESULTS, results = [];
-const corpus = process.env.EXCEL_CORPUS || path.join(os.homedir(), 'corpora', 'excel');
+const corpus = process.env.EXCEL_CORPUS || '/work/corpora/excel';
 const files = { absent: 'poi__9b403550715d__testSharedFormulasRangeSetBlankBug.xlsx',
   properties: 'libreoffice__d5ec3c1759df__tdf55417.xlsx', printer: 'poi__b79382456457__1_NoIden.xlsx',
   chart: 'openxml-sdk__f73c5d3ccfd4__ChartSheet.xlsx' };
@@ -71,4 +71,22 @@ test('chart-sheet page edits use chart-compatible settings and undo restores abs
   O.tx(wb, 'Page Setup', () => O.setPrint(sh, { ...sh.print, paper: 9 }));
   assert.deepEqual(attrs(setup((await save(wb, 'paper')).pkg, part)), { paperSize: '9' });
   wb.undo.undo(); assert.equal(setup((await save(wb, 'paper-undo')).pkg, part), undefined);
+});
+
+test('header and footer settings with no header or footer text are saved', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', REL = 'http://schemas.openxmlformats.org/package/2006/relationships';
+  const ct = 'application/vnd.openxmlformats-officedocument.spreadsheetml.';
+  const parts = {
+    '[Content_Types].xml': `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/xl/workbook.xml" ContentType="${ct}sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="${ct}worksheet+xml"/></Types>`,
+    '_rels/.rels': `<Relationships xmlns="${REL}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    'xl/workbook.xml': `<workbook xmlns="${S}" xmlns:r="${R}"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${REL}"><Relationship Id="rId1" Type="${R}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+    'xl/worksheets/sheet1.xml': `<worksheet xmlns="${S}"><sheetData><row r="1"><c r="A1"><v>42</v></c></row></sheetData><headerFooter scaleWithDoc="0" alignWithMargins="0"/></worksheet>`,
+  };
+  const blob = await L.zip.write(Object.entries(parts).map(([name, data]) => ({ name, data })));
+  const wb = await L.xlsxRead.read(new Uint8Array(await blob.arrayBuffer()));
+  O.tx(wb, 'Edit cell', () => O.put(wb.sheets[0], 0, 0, { v: 43 }));
+  const again = await L.xlsxRead.read(await L.xlsxWrite.bytes(wb));
+  assert.equal(again.sheets[0].print.hfAlign, false, 'Align with page margins stays off');
+  assert.equal(again.sheets[0].print.hfScale, false, 'Scale with document stays off');
 });

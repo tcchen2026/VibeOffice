@@ -12,7 +12,7 @@ import xml.etree.ElementTree as E
 
 ap = argparse.ArgumentParser()
 ap.add_argument('output', type=Path)
-ap.add_argument('--corpus', type=Path, default=Path.home() / 'corpora/powerpoint')
+ap.add_argument('--corpus', type=Path, default=Path('/work/corpora/powerpoint'))
 a = ap.parse_args()
 a.output.mkdir(parents=True, exist_ok=True)
 source = a.corpus / 'poi__788ee515a5cd__45545_Comment.pptx'

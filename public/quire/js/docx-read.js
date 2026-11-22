@@ -27,7 +27,17 @@
     let zip;
     try { zip = await L.zip.read(buffer); }
     catch (e) {
-      if (e.code === 'ole' && !e.encrypted && L.docbin) return L.docbin.read(e.bytes);
+      /* a Word 97-2003 document: read as the .docx Word would write for it (common/legacy/import.js) */
+      if (e.code === 'ole' && !e.encrypted && L.legacyImport && !opts.converted) {
+        const converted = await L.legacyImport.convert(e.bytes, opts.name, 'doc', { password: opts.password });
+        const res = await W.read(converted.pkg.buffer.slice(converted.pkg.byteOffset, converted.pkg.byteOffset + converted.pkg.byteLength), Object.assign({}, opts, { converted: true }));
+        const note = L.legacyImport.notice(converted, opts.name || '');
+        if (note) (res.warnings = res.warnings || []).push(note);
+        res.doc.converted = converted.format;
+        /* a password to open (not Office's default one) stays with the document, as Word keeps it on Save As */
+        if (opts.password) { res.doc.wasEncrypted = true; res.doc.openPassword = opts.password; }
+        return res;
+      }
       throw e;
     }
     const warnings = [];
@@ -236,10 +246,29 @@
     }
 
     /* ---- run properties ---- */
+    /** Word 2010's text effects (w14): fill, outline, shadow and glow; own: the properties each stands in place of
+        (a saved w14 effect belongs to them, docs/LOSSLESS_SAVE.md), so an edit of the colour drops the fill */
+    const W14FX = 'http://schemas.microsoft.com/office/word/2010/wordml', fxCtx = { get theme() { return doc.theme; }, alphaIsTransparency: true };
+    const emuPt = (v) => (+v || 0) / 12700;
+    function textEffect(r, c) {
+      const fx = r.fx = r.fx || {};
+      switch (c.localName) {
+        case 'textFill': { const f = X.fillIn(c, fxCtx); if (f) fx.fill = f; break; }
+        case 'textOutline': { const ln = X.line(c, fxCtx); if (ln) { fx.line = ln; if (ln.t !== 'none' && X.fillIn(c, fxCtx) && X.fillIn(c, fxCtx).t === 'grad') fx.line.grad = X.fillIn(c, fxCtx); } break; }
+        case 'shadow': case 'glow': {
+          const col = X.colorOf(c, fxCtx);
+          if (col) fx[c.localName] = c.localName === 'glow' ? { r: emuPt(X.at(c, 'rad')), c: col.c, a: col.a }
+            : { blur: emuPt(X.at(c, 'blurRad')), dist: emuPt(X.at(c, 'dist')), dir: (+X.at(c, 'dir') || 0) / 60000, c: col.c, a: col.a };
+          break;
+        }
+        default: break;
+      }
+    }
     function rPr(el) {
       const r = {};
       if (!el) return r;
       for (const c of el.children) {
+        if (c.namespaceURI === W14FX) { textEffect(r, c); continue; }
         if (![L.opc.NS.w, 'http://purl.oclc.org/ooxml/wordprocessingml/main'].includes(c.namespaceURI)) continue;
         switch (c.localName) {
           case 'rStyle': r.style = at(c, 'val'); break;
@@ -293,6 +322,7 @@
           default: break;
         }
       }
+      if (r.fx) r.fx.own = { color: r.color || null, outline: !!r.outline, shadow: !!r.shadow };
       return L.preserve.properties(r, el, 'rPr', propertyContext(el));
     }
     /* a tracked move is a deletion (moveFrom) and an insertion (moveTo) to edit; the writer keeps it a move inside its ranges (preserve.js, prepareMoves) */
@@ -332,7 +362,8 @@
             if (at(c, 'line') != null) {
               const rule = at(c, 'lineRule') || 'auto';
               s.rule = rule;
-              s.line = rule === 'auto' ? num(c, 'line', 240) / 240 : tw(at(c, 'line'));
+              /* (Strict files give auto spacing as a measure too: line="12.95pt" is 259 twips, 1.08 lines) */
+              s.line = rule === 'auto' ? (at(c, 'line') == null ? 1 : tw(at(c, 'line')) * 20 / 240) : tw(at(c, 'line'));
             }
             p.sp = s;
             break;
@@ -416,6 +447,7 @@
         if (X.bool(at(s, 'default'))) st.isDefault = true;
         if (X.bool(at(s, 'customStyle'))) st.custom = true; else st.builtin = true;
         if (kid(s, 'qFormat')) st.q = true;
+        if (at(kid(s, 'aliases'), 'val')) st.aliases = at(kid(s, 'aliases'), 'val');
         if (kid(s, 'semiHidden')) st.semiHidden = true;
         if (kid(s, 'unhideWhenUsed')) st.unhide = true;
         if (kid(s, 'hidden')) st.hidden = true;
@@ -547,11 +579,15 @@
       }
     }
     const chartCache = new Map();
+    const CHART_DML = { kid: X.kid, kids: X.kids, at: X.at, num: X.num, path: X.path, desc: X.desc, fillIn: X.fillIn, line: X.line, runProps: X.runProps };
     async function loadChart(p) {
       if (chartCache.has(p)) return chartCache.get(p);
       const cx = await xml(p);
       let model = null;
-      try { model = X.chart(cx, dctx); } catch (e) { model = null; }
+      /* the model of charts read from files (common/chart-read.js); the simple one if that fails */
+      const cctx = Object.assign({}, dctx, { accent: (k) => X.schemeHex('accent' + k, dctx), fonts: { mj: doc.theme.major, mn: doc.theme.minor }, chartArea: L.chart.OFFICE_AREA });
+      try { model = L.chart.read && X.runProps ? L.chart.read(cx, CHART_DML, cctx) : null; } catch (e) { model = null; }
+      if (!model) try { model = X.chart(cx, dctx); } catch (e) { model = null; }
       /* keep the original parts so the chart round-trips unchanged */
       const files = [];
       const add = async (path) => { const e = get(path); if (e) files.push({ path, data: await e.bytes() }); };
@@ -978,6 +1014,12 @@
                 if (cb) { ff.type = 'checkbox'; ff.def = bool(kid(cb, 'default'), false); ff.checked = kid(cb, 'checked') ? bool(kid(cb, 'checked')) : ff.def; ff.size = kid(cb, 'size') ? num(kid(cb, 'size'), 'val', 20) / 2 : null; }
                 else if (ti) { ff.type = 'text'; ff.def = at(kid(ti, 'default'), 'val') || ''; ff.maxLength = num(kid(ti, 'maxLength'), 'val', 0); ff.format = at(kid(ti, 'format'), 'val') || ''; ff.textType = at(kid(ti, 'type'), 'val') || 'regular'; }
                 else if (dd) { ff.type = 'dropdown'; ff.entries = kids(dd, 'listEntry').map((e) => at(e, 'val')); ff.result = num(kid(dd, 'result'), 'val', 0); }
+                // the settings Quire doesn't edit, written back as they were
+                if (kid(ffd, 'label')) ff.label = num(kid(ffd, 'label'), 'val', 0);
+                if (kid(ffd, 'tabIndex')) ff.tabIndex = num(kid(ffd, 'tabIndex'), 'val', 0);
+                if (kid(ffd, 'enabled') && !bool(kid(ffd, 'enabled'), true)) ff.disabled = true;
+                if (kid(ffd, 'calcOnExit') && bool(kid(ffd, 'calcOnExit'), true)) ff.calcOnExit = true;
+                for (const k of ['entryMacro', 'exitMacro']) if (kid(ffd, k)) ff[k] = at(kid(ffd, k), 'val') || '';
                 if (kid(ffd, 'helpText')) ff.help = at(kid(ffd, 'helpText'), 'val');
                 if (kid(ffd, 'statusText')) ff.status = at(kid(ffd, 'statusText'), 'val');
                 item.ff = ff;
@@ -1363,6 +1405,10 @@
       it.rPr = base;
       it.w = it.w || w; it.h = it.h || h;
       if (docPr) { if (at(docPr, 'descr')) it.alt = at(docPr, 'descr'); if (at(docPr, 'name')) it.name = at(docPr, 'name'); if (at(docPr, 'title')) it.title = at(docPr, 'title'); if (X.bool(at(docPr, 'hidden'))) it.hidden = true; const hl = kid(docPr, 'hlinkClick'); if (hl) { const r = rid(hl); if (r && ctx.rels[r]) it.link = { url: ctx.rels[r].raw }; } }
+      /* room Word keeps around the object for its effects (shadow, glow, a turned picture's corners): margins inline,
+         more distance from the text when it floats */
+      const ee = kid(inl, 'effectExtent'), eff = ee && { l: emu(num(ee, 'l', 0)), t: emu(num(ee, 't', 0)), r: emu(num(ee, 'r', 0)), b: emu(num(ee, 'b', 0)) };
+      if (eff && (eff.l || eff.t || eff.r || eff.b)) it.eff = eff;
       if (inl.localName === 'anchor') it.float = floatOf(inl);
       return it;
     }
@@ -1424,6 +1470,9 @@
       if (tx) { it.tb = textBoxBlocks(tx, ctx); if (at(tx, 'id') != null) it.tbId = at(tx, 'id'); }
       const ltx = kid(wsp, 'linkedTxbx');
       if (ltx && !tx) it.tbLink = { id: at(ltx, 'id'), seq: +at(ltx, 'seq') || 1 };
+      /* text in a shape that isn't a text box (an AutoShape with text: wps:cNvSpPr without txBox) */
+      const nv = kid(wsp, 'cNvSpPr');
+      if ((tx || ltx) && !(nv && X.bool(at(nv, 'txBox')))) it.txBox = false;
       const bp = kid(wsp, 'bodyPr');
       if (bp) {
         it.ins = { l: at(bp, 'lIns') != null ? emu(at(bp, 'lIns')) : 7.2, t: at(bp, 'tIns') != null ? emu(at(bp, 'tIns')) : 3.6, r: at(bp, 'rIns') != null ? emu(at(bp, 'rIns')) : 7.2, b: at(bp, 'bIns') != null ? emu(at(bp, 'bIns')) : 3.6 };
@@ -1431,7 +1480,12 @@
         if (at(bp, 'vert') && at(bp, 'vert') !== 'horz') it.vert = at(bp, 'vert');
         if (kid(bp, 'spAutoFit')) it.autofit = true;
         const warp = kid(bp, 'prstTxWarp');
-        if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') it.warp = at(warp, 'prst');
+        if (warp && at(warp, 'prst') && at(warp, 'prst') !== 'textNoShape') {
+          it.warp = at(warp, 'prst');
+          const adj = {};
+          for (const gd of kids(kid(warp, 'avLst'))) { const m = /^val\s+(-?\d+)/.exec(at(gd, 'fmla') || ''); if (m && at(gd, 'name')) adj[at(gd, 'name')] = +m[1]; }
+          if (Object.keys(adj).length) it.warpAdj = adj;
+        }
         if (at(bp, 'wrap') === 'none') it.noWrap = true;
       }
       if (refs.fontColor) it.fontColor = refs.fontColor;
@@ -1446,10 +1500,11 @@
         const rPrEl = rEl && kid(rEl, 'rPr');
         const tf = rPrEl && kid(rPrEl, 'textFill');
         const to = rPrEl && kid(rPrEl, 'textOutline');
-        const tfill = tf ? X.fillIn(tf, mctx) : null;
+        const wctx = Object.assign({}, mctx, { alphaIsTransparency: true });   // (w14's alpha is a transparency)
+        const tfill = tf ? X.fillIn(tf, wctx) : null;
         it.wordart = { text, font: rp.font || 'Arial Black', sz: rp.sz || 36, b: rp.b || undefined, i: rp.i || undefined };
         it.fill = tfill || (rp.color && rp.color !== 'auto' ? { t: 'solid', c: '#' + rp.color, a: 1 } : { t: 'solid', c: '#000000', a: 1 });
-        if (to) { const ol = X.line(to, mctx); if (ol && ol.t !== 'none') it.line = ol; else it.line = { t: 'none' }; } else it.line = { t: 'none' };
+        if (to) { const ol = X.line(to, wctx); if (ol && ol.t !== 'none') it.line = ol; else it.line = { t: 'none' }; } else it.line = { t: 'none' };
         if (!it.warp) it.warp = 'textPlain';
         delete it.tb;
         delete it.ins;
@@ -1523,10 +1578,11 @@
     }
     function smartArtItem(relIds, mctx, w, h, ctx) {
       /* SmartArt: use the pre-rendered drawing part (shapes with DrawingML text) */
+      /* its own drawing, named by its data's dataModelExt (a part with several diagrams has a drawing for each) */
       let dpath = null;
-      const dm = ctx.rels[rid(relIds, 'dm')];
-      for (const r of Object.values(ctx.rels)) if (r.type === 'diagramDrawing') { dpath = r.target; break; }
-      void dm;
+      const dm = ctx.rels[rid(relIds, 'dm')], ext = dm && desc(xmlCache.get(dm.target), 'dataModelExt'), own = ext && ctx.rels[at(ext, 'relId')];
+      if (own && own.type === 'diagramDrawing') dpath = own.target;
+      else if (!ext) { const all = Object.values(ctx.rels).filter((r) => r.type === 'diagramDrawing'); if (all.length === 1) dpath = all[0].target; }
       const dx = dpath && xmlCache.get(dpath);
       const tree = dx && desc(dx, 'spTree');
       if (!tree) return smartArtFromData(relIds, w, h, ctx) || { t: 'img', media: null, w, h, alt: 'Diagram' };
@@ -1621,6 +1677,18 @@
         const ppr = kid(ap, 'pPr');
         const jc = { l: 'left', ctr: 'center', r: 'right', just: 'both' }[at(ppr, 'algn')] || 'center';
         const p = D.para([], { jc, sp: { a: 0, b: 0, line: 0.9, rule: 'auto' } });
+        /* the paragraph's indents, spacing (a share of its text size) and bullet, as the drawing has them */
+        const lnPct = X.path(ppr, 'lnSpc', 'spcPct');
+        if (lnPct) p.pPr.sp.line = num(lnPct, 'val', 100000) / 100000;
+        if (at(ppr, 'marL') != null || at(ppr, 'indent') != null) p.pPr.ind = { l: emu(num(ppr, 'marL', 0)), fl: emu(num(ppr, 'indent', 0)) };
+        const r0 = kid(kid(ap, 'r'), 'rPr'), size = (r0 && at(r0, 'sz') ? num(r0, 'sz', 1800) / 100 : defSz || 18) * scale;
+        for (const [k, n] of [['b', 'spcBef'], ['a', 'spcAft']]) {
+          const pct = X.path(ppr, n, 'spcPct'), pts = X.path(ppr, n, 'spcPts');
+          if (pct) p.pPr.sp[k] = L.round(num(pct, 'val', 0) / 100000 * size, 2);
+          else if (pts) p.pPr.sp[k] = num(pts, 'val', 0) / 100 * scale;
+        }
+        const bu = kid(ppr, 'buChar');
+        let bullet = bu && at(bu, 'char') ? at(bu, 'char') : null;
         for (const r of kids(ap)) {
           if (r.localName !== 'r' && r.localName !== 'br') continue;
           if (r.localName === 'br') { p.runs.push(D.item('br', { type: 'line' })); continue; }
@@ -1639,6 +1707,13 @@
           if (o.sz == null && defSz) o.sz = defSz;
           if (scale !== 1 && o.sz) o.sz = Math.max(1, Math.round(o.sz * scale * 2) / 2);
           const t = kid(r, 't');
+          if (bullet && t && t.textContent) {
+            /* the bullet hangs at the first line's indent, the text right after it (at the left indent when the bullet
+               is narrower than the hang, as SmartArt's are) */
+            const bf = kid(ppr, 'buFont');
+            p.runs.push(D.text(bullet, Object.assign({}, o, bf && at(bf, 'typeface') && !/^\+/.test(at(bf, 'typeface')) ? { font: at(bf, 'typeface') } : {})));
+            bullet = null;
+          }
           if (t && t.textContent) p.runs.push(D.text(t.textContent, o));
         }
         out.push(p);
@@ -1672,6 +1747,12 @@
       return t ? vmlTypes.get(t) || null : null;
     }
     /** fill of a VML element ({t:'none'} when unfilled) */
+    /* VML's Word border types (w10:bordertop type) by their WordprocessingML names */
+    const W10_BORDER = { dot: 'dotted', dash: 'dashed', dashDotDot: 'dotDotDash', hairline: 'single', dashedSmall: 'dashSmallGap',
+      thinThickSmall: 'thinThickSmallGap', thickThinSmall: 'thickThinSmallGap', thickBetweenThinSmall: 'thinThickThinSmallGap',
+      thinThick: 'thinThickMediumGap', thickThin: 'thickThinMediumGap', thickBetweenThin: 'thinThickThinMediumGap',
+      thinThickLarge: 'thinThickLargeGap', thickThinLarge: 'thickThinLargeGap', thickBetweenThinLarge: 'thinThickThinLargeGap',
+      HTMLOutset: 'outset', HTMLInset: 'inset' };
     function vmlFill(s, def) {
       const ty = vmlType(s);
       const filled = vBool(at(s, 'filled'), ty ? vBool(at(ty, 'filled'), def) : def);
@@ -1721,14 +1802,32 @@
         if (ct || cb || cl || cr) it.crop = { t: frac(ct), b: frac(cb), l: frac(cl), r: frac(cr) };
         if (X.bool(at(im, 'grayscale'))) it.gray = true;
         if (X.bool(at(im, 'bilevel'))) it.bw = true;
-        if (at(im, 'blacklevel')) it.bright = frac(at(im, 'blacklevel'));
-        if (at(im, 'gain')) it.contrast = frac(at(im, 'gain')) - 1;
+        // VML's blacklevel is half DrawingML's brightness and its gain is the contrast slope (L.lumFilter)
+        if (at(im, 'blacklevel')) it.bright = L.round(frac(at(im, 'blacklevel')) * 2, 5);
+        const gain = at(im, 'gain') ? frac(at(im, 'gain')) : 1;
+        if (gain !== 1 && gain > 0) it.contrast = L.round(gain >= 1 ? 1 - 1 / gain : gain - 1, 5);
         if (at(s, 'alt')) it.alt = at(s, 'alt');
+        // borders set per side in Word 97-2003 (w10:bordertop… with o:bordertopcolor; widths in eighth-points);
+        // shown, and kept in the file as they were
+        const sides = {};
+        for (const side of ['top', 'left', 'bottom', 'right']) {
+          const b = kid(s, 'border' + side), type = b && at(b, 'type');
+          if (type && type !== 'none') sides[side] = { val: W10_BORDER[type] || type, sz: (parseFloat(at(b, 'width')) || 4) / 8, color: (vColor(at(s, 'border' + side + 'color')) || '#000000').replace('#', '') };
+        }
+        if (Object.keys(sides).length) it.sides = sides;
       } else {
         let geom = { rect: 'rect', roundrect: 'roundRect', oval: 'ellipse', line: 'line', arc: 'arc' }[s.localName] || 'rect';
         if (s.localName === 'shape') geom = { 1: 'rect', 2: 'roundRect', 3: 'ellipse', 4: 'diamond', 5: 'triangle', 6: 'rtTriangle', 9: 'hexagon', 10: 'octagon', 13: 'rightArrow', 32: 'straightConnector1', 33: 'bentConnector2', 34: 'bentConnector3', 35: 'bentConnector4', 37: 'curvedConnector2', 38: 'curvedConnector3', 20: 'line', 66: 'leftArrow', 67: 'downArrow', 68: 'upArrow', 183: 'sun', 184: 'moon', 96: 'smileyFace', 74: 'heart', 12: 'star5' }[spt] || 'rect';
         const isText = spt === '202' || !!tb;
         it = { t: 'shape', w: w || 72, h: h || 36, geom, fill: vmlFill(s, geom !== 'line'), line: vmlLine(s, true) };
+        /* a freeform: its own path (or its shape type's), when no preset stands for it */
+        const vpath = s.localName === 'shape' && geom === 'rect' && !isText && (!spt || spt === '0' || spt === '100' || !/^\d+$/.test(spt)) && (at(s, 'path') || (ty && at(ty, 'path')));
+        if (vpath) {
+          const cs = (at(s, 'coordsize') || (ty && at(ty, 'coordsize')) || '21600,21600').split(',').map((v) => parseFloat(v) || 21600);
+          const co = (at(s, 'coordorigin') || (ty && at(ty, 'coordorigin')) || '0,0').split(',').map((v) => parseFloat(v) || 0);
+          const path = vmlPath(vpath, cs, co);
+          if (path) { it.geom = 'custom'; it.path = path; }
+        }
         if (geom === 'line' || /Connector/.test(geom)) {
           it.fill = { t: 'none' };
           const adj = at(s, 'adj');
@@ -1737,6 +1836,7 @@
         }
         if (tb) {
           it.tb = textBoxBlocks(tb, ctx);
+          if (spt !== '202' && !/_t202$/.test(at(s, 'type') || '')) it.txBox = false;   // an AutoShape with text, not a text box
           const ins = at(tb, 'inset');
           if (ins) { const v = ins.split(',').map((x) => (x && x.trim() ? cssLen(x) : null)); it.ins = { l: v[0] != null ? v[0] : 7.2, t: v[1] != null ? v[1] : 3.6, r: v[2] != null ? v[2] : 7.2, b: v[3] != null ? v[3] : 3.6 }; }
           else it.ins = { l: 7.2, t: 3.6, r: 7.2, b: 3.6 };
@@ -1745,7 +1845,8 @@
           if (va) it.anchor = /middle/.test(va) ? 'ctr' : /bottom/.test(va) ? 'b' : undefined;
           if (/layout-flow:\s*vertical/.test(at(tb, 'style') || '')) it.vert = 'vert';
         }
-        const tp = desc(s, 'textpath');
+        /* WordArt is a v:shape's: Word draws a v:rect's textpath as nothing, and its text box as usual */
+        const tp = s.localName === 'shape' && desc(s, 'textpath');
         if (tp && at(tp, 'string')) { const ts = styleMap(at(tp, 'style')); it.wordart = { text: at(tp, 'string'), font: (ts['font-family'] || 'Arial').replace(/["']/g, ''), b: /bold/.test(ts['font-weight'] || '') || undefined, i: /italic/.test(ts['font-style'] || '') || undefined }; it.warp = it.warp || 'textPlain'; }
         const sh = kid(s, 'shadow');
         if (sh && vBool(at(sh, 'on'), false)) { const off = (at(sh, 'offset') || '2pt,2pt').split(','); it.shadow = { c: vColor(at(sh, 'color')) || '#808080', a: 0.6, dx: cssLen(off[0] || '2pt'), dy: cssLen(off[1] || '2pt'), blur: 0 }; }
@@ -1754,6 +1855,104 @@
       if (st.flip) { if (/x/.test(st.flip)) it.flipH = true; if (/y/.test(st.flip)) it.flipV = true; }
       if (st.visibility === 'hidden') it.hidden = true;
       return it;
+    }
+    /** a VML path (v:shape's path: m l c x e t r v nf ns qb qx qy, and the arcs at ar wa wr ae al) in its coordsize units
+        from its coordorigin, as a custom geometry; null for one that uses its shape type's formulas (@n) */
+    const VML_TWO = new Set(['nf', 'ns', 'ae', 'al', 'at', 'ar', 'wa', 'wr', 'qx', 'qy', 'qb']);
+    function vmlPath(str, cs, co) {
+      if (!str || /@/.test(str)) return null;
+      const src = String(str), cmds = [];
+      for (let i = 0; i < src.length;) {
+        const ch = src[i].toLowerCase();
+        if (!/[a-z]/.test(ch)) { i++; continue; }
+        const two = src.slice(i, i + 2).toLowerCase();
+        const op = VML_TWO.has(two) ? two : ch;
+        i += op.length;
+        let j = i;
+        while (j < src.length && !/[a-z]/i.test(src[j])) j++;
+        const raw = src.slice(i, j).trim();
+        cmds.push([op, raw ? raw.split(/\s*,\s*|\s+/).map((v) => (v === '' ? 0 : parseFloat(v) || 0)) : []]);
+        i = j;
+      }
+      const subs = [];
+      let cur = null, x = 0, y = 0, sx = 0, sy = 0, quad = 0;
+      const X0 = co[0], Y0 = co[1];
+      const sub = () => { if (!cur) { cur = { cmds: [], fill: true, stroke: true }; subs.push(cur); } return cur; };
+      const P = (px, py) => [px - X0, py - Y0];
+      const move = (px, py) => { cur = null; sub().cmds.push(['M', ...P(px, py)]); x = sx = px; y = sy = py; };
+      const line = (px, py) => { if (!cur) move(x, y); cur.cmds.push(['L', ...P(px, py)]); x = px; y = py; };
+      const curve = (a, b, c, d, e, f) => { if (!cur) move(x, y); cur.cmds.push(['C', ...P(a, b), ...P(c, d), ...P(e, f)]); x = e; y = f; };
+      /* an elliptical arc as cubic curves, from angle t0 through dt (radians, y down) */
+      const arc = (cx, cy, rx, ry, t0, dt, join) => {
+        const at0 = [cx + rx * Math.cos(t0), cy + ry * Math.sin(t0)];
+        if (join) line(...at0); else move(...at0);
+        const n = Math.max(1, Math.ceil(Math.abs(dt) / (Math.PI / 2) - 1e-9)), d = dt / n, k = (4 / 3) * Math.tan(d / 4);
+        for (let m = 0; m < n; m++) {
+          const a = t0 + d * m, b = a + d;
+          const p0 = [cx + rx * Math.cos(a), cy + ry * Math.sin(a)], p3 = [cx + rx * Math.cos(b), cy + ry * Math.sin(b)];
+          curve(p0[0] - k * rx * Math.sin(a), p0[1] + k * ry * Math.cos(a), p3[0] + k * rx * Math.sin(b), p3[1] - k * ry * Math.cos(b), p3[0], p3[1]);
+        }
+      };
+      for (const [op, v] of cmds) {
+        switch (op) {
+          case 'm': move(v[0] || 0, v[1] || 0); break;
+          case 't': move(x + (v[0] || 0), y + (v[1] || 0)); break;
+          case 'l': for (let k = 0; k + 1 < v.length; k += 2) line(v[k], v[k + 1]); break;
+          case 'r': for (let k = 0; k + 1 < v.length; k += 2) line(x + v[k], y + v[k + 1]); break;
+          case 'c': for (let k = 0; k + 5 < v.length; k += 6) curve(v[k], v[k + 1], v[k + 2], v[k + 3], v[k + 4], v[k + 5]); break;
+          case 'v': for (let k = 0; k + 5 < v.length; k += 6) { const bx = x, by = y; curve(bx + v[k], by + v[k + 1], bx + v[k + 2], by + v[k + 3], bx + v[k + 4], by + v[k + 5]); } break;
+          case 'x': if (cur) { cur.cmds.push(['Z']); x = sx; y = sy; } break;
+          case 'e': cur = null; break;
+          case 'nf': sub().fill = false; break;
+          case 'ns': sub().stroke = false; break;
+          case 'qb': {
+            /* a quadratic B-spline: on-curve points halfway between its control points, the last one on the curve */
+            const pts = []; for (let k = 0; k + 1 < v.length; k += 2) pts.push([v[k], v[k + 1]]);
+            for (let k = 0; k + 1 < pts.length; k++) {
+              const end = k + 2 === pts.length ? pts[k + 1] : [(pts[k][0] + pts[k + 1][0]) / 2, (pts[k][1] + pts[k + 1][1]) / 2];
+              const c0 = pts[k];
+              curve(x + (2 / 3) * (c0[0] - x), y + (2 / 3) * (c0[1] - y), end[0] + (2 / 3) * (c0[0] - end[0]), end[1] + (2 / 3) * (c0[1] - end[1]), end[0], end[1]);
+            }
+            break;
+          }
+          case 'qx': case 'qy': {
+            /* elliptical quadrants, starting along x (qx) or y (qy) and alternating */
+            quad = op === 'qx' ? 0 : 1;
+            for (let k = 0; k + 1 < v.length; k += 2, quad ^= 1) {
+              const ex = v[k], ey = v[k + 1], K = 0.5522847498;
+              if (quad === 0) curve(x + K * (ex - x), y, ex, ey - K * (ey - y), ex, ey);
+              else curve(x, y + K * (ey - y), ex - K * (ex - x), ey, ex, ey);
+            }
+            break;
+          }
+          case 'at': case 'ar': case 'wa': case 'wr': {
+            for (let k = 0; k + 7 < v.length; k += 8) {
+              const [l, t, r, b, x1, y1, x2, y2] = v.slice(k, k + 8), cx = (l + r) / 2, cy = (t + b) / 2, rx = Math.abs(r - l) / 2 || 1e-9, ry = Math.abs(b - t) / 2 || 1e-9;
+              const a1 = Math.atan2((y1 - cy) / ry, (x1 - cx) / rx), a2 = Math.atan2((y2 - cy) / ry, (x2 - cx) / rx);
+              let dt = a2 - a1;
+              if (op[0] === 'w') { while (dt <= 0) dt += 2 * Math.PI; } else { while (dt >= 0) dt -= 2 * Math.PI; }
+              arc(cx, cy, rx, ry, a1, dt, op === 'ar' || op === 'wr');
+            }
+            break;
+          }
+          case 'ae': case 'al': {
+            for (let k = 0; k + 5 < v.length; k += 6) {
+              const [cx, cy, rx, ry, a, sw] = v.slice(k, k + 6), rad = Math.PI / 180 / 65536;
+              arc(cx, cy, rx, ry, -a * rad, -sw * rad, op === 'al');
+            }
+            break;
+          }
+          default: return null;
+        }
+      }
+      const paths = [];
+      for (const q of subs) {
+        if (!q.cmds.length) continue;
+        const last = paths[paths.length - 1];
+        if (last && last.fill === (q.fill ? 'norm' : 'none') && last.stroke === q.stroke) last.cmds.push(...q.cmds);
+        else paths.push({ w: Math.max(cs[0], 0.01), h: Math.max(cs[1], 0.01), cmds: q.cmds.slice(), fill: q.fill ? 'norm' : 'none', stroke: q.stroke });
+      }
+      return paths.length ? { paths } : null;
     }
     /** a VML group flattened into a Quire group: children mapped from the group's coordinate space into points */
     function vmlGroup(g, ctx, w, h) {
@@ -1846,6 +2045,18 @@
         if (y2 < y1) it.flipV = true;
         if (st.position === 'absolute' && !st['margin-left'] && !st.left) st['margin-left'] = Math.min(x1, x2) + 'pt';
         if (st.position === 'absolute' && !st['margin-top'] && !st.top) st['margin-top'] = Math.min(y1, y2) + 'pt';
+      } else if (s.localName === 'polyline') {
+        /* its points are where it stands: the box around them, the path inside it */
+        const raw = (at(s, 'points') || '').split(/\s*,\s*|\s+/).filter(Boolean).map(cssLen), pts = [];
+        for (let i = 0; i + 1 < raw.length; i += 2) pts.push([raw[i], raw[i + 1]]);
+        if (!pts.length) return null;
+        const x0 = Math.min(...pts.map((q) => q[0])), y0 = Math.min(...pts.map((q) => q[1]));
+        const pw = Math.max(...pts.map((q) => q[0])) - x0 || 0.5, ph = Math.max(...pts.map((q) => q[1])) - y0 || 0.5;
+        it = vmlShape(s, ctx, pw, ph);
+        it.geom = 'custom';
+        it.path = { paths: [{ w: pw, h: ph, cmds: pts.map((q, i) => [i ? 'L' : 'M', L.round(q[0] - x0, 3), L.round(q[1] - y0, 3)]), fill: 'norm', stroke: true }] };
+        if (st.position === 'absolute' && !st['margin-left'] && !st.left) st['margin-left'] = x0 + 'pt';
+        if (st.position === 'absolute' && !st['margin-top'] && !st.top) st['margin-top'] = y0 + 'pt';
       } else it = vmlShape(s, ctx, w, h);
       if (!it) return null;
       if (it.t === 'img') { const ole = kid(pict, 'OLEObject'); if (ole) it.ole = { progId: at(ole, 'ProgID') }; }
@@ -1905,7 +2116,15 @@
       for (const n of kids(x, tag)) {
         const ty = at(n, 'type');
         const id = at(n, 'id');
-        if (ty === 'separator' || ty === 'continuationSeparator' || ty === 'continuationNotice') continue;
+        if (ty === 'continuationNotice') continue;
+        /* the line above the notes, and the one above a note continued from the page before: their paragraphs set
+           how much room they take (saved from doc.keep.notes) */
+        if (ty === 'separator' || ty === 'continuationSeparator') {
+          const story = { kind, id, blocks: [] };
+          story.blocks = parseBlocks(n, Object.assign(storyCtx(rel.target, nr, story), { noteId: id }));
+          ((doc.noteSep = doc.noteSep || {})[kind] = doc.noteSep[kind] || {})[ty] = story;
+          continue;
+        }
         const story = { kind, id, blocks: [] };
         const ctx = storyCtx(rel.target, nr, story);
         ctx.noteId = id;
@@ -1914,6 +2133,12 @@
         finishStory(story, ctx);
         (kind === 'fn' ? doc.fn : doc.en)[id] = story;
       }
+    }
+    /* the font table: what stands in for a font this computer doesn't have (L.fontHints, common/core.js) */
+    const ftRel = relOfType('fontTable'), ft = ftRel && await xml(ftRel.target);
+    if (ft) for (const f of kids(ft, 'font')) {
+      const name = at(f, 'name'), alt = kid(f, 'altName'), fam = kid(f, 'family'), pitch = kid(f, 'pitch');
+      if (name && !L.fontHints.has(L.fontKey(name))) L.fontHints.set(L.fontKey(name), { alt: alt ? at(alt, 'val') : null, family: fam ? at(fam, 'val') : null, pitch: pitch ? at(pitch, 'val') : null });
     }
     await notesPart('footnotes', 'fn', 'footnote');
     await notesPart('endnotes', 'en', 'endnote');

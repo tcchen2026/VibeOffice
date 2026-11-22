@@ -54,14 +54,28 @@ extends the last one; F4 to cycle `$`), colour-coded reference highlights,
 AutoComplete from the column, AutoCorrect, AutoFill by dragging the fill handle (numbers, dates,
 weekdays, months, quarters, custom lists), Ctrl+Enter and Alt+Enter.
 
-**View.** Normal and Page Break Preview (drag the blue page breaks), the task pane (while open it shows
+**View.** Normal and Page Break Preview (drag the blue page breaks), the task pane (it shows
 Chart, Picture or Drawing Tools for a selected object; docs/suite.md), the eight
 toolbars (Standard, Formatting, Borders, Chart, Drawing, Formula Auditing, Reviewing, List), formula
-bar, status bar, Header and Footer, Comments, Full Screen and Zoom (10–400 %, Fit Selection).
+bar, status bar, Header and Footer, Comments, Full Screen and Zoom (10–400 %, Zoom to Selection; Normal, Page
+Break Preview and the zoom slider are also at the right of the status bar, docs/suite.md).
 
 **Insert.** Cells, Rows, Columns, Worksheet, Chart (the four-step Chart Wizard), Symbol, Page Break,
 Function (Insert Function and Function Arguments with live results and help for every function),
-Name (Define, Paste, Create, Apply), Comment, Picture from file, AutoShapes, Text Box, Hyperlink. Open
+Name (Define, Paste, Create, Apply), Comment, Picture (Clip Art from the suite's own clips in the task pane, or from a file), AutoShapes (the
+AutoShapes menu: lines and arrows, basic shapes, block arrows, flowchart, stars and banners, callouts, action buttons),
+Text Box, Hyperlink. The Drawing toolbar has Excel 2003's AutoShapes, Line, Arrow, Rectangle and Oval; a line or an
+arrow keeps the direction it is dragged in (Shift: level, upright or at 45°) and is saved with it (`flipH`/`flipV`), an
+arrow with its head (`tailEnd`), and a new shape is named as Excel names it ("5-Point Star 4"). Arrowheads in files are
+drawn. A shape from the file that Ledger writes itself after an edit (Format AutoShape, its text typed) keeps what
+the edit didn't touch: its rotation (a quarter-turned shape with its size the other way round, as Office stores it),
+flips, arrowheads, adjustments, a freeform's geometry (it was written as `prst="custom"`), its style and the fill,
+line and effects it came with unless one is set, its text body and runs while its text is the same; a group stays
+whole (Format sets its size and properties, not colours; it was written as one shape, losing the others), and it is
+drawn as its members, shapes, lines, pictures and groups within it, each where the group puts it (it was drawn as one
+rectangle over the group). Excel 2016
+opens all 7 files of the check round without a repair prompt, and edited copies of three corpus workbooks (a group of
+freeforms, rotated lines and text boxes, adjusted presets) print pixel-identical to their unedited saves. Open
 Hyperlink goes to a reference in the workbook; a web, mail or file address is shown to copy, never opened
 (docs/suite.md, Hyperlinks).
 
@@ -114,12 +128,18 @@ searchable topics, the keyboard-shortcut reference and a function reference for 
 
 - The Chart Wizard makes Column, Bar, Line, Pie, XY (Scatter), Area and Doughnut charts in the Excel
   2003 palette, embedded or on a chart sheet. Charts follow their data as you type.
+- Charts from files are drawn as Excel draws them (the drawing Lectern uses, `common/chart-draw.js`): their own
+  colours and markers, a secondary axis, fixed axis bounds and units, blank cells as gaps, data labels, 3-D columns,
+  exploded pies, radar and bubble charts, a chart area without formatting white with a grey border. All 106 charts of
+  the 61 corpus workbooks that have them are read so; seven, printed by Excel 2016, agree in their scales, series,
+  markers and labels. A chart edited here is drawn from what Ledger saves of it (its type, series, colours, titles).
 - Charts in opened files are drawn from their own definitions (3-D charts flat; radar and stock charts
   as lines; bubble charts as scatter) and are saved back unchanged unless you edit them.
 - Pictures (PNG, JPEG, GIF, BMP, SVG and Windows metafiles — EMF and WMF are drawn by Ledger's own
   metafile player), AutoShapes and text boxes: move, resize, copy, order, Format Object; their text is edited in
   place (a click in a text box, or on the text of a selected AutoShape, puts the caret there; a text box moves by its
-  edge).
+  edge). A picture's grayscale, black and white, transparency, brightness and contrast show as Excel draws them
+  (the brightness and contrast curve measured in Word and PowerPoint 2016; docs/quire.md, Rendering notes).
 - Conditional formatting from newer files is shown too: data bars, colour scales and icon sets
   (including the Excel 2010 sets and custom icon combinations), and sparklines.
 
@@ -131,6 +151,30 @@ headings, page order), automatic and manual page breaks (drag them in Page Break
 Preview with zoom and margin guides, and Print, which produces a PDF of the chosen pages because a web page cannot drive the
 printer itself.
 
+PDF pages keep the worksheet's picture at 300 dpi (at most 40 megapixels per page),
+with text you can find, select and copy. The text follows displayed cell values,
+including number formats, wrapping, shrink-to-fit, rotation, headers and footers;
+clipped suffixes and hidden rows stay out. Repeated print titles copy in row order.
+Charts and shapes contribute their printed labels. The text layer embeds no font
+files and does not change the page picture.
+
+Cell hyperlinks remain clickable, including merged cells and repeated print titles.
+Links to cells and named ranges go to their exported page; omitted targets have no
+link. Each sheet has a sidebar bookmark at its first exported page. Top-level
+`HYPERLINK` formulas keep their target and displayed label; a `HYPERLINK` nested
+inside another function is not yet exported as a link. Navigation checks
+(2026-11-09) cover five public workbooks against Excel 2016 and LibreOffice: all
+126 pages retain identical pictures and extracted text. Native Chromium and Firefox
+viewers follow the internal and external links and show the sheet bookmarks.
+
+Measured in Chromium (2026-11-07): all 19 pages from seven public workbooks retain
+identical JPEGs and rendered pixels, and all 1,469 collected tokens extract with
+Poppler. Their page counts match Excel 2016 and LibreOffice. The first 12 pages of
+a 34.3 MB workbook export in 1.56 seconds versus 1.36 before the text layer; peak
+renderer memory falls from 951 MB to 742 MB. PDFium can merge overlapping chart
+labels and mishandle an emoji beside Arabic; these reader limits do not alter the
+visible PDF.
+
 ## File formats
 
 | Format | Open | Save |
@@ -141,8 +185,8 @@ printer itself.
 | CSV `.csv`, text `.txt` / `.tsv` / `.prn` | yes: UTF-8, UTF-16 and Windows-1252 detected; the Text Import Wizard for delimited and fixed-width text | yes: CSV (UTF-8) and tab-delimited text, what each cell shows, as Excel does |
 | XML Spreadsheet 2003 `.xml` | yes | yes |
 | Web Page `.htm` / `.html` | yes: each table on the page becomes a sheet | yes: one self-contained page per workbook, with its own security policy (no scripts) |
-| PDF | — | yes |
-| Excel 97–2003 `.xls` | no — Ledger explains how to convert it | no |
+| PDF | — | yes; page pictures with searchable, selectable text, cell links and sheet bookmarks |
+| Excel 97-2003 Workbook `.xls`, Template `.xlt` | yes: converted on opening to the `.xlsx` Excel would write (values, styles, sheets and views, formulas, names, links to other workbooks, comments, hyperlinks, data validation, conditional formatting, filters, print settings and protection, pictures, AutoShapes, groups, text boxes and charts, chart sheets too; pivot tables not yet); a message names what wasn't converted, and Save asks for an `.xlsx` name (`.xlsm`, or `.xltm` for a template, when it has macros: its VBA project is kept byte for byte with the workbook's and sheets' code names, never run; all 100 in the corpus). A workbook with a password to open asks for it (XOR obfuscation, RC4 and RC4 CryptoAPI encryption) and is saved encrypted with it, as Excel keeps it on Save As; one encrypted with Excel's default password (a workbook protected only against changes) opens without asking and is saved without a password to open | no |
 
 Passwords are handled in the browser (WebCrypto plus Ledger's own AES and SHA code), so the page must
 be served over https or from localhost. A workbook opened with its password keeps it when saved.
@@ -155,7 +199,7 @@ with no new differences. Across **6,589** attempted states, **6,326** pass the p
 check, **246** fail and **17** are excluded. Failures include
 unrenderable originals, missing outputs, conversion errors/timeouts and count differences. This does
 not establish visual fidelity for every workbook. All five saved-render failures also fail or time
-out in their originals. Reports: `~/corpora/results/lossless-final-984eaf3/ledger/`. The layout
+out in their originals. Reports: `/work/corpora/results/lossless-final-984eaf3/ledger/`. The layout
 correction restores the original counts for `tdf66668` (two pages) and `pivottable_tabular_mode`
 (four). Signed drawing offsets are retained, and empty cells retain their original style identity
 even when it maps to the model's default style. These cells follow row shifts and undo; clearing
@@ -165,8 +209,8 @@ count corrections. Office batch 7 file 07 passed. File 08 and its untouched Exce
 repair; removing the source recovery flag does not resolve it. An Office-authored replacement with
 the same blank-cell style behavior (`tableStyle.xlsx`, B7/C7) passes Excel, package/SDK and LibreOffice.
 The source failure remains a documented exception. Focused evidence is in
-`~/corpora/results/ledger-layout-final-2026-10-09/`.
-The isolation and accepted replacement are recorded in `~/corpora/results/office-batch-7-repair-2026-10-09/`.
+`/work/corpora/results/ledger-layout-final-2026-10-09/`.
+The isolation and accepted replacement are recorded in `/work/corpora/results/office-batch-7-repair-2026-10-09/`.
 The remaining three count differences are `tdf118668` (invalid source sheet visibility),
 `Photo Formats - CGM-O12-XL-Pictures` (unresolved reflow despite retained picture formatting), and
 `clusterfuzz-testcase-minimized-POIXSSFFuzzer-5937385319563264` (a damaged source ZIP member).
@@ -186,7 +230,7 @@ attempts pass. Their 14 saved states pass the SDK independently with zero errors
 issues; comparisons against the unreadable originals remain failed. Both saves open in LibreOffice:
 the readable original keeps its one page, while the unreadable original has no comparable count.
 The pre-release conversion passed Excel in Office batch 7 files 03–04. Evidence:
-`~/corpora/results/ledger-preview-schema-2026-10-09/`. The automatic-height sample passed Excel in
+`/work/corpora/results/ledger-preview-schema-2026-10-09/`. The automatic-height sample passed Excel in
 Office batch 5.
 
 Ordinary pictures now retain image effects, recolouring, geometry, fills, borders, styles and
@@ -198,19 +242,26 @@ edits, copies, undo/redo and recovery. The picture-format workbook opens in Libr
 its separate 19→17-page layout difference. Invalid source sheet visibility, which accounts for another
 remaining count difference, now has an explicit conversion notice. These corrections are included in
 the `984eaf3` full refresh; Office batch 7 file 06 passed Excel. Focused evidence is in
-`~/corpora/results/lossless-evening-review-2026-10-09/`.
+`/work/corpora/results/lossless-evening-review-2026-10-09/`.
 
 Page setup now retains its original absence, per-property values and printer-setting relationships.
 Cell edits no longer introduce a portrait orientation into a sheet that omitted page setup. Seven
 public save/edit/draft inputs produce 49 passing package/SDK states, with all seven unedited render
 pairs retaining their original page counts. Sixteen distinct command states cover paper/quality
 edits, chart sheets, history and copies.
+
+Chart sheets keep their headers and footers, code names (which macros refer to), `published` flags and
+protection, and chart frames their grouping and other locks, creation IDs, titles, alt text, hyperlinks and macros
+(2026-11-06; found in a converted `.xls`). Before, a save dropped all of them: across the corpus 14 chart sheets'
+header and footer text, 48 code names and 8 protections, and the locks of 24 chart frames, 19 creation IDs and 6
+hyperlinks; now every one survives (`tests/ledger/chart-frames.test.js`), and Excel 2016 opens the five saves of the
+check round without a repair prompt.
 The `984eaf3` refresh completes all 2,853 driver attempts and 6,589 package/SDK states with
 unchanged statuses and zero added diagnostics; independent cell comparisons are also unchanged.
 Its full LibreOffice pass resolves 34 earlier count differences. Office batch 6 files 01–04 cover absence,
 paper/quality edits, copied printer relationships and scoped namespace directives; all four pass
 focused package/SDK and LibreOffice checks and are accepted in Excel. Evidence:
-`~/corpora/results/ledger-page-setup-2026-10-09/`, `ledger-final-3cb0cd2/` and
+`/work/corpora/results/ledger-page-setup-2026-10-09/`, `ledger-final-3cb0cd2/` and
 `office-final-corrections-2026-10-09/`.
 
 Ledger regenerates worksheets and keeps original package dependencies, workbook settings, style
@@ -270,10 +321,10 @@ hoist fragment declarations to their root; opaque dependencies remain byte-ident
 All 15 suite batch files open in LibreOffice with unchanged counts. Strict conversion passes
 all **23 Strict workbooks / 92 emitted states** against original package/SDK diagnostics and keeps
 its notice through draft recovery; the Strict Excel sample passed Office batch 2.
-Reports, failed attempts and historical measurements: `~/corpora/results/next-plan-head-2026-10-08/`
-and `~/corpora/results/strict-transitional-2026-10-08/`. Current full results:
-`~/corpora/results/lossless-final-984eaf3/ledger/`; feature edit checks are in
-`~/corpora/results/ledger-group-2026-10-09/` and `~/corpora/results/review-fixes-2026-10-09/`.
+Reports, failed attempts and historical measurements: `/work/corpora/results/next-plan-head-2026-10-08/`
+and `/work/corpora/results/strict-transitional-2026-10-08/`. Current full results:
+`/work/corpora/results/lossless-final-984eaf3/ledger/`; feature edit checks are in
+`/work/corpora/results/ledger-group-2026-10-09/` and `/work/corpora/results/review-fixes-2026-10-09/`.
 The convention scan has 192 signatures: three additions to the preceding writer retain a Strict
 picture's round-rectangle adjustment and duotone colour/order in Transitional vocabulary. The
 subtrees otherwise match the source and passed Excel in batch 7. Scoped
@@ -281,10 +332,10 @@ subtrees otherwise match the source and passed Excel in batch 7. Scoped
 original processing scope; the page-setup form passed Excel in batch 6. The rebuilt 15-file **Office batch 3**
 uses `56de065` and passes package/SDK and LibreOffice with expected counts, with explained changes
 against the previous handoff; **all 15 samples passed Excel**. File 04 also checks the root-comment
-edit correction measured in `~/corpora/results/thread-root-edit-2026-10-09/`; its updated sample keeps
+edit correction measured in `/work/corpora/results/thread-root-edit-2026-10-09/`; its updated sample keeps
 the reply and mention after editing, shifting and copying the thread. A fresh LibreOffice check
 of the exact accepted batch-3 and batch-5 files also passes with expected page counts; hashes and
-results are in `~/corpora/results/office-accepted-2026-10-09/`.
+results are in `/work/corpora/results/office-accepted-2026-10-09/`.
 
 ### Package, styles and strings: edit behavior
 
@@ -352,7 +403,7 @@ package/SDK diagnostics; unchanged definitions and records retain their bytes. T
 draft/recovery hooks keep a source-edit refresh request and its notice. Two samples open in
 LibreOffice with the same two-page counts. These are focused measurements, separate from the frozen
 full-corpus figures above; The batch-3 Excel samples are accepted. Reports:
-`~/corpora/results/review-fixes-2026-10-09/current-pivots/`.
+`/work/corpora/results/review-fixes-2026-10-09/current-pivots/`.
 
 ### Threaded comments: edit behavior
 
@@ -373,8 +424,8 @@ console errors. Two LibreOffice samples retain their one-page counts. The batch-
 and failed pre-fix SDK attempts are retained with the reports; mention coverage is not claimed from
 the public corpus. Two current browser draft/recovery states also pass package/SDK comparison;
 the root-edit Office sample opens in LibreOffice with the same one-page count.
-Reports: `~/corpora/results/review-fixes-2026-10-09/guid-threads/` and
-`~/corpora/results/thread-root-edit-2026-10-09/`.
+Reports: `/work/corpora/results/review-fixes-2026-10-09/guid-threads/` and
+`/work/corpora/results/thread-root-edit-2026-10-09/`.
 
 ### Controls, embedded objects and VML: edit behavior
 
@@ -398,8 +449,8 @@ one-page counts. Core checks pass and all four pages load without console errors
 font requests remain). The 40-workbook feature sweep keeps **396 dependent parts byte-identical**;
 13 ActiveX XML parts in a Strict input undergo the approved Transitional conversion. One unrelated
 unsupported drawing in `stress020.xlsx` remains reported. The batch-3 Excel samples are accepted.
-Current focused reports: `~/corpora/results/review-fixes-2026-10-09/current-objects/`;
-the broader sweep and browser reports remain in `~/corpora/results/ledger-preservation-2026-10-08/`.
+Current focused reports: `/work/corpora/results/review-fixes-2026-10-09/current-objects/`;
+the broader sweep and browser reports remain in `/work/corpora/results/ledger-preservation-2026-10-08/`.
 
 ### Slicers and timelines: edit behavior
 
@@ -420,7 +471,7 @@ states** after real copy/paste and undo/redo. The table-sheet copy and moved tim
 LibreOffice (4 and 3 pages respectively); timeline undo/redo also opens. Copies of copied views keep
 independent GUIDs, stable across repeated saves. The three supplemental inputs are pinned by hash and
 commit through `tools/corpora.sh DIR ledger-features`, separate from the 951-file main corpus.
-Current focused reports are in `~/corpora/results/review-fixes-2026-10-09/guid-slicers/` and
+Current focused reports are in `/work/corpora/results/review-fixes-2026-10-09/guid-slicers/` and
 `guid-browser/`. The batch-3 Excel samples are accepted.
 
 ### Worksheet extensions: edit behavior
@@ -441,8 +492,8 @@ with their original 3/5 page counts; history states also open. Copied rule GUIDs
 time and stay stable across repeated saves. The extension inventory records all 951 attempts, including 25 ZIP/XML failures.
 `empty_ext_defined_name.xlsx` remains an SDK failure because its original external-link content
 type is invalid; it is not counted as a passing comparison. Current focused reports are in
-`~/corpora/results/review-fixes-2026-10-09/guid-extensions/`; the broader inventory and browser reports
-remain in `~/corpora/results/ledger-preservation-2026-10-08/extension-*`. The batch-3 Excel samples are accepted.
+`/work/corpora/results/review-fixes-2026-10-09/guid-extensions/`; the broader inventory and browser reports
+remain in `/work/corpora/results/ledger-preservation-2026-10-08/extension-*`. The batch-3 Excel samples are accepted.
 
 Namespace declarations still move to the part root. A local `mc:Ignorable` list remains where
 `PreserveAttributes`, `PreserveElements` or `ProcessContent` requires it on the same element; the
@@ -466,8 +517,8 @@ draft/recovery states**. Edited and copied samples and three history states open
 with unchanged page counts. The ten-file query sweep has no new package issues; nine SDK
 comparisons pass and one original (`queryTableExport.xlsx`) has a missing dependency and cannot
 be validated. Ledger does not execute a query or enable refresh. Current focused reports:
-`~/corpora/results/review-fixes-2026-10-09/guid-queries/`; sweep and browser reports:
-`~/corpora/results/ledger-preservation-2026-10-08/query-*`.
+`/work/corpora/results/review-fixes-2026-10-09/guid-queries/`; sweep and browser reports:
+`/work/corpora/results/ledger-preservation-2026-10-08/query-*`.
 The full Ledger group measurement is reported above; the batch-3 Excel samples are accepted.
 
 ## Compatibility testing
@@ -495,10 +546,31 @@ zoom, scrolling, frozen panes, hidden anchors and an XML Spreadsheet 2003 merge;
 workbooks fail before the fix, and the fifth fails with the new drawing alone. The fixtures and API
 evidence are in `tests/from-issues/22/`.
 
-Formula recalculation, CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`.
-Their earlier broad-corpus measurements are archived with the run history, rather than mixed into
-the current OOXML preservation figures. Current preservation does not imply exact print layout or
-support for every formula or external data source.
+**Recalculation against the values Excel stored** (`tests/ledger/recalc1.js` over a corpus, 2026-11-06): in the
+744 workbooks of the OOXML corpus that Excel saved (the SDK's three Performance files, whose stored values were never
+computed, left out), Ledger's results agree with **44,159 of 44,493** formula cells (99.25%); in the 391 Excel 97-2003
+workbooks Excel saved, opened by conversion, with **58,191 of 59,762** (97.37%; 99.65% without one workbook whose
+1,385 differences are `TODAY()` stamps and a French `CELL("adresse")`). What remains is mostly the clock, stale stored
+values, a German or French Excel's own number formats and function words, and legacy implicit intersection. Lookup
+functions (Excel's approximate search on unsorted data, `VLOOKUP`'s argument rules), `INDEX` over an array expression,
+`COUNTIF` criteria and the database functions' criteria follow the results Excel stored in POI's test workbooks; a
+computed criterion may name the database's fields (`=age<7`, as Excel's Advanced Filter takes column labels), which
+stand for each record's values while the criterion cell itself shows `#NAME?`, and `=TRUE` finds the logical value
+(POI's `DGet.xls`: its 163 formulas give what Excel 2016 gives when it recalculates them; one stored result is stale).
+
+**Excel 97-2003 workbooks** (the converter's whole corpus, 2026-11-06, `tests/legacy/`): of 764 `.xls`/`.xlt` files,
+702 convert (703 workbooks with one named `.doc`) and 62 are refused with a message saying why (older BIFF versions,
+damaged files, unknown passwords); none fails otherwise. All 703 converted workbooks pass the Open XML SDK and the 31
+tried in Excel 2016 open without a repair prompt; their cells agree with the stored values in 2,268,371 of 2,268,372
+and their formulas' cached results in 97,699 of 97,699. The 1,484 formulas still left as values (DDE links, links to
+files in a machine's XLSTART folder, Excel 4 macro names, broken arrays and a few ambiguous names) keep their results
+and are named in the message. A 14 MB workbook of 800,000 cells opens in 2.3 s with a peak of 744 MB in Chromium's
+renderer (3.0 s and 1.12 GB before the converter shared its byte windows). Workbooks with macros (100
+in the corpus) become `.xlsm` with every stream of their VBA project; LibreOffice opens, saves and reopens the 32
+macro conversions checked (Office 2016's acceptance of macro files is untested: the test machine takes none).
+
+CSV, XML Spreadsheet 2003 and UI harnesses remain in `tests/ledger/`. Current preservation does not imply exact print
+layout or support for every formula or external data source.
 
 ## Known limitations
 
@@ -510,7 +582,8 @@ support for every formula or external data source.
   execute them or maintain their query-specific edit semantics.
 - Chart editing covers the Chart Wizard types; other chart types from files are shown and kept but
   can only be replaced, not edited in place. Surface charts are not drawn.
-- One window per workbook (Window ▸ New Window is not available); the binary `.xls` format is not read.
+- One window per workbook (Window ▸ New Window is not available).
+- Excel 97-2003 `.xls` files are opened by conversion and saved as `.xlsx` (`.xlsm` when they have macros, which are kept and never run).
 - Saved as XML Spreadsheet 2003, a merged range whose top-left cell holds nothing (no value, no format)
   is not written: that format records a merge on its top-left cell.
 - Spelling is English only (U.S. and U.K.).
@@ -530,7 +603,8 @@ support for every formula or external data source.
 | `js/slicers.js` | Slicer/timeline frames, source-cache ownership, sheet/workbook extension links and copied view identities |
 | `js/extensions.js` | Extended rule/validation/sparkline ownership, per-property merges, copied identities and unknown worksheet extension entries |
 | `js/tables.js` | Table/column fragments and identities, query fields and copies, deleted-field retention and structural edits |
-| `../common/core.js`, `../common/zip.js` | Utilities, file saving, PDF writer, ZIP reader/writer |
+| `../common/core.js`, `../common/zip.js` | Utilities, file saving, PDF entry point, ZIP reader/writer |
+| `../common/pdf.js`, `../common/pdftext.js` | Loaded on PDF export: writer with links and outlines, canvas text recorder and SVG text collection; `print.js` maps cell links and sheet bookmarks to the exported pages |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js`, `js/xml.js` | Shared XML parser and OOXML preservation core; `js/xml.js` aliases the shared tree as `L.xml`. Original package ownership, settings merges and style/string identities are implemented. |
 | `../common/sha.js`, `../common/crypto.js` | SHA-1/256/384/512 and AES, Office document encryption (standard and agile) |
 | `js/model.js`, `js/ops.js` | Workbook model (sparse rows, shared styles, names, tables), undo history, every editing operation |

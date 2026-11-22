@@ -13,6 +13,11 @@ import { spawnSync, execFileSync } from 'node:child_process';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const git = (...a) => execFileSync('git', a, { cwd: root, encoding: 'utf8' }).trim();
 const args = process.argv.slice(2), dry = args.includes('--dry'), rev = args.find((a) => !a.startsWith('--'));
+/* (an option it doesn't know, --help among them, prints the usage above instead of running anything) */
+if (args.some((a) => a.startsWith('-') && a !== '--dry')) {
+  console.log(fs.readFileSync(new URL(import.meta.url), 'utf8').split('\n').filter((l) => l.startsWith('//')).map((l) => l.slice(3)).join('\n'));
+  process.exit(args.includes('--help') || args.includes('-h') ? 0 : 2);
+}
 
 /* the files changed */
 const lines = (s) => s.split('\n').filter(Boolean);
@@ -53,7 +58,7 @@ const RULES = [
   [/^tools\/ooxml\/.*\.py$/, ['tests/ooxml/check.test.mjs', 'tests/ooxml/audit.test.mjs']],
   [/^public\/common\/scout\//, ['tests/scout.test.mjs']],
   [/^public\/[^/]+\/js\/painter\.js$/, ['tests/ui/painter.test.mjs']],
-  [/^public\/common\/(lang|i18n|suite)\.js$|^public\/(?:index|(?:quire|ledger|lectern)\/index)\.html$|^tools\/ledger\/build\/template\.html$/, ['tests/chinese-language.test.mjs']],
+  [/^public\/common\/(lang|i18n|suite)\.js$|^public\/(?:index|lite|(?:quire|ledger|lectern)\/index)\.html$|^tools\/ledger\/build\/template\.html$/, ['tests/chinese-language.test.mjs']],
   [/^tools\/i18n\.mjs$|^tools\/ledger\/build\/template\.html$/, ['tests/i18n.test.mjs']],
   [/^public\/common\/core\.js$|^public\/ledger\/js\/model\.js$/, ['tests/fonts.test.mjs']],
   [/^public\/common\/locales\.js$|^public\/quire\/js\/(app|dmodel|docx-write)\.js$|^public\/ledger\/js\/(app|xlsx-write)\.js$|^public\/lectern\/js\/(model|pptx-write)\.js$/, ['tests/locales.test.mjs']],

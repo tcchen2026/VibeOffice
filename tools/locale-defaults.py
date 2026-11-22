@@ -1,6 +1,6 @@
 """New documents' defaults per language, as Office writes them (docs/i18n.md, Defaults; public/common/locales.js).
 
-  python3 tools/locale-defaults.py [~/corpora]
+  python3 tools/locale-defaults.py [/work/corpora]
 
 Scans the Office-saved files of the corpora (tools/corpora.sh) for the ones a Japanese, Korean, Chinese, French or German
 Office made, and prints the most common value of each default with its count:
@@ -19,7 +19,7 @@ language of its default text style.
 """
 import collections, os, re, sys, zipfile
 
-CORPORA = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else '~/corpora')
+CORPORA = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else '/work/corpora')
 LANGS = ['ja', 'ko', 'zh-CN', 'zh-Hant', 'fr', 'de']
 # the built-in styles whose font or size Quire's English set names (public/quire/js/dmodel.js, D.builtinStyles)
 STYLES = ['heading %d' % i for i in range(1, 10)] + ['Title', 'Subtitle', 'Body Text 3', 'Plain Text', 'caption', 'footnote text',

@@ -19,8 +19,17 @@
   const kids = (el, n) => (el ? el.children.filter((c) => !n || c.localName === n) : []);
   const kid = (el, n) => (el ? el.children.find((c) => c.localName === n) || null : null);
   const fOf = (el) => { if (!el) return null; const all = el.getElementsByTagName('*'); const f = all.find((e) => e.localName === 'f'); return f ? f.textContent.trim() : null; };
+  /* the DrawingML readers the shared chart reader takes (common/chart-read.js) */
+  const dmlOf = () => { const X = L.dml; return { kid: X.kid, kids: X.kids, at: X.at, num: X.num, path: X.path, desc: X.desc, fillIn: X.fillIn, line: X.line, runProps: X.runProps }; };
   XC.read = function (doc, wb, sh) {
-    const model = L.dml && L.dml.chart ? L.dml.chart(doc, themeCtx(wb)) : null;
+    /* the model of charts read from files (v2: secondary axes, markers, blanks, scaling, labels…); the simple one if that fails */
+    const ctx = themeCtx(wb), t = wb && wb.theme;
+    ctx.accent = (k) => ctx.theme.colors['accent' + k];
+    ctx.fonts = { mj: (t && t.major) || 'Cambria', mn: (t && t.minor) || 'Calibri' };
+    ctx.chartArea = L.chart.OFFICE_AREA;
+    let model = null;
+    if (L.chart.read && L.dml && L.dml.runProps) { try { model = L.chart.read(doc, dmlOf(), ctx); } catch (e) { model = null; } }
+    if (!model && L.dml && L.dml.chart) model = L.dml.chart(doc, themeCtx(wb));
     if (!model) return null;
     /* every formula in document order, so edited references can be written back in place */
     model.refs = doc.getElementsByTagName('*').filter((e) => e.localName === 'f').map((e) => e.textContent.trim());
@@ -39,7 +48,10 @@
     model.cacheCats = (model.cats || []).slice();
     model.imported = true;
     const v3 = kid(kid(doc, 'chart'), 'view3D');
-    if (v3) model.view3D = true;
+    if (v3) model.view3D = model.view3D || true;
+    /* Ledger's own fields for the chart and plot area ({t, color}); the v2 model's fills keep theirs (c) too */
+    const solid = (f) => (f && f.t === 'solid' ? Object.assign({}, f, { color: f.c }) : f);
+    if (model.v === 2) { model.bg = solid(model.bg); model.plotBg = solid(model.plotBg); return model; }
     const spPr = kid(plot, 'spPr');
     const pf = spPr && kid(spPr, 'solidFill');
     if (pf) { const c = L.dml.colorOf(pf, themeCtx(wb)); if (c) model.plotBg = { t: 'solid', color: c.c }; }
@@ -85,18 +97,24 @@
   /** the model to draw: cached values replaced by the cells' current values */
   XC.resolve = function (chart, wb, sh) {
     const m = Object.assign({}, chart);
-    let cats = null;
+    const v2 = chart.v === 2;
+    let cats = null, catNums = null;
     m.series = (chart.series || []).map((s, i) => {
       const o = Object.assign({}, s);
       const v = evalRef(s.valRef, wb, sh);
-      if (v) o.vals = v.vals.map((x) => (typeof x === 'number' ? x : typeof x === 'boolean' ? +x : x == null || x === '' ? null : 0)).map((x) => (x == null ? 0 : x));
+      /* (blank cells stay blank in a chart read from a file: its "show empty cells as" decides) */
+      if (v) o.vals = v.vals.map((x) => (typeof x === 'number' ? x : typeof x === 'boolean' ? +x : x == null || x === '' ? null : 0)).map((x) => (x == null && !v2 ? 0 : x));
       const nm = evalRef(s.nameRef, wb, sh);
       if (nm && nm.texts.length) o.name = nm.texts.join(' ');
-      if (!cats && s.catRef) { const c = evalRef(s.catRef, wb, sh); if (c) cats = chart.kind === 'scatter' ? c.vals.map((x) => (typeof x === 'number' ? x : 0)) : c.texts; }
+      if (v2 && s.xs && s.catRef) { const c = evalRef(s.catRef, wb, sh); if (c) o.xs = c.vals.every((x) => typeof x === 'number') ? c.vals.slice() : c.vals.map((_, k) => k + 1); }
+      if (!cats && s.catRef) {
+        const c = evalRef(s.catRef, wb, sh);
+        if (c) { cats = chart.kind === 'scatter' && !v2 ? c.vals.map((x) => (typeof x === 'number' ? x : 0)) : c.texts; if (v2 && c.vals.every((x) => typeof x === 'number')) catNums = c.vals.slice(); }
+      }
       if (!o.color) o.color = (chart.imported ? null : PAL2003[i % 8]) || L.chart.PALETTE[i % L.chart.PALETTE.length];
       return o;
     });
-    if (cats) m.cats = cats;
+    if (cats) { m.cats = cats; if (v2) m.catNums = catNums || undefined; }
     else if (!chart.series.some((s) => s.catRef)) { const n = Math.max(0, ...m.series.map((s) => s.vals.length)); if (!chart.cats || chart.cats.length !== n) m.cats = Array.from({ length: n }, (_, i) => String(i + 1)); }
     return m;
   };
@@ -104,10 +122,37 @@
   XC.render = function (chart, wb, sh, w, h, z) {
     if (L.render && !L.render.fillCSS) L.render.fillCSS = (f) => (f && f.t === 'solid' ? f.color || f.c || '#FFFFFF' : 'none');
     const m = XC.resolve(chart, wb, sh);
+    if (m.v === 2) {
+      /* drawn in points (common/chart-draw.js), shown at the drawing's size in pixels */
+      if (!m.bg) m.bg = { t: 'solid', c: '#FFFFFF', a: 1, color: '#FFFFFF' };
+      const pt = (x) => (x / (z || 1)) * 0.75;
+      const svg = L.chart.render(m, pt(w), pt(h), null);
+      svg.setAttribute('width', w); svg.setAttribute('height', h);
+      return svg;
+    }
     m.fsz = Math.max(6, (chart.fsz || 10) * (96 / 72) * (z || 1));
     if (!m.bg) m.bg = { t: 'solid', color: '#FFFFFF' };
     if (!chart.imported && !m.plotBg) m.plotBg = { t: 'solid', color: '#C0C0C0' };
     return L.chart.render(m, w, h, null);
+  };
+
+  /** a chart edited here, which Ledger saves from the simple fields (kind, series, colours…): the model it draws becomes
+      that too, so what is shown is what is saved (a chart read from a file is drawn from its full model until then) */
+  XC.plain = function (chart) {
+    if (!chart || chart.v !== 2) return Object.assign({}, chart);
+    const KEEP = ['kind', 'title', 'legend', 'gridY', 'labels', 'fsz', 'cats', 'axTitleX', 'axTitleY', 'numFmt', 'axisFmt', 'catRot', 'pieColors', 'imported', 'refs', 'cacheCats', 'dirty'];
+    const o = {};
+    for (const k of KEEP) if (chart[k] !== undefined) o[k] = chart[k];
+    const fill = (f) => (f && f.t === 'solid' ? { t: 'solid', color: f.color || f.c } : f && f.t === 'none' ? { t: 'none' } : undefined);
+    if (fill(chart.bg)) o.bg = fill(chart.bg);
+    if (fill(chart.plotBg)) o.plotBg = fill(chart.plotBg);
+    if (chart.view3D) o.view3D = true;
+    o.series = (chart.series || []).map((sr) => {
+      const x = { name: sr.name, vals: sr.vals, color: sr.color, nameRef: sr.nameRef, catRef: sr.catRef, valRef: sr.valRef, cacheVals: sr.cacheVals };
+      if (sr.overlay) x.overlay = sr.overlay;
+      return x;
+    });
+    return o;
   };
 
   /* ------------------------------------------------------------ reference maintenance */
@@ -270,7 +315,7 @@
   };
   CW.setKind = function (d, kind) {
     const sh = L.grid.sheet();
-    const nc = Object.assign({}, d.chart, { kind, dirty: true });
+    const nc = Object.assign(XC.plain(d.chart), { kind, dirty: true });
     const nd = Object.assign({}, d, { chart: nc });
     L.ops.tx(sh.wb, 'Chart Type', () => L.ops.setDrawings(sh, sh.drawings.map((x) => (x === d ? nd : x))));
     L.grid.selectObject(nd); L.grid.syncObjects(true);
@@ -393,7 +438,7 @@
         if (!ok) { resolve(null); return; }
         const m = model();
         if (!m.series.length) { ui.msg('The chart has no data. Select a range with numbers first.', { icon: 'warn' }); resolve(null); return; }
-        const chart = Object.assign({}, editing ? editing.chart : {}, m, { dirty: true, imported: editing ? editing.chart.imported : false });
+        const chart = Object.assign(editing ? XC.plain(editing.chart) : {}, m, { dirty: true, imported: editing ? editing.chart.imported : false });
         delete chart.refs;
         if (editing) {
           const nd = Object.assign({}, editing, { chart });

@@ -24,12 +24,15 @@ const EXCEPTIONS = {
   },
   ledger: {
     customize: 'customizes the classic toolbars',
+    gettingStarted: 'Help (F1)',
     keyboardHelp: 'Help (F1)',
     showAssistant: 'not in Office 2016; Search commands finds it',
   },
   lectern: {
     clear: 'the Delete key',
+    customize: 'customizes the classic toolbars',
     gettingStarted: 'Help (F1)',
+    keyboardHelp: 'Help (F1)',
     showAssistant: 'not in Office 2016; Search commands finds it',
   },
 };

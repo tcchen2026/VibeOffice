@@ -14,8 +14,27 @@ feature. The proofing dictionaries are fetched at run time from `../common/dict/
 so the site is served rather than opened from disk (a `file://` page cannot fetch them; editing still
 works, but spelling and the thesaurus stay off). To run it locally, see [testing.md](testing.md).
 The metric-compatible fonts (see *Rendering notes*) are served with the site from `public/fonts/`.
-A hyperlink is never opened from the document: Ctrl+click and Open Hyperlink show its address to copy
+Zoom with the slider at the right of the status bar (with the view buttons), View › Zoom or Ctrl+wheel
+(docs/suite.md, The status bar). A hyperlink is never opened from the document: Ctrl+click and Open Hyperlink show its address to copy
 (docs/suite.md, Hyperlinks); `#bookmark` links go to the bookmark.
+A table shows Word's move handle at its top left while the pointer is over it (Print and Web Layout):
+a click selects the table, a right-click opens its menu, a drag moves it, making it a floating table
+where it is dropped (`w:tblpPr` as Word writes one after a drag: 0.125" from the text, from the margin
+and the paragraph there; one undo step; Esc cancels). The square at its bottom right resizes it: the
+columns by the width it is given, the rows by the height (each then at least its share, as Word sets
+them). Table Properties ▸ Text wrapping does the same (Around) or puts it back in the text (None).
+With a whole table selected (its handle, Table ▸ Select ▸ Table), Ctrl+X cuts the table and Backspace
+deletes it, while Delete empties its cells, as in Word; with Track Changes on, both empty the cells.
+A shape takes text as in Word: right-click ▸ Add Text (Edit Text once it has some), or select it and type,
+and the typing goes to the end of its text; a shape's first text is centred both ways, as Word starts it,
+and it is saved as a shape with text (`wps:cNvSpPr` without `txBox`, which marks text boxes only; Quire
+used to write every shape it had edited as a text box). A click in the empty part of a shape's or text
+box's text area puts the caret in its nearest line. The right-click menu of a selected object is Word's:
+Add Text, Grouping (Regroup puts back the shapes ungrouped last; Group needs several objects selected,
+which Quire doesn't do), Order, Text Wrapping, Set AutoShape Defaults, Caption, Format AutoShape / Picture
+/ Text Box, Hyperlink; it opens on the object's handles too. On text it adds Synonyms (the thesaurus' words
+for the one at the caret) and New Comment; in a table, Text Direction, AutoFit and Caption. Word's Select
+Text with Similar Formatting needs a selection of several separate pieces, which Quire doesn't have.
 
 ## Proofing tools (offline)
 
@@ -36,6 +55,84 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   top of a page reached by overflow, by "page break before" or (Word 2013+ documents) by a section
   break, a line with "multiple" line spacing only needs its single-spaced height to fit at the bottom
   of a page, and Word 2013+ justified text may squeeze spaces by up to 20% to fit a word on a line.
+- Measured in Word 2016's prints of test documents (2026-11-06): an empty paragraph that only holds a section break,
+  the next section going on continuously on the same paper, takes no room at all, neither its line (however large its
+  mark) nor its spacing, in every compatibility mode; spacing collapses across a continuous section break as between
+  any two paragraphs, and the next section starts right below the text (Quire left a pixel). Auto spacing (HTML's)
+  stays out from between two paragraphs whose numbering goes on from one to the next, at any level and through
+  another numbering of the same list, but not between two lists or where the numbering restarts. Paragraphs with the
+  same borders share one box when neither has an indent (they were drawn as separate boxes), and Liberation Sans,
+  Serif and Mono, Arimo, Tinos, Cousine, Carlito and Caladea are as tall as the fonts they stand in for. Of the
+  2,290 Word-saved corpus files, 2,147 now show Word's stored page count (2,140 before); 9 moved toward it, and one
+  with overlapping floating tables, wrong before as well, moved away. A section break's mark (with formatting marks
+  shown) is named by how the next section starts, as in Word (it named the section it ends).
+- Paragraphs kept with the next one go to the next page together, and a table stays in such a chain when its last
+  row keeps with the next paragraph (its first cell's first paragraph does, whatever the other cells say, as Word 2016
+  prints it); a chain that starts at the top of a page is laid out from there. Quire ended every chain at a table, so a
+  contract whose paragraphs all keep with the next took 181 pages to Word's 177 (180 now).
+- A footnote that doesn't fit below its reference goes on to the next page, as Word 2016 prints it: the reference's line
+  stays, the note fills the rest of the page (between its paragraphs or inside one) and goes on at the top of the next
+  page's notes under a full-width line, and the text after the reference waits for that page; a note whose first
+  paragraph keeps its lines together, or with no room for a line, takes its reference's line along. Quire moved the
+  reference to the next page whenever its note didn't fit whole, and let a note longer than a page run off it. The line
+  above the notes is the file's own separator paragraph, so it takes Word's room (Quire's was 7 pt shorter); two
+  corpus files now show Word 2016's page count (stress008, stress018). A note referenced in a table cell goes to the
+  page's notes as well, and on to the next page from its row as from a paragraph (Quire left such notes out, and let a
+  table run into the notes above it: POI's form_footnotes.docx now has Word's 3 pages).
+- A gutter at the top of the page (Page Setup's Gutter position: Top, `w:gutterAtTop`) adds to the top margin, as in
+  Word (Quire added it on the left and Page Setup showed Left), and Strict files' "auto" line spacing given as a
+  measure (`w:line="12.95pt"`, 259 twips) is read as lines (Quire read 12.95 twips, so the SDK's Strict01.docx had its
+  lines on top of each other: 8 pages to Word 2016's 13; Quire 13 now).
+- Single line spacing is as tall as Word 2016 prints it: a little more than the fonts' metrics give (Times New Roman
+  and Arial 1.1502 times the font size, Calibri 1.2209, Cambria 1.1727, Courier New 1.1331, measured at 10 to 12 pt),
+  and the browser's line, which it cuts down to a 64th of a pixel, comes to the nearest 64th (R.lhNum): 12 pt Times
+  New Roman lines are 13.80 pt apart, not 13.78, which over a page decides whether a last line or a footnote's fits.
+- A font this computer lacks and the suite has no stand-in for is drawn with the font table's alternate name (`w:altName`), else
+  a face of its kind (Times New Roman for `w:family="roman"`, Courier New for fixed pitch), as Word substitutes, not
+  Arial (POI's bug59058.docx now shows Word's 52 pages).
+- Word 2010's text effects on text are drawn (`w14:textFill`, `textOutline`, `shadow`, `glow`): a solid fill with its
+  transparency (w14's alpha is a transparency, not DrawingML's opacity), a gradient through the letters, the outline
+  (behind the letters, a double or triple one as one thin line), shadow and glow; they are saved as they came, and a
+  colour set here replaces the fill, as in Word. Quire drew such text in its plain colour (a library calendar's cover
+  title, orange with a shadow in Word, was black). A reflection and 3-D effects are not drawn.
+- Charts are read and drawn as Lectern and Ledger draw them (`common/chart-read.js`, `chart-draw.js`): their own colours
+  and markers, secondary axes (a deleted one leaves its series on the primary scale, as Word plots them), fixed axis
+  bounds, blanks as gaps, data labels in their number formats (11%, not 0.112676), 3-D, exploded pies, radar and
+  bubble charts, a chart area without formatting white with a grey border as in Word, and the categories of the axis
+  the series stand on. All 127 charts of the 74 corpus documents that have them are read so; three documents printed
+  by Word 2016 agree in their scales, series, markers, labels and borders.
+- Drawings take the room Word gives them, measured in Word 2016's prints of documents made for the purpose
+  (2026-11-07; `tests/quire/drawn-as-word.test.mjs`): the room an object keeps for its effects (`wp:effectExtent`: a
+  shadow, a glow, a turned picture's corners) is a margin around it in its line and adds to a floating object's
+  distance from the text; a picture in line with text wider than its line sticks out past the right edge on its one
+  line (Quire gave it a second, empty line); a text box that fits its text is fitted again on opening, shrunk as well
+  as grown (a box saved 200 pt tall around two lines is 34.5 pt); a line with nothing on it but anchors goes below an
+  object text can't go beside, as any line; floating objects stack by every step of their z-order (Word's VML
+  z-index counts by one); a float placed from its paragraph stands by the paragraph where it ends up, in a cell
+  centred vertically while its content was still short as on a page aligned to the middle (Quire left it where the
+  paragraph first stood, and a cell laid out twice drew its floats twice: fdo77887.docx's logo). VML freeforms and polylines are drawn from their paths and points (they were rectangles),
+  each SmartArt diagram from its own drawing part (a document with several drew the first each time) with its
+  text's bullets, a WMF whose header has empty bounds to its window, and percentage shading as that share of the
+  pattern colour over the fill (pct25 auto on auto is light grey; Quire drew it dark grey with white text). STYLEREF
+  finds a style by the name Word shows with its aliases ("Product Head,ph") or by one alias, and the first paragraph
+  in that style on the page gives its text even when it is empty, as Word prints it. A `v:rect` with a textpath is
+  the text box it holds (Word draws no WordArt for it), and "Don't use HTML paragraph auto spacing" adds space after
+  and space before together only up to compatibility mode 14: in mode 15 Word 2016 takes the larger even so (Quire
+  added them, and LibreOffice's tdf145716_nonHTMLspacing.docx ran to a second page). Measured with
+  `tools/quire-pictures.mjs` against Word 2016's PDFs of 320 Word-made corpus documents (374 pages): the summed
+  difference of the pages went from 1011 to 888; the SmartArt document from 27.7 to 1.9, a table shaded pct25 from
+  40.4 to 4.5, the VML stars from 43.8 to 5.3; three pages moved away from Word's by more than 1 (a picture whose
+  line was already lower than Word's moved 1.5 pt further, by its effects' room).
+- A table style comes between the document defaults and the paragraph style, the Normal style included: what Normal
+  sets itself (size, colour, spacing, line spacing, shading) wins over the table style in Word 2016's prints in every
+  compatibility mode, with overrideTableStyleFontSizeAndJustification on or off, and a toggle Normal turns off (b=0)
+  leaves the table style's bold on (`tests/quire/table-style-precedence.test.mjs`). Below mode 15, unless that setting
+  is on, Normal's own "left" gives way to the table style's justification ([MS-DOCX]); its rule for 11 and 12 pt
+  sizes Word 2016 follows only in part (Normal's 12 pt gave way over 8 pt defaults and held over 11 pt ones), so
+  Normal's size is kept. Quire let the table style override all of Normal's own settings (LibreOffice's
+  tdf90906_colAutoB.docx lost its 12 pt text and red shading in the cells). Of the 2,289 Word-saved corpus files,
+  2,146 show Word's stored page count (2,145 before); one moved away (tdf81100.docx: its rows now as tall as Word's,
+  a tall row Word splits across the page goes whole to the next).
 - More of Word's own habits: a right or centred tab stop placed beyond the right indent lets the page
   number of a table of contents run out to it; superscripts and footnote references do not push their
   line down; table rows are as tall as Word makes them even though the browser draws hairline borders a
@@ -51,6 +148,22 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   break and a section break or a break at their end, 4 more show it (42 in all), one more comes closer,
   and none moves away. A centred table wider than its column overhangs both margins evenly, a
   right-aligned one the left margin.
+- Floating tables (`w:tblpPr`, Table Properties ▸ Text wrapping ▸ Around) stand where their anchors put
+  them, with the text wrapping beside them: horizontally from the column, the margin or the page, by an
+  offset or an alignment; vertically from their paragraph (`vertAnchor="text"`), the margin (the default
+  Word leaves out) or the page. One longer than the page goes on at the top of the next page's body, the
+  text after it beside its last part, as in Word. In files of Word 2010 and before, the cells' text, not
+  the border, stands at the offset, as for tables in the text. Limits: text goes on the wider side only
+  (Word fills both sides of a narrow table where there is room; Quire's pictures also take one side), and
+  Word sometimes starts a table on the next page where Quire still fits a row. Measured on the 170
+  Word-saved corpus files with floating tables (all LibreOffice test files): 136 show Word's stored page
+  count, as before, 9 come closer to it and 8 move away (`tools/quire-pages.mjs`); Word 2016 PDFs of five
+  of them and three of our own (2026-11-05) agree on the tables' positions. Of the 74 files with frames,
+  only one, which also has a floating table, changes page count (`tests/quire/float-tables.test.mjs`).
+  Tables moved by the handle (an inline one, a floating one, a Word 2016 file's) and one floated by
+  Table Properties open in Word 2016 without repair, each saved with only `w:tblpPr` added or changed
+  against its unedited save, and Word draws them where Quire does (2026-11-05, 7 files); two tables
+  resized by the square open without repair and as large as in Quire (4 files with their unedited saves).
 - Inline pictures wider than a column are clipped halfway across the gap to the next column,
   preserving their size and crop in the document. The outside page margins stay available to
   negative indents; floating pictures and inline AutoShapes can cross columns. Checked against
@@ -105,6 +218,13 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
   original document has not been available to confirm that it uses the same encoding.
 - Equations (Office Math, `m:oMath`) are rendered as MathML: fractions, scripts, radicals, delimiters,
   n-ary operators, accents, matrices and equation arrays. They are kept unchanged when saving.
+- Text in the Symbol font shows its Greek letters and signs (`q` is θ), typed or in Word's private-use
+  form, with or without the font on your computer; so do Symbol bullets and the Symbol text in old
+  Equation Editor pictures. The file keeps the characters as they were.
+- A picture's brightness and contrast are drawn as Word draws them: measured in Word 2016 on a grey ramp
+  under 13 settings (VML and DrawingML, Washout among them), Quire's greys agree within 1 of 255. The
+  same holds for Lectern against PowerPoint 2016 (7 settings). A picture's borders set per side (Word
+  97-2003) are drawn, and a frame with no vertical position stands beside its own paragraph, as in Word.
 - Content controls bound to custom XML or to the document properties show the bound values, as Word
   does when it opens a file. Linked text boxes continue their story from one box to the next.
 - SmartArt is drawn from the picture Word stores with it; files saved without that picture (Word 2007
@@ -128,11 +248,34 @@ Licences for the word lists are in `public/common/dict/LICENSES.txt`.
 | Plain Text `.txt` | yes | yes |
 | Markdown `.md` / `.markdown` (GitHub flavour) | yes | yes |
 | Markdown with pictures `.zip` (a `.md` and its picture files) | yes | yes |
-| PDF | — | yes (File ▸ Print, or Save As ▸ PDF) |
+| PDF | — | yes: page pictures with text you can find, select and copy, clickable links and heading bookmarks (File ▸ Print, or Save As ▸ PDF) |
+| Word 97-2003 Document `.doc`, Template `.dot` | yes: converted on opening to the `.docx` Word would write (text, styles, lists, sections, headers and footers, notes, tables, fields and form fields, bookmarks, comments and tracked changes, pictures, drawings and text boxes; embedded objects as their pictures); a message names what wasn't converted, and Save asks for a `.docx` name (`.docm`, or `.dotm` for a template, when it has macros: its VBA project is kept byte for byte with its commands and document events, never run; all 8 in the corpus). A document with a password to open asks for it (XOR obfuscation, RC4 and RC4 CryptoAPI encryption, as Word 97-2003 wrote them) and is saved encrypted with it, as Word keeps it on Save As | no |
 | Password-protected `.docx` | yes (Word 2007 "standard" and Word 2010+ "agile" encryption) | yes: Tools ▸ Options ▸ Security ▸ Password to open (AES-256, as Word 2013+) |
 
 Encryption and decryption happen in the browser (WebCrypto for hashing, so the page must be served over
 https or from localhost). A document opened with its password keeps that password when saved.
+
+PDF pages use the document's fonts at 300 dpi, reduced for pages above 40 megapixels.
+An invisible text layer follows the displayed words, including tables, headers, footers,
+notes, equations and DrawingML LettersArt. Hidden or fully clipped text is omitted.
+Selection within a word is approximate; rotated and bent text has approximate selection boxes.
+Older VML LettersArt and text inside pictures remain pictures, and equations copy as linear text.
+
+Hyperlinks keep their visible areas, with separate areas for wrapped lines. Internal
+links and cross-references go to the bookmark's page and text position; a target
+outside the exported page range is omitted. The PDF sidebar nests headings by their
+outline level, and the PDF records the document's language when available.
+Navigation checks (2026-11-09) cover six Word controls, compared with Word 2016 and
+LibreOffice, including a relative file link: all 13 pages retain identical pictures
+and extracted text. Internal and external links and nested bookmarks work in the
+native Chromium and Firefox PDF viewers.
+
+Checked on 12 public corpus documents, the sample and an exact-height table control
+(2026-11-07): all 194 page pictures and rendered PDF pages match the picture-only export.
+The 180-page control takes 17.14 s versus 16.22 s; collecting its text takes 0.72 s.
+Chromium copies a selected line and finds text on page 2. Poppler joins one narrow word
+space in the long control; Chromium's PDFium preserves it. Acrobat Reader and macOS
+Preview checks are pending user review.
 
 ## Markdown
 
@@ -254,7 +397,7 @@ The user accepted the bound-text, formatted-effects, resized-SmartArt, pasted-OL
 samples in Office batch 1. All 15 batch 2 files open in LibreOffice with unchanged counts. Strict
 conversion passes **67 documents / 268 emitted states** against original package/SDK diagnostics and
 keeps its notice through draft recovery; its Office review is included in batch 2.
-Current full reports and exceptions: `~/corpora/results/quire-final-7c25bd7/`. Earlier focused
+Current full reports and exceptions: `/work/corpora/results/quire-final-7c25bd7/`. Earlier focused
 measurements and failed attempts remain in the report directories linked by its README. Section,
 numbering and picture-bullet corrections are included in the full run. Missing table grids and
 conflicting default styles have save notices; these recoveries can still change pagination.
@@ -262,7 +405,7 @@ Office batch 5 files 01–05 now cover picture bullets, custom formats, edited/c
 lists and section settings. All five add no package/SDK diagnostics and retain their LibreOffice
 page counts; their previous-writer differences are reviewed. The user accepted all five in Word.
 A fresh LibreOffice check of the exact accepted files also passes; hashes and results are in
-`~/corpora/results/office-accepted-2026-10-09/`.
+`/work/corpora/results/office-accepted-2026-10-09/`.
 The pinned inventory finds numbering parts in 810 inputs. The writer keeps their source level counts,
 including absent defaults, rather than serializing all nine levels used internally for layout.
 Independent list copies now also receive fresh eight-digit `nsid` identities. Two command fixtures
@@ -271,14 +414,14 @@ Multi-column index insertion keeps the original section start before the index a
 and remainder continuous; two fixtures pass 18 assertions and 14 package/SDK comparisons through
 undo/redo and draft recovery. All four selected saves open in LibreOffice with unchanged counts.
 These corrections passed Word in Office batch 7 files 01–02 and are included in the full refresh. Focused evidence:
-`~/corpora/results/lossless-evening-review-2026-10-09/`.
+`/work/corpora/results/lossless-evening-review-2026-10-09/`.
 The render review also found seven misplaced breaks in `tdf108714`, which the reader previously
 skipped. Recovering them in valid paragraphs/runs retains all four pages on save and text edit,
 with a recorded notice. The pinned scan finds one affected readable input and
 records 33 archive/XML read failures separately. Seven command states and seven corpus
 save/edit/history/draft states add no package/SDK diagnostics; 25 browser assertions and all 27
 Quire unit tests pass. All seven emitted corpus states retain four LibreOffice pages.
-Reports: `~/corpora/results/quire-break-recovery-2026-10-09/`.
+Reports: `/work/corpora/results/quire-break-recovery-2026-10-09/`.
 Office batch 6 file 05 checks that correction in Word; its package/SDK and four-page LibreOffice
 comparisons pass, and the user accepted it in Word.
 
@@ -287,13 +430,13 @@ also fails or times out in its original. With the break correction included, **1
 unedited pairs change page count. Across all **19,028** states, the paired render/count results are
 **18,000 OK, 429 failed and 599 excluded**. Missing outputs, unrenderable originals, saved conversion
 failures and count differences remain separate in the reports; these are not lossless-save percentages.
-The current run and explicit retry results are retained in `~/corpora/results/lossless-final-984eaf3/`.
+The current run and explicit retry results are retained in `/work/corpora/results/lossless-final-984eaf3/`.
 The twelve remaining pairs are listed in its `consolidated/render-exceptions.json`; known source defects and
 unresolved reflow are distinguished. Malformed extra-body/final-section notices cover two readable
 corpus inputs: six save/edit/draft attempts and 14 package/SDK states pass, as do all 29 Quire unit
 tests. All emitted package content matches the frozen saves except generated metadata timestamps,
 so the existing layout evidence applies. The scope scan retains 35 failed archive/main-XML reads
-separately. Evidence: `~/corpora/results/quire-structure-notices-2026-10-09/`.
+separately. Evidence: `/work/corpora/results/quire-structure-notices-2026-10-09/`.
 
 The issue #1 regressions pass all **4 browser checks**, each of which fails on the previous
 commit. The full save/reopen recheck completes **2,880/2,902 inputs**, with the same **22 failures**
@@ -301,7 +444,7 @@ reproduced on the previous commit. Nine independently authored page-field docume
 byte-identical package contents under both writers and add no package/SDK diagnostics.
 LibreOffice opens **8 original/saved pairs** with matching page counts; the remaining original
 fails to load. The generated carriage-return fixtures also pass package/SDK checks and retain
-their separate lines in LibreOffice. Reports: `~/corpora/results/issue-1-2026-10-11/`.
+their separate lines in LibreOffice. Reports: `/work/corpora/results/issue-1-2026-10-11/`.
 
 Review of that fix adds **5 edge-case regression groups**, all failing on the first fix and
 passing after correction: protected fill destinations, split CRLF pairs through formatting and
@@ -309,7 +452,7 @@ save/reopen, forced-line pagination, mark placement in rotated, RTL and vertical
 three zoom levels, and omission of all formatting symbols from print/PDF rendering.
 The original four groups still pass, as do **79 Ledger and 29 Quire unit
 tests**. Three split-CRLF packages pass package/SDK validation without diagnostics and retain
-their line count in LibreOffice. Reports: `~/corpora/results/issue-1-review-2026-10-11/`.
+their line count in LibreOffice. Reports: `/work/corpora/results/issue-1-review-2026-10-11/`.
 
 The convention scan has 193 signatures, unchanged from the preceding full writer. The earlier
 scoped MC rules and Strict list-alignment entries retain their reviewed source properties.
@@ -410,8 +553,14 @@ The reproducible OOXML run uses the pinned LibreOffice, Apache POI and Open XML 
 `tools/corpora.sh`. Quire runs in Chromium through CDP; independent package checks, SDK diagnostics
 and LibreOffice compare the saved file with its original. Page counts, Word's saved page-break markers
 and reference PDFs help diagnose layout. Missing fonts, tight wrapping around irregular pictures,
-vertical text and complex data bindings remain known differences. RC4-encrypted legacy binary files
-are outside the supported OOXML encryption path.
+vertical text and complex data bindings remain known differences.
+
+**Word 97-2003 documents** (the converter's whole corpus, 2026-11-06, `tests/legacy/`): of 524 `.doc`/`.dot` files, 409
+convert (one of them an Excel workbook named `.doc`, which Quire refuses and Ledger opens) and 115 are refused with a
+message saying why (Word 6.0/95 and older files, damaged files, unknown passwords); none fails otherwise. All 408
+converted documents pass the Open XML SDK and the 39 tried in Word 2016 open without a repair prompt. Their text
+agrees with the original's in 393 of 406 and with LibreOffice's conversion in 375 of 400; of the 266 with a page count
+Word stored, 236 show that count in Quire, and all open.
 
 In Word 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 2,310 distinct Word files (made at
 6e697db) **open without repair in 2,287**; 3 stop at a prompt Word shows for the original too (a mail merge's
@@ -429,7 +578,8 @@ compatibility results are archived with the run history rather than mixed into c
 | File | What it does |
 | --- | --- |
 | `index.html` | Window chrome and page CSS, script order |
-| `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF writer, downloads |
+| `../common/core.js`, `../common/zip.js` | Utilities, colour maths, storage, ZIP reader/writer, PDF entry point, downloads |
+| `../common/pdf.js`, `../common/pdftext.js` | Loaded on PDF export: page pictures, generated invisible text font, DOM word/link geometry, heading destinations and document language |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML package graph, identity reservations, AlternateContent capture and schema-order merges |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected documents: compound-file reader/writer, AES, ECMA-376 agile and standard encryption |
 | `js/dmodel.js`, `js/ops.js` | Document model (paragraphs, runs, tables, sections, styles, numbering), undo history, editing operations |
@@ -444,11 +594,11 @@ compatibility results are archived with the run history rather than mixed into c
 | `js/fields.js` | Field engine (PAGE, DATE, REF, SEQ, TOC, INDEX, IF, formulas, …), footnotes and endnotes |
 | `js/review.js` | Track changes, comments, balloons, Reviewing pane, compare documents |
 | `js/tables.js` | Tables and Borders toolbar, table styles, draw/erase, merge/split, sort, formulas |
-| `js/drawing.js`, `js/drawtool.js`, `../common/geometry.js`, `../common/charts.js`, `../common/metafile.js`, `../common/clipart.js` | Pictures, AutoShapes, LettersArt (WordArt), diagrams, charts, WMF/EMF, clip art |
+| `js/drawing.js`, `js/drawtool.js`, `../common/geometry.js`, `../common/charts.js`, `../common/chart-read.js`, `../common/chart-draw.js`, `../common/numfmt.js`, `../common/metafile.js`, `../common/clipart.js` | Pictures, AutoShapes, LettersArt (WordArt) and text boxes bent by a warp (drawn from their laid-out lines as Lectern bends text: docs/lectern.md), diagrams, charts (read and drawn as Lectern and Ledger do), WMF/EMF, clip art |
 | `js/autocorrect.js`, `../common/spell.js`, `js/spell.js` | AutoCorrect, AutoFormat as you type, AutoText; the shared spelling engine and Quire's Spelling and Grammar (offline) |
 | `js/omml.js` | Office Math (OMML) to MathML for equations |
 | `../common/dict/` | Spelling word lists, thesaurus, licences (shared with Ledger) |
-| `js/outline.js`, `js/rulers.js`, `js/panes.js` | Outline view, rulers, task panes (Research/Thesaurus, Clip Art, Styles…; while open, Picture or Drawing Tools for a selected object, docs/suite.md), Document Map, thumbnails, Print Preview, Reading Layout |
+| `js/outline.js`, `js/rulers.js`, `js/panes.js` | Outline view, rulers, task panes (Research/Thesaurus, Clip Art, Styles…; Picture, Drawing or Table Tools for a selected object, Header & Footer Tools while one is edited, docs/suite.md), Document Map, thumbnails, Print Preview, Reading Layout |
 | `js/mailmerge.js`, `js/templates.js` | Mail Merge wizard and toolbar, document templates |
 | `../common/ui.js`, `../common/search.js`, `../common/icons.js`, `../common/looks.css`, `../common/ui.css` | Menus, toolbars, dialogs, colour pickers, Search commands, original 16×16 icon set, the looks (shared) |
 | `js/commands.js`, `js/dialogs*.js`, `js/find.js`, `js/app.js` | Command registry, all dialogs, Find and Replace, application controller |

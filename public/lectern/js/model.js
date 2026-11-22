@@ -315,11 +315,14 @@
   T.plain = (tx) => (tx && tx.ps ? tx.ps.map(T.paraText).join('\n') : '');
   T.isEmpty = (tx) => !tx || !tx.ps || tx.ps.every((p) => !T.paraText(p).length);
   T.RUN_KEYS = ['b', 'i', 'u', 'strike', 'sz', 'font', 'fontEA', 'color', 'base', 'shd', 'shdX', 'link', 'fld', 'spc', 'cap', 'fill', 'ln', 'hl', 'emb', 'keep'];
-  T.runProps = (r) => { const o = {}; for (const k of T.RUN_KEYS) if (r[k] !== undefined && k !== 'fld') o[k] = r[k]; return o; };
+  T.runProps = (r) => { const o = {}; for (const k of T.RUN_KEYS) if (r[k] !== undefined && k !== 'fld' && !(k === 'keep' && r.fld === 'math')) o[k] = r[k]; return o; };
   T.sameProps = (a, b) => L.equal(T.runProps(a), T.runProps(b)) && !a.fld && !b.fld;
   T.normalize = (p) => {
     const out = [];
     for (const r of p.rs) {
+      // Typing next to an atomic equation may inherit a DOM span's properties,
+      // but its opaque payload belongs only to the equation itself.
+      if (r.fld !== 'math' && r.keep?.math) { r.keep = { ...r.keep }; delete r.keep.math; if (!Object.keys(r.keep).length) delete r.keep; }
       if (!r.fld && !r.t && !r.keep) continue;
       const prev = out[out.length - 1];
       if (prev && T.sameProps(prev, r)) prev.t += r.t;
@@ -547,7 +550,13 @@
     L.preserve?.joinSection(pres, pres.slides, at, slides);
     pres.slides.splice(at, 0, ...slides);
   };
-  M.design = (pres, slide) => (slide && pres.designs[slide.design]) || Object.values(pres.designs)[0];
+  /** a slide's design: its master's, with the slide's own colours over it where it has some (a theme override) and
+      its own colour mapping (clrMapOvr) */
+  M.design = (pres, slide) => {
+    const d = (slide && pres.designs[slide.design]) || Object.values(pres.designs)[0];
+    if (!d || !slide || !(slide.themeOverride || slide.clrMap)) return d;
+    return Object.assign({}, d, slide.themeOverride ? { colors: Object.assign({}, d.colors, slide.themeOverride) } : {}, slide.clrMap ? { clrMap: Object.assign({}, d.clrMap, slide.clrMap) } : {});
+  };
 
   /** Re-apply a layout: keep existing content, move it into the new frames, add/remove empty placeholders. */
   M.applyLayout = function (pres, slide, key) {
@@ -703,6 +712,7 @@
     const sx = ob.w ? nb.w / ob.w : 1, sy = ob.h ? nb.h / ob.h : 1;
     const each = (k) => {
       k.x = nb.x + (k.x - ob.x) * sx; k.y = nb.y + (k.y - ob.y) * sy; k.w *= sx; k.h *= sy;
+      if (k.txRect) k.txRect = k.txRect.map((v, i) => v * (i % 2 ? sy : sx));
       if (k.type === 'group') for (const c of k.kids) each(c);
     };
     for (const k of g.kids) each(k);

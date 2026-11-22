@@ -439,7 +439,7 @@
   /* Office's layouts that are ours under the same name (by the id in the file; the definitions are not used) */
   const OFFICE = { default: 'blockList', orgChart1: 'orgChart', hierarchy1: 'hierarchy', hierarchy2: 'hHierarchy', vList2: 'verticalBullet', hList1: 'hBullet',
     process1: 'process', chevron1: 'chevron', process2: 'vProcess', hProcess11: 'timeline', cycle2: 'cycle', cycle3: 'continuousCycle', radial1: 'radial',
-    venn1: 'venn', venn3: 'linearVenn', target1: 'target', funnel1: 'funnel', matrix1: 'matrix', pyramid1: 'pyramid', pyramid2: 'pyramidList', pyramid3: 'invertedPyramid' };
+    venn1: 'venn', venn3: 'linearVenn', target1: 'target', funnel1: 'funnel', matrix3: 'matrix', pyramid1: 'pyramid', pyramid2: 'pyramidList', pyramid3: 'invertedPyramid' };
   const OFFICE_URN = 'urn:microsoft.com/office/officeart/2005/8/';
   /** a diagram's sa record from its data model: Lectern's own, or an Office layout that is ours by another
       id (sa.office: shown as PowerPoint drew it until edited here); null for any other layout */

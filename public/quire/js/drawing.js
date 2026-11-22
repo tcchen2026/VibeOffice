@@ -25,11 +25,13 @@
   DR.PATTERNS = PATT;
   const pattPath = L.geom.patternPath;
   DR.patternSVG = (prst, fg, bg, tile) => `<svg xmlns="http://www.w3.org/2000/svg" width="${tile || 6}" height="${tile || 6}" viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="${bg}"/><path d="${pattPath(PATT[prst] || PATT.pct50)}" fill="${fg}"/></svg>`;
+  /** a gradient's stops in order, in their colours, blended as Office blends them (L.color.lightStops) */
+  const gradStops = (fill) => L.color.lightStops((fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => ({ p: st.p, c: col(st.c), a: st.a })));
   DR.fillCSS = function (fill) {
     if (!fill || fill.t === 'none') return 'transparent';
     if (fill.t === 'solid') return L.color.rgba(col(fill.c), fill.a);
     if (fill.t === 'grad') {
-      const stops = (fill.stops || []).slice().sort((a, b) => a.p - b.p).map((st) => `${L.color.rgba(col(st.c), st.a)} ${L.round(st.p * 100, 1)}%`).join(', ');
+      const stops = gradStops(fill).map((st) => `${L.color.rgba(st.c, st.a)} ${L.round(st.p * 100, 2)}%`).join(', ');
       if (fill.path === 'circle' || fill.path === 'shape') return `radial-gradient(circle farthest-side at 50% 50%, ${stops})`;
       if (fill.path === 'rect') return `radial-gradient(ellipse farthest-corner at 50% 50%, ${stops})`;
       return `linear-gradient(${L.round((fill.ang || 0) + 90, 2)}deg, ${stops})`;
@@ -50,7 +52,7 @@
         const a = ((fill.ang || 0) * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a), k = Math.abs(c) + Math.abs(si);
         g = s('linearGradient', { id, gradientUnits: 'objectBoundingBox', x1: L.round(0.5 - (c * k) / 2, 4), y1: L.round(0.5 - (si * k) / 2, 4), x2: L.round(0.5 + (c * k) / 2, 4), y2: L.round(0.5 + (si * k) / 2, 4) });
       }
-      for (const st of (fill.stops || []).slice().sort((a, b) => a.p - b.p)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': col(st.c), 'stop-opacity': st.a == null ? 1 : st.a }));
+      for (const st of gradStops(fill)) g.appendChild(s('stop', { offset: L.round(st.p, 4), 'stop-color': st.c, 'stop-opacity': st.a == null ? 1 : L.round(st.a, 3) }));
       defs.appendChild(g);
       return { paint: `url(#${id})`, opacity: 1 };
     }
@@ -69,24 +71,7 @@
   }
   DR.DASH = { solid: null, sysDot: [1, 1], sysDash: [3, 1], dot: [1, 2], dash: [4, 3], dashDot: [4, 3, 1, 3], lgDash: [8, 3], lgDashDot: [8, 3, 1, 3], lgDashDotDot: [8, 3, 1, 3, 1, 3], sysDashDot: [3, 1, 1, 1], sysDashDotDot: [3, 1, 1, 1, 1, 1] };
   const dashArray = (dash, w) => { const d = DR.DASH[dash]; return d ? d.map((v) => L.round(v * Math.max(w, 0.75), 2)).join(' ') : null; };
-  function marker(defs, end, color, lw, isHead) {
-    if (!end || !end.type || end.type === 'none') return null;
-    const id = nid('mk');
-    const sz = { sm: 2, med: 3, lg: 5 };
-    const k = Math.max(lw || 0.75, 2) / Math.max(lw || 0.75, 0.1);
-    const m = s('marker', { id, viewBox: '0 0 10 10', refX: end.type === 'arrow' ? 9 : end.type === 'oval' || end.type === 'diamond' ? 5 : 8, refY: 5, markerWidth: (sz[end.len || 'med'] || 3) * k, markerHeight: (sz[end.w || 'med'] || 3) * k, orient: isHead ? 'auto-start-reverse' : 'auto', markerUnits: 'strokeWidth' });
-    let shape;
-    switch (end.type) {
-      case 'stealth': shape = s('path', { d: 'M0,0 L10,5 L0,10 L3,5 Z', fill: color }); break;
-      case 'diamond': shape = s('path', { d: 'M0,5 L5,0 L10,5 L5,10 Z', fill: color }); break;
-      case 'oval': shape = s('circle', { cx: 5, cy: 5, r: 4.5, fill: color }); break;
-      case 'arrow': shape = s('path', { d: 'M1,1 L9,5 L1,9', fill: 'none', stroke: color, 'stroke-width': 1.6 }); break;
-      default: shape = s('path', { d: 'M0,0 L10,5 L0,10 Z', fill: color });
-    }
-    m.appendChild(shape);
-    defs.appendChild(m);
-    return `url(#${id})`;
-  }
+  const marker = (defs, end, color, lw, isHead) => L.geom.marker(defs, end, color, lw, isHead);   // common/geometry.js
   const shadowCSS = (sh) => (sh ? `drop-shadow(${L.round(sh.dx == null ? 3 : sh.dx, 2)}px ${L.round(sh.dy == null ? 3 : sh.dy, 2)}px ${L.round(sh.blur || 0, 2)}px ${L.color.rgba(col(sh.c || '#000000'), sh.a == null ? 0.5 : sh.a)})` : '');
 
   /* ---------- shape geometry → SVG (in points, scaled by the caller) ---------- */
@@ -140,59 +125,24 @@
 
   /* ---------- WordArt ---------- */
   DR.WARPS = [['textPlain', L.N('Plain Text')], ['textArchUp', L.N('Arch Up')], ['textArchDown', L.N('Arch Down')], ['textCircle', L.N('Circle')], ['textWave1', L.N('Wave')], ['textSlantUp', L.N('Slant Up')], ['textSlantDown', L.N('Slant Down')], ['textTriangle', L.N('Triangle Up')], ['textChevron', L.N('Chevron Up')], ['textCanUp', L.N('Can Up')]];
-  function warpPoints(warp, w, hh, fs) {
-    const pts = [], N = 64, m = fs * 0.15;
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      switch (warp) {
-        case 'textArchUp': { const a = Math.PI - t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), hh - m - Math.sin(a) * (hh - fs - m)]); break; }
-        case 'textArchDown': { const a = Math.PI + t * Math.PI; pts.push([w / 2 + Math.cos(a) * (w / 2 - m), fs + m - Math.sin(a) * (hh - fs - m * 2)]); break; }
-        case 'textCircle': { const a = Math.PI + t * Math.PI * 2 * 0.98; pts.push([w / 2 + Math.cos(a) * (w / 2 - fs), hh / 2 + Math.sin(a) * (hh / 2 - fs)]); break; }
-        case 'textWave1': pts.push([m + t * (w - 2 * m), hh / 2 + fs / 3 + Math.sin(t * Math.PI * 2) * (hh / 2 - fs * 0.8)]); break;
-        case 'textSlantUp': pts.push([m + t * (w - 2 * m), hh - m - t * (hh - fs - m)]); break;
-        case 'textSlantDown': pts.push([m + t * (w - 2 * m), fs + t * (hh - fs - m)]); break;
-        case 'textTriangle': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh - m - t * 2 * (hh - fs - m) : fs + (t - 0.5) * 2 * (hh - fs - m)]); break;
-        case 'textChevron': pts.push([m + t * (w - 2 * m), t < 0.5 ? hh * 0.75 - t * 2 * hh * 0.35 : hh * 0.4 + (t - 0.5) * 2 * hh * 0.35]); break;
-        case 'textCanUp': pts.push([m + t * (w - 2 * m), hh * 0.85 - Math.sin(t * Math.PI) * hh * 0.25]); break;
-        default: pts.push([t * w, hh / 2]);
-      }
-    }
-    return pts;
-  }
+  /** LettersArt: its lines at the size they are saved with (docx-write.js: centred), bent by its warp
+      (L.geom.warpSVG, as PowerPoint and Word bend text) */
   DR.wordartSVG = function (sh) {
     const wa = sh.wordart || { text: 'LettersArt' };
-    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
-    const svg = s('svg', { class: 'wa', width: L.round(w * PX, 2), height: L.round(hh * PX, 2), viewBox: `0 0 ${L.round(w, 3)} ${L.round(hh, 3)}`, preserveAspectRatio: 'none', overflow: 'visible' });
-    const defs = s('defs');
-    svg.appendChild(defs);
-    const fill = svgPaint(sh.fill && sh.fill.t !== 'none' ? sh.fill : { t: 'solid', c: '#3366CC' }, defs);
-    const ln = sh.line && sh.line.t !== 'none' && sh.line.c ? sh.line : null;
-    const lines = String(wa.text || '').split('\n');
-    const common = { 'font-family': L.fontStack(wa.font || 'Arial Black'), 'font-weight': wa.b ? 700 : 400, 'font-style': wa.i ? 'italic' : 'normal', fill: fill.paint, 'fill-opacity': fill.opacity };
-    if (ln) Object.assign(common, { stroke: col(ln.c), 'stroke-width': Math.max(0.25, ln.w || 0.75), 'paint-order': 'stroke', 'stroke-linejoin': 'round' });
+    const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1), sz = wa.sz || 36;
+    const run = { size: sz, family: L.fontStack(wa.font || 'Arial Black'), bold: !!wa.b, italic: !!wa.i, paint: 0 };
+    const lines = String(wa.text || '').split('\n').map((t) => ({ runs: t ? [Object.assign({ text: t }, run)] : [], algn: 'ctr', size: sz, pitch: sz * 1.2 }));
+    const fill = sh.fill && sh.fill.t !== 'none' ? sh.fill : { t: 'solid', c: '#3366CC' }, ln = sh.line && sh.line.t !== 'none' && sh.line.c ? sh.line : null;
+    const svg = L.geom.warpSVG(sh.warp || wa.warp || 'textPlain', sh.warpAdj, w, hh, lines, (key, defs) => {
+      const out = { fill: null, stroke: null };
+      if (fill.t === 'solid') Object.assign(out, { fill: col(fill.c), fillOpacity: fill.a });
+      else { const p = svgPaint(fill, defs); Object.assign(out, { fill: p.paint, fillOpacity: p.opacity }); }
+      if (ln) Object.assign(out, { stroke: col(ln.c), strokeWidth: Math.max(0.25, ln.w || 0.75), strokeOpacity: ln.a });
+      return out;
+    }) || s('svg', { width: 1, height: 1 });
+    svg.setAttribute('class', 'wa');
+    svg.setAttribute('width', L.round(w * PX, 2)); svg.setAttribute('height', L.round(hh * PX, 2));
     if (sh.shadow) svg.style.filter = shadowCSS(sh.shadow);
-    const warp = sh.warp || wa.warp || 'textPlain';
-    if (warp === 'textPlain' || lines.length > 1) {
-      const lh = hh / lines.length;
-      lines.forEach((t, i) => {
-        const txt = s('text', Object.assign({ x: 0, y: L.round(i * lh + lh * 0.8, 2), 'font-size': L.round(lh * 0.86, 2), textLength: L.round(w, 2), lengthAdjust: 'spacingAndGlyphs' }, common));
-        txt.textContent = t || ' ';
-        svg.appendChild(txt);
-      });
-      return svg;
-    }
-    const fs = Math.min(hh * (warp === 'textCircle' ? 0.2 : 0.42), (w / Math.max(lines[0].length, 1)) * 1.4);
-    const pts = warpPoints(warp, w, hh, fs);
-    let len = 0;
-    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    const id = nid('wp');
-    defs.appendChild(s('path', { id, d: 'M' + pts.map((p) => L.round(p[0], 2) + ',' + L.round(p[1], 2)).join(' L') }));
-    const txt = s('text', Object.assign({ 'font-size': L.round(fs, 2) }, common));
-    const tp = s('textPath', { href: '#' + id, textLength: L.round(len * 0.98, 2), lengthAdjust: 'spacingAndGlyphs', startOffset: L.round(len * 0.01, 2) });
-    tp.textContent = lines[0];
-    txt.appendChild(tp);
-    svg.appendChild(txt);
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     return svg;
   };
 
@@ -277,14 +227,54 @@
           const next = w.find((x) => x.id === cid && x.seq === seq + 1 && x.el.isConnected);
           if (next) { chains.waiters = w.filter((x) => x !== next); next.fill(); }
         }
+        if (it.warp && !it.vert) DR.warpBox(box, tbx, it);
         if (it.autofit && !opts.inGroup) {
-          /* resize-shape-to-fit-text: the box grows with its text */
+          /* resize-shape-to-fit-text: the box is as tall as its text, grown or shrunk from the size saved (Word fits
+             it again when it lays the page out) */
           const need = inner.offsetHeight + px(ins.t + ins.b);
-          if (need > hh + 1) { box.style.height = need + 'px'; tbx.style.height = inner.offsetHeight + 'px'; const svg = box.querySelector('svg.geo'); if (svg) { const nh = need / PX; svg.setAttribute('height', need); svg.setAttribute('viewBox', `0 0 ${L.round(Math.max(it.w, 1), 3)} ${L.round(nh, 3)}`); const parts = L.geom.parts(Object.assign({}, it, { h: nh }), it.w, nh); const ps = svg.querySelectorAll('g > path'); parts.forEach((pp, i) => { if (ps[i]) ps[i].setAttribute('d', pp.d); }); } }
+          if (Math.abs(need - hh) > 1) { box.style.height = need + 'px'; tbx.style.height = inner.offsetHeight + 'px'; const svg = box.querySelector('svg.geo'); if (svg) { const nh = need / PX; svg.setAttribute('height', need); svg.setAttribute('viewBox', `0 0 ${L.round(Math.max(it.w, 1), 3)} ${L.round(nh, 3)}`); const parts = L.geom.parts(Object.assign({}, it, { h: nh }), it.w, nh); const ps = svg.querySelectorAll('g > path'); parts.forEach((pp, i) => { if (ps[i]) ps[i].setAttribute('d', pp.d); }); } }
         }
       };
     }
     return box;
+  };
+  /** a text box's text bent by its warp (bodyPr's prstTxWarp, L.geom.warpSVG) over the whole shape, from its lines
+      as laid out: the characters on each line with their fonts and colours as drawn. The laid-out text stays under it
+      for editing, shown in its place while the caret is in the box. */
+  DR.warpBox = function (box, tbx, it) {
+    const old = box.querySelector(':scope > svg.warp');
+    if (old) old.remove();
+    const lines = [], walk = document.createTreeWalker(tbx, NodeFilter.SHOW_TEXT);
+    let line = null, n = 0;
+    for (let t; (t = walk.nextNode()) && n < 4000;) {
+      const pe = t.parentElement, para = (pe && pe.closest('.p')) || tbx, cs = pe && getComputedStyle(pe);
+      if (!cs || cs.display === 'none' || cs.visibility === 'hidden') continue;
+      const style = { family: cs.fontFamily, size: parseFloat(cs.fontSize), bold: +cs.fontWeight >= 600, italic: cs.fontStyle !== 'normal',
+        paint: { color: /rgba\([^)]*,\s*0\)|transparent/.test(cs.color) && /gradient/.test(cs.backgroundImage) ? (cs.backgroundImage.match(/rgba?\([^)]*\)/) || [cs.color])[0] : cs.color, stroke: parseFloat(cs.webkitTextStrokeWidth) > 0 ? [cs.webkitTextStrokeColor, parseFloat(cs.webkitTextStrokeWidth)] : null } };
+      const r = document.createRange();
+      let i = 0;
+      for (const ch of Array.from(t.data)) {
+        r.setStart(t, i); r.setEnd(t, i + ch.length); i += ch.length; n++;
+        const q = r.getClientRects()[0];
+        if (!q) continue;
+        /* a new line where the text moves down a line, or a new paragraph starts */
+        if (!line || line.para !== para || q.top > line.top + line.size * 0.6) {
+          line = { para, top: q.top, size: style.size, runs: [], algn: { center: 'ctr', right: 'r', end: 'r' }[getComputedStyle(pe.closest('.pc') || para).textAlign] || 'l' };
+          lines.push(line);
+        }
+        const last = line.runs[line.runs.length - 1];
+        if (last && JSON.stringify([last.family, last.size, last.bold, last.italic, last.paint]) === JSON.stringify([style.family, style.size, style.bold, style.italic, style.paint])) last.text += ch;
+        else line.runs.push(Object.assign({ text: ch }, style));
+        line.size = Math.max(line.size, style.size);
+      }
+    }
+    lines.forEach((ln, k) => { ln.runs = ln.runs.filter((x, j, all) => j || x.text.trim() || all.length > 1); ln.pitch = k < lines.length - 1 ? Math.max(1, lines[k + 1].top - ln.top) : ln.size * 1.2; });
+    const w = Math.max(1, px(it.w)), hh = Math.max(1, px(it.h));
+    const svg = lines.length && L.geom.warpSVG(it.warp, it.warpAdj, w, hh, lines, ({ color, stroke }) => ({ fill: color, stroke: stroke && stroke[0], strokeWidth: stroke && stroke[1] }));
+    if (!svg) return;
+    svg.style.cssText = 'position:absolute;left:0;top:0';
+    box.classList.add('warped');
+    box.appendChild(svg);
   };
   /** run deferred text-box layouts below an element */
   DR.fillPending = function (root) {
@@ -304,6 +294,7 @@
     }
     const box = DR.objectEl(it, ctx);
     if (it.rot) box.style.transform = `rotate(${it.rot}deg)`;
+    R.effectRoom(box, it);
     return box;
   };
 
@@ -407,8 +398,10 @@
       const pos = floatPos(it, page, frag, anc, frame);
       if (!textWrap || ctx.inCell && !f.layoutInCell) {
         const lay = layer(page, f.wrap === 'behind' || f.behind);
-        wrap.style.cssText = `position:absolute;left:${pos.x}px;top:${pos.y}px;z-index:${Math.max(0, Math.min(1000, Math.round((f.z || 0) / 1e6)))}`;
+        /* stacked by relativeHeight inside the page's layer, every step kept (Word's VML z-index counts by one) */
+        wrap.style.cssText = `position:absolute;left:${pos.x}px;top:${pos.y}px;z-index:${Math.max(-2147483647, Math.min(2147483647, Math.round((f.z || 0) - 251658240)))}`;
         wrap._pos = pos;
+        wrap._frag = frag;
         lay.appendChild(wrap);
         (frag._floats || (frag._floats = [])).push(wrap);
         DR.fillPending(wrap);
@@ -429,21 +422,23 @@
     let ref = pc.firstChild;
     for (const { wrap, obj, pos, f } of wraps) {
       const dist = f.dist || { t: 0, b: 0, l: 9, r: 9 };
-      const t = px(dist.t || 0), b = px(dist.b || 0);
+      /* the room for the object's effects (wp:effectExtent) adds to its distance from the text, as Word keeps it */
+      const e = wrap._item.eff || { l: 0, t: 0, r: 0, b: 0 };
+      const t = px((dist.t || 0) + e.t), b = px((dist.b || 0) + e.b);
       const dy = Math.max(0, pos.y - pcY - t);
       const leftSide = pos.x + pos.ow / 2 < pcX + pcW / 2 || f.side === 'right';
       const side = f.wrap === 'topBottom' || leftSide ? 'left' : 'right';
       const sp = el('span', 'fl-sp', `float:${side};width:0;height:${Math.max(0, many ? dy - cursor : dy)}px${many ? ';clear:both' : ''}`);
       sp.contentEditable = 'false';
       if (f.wrap === 'topBottom') {
-        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};width:100%;height:${pos.oh + b}px;position:relative;padding-top:${t}px`;
+        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};width:100%;height:${t + pos.oh + b}px;position:relative;padding-top:${t}px`;
         obj.style.position = 'absolute';
         obj.style.left = pos.x - pcX + 'px';
         obj.style.top = t + 'px';
       } else if (leftSide) {
-        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};margin-left:${pos.x - pcX}px;margin-right:${px(dist.r || 9)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
+        wrap.style.cssText = `float:left;clear:${many ? 'both' : 'left'};margin-left:${pos.x - pcX}px;margin-right:${px((dist.r != null ? dist.r : 9) + e.r)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
       } else {
-        wrap.style.cssText = `float:right;clear:${many ? 'both' : 'right'};margin-right:${pcX + pcW - pos.x - pos.ow}px;margin-left:${px(dist.l || 9)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
+        wrap.style.cssText = `float:right;clear:${many ? 'both' : 'right'};margin-right:${pcX + pcW - pos.x - pos.ow}px;margin-left:${px((dist.l != null ? dist.l : 9) + e.l)}px;margin-bottom:${b}px;margin-top:${t}px;position:relative`;
       }
       wrap._pos = pos;
       pc.insertBefore(sp, ref);
@@ -451,7 +446,7 @@
       DR.fillPending(wrap);
       /* a text box that grows to fit its text takes its real height in the wrap */
       let oh = pos.oh;
-      if (obj.querySelector('.tbx')) { const real = obj.offsetHeight; if (real > oh + 0.5) { oh = real; if (f.wrap === 'topBottom') wrap.style.height = oh + b + 'px'; } }
+      if (obj.querySelector('.tbx')) { const real = obj.offsetHeight; if (Math.abs(real - oh) > 0.5) { oh = real; if (f.wrap === 'topBottom') wrap.style.height = t + oh + b + 'px'; } }
       cursor = Math.max(cursor, dy) + t + oh + b;
     }
   };
@@ -470,9 +465,11 @@
       t.textContent = wm.text;
       box.appendChild(t);
     } else if (wm.type === 'picture' && wm.media) {
-      const im = el('img', null, `max-width:${page.bodyW}px;max-height:${page.H * 0.7}px;${wm.washout !== false ? 'filter:brightness(1.7) contrast(0.25);' : ''}`);
+      const im = el('img', null, `max-width:${page.bodyW}px;max-height:${page.H * 0.7}px`);
       im.src = L.media.url(wm.media);
       if (wm.scale) { im.style.width = px((wm.w || 200) * wm.scale) + 'px'; }
+      const lum = wm.washout !== false && L.lumFilter(0.7, -0.7);   // Word's Washout
+      if (lum) { im.style.filter = lum.css; box.appendChild(lum.defs); }
       box.appendChild(im);
     }
     page.el.insertBefore(box, page.el.firstChild);
@@ -492,7 +489,23 @@
     const wrap = objEl.closest('.flt');
     /* presses anywhere in a text box's text area (on the text or the space around it) edit the text: the
        caret goes there and a drag selects; the box's border and margins move it */
-    if (e.target.closest && e.target.closest('.tbx')) { DR.clearSelection(); return false; }
+    const tbx = e.target.closest && e.target.closest('.tbx');
+    if (tbx) {
+      DR.clearSelection();
+      /* in the box's empty space (above or below its lines) the browser doesn't put the caret in the box: its
+         nearest line takes it */
+      if (e.button === 0 && !e.shiftKey && !e.target.closest('.p') && document.caretRangeFromPoint) {
+        const b = (tbx.firstElementChild || tbx).getBoundingClientRect();
+        const r = document.caretRangeFromPoint(L.clamp(e.clientX, b.left + 1, b.right - 1), L.clamp(e.clientY, b.top + 1, b.bottom - 1));
+        if (r && tbx.contains(r.startContainer)) {
+          e.preventDefault();
+          L.layout.root.focus({ preventScroll: true });
+          window.getSelection().setBaseAndExtent(r.startContainer, r.startOffset, r.startContainer, r.startOffset);
+          L.ed.syncSel();
+        }
+      }
+      return false;
+    }
     if (!wrap) {
       /* inline shape or chart: select as an inline object */
       if (objEl.classList.contains('shp') && objEl.closest('.p') && !objEl.closest('.flt')) {
@@ -538,6 +551,8 @@
     }
     const it = target._item;
     if (it && it.t === 'shape') { const rh = el('div', 'oh oh-rot'); rh.addEventListener('pointerdown', (ev) => startRotate(ev, target)); box.appendChild(rh); }
+    /* a right-click on a handle: the object's menu, as anywhere else on it */
+    box.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); if (L.app && L.app.contextMenu) L.app.contextMenu(ev); });
     sc.appendChild(box);
     handles = box;
     box._place = place;
@@ -675,6 +690,34 @@
     }
     it.float.wrap = wrap;
     it.float.behind = wrap === 'behind';
+  };
+  /** a shape that can hold text: AutoShapes and text boxes (not lines, LettersArt, the boxes of a linked story) */
+  DR.takesText = (it) => !!it && it.t === 'shape' && !it.wordart && !it.tbLink && it.geom !== 'line' && !L.geom.isLine(it.geom);
+  /** Word's Add Text / Edit Text on the selected shape: a caret at the end of its text, typing `text` there if given;
+      a shape without text first gets a paragraph centred in it, as Word starts one (an undo step of its own) */
+  DR.editText = function (text) {
+    const E = L.ed, os = E.objSel, it = DR.selectedItem();
+    if (!os || !DR.takesText(it)) return false;
+    const end = () => { const p = D.lastPara(it.tb.blocks); return D.pos(p, D.plen(p)); };
+    let pos = null;
+    if (!it.tb || text) {
+      E.edit(it.tb ? L.N('Typing') : L.N('Add Text'), () => {
+        if (!it.tb) {
+          D.touch(os.p);
+          it.tb = { kind: 'tb', blocks: [D.para([], { jc: 'center' })] };
+          it.txBox = false;
+          if (!it.anchor) it.anchor = 'ctr';
+          if (!it.ins) it.ins = { l: 7.2, t: 3.6, r: 7.2, b: 3.6 };
+          D.reindex(D.doc);
+        }
+        pos = text ? L.O.insertText(end(), text) : end();
+        return pos;
+      }, it.tb ? { merge: 'type' } : undefined);
+    }
+    /* the caret in its text ends the object selection (so the next keys type there) */
+    E.setSel(pos || end());
+    E.focus();
+    return true;
   };
   /** default AutoShape / text box item */
   DR.newShape = function (geom, w, h, opts) {

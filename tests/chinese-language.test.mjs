@@ -10,7 +10,7 @@ const read = async (p) => {
   assert.ok(r.ok, p);
   return r.text();
 };
-const pages = ['index.html', 'quire/index.html', 'ledger/index.html', 'lectern/index.html'];
+const pages = ['index.html', 'lite.html', 'quire/index.html', 'ledger/index.html', 'lectern/index.html'];
 async function boot(page, { query = '', stored = 'auto', languages = ['en-US'], language = 'en-US', unavailable = false } = {}) {
   const html = await read(page), attrs = { lang: 'en', dataset: {}, getAttribute(k) { return this[k]; } };
   const fetched = [], state = new Map([['vibeoffice.lang', stored]]);

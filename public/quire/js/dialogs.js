@@ -47,74 +47,19 @@
     return s;
   };
   /** colour picker button. value: 'auto' | 'RRGGBB' | null(no colour) */
+  /** a colour button (common ui.colorButton): values 'auto', null (none) or 'RRGGBB' without '#', as Quire keeps them */
   G.color = function (value, o) {
     o = o || {};
-    let val = value;
-    const sw = h('span', { class: 'cpk-sw' });
-    const lbl = h('span', { class: 'cpk-l' });
-    const btn = h('button', { type: 'button', class: 'cpk', id: o.id || nid('col') }, sw, lbl, h('span', { class: 'dd-arrow' }));
-    const show = () => { sw.style.background = val && val !== 'auto' ? '#' + val : o.autoColor || (val === 'auto' ? '#000' : 'transparent'); lbl.textContent = val === 'auto' ? L.t(o.autoText || 'Automatic') : !val ? L.t(o.noneText || 'No Color') : L.t(ui.colorName('#' + val)); };
-    show();
-    btn.addEventListener('click', () => ui.colorMenu(btn, { mode: o.mode || 'font', automatic: o.automatic !== false }, (v) => {
-      if (v && v.auto) val = 'auto';
-      else if (v && v.none) val = null;
-      else if (typeof v === 'string') val = v.replace('#', '').toUpperCase();
-      show();
-      if (o.onChange) o.onChange(val);
-    }));
-    btn.get = () => val;
-    btn.set = (v) => { val = v; show(); };
+    const toUI = (v) => (v && v !== 'auto' ? '#' + v : v);
+    const fromUI = (v) => (v && v !== 'auto' ? String(v).replace('#', '').toUpperCase() : v);
+    const btn = ui.colorButton(toUI(value), Object.assign({}, o, { id: o.id || nid('col'), onChange: o.onChange ? (v) => o.onChange(fromUI(v)) : null }));
+    const get = btn.get, set = btn.set;
+    btn.get = () => fromUI(get());
+    btn.set = (v) => set(toUI(v));
     return btn;
   };
-  /** list box with optional text input on top (Word's font/size/style pickers); items: values or { value, label }.
-   *  Labels are shown in the UI's language; o.translate === 'no': the items are data (fonts, sizes, names), shown as
-   *  they are. Items are matched by value, never by the text shown. */
-  G.listBox = function (items, value, o) {
-    o = o || {};
-    const box = h('div', { class: 'listbox', style: o.height ? `height:${o.height}px` : '', translate: o.translate || null });
-    const val = (it) => (typeof it === 'object' ? it.value : it);
-    const shown = (it) => { const s = typeof it === 'object' ? it.label : String(it); return o.translate === 'no' ? s : L.t(s); };
-    let list = items.slice();
-    const label = (v) => { const it = list.find((x) => String(val(x)) === String(v)); return it ? shown(it) : v == null ? '' : String(v); };
-    const inp = o.input ? h('input', { type: 'text', class: 'listbox-in', id: o.id || nid('lb'), value: label(value), autocomplete: 'off', translate: o.translate || null }) : null;
-    let cur = value;
-    const render = () => {
-      L.clear(box);
-      for (const it of list) {
-        const v = val(it);
-        const el = h('div', { class: 'li' + (String(v) === String(cur) ? ' on' : '') });
-        el.textContent = shown(it);
-        el._v = v;
-        if (typeof it === 'object' && it.style) el.style.cssText += it.style;
-        if (typeof it === 'object' && it.group) { el.className = 'li-group'; box.appendChild(el); continue; }
-        el.addEventListener('click', () => { pick(v); });
-        el.addEventListener('dblclick', () => { pick(v); if (o.onDbl) o.onDbl(v); });
-        box.appendChild(el);
-      }
-      const on = box.querySelector('.li.on');
-      if (on) setTimeout(() => on.scrollIntoView({ block: 'nearest' }), 0);
-    };
-    const mark = (v) => { for (const el of box.querySelectorAll('.li')) el.classList.toggle('on', v !== undefined && String(el._v) === String(v)); };
-    const pick = (v, fromInput) => { cur = v; if (inp && !fromInput) inp.value = label(v); mark(v); if (o.onChange) o.onChange(v); };
-    if (inp) inp.addEventListener('input', () => {
-      const v = inp.value, lc = v.toLowerCase();
-      const hit = list.find((x) => shown(x).toLowerCase().startsWith(lc));
-      /* a label typed in the UI's language stands for its value */
-      const exact = list.find((x) => shown(x).toLowerCase() === lc);
-      cur = exact && shown(exact) !== String(val(exact)) ? val(exact) : v;
-      mark(hit ? val(hit) : undefined);
-      const on = box.querySelector('.li.on');
-      if (on) on.scrollIntoView({ block: 'nearest' });
-      if (o.onChange) o.onChange(cur);
-    });
-    render();
-    const wrap = h('div', { class: 'col', style: 'gap:2px' }, inp, box);
-    wrap.get = () => (inp ? (cur != null && label(cur) === inp.value ? String(cur) : inp.value) : cur);
-    wrap.set = (v) => { cur = v; if (inp) inp.value = label(v); render(); };
-    wrap.setItems = (it) => { list = it; render(); };
-    wrap.input = inp;
-    return wrap;
-  };
+  /** list box (common ui.listBox), with an optional text box on top (Word's font/size/style pickers) */
+  G.listBox = (items, value, o) => ui.listBox(items, value, o);
   /** text that is data (a sample, a name, the document's own text): shown as it is, never translated */
   const raw = (tag, attrs, text) => { const el = h(tag, Object.assign({ translate: 'no' }, attrs)); el.textContent = text; return el; };
   G.raw = raw;
@@ -132,8 +77,9 @@
   };
   const FONTS = () => Array.from(new Set(L.FONT_LIST.concat(Object.values(doc().styles).map((s) => s.rPr && s.rPr.font).filter(Boolean), [doc().defaults.rPr.font]))).sort((a, b) => a.localeCompare(b));
   G.FONTS = FONTS;
-  /** mixed values across the selection (undefined when mixed) */
-  const uni = (k) => E.uniformRun(k);
+  /** a run property over the selection, MIXED when it varies */
+  const MIXED = {};
+  const uni = (k) => E.uniformRun(k, MIXED);
   /** apply props and remember the dialog choices */
   function preview(el, r) {
     el.style.cssText = R.runCSS(Object.assign({}, r, { sz: Math.min(r.sz || 12, 30) }), 1) + ';white-space:nowrap;overflow:hidden';
@@ -148,12 +94,14 @@
   G.font = function (opts) {
     opts = opts || {};
     const base = opts.target ? Object.assign({}, opts.base || {}, opts.target) : E.curRun();
-    const val = (k) => (opts.target ? base[k] : uni(k));
+    /* the properties that vary over the selection: blank or indeterminate in the dialog, untouched unless changed */
+    const mixed = new Set();
+    const val = (k) => { if (opts.target) return base[k]; const v = uni(k); if (v !== MIXED) return v; mixed.add(k); return undefined; };
     const st = { font: val('font'), sz: val('sz'), b: val('b'), i: val('i'), u: val('u'), uColor: val('uColor'), color: val('color'), strike: val('strike'), dstrike: val('dstrike'), vert: val('vert'), shadow: val('shadow'), outline: val('outline'), emboss: val('emboss'), imprint: val('imprint'), smallCaps: val('smallCaps'), caps: val('caps'), hidden: val('hidden'), w: val('w'), spacing: val('spacing'), position: val('position'), kern: val('kern'), effect: val('effect') };
     const changed = new Set();
     const set = (k, v) => { st[k] = v; changed.add(k); upd(); };
     const fontLB = G.listBox(FONTS(), st.font || '', { input: true, height: 110, id: 'fd-font', translate: 'no', onChange: (v) => set('font', v) });
-    const styleName = () => (st.b && st.i ? 'Bold Italic' : st.b ? 'Bold' : st.i ? 'Italic' : st.b === undefined || st.i === undefined ? '' : 'Regular');
+    const styleName = () => (st.b && st.i ? 'Bold Italic' : st.b ? 'Bold' : st.i ? 'Italic' : (opts.target ? st.b === undefined || st.i === undefined : mixed.has('b') || mixed.has('i')) ? '' : 'Regular');
     const styleLB = G.listBox([L.N('Regular'), L.N('Italic'), L.N('Bold'), L.N('Bold Italic')], styleName(), { input: true, height: 110, id: 'fd-style', onChange: (v) => { const s = String(v).toLowerCase(); st.b = /bold/.test(s); st.i = /italic/.test(s); changed.add('b'); changed.add('i'); upd(); } });
     const sizeLB = G.listBox(L.SIZE_LIST.map(String), st.sz != null ? String(L.round(st.sz, 1)) : '', { input: true, height: 110, id: 'fd-size', translate: 'no', onChange: (v) => { const n = parseFloat(v); if (n > 0) set('sz', L.clamp(Math.round(n * 2) / 2, 1, 1638)); } });
     const color = G.color(st.color == null ? 'auto' : st.color, { id: 'fd-color', onChange: (v) => set('color', v === 'auto' ? undefined : v) });
@@ -169,7 +117,7 @@
         else { st[k] = v || (opts.target ? undefined : false); changed.add(k); if (v && k === 'strike') { st.dstrike = undefined; fxEls.dstrike.input.checked = false; changed.add('dstrike'); } if (v && k === 'dstrike') { st.strike = undefined; fxEls.strike.input.checked = false; changed.add('strike'); } if (v && k === 'caps') { st.smallCaps = undefined; fxEls.smallCaps.input.checked = false; changed.add('smallCaps'); } if (v && k === 'smallCaps') { st.caps = undefined; fxEls.caps.input.checked = false; changed.add('caps'); } if (v && k === 'emboss') { st.imprint = undefined; fxEls.imprint.input.checked = false; changed.add('imprint'); } if (v && k === 'imprint') { st.emboss = undefined; fxEls.emboss.input.checked = false; changed.add('emboss'); } }
         upd();
       });
-      if (k !== 'sup' && k !== 'sub' && st[k] === undefined && !opts.target && E.uniformRun(k) === undefined && !E.collapsed()) c.input.indeterminate = true;
+      if (k === 'sup' || k === 'sub' ? mixed.has('vert') : mixed.has(k)) c.input.indeterminate = true;
       fxEls[k] = c;
       fxBox.appendChild(c);
     }
@@ -200,7 +148,7 @@
     const anim = ui.select([['', '(none)'], ['blinkBackground', 'Blinking Background'], ['lights', 'Las Vegas Lights'], ['antsBlack', 'Marching Black Ants'], ['antsRed', 'Marching Red Ants'], ['shimmer', 'Shimmer'], ['sparkle', 'Sparkle Text']], st.effect || '', (v) => set('effect', v || undefined), { id: 'fd-anim', size: 7, style: 'width:100%' });
     const tabs = ui.tabs([
       { label: 'Fo&nt', body: h('div', null, G.row(h('div', { class: 'col', style: 'flex:2;min-width:150px' }, h('label', { for: 'fd-font', html: ui.ampHTML('&Font:') }), fontLB), h('div', { class: 'col', style: 'flex:1.2;min-width:100px' }, h('label', { for: 'fd-style', html: ui.ampHTML('Font st&yle:') }), styleLB), h('div', { class: 'col', style: 'flex:0.7;min-width:60px' }, h('label', { for: 'fd-size', html: ui.ampHTML('&Size:') }), sizeLB)),
-        G.row(G.f('Font &color:', color), G.f('&Underline style:', ul), G.f('Underline color:', ulColor)), ui.group('Effects', fxBox)) },
+        G.row(G.f('Font &color:', color), G.f('&Underline style:', ul), G.f('Underline co&lor:', ulColor)), ui.group('Effects', fxBox)) },
       { label: 'Cha&racter Spacing', body: h('div', { class: 'col' }, G.f('S&cale:', scale, 'wide'), G.row(G.f('&Spacing:', spKind, 'wide'), G.f('&By:', spBy, 'narrow')), G.row(G.f('&Position:', posKind, 'wide'), G.f('B&y:', posBy, 'narrow')), G.row(kern, G.f('Poi&nts and above', kernAt))) },
       { label: 'Te&xt Effects', body: h('div', { class: 'col' }, h('label', { for: 'fd-anim', text: 'Animations:' }), anim, h('div', { class: 'tp-note', text: 'Animated text effects are kept in the file; they display as plain text, as in later versions of Word.' })) },
     ], opts.tab || 0);
@@ -623,7 +571,7 @@
     const s = A().curSect();
     const sect = s.sect;
     const cols = Object.assign({ n: 1, space: 36, eq: true, w: [], sep: false }, sect.cols || {});
-    const bodyW = sect.pgW - sect.ml - sect.mr - (sect.gutter || 0);
+    const bodyW = D.textWidth(doc(), sect);
     const n = G.num(cols.n, { min: 1, max: 13, id: 'cd-n', onChange: () => { cols.n = n.get(); build(); } });
     const eq = ui.check('&Equal column width', cols.eq !== false, (v) => { cols.eq = v; build(); });
     const sep = ui.check('Line &between', !!cols.sep, (v) => { cols.sep = v; drawPv(); });
@@ -706,7 +654,7 @@
     const sect = L.clone(s.sect);
     const mt = G.len(sect.mt, { id: 'ps-t', min: -1584 }), mb = G.len(sect.mb, { id: 'ps-b', min: -1584 }), ml = G.len(sect.ml, { id: 'ps-l', min: 0 }), mr = G.len(sect.mr, { id: 'ps-r', min: 0 });
     const gutter = G.len(sect.gutter || 0, { id: 'ps-g', min: 0 });
-    const gutPos = ui.select([['left', 'Left'], ['top', 'Top']], d.settings.gutterAtTop ? 'top' : 'left', null, { id: 'ps-gp' });
+    const gutPos = ui.select([['left', 'Left'], ['top', 'Top']], d.settings.gutterTop ? 'top' : 'left', null, { id: 'ps-gp' });
     let orient = sect.orient || (sect.pgW > sect.pgH ? 'landscape' : 'portrait');
     const orBtns = h('div', { class: 'preset-grid' });
     const orB = (k, l) => { const b = h('button', { type: 'button', class: orient === k ? 'on' : '' }, h('div', { class: 'ps-page', style: k === 'landscape' ? 'width:60px;height:46px' : 'width:46px;height:60px' }), h('span', { html: l })); b.addEventListener('click', () => { if (orient !== k) { orient = k; const w = pw.get(), hh = ph.get(); pw.set(Math.min(w, hh) === w && k === 'landscape' ? hh : w); ph.set(Math.min(w, hh) === w && k === 'landscape' ? w : hh); if (k === 'portrait' && w > hh) { pw.set(hh); ph.set(w); } } L.$$('button', orBtns).forEach((x) => x.classList.toggle('on', x === b)); drawPv(); }); return b; };
@@ -770,7 +718,7 @@
         d.settings.evenOdd = evenOdd.input.checked;
         d.settings.mirror = multi.value === 'mirror' || multi.value === 'bookFold';
         d.settings.bookFold = multi.value === 'bookFold' || undefined;
-        d.settings.gutterAtTop = gutPos.value === 'top' || undefined;
+        d.settings.gutterTop = gutPos.value === 'top' || undefined;
         const assign = (hd) => { D.touchKey(hd, 'sect'); const sc = hd === d ? d.sect : hd.sect; Object.assign(sc, v); };
         if (applyTo.value === 'all') for (const sc of D.sections(d)) assign(sc.endPara || d);
         else if (applyTo.value === 'forward') {

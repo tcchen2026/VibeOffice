@@ -14,13 +14,13 @@
       protectWorkbook: 'protect', allowEditRanges: 'protect', deleteComment: 'delete', showHideComment: 'comment', showComments: 'comment', viewNormal: 'normalGrid', newWindow: 'newWindow',
       arrangeWindows: 'arrangeAll', macros: 'macros', formulaBar: 'fx', statusBar: 'layout', gridlinesView: 'grid', headingsView: 'headingRows', setPrintArea: 'pageSetup', insertPageBreak: 'pageBreak',
       resetPageBreaks: 'pageBreak', sheetBackground: 'background', createList: 'table', totalRow: 'autoSum', convertToRange: 'tableToText', newSheetChart: 'chart', exportCSV: 'excel', conditionalFormat: 'condFormat', styleDlg: 'stylesPane', headerFooter: 'headerFooter', formatObject: 'formatPicture' },
-    qat: ['save', 'undo', 'redo'],
-    file: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'properties', ...(L.file.native() ? ['versions'] : []), 'links', '-', 'pageSetup', 'printPreview', 'print', '-', 'exportPDF', 'exportCSV', '-', 'options', 'addIns', 'help', 'about', '-', 'exitApp'],
+    qat: ['save', { split: 'undo', menu: (r) => A().historyMenu(r, 'undo') }, { split: 'redo', menu: (r) => A().historyMenu(r, 'redo') }],
+    file: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), 'links', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', 'exportCSV', '-', 'options', 'addIns', 'help', 'about', '-', 'exitApp'],
     tabs: [
       { id: 'home', label: '&Home', groups: [
         { label: 'Clipboard', launcher: 'officeClipboard', items: [{ split: 'paste', size: 'large', menu: open(['paste', 'pasteValues', 'pasteSpecial', 'pasteHyperlink']) }, 'cut', 'copy', 'formatPainter'] },
         { label: 'Font', icon: 'font', launcher: 'formatCells', items: [
-          { row: [{ make: () => A().parts.font({ width: 132, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 44, id: 'rb-size' }) }] },
+          { row: [{ make: () => A().parts.font({ width: 130, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 44, id: 'rb-size' }) }, 'growFont', 'shrinkFont'] },
           { row: ['bold', 'italic', 'underline', 'strike', '|', { split: 'bordersApply', menu: (r, b) => A().menus.borders(r, b) }, { split: 'fillColorApply', menu: (r, b) => A().menus.fill(r, b) }, { split: 'fontColorApply', menu: (r, b) => A().menus.fontColor(r, b) }] }] },
         { label: 'Alignment', launcher: 'formatCells', items: [
           { row: ['alignLeft', 'alignCenter', 'alignRight', '|', 'decIndent', 'incIndent'] },
@@ -42,10 +42,10 @@
       ] },
       { id: 'insert', label: '&Insert', groups: [
         { label: 'Tables', items: [{ cmd: 'pivotTable', size: 'large', label: 'PivotTable' }, { cmd: 'createList', size: 'large', label: 'Table' }] },
-        { label: 'Illustrations', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', { cmd: 'insertShape', label: 'Shapes', icon: 'autoshapes' }] },
-        { label: 'Charts', items: [{ cmd: 'chartWizard', size: 'large', label: 'Chart' }, 'insertChart', 'newSheetChart'] },
+        { label: 'Illustrations', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', { drop: 'Shapes', icon: 'autoshapes', menu: (r) => L.drawing.autoShapesMenu(r) }] },
+        { label: 'Charts', items: [{ cmd: 'insertChart', size: 'large', label: 'Chart' }, 'newSheetChart'] },
         { label: 'Links', items: [{ cmd: 'hyperlink', size: 'large', label: 'Hyperlink' }] },
-        { label: 'Text', items: [{ cmd: 'insertTextBox', size: 'large', label: 'Text Box' }, 'headerFooter'] },
+        { label: 'Text', items: [{ cmd: 'insertTextBox', size: 'large', label: 'Text Box' }, { cmd: 'headerFooter', size: 'large', label: 'Header & Footer' }] },
         { label: 'Symbols', items: [{ cmd: 'insertSymbol', size: 'large', label: 'Symbol' }] },
       ] },
       { id: 'pageLayout', label: 'Page Layout', groups: [
@@ -62,7 +62,7 @@
       ] },
       { id: 'data', label: '&Data', groups: [
         { label: 'Get External Data', items: [{ cmd: 'importText', size: 'large', label: 'From Text' }, { cmd: 'refreshData', size: 'large', label: 'Refresh All' }] },
-        { label: 'Sort & Filter', items: [{ row: ['sortAsc', 'sortDesc'] }, { cmd: 'sortDlg', size: 'large', label: 'Sort' }, { cmd: 'autoFilter', size: 'large', label: 'Filter' }, 'showAll', 'advancedFilter'] },
+        { label: 'Sort & Filter', items: ['sortAsc', 'sortDesc', { cmd: 'sortDlg', size: 'large', label: 'Sort' }, { cmd: 'autoFilter', size: 'large', label: 'Filter' }, 'showAll', 'advancedFilter'] },
         { label: 'Data Tools', items: [{ cmd: 'textToColumns', size: 'large', label: 'Text to Columns' }, { split: 'validation', menu: open(['validation', 'circleInvalid', 'clearCircles']) }, 'consolidate', 'dataForm'] },
         { label: 'Forecast', items: [{ drop: 'What-If Analysis', icon: 'goalSeek', size: 'large', menu: open(['scenarios', 'goalSeek', 'dataTable']) }] },
         { label: 'Outline', launcher: 'outlineSettings', items: [{ cmd: 'groupRows', size: 'large', label: 'Group' }, { split: 'ungroupRows', size: 'large', label: 'Ungroup', menu: open(['ungroupRows', 'clearOutline']) }, { cmd: 'subtotals', size: 'large', label: 'Subtotal' }, 'showDetail', 'hideDetail', 'autoOutline'] },
@@ -75,7 +75,7 @@
       { id: 'view', label: 'Vie&w', groups: [
         { label: 'Workbook Views', items: [{ cmd: 'viewNormal', size: 'large', label: 'Normal' }, { cmd: 'viewPageBreak', size: 'large', label: 'Page Break Preview' }, 'fullScreen'] },
         { label: 'Show', items: ['formulaBar', { cmd: 'gridlinesView', label: 'Gridlines' }, { cmd: 'headingsView', label: 'Headings' }, 'statusBar', 'taskPane'] },
-        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { make: () => A().parts.zoom({ width: 70, id: 'rb-zoom' }) }] },
+        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { cmd: 'zoom100', size: 'large' }, { cmd: 'zoomSelection', size: 'large' }] },
         { label: 'Window', items: [{ cmd: 'newWindow', size: 'large', label: 'New Window' }, 'arrangeWindows', { cmd: 'freezePanes', size: 'large', label: 'Freeze Panes' }, 'splitWindow'] },
         { label: 'Macros', items: [{ cmd: 'macros', size: 'large', label: 'Macros' }] },
       ] },
@@ -93,7 +93,7 @@
       ] },
       { id: 'drawing', set: 'Drawing Tools', when: ctx('shape'), tabs: [
         { id: 'drawingFormat', label: 'Format', groups: [
-          { label: 'Insert Shapes', items: [{ cmd: 'insertShape', size: 'large', label: 'Shapes', icon: 'autoshapes' }, 'insertTextBox'] },
+          { label: 'Insert Shapes', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => L.drawing.autoShapesMenu(r) }, 'insertTextBox'] },
           { label: 'Shape Styles', launcher: 'formatObject', items: [{ cmd: 'fillColorApply', size: 'large', label: 'Shape Fill' }] },
           { label: 'Arrange', items: [{ drop: 'Arrange', icon: 'bringFront', size: 'large', menu: (r) => A().menus.draw(r) }] },
         ] },

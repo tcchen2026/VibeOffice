@@ -46,3 +46,16 @@ commands.allow = [
   "host_close_window",
   "host_set_setting",
 ]
+
+[[permission]]
+identifier = "lite"
+description = "The lite edition's one window (src/lite.rs): the documents in ~/VibeOffice/Documents, opening one or a new one in the window, back to the start page, the licences page, quitting, Lectern's slide show on HDMI"
+commands.allow = [
+  "host_lite_list",
+  "host_lite_open",
+  "host_lite_new",
+  "host_lite_home",
+  "host_lite_licenses",
+  "host_lite_quit",
+  "host_lite_show",
+]

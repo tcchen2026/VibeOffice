@@ -6,7 +6,7 @@ const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} };
 require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops, output = process.env.OBJECT_RESULTS, results = [];
-const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
+const corpus = process.env.VO_CORPORA || '/work/corpora';
 const fixtures = { control: 'libreoffice__1b04d082bd6e__button-form-control.xlsx', ole: 'poi__2a89697e0dc6__58325_lt.xlsx',
   named: 'libreoffice__8d005aca2c1d__tdf161365.xlsx', mixed: 'poi__9028285d4065__bug66827.xlsx',
   vml: 'libreoffice__9f0dba934b74__tdf166724_cellAnchor.xlsx', properties: 'poi__448351c00314__60512.xlsm',

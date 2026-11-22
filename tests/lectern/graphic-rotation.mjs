@@ -1,12 +1,11 @@
 // Real chart/embedded-object commands and recovery of old rotated model state.
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 const [out] = process.argv.slice(2);
 if (!out) throw new Error('Usage: graphic-rotation.mjs OUTPUT');
 fs.mkdirSync(out, { recursive: true });
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const stop = await ensureServer(), page = await openPage('lectern', { persistence: false }), reports = [];
 try {
   for (const [file, kind] of [['poi__e162cc2c2bf0__bar-chart.pptx', 'chart'], ['libreoffice__12b5c8257d02__ole-emf_min.pptx', 'ole']]) {

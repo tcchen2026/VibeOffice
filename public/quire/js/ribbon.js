@@ -14,12 +14,12 @@
       setLanguage: 'language', deleteAllComments: 'delete', showComments: 'comment', compareDocs: 'compare', newWindow: 'newWindow', arrangeAll: 'arrangeAll', splitWindow: 'split',
       macros: 'macros', headingRows: 'headingRows', splitTable: 'splitTable', tableToText: 'tableToText', formulaDlg: 'fx', wordartEdit: 'editText', hfClose: 'close' },
     qat: ['save', { split: 'undo', menu: (r) => A().historyMenu(r, 'undo') }, { split: 'redo', menu: (r) => A().historyMenu(r, 'redo') }],
-    file: () => ['new', 'open', 'close', 'templates', 'fileSearch', '-', 'save', 'saveAs', 'saveWeb', 'webPreview', '-', 'properties', ...(L.file.native() ? ['versions'] : []), 'permission', 'links', '-', 'pageSetup', 'printPreview', 'print', '-', 'exportPDF', 'sendMail', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
+    file: () => ['new', 'open', 'close', 'templates', 'fileSearch', '-', 'save', 'saveAs', 'saveWeb', 'webPreview', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), 'permission', 'links', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', 'sendMail', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
     tabs: [
       { id: 'home', label: '&Home', groups: [
         { label: 'Clipboard', launcher: 'officeClipboard', items: [{ split: 'paste', size: 'large', menu: open(['paste', 'pasteSpecial', 'pasteHyperlink']) }, 'cut', 'copy', 'painter'] },
         { label: 'Font', icon: 'font', launcher: 'fontDlg', items: [
-          { row: [{ make: () => A().parts.font({ width: 128, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 42, id: 'rb-size' }) }, 'growFont', 'shrinkFont', 'changeCase', 'clearFormats'] },
+          { row: [{ make: () => A().parts.font({ width: 130, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 44, id: 'rb-size' }) }, 'growFont', 'shrinkFont', 'changeCase', 'clearFormats'] },
           { row: ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', '|', { split: 'highlightBtn', menu: (r, b) => A().menus.highlight(r, b) }, { split: 'fontColorBtn', menu: (r, b) => A().menus.fontColor(r, b) }] }] },
         { label: 'Paragraph', icon: 'paragraph', launcher: 'paragraphDlg', items: [
           { row: [{ split: 'bullets', menu: open(['bulletsDlg']) }, 'numbering', 'decIndent', 'incIndent', '|', 'sortDlg', 'showMarks'] },
@@ -33,7 +33,7 @@
         { label: 'Illustrations', items: [{ cmd: 'insertPicture', size: 'large', label: 'Pictures' }, 'insertClipArt', { drop: 'Shapes', icon: 'autoshapes', menu: (r) => A().openAutoShapes(r) }, 'insertDiagram', 'insertChart'] },
         { label: 'Links', items: ['hyperlink', 'bookmark', 'crossReference'] },
         { label: 'Comments', items: [{ cmd: 'insertComment', size: 'large', label: 'Comment' }] },
-        { label: 'Header & Footer', items: ['headerFooter', 'pageNumbers'] },
+        { label: 'Header & Footer', items: [{ cmd: 'headerFooter', label: 'Header & Footer' }, 'pageNumbers'] },
         { label: 'Text', items: [{ cmd: 'textBox', size: 'large', label: 'Text Box' }, 'insertWordArt', 'dropCap', 'dateTime', 'insertField', 'insertObject', 'insertFile'] },
         { label: 'Symbols', items: [{ cmd: 'insertSymbol', size: 'large', label: 'Symbol' }] },
       ] },
@@ -44,7 +44,7 @@
       { id: 'layout', label: 'Layout', groups: [
         { label: 'Page Setup', launcher: 'pageSetup', items: [{ cmd: 'pageSetup', size: 'large', label: 'Margins' }, { drop: 'Columns', icon: 'columns', size: 'large', menu: (r) => A().menus.columns(r, ['-', 'columnsDlg']) }, 'insertBreak', 'hyphenation', 'textDirection'] },
         { label: 'Paragraph', icon: 'paragraph', launcher: 'paragraphDlg', items: ['incIndent', 'decIndent', 'tabsDlg'] },
-        { label: 'Arrange', items: ['bringFront', 'sendBack', { drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, 'groupObj', 'ungroupObj', 'rotateRight'] },
+        { label: 'Arrange', items: ['bringFront', 'sendBack', { drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, { drop: 'Group', icon: 'group', menu: open(['groupObj', 'regroupObj', 'ungroupObj']) }, 'rotateRight'] },
       ] },
       { id: 'references', label: 'Refe&rences', groups: [
         { label: 'Table of Contents', items: [{ cmd: 'indexTables', size: 'large', label: 'Table of Contents' }, 'updateTOC'] },
@@ -71,9 +71,9 @@
         { label: 'Protect', items: [{ cmd: 'protectDoc', size: 'large', label: 'Protect Document' }] },
       ] },
       { id: 'view', label: 'Vie&w', groups: [
-        { label: 'Views', items: [{ cmd: 'viewReading', size: 'large', label: 'Read Mode' }, { cmd: 'viewPrint', size: 'large', label: 'Print Layout' }, { cmd: 'viewWeb', size: 'large', label: 'Web Layout' }, 'viewOutline', 'viewNormal'] },
+        { label: 'Views', items: [{ cmd: 'viewReading', size: 'large', label: 'Read Mode' }, { cmd: 'viewPrint', size: 'large', label: 'Print Layout' }, { cmd: 'viewWeb', size: 'large', label: 'Web Layout' }, 'viewOutline', 'viewNormal', 'fullScreen'] },
         { label: 'Show', items: ['ruler', 'docMap', 'thumbnails', 'taskPane'] },
-        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { make: () => A().parts.zoom({ width: 90, id: 'rb-zoom' }) }, 'fullScreen'] },
+        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { cmd: 'zoom100', size: 'large' }, 'zoomOnePage', 'zoomMultiPage', 'zoomPageWidth'] },
         { label: 'Window', items: [{ cmd: 'newWindow', size: 'large', label: 'New Window' }, 'arrangeAll', 'splitWindow'] },
         { label: 'Macros', items: [{ cmd: 'macros', size: 'large', label: 'Macros' }] },
       ] },
@@ -106,7 +106,7 @@
           { label: 'Insert Shapes', items: [{ drop: 'Shapes', icon: 'autoshapes', size: 'large', menu: (r) => A().openAutoShapes(r) }, 'textBox'] },
           { label: 'Shape Styles', launcher: 'formatObject', items: [{ split: 'fillColor', menu: (r, b) => A().objColorMenu(b, 'fill') }, { split: 'lineColor', menu: (r, b) => A().objColorMenu(b, 'line') }, { drop: 'Shadow', icon: 'shadowStyle', menu: (r) => A().objShadowMenu(r) }] },
           { label: 'LettersArt Styles', items: [{ cmd: 'wordartGallery', size: 'large', label: 'LettersArt Styles' }, 'wordartEdit'] },
-          { label: 'Arrange', items: [{ drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, 'bringFront', 'sendBack', 'groupObj', 'ungroupObj', 'rotateRight'] },
+          { label: 'Arrange', items: [{ drop: 'Wrap Text', icon: 'textWrap', menu: (r) => A().wrapMenu(r) }, 'bringFront', 'sendBack', { drop: 'Group', icon: 'group', menu: open(['groupObj', 'regroupObj', 'ungroupObj']) }, 'rotateRight'] },
         ] },
       ] },
       { id: 'headerFooter', set: 'Header & Footer Tools', open: true, when: ctx('headerFooter'), tabs: [

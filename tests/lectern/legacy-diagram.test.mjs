@@ -3,11 +3,10 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 
-const file = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint', 'poi__6d3225f18c39__PPTWithAttachments.pptm');
+const file = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint', 'poi__6d3225f18c39__PPTWithAttachments.pptm');
 let page, stop;
 before(async () => {
   if (!fs.existsSync(file)) return;

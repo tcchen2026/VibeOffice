@@ -9,19 +9,19 @@
 
   L.ribbonSpec = () => ({
     icons: { clear: 'delete', duplicate: 'duplicate', deleteSlide: 'delete', vTextBox: 'vtextbox', slidesFromFiles: 'insertSlides', slidesFromOutline: 'outlineTxt', replaceFonts: 'font',
-      viewNotes: 'notesView', viewColor: 'grayscale', viewBW: 'grayscale', zoomFit: 'zoom', closeMaster: 'close', insertTitleMaster: 'master', deleteTitleMaster: 'delete', speakerNotes: 'notesView',
+      viewNotes: 'notesView', viewColor: 'grayscale', viewBW: 'grayscale', closeMaster: 'close', insertTitleMaster: 'master', deleteTitleMaster: 'delete', speakerNotes: 'notesView',
       selectTable: 'selectTable', tableBordersFill: 'tablesBorders', regroup: 'group', alignToSlide: 'alignC', editPoints: 'freeform', summarySlide: 'summary', slidesPane: 'thumbnails',
       gridGuides: 'grid', autocorrectDlg: 'options', duplicateSlide: 'duplicate', subscript: 'subscript', superscript: 'superscript', headerFooter: 'headerFooter',
       pageSetup: 'pageSetup', animSchemes: 'animation' },
-    qat: ['save', 'undo', 'redo', 'showFromStart'],
-    file: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'properties', ...(L.file.native() ? ['versions'] : []), '-', 'pageSetup', 'printPreview', 'print', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
+    qat: ['save', { split: 'undo', menu: (r) => A().historyMenu(r, 'undo') }, { split: 'redo', menu: (r) => A().historyMenu(r, 'redo') }, 'showFromStart'],
+    file: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', 'optionsDlg', 'help', 'about', '-', 'exitApp'],
     tabs: [
       { id: 'home', label: '&Home', groups: [
         { label: 'Clipboard', launcher: 'officeClipboard', items: [{ split: 'paste', size: 'large', menu: open(['paste', 'pasteSpecial']) }, 'cut', { split: 'copy', menu: open(['copy', 'duplicate']) }, 'painter'] },
         { label: 'Slides', items: [{ split: 'newSlide', size: 'large', label: 'New Slide', menu: open(['newSlide', 'duplicateSlide', '-', 'slidesFromFiles', 'slidesFromOutline']) }, { cmd: 'slideLayout', label: 'Layout' }, 'duplicateSlide', 'deleteSlide'] },
         { label: 'Font', icon: 'font', launcher: 'fontDlg', items: [
           { row: [{ make: () => A().parts.font({ width: 130, id: 'rb-font' }) }, { make: () => A().parts.size({ width: 44, id: 'rb-size' }) }, 'growFont', 'shrinkFont', 'changeCase'] },
-          { row: ['bold', 'italic', 'underline', 'shadowText', 'subscript', 'superscript', '|', { split: 'fontColor', menu: (r, b) => A().menus.color('font')(r, b) }] }] },
+          { row: ['bold', 'italic', 'underline', 'shadowText', 'strike', 'subscript', 'superscript', '|', { split: 'fontColor', menu: (r, b) => A().menus.color('font')(r, b) }] }] },
         { label: 'Paragraph', icon: 'paragraph', launcher: 'bulletsDlg', items: [
           { row: ['bullets', 'numbering', '|', 'promote', 'demote', '|', 'lineSpacing'] },
           { row: ['alignLeft', 'alignCenter', 'alignRight', 'justify'] }] },
@@ -65,8 +65,8 @@
       { id: 'view', label: 'View', groups: [
         { label: 'Presentation Views', items: [{ cmd: 'viewNormal', size: 'large', label: 'Normal' }, { cmd: 'viewSorter', size: 'large', label: 'Slide Sorter' }, { cmd: 'viewNotes', size: 'large', label: 'Notes Page' }] },
         { label: 'Master Views', items: [{ cmd: 'viewMaster', size: 'large', label: 'Slide Master' }] },
-        { label: 'Show', items: ['ruler', 'showGrid', 'gridGuides', { cmd: 'speakerNotes', label: 'Notes' }, 'slidesPane', 'taskPane'] },
-        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { cmd: 'zoomFit', size: 'large', label: 'Fit to Window' }, { make: () => A().parts.zoom({ width: 64, id: 'rb-zoom' }) }] },
+        { label: 'Show', launcher: 'gridGuides', items: ['ruler', 'showGrid', 'showGuides', { cmd: 'speakerNotes', label: 'Notes' }, 'slidesPane', 'taskPane'] },
+        { label: 'Zoom', items: [{ cmd: 'zoomDlg', size: 'large', label: 'Zoom' }, { cmd: 'zoomFit', size: 'large' }] },
         { label: 'Color/Grayscale', items: ['viewColor', 'viewGray', 'viewBW'] },
       ] },
     ],
@@ -115,7 +115,7 @@
           { label: 'Rows & Columns', items: [{ drop: 'Delete', icon: 'deleteTable', size: 'large', menu: open(['deleteRows', 'deleteCols']) }, 'rowAbove', 'rowBelow', 'colLeft', 'colRight'] },
           { label: 'Merge', items: ['mergeCells', 'splitCell'] },
           { label: 'Cell Size', items: ['distRows', 'distCols'] },
-          { label: 'Alignment', items: ['cellTop', 'cellMiddle', 'cellBottom'] },
+          { label: 'Alignment', items: ['cellTop', 'cellMiddle', 'cellBottom', { drop: 'Text Direction', icon: 'textDir', size: 'large', menu: open(['cellHorz', 'cellVert', 'cellVert270', 'cellStacked']) }] },
         ] },
       ] },
       { id: 'wordart', set: 'LettersArt Tools', when: ctx('wordart'), tabs: [

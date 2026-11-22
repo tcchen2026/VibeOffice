@@ -61,10 +61,16 @@ The contracts are in [suite.md, Preservation](suite.md#preservation); the per-fe
   - query tables;
   - custom XML.
 - **Lectern:**
+  - table-cell text directions, retained through text edits, copies, history and drafts (11/11 affected corpus cells);
+  - right-to-left table order (10/10 affected corpus tables), with cell selection and Tab in logical order;
+  - table style links and definitions, including sparse inherited cell/run formatting and detached copies (183/183 links in 54 decks);
+  - exact table widths, heights and margins (1,016/1,016 measured dimensions/defaults in two source decks; both reduced Office PDFs match);
+  - table fill/border theme colours and transforms (5,492/5,492 previously flattened colours retained);
   - media;
   - sections and custom shows;
   - comments;
   - SmartArt, OLE, ink, 3-D and chartEx frames;
+  - opaque equation runs in diagram data and drawing caches, retained through conversion to shapes, adjacent text edits, copies, history and drafts; conversion notices account for removed diagram parts;
   - unused masters and design-edit invalidation;
   - tags, actions and effects.
 - **Final measurement (`984eaf3`):**
@@ -74,7 +80,7 @@ The contracts are in [suite.md, Preservation](suite.md#preservation); the per-fe
     Page counts differ for 12 Word and 3 Excel files.
   - **Text:** Word keeps 776,207/776,869 words. PowerPoint keeps all 58,022 words.
   - **Cells:** Excel matches exactly in 883/889 saves.
-  - **Evidence:** `~/corpora/results/lossless-final-984eaf3/`.
+  - **Evidence:** `/work/corpora/results/lossless-final-984eaf3/`.
 
 ## Working rules
 
@@ -86,7 +92,7 @@ These are in addition to AGENTS.md.
   results and native DOCX/XLSX/PPTX PDFs; setup and endpoints are in [Testing](testing.md#office-2016-vm-http-openrepair-and-pdf-checks).
   Compare original and saved files. An inconclusive result is not a pass; a clean open/PDF does not replace
   the checklist's content and editability checks.
-- **Docs:** they describe the current state. Run details go in `~/corpora/results/<run>/README.md` and
+- **Docs:** they describe the current state. Run details go in `/work/corpora/results/<run>/README.md` and
   in commit bodies.
 - **Commit bodies:** what changed for the user, the measured numbers (and that the test fails on the
   previous commit), and what is pending.

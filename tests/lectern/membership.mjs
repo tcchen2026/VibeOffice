@@ -1,12 +1,11 @@
 // Real slide operations, retained section/custom-show identities and suite recovery.
-// node tests/lectern/membership.mjs OUTPUT_DIR (VO_CORPORA overrides ~/corpora)
+// node tests/lectern/membership.mjs OUTPUT_DIR (VO_CORPORA overrides /work/corpora)
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 const [out] = process.argv.slice(2);
 if (!out) throw Error('Usage: membership.mjs OUTPUT_DIR');
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const cases = [
   ...['insert', 'copy', 'move', 'delete-section', 'draft'].map(scenario => ({ file: 'libreoffice__a74aecc61390__slide-section-test.pptx', scenario })),
   { file: 'poi__f6381daec5e8__bug65551.pptx', scenario: 'large-empty' },

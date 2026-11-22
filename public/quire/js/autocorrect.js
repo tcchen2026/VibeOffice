@@ -7,15 +7,11 @@
   const opt = (k) => { const a = L.app && L.app.opts; return a ? a[k] !== false : true; };
 
   const EXCEPTIONS = ['a.', 'abbr.', 'abs.', 'acad.', 'acct.', 'adj.', 'adv.', 'al.', 'apr.', 'approx.', 'assn.', 'aug.', 'ave.', 'b.a.', 'c.', 'ca.', 'cf.', 'co.', 'corp.', 'dec.', 'dept.', 'dr.', 'e.g.', 'ed.', 'esp.', 'est.', 'etc.', 'ex.', 'feb.', 'fig.', 'figs.', 'fri.', 'gen.', 'i.e.', 'inc.', 'jan.', 'jr.', 'jul.', 'jun.', 'ltd.', 'mar.', 'max.', 'min.', 'misc.', 'mon.', 'mr.', 'mrs.', 'ms.', 'mt.', 'no.', 'nov.', 'oct.', 'p.', 'pp.', 'prof.', 'ref.', 'rev.', 'sat.', 'sep.', 'sept.', 'sr.', 'st.', 'sun.', 'tel.', 'thu.', 'tue.', 'u.s.', 'vol.', 'vs.', 'wed.'];
-  AC.list = function () {
-    const base = L.spell.autocorrectDefaults();
-    const user = L.store.get('acList', null);
-    if (user) { for (const k of user.del || []) base.delete(k); for (const [k, v] of user.add || []) base.set(k, v); }
-    return base;
-  };
+  /* the replacement list: common/spell.js's, with the user's entries */
+  AC.list = () => L.spell.autocorrectList();
   let LIST = null;
   AC.reload = () => { LIST = AC.list(); };
-  AC.setEntry = function (from, to) { const u = L.store.get('acList', { add: [], del: [] }); u.add = (u.add || []).filter((x) => x[0] !== from); u.del = (u.del || []).filter((x) => x !== from); if (to != null) u.add.push([from, to]); else u.del.push(from); L.store.set('acList', u); AC.reload(); };
+  AC.setEntry = (from, to) => { L.spell.setAutocorrectEntry(from, to); AC.reload(); };
   AC.exceptions = () => L.store.get('acExceptions', EXCEPTIONS);
   AC.setExceptions = (list) => { L.store.set('acExceptions', list); };
   const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];

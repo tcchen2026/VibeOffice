@@ -56,7 +56,7 @@
   function buildMenus() {
     const recentItems = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', '-', { label: 'Sen&d To', sub: ['sendMail', 'exportPDF'] }, 'properties', ...(L.file.native() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', { label: 'Sen&d To', sub: ['sendMail'] }, 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'Cle&ar', sub: ['clearFormats', 'clearContents'] }, 'selectAll', '-', 'find', 'replace', 'goTo', '-', 'links', 'editObject'],
@@ -274,17 +274,17 @@
       value: () => (E.sel ? styleState() : ''), onChange: (v) => A.applyStyleByName(v),
     }, o)),
     font: (o) => ui.combo(Object.assign({ id: 'tb-font', width: 136, tip: 'Font', options: () => A.fontOptions(), preview: (v) => `font-family:${L.fontStack(v)};font-size:13px`, note: L.fontNote, listCls: 'fonts', value: () => (A.typingEA() && E.uniformRun('fontEA')) || E.uniformRun('font') || '', onChange: (v) => A.setFont(v) }, o)),
-    size: (o) => ui.combo(Object.assign({ id: 'tb-size', width: 48, tip: 'Font Size', options: () => L.SIZE_LIST, value: () => { const v = E.uniformRun('sz'); return v ? String(L.round(v, 1)) : ''; }, onChange: (v) => A.setFontSize(parseFloat(v)) }, o)),
-    zoom: (o) => ui.combo(Object.assign({ id: 'tb-zoom', width: 74, tip: 'Zoom', options: () => ['500%', '200%', '150%', '100%', '75%', '50%', '25%', '10%'].concat([L.N('Page Width'), L.N('Text Width'), L.N('Whole Page'), L.N('Two Pages')].map((v) => ({ value: v, label: L.t(v) }))), value: () => Math.round(LY.zoom * 100) + '%', onChange: (v) => A.zoomTo(v) }, o)),
+    size: (o) => ui.combo(Object.assign({ id: 'tb-size', width: 44, tip: 'Font Size', options: () => L.SIZE_LIST, value: () => { const v = E.uniformRun('sz'); return v ? String(L.round(v, 1)) : ''; }, onChange: (v) => A.setFontSize(parseFloat(v)) }, o)),
+    zoom: (o) => ui.combo(Object.assign({ id: 'tb-zoom', width: 64, tip: 'Zoom', options: () => ['500%', '200%', '150%', '100%', '75%', '50%', '25%', '10%'].concat([L.N('Page Width'), L.N('Text Width'), L.N('Whole Page'), L.N('Two Pages')].map((v) => ({ value: v, label: L.t(v) }))), value: () => Math.round(LY.zoom * 100) + '%', onChange: (v) => A.zoomTo(v) }, o)),
   };
   function buildToolbars() {
     const host = L.$('#toolbars');
     const styleCombo = A.parts.style(), fontCombo = A.parts.font(), sizeCombo = A.parts.size(), zoomCombo = A.parts.zoom();
     A.toolbarsEl = {
-      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', 'permission', 'sendMail', 'print', 'printPreview', 'spelling', 'research', '|', 'cut', 'copy', 'paste', 'painter', '|',
+      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', 'permission', '|', 'sendMail', 'print', 'printPreview', 'spelling', 'research', '|', 'cut', 'copy', 'paste', 'painter', '|',
         ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'hyperlink', ui.tbButton('tb_tables', { icon: 'tablesBorders' }),
-        ui.tbDrop('', 'table', (r) => tableGridPicker(r), 'Insert Table'), 'insertExcel', ui.tbDrop('', 'columns', (r) => columnsPicker(r), 'Columns'), ui.tbButton('tb_drawing', { icon: 'drawing' }), 'docMap', 'showMarks', zoomCombo, 'help', ui.tbButton('viewReading', { label: 'Read', icon: 'read' })]),
-      formatting: ui.toolbar('formatting', 'Formatting', ['stylesPane', styleCombo, fontCombo, sizeCombo, 'bold', 'italic', 'underline', '|', 'alignLeft', 'alignCenter', 'alignRight', 'justify', '|',
+        ui.tbDrop('', 'table', (r) => tableGridPicker(r), 'Insert Table'), 'insertExcel', ui.tbDrop('', 'columns', (r) => columnsPicker(r), 'Columns'), ui.tbButton('tb_drawing', { icon: 'drawing' }), '|', 'docMap', 'showMarks', '|', zoomCombo, '|', 'help', ui.tbButton('viewReading', { label: 'Read', icon: 'read' })]),
+      formatting: ui.toolbar('formatting', 'Formatting', ['stylesPane', styleCombo, fontCombo, sizeCombo, '|', 'bold', 'italic', 'underline', '|', 'alignLeft', 'alignCenter', 'alignRight', 'justify', '|',
         ui.tbDrop('', 'lineSpacing', lineSpacingMenu, 'Line Spacing'), '|', 'numbering', 'bullets', 'decIndent', 'incIndent', '|', ui.tbSplit('borderBtn', bordersDD), ui.tbSplit('highlightBtn', highlightDD), ui.tbSplit('fontColorBtn', fontColorDD)]),
       tables: ui.toolbar('tables', 'Tables and Borders', ['drawTable', 'eraser', '|', ui.tbDrop('', 'dashStyle', (r) => A.borderStyleMenu(r), 'Line Style'), ui.tbDrop('', 'lineStyle', (r) => A.borderWeightMenu(r), 'Line Weight'), ui.tbDrop('', 'lineColor', (r, b) => ui.colorMenu(b, { mode: 'plain', automatic: true }, (v) => { A.borderPen.color = v && v.auto ? 'auto' : typeof v === 'string' ? v.replace('#', '') : A.borderPen.color; }), 'Border Color'),
         ui.tbSplit('borderBtn', bordersDD), ui.tbDrop('', 'fillColor', (r, b) => ui.colorMenu(b, { mode: 'fill' }, (v) => { if (L.tables) L.tables.shade(v && v.none ? null : typeof v === 'string' ? v.replace('#', '') : null); }), 'Shading Color'), '|',
@@ -306,8 +306,9 @@
     const row1 = h('div', { class: 'tb-row' }, A.toolbarsEl.standard);
     const row2 = h('div', { class: 'tb-row' }, A.toolbarsEl.formatting);
     const row3 = h('div', { class: 'tb-row' }, A.toolbarsEl.tables, A.toolbarsEl.reviewing, A.toolbarsEl.outlining, A.toolbarsEl.headerFooter, A.toolbarsEl.picture, A.toolbarsEl.mailMerge, A.toolbarsEl.wordart);
-    host.append(row1, row2, row3);
+    host.append(h('div', { class: 'tb-pair' }, row1, row2), row3);
     A.tbRows = [row1, row2, row3];
+    ui.toolbarPrefs(A.opts);
     /* drawing toolbar */
     const asBtn = ui.tbDrop('A&utoShapes', null, (r) => A.openAutoShapes(r), 'AutoShapes');
     asBtn.setAttribute('data-as', '1');
@@ -315,10 +316,6 @@
       ui.tbSplit('fillColor', (r, b) => A.objColorMenu(b, 'fill')), ui.tbSplit('lineColor', (r, b) => A.objColorMenu(b, 'line')), ui.tbSplit('fontColorBtn', fontColorDD), '|',
       ui.tbDrop('', 'lineStyle', (r) => A.objLineWeightMenu(r), 'Line Style'), ui.tbDrop('', 'dashStyle', (r) => A.objDashMenu(r), 'Dash Style'), ui.tbDrop('', 'arrowStyle', (r) => A.objArrowMenu(r), 'Arrow Style'), ui.tbDrop('', 'shadowStyle', (r) => A.objShadowMenu(r), 'Shadow Style')]);
     L.$('#drawrow').appendChild(A.toolbarsEl.drawing);
-    /* view buttons & browse */
-    const vb = L.$('#viewbar');
-    vb.append(ui.tbButton('viewNormal'), ui.tbButton('viewWeb'), ui.tbButton('viewPrint'), ui.tbButton('viewOutline'), ui.tbButton('viewReading'), h('span', { class: 'vb-sp' }),
-      h('span', { class: 'browse' }, ui.tbButton('browsePrev'), ui.tbDrop('', 'browseObj', (r) => A.browseMenu(r), 'Select Browse Object'), ui.tbButton('browseNext')));
   }
   A.fontOptions = () => {
     const docFonts = [doc().defaults.rPr.font];
@@ -396,28 +393,11 @@
     E.edit(L.N('Style'), () => { O.applyStyle(a, b, s.id); return E.sel; });
     E.refocus();
   };
-  A.historyMenu = function (r, kind) {
-    const list = kind === 'undo' ? D.undoList() : D.redoList();
-    if (!list.length) return;
-    ui.openMenu([{ custom: (close) => {
-      const el = h('div', { class: 'style-list', style: 'max-height:260px;overflow:auto;min-width:180px' });
-      const actions = (n) => (kind === 'undo' ? (n === 1 ? L.t('Undo {0} Action', n) : L.t('Undo {0} Actions', n)) : n === 1 ? L.t('Redo {0} Action', n) : L.t('Redo {0} Actions', n));
-      const lbl = h('div', { class: 'tgp-label', text: actions(1) });
-      const btns = list.slice(0, 40).map((label, i) => {
-        const b = h('button', { type: 'button', text: label });
-        b.addEventListener('pointerenter', () => { btns.forEach((x, k) => { x.style.background = k <= i ? '#316ac5' : ''; x.style.color = k <= i ? '#fff' : ''; }); lbl.textContent = actions(i + 1); });
-        b.addEventListener('click', () => { close(); for (let k = 0; k <= i; k++) ui.exec(kind); });
-        el.appendChild(b);
-        return b;
-      });
-      const wrap = h('div', { style: 'background:#fff' }, el, lbl);
-      return wrap;
-    } }], r);
-  };
+  A.historyMenu = (r, kind) => ui.historyMenu(r, kind, kind === 'undo' ? D.undoList() : D.redoList());
 
   /* ---------- drawing toolbar helpers ---------- */
   A.drawMenu = function (r) {
-    ui.openMenu(['groupObj', 'ungroupObj', '-', { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward', 'bringFrontText', 'sendBehindText'] },
+    ui.openMenu(['groupObj', 'ungroupObj', 'regroupObj', '-', { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward', 'bringFrontText', 'sendBehindText'] },
       { label: '&Grid...', run: () => L.dlg.drawingGrid && L.dlg.drawingGrid() }, { label: 'Nud&ge', sub: ['nudgeUp', 'nudgeDown', 'nudgeLeft', 'nudgeRight'] },
       { label: 'Rotate or Fl&ip', sub: ['rotateLeft', 'rotateRight', '-', 'flipH', 'flipV'] }, { label: '&Text Wrapping', sub: () => A.wrapItems() }, '-', 'setDefaults'], r);
   };
@@ -457,13 +437,13 @@
     const sb = L.$('#statusbar');
     const cell = (cls, tip) => h('div', { class: 'sb-cell ' + (cls || ''), 'data-tip': tip || null });
     A.sb = {
-      page: cell('', L.N('Page')), sec: cell('', L.N('Section')), pages: cell('', 'Page / pages'), at: cell('', 'Vertical position'), ln: cell('', L.N('Line|position')), col: cell('', L.N('Column|position')),
-      rec: cell('flag', 'Record macro'), trk: cell('flag act', 'Track Changes (double-click to toggle)'), ext: cell('flag act', 'Extend selection'), ovr: cell('flag act', 'Overtype (double-click to toggle)'),
+      page: cell('', L.N('Page')), sec: cell('opt', L.N('Section')), pages: cell('', 'Page / pages'), at: cell('opt', 'Vertical position'), ln: cell('', L.N('Line|position')), col: cell('', L.N('Column|position')),
+      rec: cell('flag opt', 'Record macro'), trk: cell('flag act opt', 'Track Changes (double-click to toggle)'), ext: cell('flag act opt', 'Extend selection'), ovr: cell('flag act opt', 'Overtype (double-click to toggle)'),
       lang: cell('act', L.N('Language')), spell: cell('act sb-spell', 'Spelling and grammar status'), msg: cell('grow'),
     };
     A.sb.rec.textContent = L.t('REC'); A.sb.trk.textContent = L.t('TRK'); A.sb.ext.textContent = L.t('EXT'); A.sb.ovr.textContent = L.t('OVR');
     A.sb.lang.textContent = A.langName('en-US');
-    A.sb.spell.innerHTML = '<svg width="18" height="14" viewBox="0 0 18 14"><rect x="1.5" y="1.5" width="11" height="11" fill="#fff" stroke="#556"/><path d="M3 4h7M3 6.5h7M3 9h5" stroke="#889"/><path d="M10 9l2.5 3 4.5-7" fill="none" stroke="#2f9a3a" stroke-width="1.6"/></svg>';
+    A.sb.spell.innerHTML = L.icons.get('spellStatus');
     A.sb.trk.addEventListener('dblclick', () => ui.exec('trackChanges'));
     A.sb.ovr.addEventListener('dblclick', () => { E.overtype = !E.overtype; A.updateStatus(); });
     A.sb.ext.addEventListener('dblclick', () => { E.extend = !E.extend; A.updateStatus(); });
@@ -484,7 +464,14 @@
     L.bus.on('doc-loaded', spellIcon);
     spellIcon();
     A.sb.page.addEventListener('dblclick', () => ui.exec('goTo'));
-    sb.append(A.sb.page, A.sb.sec, A.sb.pages, A.sb.at, A.sb.ln, A.sb.col, A.sb.rec, A.sb.trk, A.sb.ext, A.sb.ovr, A.sb.lang, A.sb.spell, A.sb.msg);
+    // the right end, as in the other apps (ui.js): browse buttons, view buttons, the zoom slider, the task pane's toggle
+    const zoom = ui.zoomSlider({ min: 10, max: 500, value: () => Math.round(LY.zoom * 100), dialog: 'zoomDlg',
+      set: (p, final) => (final ? A.zoomTo(p + '%', { focus: false }) : A.zoomLive(p)) });
+    const browse = ui.statusGroup(['browsePrev', ui.tbDrop('', 'browseObj', (r) => A.browseMenu(r), 'Select Browse Object'), 'browseNext']);
+    browse.classList.add('sb-browse');
+    const views = ui.statusGroup(['viewNormal', 'viewWeb', 'viewPrint', 'viewOutline', 'viewReading']);
+    views.classList.add('sb-views');
+    sb.append(A.sb.page, A.sb.sec, A.sb.pages, A.sb.at, A.sb.ln, A.sb.col, A.sb.rec, A.sb.trk, A.sb.ext, A.sb.ovr, A.sb.lang, A.sb.spell, A.sb.msg, h('div', { class: 'sb-right' }, browse, views, zoom, ui.paneToggle('taskPane')));
   }
   A.status = (msg, ms) => { if (!A.sb) return; A.sb.msg.textContent = L.t(msg); clearTimeout(statusTimer); statusTimer = setTimeout(() => { A.sb.msg.textContent = ''; }, ms || 4000); };
   A.updateStatus = L.debounce(function () {
@@ -589,7 +576,9 @@
     ui.refresh();
     L.bus.emit('view', v);
   };
-  A.zoomTo = function (v) {
+  /** zoom to v ('NN%', 'Page Width', 'Text Width', 'Whole Page', 'Two Pages'); the Zoom box and dialog give the
+      document the keyboard afterwards, the status bar's slider and the ribbon's buttons pass { focus: false } */
+  A.zoomTo = function (v, o) {
     let z;
     if (/page width/i.test(v)) z = LY.zoomFor('pageWidth');
     else if (/text width/i.test(v)) z = LY.zoomFor('textWidth');
@@ -600,7 +589,14 @@
     LY.setZoom(L.clamp(z, 0.1, 5));
     A.opts.zoom = LY.zoom; A.saveOpts();
     if (L.rulers) L.rulers.draw();
-    E.focus();
+    if (!o || o.focus !== false) E.focus();
+  };
+  /** while the slider is dragged: the same zoom without saving it; Web Layout, which lays the whole document out
+      again for a zoom, waits for the release */
+  A.zoomLive = function (pct) {
+    if (LY.view === 'web') return;
+    if (LY.multi && A.view !== 'reading') LY.setMultiPage(0);
+    LY.setZoom(L.clamp(pct / 100, 0.1, 5));
   };
 
   /* ================= toolbars visibility ================= */
@@ -768,14 +764,14 @@
   };
   A.openDialog = async function () {
     if (window.VO && VO.oneDocument) return VO.openDialog();
-    const files = await L.pickFiles('.docx,.docm,.dotx,.dotm,.doc,.txt,.htm,.html,.rtf,.xml,.md,.markdown,.zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const files = await L.pickFiles('.docx,.docm,.dotx,.dotm,.doc,.dot,.txt,.htm,.html,.rtf,.xml,.md,.markdown,.zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     if (files[0]) A.openFile(files[0]);
   };
-  A.openFiles = (files) => { const f = files.find((x) => /\.(docx|docm|dotx|dotm|doc|txt|html?|rtf|md|markdown|zip)$/i.test(x.name)); if (f) A.openFile(f); };
+  A.openFiles = (files) => { const f = files.find((x) => /\.(docx|docm|dotx|dotm|doc|dot|txt|html?|rtf|md|markdown|zip)$/i.test(x.name)); if (f) A.openFile(f); };
   A.openFile = async function (file) {
     if (window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
     const reuse = pristine();
-    const name = file.name.replace(/\.(docx|docm|dotx|dotm|doc|txt|html?|rtf|xml|md|markdown|mdown|mkd|zip)$/i, '');
+    const name = file.name.replace(/\.(docx|docm|dotx|dotm|doc|dot|txt|html?|rtf|xml|md|markdown|mdown|mkd|zip)$/i, '');
     ui.busy(true, L.t('Opening {0}...', file.name));
     try {
       let d, warnings = [], type = 'docx';
@@ -789,7 +785,7 @@
         const res = await A.readDocx(buf, file.name);
         d = res.doc; warnings = res.warnings || []; type = d.ooxmlFormat || type;
       }
-      A.loadDoc(d, name, { saved: /\.(docx|docm|dotx|dotm)$/i.test(file.name) || type !== 'docx', type, newWindow: !reuse });
+      A.loadDoc(d, name, { saved: !d.converted && (/\.(docx|docm|dotx|dotm)$/i.test(file.name) || type !== 'docx'), type, newWindow: !reuse });   // a converted 97-2003 file: Save asks for a new name
       if (window.VO) VO.opened(file, doc());
       ui.busy(false);
       if (d.isTemplate) A.status('Opened a template. Save keeps its template format.');
@@ -807,13 +803,25 @@
   };
   /** read .docx bytes; a password-protected file asks for its password (or takes opts.password) */
   A.readDocx = async function (buf, displayName, opts) {
-    try { return await L.docx.read(buf); }
+    try { return await L.docx.read(buf, { name: displayName }); }
     catch (e) {
-      if (!(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
+      /* a Word 97-2003 document with a password to open (code 'password', from common/legacy/import.js) or an encrypted .docx */
+      const legacy = e && e.code === 'password';
+      if (!legacy && !(e && e.code === 'ole' && e.encrypted && L.officeCrypto)) throw e;
       let pass = opts && opts.password != null ? opts.password : null;
       if (pass == null) { ui.busy(false); pass = await ui.password(displayName || 'Document'); }
       if (pass == null) { const c = new Error('cancelled'); c.code = 'cancel'; throw c; }
       ui.busy(true, 'Opening...');
+      if (legacy) {
+        try { return await L.docx.read(buf, { name: displayName, password: pass }); }
+        catch (err) {
+          if (!(err && err.code === 'badpassword')) throw err;
+          const b = new Error(L.t('The password is incorrect. {0} cannot open the document.', L.APP));
+          b.code = 'ole';
+          b.badPassword = true;
+          throw b;
+        }
+      }
       let plain;
       try { plain = await L.officeCrypto.decrypt(e.bytes, pass); }
       catch (err) {
@@ -832,7 +840,7 @@
   A.openBytes = async function (bytes, name, opts) {
     const buf = bytes instanceof ArrayBuffer ? bytes : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
     const res = await A.readDocx(buf, name, opts);
-    A.loadDoc(res.doc, String(name || 'Document').replace(/\.(docx|docm|dotx|dotm)$/i, ''), { saved: true, type: 'docx', newWindow: !pristine() });
+    A.loadDoc(res.doc, String(name || 'Document').replace(/\.(docx|docm|dotx|dotm|doc|dot)$/i, ''), { saved: !res.doc.converted, type: 'docx', newWindow: !pristine() });
     return res;
   };
   A.docFromText = function (text) {
@@ -957,7 +965,7 @@
     for (const [, m] of L.media.all()) { if (html && !html.includes(m.url)) continue; try { map.set(m.url, await L.blobToDataURL(m.view || m.blob)); } catch (e) { /* skip */ } }
     return map;
   }
-  A.rasterizePage = async function (pgEl, scale, css, map) {
+  async function pageSVG(pgEl, css, map, fonts) {
     const w = pgEl.offsetWidth, hh = pgEl.offsetHeight;
     const clone = pgEl.cloneNode(true);
     clone.style.margin = '0'; clone.style.boxShadow = 'none';
@@ -965,7 +973,14 @@
     for (const e of clone.querySelectorAll('[contenteditable]')) e.removeAttribute('contenteditable');
     let xhtml = new XMLSerializer().serializeToString(clone);
     for (const [u, dd] of map) xhtml = xhtml.split(u).join(dd);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${hh}px;color:#000;font-size:16px;line-height:normal"><style>${css.replace(/</g, '\\3c ')}</style>${xhtml}</div></foreignObject></svg>`;
+    // A PDF prepares these once for all pages; a Recent Files picture prepares just its own fonts.
+    fonts ??= await L.embedFonts(xhtml + css);
+    css = fonts + '\n' + css;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${hh}px;color:#000;font-size:16px;line-height:normal"><style>${css.replace(/</g, '\\3c ')}</style>${xhtml}</div></foreignObject></svg>`;
+  }
+  A.rasterizePage = async function (pgEl, scale, css, map, fonts) {
+    const w = pgEl.offsetWidth, hh = pgEl.offsetHeight;
+    const svg = await pageSVG(pgEl, css, map, fonts);
     const img = await L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
     const c = document.createElement('canvas');
     c.width = Math.round(w * scale); c.height = Math.round(hh * scale);
@@ -983,17 +998,76 @@
     const css = docCSS();
     const pages = [];
     const list = LY.pages.filter((p, i) => !range || range.includes(i + 1));
+    const fonts = await L.embedFonts(list.map((p) => p.el.outerHTML).join('') + css);
     const sel = window.getSelection(); sel.removeAllRanges();
-    let n = 0;
-    for (const p of list) {
-      ui.busy(true, L.t('Creating PDF... (page {0} of {1})', ++n, list.length));
-      const c = await A.rasterizePage(p.el, 2.2, css, map);
-      const jpeg = new Uint8Array(await (await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error(L.t('This browser blocked the page image.')))), 'image/jpeg', 0.92))).arrayBuffer());
-      pages.push({ jpeg, iw: c.width, ih: c.height, pw: p.sect.pgW, ph: p.sect.pgH });
+    const pdf = await L.pdfModule(true);
+    const text = new Map(), links = new Map(), outline = [], headings = new Set();
+    const scale = 0.75 / LY.scale(), pageIndex = new Map(list.map((p, i) => [p.el, i]));
+    const bookmarks = L.fields.bookmarks();
+    const destination = (pos) => {
+      const frag = LY.fragFor(pos.p, pos.o, LY.root);
+      const pageEl = frag?.closest('.pg'), page = pageIndex.get(pageEl);
+      if (page === undefined) return null;
+      const point = LY.posToDom(pos, pageEl), range = document.createRange();
+      let r = frag.getBoundingClientRect();
+      if (point) {
+        range.setStart(point.node, point.offset); range.collapse(true);
+        let caret = range.getClientRects()[0];
+        // A bookmark at a run boundary can map between elements, with no caret box.
+        // The next character locates that same line without changing the editor selection.
+        if (!caret?.height && pos.o < +frag.dataset.to) {
+          const next = LY.posToDom({ p: pos.p, o: pos.o + 1 }, pageEl);
+          if (next) {
+            range.setStart(next.node, next.offset); range.collapse(true);
+            caret = range.getClientRects()[0];
+          }
+        }
+        if (caret && caret.height) r = caret;
+      }
+      const bounds = pageEl.getBoundingClientRect();
+      if (r.bottom <= bounds.top || r.top >= bounds.bottom) return null;
+      return { page, top: Math.max(0, (r.top - bounds.top) * scale) };
+    };
+    const resolve = (el) => {
+      const link = el.dataset.link;
+      if (!link) return null;
+      if (!link.startsWith('#')) return { url: link };
+      let name = link.slice(1);
+      try { name = decodeURIComponent(name); } catch (e) { /* a literal bookmark name */ }
+      const b = bookmarks.get(link.slice(1)) || bookmarks.get(name);
+      return b ? destination(b) : null;
+    };
+    for (const [page, p] of list.entries()) {
+      const origin = p.el.getBoundingClientRect();
+      for (const frag of p.el.querySelectorAll('.p[data-pid]')) {
+        const id = +frag.dataset.pid;
+        if (headings.has(id)) continue;
+        const para = D.byId(doc(), id), level = para && D.headingLevel(doc(), para);
+        if (!level) continue;
+        const title = D.plainText(para, { skipDeleted: true }).trim(), r = frag.getBoundingClientRect();
+        if (!title || !r.height || r.bottom <= origin.top || r.top >= origin.bottom) continue;
+        headings.add(id);
+        outline.push({ title, page, top: Math.max(0, (r.top - origin.top) * scale), level });
+      }
+    }
+    const prepare = async (p) => {
+      const w = p.el.offsetWidth, h = p.el.offsetHeight;
+      text.set(p, pdf.collectDOM(p.el, scale));
+      links.set(p, pdf.collectLinks(p.el, scale, resolve));
+      return { svg: await pageSVG(p.el, css, map, ''), w, h, scale: L.pdfScale(w, h, L.PDF_DPI / 96) };
+    };
+    for await (const { canvas: c, page: p, index } of pdf.pictures(list, prepare, fonts)) {
+      ui.busy(true, L.t('Creating PDF... (page {0} of {1})', index + 1, list.length));
+      const jpeg = pdf.jpeg(c);
+      pages.push({ jpeg, iw: c.width, ih: c.height, pw: p.sect.pgW, ph: p.sect.pgH,
+        lines: text.get(p), links: links.get(p) });
+      text.delete(p);
+      links.delete(p);
     }
     if (prevView !== A.view || LY.view !== (prevView === 'reading' || prevView === 'preview' ? 'print' : prevView)) { LY.view = prevView === 'reading' || prevView === 'preview' ? 'print' : prevView; LY.render(); }
     E.restoreDom(true);
-    return L.buildPDF(pages, { title: doc().props.title || A.fileName, author: doc().props.creator || '' });
+    return L.buildPDF(pages, { title: doc().props.title || A.fileName, author: doc().props.creator || '',
+      lang: pdf.language(doc().props.language, doc().defaults.rPr.lang), outline });
   };
   A.printPDF = async function () {
     try { const blob = await A.buildPDF(); ui.busy(false); await L.saveFile(`${A.fileName}.pdf`, blob); }
@@ -1124,15 +1198,43 @@
     const p = D.firstPara(st.blocks);
     if (p) A.gotoPos(D.pos(p, D.plen(p)));
   };
+  /** Word's menu for a selected object: its text, grouping and order, wrapping, caption, Format…, hyperlink */
+  A.objectMenu = function (it) {
+    const fl = !!(E.objSel && E.objSel.float);
+    const format = it.t === 'img' ? 'Format &Picture...' : it.wordart ? 'Format Letters&Art...' : it.tb && it.txBox !== false ? 'Format Te&xt Box...' : it.t === 'shape' ? 'Format AutoSha&pe...' : 'Format &Object...';
+    const items = ['cut', 'copy', 'paste', '-'];
+    if (L.drawing.takesText(it)) items.push('shapeText', '-');
+    else if (it.wordart) items.push('wordartEdit', '-');
+    if (fl) items.push({ label: 'Gro&uping', sub: ['groupObj', 'ungroupObj', 'regroupObj'] }, { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward', '-', 'bringFrontText', 'sendBehindText'] }, '-');
+    items.push({ label: 'Text W&rapping', sub: () => A.wrapItems() });
+    if (it.t === 'shape' && !it.wordart) items.push('setDefaults');
+    items.push('insertCaption', { cmd: 'formatObject', label: format }, '-', 'hyperlink');
+    return items;
+  };
+  /** Word's Synonyms submenu: the thesaurus' words for the one at the caret (a click puts it there), and Thesaurus… */
+  A.synonymItems = function () {
+    const r = E.sel && (E.collapsed() ? O.wordAt(E.sel.f) : E.range());
+    const word = r ? O.textRange(r[0], r[1]).trim() : '';
+    const TH = L.thesaurus, e = TH && TH.data && /^[\p{L}'’-]+$/u.test(word) ? TH.lookup(word) : null;
+    const cap = (s) => (/^\p{Lu}/u.test(word) ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+    const syns = e ? [...new Set(e.senses.flatMap((s) => s.syns))].slice(0, 10).map(cap) : [];
+    return (syns.length ? syns.map((s) => ({ label: s, raw: true, run: () => { E.setSel(r[0], r[1]); E.insertTextAt(s, L.N('Synonym')); } })) : [{ label: '(No Suggestions)', disabled: true }]).concat(['-', 'thesaurus']);
+  };
   A.contextMenu = function (e) {
     e.preventDefault();
+    /* a right-click away from the selected object (or in its text) selects there first, as in Word */
+    const onObj = E.objSel && e.target.closest && !e.target.closest('.tbx') && ((E.objSel.el && E.objSel.el.contains(e.target)) || e.target.closest('.obj-handles'));
+    if (E.objSel && !onObj) E.clearObjSel();
     if (!E.objSel) E.syncSel();   /* the press moved the caret, but 'selectionchange' comes after this */
+    /* a selected object: its own menu, without the text's */
+    const obj = onObj && L.drawing && L.drawing.selectedItem();
+    if (obj) { ui.openMenu(A.objectMenu(obj), { x: e.clientX, y: e.clientY }); return; }
+    if (L.thesaurus && !(window.VO && VO.host.lite)) L.thesaurus.load().catch(() => {});   // 2 MB: not ahead in the lite edition
     const inTable = L.tables && L.tables.inTable();
     const items = ['cut', 'copy', 'paste', '-'];
-    if (E.objSel) items.push({ label: 'Text W&rapping', sub: () => A.wrapItems() }, 'formatObject', '-');
     const ln = e.target.closest && e.target.closest('[data-link]');
-    if (ln) items.push('hyperlink', { label: '&Open Hyperlink', run: () => L.ed.followLink(ln.dataset.link) }, { label: '&Remove Hyperlink', run: () => ui.exec('removeHyperlink') }, '-');
-    if (inTable) items.push({ label: '&Insert', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', 'insertCells'] }, { label: '&Delete', sub: ['deleteTable', 'deleteCols', 'deleteRows', 'deleteCells'] }, 'mergeCells', 'splitCells', '-', 'distRows', 'distCols', '-', 'bordersDlg', { label: 'Cell Alignment', sub: ['cellTop', 'cellMiddle', 'cellBottom'] }, 'tableAutoFormat', 'tableProps', '-');
+    if (ln) items.push({ label: '&Edit Hyperlink...', cmd: 'hyperlink' }, { label: '&Open Hyperlink', run: () => L.ed.followLink(ln.dataset.link) }, { label: '&Remove Hyperlink', run: () => ui.exec('removeHyperlink') }, '-');
+    if (inTable) items.push({ label: '&Insert', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', 'insertCells'] }, { label: '&Delete', sub: ['deleteTable', 'deleteCols', 'deleteRows', 'deleteCells'] }, 'mergeCells', 'splitCells', '-', 'distRows', 'distCols', '-', 'bordersDlg', 'textDirection', { label: 'Cell Alignment', sub: ['cellTop', 'cellMiddle', 'cellBottom'] }, { label: '&AutoFit', sub: ['autofitContents', 'autofitWindow', 'fixedWidth', '-', 'distRows', 'distCols'] }, '-', 'insertCaption', 'tableAutoFormat', 'tableProps', '-');
     const f = L.fields && L.fields.at(E.sel && E.sel.f);
     if (f) items.push('updateField', 'editField', 'toggleCodes', '-');
     const control = L.preserve.controlAt(E.sel && E.sel.f);
@@ -1140,7 +1242,7 @@
     if (L.review && L.review.revisionAt && L.review.revisionAt()) items.push('acceptChange', 'rejectChange', '-');
     const cm = L.review && L.review.commentAt && L.review.commentAt();
     if (cm) items.push({ label: '&Edit Comment', run: () => L.review.editComment(cm) }, { label: 'Delete Co&mment', run: () => L.review.deleteComment(cm) }, '-');
-    items.push('fontDlg', 'paragraphDlg', 'bulletsDlg', '-', 'hyperlink', 'research');
+    items.push('fontDlg', 'paragraphDlg', 'bulletsDlg', '-', ...(ln ? [] : ['hyperlink']), 'research', { label: 'S&ynonyms', sub: () => A.synonymItems() }, '-', { cmd: 'insertComment', label: 'New Co&mment' });
     /* on a misspelled word or a grammar problem Word shows only the proofing menu */
     if (!E.objSel && L.spell && L.spell.suggestionsAt) { const s = L.spell.suggestionsAt(e); if (s && s.length) { ui.openMenu(s.concat(['-', 'cut', 'copy', 'paste']), { x: e.clientX, y: e.clientY }); return; } }
     ui.openMenu(items, { x: e.clientX, y: e.clientY });
@@ -1184,7 +1286,7 @@
       } catch (e) { /* keep default */ }
       /* fit to the text column */
       const s = A.curSect().sect;
-      const maxW = s.pgW - s.ml - s.mr - (s.gutter || 0);
+      const maxW = D.textWidth(doc(), s);
       if (w > maxW) { hh *= maxW / w; w = maxW; }
       items.push(D.item('img', { media: id, w: L.round(w, 2), h: L.round(hh, 2), name: f.name, alt: '' }));
     }
@@ -1297,6 +1399,15 @@
     L.bus.on('layout-done', () => { A.updateStatus(); if (L.rulers) L.rulers.drawSoon(); if (L.drawing) L.drawing.placeHandles(); E.placeHandles(); });
     L.bus.on('zoom', () => { ui.refresh(); if (L.rulers) L.rulers.draw(); if (L.drawing) L.drawing.placeHandles(); E.placeHandles(); });
     LY.scroller.addEventListener('scroll', () => { if (L.rulers) L.rulers.drawSoon(); });
+    // Ctrl+wheel (a trackpad's pinch too) zooms in 10 % steps, as in Word and the other apps; Web Layout lays the
+    // document out again for each step, so it doesn't follow the wheel
+    LY.scroller.addEventListener('wheel', (e) => {
+      if (!(e.ctrlKey || e.metaKey) || !e.deltaY) return;
+      e.preventDefault();
+      if (LY.view === 'web') return;
+      const p = Math.round(LY.zoom * 100), n = e.deltaY < 0 ? Math.floor(p / 10) * 10 + 10 : Math.ceil(p / 10) * 10 - 10;
+      A.zoomTo(L.clamp(n, 10, 500) + '%', { focus: false });
+    }, { passive: false });
     window.addEventListener('beforeunload', (e) => { const any = (doc() && doc().dirty) || A.docs.some((w, i) => i !== A.cur && w && w.doc && w.doc.dirty); if (any) { e.preventDefault(); e.returnValue = ''; } });
     window.addEventListener('resize', L.debounce(() => { if (A.view === 'web') LY.render(); else LY.fitSizer(); if (L.rulers) L.rulers.draw(); }, 200));
     document.addEventListener('keydown', (e) => { LY.root.classList.toggle('ctrl', e.ctrlKey || e.metaKey); });
@@ -1349,7 +1460,7 @@
     bl.push(P('Getting around', { style: 'Heading1' }));
     bl.push(D.para([D.text('Type anywhere on this page. Everything works the way you remember: '), D.text('bold', { b: true }), D.text(', '), D.text('italic', { i: true }), D.text(', '), D.text('underline', { u: 'single' }), D.text(', '), D.text('highlighting', { hl: 'yellow' }), D.text(', '), D.text('colors', { color: 'C00000' }), D.text(', styles, bullets, numbering, tables, headers and footers, footnotes, comments, tracked changes, fields and more.')], { jc: 'both' }));
     bl.push(P('Open a document with File ▸ Open, or drop a .docx onto the window. Save with File ▸ Save (Ctrl+S); File ▸ Save As offers Word Document, Word Template, Web Page, Plain Text, Markdown and PDF.', { num: { id: '1', lvl: 0 } }));
-    bl.push(P('Switch views with the buttons in the lower-left corner: Normal, Web Layout, Print Layout, Outline and Reading Layout.', { num: { id: '1', lvl: 0 } }));
+    bl.push(P('Switch views with the buttons in the lower-right corner: Normal, Web Layout, Print Layout, Outline and Reading Layout; the slider beside them zooms.', { num: { id: '1', lvl: 0 } }));
     bl.push(P('Right-click for the shortcut menu; the task pane (Ctrl+F1) holds Styles and Formatting, Reveal Formatting, Clip Art and the Mail Merge wizard.', { num: { id: '1', lvl: 0 } }));
     bl.push(P('A small table', { style: 'Heading2' }));
     const t = D.simpleTable(4, 3, 432);
@@ -1390,8 +1501,11 @@
     E.init();
     if (L.rulers) L.rulers.mount(L.$('#hruler'), L.$('#vruler'), L.$('#rcorner'));
     if (L.panes) { L.panes.task.mount(L.$('#taskpane')); L.panes.docmap.mount(L.$('#docmap')); if (L.panes.reviewing) L.panes.reviewing.mount(L.$('#revpane')); }
-    /* the open task pane follows the selected object to its tool set (common/ribbon.js) */
-    if (L.panes) L.ribbonUI.follow({ task: L.panes.task, sets: { picture: true, drawing: true }, on: () => A.opts.paneFollows !== false });
+    /* the task pane follows the selected object to its tool set, opening and closing itself (common/ribbon.js) */
+    const taskPref = { get: () => A.opts.taskOpen, set: (v) => { A.opts.taskOpen = v; A.saveOpts(); } };
+    if (L.panes) L.ribbonUI.follow({ task: L.panes.task, sets: { picture: true, drawing: true, table: { when: () => L.tables.wholeSelected() }, headerFooter: true }, on: () => A.opts.paneFollows !== false, open: () => A.toggleTask(true), close: () => A.toggleTask(false), pref: taskPref,
+      room: () => { const s = LY.scroller; return s.getBoundingClientRect().left + s.clientLeft + s.clientWidth; },
+      target: () => { const t = !E.objSel && E.cellSel && E.cellSel.tbl, el = E.objSel ? E.objSel.el : t && LY.root.querySelector(`table.tbl[data-tid="${t.id}"]`); return el ? el.getBoundingClientRect() : null; } });
     setupDrop();
     setupSplitters();
     wire();
@@ -1399,13 +1513,16 @@
     const narrow = window.innerWidth < 820;
     if (narrow) A.opts.taskOpen = false;
     L.$('#taskpane').hidden = !A.opts.taskOpen;
-    LY.zoom = narrow ? Math.max(0.4, (window.innerWidth - 40) / 816) : A.opts.zoom || 1;
+    const view = A.opts.view && ['print', 'normal', 'web', 'outline'].includes(A.opts.view) ? A.opts.view : 'print';
+    /* a narrow window shows Print Layout's page whole; the other views wrap the text to the window (the lite edition's
+       Web Layout) */
+    LY.zoom = narrow && view === 'print' ? Math.max(0.4, (window.innerWidth - 40) / 816) : A.opts.zoom || 1;
     /* opened from the Start Center: a template, or blank (a new document, or to open a file into); else the sample */
     const launch = window.VO && VO.launch;
     if (launch && launch.n) A.untitled = launch.n;   // the desktop app's number for it
     A.loadDoc(launch && launch.template && L.templates ? L.templates.build(launch.template) : launch ? blank() : A.buildSample(), 'Document' + A.untitled);
     A.view = 'x';
-    A.setView(A.opts.view && ['print', 'normal', 'web', 'outline'].includes(A.opts.view) ? A.opts.view : 'print');
+    A.setView(view);
     if (L.panes && A.opts.taskOpen) L.panes.task.show('getting-started');
     A.applyOpts();
     if (A.opts.docMap) A.toggleDocMap(true);

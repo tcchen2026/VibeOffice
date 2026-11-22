@@ -2,13 +2,12 @@
 // node tests/lectern/designs.mjs OUTPUT_DIR [SCENARIO_REGEX]
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 const [out, filter = ''] = process.argv.slice(2);
 if (!out) throw Error('Usage: designs.mjs OUTPUT_DIR [SCENARIO_REGEX]');
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'powerpoint');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'powerpoint');
 const cases = ['color', 'font', 'background', 'geometry', 'style', 'copy-design', 'new-layout', 'delete-slide', 'draft', 'footer', 'title-align'].map(edit => ({
   file: 'libreoffice__07eb8b76b2cf__master-slides.pptx', edit, scenario: edit,
 }));

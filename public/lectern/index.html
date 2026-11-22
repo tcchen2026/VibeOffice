@@ -134,24 +134,22 @@
 .trans-list .li { padding: 1px 6px; }
 .cb-item .cb-ico { flex: none; }
 /* bottom bars */
-.viewbar { flex: none; display: flex; align-items: center; height: 22px; padding: 0 4px; background: linear-gradient(var(--tb-a), var(--tb-b)); border-top: 1px solid var(--chrome-line); gap: 1px; }
-.viewbar .tb-btn { height: 18px; min-width: 20px; }
-.drawrow { flex: none; padding: 1px 2px 2px; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-top: 1px solid var(--chrome-line); overflow-x: auto; scrollbar-width: none; }
-.drawrow::-webkit-scrollbar { display: none; }
-.sb-cell { padding: 0 10px; border-right: 1px solid var(--sb-sep); box-shadow: 1px 0 0 var(--sb-sep-hi); height: 16px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; }
-.sb-cell.fit { flex: none; }
-.sb-zoom { display: flex; align-items: center; gap: 4px; }
-.sb-zoom input[type=range] { width: 90px; height: 14px; accent-color: var(--sel); }
 /* ---------- slide rendering ---------- */
 .sl { position: relative; overflow: hidden; background: #fff; transform-origin: 0 0; font-kerning: normal; -webkit-font-smoothing: antialiased; }
 .sl .shp { position: absolute; pointer-events: none; transform-origin: 50% 50%; }
-.sl .shp > svg.geo, .sl .shp > svg.wa, .sl .shp > svg.chart { position: absolute; left: 0; top: 0; overflow: visible; }
+.sl .shp > svg.geo, .sl .shp > svg.wa, .sl .shp > svg.warp, .sl .shp > svg.chart { position: absolute; left: 0; top: 0; overflow: visible; }
+.sl .shp > svg.warp { pointer-events: none; }
+.sl .shp.warped:not(.editing) > .tx { opacity: 0; }
+.sl .shp.warped.editing > svg.warp { display: none; }
 .sl .shp > svg.geo { pointer-events: none; }
 .sl .tx { position: absolute; display: flex; flex-direction: column; overflow: visible; }
 .sl .txi { position: relative; min-width: 1px; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; tab-size: 72px; outline: none; cursor: text; }
 .sl .txi.nowrap { white-space: pre; }
-.sl p.pa { margin: 0; padding: 0; min-height: 1em; }
-.sl p.pa[data-bu]::before { content: attr(data-bu); display: inline-block; min-width: var(--bu-w, .6em); text-indent: 0; color: var(--bu-c, inherit); font-size: var(--bu-s, inherit); font-family: var(--bu-f, inherit); font-weight: normal; font-style: normal; text-decoration: none; line-height: 1; }
+/* a word Spelling found, shown selected while the keyboard is in its dialog (textedit.js, TE.mark) */
+::highlight(lectern-mark) { background-color: Highlight; color: HighlightText; }
+.sl p.pa { margin: 0; padding: 0; min-height: 1lh; }
+.sl p.pa[data-bu]::before { content: attr(data-bu); display: inline-block; min-width: var(--bu-w, .6em); text-indent: 0; color: var(--bu-c, inherit); font-size: var(--bu-s, inherit); font-family: var(--bu-f, inherit); font-weight: normal; font-style: normal; text-decoration: none; line-height: 0; }
+.sl p.pa.bu-img[data-bu]::before { background: var(--bu-img) left center / var(--bu-s, 1em) var(--bu-s, 1em) no-repeat; height: var(--bu-s, 1em); vertical-align: -0.1em; line-height: 1; }
 .sl:not(.sl-edit) p.pa.empty::before, .sl .shp:not(.editing) p.pa.empty::before { visibility: hidden; }
 .sl .prompt { pointer-events: none !important; }
 .sl .shp.editing .prompt, .sl .shp.editing .ph-content { display: none; }
@@ -217,8 +215,6 @@
 .bul-grid button, .num-grid button { height: 78px; border: 1px solid var(--grid-line); background: var(--surface); display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 6px 8px; font: 12px Arial, "Arimo", sans-serif; }
 .bul-grid button div, .num-grid button div { display: flex; align-items: center; gap: 6px; }
 .bul-grid button div i, .num-grid button div i { flex: 1; border-top: 2px solid var(--ink-9); }
-.sym-grid { display: grid; grid-template-columns: repeat(16, 24px); max-height: 220px; overflow: auto; border: 1px solid var(--grid-line); background: var(--surface); }
-.sym-grid button { height: 24px; border: 0; border-right: 1px solid var(--grid-line-2); border-bottom: 1px solid var(--grid-line-2); background: var(--surface); padding: 0; font-size: 15px; }
 .wa-grid { display: grid; grid-template-columns: repeat(5, 76px); gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--grid-line); justify-content: center; }
 .wa-grid button { height: 56px; border: 1px solid var(--card-line-2); background: var(--surface); padding: 4px; overflow: hidden; position: relative; }
 .wa-grid button > svg { position: static !important; display: block; margin: auto; }
@@ -296,7 +292,6 @@
     </div>
     <div class="taskpane" id="taskpane"></div>
   </div>
-  <div class="viewbar" id="viewbar"></div>
   <div class="drawrow" id="drawrow"></div>
   <div class="statusbar" id="statusbar"></div>
 </div>
@@ -306,10 +301,12 @@
 <script src="../common/locales.js"></script>
 <script src="../common/sha.js"></script>
 <script src="../common/crypto.js"></script>
+<script src="../common/legacy/import.js"></script>
 <script src="../common/xml.js"></script>
 <script src="../common/opc.js"></script>
 <script src="../common/opc-order.js"></script>
 <script src="../common/zip.js"></script>
+<script src="../common/presets.js"></script>
 <script src="../common/geometry.js"></script>
 <script src="js/model.js"></script>
 <script src="../common/icons.js"></script>
@@ -317,8 +314,11 @@
 <script src="../common/metafile.js"></script>
 <script src="../common/numfmt.js"></script>
 <script src="../common/charts.js"></script>
-<script src="js/chart-draw.js"></script>
+<script src="../common/chart-read.js"></script>
+<script src="../common/chart-draw.js"></script>
 <script src="../common/ui.js"></script>
+<script src="../common/spell.js"></script>
+<script src="../common/dialogs.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/textedit.js"></script>
 <script src="../common/clipart.js"></script>

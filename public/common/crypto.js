@@ -11,71 +11,154 @@
   const OC = (L.officeCrypto = {});
 
   /* ================= compound file (CFB) reader ================= */
-  function cfb(u8) {
+  // Derived from Apache POI poifs/{storage/HeaderBlock,filesystem/POIFSFileSystem,property/PropertyTable} (Apache-2.0).
+  // Derived from Apache OpenOffice main/sot/source/sdstor/{stgcache,stgdir,stgstrms}.cxx (Apache-2.0).
+  // MS-CFB layout, with the tolerant reads used by those implementations. A stream is
+  // validated only as far as its declared data: damage elsewhere cannot hide the document.
+  function cfb(u8, options = {}) {
+    const fail = (code, message) => { const e = new Error(message); e.name = 'CFBError'; e.code = code; throw e; };
+    const maxBytes = Math.min(options.maxBytes || 0x7fffffff, 0x7fffffff);
+    const maxEntries = Math.min(options.maxEntries || 262144, 1048576);
+    const maxDepth = Math.min(options.maxDepth || 1000, 1000);
+    if (!(u8 instanceof Uint8Array) || u8.length < 512) fail('CFB_HEADER', 'Truncated compound file header');
+    if (u8.length > maxBytes) fail('CFB_LIMIT', 'Compound file exceeds the size limit');
     const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
-    if (dv.getUint32(0, true) !== 0xe011cfd0 || dv.getUint32(4, true) !== 0xe11ab1a1) throw new Error('not a compound file');
-    const ssz = 1 << dv.getUint16(0x1e, true), mssz = 1 << dv.getUint16(0x20, true);
-    const nFat = dv.getUint32(0x2c, true), dirStart = dv.getUint32(0x30, true), cutoff = dv.getUint32(0x38, true);
-    const miniFatStart = dv.getUint32(0x3c, true), difatStart = dv.getUint32(0x44, true), nDifat = dv.getUint32(0x48, true);
-    const off = (n) => (n + 1) * ssz; /* sector n follows the header sector */
-    /* FAT sector list: 109 in the header, the rest in the DIFAT chain */
+    if (dv.getUint32(0, true) !== 0xe011cfd0 || dv.getUint32(4, true) !== 0xe11ab1a1) fail('CFB_SIGNATURE', 'Not a compound file');
+    // POI HeaderBlock uses the sector-shift byte, not advisory version/byte-order fields.
+    const shift = u8[30];
+    if (shift !== 9 && shift !== 12) fail('CFB_HEADER', 'Unsupported compound file sector size');
+    const ssz = 2 ** shift, version = shift === 12 ? 4 : 3, per = ssz / 4, END = 0xfffffffe, FREE = 0xffffffff;
+    const count = Math.max(0, Math.ceil(u8.length / ssz) - 1);
+    const nFat = dv.getUint32(0x2c, true), dirStart = dv.getUint32(0x30, true);
+    const miniFatStart = dv.getUint32(0x3c, true), nMiniFat = dv.getUint32(0x40, true);
+    const difatStart = dv.getUint32(0x44, true), nDifat = dv.getUint32(0x48, true);
+    // Bound work by addressable data, not by a possibly stale header count.
+    const wantedFats = Math.min(nFat || 109, Math.ceil((count + 1) / per));
+    const issues = [], warn = (code, detail) => { if (issues.length < 256) issues.push({ code, detail }); };
+    const sector = s => {
+      // OpenOffice StgCache::Read also permits the page immediately after EOF.
+      if (!Number.isInteger(s) || s < 0 || s > count) fail('CFB_SECTOR', 'Compound file sector is outside the file');
+      const offset = (s + 1) * ssz;
+      if (offset + ssz <= u8.length) return u8.subarray(offset, offset + ssz);
+      const padded = new Uint8Array(ssz);
+      if (offset < u8.length) padded.set(u8.subarray(offset));
+      return padded;
+    };
+    const sectorView = s => { const bytes = sector(s); return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength); };
     const fatSecs = [];
-    for (let i = 0; i < 109 && fatSecs.length < nFat; i++) { const v = dv.getUint32(0x4c + i * 4, true); if (v < 0xfffffffa) fatSecs.push(v); }
-    let d = difatStart, guard = 0;
-    while (d < 0xfffffffa && guard++ < nDifat + 1 && fatSecs.length < nFat) {
-      const base = off(d), per = ssz / 4 - 1;
-      for (let i = 0; i < per && fatSecs.length < nFat; i++) { const v = dv.getUint32(base + i * 4, true); if (v < 0xfffffffa) fatSecs.push(v); }
-      d = dv.getUint32(base + per * 4, true);
+    for (let i = 0; i < Math.min(wantedFats, 109); i++) fatSecs.push(dv.getUint32(0x4c + i * 4, true));
+    let d = difatStart;
+    const difatSeen = new Set();
+    for (let i = 0; i < nDifat && fatSecs.length < wantedFats; i++) {
+      if (d === END || d === FREE) break;
+      if (difatSeen.has(d) || difatSeen.size > count) { warn('CFB_CYCLE', 'DIFAT'); break; }
+      difatSeen.add(d);
+      let view; try { view = sectorView(d); } catch (e) { if (e.name !== 'CFBError') throw e; warn(e.code, 'DIFAT'); break; }
+      for (let k = 0; k < per - 1 && fatSecs.length < wantedFats; k++) {
+        const value = view.getUint32(k * 4, true); if (value === END || value === FREE) break; fatSecs.push(value);
+      }
+      d = view.getUint32(ssz - 4, true);
     }
-    const fat = new Uint32Array(fatSecs.length * (ssz / 4));
-    fatSecs.forEach((s, i) => { const b = off(s); for (let k = 0; k < ssz / 4; k++) fat[i * (ssz / 4) + k] = dv.getUint32(b + k * 4, true); });
-    const chain = (start, limit) => {
-      const out = [];
-      let s = start;
-      while (s < 0xfffffffa && out.length <= limit) { out.push(s); s = fat[s]; }
+    // Lazy FAT blocks: unused/damaged trailing FAT entries are not an error on open.
+    const fatViews = new Map();
+    const fatNext = s => {
+      const block = Math.floor(s / per);
+      if (block >= fatSecs.length) fail('CFB_FAT', 'A required FAT sector is missing');
+      if (!fatViews.has(block)) fatViews.set(block, sectorView(fatSecs[block]));
+      return fatViews.get(block).getUint32(s % per * 4, true);
+    };
+    // A reusable lazy chain cursor, used for the root mini stream and mini FAT.
+    const lazyChain = (start, next, limit, label) => {
+      const pages = [], seen = new Set();
+      return index => {
+        if (!Number.isInteger(index) || index < 0 || index > limit) fail('CFB_LIMIT', `${label} exceeds the chain limit`);
+        while (pages.length <= index) {
+          const s = pages.length ? next(pages[pages.length - 1]) : start;
+          if (s === END || s === FREE) fail('CFB_TRUNCATED', `Truncated ${label} chain`);
+          if (!Number.isInteger(s) || s < 0 || s > limit) fail('CFB_CHAIN', `Invalid ${label} chain sector`);
+          if (seen.has(s)) fail('CFB_CYCLE', `Cyclic ${label} chain`);
+          seen.add(s); pages.push(s);
+        }
+        return pages[index];
+      };
+    };
+    const readStream = (start, size, next, block, blockSize, limit, label) => {
+      if (!Number.isSafeInteger(size) || size < 0) fail('CFB_LIMIT', 'Invalid compound file stream size');
+      // OpenOffice StgDataStrm/StgSmallStrm::Read returns the bytes actually read.
+      // Keep that prefix on EOF or a damaged tail; report it through issues. Never
+      // allocate from a stale stream size beyond what this file can possibly hold.
+      const length = Math.min(size, maxBytes, (count + 1) * ssz), out = new Uint8Array(length), seen = new Set(); let s = start;
+      for (let p = 0; p < length; p += blockSize) {
+        try {
+          if (s === END || s === FREE) fail('CFB_TRUNCATED', `Truncated ${label} chain`);
+          if (!Number.isInteger(s) || s < 0 || s > limit) fail('CFB_CHAIN', `Invalid ${label} chain sector`);
+          if (seen.has(s)) fail('CFB_CYCLE', `Cyclic ${label} chain`);
+          seen.add(s); out.set(block(s).subarray(0, Math.min(blockSize, length - p)), p);
+        } catch (e) { if (e.name !== 'CFBError') throw e; warn(e.code, label); return out.subarray(0, p); }
+        if (p + blockSize < length) {
+          try { s = next(s); }
+          catch (e) { if (e.name !== 'CFBError') throw e; warn(e.code, label); return out.subarray(0, p + blockSize); }
+        }
+      }
+      if (length < size) warn('CFB_TRUNCATED', label);
       return out;
     };
-    const readChain = (start, size) => {
-      const secs = chain(start, Math.ceil((size || 1e9) / ssz) + 1);
-      const buf = new Uint8Array(secs.length * ssz);
-      secs.forEach((s, i) => buf.set(u8.subarray(off(s), Math.min(u8.length, off(s) + ssz)), i * ssz));
-      return size != null ? buf.subarray(0, size) : buf;
-    };
-    /* directory */
-    const dirBytes = readChain(dirStart, null);
-    const entries = [];
-    for (let p = 0; p + 128 <= dirBytes.length; p += 128) {
-      const nameLen = dirBytes[p + 64] | (dirBytes[p + 65] << 8);
-      const type = dirBytes[p + 66];
-      if (!type) { entries.push(null); continue; }
-      const name = new TextDecoder('utf-16le').decode(dirBytes.subarray(p, p + Math.max(0, nameLen - 2)));
-      const ed = new DataView(dirBytes.buffer, dirBytes.byteOffset + p, 128);
-      entries.push({ name, type, start: ed.getUint32(116, true), size: ed.getUint32(120, true) });
+    const dirSectors = [], dirSeen = new Set(); let dir = dirStart;
+    while (dir !== END && dir !== FREE) {
+      if (dirSeen.has(dir)) { warn('CFB_CYCLE', 'directory stream'); break; }
+      if ((dirSectors.length + 1) * ssz / 128 > maxEntries) { warn('CFB_LIMIT', 'directory entry budget'); break; }
+      try { dirSeen.add(dir); dirSectors.push(sector(dir)); dir = fatNext(dir); }
+      catch (e) { if (e.name !== 'CFBError' || !dirSectors.length) throw e; warn(e.code, 'directory stream'); break; }
     }
-    const rootEntry = entries[0];   // the compound file's root storage
-    let mini = null, miniFat = null;
-    const getMini = () => {
-      if (!mini) {
-        mini = readChain(rootEntry.start, rootEntry.size);
-        const mf = miniFatStart < 0xfffffffa ? readChain(miniFatStart, null) : new Uint8Array(0);
-        miniFat = new Uint32Array(mf.buffer, mf.byteOffset, mf.byteLength >> 2);
-      }
+    if (!dirSectors.length) fail('CFB_DIRECTORY', 'Compound file has no directory');
+    const entries = [], decoder = new TextDecoder('utf-16le');
+    for (const bytes of dirSectors) for (let p = 0; p < ssz; p += 128) {
+      const ed = new DataView(bytes.buffer, bytes.byteOffset + p, 128), type = ed.getUint8(66), id = entries.length;
+      const nameLen = ed.getUint16(64, true), nameChars = Math.max(0, Math.floor(nameLen / 2) - 1);
+      const name = nameChars <= 31 ? decoder.decode(bytes.subarray(p, p + nameChars * 2)) : '';
+      const valid = [1, 2, 5].includes(type) && name && !/[\x00/\\:!]/.test(name);
+      const size = type === 1 ? 0 : ed.getUint32(120, true) + (version === 4 ? ed.getUint32(124, true) * 4294967296 : 0);
+      entries.push({ id, name, type, size, valid, start: ed.getUint32(116, true),
+        left: ed.getUint32(68, true), right: ed.getUint32(72, true), child: ed.getUint32(76, true),
+        clsid: bytes.slice(p + 80, p + 96), created: bytes.slice(p + 100, p + 108), modified: bytes.slice(p + 108, p + 116) });
+    }
+    const rootEntry = entries[0], paths = new Map(), reachable = [], seen = new Set([0]);
+    const pending = [{ id: rootEntry.child, parent: '', depth: 0 }];
+    while (pending.length) {
+      const item = pending.pop(); if (item.id === FREE || item.id === END) continue;
+      const e = entries[item.id];
+      // A broken branch, duplicate, or unused property must not hide its sound siblings.
+      if (!e || seen.has(item.id) || item.depth > maxDepth) { warn('CFB_DIRECTORY', item.id); continue; }
+      seen.add(item.id);
+      pending.push({ id: e.right, parent: item.parent, depth: item.depth }, { id: e.left, parent: item.parent, depth: item.depth });
+      if (!e.valid || e.type === 5) { if (e.type) warn('CFB_DIRECTORY', item.id); continue; }
+      const path = item.parent + e.name, key = path.toUpperCase();
+      if (paths.has(key)) { warn('CFB_DUPLICATE', path); continue; }
+      const entry = Object.freeze({ ...e, path }); paths.set(key, entry); reachable.push(entry);
+      if (e.type === 1) pending.push({ id: e.child, parent: path + '/', depth: item.depth + 1 });
+    }
+    const miniPages = lazyChain(rootEntry.start, fatNext, count, 'root mini stream');
+    const miniFatPages = lazyChain(miniFatStart, fatNext, count, 'mini FAT');
+    const miniFatViews = new Map();
+    const miniNext = s => {
+      if (!nMiniFat) fail('CFB_CHAIN', 'The mini FAT is missing');
+      const index = Math.floor(s / per);
+      if (!miniFatViews.has(index)) miniFatViews.set(index, sectorView(miniFatPages(index)));
+      return miniFatViews.get(index).getUint32(s % per * 4, true);
     };
+    const miniSector = s => { const at = s * 64, page = sector(miniPages(Math.floor(at / ssz))); return page.subarray(at % ssz, at % ssz + 64); };
     return {
-      stream(name) {
-        const e = entries.find((x) => x && x.type === 2 && x.name.toLowerCase() === name.toLowerCase());
-        if (!e) return null;
-        if (e.size < cutoff) {
-          getMini();
-          const out = new Uint8Array(e.size);
-          let s = e.start, pos = 0, g = 0;
-          while (s < 0xfffffffa && pos < e.size && g++ < 1e7) { out.set(mini.subarray(s * mssz, s * mssz + Math.min(mssz, e.size - pos)), pos); pos += mssz; s = miniFat[s]; }
-          return out;
-        }
-        return readChain(e.start, e.size);
+      version, entries: Object.freeze(reachable), root: Object.freeze({ ...rootEntry, path: '' }), get issues() { return Object.freeze(issues.slice()); },
+      stream(path) {
+        const e = paths.get(String(path).toUpperCase());
+        if (!e || e.type !== 2) return null;
+        return e.size < 4096
+          ? readStream(e.start, e.size, miniNext, miniSector, 64, Math.floor(maxBytes / 64), e.path)
+          : readStream(e.start, e.size, fatNext, sector, ssz, count, e.path);
       },
     };
   }
+  OC.cfb = cfb;
 
   /* ================= AES (decryption) ================= */
   const xtime = (b) => ((b << 1) ^ (b & 0x80 ? 0x1b : 0)) & 0xff;

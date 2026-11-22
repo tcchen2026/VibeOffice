@@ -378,13 +378,13 @@
     let area = getName('_xlnm.print_area');
     const titles = L.print.titles(s);
     /* page */
-    const adj = ui.spin({ value: p.scale || 100, min: 10, max: 400, step: 5, dec: 0, fmt: (v) => L.t('{0}% normal size', Math.round(v)), onChange: (v) => { p.scale = Math.round(v); } });
+    const adj = ui.spin({ value: p.scale || 100, min: 10, max: 400, step: 5, dec: 0, unit: '%', onChange: (v) => { p.scale = Math.round(v); } });
     const fitW = ui.spin({ value: p.fitW == null ? 1 : p.fitW, min: 0, max: 32767, step: 1, dec: 0, onChange: (v) => { p.fitW = Math.round(v) || null; } });
     const fitH = ui.spin({ value: p.fitH == null ? 1 : p.fitH, min: 0, max: 32767, step: 1, dec: 0, onChange: (v) => { p.fitH = Math.round(v) || null; } });
     const first = h('input', { type: 'text', value: p.firstPage != null ? String(p.firstPage) : L.t('Auto'), style: 'width:70px' });
     const pageTab = h('div', { class: 'col' },
       ui.group('Orientation', h('div', { class: 'row', style: 'gap:24px' }, ui.radio('ps-o', 'Por&trait', p.orientation !== 'landscape', () => { p.orientation = 'portrait'; }), ui.radio('ps-o', '&Landscape', p.orientation === 'landscape', () => { p.orientation = 'landscape'; }))),
-      ui.group('Scaling', h('div', { class: 'row', style: 'gap:8px' }, ui.radio('ps-s', '&Adjust to:', !p.fit, () => { p.fit = false; }), adj), h('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap' }, ui.radio('ps-s', '&Fit to:', !!p.fit, () => { p.fit = true; }), fitW, h('span', { text: 'page(s) wide by' }), fitH, h('span', { text: 'tall' }))),
+      ui.group('Scaling', h('div', { class: 'row', style: 'gap:8px;align-items:center' }, ui.radio('ps-s', '&Adjust to:', !p.fit, () => { p.fit = false; }), adj, h('span', { text: 'normal size' })), h('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;align-items:center' }, ui.radio('ps-s', '&Fit to:', !!p.fit, () => { p.fit = true; }), fitW, h('span', { text: 'page(s) wide by' }), fitH, h('span', { text: 'tall' }))),
       ui.field('Paper si&ze:', ui.select(Object.keys(L.print.PAPERS).map((k) => [k, L.t('{0} ({1} x {2} in)', L.t(L.print.PAPERS[k][0]), L.print.PAPERS[k][1], L.print.PAPERS[k][2])]), p.paper || 1, (v) => { p.paper = +v; })),
       ui.field('Print &quality:', ui.select(['600 dpi', '300 dpi', '150 dpi'], '600 dpi', null, { translate: 'no' })),
       ui.field('Fi&rst page number:', first));
@@ -447,19 +447,15 @@
   };
 
   /* ================================================================ Print */
+  /** File ▸ Print (common ui.printDialog): Excel's From and To, and Print what beside them */
   D.print = function () {
-    const st = { what: 'sheets', range: 'all', from: 1, to: 1, copies: 1 };
-    const from = h('input', { type: 'text', value: '1', style: 'width:40px' }), to = h('input', { type: 'text', value: '1', style: 'width:40px' });
+    let what = 'sheets';
     const items = L.print.allPages(A().selectedSheets(), null);
-    to.value = String(Math.max(1, items.length));
-    return new Promise((res) => {
-      ui.dialog({ title: 'Print', width: 440, body: h('div', { class: 'col' },
-        ui.group('Printer', ui.field('&Name:', ui.select([['pdf', 'Ledger PDF Writer']], 'pdf')), h('div', { class: 'hint', text: 'Ledger prints by creating a PDF that you can open and print on any printer.' })),
-        h('div', { class: 'row', style: 'gap:10px;align-items:stretch' },
-          ui.group('Print range', ui.radio('pr-r', '&All', true, () => { st.range = 'all'; }), h('div', { class: 'row', style: 'gap:6px' }, ui.radio('pr-r', 'Pa&ge(s)', false, () => { st.range = 'pages'; }), h('span', { text: 'From:' }), from, h('span', { text: 'To:' }), to)),
-          ui.group('Print what', ui.radio('pr-w', 'Selectio&n', false, () => { st.what = 'selection'; }), ui.radio('pr-w', 'Active s&heet(s)', true, () => { st.what = 'sheets'; }), ui.radio('pr-w', '&Entire workbook', false, () => { st.what = 'workbook'; }))),
-        ui.field('Number of &copies:', ui.spin({ value: 1, min: 1, max: 99, step: 1, dec: 0 }))),
-      buttons: [{ label: 'Pre&view', onClick: () => { setTimeout(() => L.print.preview(), 0); } }, { label: 'OK', primary: true, onClick: () => { const o = { what: st.what }; if (st.range === 'pages') { o.from = parseInt(from.value, 10) || 1; o.to = parseInt(to.value, 10) || o.from; } L.print.exportPDF(o); } }, { label: 'Cancel' }] }).done.then(res);
-    });
+    return ui.printDialog({
+      count: Math.max(1, items.length), fromTo: true,
+      beside: ui.group('Print what', h('div', { class: 'col', style: 'gap:2px' }, ui.radio('pr-w', 'Selectio&n', false, () => { what = 'selection'; }), ui.radio('pr-w', 'Active s&heet(s)', true, () => { what = 'sheets'; }), ui.radio('pr-w', '&Entire workbook', false, () => { what = 'workbook'; }))),
+      preview: () => { setTimeout(() => L.print.preview(), 0); },
+      print: (r) => { const o = { what }; if (r.range === 'pages') { o.from = r.from; o.to = r.to; } L.print.exportPDF(o); },
+    }).done;
   };
 })(typeof window !== 'undefined' ? window : globalThis);

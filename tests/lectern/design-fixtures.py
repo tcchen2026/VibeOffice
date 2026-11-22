@@ -7,7 +7,7 @@ import xml.etree.ElementTree as E
 
 ap = argparse.ArgumentParser(description=__doc__)
 ap.add_argument('output', type=Path)
-ap.add_argument('--corpus', type=Path, default=Path.home() / 'corpora/powerpoint')
+ap.add_argument('--corpus', type=Path, default=Path('/work/corpora/powerpoint'))
 args = ap.parse_args()
 args.output.mkdir(parents=True, exist_ok=True)
 with zipfile.ZipFile(args.corpus / 'libreoffice__07eb8b76b2cf__master-slides.pptx') as z:

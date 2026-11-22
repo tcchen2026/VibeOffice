@@ -1,10 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} }; require('../../public/ledger/js/ops.js');
 const K = L.opc, E = L.sheetExtensions, O = L.ops, output = process.env.EXTENSION_RESULTS, results = [];
-const dir = process.env.EXCEL_CORPUS || path.join(os.homedir(), 'corpora', 'excel');
+const dir = process.env.EXCEL_CORPUS || '/work/corpora/excel';
 const files = { bars: 'poi__48c9cc6ad6e4__NewStyleConditionalFormattings.xlsx',
   simple: 'libreoffice__824231349a68__condformat_databar.xlsx',
   validation: 'libreoffice__18cc6e52b38e__tdf152037.xlsx',

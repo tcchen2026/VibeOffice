@@ -16,14 +16,14 @@
     const nav = (icon, label) => h('button', { class: 'tp-nav', type: 'button', 'aria-label': label, 'data-tip': label, html: L.icons.get(icon) || label[0] });
     TP.back = nav('back', L.N('Back')); TP.fwd = nav('forward', L.N('Forward')); TP.home = nav('home', L.N('Home'));
     TP.title = h('div', { class: 'tp-title', role: 'button', tabindex: '0', 'aria-haspopup': 'menu' }, h('span', { text: '' }), h('span', { class: 'dd-arrow' }));
-    const close = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Close task pane', 'data-tip': 'Close', html: '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="#000" stroke-width="1.6"/></svg>' });
+    const close = h('button', { class: 'tp-nav', type: 'button', 'aria-label': 'Close task pane', 'data-tip': 'Close', html: L.icons.get('close', 12) });
     TP.body = h('div', { class: 'tp-body' });
     el.append(h('div', { class: 'tp-head' }, TP.back, TP.fwd, TP.home, TP.title, close), TP.body);
     TP.back.addEventListener('click', () => TP.go(TP.pos - 1));
     TP.fwd.addEventListener('click', () => TP.go(TP.pos + 1));
     TP.home.addEventListener('click', () => TP.show('getting-started'));
     close.addEventListener('click', () => A().toggleTask(false));
-    const openList = () => { const r = TP.title.getBoundingClientRect(); ui.openMenu(Object.values(TP.registry).filter((p) => !p.hidden).map((p) => ({ label: p.title, run: () => TP.show(p.id), checked: () => TP.current === p.id })), { left: r.left, bottom: r.bottom }); };
+    const openList = () => ui.paneList(TP);
     TP.title.addEventListener('click', openList);
     TP.title.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openList(); } });
     L.bus.on('clipboard', () => TP.refresh('clip'));
@@ -141,6 +141,8 @@
     id: 'keys', title: 'Keyboard Shortcuts',
     render(b) { b.appendChild(h('table', { class: 'kbd-table' }, ...KEYS.map(([k, d]) => h('tr', null, h('td', { text: k }), h('td', { text: d }))))); },
   });
+  /* ---------- Clip Art (common/clipart.js) ---------- */
+  TP.register({ id: 'clipart', title: 'Clip Art', render: (b) => L.clipart.pane(b, (it) => A().insertClipArt(it), L.N('Click a clip to insert it at the active cell.')) });
   /* ---------- Office Clipboard ---------- */
   P.clips = [];
   P.addClip = function (clip) {

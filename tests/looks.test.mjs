@@ -15,6 +15,7 @@ const SHEETS = {
   'quire/index.html': styleOf(read('quire/index.html')),
   'lectern/index.html': styleOf(read('lectern/index.html')),
   'index.html': styleOf(read('index.html')),
+  'lite.html': styleOf(read('lite.html')),
 };
 /* set per element by the apps for document content (and by scout.js for his size and balloon tip), not by a look */
 const DOCUMENT_VARS = new Set(['--tabc', '--olvl', '--bu-c', '--bu-f', '--bu-s', '--bu-w', '--icon-swatch', '--scout-w', '--scout-tip']);
@@ -65,7 +66,7 @@ test('the shared chrome has no colours of its own', () => {
 
 test('the pages pick the look before the first paint and load looks.css first', () => {
   assert.match(read('common/look.js'), /d\.dataset\.look = l;/);
-  for (const page of ['index.html', 'quire/index.html', 'ledger/index.html', 'lectern/index.html']) {
+  for (const page of ['index.html', 'lite.html', 'quire/index.html', 'ledger/index.html', 'lectern/index.html']) {
     const html = read(page);
     const script = html.indexOf('common/look.js"');
     const sheet = html.indexOf('common/looks.css');

@@ -84,7 +84,7 @@ const APPS = {
   },
 };
 
-const CHROME = ['.cmdbars', '#statusbar', '#drawrow', '#viewbar', '#fbar', '.rb-tabs', '.tb-grip'];
+const CHROME = ['.cmdbars', '#statusbar', '#drawrow', '#fbar', '.rb-tabs', '.tb-grip'];
 
 for (const [app, A] of Object.entries(APPS)) for (const look of ['classic', 'paper2016']) {
   test(`${app}, ${look}: the keyboard stays with the document`, async (s) => {
@@ -128,6 +128,17 @@ for (const [app, A] of Object.entries(APPS)) for (const look of ['classic', 'pap
         await s.test('a menu opened from the menu bar and closed with Esc', () => keeps(async () => {
           await t.menu('Edit'); await pause(150); await t.esc();
         }));
+        /* Toolbar Options (») of a toolbar cut short (Standard and Formatting sharing a row at 1280 px): the pop-up
+           holds the controls that don't fit, Esc closes it and they go back */
+        await s.test('Toolbar Options (») opened, then closed with Esc', () => keeps(async () => {
+          await t.evaluate(`(L.app.opts.twoRows = false, L.ui.toolbarPrefs(L.app.opts))`); await pause(300);
+          try {
+            await t.click(await t.el('#tb-standard .tb-more'));
+            assert.equal(await t.evaluate(`!!document.querySelector('.tb-pop [data-cmd="help"]')`), true, 'Help is in the pop-up');
+            await t.esc();
+            assert.equal(await t.evaluate(`!document.querySelector('.tb-pop') && !!document.querySelector('#tb-standard [data-cmd="help"]')`), true, 'closed, Help back on the toolbar');
+          } finally { await t.evaluate(`(L.app.opts.twoRows = true, L.ui.toolbarPrefs(L.app.opts))`); }
+        }));
       } else {
         await s.test('the ribbon\'s tabs clicked', () => keeps(async () => {
           await t.click(await t.el('.rb-tab[data-tab="insert"]')); await pause(150);
@@ -139,6 +150,31 @@ for (const [app, A] of Object.entries(APPS)) for (const look of ['classic', 'pap
         if (!p) continue;
         await s.test(`a press on ${sel} where it has no control`, () => keeps(async () => { await t.click(await blank(t, sel)); }));
       }
+      /* a dialog's underlined letter with Alt (ui.dialog): Zoom's &200% is chosen, then Esc */
+      await s.test('a dialog\'s access key pressed with Alt, then Esc', () => keeps(async () => {
+        await t.evaluate(`L.ui.exec('zoomDlg')`); await pause(300);
+        await t.key('2', { alt: true }); await pause(150);
+        assert.match(await t.evaluate(`(() => { const r = [...document.querySelectorAll('.dlg input[type=radio]')].find((x) => x.checked); return r ? r.parentElement.textContent : ''; })()`), /^200\s?%$/, 'Alt+2 chose 200%');
+        await t.esc();
+      }));
+      /* the status bar's zoom slider (ui.zoomSlider) is chrome too: the zoom changes, the keyboard and selection stay */
+      const zoomNow = () => t.evaluate(`+document.querySelector('#statusbar .zs-track').getAttribute('aria-valuenow')`);
+      await s.test('the zoom slider\'s thumb dragged', () => keeps(async () => {
+        const z0 = await zoomNow(), tr = await t.el('#statusbar .zs-track'), th = await t.el('#statusbar .zs-thumb');
+        await t.drag({ x: th.x, y: tr.y }, { x: Math.min(tr.r - 2, th.x + 24), y: tr.y }, 6);
+        assert.ok(await zoomNow() > z0, `zoomed in from ${z0}%`);
+      }));
+      await s.test('the zoom slider dragged, then Esc', () => keeps(async () => {
+        const z0 = await zoomNow(), tr = await t.el('#statusbar .zs-track'), th = await t.el('#statusbar .zs-thumb'), to = { x: Math.max(tr.l + 2, th.x - 24), y: tr.y };
+        await t.press({ x: th.x, y: tr.y }); await t.glide({ x: th.x, y: tr.y }, to, 6);
+        await t.esc(); await t.release(to);
+        assert.equal(await zoomNow(), z0, 'the zoom is back');
+      }));
+      await s.test('the zoom slider\'s + clicked', () => keeps(async () => {
+        const z0 = await zoomNow();
+        await t.click(await t.evaluate(`(() => { const r = document.querySelectorAll('#statusbar .zs-step')[1].getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`));
+        assert.ok(await zoomNow() > z0, `zoomed in from ${z0}%`);
+      }));
       await s.test('no browser errors, no external requests', () => t.clean());
     } finally { await t.close(); }
   });

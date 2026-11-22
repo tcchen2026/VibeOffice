@@ -459,44 +459,21 @@
     styleCache.set(key, out);
     return out;
   };
-  D.isDefaultParaStyle = (doc, sid) => !doc.styles[sid] || sid === D.defaultStyleId(doc, 'paragraph');
-  /** the default paragraph style's own settings, and those it inherits (and does not override) from parents */
-  D.defaultStyleSplit = function (doc, sid) {
-    const key = 'ds:' + sid;
-    if (styleCache.has(key)) return styleCache.get(key);
-    const chain = D.styleChain(doc, doc.styles[sid] ? sid : D.defaultStyleId(doc, 'paragraph'));
-    const own = (chain.length && chain[chain.length - 1].pPr) || {};
-    let anc = {};
-    for (const st of chain.slice(0, -1)) anc = D.mergePPr(anc, st.pPr);
-    const inherited = {};
-    for (const k in anc) {
-      const v = anc[k], o = own[k];
-      if (v === undefined) continue;
-      if (o === undefined) inherited[k] = v;
-      else if (NESTED_P.includes(k) && v && o && typeof v === 'object' && typeof o === 'object' && !Array.isArray(v)) {
-        const sub = {};
-        for (const kk in v) if (o[kk] === undefined) sub[kk] = v[kk];
-        if (Object.keys(sub).length) inherited[k] = sub;
-      }
-    }
-    const out = { own, inherited };
-    styleCache.set(key, out);
-    return out;
-  };
+  const TOGGLES = ['b', 'i', 'caps', 'smallCaps', 'strike', 'dstrike', 'outline', 'shadow', 'emboss', 'imprint', 'hidden'];
   /** paragraph properties after style + numbering + direct formatting */
   D.pProps = function (doc, p, ctx) {
     const sid = p.pPr.style || 'Normal';
     let pPr;
-    /* precedence: document defaults < table style < paragraph style < numbering < direct */
+    /* precedence: document defaults < table style < paragraph style < numbering < direct. The Normal style is a
+       paragraph style like any other here: what it sets itself (size, spacing, shading) wins over the table style in
+       Word 2016's prints (2026-11-07). One exception, [MS-DOCX]'s overrideTableStyleFontSizeAndJustification: below
+       compatibility mode 15, unless the document turns it on, Normal's own "left" gives way to the table style's
+       justification. (Its font size rule Word 2016 follows only in part: Normal's 12 pt over 8 pt defaults gave way,
+       over 11 pt defaults it held; Normal's size is kept here.) */
     if (ctx && ctx.tblPPr) {
-      if (D.isDefaultParaStyle(doc, sid)) {
-        /* inside a table, settings made in the default paragraph style itself count like document defaults:
-           the table style overrides them (what Word and LibreOffice do); settings inherited from a parent
-           style still win. overrideTableStyleFontSizeAndJustification gives the style's justification back. */
-        const sp = D.defaultStyleSplit(doc, sid);
-        pPr = D.mergePPr(D.mergePPr(D.mergePPr(doc.defaults.pPr, sp.own), ctx.tblPPr), sp.inherited);
-        if (sp.own.jc && doc.settings && doc.settings.tblFsJcOverride) pPr = Object.assign({}, pPr, { jc: sp.own.jc });
-      } else pPr = D.mergePPr(D.mergePPr(doc.defaults.pPr, ctx.tblPPr), D.stylePPrOnly(doc, sid));
+      pPr = D.mergePPr(D.mergePPr(doc.defaults.pPr, ctx.tblPPr), D.stylePPrOnly(doc, sid));
+      const def = D.defaultStyleId(doc, 'paragraph'), normal = doc.styles[def];
+      if (ctx.tblPPr.jc && (sid === def || !doc.styles[sid]) && normal && normal.pPr && normal.pPr.jc === 'left' && (doc.settings.compat || 12) < 15 && !doc.settings.tblFsJcOverride) pPr = Object.assign({}, pPr, { jc: ctx.tblPPr.jc });
     } else pPr = D.styleProps(doc, sid).pPr;
     const num = (p.pPr.num !== undefined ? p.pPr.num : pPr.num);
     if (num && num.id && num.id !== '0') {
@@ -540,8 +517,10 @@
     const sp = D.styleProps(doc, p.pPr.style || 'Normal');
     let r = sp.rPr;
     if (ctx && ctx.tblRPr) {
-      r = D.mergeRPr(D.mergeRPr(doc.defaults.rPr, ctx.tblRPr), D.styleRPrOnly(doc, p.pPr.style || 'Normal'));
-      if (ctx.tblRPr.sz && !(doc.settings && doc.settings.tblFsJcOverride) && D.isDefaultParaStyle(doc, p.pPr.style || 'Normal')) r = Object.assign({}, r, { sz: ctx.tblRPr.sz });
+      /* a toggle the paragraph style turns off (b=0) leaves the table style's on: bold stays bold, as Word prints it */
+      const own = Object.assign({}, D.styleRPrOnly(doc, p.pPr.style || 'Normal'));
+      for (const k of TOGGLES) if (own[k] === false && ctx.tblRPr[k]) delete own[k];
+      r = D.mergeRPr(D.mergeRPr(doc.defaults.rPr, ctx.tblRPr), own);
     }
     const rp = it ? it.rPr : p.rPr;
     if (rp && rp.style) r = D.mergeRPr(r, D.charStyleProps(doc, rp.style));
@@ -592,11 +571,12 @@
       const absId = def.num.abs;
       let c = counters.get(absId);
       if (!c) { c = new Array(9).fill(null); counters.set(absId, c); }
+      let restarts = false;
       if (!seenNum.has(num.id)) {
         seenNum.add(num.id);
         const ov = def.num.ov || {};
         for (const k in ov) if (ov[k] && ov[k].start != null) { c[+k] = null; for (let j = +k + 1; j < 9; j++) c[j] = null; }
-        if (Object.keys(ov).some((k) => ov[k] && ov[k].start != null)) def._restart = true;
+        if (Object.keys(ov).some((k) => ov[k] && ov[k].start != null)) def._restart = restarts = true;
       }
       const lvDef = D.numLevelDef(doc, num.id, lvl) || {};
       const startOf = (l) => { const ov = def.num.ov && def.num.ov[l]; if (ov && ov.start != null) return ov.start; const d = D.numLevelDef(doc, num.id, l); return d && d.start != null ? d.start : 1; };
@@ -618,7 +598,8 @@
           return D.fmtNum(c[k] == null ? startOf(k) : c[k], fmt);
         });
       }
-      labels.set(p.id, { text, lv: lvDef, numId: num.id, lvl, value: c[lvl] });
+      /* (abs and restarts: whether the numbering goes on from the paragraph before, R.para's auto spacing) */
+      labels.set(p.id, { text, lv: lvDef, numId: num.id, lvl, value: c[lvl], abs: absId, restarts });
     };
     const walk = (blocks) => {
       for (const b of blocks) {
@@ -1061,11 +1042,21 @@
     out.push({ sect: doc.sect, from, to: bl.length, endPara: null });
     return out;
   };
+  /** the properties of the section after the one that paragraph p (holding a section break) ends */
+  D.sectAfter = function (doc, p) {
+    const bl = doc.main.blocks, r = D.info(doc, p);
+    for (let i = (r && r.cont === doc.main ? r.i : bl.indexOf(p)) + 1; i < bl.length; i++) if (bl[i].t === 'p' && bl[i].sect) return bl[i].sect;
+    return doc.sect;
+  };
   D.sectOfBlock = function (doc, idx) {
     for (const s of D.sections(doc)) if (idx < s.to || s.endPara === null) return s;
     return { sect: doc.sect };
   };
   /** section properties governing paragraph p (main story) */
+  /** the gutter beside the text (0 when the document puts it at the top of the page, w:gutterAtTop) */
+  D.sideGutter = (doc, s) => (doc && doc.settings && doc.settings.gutterTop ? 0 : s.gutter || 0);
+  /** the width between a section's margins */
+  D.textWidth = (doc, s) => s.pgW - s.ml - s.mr - D.sideGutter(doc, s);
   D.sectFor = function (doc, p) {
     const tb = D.topBlock(doc, p);
     if (!tb || tb.cont !== doc.main) return doc.sect;
@@ -1102,9 +1093,16 @@
     D.walk(doc.main, (b) => { if (b.t === 'p') { if (b.pPr.style) s.add(b.pPr.style); for (const it of b.runs) if (it.rPr && it.rPr.style) s.add(it.rPr.style); } });
     return s;
   };
+  /** a style by its id or name; also by the name Word shows with its aliases ("Product Head,ph") or one alias alone */
   D.findStyleByName = (doc, name) => {
     const n = String(name).toLowerCase();
-    for (const k in doc.styles) { const s = doc.styles[k]; if (s.sameAs) continue; if (s.id.toLowerCase() === n || String(s.name).toLowerCase() === n || D.styleDisplayName(s).toLowerCase() === n) return s; }
+    for (const k in doc.styles) {
+      const s = doc.styles[k];
+      if (s.sameAs) continue;
+      if (s.id.toLowerCase() === n || String(s.name).toLowerCase() === n || D.styleDisplayName(s).toLowerCase() === n) return s;
+      const al = s.aliases ? String(s.aliases).toLowerCase() : '';
+      if (al && (n === String(s.name).toLowerCase() + ',' + al || al.split(',').some((a) => a.trim() === n))) return s;
+    }
     return null;
   };
   D.uniqueStyleId = (doc, name) => { let base = String(name).replace(/[^A-Za-z0-9]/g, '') || 'Style'; let id = base, i = 1; while (doc.styles[id]) id = base + (++i); return id; };

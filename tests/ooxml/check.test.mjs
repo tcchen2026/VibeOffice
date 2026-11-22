@@ -63,6 +63,11 @@ test('PowerPoint graphic frames cannot carry DrawingML rotation or flips', async
   const bad = run('check', await pkg('rotated-frame', { 'slide.xml': frame(' rot="60000" flipH="0" flipV="1"') }));
   assert(bad.issues.some(i => i.code === 'graphic-frame-orientation'));
 });
+test('PowerPoint table style lists name their default style even when it is built in', async () => {
+  const styles = attr => ({ 'ppt/tableStyles.xml': `<a:tblStyleLst xmlns:a="${A}"${attr}/>` });
+  assert.equal(run('check', await pkg('table-style-default', styles(' def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"'))).status, 'ok');
+  assert.ok(run('check', await pkg('table-style-no-default', styles(''))).issues.some(i => i.code === 'table-style-default'));
+});
 test('synthetic unread graphics need an unsupported compatibility choice with a fallback', async () => {
   const graphic = '<p:graphicFrame><a:graphic><a:graphicData uri="urn:vibeoffice:test:unread"><probe:object xmlns:probe="urn:vibeoffice:test:unread"/></a:graphicData></a:graphic></p:graphicFrame>';
   const check = async (name, xml) => run('check', await pkg(name, { 'slide.xml': slide(xml) }));
@@ -217,6 +222,99 @@ test('a preset shape lists all of its adjustment values or none', async () => {
   assert.ok(run('check', await pkg('adj-partial', { 'slide.xml': slide(sp(gd('adj1', -62000) + gd('adj2', 48000))) })).issues.some(i => i.code === 'partial-preset-adjust'));
   assert.equal(run('check', await pkg('adj-full', { 'slide.xml': slide(sp(gd('adj1', -62000) + gd('adj2', 48000) + gd('adj3', 16667))) })).status, 'ok');
   assert.equal(run('check', await pkg('adj-none', { 'slide.xml': slide(sp('')) })).status, 'ok');
+});
+
+test('a cell\'s text is at most 32,767 characters, as Excel opens it: runs joined, phonetic text not counted', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const sst = (...items) => ({ 'xl/sharedStrings.xml': `<sst xmlns="${S}">${items.map((i) => `<si>${i}</si>`).join('')}</sst>` });
+  const t = (n, ch = 'a') => `<t>${ch.repeat(n)}</t>`;
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  assert.ok((await codes('cell-text-over', sst(t(32768)))).includes('cell-text-too-long'));
+  assert.ok((await codes('cell-text-runs', sst(`<r>${t(20000)}</r><r>${t(12768)}</r>`))).includes('cell-text-too-long'));
+  assert.ok((await codes('cell-text-cached', { 'xl/worksheets/sheet1.xml': `<worksheet xmlns="${S}"><sheetData><row r="1"><c r="A1" t="str"><f>REPT("a",32768)</f><v>${'a'.repeat(32768)}</v></c></row></sheetData></worksheet>` })).includes('cell-text-too-long'));
+  assert.ok(!(await codes('cell-text-limit', sst(t(32767), t(32766) + '<rPh sb="0" eb="1"><t>ア</t></rPh>', t(32763) + '<t>_x000D_</t>'))).includes('cell-text-too-long'));
+});
+
+test('what Excel refuses in a converted workbook: an empty external cache set, a built-in short of operands, GET.CELL in a plain workbook\'s name', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  const link = (cache) => ({ 'xl/externalLinks/externalLink1.xml': `<externalLink xmlns="${S}"><externalBook><sheetNames><sheetName val="Data"/></sheetNames>${cache}</externalBook></externalLink>` });
+  assert.ok((await codes('ext-empty', link('<sheetDataSet/>'))).includes('external-empty-sheet-data-set'));
+  assert.ok(!(await codes('ext-cache', link('<sheetDataSet><sheetData sheetId="0"/></sheetDataSet>'))).includes('external-empty-sheet-data-set'));
+  assert.ok(!(await codes('ext-none', link(''))).includes('external-empty-sheet-data-set'));
+  const sheet = (f) => ({ 'xl/worksheets/sheet1.xml': `<worksheet xmlns="${S}"><sheetData><row r="1"><c r="A1"><f>${f}</f><v>0</v></c></row></sheetData></worksheet>` });
+  for (const f of ['sumif(D9:D42)', '_xlfn.SUMIF(D9:D42)', 'SUM(1,_xll.SUMIF(D9:D42))'])
+    assert.ok((await codes('short-' + f.length, sheet(f))).includes('function-missing-operands'), f);
+  for (const f of ['SUMIF(D9:D42,"a,b")', 'ABS("1")', 'SUMIF(D9:D42,)', 'CUSTOMFN(D9:D42)', 'SUM((A1,B1))', 'SUM(T[[#This Row],[a,b]])'])
+    assert.ok(!(await codes('enough-' + f.length, sheet(f))).includes('function-missing-operands'), f);
+  const book = `<workbook xmlns="${S}"><definedNames><definedName name="Zellfarbe">GET.CELL(63,'Ressourcen'!$2:$2)</definedName></definedNames></workbook>`;
+  const types = (type) => '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.ms-excel.${type}.main+xml"/></Types>`;
+  assert.ok((await codes('xlm-plain', { '[Content_Types].xml': types('sheet').replace('ms-excel.sheet', 'openxmlformats-officedocument.spreadsheetml.sheet'), 'xl/workbook.xml': book })).includes('xlm-name-in-plain-workbook'));
+  assert.ok(!(await codes('xlm-macro', { '[Content_Types].xml': types('sheet.macroEnabled'), 'xl/workbook.xml': book })).includes('xlm-name-in-plain-workbook'));
+});
+
+test('what PowerPoint refuses in a converted presentation: unsigned font bytes, huge transform extents, unknown numbering schemes, an overlong editing time', async () => {
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  const run1 = (rPr) => ({ 'ppt/slides/slide1.xml': slide(`<p:sp><p:txBody><a:p><a:pPr>${rPr.pPr || ''}</a:pPr><a:r><a:rPr>${rPr.r || ''}</a:rPr><a:t>x</a:t></a:r></a:p></p:txBody></p:sp>`) });
+  for (const [attr, bad] of [['charset', 128], ['pitchFamily', 192]]) {
+    assert.ok((await codes('font-' + attr, run1({ r: `<a:latin typeface="MS Gothic" ${attr}="${bad}"/>` }))).includes('drawingml-font-byte'), attr);
+    for (const ok of [127, -128, -64]) assert.ok(!(await codes('font-ok-' + attr + ok, run1({ r: `<a:ea typeface="MS Gothic" ${attr}="${ok}"/>` }))).includes('drawingml-font-byte'), attr + ok);
+  }
+  const xfrm = (cx) => ({ 'ppt/slides/slide1.xml': slide(`<p:grpSp><p:grpSpPr><a:xfrm><a:off x="-5" y="0"/><a:ext cx="${cx}" cy="10"/><a:chOff x="0" y="0"/><a:chExt cx="${cx}" cy="10"/></a:xfrm></p:grpSpPr></p:grpSp>`) });
+  assert.ok((await codes('extent-over', xfrm(2147483648))).includes('drawingml-transform-extent'));
+  assert.ok(!(await codes('extent-max', xfrm(2147483647))).includes('drawingml-transform-extent'), 'the largest, and a negative offset, open');
+  assert.ok((await codes('numbering-poi', run1({ pPr: '<a:buAutoNum type="arabicParenRight"/>' }))).includes('drawingml-numbering-scheme'));
+  assert.ok(!(await codes('numbering-ok', run1({ pPr: '<a:buAutoNum type="arabicParenR"/>' }))).includes('drawingml-numbering-scheme'));
+  const app = (t) => ({ 'docProps/app.xml': `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><TotalTime>${t}</TotalTime></Properties>` });
+  assert.ok((await codes('total-time-over', app(26185585450))).includes('extended-property-total-time'));
+  assert.ok(!(await codes('total-time-ok', app(2147483647))).includes('extended-property-total-time'));
+});
+
+test('what PowerPoint refuses in a converted presentation\'s drawings: a table of another graphic type, a custom connector, a group placeholder, a master text box with no body', async () => {
+  const codes = async (name, parts) => run('check', await pkg(name, parts)).issues.map((i) => i.code);
+  const one = (xml) => ({ 'ppt/slides/slide1.xml': slide(`<p:cSld><p:spTree>${xml}</p:spTree></p:cSld>`) });
+  const table = (uri) => one(`<p:graphicFrame><a:graphic><a:graphicData uri="${uri}"><a:tbl><a:tblGrid><a:gridCol w="10"/></a:tblGrid></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`);
+  assert.ok((await codes('table-uri', table('http://schemas.openxmlformats.org/presentationml/2006/ole'))).includes('drawingml-table-uri'));
+  assert.ok(!(await codes('table-ok', table('http://schemas.openxmlformats.org/drawingml/2006/table'))).includes('drawingml-table-uri'));
+  const geom = '<a:custGeom><a:pathLst><a:path w="10" h="10"><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:lnTo><a:pt x="10" y="10"/></a:lnTo></a:path></a:pathLst></a:custGeom>';
+  assert.ok((await codes('connector-custom', one(`<p:cxnSp><p:spPr>${geom}</p:spPr></p:cxnSp>`))).includes('presentation-connector-custom-geometry'));
+  assert.ok(!(await codes('shape-custom', one(`<p:sp><p:spPr>${geom}</p:spPr></p:sp>`))).includes('presentation-connector-custom-geometry'), 'the same geometry on a shape opens');
+  assert.ok((await codes('group-ph', one('<p:grpSp><p:nvGrpSpPr><p:cNvPr id="2" name="Group"/><p:cNvGrpSpPr/><p:nvPr><p:ph type="tbl"/></p:nvPr></p:nvGrpSpPr></p:grpSp>'))).includes('presentation-group-placeholder'));
+  assert.ok(!(await codes('shape-ph', one('<p:sp><p:nvSpPr><p:cNvPr id="2" name="Table"/><p:cNvSpPr/><p:nvPr><p:ph type="tbl"/></p:nvPr></p:nvSpPr></p:sp>'))).includes('presentation-group-placeholder'));
+  const box = (body) => `<p:sp><p:nvSpPr><p:cNvPr id="2" name="Text Box"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr/>${body}</p:sp>`;
+  const master = (xml) => ({ '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/></Types>',
+    'ppt/slideMasters/slideMaster1.xml': `<p:sldMaster xmlns:p="${P}" xmlns:a="${A}"><p:cSld><p:spTree>${xml}</p:spTree></p:cSld></p:sldMaster>` });
+  assert.ok((await codes('master-box', master(box('')))).includes('presentation-master-textbox-body'));
+  assert.ok(!(await codes('master-box-body', master(box('<p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody>')))).includes('presentation-master-textbox-body'));
+  assert.ok(!(await codes('slide-box', one(box('')))).includes('presentation-master-textbox-body'), 'only a master was measured');
+});
+
+test('a Word document\'s AppVersion carries no producer build (Word offers a converter instead of opening 12.0999)', async () => {
+  const codes = async (name, main, version) => run('check', await pkg(name, {
+    '[Content_Types].xml': `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/${main[0]}" ContentType="application/vnd.openxmlformats-officedocument.${main[1]}.main+xml"/></Types>`,
+    '_rels/.rels': `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="${main[0]}"/></Relationships>`,
+    [main[0]]: main[2],
+    'docProps/app.xml': `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><AppVersion>${version}</AppVersion></Properties>` })).issues.map((i) => i.code);
+  const doc = ['word/document.xml', 'wordprocessingml.document', '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body/></w:document>'];
+  const book = ['xl/workbook.xml', 'spreadsheetml.sheet', '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>'];
+  for (const v of ['12.0999', '11.6568', '16.1000']) assert.ok((await codes('word-' + v, doc, v)).includes('word-app-version-build'), v);
+  for (const v of ['12.0300', '16.0000', '00.0001']) assert.ok(!(await codes('word-' + v, doc, v)).includes('word-app-version-build'), v);
+  assert.ok(!(await codes('excel-build', book, '16.6568')).includes('word-app-version-build'), 'only Word was measured');
+});
+
+test('a defined name Excel takes, and its definition qualified by a sheet or a bang (as Office opens them)', async () => {
+  const S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const types = '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>';
+  const issues = async (tag, names) => run('check', await pkg(tag, { '[Content_Types].xml': types, 'xl/workbook.xml': `<workbook xmlns="${S}"><definedNames>${names.map(([n, d]) => `<definedName name="${n}">${d}</definedName>`).join('')}</definedNames></workbook>` })).issues.map((i) => i.code + ' ' + i.detail);
+  const refused = ['?Name', 'C1244_suffix', 'C1244A1430', 'Name\u008f', 'Name\u00a6', 'Name\u00a9', 'Name\u00bb', 'TRUE', 'rc', 'Two words', '1st'];
+  const taken = ['_?', 'C1244', 'C000_V', '_C1244\u31411430', 'Name\u00b6', 'Name\u00a7', 'Name\u00aa', 'Name\u20ac', 'Name\u2192', 'Name\u00ad', 'a.b?c', '\\x', 'Rate'];
+  const bad = await issues('names-refused', refused.map((n) => [n, '0']));
+  for (const n of refused) assert.ok(bad.some((i) => i.startsWith('defined-name-invalid ' + n + ':')), n);
+  assert.deepEqual(await issues('names-taken', taken.map((n) => [n, '0'])), []);
+  assert.deepEqual(await issues('name-bare', [['GoodName', 'V200'], ['Area', 'B2:C3']]), ['defined-name-current-sheet-reference GoodName: V200', 'defined-name-current-sheet-reference Area: B2:C3']);
+  assert.deepEqual(await issues('name-qualified', [['Here', '!V200'], ['There', 'Sheet1!$V$200:$W$300'], ['Quoted', "'My sheet'!A1"], ['Text', 'LOG10(100)+"A1"'], ['Sum', 'SUM(Sheet1!A1:B2)*Rate'], ['Names', 'XFE1+ABCD12'], ['Offset', 'SUM(OFFSET($B$1,3,0))']]), []);
 });
 
 test('WordArt fill belongs to textFill/textOutline and insertion encloses deletion', async () => {

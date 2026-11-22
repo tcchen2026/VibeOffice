@@ -26,6 +26,18 @@ test('text that can\'t be translated yet doesn\'t grow (tmp/i18n/untranslatable.
   assert.ok(fragments.length <= UNTRANSLATABLE, `${fragments.length} pieces, the limit is ${UNTRANSLATABLE}: write the new text as one L.t('… {0} …', value) string`);
 });
 
+test('PDF syntax and font metadata are not UI text; marked export errors are', () => {
+  const { catalog } = gather();
+  for (const text of ['BT 3 Tr', 'CMapName currentdict /CMap defineresource pop', 'Version 1.0']) {
+    assert.equal(Object.hasOwn(catalog, text), false, text);
+  }
+  for (const text of ['The PDF exporter could not be loaded. Please try again.',
+    'This browser blocked the page image.']) {
+    assert.ok(Object.hasOwn(catalog, text), text);
+  }
+  assert.ok(catalog['This browser blocked the page image.'].where.some(where => where.startsWith('common/pdf.js:')));
+});
+
 /** common/i18n.js in a page whose UI language is lang, with dictionary dict */
 async function page(lang, dict) {
   const html = { getAttribute: () => (lang === 'qps' ? 'qps-ploc' : lang) };

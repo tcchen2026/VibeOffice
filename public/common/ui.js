@@ -45,6 +45,8 @@
   const plainAmp = (s) => (root.VO && root.VO.i18n ? root.VO.i18n.plain(String(s || '')) : String(s || '')).replace(/&&/g, '\u0000').replace(/&(\S)/g, '$1').replace(/\u0000/g, '&');
   /** a label as shown, without its access key mark */
   const stripAmp = (s) => plainAmp(t(s));
+  /** the desktop app's lite edition (common/suite.js, VO.host.lite) */
+  const lite = () => !!(root.VO && root.VO.host && root.VO.host.lite);
   /** text as HTML, its access key underlined */
   const ampMark = (s) => L.esc(s || '').replace(/&amp;&amp;/g, '\u0000').replace(/&amp;(\S)/g, '<u>$1</u>').replace(/\u0000/g, '&amp;');
   /** a label as shown, its access key underlined */
@@ -75,7 +77,8 @@
     const t = target.getAttribute('data-tip');
     if (!t) return;
     if (!tipEl) { tipEl = h('div', { class: 'tooltip', role: 'tooltip' }); document.body.appendChild(tipEl); }
-    tipEl.textContent = target.closest('[translate="no"]') ? t : (L.t ? L.t(t) : t);   // data (a font's name) stays as it is
+    const key = target.getAttribute('data-tip-key');
+    tipEl.textContent = (target.closest('[translate="no"]') ? t : (L.t ? L.t(t) : t)) + (key && !document.body.classList.contains('notipkeys') ? ` (${key})` : '');   // data (a font's name) stays as it is
     tipEl.hidden = false;
     const r = tipEl.getBoundingClientRect();
     let left = x + 2, top = y + 20;
@@ -135,7 +138,7 @@
     ui.closeMenus(depth);
     const list = (typeof items === 'function' ? items() : items).map(resolveItem).filter((x) => x && !x.hidden);
     /* a menu from inside a dialog (a drop-down button there) goes above the dialogs */
-    const el = h('div', { class: 'menu' + (opts.cls ? ' ' + opts.cls : '') + (ui.dialogOpen() ? ' over-dlg' : ''), role: 'menu', tabindex: '-1' });
+    const el = h('div', { class: 'menu' + (opts.cls ? ' ' + opts.cls : '') + (ui.dialogOpen() ? ' over-dlg' : '') + (lite() ? ' no-keys' : ''), role: 'menu', tabindex: '-1' });
     const rows = [];
     list.forEach((it) => {
       if (it.sep) { el.appendChild(h('div', { class: 'm-sep' })); return; }
@@ -159,7 +162,17 @@
       el.appendChild(row);
     });
     let active = null;
-    function setActive(r) { if (active) active.classList.remove('act'); active = r; if (r) r.classList.add('act'); }
+    /* shown: the menu scrolls to it (a move by the keyboard in a menu taller than the window) */
+    function setActive(r, shown) {
+      if (active) active.classList.remove('act');
+      active = r;
+      if (!r) return;
+      r.classList.add('act');
+      if (shown && el.scrollHeight > el.clientHeight) {
+        if (r.offsetTop < el.scrollTop) el.scrollTop = r.offsetTop;
+        else if (r.offsetTop + r.offsetHeight > el.scrollTop + el.clientHeight) el.scrollTop = r.offsetTop + r.offsetHeight - el.clientHeight;
+      }
+    }
     function openSub(row) {
       const r = row.getBoundingClientRect();
       ui.openMenu(row._it.sub, { x: r.right - 3, y: r.top - 3, side: r.left }, { depth: depth + 1 });
@@ -176,11 +189,11 @@
     el._keys = (e) => {
       const idx = rows.indexOf(active);
       const usable = rows.filter((r) => !r.classList.contains('dis'));
-      if (e.key === 'ArrowDown') { const n = usable[(usable.indexOf(active) + 1) % usable.length]; setActive(n); return true; }
-      if (e.key === 'ArrowUp') { const i = usable.indexOf(active); setActive(usable[(i - 1 + usable.length) % usable.length]); return true; }
+      if (e.key === 'ArrowDown') { const n = usable[(usable.indexOf(active) + 1) % usable.length]; setActive(n, true); return true; }
+      if (e.key === 'ArrowUp') { const i = usable.indexOf(active); setActive(usable[(i - 1 + usable.length) % usable.length], true); return true; }
       if (e.key === 'ArrowRight' && active && active._it.sub) { openSub(active); const sub = openStack[openStack.length - 1]; if (sub && sub.first) sub.first(); return true; }
       if (e.key === 'Enter' || e.key === ' ') { if (active) activate(active); return true; }
-      if (e.key.length === 1) {
+      if (e.key.length === 1 && !lite()) {   // the lite edition's menus choose by the arrows only (menuKey)
         const k = e.key.toLowerCase();
         const hit = usable.find((r) => r._mn === k);
         if (hit) { setActive(hit); activate(hit); return true; }
@@ -228,23 +241,36 @@
   /** after chrome that took the keyboard is done with it (a menu command, a dialog), the document gets it back */
   const keyboardLost = () => !document.activeElement || document.activeElement === document.body || !document.activeElement.isConnected;
   ui.menuOpen = () => openStack.length > 0;
+  /* the lite edition's arrow letters, the CardputerZero's F, X, Z and C without Fn (as on its start page, lite.js): in
+     a menu they move as the arrows do; no letter chooses an item there (X would be Exit), so none is underlined */
+  const LITE_ARROWS = { f: 'ArrowUp', x: 'ArrowDown', z: 'ArrowLeft', c: 'ArrowRight' };
+  const liteArrow = (e) => !e.ctrlKey && !e.altKey && !e.metaKey && lite() && LITE_ARROWS[e.key.toLowerCase()];
   /* menu keyboard routing; returns true if handled */
   ui.menuKey = (e) => {
     if (!openStack.length) return false;
     const top = openStack[openStack.length - 1];
-    if (e.key === 'Escape') {
+    const key = liteArrow(e) || e.key;
+    if (key === 'Escape') {
       if (openStack.length > 1) ui.closeMenus(openStack.length - 1); else ui.closeMenus();
       return true;
     }
-    if (e.key === 'ArrowLeft') {
+    if (key === 'ArrowLeft') {
       if (openStack.length > 1) { ui.closeMenus(openStack.length - 1); return true; }
       if (menuBarState) { menuBarState.step(-1); return true; }
     }
-    if (e.key === 'ArrowRight' && menuBarState && !(top.el._keys && top.el.querySelector('.m-item.act.has-sub'))) { menuBarState.step(1); return true; }
-    if (top.el._keys && top.el._keys(e)) return true;
+    if (key === 'ArrowRight' && menuBarState && !(top.el._keys && top.el.querySelector('.m-item.act.has-sub'))) { menuBarState.step(1); return true; }
+    if (top.el._keys && top.el._keys(key === e.key ? e : { key })) return true;
     return true; /* swallow keys while a menu is open */
   };
 
+  /** the task pane's list of panes, under its title (as Office's): every pane registered but those marked hidden,
+      the panels of a group (the tool sets', common/ribbon.js) after a line, each greyed while p.enabled() is false */
+  ui.paneList = function (TP) {
+    const r = TP.title.getBoundingClientRect(), all = Object.values(TP.registry).filter((p) => !p.hidden);
+    const item = (p) => ({ label: p.title, run: () => TP.show(p.id), checked: () => TP.current === p.id, enabled: p.enabled });
+    const tools = all.filter((p) => p.group).map(item);
+    ui.openMenu([...all.filter((p) => !p.group).map(item), ...(tools.length ? ['-'] : []), ...tools], { left: r.left, bottom: r.bottom });
+  };
   /* the keyboard of another command-bar layout (the ribbon, common/ribbon.js) while it is shown instead of the menus:
      { active(), byKey(ch) → handled, index(i) } */
   ui.barKeys = null;
@@ -285,7 +311,7 @@
     opts = opts || {};
     const c = ui.cmds[id] || {};
     const label = opts.label != null ? opts.label : c.tbLabel;
-    const b = h('button', { class: 'tb-btn' + (label ? ' with-label' : ''), type: 'button', 'data-cmd': id, 'aria-label': stripAmp(c.label || id), 'data-tip': stripAmp(c.tip || c.label || id) + (c.key ? ` (${keyText(c.key)})` : '') });
+    const b = h('button', { class: 'tb-btn' + (label ? ' with-label' : ''), type: 'button', 'data-cmd': id, 'aria-label': stripAmp(c.label || id), 'data-tip': stripAmp(c.tip || c.label || id), 'data-tip-key': c.key ? keyText(c.key) : null });
     b.innerHTML = (c.icon || opts.icon ? L.icons.get(opts.icon || c.icon) : '') + (label ? `<span class="tb-lbl">${ampHTML(label)}</span>` : '');
     b.addEventListener('pointerdown', (e) => e.preventDefault()); /* keep the focus and selection where they are */
     b.addEventListener('click', (e) => ui.exec(id, opts.arg, e));
@@ -371,7 +397,171 @@
       else if (it instanceof Node) tb.appendChild(it);
     }
     tb.appendChild(h('span', { class: 'tb-end' }));
+    toolbarOptions(tb);
     return tb;
+  };
+  /* Toolbar Options (») at the end of a toolbar cut short by the window or by a shared row, as in Office 2003: it shows
+     the controls that don't fit in a pop-up, the controls themselves (moved there while it is open), so their menus,
+     lists and states work as on the toolbar */
+  function toolbarOptions(tb) {
+    const more = h('button', { class: 'tb-more', type: 'button', tabindex: '-1', 'aria-label': 'Toolbar Options', 'data-tip': 'Toolbar Options', 'aria-haspopup': 'true', hidden: true, html: '<span aria-hidden="true">»</span>' });
+    const end = tb.lastChild;
+    let pop = null;
+    tb.appendChild(more);
+    const update = () => {
+      if (pop) return;
+      const need = tb.scrollWidth - (more.hidden ? 0 : more.offsetWidth);
+      more.hidden = !(need > tb.clientWidth + 1);
+    };
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(update).observe(tb);
+    const close = () => {
+      if (!pop) return;
+      for (const n of [...pop.children]) tb.insertBefore(n, end);
+      pop.remove(); pop = null;
+      tb.style.width = tb.style.flex = '';
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('keydown', esc, true);
+      more.classList.remove('open');
+      update();
+    };
+    const outside = (e) => { if (!pop.contains(e.target) && !more.contains(e.target) && !e.target.closest('.menu')) close(); };
+    const esc = (e) => { if (e.key === 'Escape' && !ui.menuOpen()) { e.preventDefault(); e.stopPropagation(); close(); } };
+    more.addEventListener('pointerdown', (e) => e.preventDefault());
+    more.addEventListener('click', () => {
+      if (pop) { close(); return; }
+      const edge = more.getBoundingClientRect().left;
+      const kids = [...tb.children];
+      const from = kids.findIndex((n) => n !== more && n !== end && n.getClientRects().length && n.getBoundingClientRect().right > edge + 1);
+      if (from < 0) return;
+      /* the toolbar keeps its width while its controls are away */
+      tb.style.width = tb.getBoundingClientRect().width + 'px'; tb.style.flex = 'none';
+      pop = h('div', { class: 'toolbar tb-pop', role: 'toolbar', 'aria-label': tb.getAttribute('aria-label') });
+      for (const n of kids.slice(from)) if (n !== more && n !== end) pop.appendChild(n);
+      document.body.appendChild(pop);
+      const r = more.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+      pop.style.left = Math.max(2, Math.min(r.right - pr.width, window.innerWidth - pr.width - 2)) + 'px';
+      pop.style.top = r.bottom + 1 + 'px';
+      more.classList.add('open');
+      document.addEventListener('pointerdown', outside, true);
+      document.addEventListener('keydown', esc, true);
+      /* a button that runs its command closes the pop-up; a drop-down's arrow or list keeps it until the choice is made */
+      pop.addEventListener('click', (e) => { const b = e.target.closest('.tb-btn'); if (b && !b.classList.contains('tb-drop')) setTimeout(close); });
+      ui.refresh();
+    });
+    window.addEventListener('resize', close);
+  }
+  /** the Undo or Redo drop-down: labels are the steps, newest first; choosing one undoes (or redoes) it and every step
+   * after it, as in Office */
+  ui.historyMenu = function (r, kind, labels) {
+    if (!labels || !labels.length) return;
+    ui.openMenu([{ custom: (close) => {
+      const el = h('div', { class: 'style-list hist-list' });
+      const actions = (n) => (kind === 'undo' ? (n === 1 ? L.t('Undo {0} Action', n) : L.t('Undo {0} Actions', n)) : n === 1 ? L.t('Redo {0} Action', n) : L.t('Redo {0} Actions', n));
+      const lbl = h('div', { class: 'tgp-label', translate: 'no', text: actions(1) });
+      const btns = labels.slice(0, 40).map((label, i) => {
+        const b = h('button', { type: 'button', text: label });
+        b.addEventListener('pointerenter', () => { btns.forEach((x, k) => x.classList.toggle('on', k <= i)); lbl.textContent = actions(i + 1); });
+        b.addEventListener('click', () => { close(); for (let k = 0; k <= i; k++) ui.exec(kind); });
+        el.appendChild(b);
+        return b;
+      });
+      btns[0].classList.add('on');
+      return h('div', { class: 'hist-menu' }, el, lbl);
+    } }], r);
+  };
+  /* ---------- the status bar's right end: view buttons and the zoom slider, the same in every app ---------- */
+  /** a group of status-bar buttons (the view buttons): toolbar items, so a drop-down (tbDrop) fits too */
+  ui.statusGroup = function (items) {
+    const g = h('div', { class: 'sb-group', role: 'group' });
+    for (const it of items) {
+      if (it === '|') g.appendChild(h('span', { class: 'sb-gap' }));
+      else if (typeof it === 'string') g.appendChild(ui.tbButton(it));
+      else if (it instanceof Node) g.appendChild(it);
+    }
+    return g;
+  };
+  /** The status bar's last button: the task pane in and out (cmd: the app's Task Pane command), a chevron pointing the
+   * way the pane goes: ‹ brings it out at the right, › puts it away. Like a toolbar button it leaves the keyboard with
+   * the document. */
+  ui.paneToggle = function (cmd) {
+    const b = h('button', { class: 'sb-pane', type: 'button' });
+    b.addEventListener('pointerdown', (e) => e.preventDefault());
+    b.addEventListener('click', () => ui.exec(cmd));
+    let was = null;
+    const show = () => {
+      const c = ui.cmds[cmd], on = !!(c && c.checked && c.checked());
+      if (on === was) return;
+      was = on;
+      b.innerHTML = `<svg width="8" height="10" viewBox="0 0 8 10" aria-hidden="true"><path d="${on ? 'M2 1l4 4-4 4' : 'M6 1L2 5l4 4'}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+      const tip = L.t(on ? 'Hide the Task Pane' : 'Show the Task Pane');   // (no shortcut: Ctrl+F1 is the ribbon's in Paper 2016)
+      b.setAttribute('aria-label', tip); b.dataset.tip = tip;
+    };
+    show();
+    L.bus.on('ui-refresh', show);
+    return b;
+  };
+  /** The zoom slider: −, a track with 100 % at its centre (min…100 % on the left half, 100 %…max on the right, as in
+   * Office), +, and the percentage, which opens the Zoom dialog. o = { min, max, value: () => percent,
+   * set(percent, final): final is false while the thumb is dragged, true when it is let go and for −/+;
+   * dialog: command id; fit: command id of a fit-to-window button; enabled(): false greys it out }.
+   * Like a toolbar button it never takes the keyboard: pressing it leaves typing, the selection and shortcuts with
+   * the document. Esc during a drag puts the zoom back. */
+  ui.zoomSlider = function (o) {
+    const min = o.min || 10, max = o.max || 400;
+    const toPos = (p) => (p <= 100 ? (Math.max(min, p) - min) / (100 - min) / 2 : 0.5 + (Math.min(max, p) - 100) / (max - 100) / 2);
+    const toPct = (x) => { if (Math.abs(x - 0.5) < 0.025) return 100; return Math.round(x < 0.5 ? min + (100 - min) * x * 2 : 100 + (max - 100) * (x - 0.5) * 2); };
+    const step = (dir) => { const p = o.value(); const n = dir > 0 ? Math.floor(p / 10) * 10 + 10 : Math.ceil(p / 10) * 10 - 10; o.set(L.clamp(n, min, max), true); ui.refresh(); };
+    const glyph = (plus) => `<svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true"><path d="M0 4.5h9${plus ? 'M4.5 0v9' : ''}" stroke="currentColor" stroke-width="1.4"/></svg>`;
+    const btn = (cls, tip, html, run) => {
+      const b = h('button', { class: cls, type: 'button', 'aria-label': tip, 'data-tip': tip });
+      b.innerHTML = html;
+      b.addEventListener('pointerdown', (e) => e.preventDefault());
+      b.addEventListener('click', run);
+      return b;
+    };
+    const out = btn('zs-step', L.N('Zoom Out'), glyph(false), () => step(-1));
+    const inn = btn('zs-step', L.N('Zoom In'), glyph(true), () => step(1));
+    const thumb = h('span', { class: 'zs-thumb' });
+    const track = h('div', { class: 'zs-track', role: 'slider', 'aria-label': 'Zoom', 'aria-valuemin': String(min), 'aria-valuemax': String(max) }, thumb);
+    const pct = btn('zs-pct', L.N('Zoom level'), '', () => ui.exec(o.dialog));
+    const wrap = h('div', { class: 'sb-zoom' }, out, track, inn, pct);
+    if (o.fit) wrap.appendChild(ui.tbButton(o.fit));
+    const show = (p) => { thumb.style.left = toPos(p) * 100 + '%'; pct.textContent = p + '%'; track.setAttribute('aria-valuenow', String(p)); track.setAttribute('aria-valuetext', p + '%'); };
+    let drag = null;
+    const at = (e) => { const r = track.getBoundingClientRect(); return toPct(L.clamp((e.clientX - r.left) / r.width, 0, 1)); };
+    const live = L.rafThrottle(() => { if (drag) o.set(drag.pct, false); });
+    const end = (keep) => {
+      if (!drag) return;
+      const d = drag; drag = null;
+      document.removeEventListener('keydown', onKey, true);
+      wrap.classList.remove('dragging');
+      o.set(keep ? d.pct : d.start, true);
+      ui.refresh();
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); end(false); } };
+    track.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (e.button !== 0 || wrap.classList.contains('dis')) return;
+      if (ui.hooks.commitEdit) ui.hooks.commitEdit();
+      drag = { start: o.value(), pct: at(e) };
+      track.setPointerCapture(e.pointerId);
+      wrap.classList.add('dragging');
+      document.addEventListener('keydown', onKey, true);
+      show(drag.pct); live();
+    });
+    track.addEventListener('pointermove', (e) => { if (!drag) return; drag.pct = at(e); show(drag.pct); live(); });
+    track.addEventListener('pointerup', () => end(true));
+    track.addEventListener('lostpointercapture', () => end(true));
+    wrap._refresh = () => {
+      const en = o.enabled ? o.enabled() : true;
+      wrap.classList.toggle('dis', !en);
+      for (const b of [out, inn, pct]) b.disabled = !en;
+      track.setAttribute('aria-disabled', String(!en));
+      if (!drag) show(o.value());
+    };
+    tbButtons.push(wrap);
+    wrap._refresh();
+    return wrap;
   };
   ui.refresh = L.rafThrottle(() => {
     for (const b of tbButtons) {
@@ -392,6 +582,20 @@
 
   /* ---------- dialogs ---------- */
   const dlgStack = [];
+  /* a tabbed dialog keeps one size whichever tab is shown, as Office's property sheets: its pages share the tallest
+     one's height, so OK and Cancel stay where they are */
+  function fitTabs(root) {
+    for (const bodies of L.$$('.tabs-body', root)) {
+      const panes = [...bodies.children], was = panes.map((p) => p.hidden);
+      if (panes.length < 2) continue;
+      let tallest = 0;
+      for (const p of panes) { panes.forEach((q) => { q.hidden = q !== p; }); tallest = Math.max(tallest, bodies.getBoundingClientRect().height); }
+      panes.forEach((q, i) => { q.hidden = was[i]; });
+      const cs = getComputedStyle(bodies);
+      const frame = cs.boxSizing === 'border-box' ? 0 : ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + (parseFloat(cs[k]) || 0), 0);
+      bodies.style.minHeight = Math.ceil(tallest - frame) + 'px';
+    }
+  }
   ui.dialogOpen = () => dlgStack.length > 0;
   /**
    * opts: {title, body, width, buttons:[{label, primary, cancel, onClick(close, button)→false to keep open}], onClose, help}
@@ -415,7 +619,7 @@
     let result;
     const done = new Promise((res) => { result = res; });
     const btns = (opts.buttons || [{ label: 'OK', primary: true }]).map((b, i) => {
-      const el = h('button', { class: 'btn' + (b.primary ? ' primary' : ''), type: 'button', html: ampHTML(b.label) });
+      const el = h('button', { class: 'btn' + (b.primary ? ' primary' : '') + (b.cls ? ' ' + b.cls : ''), type: 'button', html: ampHTML(b.label) });
       el.addEventListener('click', () => {
         if (b.onClick) { const r = b.onClick(close, el); if (r === false) return; }
         close(i);
@@ -426,6 +630,7 @@
     dlg.append(titleBar, body, foot);
     overlay.appendChild(dlg);
     (document.fullscreenElement || document.body).appendChild(overlay);   // over a slide show, which is full screen
+    fitTabs(dlg);
     /* center */
     const r = dlg.getBoundingClientRect();
     dlg.style.left = Math.max(4, (window.innerWidth - r.width) / 2) + 'px';
@@ -451,6 +656,7 @@
         const pi = (opts.buttons || []).findIndex((b) => b.primary);
         if (pi >= 0) { e.preventDefault(); btns[pi].click(); return true; }
       }
+      if (e.altKey && !e.ctrlKey && !e.metaKey && accessKeyIn(dlg, e)) { e.preventDefault(); return true; }
       if (e.key === 'Tab') {
         const f = L.$$('input,select,textarea,button,[tabindex="0"]', dlg).filter((x) => !x.disabled && x.offsetParent !== null);
         if (!f.length) return false;
@@ -481,6 +687,37 @@
     }, 0);
     if (opts.onOpen) opts.onOpen(dlg);
     return { el: dlg, body, close, done, buttons: btns };
+  };
+  /* Alt+letter in a dialog, as in Office: the underlined letter's button is pressed, a tab chosen, a checkbox or radio
+     ticked, a label's box focused; when several share the letter, each press moves to the next. The letter is the key's
+     own (e.key), or its place on a US keyboard where Option or AltGr makes another character (e.code) */
+  function accessKeyIn(dlg, e) {
+    const want = new Set([e.key.length === 1 ? e.key.toLowerCase() : '', (/^Key([A-Z])$/.exec(e.code) || /^Digit(\d)$/.exec(e.code) || [])[1]].filter(Boolean).map((x) => x.toLowerCase()));
+    const hits = L.$$('u', dlg).filter((u) => want.has(u.textContent.toLowerCase()) && u.getClientRects().length)
+      .map((u) => u.closest('button, label')).filter((x) => x && !x.disabled && !(x.control && x.control.disabled));
+    if (!hits.length) return false;
+    const target = (x) => (x.tagName === 'BUTTON' ? x : x.control || L.$$('input,select,textarea,button,[tabindex="0"]', dlg).find((c) => (x.compareDocumentPosition(c) & 4) && !c.disabled && c.getClientRects().length));
+    const at = hits.findIndex((x) => target(x) === document.activeElement);
+    const x = hits[(at + 1) % hits.length], c = target(x);
+    if (!c) return true;
+    if (hits.length > 1) { c.focus(); return true; }
+    if (c.tagName === 'BUTTON' || c.type === 'checkbox' || c.type === 'radio') { c.focus(); c.click(); }
+    else { c.focus(); if (c.select && c.type !== 'file') c.select(); }
+    return true;
+  }
+  /** A dialog moved off what it is about (the word Spelling found), as Office does: above or below that place,
+   *  whichever is the shorter move and fits in the window, else beside it; left alone when it covers nothing.
+   *  r: a client rect */
+  ui.keepClear = function (dlg, r) {
+    if (!dlg || !r || !dlg.isConnected) return;
+    const d = dlg.getBoundingClientRect(), m = 12, W = window.innerWidth, H = window.innerHeight;
+    if (d.right <= r.left - m || d.left >= r.right + m || d.bottom <= r.top - m || d.top >= r.bottom + m) return;
+    const at = [[d.left, r.top - m - d.height], [d.left, r.bottom + m], [r.right + m, d.top], [r.left - m - d.width, d.top]]
+      .filter(([x, y]) => x >= 4 && y >= 4 && x + d.width <= W - 4 && y + d.height <= H - 4);
+    if (!at.length) return;
+    const [x, y] = at.sort((a, b) => Math.hypot(a[0] - d.left, a[1] - d.top) - Math.hypot(b[0] - d.left, b[1] - d.top))[0];
+    dlg.style.left = x + 'px';
+    dlg.style.top = y + 'px';
   };
   ui.dialogKey = (e) => { const top = dlgStack[dlgStack.length - 1]; return top ? top.keys(e) || true : false; };
 
@@ -635,6 +872,140 @@
     wrap.setDisabled = (d) => { inp.disabled = d; up.disabled = d; dn.disabled = d; };
     return wrap;
   };
+  /** A list box, as Office's dialogs have (Font, Size, Go To, Date and Time…). items: values, [value, label] or
+   *  { value, label, note (shown at the right: a shortcut key), col (a second column: AutoCorrect's With), style,
+   *  group (a heading), dim (a line that can't be chosen) }; labels are UI text shown in the UI's language unless o.translate === 'no' (data:
+   *  fonts, sizes, names). o: { input (a box above that picks as you type, as Word's Font box), height, id (the
+   *  input's, else the list's), cls, translate, onChange(v, i), onDbl(v, i) }. Arrow keys, Home, End, Page Up/Down
+   *  and typed letters move the selection; the input's Up and Down move it too. Items are matched by value, never by
+   *  the text shown. Returns the element with get(), set(v), setItems(items), index(), .input and .list */
+  ui.listBox = function (items, value, o) {
+    o = o || {};
+    const data = o.translate === 'no';
+    const val = (it) => (Array.isArray(it) ? it[0] : it && typeof it === 'object' ? it.value : it);
+    const shown = (it) => { const s = String(Array.isArray(it) ? it[1] : it && typeof it === 'object' ? it.label : it); return data ? s : t(s); };
+    /* a group's heading, or a dimmed line that can't be chosen ("No Suggestions") */
+    const isGroup = (it) => !!(it && typeof it === 'object' && !Array.isArray(it) && (it.group || it.dim));
+    const box = h('div', { class: 'listbox' + (o.cls ? ' ' + o.cls : ''), role: 'listbox', tabindex: '0', id: o.input ? null : o.id || null, style: o.height ? `height:${o.height}px` : null, translate: data ? 'no' : null });
+    let list = items.slice(), cur = value;
+    const label = (v) => { const it = list.find((x) => !isGroup(x) && String(val(x)) === String(v)); return it ? shown(it) : v == null ? '' : String(v); };
+    const inp = o.input ? h('input', { type: 'text', class: 'listbox-in', id: o.id || 'lb' + (++ctlId), value: label(value), autocomplete: 'off', translate: data ? 'no' : null }) : null;
+    const rows = () => [...box.querySelectorAll('.li')];
+    const indexOf = (v) => rows().findIndex((r) => String(r._v) === String(v));
+    const mark = (v, scroll) => {
+      for (const r of rows()) { const on = v !== undefined && String(r._v) === String(v); r.classList.toggle('on', on); r.setAttribute('aria-selected', String(on)); if (on && scroll) r.scrollIntoView({ block: 'nearest' }); }
+    };
+    const pick = (v, fromInput) => { cur = v; if (inp && !fromInput) inp.value = label(v); mark(v, true); if (o.onChange) o.onChange(v, indexOf(v)); };
+    const render = () => {
+      L.clear(box);
+      for (const it of list) {
+        const el = h('div', { class: isGroup(it) ? (it.dim ? 'li-dim' : 'li-group') : 'li', role: isGroup(it) ? 'presentation' : 'option' });
+        el.textContent = shown(it);
+        if (it && typeof it === 'object' && it.col != null) { el.textContent = ''; el.append(h('span', { class: 'li-c1', text: shown(it) }), h('span', { class: 'li-c2', translate: 'no', text: it.col })); }
+        /* a second column on the right: a shortcut key, a count */
+        if (it && typeof it === 'object' && it.note) el.appendChild(h('span', { class: 'li-note', translate: 'no', text: it.note }));
+        if (it && typeof it === 'object' && it.style) el.style.cssText += it.style;
+        box.appendChild(el);
+        if (isGroup(it)) continue;
+        const v = val(it);
+        el._v = v;
+        el.addEventListener('click', () => pick(v));
+        el.addEventListener('dblclick', () => { pick(v); if (o.onDbl) o.onDbl(v, indexOf(v)); });
+      }
+      mark(cur);
+      /* once the list is laid out, its selection in view (the one it has by then: set() may follow) */
+      setTimeout(() => { const on = box.querySelector('.li.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }, 0);
+    };
+    /* the keys that move the selection: in the list all of them, from the input only Up, Down, Page Up and Page Down */
+    const move = (e, all) => {
+      const rs = rows();
+      if (!rs.length) return false;
+      let i = rs.findIndex((r) => r.classList.contains('on'));
+      const page = Math.max(1, Math.floor(box.clientHeight / (rs[0].offsetHeight || 16)) - 1);
+      const k = e.key;
+      if (k === 'ArrowDown') i = Math.min(rs.length - 1, i + 1);
+      else if (k === 'ArrowUp') i = Math.max(0, i - 1);
+      else if (k === 'PageDown') i = Math.min(rs.length - 1, Math.max(0, i) + page);
+      else if (k === 'PageUp') i = Math.max(0, i - page);
+      else if (all && k === 'Home') i = 0;
+      else if (all && k === 'End') i = rs.length - 1;
+      else return false;
+      e.preventDefault(); e.stopPropagation();
+      pick(rs[i]._v);
+      return true;
+    };
+    let typed = '', typedAt = 0;
+    box.addEventListener('keydown', (e) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || move(e, true)) return;
+      if (e.key.length !== 1 || e.key === ' ') return;
+      /* letters typed in quick succession find the first item that starts with them */
+      typed = (Date.now() - typedAt < 800 ? typed : '') + e.key.toLowerCase(); typedAt = Date.now();
+      const rs = rows(), from = Math.max(0, rs.findIndex((r) => r.classList.contains('on')));
+      const order = typed.length > 1 ? rs.slice(from).concat(rs.slice(0, from)) : rs.slice(from + 1).concat(rs.slice(0, from + 1));
+      const hit = order.find((r) => r.textContent.toLowerCase().startsWith(typed));
+      if (hit) { e.preventDefault(); e.stopPropagation(); pick(hit._v); }
+    });
+    if (inp) {
+      inp.addEventListener('keydown', (e) => { if (!e.altKey && !e.ctrlKey && !e.metaKey) move(e, false); });
+      inp.addEventListener('input', () => {
+        const v = inp.value, lc = v.toLowerCase();
+        const hit = list.find((x) => !isGroup(x) && shown(x).toLowerCase().startsWith(lc));
+        /* a label typed in the UI's language stands for its value */
+        const exact = list.find((x) => !isGroup(x) && shown(x).toLowerCase() === lc);
+        cur = exact && shown(exact) !== String(val(exact)) ? val(exact) : v;
+        mark(hit ? val(hit) : undefined, true);
+        if (o.onChange) o.onChange(cur, exact ? indexOf(val(exact)) : -1);
+      });
+    }
+    render();
+    const wrap = inp ? h('div', { class: 'col listbox-wrap', style: 'gap:2px' }, inp, box) : box;
+    wrap.get = () => (inp ? (cur != null && label(cur) === inp.value ? String(cur) : inp.value) : cur);
+    wrap.set = (v) => { cur = v; if (inp) inp.value = label(v); mark(v, true); };
+    wrap.setItems = (it) => { list = it.slice(); render(); };
+    wrap.index = () => indexOf(cur);
+    wrap.input = inp;
+    wrap.list = box;
+    return wrap;
+  };
+  /** A colour button in a dialog (Font color, Border color, Fill…): a swatch, the colour's name and an arrow that
+   *  opens ui.colorMenu. Values: 'auto', null (none), '#RRGGBB' or what the app's colour menu gives (a theme colour,
+   *  a fill). o: { id, mode ('font' | 'fill' | 'line' | 'plain'), automatic (offer Automatic; default for 'font'),
+   *  none (offer No Color in 'plain' and 'font'), autoText, noneText, autoColor (the swatch for Automatic),
+   *  paint(v) → CSS background, or null for the none pattern (theme colours, fills), name(v) → its label,
+   *  convert(pick, current) → the new value from the menu's pick (a fill keeping its transparency), effects(current)
+   *  → a promise of the value from Fill Effects… (undefined: cancelled), grid, design, onChange(v) }. Returns the
+   *  button with get() and set(v) */
+  ui.colorButton = function (value, o) {
+    o = o || {};
+    let val = value;
+    const sw = h('span', { class: 'cpk-sw' });
+    const lbl = h('span', { class: 'cpk-l' });
+    const btn = h('button', { type: 'button', class: 'cpk', id: o.id || 'cb' + (++ctlId), 'aria-haspopup': 'true' }, sw, lbl, h('span', { class: 'dd-arrow' }));
+    const show = () => {
+      const custom = o.paint && val && val !== 'auto' ? o.paint(val) : undefined;
+      const bg = custom !== undefined ? custom : val === 'auto' ? o.autoColor || '#000' : typeof val === 'string' && val[0] === '#' ? val : null;
+      sw.style.background = bg || '';
+      sw.classList.toggle('none', !bg);
+      const name = val === 'auto' ? t(o.autoText || 'Automatic') : !val ? t(o.noneText || (o.mode === 'fill' ? 'No Fill' : o.mode === 'line' ? 'No Line' : 'No Color')) : o.name ? o.name(val) : typeof val === 'string' && val[0] === '#' ? ui.colorName(val) : '';
+      lbl.textContent = name;
+      btn.setAttribute('aria-label', name);
+    };
+    show();
+    btn.addEventListener('click', () => ui.colorMenu(btn, { mode: o.mode || 'font', automatic: o.automatic, noneLabel: o.none ? o.noneText || 'No Color' : null, effects: !!o.effects, grid: o.grid, design: o.design, current: typeof val === 'string' && val[0] === '#' ? val : null }, async (v) => {
+      let next;
+      if (v && v.effects) { next = await o.effects(val); if (next === undefined) return; }
+      else if (v && v.auto) next = 'auto';
+      else if (v && v.none) next = null;
+      else if (typeof v === 'string') next = v[0] === '#' ? v.toUpperCase() : v;
+      else return;
+      val = o.convert && !(v && v.effects) ? o.convert(next, val) : next;
+      show();
+      if (o.onChange) o.onChange(val);
+    }));
+    btn.get = () => val;
+    btn.set = (v) => { val = v; show(); };
+    return btn;
+  };
   /** Tabs: [{label, body}] */
   ui.tabs = (tabs, active) => {
     const head = h('div', { class: 'tabs-head', role: 'tablist' });
@@ -665,10 +1036,10 @@
     if (!window.VO || !VO.look) return null;
     let pick = VO.look.get();
     const sel = ui.select(VO.look.list().map((l) => [l.id, l.name]), pick, (v) => { pick = v; }, { id: 'op-look' });
-    const el = h('div', { class: 'col' }, ui.field('Theme:', sel));
+    const el = h('div', { class: 'col' }, ui.field('T&heme:', sel));
     let lang = VO.lang && VO.lang.get();
     /* each language named in itself */
-    if (VO.lang) el.appendChild(ui.field('Language:', ui.select(VO.lang.list().map((l) => [l.id, l.id === 'auto' ? t('Auto (as the browser)') : l.name]), lang, (v) => { lang = v; }, { id: 'op-lang', translate: 'no' })));
+    if (VO.lang) el.appendChild(ui.field('L&anguage:', ui.select(VO.lang.list().map((l) => [l.id, l.id === 'auto' ? t('Auto (as the browser)') : l.name]), lang, (v) => { lang = v; }, { id: 'op-lang', translate: 'no' })));
     return {
       el,
       apply: () => {
@@ -678,13 +1049,84 @@
     };
   };
 
+  /* ---------- Tools ▸ Customize ---------- */
+  /** the Customize options an app keeps in its saved options o, all on unless false: Standard and Formatting
+   *  toolbars on two rows (twoRows; the two rows sit in a .tb-pair), ScreenTips (screenTips), shortcut keys in them (tipKeys) */
+  ui.toolbarPrefs = (o) => {
+    const host = document.getElementById('toolbars');
+    if (host) host.classList.toggle('one-row', o.twoRows === false);
+    document.body.classList.toggle('notips', o.screenTips === false);
+    document.body.classList.toggle('notipkeys', o.tipKeys === false);
+  };
+  /** Tools ▸ Customize. o: { toolbars: ids, each with a 'tb_<id>' toggle command; opts: the app's saved options;
+   *  save(); shortcuts: { key: command id } besides the commands' own keys }. Changes apply at once, as in Office */
+  ui.customize = function (o) {
+    const plain = (label) => h('span', { text: stripAmp(label), translate: 'no' });
+    const tbs = h('div', { class: 'cz-list' });
+    for (const id of o.toolbars) {
+      const c = ui.cmds['tb_' + id];
+      if (!c) continue;
+      const inp = h('input', { type: 'checkbox', id: 'cz-tb-' + id });
+      inp.checked = ui.checked('tb_' + id);
+      inp.addEventListener('change', () => { ui.exec('tb_' + id); inp.checked = ui.checked('tb_' + id); });
+      tbs.appendChild(h('label', { class: 'ck', for: inp.id }, inp, plain(c.label)));
+    }
+    /* every command with a name (not the toolbars' toggles or symbols), its shortcut keys beside it */
+    const keys = {};
+    for (const [k, id] of Object.entries(o.shortcuts || {})) (keys[id] || (keys[id] = new Set())).add(k);
+    const seen = new Set(), rows = [];
+    for (const c of Object.values(ui.cmds)) {
+      /* the command's own name: a fixed menu label or label, not one that tells the moment ("Undo Typing") */
+      const fixed = (k) => { const d = Object.getOwnPropertyDescriptor(c, k); return d && !d.get ? d.value : null; };
+      const name = c.label && !c.id.startsWith('tb_') ? stripAmp(fixed('menuLabel') || fixed('label') || c.tip || c.label).replace(/\.\.\.$|…$/, '') : '';
+      if (!/\p{L}/u.test(name)) continue;
+      const ks = new Set(keys[c.id]); if (c.key) ks.add(c.key);
+      const kt = [...ks].map(keyText).sort().join(', ');
+      if (seen.has(name + '\u0000' + kt)) continue;
+      seen.add(name + '\u0000' + kt);
+      rows.push({ id: c.id, name, kt });
+    }
+    rows.sort((a, b) => a.name.localeCompare(b.name));
+    const table = h('table', { class: 'kbd-table cz-cmds', translate: 'no' }, h('tr', null, h('th', { text: 'Command' }), h('th', { text: 'Shortcut keys' })));
+    let on = null;
+    const pick = (tr) => { if (on) on.classList.remove('on'); on = tr; if (tr) { tr.classList.add('on'); tr.scrollIntoView({ block: 'nearest' }); } };
+    for (const r of rows) {
+      const tr = h('tr', null, h('td', { text: r.name, translate: 'no' }), h('td', { text: r.kt, translate: 'no' }));
+      tr.addEventListener('click', () => pick(tr));
+      tr.addEventListener('dblclick', () => ui.exec(r.id));
+      tr.cmd = r.id;
+      table.appendChild(tr);
+    }
+    const box = h('div', { class: 'cz-box', tabindex: '0', role: 'grid', 'aria-label': 'Commands' }, table);
+    box.addEventListener('keydown', (e) => {
+      const all = [...table.rows].slice(1);
+      const i = all.indexOf(on);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); pick(all[L.clamp(i + (e.key === 'ArrowDown' ? 1 : -1), 0, all.length - 1)]); }
+      else if (e.key === 'Enter' && on) { e.preventDefault(); e.stopPropagation(); ui.exec(on.cmd); }
+    });
+    const op = o.opts;
+    const set = (k, v) => { op[k] = v; o.save(); ui.toolbarPrefs(op); };
+    const keyTips = ui.check('Show shortcut &keys in ScreenTips', op.tipKeys !== false, (v) => set('tipKeys', v));
+    keyTips.input.disabled = op.screenTips === false;
+    const options = h('div', { class: 'col' },
+      ui.check('Show Standard and Formatting toolbars on t&wo rows', op.twoRows !== false, (v) => set('twoRows', v)),
+      ui.check('Show Screen&Tips on toolbars', op.screenTips !== false, (v) => { set('screenTips', v); keyTips.input.disabled = !v; }),
+      keyTips);
+    ui.dialog({ title: 'Customize', width: 440, body: ui.tabs([
+      { label: 'Tool&bars', body: h('div', { class: 'col' }, h('label', { for: tbs.firstChild && tbs.firstChild.htmlFor, text: 'Toolbars:' }), tbs) },
+      { label: '&Commands', body: h('div', { class: 'col' }, h('div', { class: 'hint', text: 'Double-click a command to run it.' }), box) },
+      { label: '&Options', body: options },
+    ]), buttons: [{ label: 'Close', primary: true }] });
+  };
+
   /* ---------- colour pickers ---------- */
   const recent = [];
   ui.addRecentColor = (c) => { if (!c || c[0] !== '#') return; const i = recent.indexOf(c); if (i >= 0) recent.splice(i, 1); recent.unshift(c); recent.length = Math.min(recent.length, 8); };
   /**
-   * Colour drop-down. o: {mode:'fill'|'line'|'font'|'plain', design, noneLabel, effects:bool, automatic:bool,
+   * Colour drop-down. o: {mode:'fill'|'line'|'font'|'plain', design, effects:bool, automatic:bool (false: no Automatic,
+   *   even in 'font'), noneLabel (a No Color entry where the mode has none), current ('#hex' More Colors starts at),
    *   scheme:bool (theme colours; on when the app provides ui.schemeColors), grid:bool (the standard colours too)}
-   * onPick(value) where value is a colour ('#hex' or scheme ref), {none:true}, {auto:true}, {more:true}, {effects:true}
+   * onPick(value) where value is a colour ('#hex' or scheme ref), {none:true}, {auto:true}, {effects:true}
    */
   ui.colorMenu = function (anchor, o, onPick) {
     o = o || {};
@@ -694,7 +1136,8 @@
     const panel = (close) => {
       const el = h('div', { class: 'color-panel' });
       if (o.mode === 'fill' || o.mode === 'line') el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'fill' ? 'No Fill' : 'No Line', onclick: () => { close(); onPick({ none: true }); } }));
-      if (o.mode === 'font' || o.automatic) el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: 'Automatic', onclick: () => { close(); onPick({ auto: true }); } }));
+      if (o.automatic !== false && (o.mode === 'font' || o.automatic)) el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: 'Automatic', onclick: () => { close(); onPick({ auto: true }); } }));
+      else if (o.noneLabel && o.mode !== 'fill' && o.mode !== 'line') el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.noneLabel, onclick: () => { close(); onPick({ none: true }); } }));
       el.appendChild(h('div', { class: 'cp-sep' }));
       if (scheme && ui.schemeColors) {
         const row = h('div', { class: 'cp-row' });
@@ -718,7 +1161,7 @@
         el.appendChild(g);
       }
       el.appendChild(h('div', { class: 'cp-sep' }));
-      el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'fill' ? 'More Fill Colors...' : o.mode === 'line' ? 'More Line Colors...' : 'More Colors...', onclick: () => { close(); ui.moreColors(null, (c) => { if (c) { ui.addRecentColor(c); onPick(c); } }); } }));
+      el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'fill' ? 'More Fill Colors...' : o.mode === 'line' ? 'More Line Colors...' : 'More Colors...', onclick: () => { close(); ui.moreColors(o.current || null, (c) => { if (c) { ui.addRecentColor(c); onPick(c); } }); } }));
       if (o.effects) el.appendChild(h('button', { class: 'cp-wide', type: 'button', text: o.mode === 'line' ? 'Patterned Lines...' : 'Fill Effects...', onclick: () => { close(); onPick({ effects: true }); } }));
       return el;
     };

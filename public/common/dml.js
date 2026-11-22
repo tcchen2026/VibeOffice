@@ -109,7 +109,8 @@
     const mods = [];
     for (const m of el.children) {
       const v = +X.at(m, 'val');
-      if (m.localName === 'alpha') alpha = v / 100000;
+      /* (Word 2010's w14 colours give a transparency where DrawingML gives an opacity) */
+      if (m.localName === 'alpha') alpha = ctx && ctx.alphaIsTransparency ? 1 - v / 100000 : v / 100000;
       else if (m.localName === 'alphaMod') alpha *= v / 100000;
       else if (m.localName === 'alphaOff') alpha += v / 100000;
       else mods.push({ name: m.localName, val: isNaN(v) ? 0 : v });
@@ -165,6 +166,20 @@
     if (he && X.at(he, 'type') && X.at(he, 'type') !== 'none') ln.head = { type: X.at(he, 'type'), w: X.at(he, 'w') || 'med', len: X.at(he, 'len') || 'med' };
     if (te && X.at(te, 'type') && X.at(te, 'type') !== 'none') ln.tail = { type: X.at(te, 'type'), w: X.at(te, 'w') || 'med', len: X.at(te, 'len') || 'med' };
     return ln;
+  };
+  /** a run's size, weight, slant, colour and Latin font; a theme font (+mn-lt, +mj-lt) by its name in ctx.fonts {mn, mj} */
+  X.runProps = function (rPr, ctx) {
+    const r = {};
+    if (!rPr) return r;
+    if (X.at(rPr, 'sz')) r.sz = +X.at(rPr, 'sz') / 100;
+    if (X.at(rPr, 'b') != null) r.b = X.bool(X.at(rPr, 'b'));
+    if (X.at(rPr, 'i') != null) r.i = X.bool(X.at(rPr, 'i'));
+    const f = X.fillIn(rPr, ctx);
+    const c = f && (f.t === 'solid' ? f.c : f.t === 'grad' && f.stops[0] ? f.stops[0].c : f.t === 'patt' ? f.fg : null);
+    if (c) r.color = c;
+    const face = X.at(X.kid(rPr, 'latin'), 'typeface');
+    if (face) { const m = /^\+(mj|mn)/.exec(face); r.font = m ? (ctx && ctx.fonts && ctx.fonts[m[1]]) || (m[1] === 'mj' ? 'Cambria' : 'Calibri') : face; }
+    return r;
   };
   X.shadow = function (effectLst, ctx) {
     const o = effectLst && X.kid(effectLst, 'outerShdw');

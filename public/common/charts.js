@@ -1,7 +1,7 @@
 /* VibeOffice — charts shared by Quire, Ledger and Lectern: the SVG renderer (Insert ▸ Chart, the Chart Wizard
  * preview, slide charts) and the chart data dialog.
  * Model: {kind, title, legend, cats[], series:[{name, vals[], color}], gridY, labels, fsz, axTitleX, axTitleY}.
- * Lectern's chart-draw.js adds CH.renderV2 for charts read from files ({v: 2, …}); the hooks for it are inert elsewhere.
+ * chart-read.js reads charts from files into a richer model ({v: 2, …}) that chart-draw.js draws (CH.renderV2).
  */
 (function (root) {
   'use strict';
@@ -17,7 +17,7 @@
     ['area', N('Area|chart')], ['areaStacked', N('Stacked Area')],
     ['pie', N('Pie|chart')], ['doughnut', N('Doughnut')], ['scatter', N('XY (Scatter)')],
   ];
-  /* kinds only the v2 renderer (Lectern's chart-draw.js) draws; offered when it is loaded */
+  /* kinds only the v2 renderer (chart-draw.js) draws; offered when it is loaded */
   const KINDS_V2 = CH.KINDS.slice();
   KINDS_V2.splice(5, 0, ['barPct', N('100% Stacked Bar')]);
   KINDS_V2.splice(10, 0, ['areaPct', N('100% Stacked Area')]);
@@ -31,9 +31,11 @@
   CH.src = new Map();
   CH.keep = (o) => { const id = L.uid('cs'); CH.src.set(id, o); return id; };
 
-  /** the series colour Office picks when a series has no fill of its own (c:style 1–48: grey, colourful, or one accent) */
-  CH.autoColor = function (i, n, style, design) {
-    const acc = (k) => L.model.resolveColor('accent' + k, design);
+  /** the series colour Office picks when a series has no fill of its own (c:style 1–48: grey, colourful, or one accent);
+      accent(k) gives the theme's accent k where there is no Lectern design to resolve it */
+  const OFFICE_ACCENTS = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5', '#70AD47'];   // Office 2013's theme
+  CH.autoColor = function (i, n, style, design, accent) {
+    const acc = (k) => (accent ? accent(k) : L.model && L.model.resolveColor ? L.model.resolveColor('accent' + k, design) : OFFICE_ACCENTS[k - 1]);
     const col = ((style || 2) - 1) % 8;
     const VAR = [[], [['lumMod', 60000]], [['lumMod', 80000], ['lumOff', 20000]], [['lumMod', 80000]], [['lumMod', 60000], ['lumOff', 40000]], [['lumMod', 50000]], [['lumMod', 70000], ['lumOff', 30000]], [['lumMod', 70000]], [['lumMod', 50000], ['lumOff', 50000]]];
     if (col === 1) return L.color.applyMods(acc((i % 6) + 1), VAR[Math.floor(i / 6) % VAR.length].map(([name, val]) => ({ name, val })));

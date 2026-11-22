@@ -52,7 +52,7 @@
         const gs = stops.map((s) => `<a:gs pos="${Math.round(L.clamp(s.p, 0, 1) * 100000)}">${clr(s.c, s.a, design)}</a:gs>`).join('');
         const shade = f.path && f.path !== 'lin'
           ? `<a:path path="${f.path === 'rect' ? 'rect' : f.path === 'shape' ? 'shape' : 'circle'}">${(() => { const [fx, fy] = f.focus || [0.5, 0.5]; return `<a:fillToRect l="${Math.round(fx * 100000)}" t="${Math.round(fy * 100000)}" r="${Math.round((1 - fx) * 100000)}" b="${Math.round((1 - fy) * 100000)}"/>`; })()}</a:path>`
-          : `<a:lin ang="${Math.round((((f.ang || 0) % 360) + 360) % 360 * 60000)}" scaled="1"/>`;
+          : `<a:lin ang="${Math.round((((f.ang || 0) % 360) + 360) % 360 * 60000)}" scaled="${f.scaled === false ? 0 : 1}"/>`;
         return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst>${shade}</a:gradFill>`;
       }
       case 'patt': return `<a:pattFill prst="${f.prst || 'pct50'}"><a:fgClr>${clr(f.fg || '#000000', null, design)}</a:fgClr><a:bgClr>${clr(f.bg || '#FFFFFF', null, design)}</a:bgClr></a:pattFill>`;
@@ -163,7 +163,7 @@
     const jump = { next: 'nextslide', prev: 'previousslide', first: 'firstslide', last: 'lastslide', lastViewed: 'lastslideviewed', end: 'endshow' }[link.action];
     return jump ? `<${tag} r:id="" action="ppaction://hlinkshowjump?jump=${jump}"/>` : '';
   }
-  function buXML(bu, design) {
+  function buXML(bu, design, ctx) {
     if (!bu) return '';
     let x = '';
     if (bu.c) x += `<a:buClr>${clr(bu.c, null, design)}</a:buClr>`;
@@ -171,6 +171,7 @@
     if (bu.t === 'none') return x + '<a:buNone/>';
     if (bu.t === 'num') return x + (bu.font ? `<a:buFont typeface="${X(bu.font)}"/>` : '<a:buFont typeface="+mj-lt"/>') + `<a:buAutoNum type="${bu.scheme || 'arabicPeriod'}"${bu.start && bu.start !== 1 ? ` startAt="${bu.start}"` : ''}/>`;
     if (bu.t === 'char') return x + `<a:buFont typeface="${X(bu.font || 'Arial')}"/><a:buChar char="${X(bu.ch || '•')}"/>`;
+    if (bu.t === 'blip') { const rid = ctx && ctx.media ? ctx.media(bu.media) : null; return x + (rid ? `<a:buBlip><a:blip r:embed="${rid}"/></a:buBlip>` : '<a:buFont typeface="Arial"/><a:buChar char="■"/>'); }
     return x;
   }
   const spc = (s, tag) => (s ? (s.pts != null ? `<${tag}><a:spcPts val="${Math.round(s.pts * 100)}"/></${tag}>` : `<${tag}><a:spcPct val="${pct(s.pct)}"/></${tag}>`) : '');
@@ -181,7 +182,7 @@
     if (lvl) a.push(`lvl="${lvl}"`);
     if (pp.indent != null) a.push(`indent="${emu(pp.indent)}"`);
     if (pp.algn) a.push(`algn="${pp.algn}"`);
-    let kids = spc(pp.lnSpc, 'a:lnSpc') + spc(pp.spcBef, 'a:spcBef') + spc(pp.spcAft, 'a:spcAft') + buXML(pp.bu, design);
+    let kids = spc(pp.lnSpc, 'a:lnSpc') + spc(pp.spcBef, 'a:spcBef') + spc(pp.spcAft, 'a:spcAft') + buXML(pp.bu, design, ctx);
     if (withDefRPr && pp.rPr && Object.keys(pp.rPr).length) kids += rPrXML(pp.rPr, 'a:defRPr', ctx, design);
     const xml = !a.length && !kids ? '' : kids ? `<${tag}${a.length ? ' ' + a.join(' ') : ''}>${kids}</${tag}>` : `<${tag} ${a.join(' ')}/>`;
     return L.properties.text(pp, ctx, xml, 'para', tag, lvl);
@@ -198,6 +199,7 @@
       x += pPrXML(p.pp || {}, 'a:pPr', p.lvl || 0, ctx, design, false) || '';
       for (const r of p.rs) {
         const props = L.txt.runProps(r);
+        if (r.fld === 'math' && r.keep?.math) { x += L.properties.emit(r.keep.math, ctx) || `<a:r>${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:r>`; continue; }
         if (r.fld) { x += `<a:fld id="${ctx.fieldId ? ctx.fieldId() : K.guid()}" type="${X(r.fld)}">${rPrXML(props, 'a:rPr', ctx, design)}<a:t>${X(r.t || '')}</a:t></a:fld>`; continue; }
         const parts = String(r.t).split('\n');
         parts.forEach((t, i) => {
@@ -220,9 +222,10 @@
     if (tx.vert) a.push(`vert="${tx.vert}"`);
     if (tx.rot) a.push(`rot="${Math.round(tx.rot * 60000)}"`);
     if (tx.cols > 1) a.push(`numCol="${tx.cols}" spcCol="${emu(tx.colGap || 0)}"`);
+    else if (tx.cols === 1) a.push('numCol="1"');
     if (extra && extra.attrs) a.push(extra.attrs);
     a.push('rtlCol="0"');
-    let kids = extra && extra.warp ? extra.warp : '';
+    let kids = extra && extra.warp ? extra.warp : tx.warp ? `<a:prstTxWarp prst="${X(tx.warp)}"><a:avLst>${Object.entries(tx.warpAdj || {}).map(([k, v]) => `<a:gd name="${X(k)}" fmla="val ${Math.round(v)}"/>`).join('')}</a:avLst></a:prstTxWarp>` : '';
     if (tx.autofit === 'shape') kids += '<a:spAutoFit/>';
     else if (tx.autofit === 'norm') kids += tx.fontScale && tx.fontScale < 1 ? `<a:normAutofit fontScale="${Math.round(tx.fontScale * 100000)}"${tx.lnSpcRed ? ` lnSpcReduction="${Math.round(tx.lnSpcRed * 100000)}"` : ''}/>` : '<a:normAutofit/>';
     return `<a:bodyPr ${a.join(' ')}>${kids}</a:bodyPr>`;
@@ -315,9 +318,10 @@
   }
   function tableXML(sh, id, ctx, design) {
     const t = sh.tbl;
-    const grid = t.cols.map((w) => `<a:gridCol w="${emu(w)}"/>`).join('');
+    const size = (v, original) => original && v === original.pt ? original.emu : emu(v);
+    const grid = t.cols.map((w, i) => `<a:gridCol w="${size(w, t.keep?.gridWidths?.[i])}"/>`).join('');
     const bd = (b, tag) => lineXML(b && b.c && b.t !== 'none' ? b : { t: 'none', w: 1 }, design, tag);
-    const rows = t.rows.map((r) => `<a:tr h="${emu(r.h)}">` + r.cells.map((c) => {
+    const rows = t.rows.map((r) => `<a:tr h="${size(r.h, r.keep?.height)}">` + r.cells.map((c) => {
       const a = [];
       if (c.gs > 1) a.push(`gridSpan="${c.gs}"`);
       if (c.rs > 1) a.push(`rowSpan="${c.rs}"`);
@@ -326,10 +330,13 @@
       const tx = c.tx || L.txt.body();
       const ins = tx.ins || [7.2, 3.6, 7.2, 3.6];
       const ps = tx.ps && tx.ps.length ? tx.ps : [L.txt.para('')];
-      const tcPr = `<a:tcPr marL="${emu(ins[0])}" marR="${emu(ins[2])}" marT="${emu(ins[1])}" marB="${emu(ins[3])}" anchor="${tx.anchor || 't'}">${bd(c.bd && c.bd.l, 'a:lnL')}${bd(c.bd && c.bd.r, 'a:lnR')}${bd(c.bd && c.bd.t, 'a:lnT')}${bd(c.bd && c.bd.b, 'a:lnB')}${fillXML(c.fill || { t: 'none' }, ctx, design) || '<a:noFill/>'}</a:tcPr>`;
-      return `<a:tc${a.length ? ' ' + a.join(' ') : ''}><a:txBody><a:bodyPr/>${lstStyleXML(null)}${parasXML(ps, ctx, design)}</a:txBody>${tcPr}</a:tc>`;
+      const tcPr = `<a:tcPr marL="${emu(ins[0])}" marR="${emu(ins[2])}" marT="${emu(ins[1])}" marB="${emu(ins[3])}" anchor="${tx.anchor || 't'}"${tx.vert ? ` vert="${X(tx.vert)}"` : ''}>${bd(c.bd && c.bd.l, 'a:lnL')}${bd(c.bd && c.bd.r, 'a:lnR')}${bd(c.bd && c.bd.t, 'a:lnT')}${bd(c.bd && c.bd.b, 'a:lnB')}${fillXML(c.fill || { t: 'none' }, ctx, design) || '<a:noFill/>'}</a:tcPr>`;
+      return `<a:tc${a.length ? ' ' + a.join(' ') : ''}><a:txBody><a:bodyPr/>${lstStyleXML(null)}${parasXML(ps, ctx, design)}</a:txBody>${L.properties.cell(c, ctx, tcPr)}</a:tc>`;
     }).join('') + '</a:tr>').join('');
-    return `<p:graphicFrame><p:nvGraphicFramePr>${cNvPr(id, sh, ctx)}<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>${phXML(sh.ph)}</p:nvGraphicFramePr>${xfrm(sh, 'p:xfrm')}<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr firstRow="${t.firstRow ? 1 : 0}" bandRow="${t.bandRow ? 1 : 0}"/><a:tblGrid>${grid}</a:tblGrid>${rows}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
+    const styleId = ctx.writer?.tableStyleIds?.get(t) || t.styleId;
+    const flags = ['firstRow', 'lastRow', 'firstCol', 'lastCol', 'bandRow', 'bandCol', 'rtl'].filter(k => t[k] != null).map(k => ` ${k}="${t[k] ? 1 : 0}"`).join('');
+    const tblPr = L.properties.table(t, ctx, `<a:tblPr${flags}>${styleId ? `<a:tableStyleId>${X(styleId)}</a:tableStyleId>` : ''}</a:tblPr>`);
+    return `<p:graphicFrame><p:nvGraphicFramePr>${cNvPr(id, sh, ctx)}<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>${phXML(sh.ph)}</p:nvGraphicFramePr>${xfrm(sh, 'p:xfrm')}<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl>${tblPr}<a:tblGrid>${grid}</a:tblGrid>${rows}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
   }
   function wordartXML(sh, id, ctx, design) {
     const wa = sh.wa || {};
@@ -787,6 +794,7 @@
     const mainCT = format.contentType;
     const presRels = pack.rels('ppt/presentation.xml');
     const frames = L.frames.prepare(pres, writer);
+    const tableStyles = L.properties.prepareTables(pres, pack);
     const mediaMap = new Map(); /* media id → {name} */
     let chartN = 0;
     const charts = [];
@@ -818,15 +826,21 @@
     /* media must be resolved synchronously during XML generation, so preload */
     const usedMedia = new Set();
     const scanFill = (f) => { if (f && f.t === 'img' && f.media) usedMedia.add(f.media); };
+    /* picture bullets, wherever text styles keep them (paragraphs, list styles, a master's text styles) */
+    const scanBullets = (o, depth = 0) => {
+      if (!o || typeof o !== 'object' || depth > 12) return;
+      if (o.t === 'blip' && o.media) { usedMedia.add(o.media); return; }
+      for (const k in o) if (k !== 'keep') scanBullets(o[k], depth + 1);
+    };
     const scanShape = (s) => {
       if (s.type === 'image' && s.media) usedMedia.add(s.media);
       if (s.type === 'image' && s.svgMedia) usedMedia.add(s.svgMedia);
-      scanFill(s.fill);
-      if (s.tbl) s.tbl.rows.forEach((r) => r.cells.forEach((c) => scanFill(c.fill)));
+      scanFill(s.fill); scanBullets(s.tx);
+      if (s.tbl) s.tbl.rows.forEach((r) => r.cells.forEach((c) => { scanFill(c.fill); scanBullets(c.tx); }));
       if (s.kids) s.kids.forEach(scanShape);
     };
     for (const s of allSlides) { scanFill(s.bg); s.shapes.forEach(scanShape); }
-    for (const id of designIds) { const d = pres.designs[id]; if (!d) continue; scanFill(d.bg); scanFill(d.titleBg); (d.deco || []).forEach(scanShape); (d.titleDeco || []).forEach(scanShape); if (d.layoutDecos) Object.values(d.layoutDecos).forEach((a) => a.forEach(scanShape)); if (d.layoutBgs) Object.values(d.layoutBgs).forEach(scanFill); }
+    for (const id of designIds) { const d = pres.designs[id]; if (!d) continue; scanBullets(d.tx); scanFill(d.bg); scanFill(d.titleBg); (d.deco || []).forEach(scanShape); (d.titleDeco || []).forEach(scanShape); if (d.layoutDecos) Object.values(d.layoutDecos).forEach((a) => a.forEach(scanShape)); if (d.layoutBgs) Object.values(d.layoutBgs).forEach(scanFill); }
     const preloaded = new Map();
     for (const id of usedMedia) preloaded.set(id, await mediaBytes(id));
     const mediaSync = (rels, owner = rels.base || 'ppt/slides/slide1.xml') => (id) => {
@@ -1107,7 +1121,7 @@
     overrides.push(['/ppt/presProps.xml', CT.presProps]);
     add('ppt/viewProps.xml', HEAD + `<p:viewPr ${NSDECL}><p:normalViewPr><p:restoredLeft sz="15620"/><p:restoredTop sz="94660"/></p:normalViewPr><p:gridSpacing cx="76200" cy="76200"/></p:viewPr>`);
     overrides.push(['/ppt/viewProps.xml', CT.viewProps]);
-    add('ppt/tableStyles.xml', HEAD + `<a:tblStyleLst xmlns:a="${NS_A}" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>`);
+    add('ppt/tableStyles.xml', tableStyles || HEAD + `<a:tblStyleLst xmlns:a="${NS_A}" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>`);
     overrides.push(['/ppt/tableStyles.xml', CT.tableStyles]);
 
     /* document properties */
@@ -1134,6 +1148,7 @@
     const types = new Map(overrides.map(([name, type]) => [name.slice(1), type]));
     for (const file of files) pack.put(file.name, file.data, types.get(file.name) || defaults.get(file.name.split('.').pop()));
     const result = pack.finish();
+    L.frames.reportConversions(writer);
     const blob = await L.zip.write(result.files, mime);
     blob.dropped = result.dropped;
     /* a password to open: the package is encrypted (AES-256) inside a compound file, as PowerPoint 2013 and later do */

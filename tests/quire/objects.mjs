@@ -1,5 +1,5 @@
 // Authored OLE/SmartArt objects: foreign clipboard, content edits, undo and drafts.
-// node tests/quire/objects.mjs ~/corpora/word /tmp/quire-object-copies
+// node tests/quire/objects.mjs /work/corpora/word /tmp/quire-object-copies
 import fs from 'node:fs';
 import path from 'node:path';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';

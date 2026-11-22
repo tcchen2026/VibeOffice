@@ -151,6 +151,7 @@ pub async fn open(window: &WebviewWindow, title: &str, filters: Vec<Filter>) -> 
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
+#[cfg_attr(feature = "lite", allow(dead_code))] // the lite edition asks for a name in the page (doc.rs host_choose)
 pub async fn save(
     window: &WebviewWindow,
     title: &str,

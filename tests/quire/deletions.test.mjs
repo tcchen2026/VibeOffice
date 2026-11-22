@@ -3,11 +3,10 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { ensureServer, openPage } from '../../tools/ooxml/cdp.mjs';
 
-const corpus = path.join(process.env.VO_CORPORA || path.join(os.homedir(), 'corpora'), 'word');
+const corpus = path.join(process.env.VO_CORPORA || '/work/corpora', 'word');
 const picture = path.join(corpus, 'libreoffice__34e27588d443__fdo76597.docx');
 const chart = path.join(corpus, 'libreoffice__150741726c0c__tdf155685.docx');
 let page, stop;

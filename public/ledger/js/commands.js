@@ -29,13 +29,13 @@
   cmd('close', { label: '&Close', run: () => A().closeWorkbook() });
   cmd('save', { label: '&Save', icon: 'save', key: 'Ctrl+S', run: run(() => A().save()) });
   cmd('saveAs', { label: 'Save &As...', key: 'F12', run: run(() => D().saveAs()) });
-  cmd('saveWeb', { label: 'Save as Web Pa&ge...', run: run(() => A().saveAs('html')) });
+  cmd('saveWeb', { label: 'Save as Web Pa&ge...', icon: 'webPage', run: run(() => A().saveAs('html')) });
   cmd('exportPDF', { label: 'Export to &PDF...', icon: 'print', run: run(() => L.print.exportPDF()) });
   cmd('exportCSV', { label: 'Save as &CSV', run: run(() => A().saveAs('csv')) });
   cmd('pageSetup', { label: 'Page Set&up...', icon: 'pageSetup', run: run(() => D().pageSetup()) });
   cmd('setPrintArea', { label: '&Set Print Area', run: run(() => A().setPrintArea(true)) });
   cmd('clearPrintArea', { label: '&Clear Print Area', run: run(() => A().setPrintArea(false)), enabled: () => !!A().printAreaOf(sh()) });
-  cmd('printPreview', { label: 'Print Pre&view', icon: 'preview', run: run(() => L.print.preview()) });
+  cmd('printPreview', { label: 'Print Pre&view', icon: 'preview', key: 'Ctrl+F2', run: run(() => L.print.preview()) });
   cmd('print', { label: '&Print...', icon: 'print', key: 'Ctrl+P', run: run(() => D().print()) });
   cmd('printQuick', { label: 'Print', tip: 'Print', icon: 'print', run: run(() => L.print.exportPDF({ quick: true })) });
   cmd('properties', { label: 'Propert&ies', icon: 'properties', run: run(() => D().properties()) });
@@ -79,15 +79,17 @@
   /* ------------------------------------------------------------ View */
   cmd('viewNormal', { label: '&Normal', icon: 'normalGrid', radio: true, checked: () => !sh().view.pageBreakPreview, run: run(() => A().setPageBreakPreview(false)) });
   cmd('viewPageBreak', { label: '&Page Break Preview', icon: 'pageBreakView', radio: true, checked: () => !!sh().view.pageBreakPreview, run: run(() => A().setPageBreakPreview(true)) });
-  cmd('taskPane', { label: 'Tas&k Pane', key: 'Ctrl+F1', checked: () => !L.$('#taskpane').hidden, run: () => A().toggleTaskPane() });
+  cmd('taskPane', { label: 'Tas&k Pane', icon: 'taskpane', key: 'Ctrl+F1', checked: () => !L.$('#taskpane').hidden, run: () => A().toggleTaskPane() });
   cmd('formulaBar', { label: '&Formula Bar', checked: () => A().opts.formulaBar !== false, run: () => { A().opts.formulaBar = A().opts.formulaBar === false; A().applyOpts(); } });
   cmd('statusBar', { label: '&Status Bar', checked: () => A().opts.statusBar !== false, run: () => { A().opts.statusBar = A().opts.statusBar === false; A().applyOpts(); } });
-  cmd('headerFooter', { label: '&Header and Footer...', run: run(() => D().pageSetup(2)) });
+  cmd('headerFooter', { label: '&Header and Footer...', icon: 'headerFooter', run: run(() => D().pageSetup(2)) });
   cmd('showComments', { label: '&Comments', icon: 'comment', checked: () => !!wb()._showComments, run: run(() => { wb()._showComments = !wb()._showComments; A().toggleToolbar('reviewing', wb()._showComments ? true : undefined); }) });
   cmd('fullScreen', { label: 'F&ull Screen', icon: 'fullScreen', checked: () => L.$('#app').classList.contains('fullscreen'), run: () => A().toggleFullScreen() });
   cmd('zoomDlg', { label: '&Zoom...', icon: 'zoom', run: run(() => D().zoom()) });
   cmd('zoomIn', { label: 'Zoom In', run: () => G().setZoom((sh().view.zoom || 100) + 10) });
   cmd('zoomOut', { label: 'Zoom Out', run: () => G().setZoom((sh().view.zoom || 100) - 10) });
+  cmd('zoom100', { label: '&100%', icon: 'zoom100', tip: 'Zoom the sheet to 100%', run: () => G().setZoom(100) });
+  cmd('zoomSelection', { label: 'Zoom to &Selection', icon: 'zoomSelection', tip: 'Zoom so the selected cells fill the window', run: () => A().zoomToSelection() });
   cmd('showFormulas', { label: 'Formula Auditing &Mode', icon: 'showFormulas', key: 'Ctrl+`', checked: () => !!sh().view.formulas, run: () => { sh().view.formulas = !sh().view.formulas; G().paint(); ui.refresh(); } });
   cmd('gridlinesView', { label: '&Gridlines', checked: () => sh().view.grid !== false, run: () => { sh().view.grid = sh().view.grid === false; G().paint(); } });
   cmd('headingsView', { label: 'Row & Column &Headers', checked: () => sh().view.headings !== false, run: () => { sh().view.headings = sh().view.headings === false; G().paint(); } });
@@ -116,8 +118,15 @@
   cmd('deleteComment', { label: 'Delete Co&mment', enabled: () => { const s = sel(); return !!sh().comments.get(M.key(s.r, s.c)); }, run: run(() => { const s = sel(); O.tx(wb(), 'Delete Comment', () => O.setComment(sh(), s.r, s.c, null)); }) });
   cmd('showHideComment', { label: 'Show/Hide Co&mment', enabled: () => { const s = sel(); return !!sh().comments.get(M.key(s.r, s.c)); }, run: run(() => { const s = sel(); const cm = sh().comments.get(M.key(s.r, s.c)); O.tx(wb(), 'Show Comment', () => O.setComment(sh(), s.r, s.c, Object.assign({}, cm, { visible: !cm.visible }))); }) });
   cmd('insertPicture', { label: '&From File...', icon: 'picture', run: run(() => A().insertPicture()) });
-  cmd('insertClipArt', { label: '&Clip Art...', icon: 'clipart', run: run(() => A().insertPicture()) });
-  cmd('insertShape', { label: '&AutoShapes', icon: 'autoshapes', run: run(() => L.drawing.startTool('rect')) });
+  cmd('growFont', { label: 'Increase Font Size', icon: 'growFont', run: run(() => A().stepFont(1)) });
+  cmd('shrinkFont', { label: 'Decrease Font Size', icon: 'shrinkFont', run: run(() => A().stepFont(-1)) });
+  cmd('insertClipArt', { label: '&Clip Art...', icon: 'clipart', run: run(() => L.panes.task.show('clipart')) });
+  cmd('insertShape', { label: '&AutoShapes', icon: 'autoshapes', run: run(() => L.drawing.autoShapesMenu()) });
+  /* the Drawing toolbar's tools, as Excel 2003's: a drag draws the object */
+  cmd('drawLine', { label: '&Line', icon: 'line', tip: 'Line', run: run(() => L.drawing.startTool('line')) });
+  cmd('drawArrow', { label: '&Arrow', icon: 'arrowTool', tip: 'Arrow', run: run(() => L.drawing.startTool('arrow')) });
+  cmd('drawRect', { label: '&Rectangle', icon: 'rect', tip: 'Rectangle', run: run(() => L.drawing.startTool('rect')) });
+  cmd('drawOval', { label: '&Oval', icon: 'oval', tip: 'Oval', run: run(() => L.drawing.startTool('ellipse')) });
   cmd('insertTextBox', { label: 'Te&xt Box', icon: 'textbox', run: run(() => L.drawing.startTool('textbox')) });
   cmd('hyperlink', { label: 'Hyperl&ink...', icon: 'hyperlink', key: 'Ctrl+K', run: run(() => D().hyperlink()) });
   cmd('removeHyperlink', { label: '&Remove Hyperlink', enabled: () => { const s = sel(); return sh().links.some((l) => M.rangeContains(l.ref, s.r, s.c)); }, run: run(() => O.clear(sh(), rgs(), 'hyperlinks')) });
@@ -239,6 +248,7 @@
 
   /* ------------------------------------------------------------ Help */
   cmd('help', { label: 'Ledger &Help', icon: 'help', key: 'F1', run: () => L.panes.task.show('help') });
+  cmd('gettingStarted', { label: '&Getting Started', run: () => L.panes.task.show('getting-started') });
   cmd('keyboardHelp', { label: '&Keyboard Shortcuts', run: () => L.panes.task.show('keys') });
   cmd('functionsHelp', { label: '&Functions Reference', run: () => D().insertFunction() });
   cmd('about', { label: '&About Ledger', run: () => D().about() });

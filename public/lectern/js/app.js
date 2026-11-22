@@ -32,7 +32,7 @@
 
   const DEFAULT_OPTS = {
     startupPane: true, layoutPaneOnNew: true, paneFollows: true, statusBar: true, ruler: false, showPopup: true, showPopbar: true, endBlack: true,
-    smartQuotes: true, autocorrect: true, capSentence: true, spell: true, autoPreview: true, gray: false, bw: false, outlinePlain: false, alignToSlide: false,
+    smartQuotes: true, autocorrect: true, twoCaps: true, acReplace: true, capSentence: true, spell: true, autoPreview: true, gray: false, bw: false, outlinePlain: false, alignToSlide: false,
     toolbars: { standard: true, formatting: true, drawing: true, outlining: false, picture: 'auto', tables: 'auto', wordart: 'auto', diagram: 'auto' },
     grid: { show: false, snap: true, size: 6 }, leftW: 196, notesH: 92, leftOpen: true, taskOpen: true,
   };
@@ -50,7 +50,7 @@
     A.opts = L.deepMerge(L.clone(DEFAULT_OPTS), o || {});
     E.grid = Object.assign(E.grid, A.opts.grid);
   };
-  A.saveOpts = () => { A.opts.grid = { show: E.grid.show, snap: E.grid.snap, size: E.grid.size }; L.store.set('opts', A.opts); };
+  A.saveOpts = () => { A.opts.grid = { show: E.grid.show, snap: E.grid.snap, size: E.grid.size, guides: E.grid.guides }; L.store.set('opts', A.opts); };
   A.applyOpts = () => {
     L.$('#statusbar').hidden = !A.opts.statusBar;
     A.updateToolbars();
@@ -62,13 +62,13 @@
   function buildMenus() {
     const autoShapeSub = (group) => ({ custom: (close) => shapeGrid(L.geom.MENU[group], close) });
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', '-', 'properties', ...(L.file.native() ? ['versions'] : []), ...((r) => (r.length ? ['-', ...r] : []))(window.VO ? VO.recentMenuItems(4) : []), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), ...((r) => (r.length ? ['-', ...r] : []))(window.VO ? VO.recentMenuItems(4) : []), '-', 'exitApp'] },
       { label: '&Edit', items: ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', '-', 'clear', 'selectAll', 'duplicate', 'deleteSlide', '-', 'find', 'replace'] },
       {
         label: '&View', items: () => ['viewNormal', 'viewSorter', 'showFromStart', 'viewNotes', '-',
           { label: '&Master', sub: ['viewMaster'] },
           { label: 'Co&lor/Grayscale', sub: ['viewColor', 'viewGray', 'viewBW'] }, '-',
-          'taskPane', 'slidesPane', { label: '&Toolbars', sub: ['tb_standard', 'tb_formatting', 'tb_drawing', 'tb_outlining', 'tb_picture', 'tb_tables', 'tb_wordart'] }, 'ruler', 'gridGuides', '-', 'headerFooter', '-', 'zoomDlg'],
+          'taskPane', 'slidesPane', { label: '&Toolbars', sub: ['tb_standard', 'tb_formatting', 'tb_drawing', 'tb_outlining', 'tb_picture', 'tb_tables', 'tb_wordart', '-', 'customize'] }, 'ruler', 'gridGuides', '-', 'headerFooter', '-', 'zoomDlg'],
       },
       {
         label: '&Insert', items: ['newSlide', 'duplicateSlide', '-', 'insertSlideNumber', 'insertDateTime', 'insertSymbol', '-', 'slidesFromFiles', 'slidesFromOutline', '-',
@@ -76,14 +76,14 @@
           'insertDiagram', 'textBox', 'insertMedia', 'insertChart', 'insertTable', '-', 'hyperlink'],
       },
       { label: 'F&ormat', items: ['fontDlg', 'bulletsDlg', { label: '&Alignment', sub: ['alignLeft', 'alignCenter', 'alignRight', 'justify'] }, 'lineSpacing', 'changeCase', 'replaceFonts', '-', 'slideDesign', 'slideLayout', 'background', '-', 'formatObject'] },
-      { label: '&Tools', items: ['spelling', '-', 'autocorrectDlg', '-', 'optionsDlg'] },
+      { label: '&Tools', items: ['spelling', '-', 'autocorrectDlg', 'customize', 'optionsDlg'] },
       {
         label: 'Sli&de Show', items: () => ['showFromStart', 'setupShow', 'rehearse', '-',
           { label: 'Act&ion Buttons', sub: [{ custom: (close) => shapeGrid(L.geom.MENU['Action Buttons'], close) }] }, 'actionSettings', '-',
           'animSchemes', 'customAnim', 'transitionPane', '-', 'hideSlide'],
       },
       { label: '&Window', items: () => [{ label: '&1 ' + A.fileName.replace(/&/g, '&&'), raw: true, checked: () => true, run: () => {} }] },
-      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'gettingStarted', '-', 'about'] },
+      { label: '&Help|menu bar', items: ['help', 'showAssistant', '-', 'gettingStarted', 'keyboardHelp', '-', 'about'] },
     ];
     void autoShapeSub;
     const row = L.$('#menurow');
@@ -195,8 +195,8 @@
     const host = L.$('#toolbars');
     const fontCombo = A.parts.font(), sizeCombo = A.parts.size(), zoomCombo = A.parts.zoom();
     A.toolbarsEl = {
-      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', '|', 'print', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'painter', '|', 'undo', 'redo', '|', 'insertChart', 'insertTable', ui.tbButton('tb_tables', { icon: 'tablesBorders' }), 'hyperlink', '|', 'expandAll', 'showFormatting', 'showGrid', ui.tbSplit('viewGray', (r) => ui.openMenu(['viewColor', 'viewGray', 'viewBW'], r)), zoomCombo, 'help']),
-      formatting: ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, 'bold', 'italic', 'underline', 'shadowText', '|', 'alignLeft', 'alignCenter', 'alignRight', '|', 'numbering', 'bullets', '|', 'growFont', 'shrinkFont', '|', 'promote', 'demote', '|', ui.tbSplit('fontColor', colorDD('font')), '|', ui.tbButton('slideDesign', { label: 'Design' }), ui.tbButton('newSlide', { label: 'New Slide' })]),
+      standard: ui.toolbar('standard', 'Standard', ['new', 'open', 'save', '|', 'print', 'printPreview', 'spelling', '|', 'cut', 'copy', 'paste', 'painter', '|', ui.tbSplit('undo', (r) => A.historyMenu(r, 'undo')), ui.tbSplit('redo', (r) => A.historyMenu(r, 'redo')), '|', 'insertChart', 'insertTable', ui.tbButton('tb_tables', { icon: 'tablesBorders' }), 'hyperlink', '|', 'expandAll', 'showFormatting', 'showGrid', ui.tbSplit('viewGray', (r) => ui.openMenu(['viewColor', 'viewGray', 'viewBW'], r)), '|', zoomCombo, '|', 'help']),
+      formatting: ui.toolbar('formatting', 'Formatting', [fontCombo, sizeCombo, '|', 'bold', 'italic', 'underline', 'shadowText', '|', 'alignLeft', 'alignCenter', 'alignRight', '|', 'numbering', 'bullets', '|', 'growFont', 'shrinkFont', '|', 'promote', 'demote', '|', ui.tbSplit('fontColor', colorDD('font')), '|', ui.tbButton('slideDesign', { label: 'Design' }), ui.tbButton('newSlide', { label: 'New Slide' })]),
       outlining: ui.toolbar('outlining', 'Outlining', ['promote', 'demote', 'moveParaUp', 'moveParaDown', '|', 'summarySlide', 'showFormatting']),
       picture: ui.toolbar('picture', 'Picture', ['insertPicture', ui.tbDrop('', 'colorPic', A.menus.picColor, 'Color'), 'picMoreContrast', 'picLessContrast', 'picMoreBright', 'picLessBright', '|', 'picCrop', 'rotateLeft', ui.tbDrop('', 'lineStyle', lineStyleMenu, 'Line Style'), '|', ui.tbButton('formatObject', { icon: 'formatPicture' }), 'picTransparent', 'picReset']),
       tables: ui.toolbar('tables', 'Tables and Borders', [ui.tbDrop('', 'dashStyle', (r) => ui.openMenu([{ custom: (close) => listPanel(L.dlg.DASHES.map(([k, n]) => ({ html: lineSVG(2, (L.render.dashArray(k, 2) || '').replace(/,/g, ' ')), label: n, run: () => { A.tblBorder.dash = k; } })), close) }], r), 'Border Style'),
@@ -205,7 +205,7 @@
         ui.tbDrop('', 'bordersAll', A.menus.tableBorders, 'Borders'),
         ui.tbDrop('', 'fillColor', A.menus.tableFill, 'Fill Color'),
         '|', ui.tbDrop('Table', null, (r) => ui.openMenu(['insertTable', '-', 'colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', '-', 'selectTable', '-', 'tableBordersFill'], r), 'Table'),
-        'mergeCells', 'splitCell', '|', 'cellTop', 'cellMiddle', 'cellBottom', '|', 'distRows', 'distCols']),
+        'mergeCells', 'splitCell', '|', 'cellTop', 'cellMiddle', 'cellBottom', ui.tbDrop('', 'textDir', (r) => ui.openMenu(['cellHorz', 'cellVert', 'cellVert270', 'cellStacked'], r), 'Text Direction'), '|', 'distRows', 'distCols']),
       wordart: ui.toolbar('wordart', 'LettersArt', ['insertWordArt', ui.tbButton('wordartEdit', { label: 'Edit Text...' }), 'wordartGallery', ui.tbButton('formatObject', { icon: 'formatPicture' }),
         ui.tbDrop('', 'waShape', A.menus.waShape, 'LettersArt Shape'),
         'waSameHeight', 'waVertical',
@@ -221,8 +221,9 @@
     A.toolbarsEl.diagram = ui.toolbar('diagram', 'Diagram', [ui.tbSplit('diagramAddShape', (r) => ui.openMenu(['diagramAddAfter', 'diagramAddBefore', 'diagramAddAbove', 'diagramAddBelow'], r)), 'diagramPromote', 'diagramDemote', 'diagramMoveUp', 'diagramMoveDown', '|',
       ui.tbDrop('&Layout', 'layout', (r) => DGM().layoutMenu(r), 'Change Layout'), ui.tbDrop('', 'colorPic', (r) => DGM().colorsMenu(r), 'Change Colors'), ui.tbDrop('', 'themes', (r) => DGM().styleMenu(r), 'IntelliArt Styles'), '|', 'diagramTextPane', 'diagramReset', 'diagramToShapes']);
     const row3 = h('div', { class: 'tb-row' }, A.toolbarsEl.picture, A.toolbarsEl.tables, A.toolbarsEl.wordart, A.toolbarsEl.diagram, A.toolbarsEl.master, A.toolbarsEl.sorter);
-    host.append(row1, row2, row3);
+    host.append(h('div', { class: 'tb-pair' }, row1, row2), row3);
     A.tbRows = [row1, row2, row3];
+    ui.toolbarPrefs(A.opts);
     /* drawing toolbar */
     const asBtn = ui.tbDrop('A&utoShapes', null, (r) => openAutoShapes(r), 'AutoShapes');
     asBtn.setAttribute('data-as', '1');
@@ -230,9 +231,6 @@
       ui.tbSplit('fillColor', colorDD('fill')), ui.tbSplit('lineColor', colorDD('line')), ui.tbSplit('fontColor', colorDD('font')), '|',
       ui.tbDrop('', 'lineStyle', lineStyleMenu, 'Line Style'), ui.tbDrop('', 'dashStyle', dashMenu, 'Dash Style'), ui.tbDrop('', 'arrowStyle', arrowMenu, 'Arrow Style'), ui.tbDrop('', 'shadowStyle', shadowMenu, 'Shadow Style')]);
     L.$('#drawrow').appendChild(A.toolbarsEl.drawing);
-    /* view buttons */
-    const vb = L.$('#viewbar');
-    vb.append(ui.tbButton('viewNormal'), ui.tbButton('viewSorter'), ui.tbButton('showFromCurrent'));
   }
   A.tblBorder = { c: 'tx1', w: 1, dash: 'solid' };
   let tsCache = null, tsTick = 0;
@@ -277,13 +275,14 @@
     const sb = L.$('#statusbar');
     A.sbSlide = h('div', { class: 'sb-cell fit', 'aria-live': 'polite' });
     A.sbMsg = h('div', { class: 'sb-cell grow' });
-    A.sbDesign = h('div', { class: 'sb-cell fit' });
+    A.sbDesign = h('div', { class: 'sb-cell fit opt' });
     A.sbLang = h('div', { class: 'sb-cell fit', text: 'English (U.S.)' });
-    const zr = h('input', { type: 'range', min: 10, max: 400, value: 100, id: 'sb-zoom', 'aria-label': 'Zoom' });
-    zr.addEventListener('input', () => E.setZoom(zr.value / 100));
-    A.sbZoom = h('div', { class: 'sb-cell fit sb-zoom' }, h('span', { text: '100%' }), zr);
-    sb.append(A.sbSlide, A.sbDesign, A.sbMsg, A.sbLang, A.sbZoom);
-    L.bus.on('zoom', () => { A.sbZoom.firstChild.textContent = E.zoomPct() + '%'; zr.value = E.zoomPct(); ui.refresh(); });
+    // the view buttons and the zoom slider (ui.js), as in the other apps; the slider works on the slide area, so it is
+    // greyed out in Slide Sorter, Notes Page and Print Preview
+    const zoom = ui.zoomSlider({ min: 10, max: 400, value: () => E.zoomPct(), set: (p) => E.setZoom(p / 100), dialog: 'zoomDlg', fit: 'zoomFit',
+      enabled: () => A.view === 'normal' || A.view === 'master' });
+    sb.append(A.sbSlide, A.sbDesign, A.sbMsg, A.sbLang, h('div', { class: 'sb-right' }, ui.statusGroup(['viewNormal', 'viewSorter', 'showFromCurrent']), zoom, ui.paneToggle('taskPane')));
+    L.bus.on('zoom', () => ui.refresh());
   }
   A.status = (msg) => { if (!A.sbMsg) return; A.sbMsg.textContent = L.t(msg); clearTimeout(statusTimer); statusTimer = setTimeout(() => { A.sbMsg.textContent = ''; }, 3000); };
   A.updateStatus = function () {
@@ -398,13 +397,12 @@
   };
   A.openDialog = async function () {
     if (window.VO && VO.oneDocument) return VO.openDialog();
-    const files = await L.pickFiles('.pptx,.ppsx,.potx,.pptm,.potm,.ppsm,.txt,application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    const files = await L.pickFiles('.pptx,.ppsx,.potx,.pptm,.potm,.ppsm,.ppt,.pps,.pot,.txt,application/vnd.openxmlformats-officedocument.presentationml.presentation');
     if (files[0]) A.openFile(files[0]);
   };
   A.openFile = async function (file) {
     if (window.VO && await VO.elsewhere(file)) return;   // the desktop app: a window of its own
     if (/\.txt$/i.test(file.name)) { if (!(await confirmDiscard())) return; const text = await L.readAsText(file); const pres = M.newPresentation(Object.assign({ design: 'default', empty: true }, A.newSize())); A.loadPres(pres, file.name.replace(/\.txt$/i, '')); A.outlineToSlides(text, 0); return; }
-    if (/\.ppt$/i.test(file.name)) { ui.msg(L.t('{0} is in the older binary PowerPoint 97–2003 format. Open it in PowerPoint, Keynote, Google Slides or LibreOffice and save it as .pptx, then open the .pptx here.', file.name), { icon: 'warn' }); return; }
     if (!(await confirmDiscard())) return;
     ui.busy(true, L.t('Opening {0}...', file.name));
     try {
@@ -412,7 +410,7 @@
       const progress = (i, n) => ui.busy(true, L.t('Opening {0}... (slide {1} of {2})', file.name, i, n));
       let pres = null, password, wrong = false;
       for (;;) {
-        try { pres = await L.pptx.read(buf, { progress, password }); break; } catch (e) {
+        try { pres = await L.pptx.read(buf, { progress, password, name: file.name }); break; } catch (e) {
           if (!(e && (e.code === 'password' || e.code === 'badpassword'))) throw e;
           /* a password to open: ask for it, as PowerPoint does */
           ui.busy(false);
@@ -423,18 +421,22 @@
         }
       }
       if (!pres.slides.length) pres.slides.push(M.newSlide(pres, 'title', Object.keys(pres.designs)[0]));
-      A.loadPres(pres, file.name.replace(/\.(pptx|ppsx|potx|pptm|ppsm|potm)$/i, ''), { saved: true });
+      /* a converted 97-2003 file is saved under a new .pptx name, as PowerPoint converts it */
+      A.loadPres(pres, file.name.replace(/\.(pptx|ppsx|potx|pptm|ppsm|potm|ppt|pps|pot)$/i, ''), { saved: !pres.converted });
       A.fileType = pres.ooxmlFormat || 'pptx';
       if (window.VO) VO.opened(file, L.pres);
       ui.busy(false);
+      const note = pres.converted && L.legacyImport.notice(pres.converted, file.name);
+      if (note) await ui.msg(note, { icon: 'warn' });
       if (pres.repaired) {
         const lost = pres.repaired.parts.filter((p) => /slides\/slide\d+\.xml$/.test(p)).length;
         ui.msg(L.t('{0} found a problem with content in {1} and repaired the presentation.', L.APP, file.name) + '\n' + (lost > 1 ? L.t('{0} slides could not be recovered.', lost) : lost ? L.t('1 slide could not be recovered.') : L.t('Check the slides before you save over the original.')), { icon: 'warn' });
-      } else if (/\.pps[xm]$/i.test(file.name)) L.show.start({ from: 0 });
+      } else if (/\.pps[xm]?$/i.test(file.name)) L.show.start({ from: 0 });
     } catch (e) {
       ui.busy(false);
       console.error(e);
       if (e && e.code === 'ole') ui.msg(L.t(e.message), { icon: 'warn' });
+      else if (e && e.code === 'legacy') ui.msg(L.t("{0} can't open {1}. {2}", L.APP, file.name, e.message), { icon: 'error' });
       else ui.msg(L.t('{0} can\'t read {1}. {2}\nMake sure the file is a PowerPoint 2007 or later presentation (.pptx).', L.APP, file.name, e && e.message ? L.t(e.message) : ''), { icon: 'error' });
     }
   };
@@ -522,11 +524,16 @@
   }
   function inlineMedia(html, map) { for (const [u, d] of map) html = html.split(u).join(d); return html; }
   /** Rasterize a detached DOM element (laid out at w×h CSS px) into a canvas `scale` times larger. */
-  A.rasterize = async function (el, w, hh, scale, opts) {
+  async function pageSVG(el, w, hh, opts) {
     const map = (opts && opts.map) || await mediaDataMap();
     const xhtml = inlineMedia(new XMLSerializer().serializeToString(el), map);
-    const css = (opts && opts.css) || slideCSS(opts && opts.extraCSS);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${hh}px;font:11px Arial,Arimo,sans-serif"><style>${css.replace(/</g, '\\3c ')}</style>${xhtml}</div></foreignObject></svg>`;
+    let css = (opts && opts.css) || slideCSS(opts && opts.extraCSS);
+    const fonts = opts?.fonts ?? await L.embedFonts(xhtml + css + ' Arimo');
+    css = fonts + '\n' + css;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${hh}px;font:11px Arial,Arimo,sans-serif"><style>${css.replace(/</g, '\\3c ')}</style>${xhtml}</div></foreignObject></svg>`;
+  }
+  A.rasterize = async function (el, w, hh, scale, opts) {
+    const svg = await pageSVG(el, w, hh, opts);
     const img = await L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
     const c = document.createElement('canvas');
     c.width = Math.round(w * scale); c.height = Math.round(hh * scale);
@@ -547,32 +554,109 @@
   /** PDF of the slides (one slide per page, page = slide size) or of the print-preview pages. */
   A.buildPDF = async function (source) {
     const pages = [];
+    const pdf = await L.pdfModule(true);
+    const text = new Map(), links = new Map(), destinations = new Map(), outline = [];
+    const slidesById = new Map(L.pres.slides.map(s => [String(s.id), s]));
+    const navigationSlides = L.pres.slides.filter(s => !s.hidden || (source === 'preview' && A.printOpts.hidden));
+    const addDestination = (slide, page, top) => {
+      if (!slide || destinations.has(String(slide.id))) return;
+      destinations.set(String(slide.id), { page, top });
+      const title = M.slideTitle(slide);
+      if (title) outline.push({ title, page, top, level: 1 });
+    };
+    const resolveLink = (el) => {
+      const slide = slidesById.get(el.closest('[data-slide]')?.dataset.slide);
+      let link;
+      if (el.dataset.link) {
+        try { link = JSON.parse(el.dataset.link); } catch (e) { return null; }
+      } else if (slide && el.dataset.sid) link = M.shapeById(slide, el.dataset.sid)?.link;
+      if (link?.url) return { url: link.url };
+      if (link?.slide != null) return destinations.get(String(link.slide));
+      if (slide && link?.action) {
+        const current = navigationSlides.indexOf(slide), last = navigationSlides.length - 1;
+        const index = { first: 0, last, next: Math.min(last, current + 1), prev: Math.max(0, current - 1) }[link.action];
+        // PowerPoint and LibreOffice omit last-viewed/end-show actions from PDFs.
+        if (index !== undefined) return destinations.get(String(navigationSlides[index]?.id));
+      }
+      return null;
+    };
+    const collectLinks = (el, scale) => pdf.collectLinks(el, scale, resolveLink,
+      { transforms: true, selector: '[data-link],[data-sid]' });
     const map = await mediaDataMap();
-    const jpeg = async (c) => new Uint8Array(await (await canvasBlob(c, 'image/jpeg', 0.92)).arrayBuffer());
     if (source === 'preview') {
       const els = L.$$('.pv-page', L.panes.preview.scroll);
       const css = slideCSS(true);
-      let n = 0;
-      for (const p of els) {
-        ui.busy(true, L.t('Creating PDF... (page {0} of {1})', ++n, els.length));
+      const fonts = await L.embedFonts(els.map((p) => p.outerHTML).join('') + css + ' Arimo');
+      await document.fonts.ready;
+      const o = A.printOpts;
+      const shown = L.pres.slides.filter((s, i) => (o.hidden || !s.hidden) && (!o.range || o.range.includes(i)));
+      let titleIndex = 0;
+      for (const [page, el] of els.entries()) {
+        const origin = el.getBoundingClientRect(), scale = (el.offsetHeight > el.offsetWidth ? 612 : 792) / el.offsetWidth;
+        const targets = o.what === 'outline' ? [...el.querySelectorAll('.pv-text')]
+          .filter(node => node.style.fontWeight === 'bold') : el.querySelectorAll('[data-slide]');
+        for (const node of targets) {
+          const slide = o.what === 'outline' ? shown[titleIndex++] : slidesById.get(node.dataset.slide);
+          addDestination(slide, page, Math.max(0, (node.getBoundingClientRect().top - origin.top) * scale));
+        }
+      }
+      const prepare = async (p) => {
         const w = p.offsetWidth, hh = p.offsetHeight;
         const clone = p.cloneNode(true);
         clone.style.margin = '0'; clone.style.boxShadow = 'none'; clone.style.position = 'relative';
         const portrait = hh > w;
+        const pw = portrait ? 612 : 792;
+        await document.fonts.ready;
+        text.set(p, pdf.collectDOM(p, pw / w, { transforms: true }));
+        links.set(p, collectLinks(p, pw / w));
+        const scale = L.pdfScale(w, hh, (pw / w) * L.PDF_DPI / 72);
+        return { svg: await pageSVG(clone, w, hh, { map, css, fonts: '' }), w, h: hh, scale };
+      };
+      for await (const { canvas: c, page: p, index } of pdf.pictures(els, prepare, fonts)) {
+        ui.busy(true, L.t('Creating PDF... (page {0} of {1})', index + 1, els.length));
+        const portrait = p.offsetHeight > p.offsetWidth;
         const pw = portrait ? 612 : 792, ph = portrait ? 792 : 612;
-        const c = await A.rasterize(clone, w, hh, (pw * 2.5) / w, { map, css });
-        pages.push({ jpeg: await jpeg(c), iw: c.width, ih: c.height, pw, ph });
+        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw, ph,
+          lines: text.get(p), links: links.get(p) });
+        text.delete(p);
+        links.delete(p);
       }
     } else {
       const slides = L.pres.slides.filter((s) => !s.hidden);
-      let n = 0;
-      for (const s of slides) {
-        ui.busy(true, L.t('Creating PDF... (slide {0} of {1})', ++n, slides.length));
-        const c = await A.slideCanvas(s, Math.round(L.pres.W * 2.5), map);
-        pages.push({ jpeg: await jpeg(c), iw: c.width, ih: c.height, pw: L.pres.W, ph: L.pres.H });
+      slides.forEach((slide, page) => addDestination(slide, page, 0));
+      const elements = slides.map((s) => L.render.slide(L.pres, s, { mode: 'thumb', index: L.pres.slides.indexOf(s) }));
+      const css = slideCSS();
+      const fonts = await L.embedFonts(elements.map((el) => el.outerHTML).join('') + css + ' Arimo');
+      const scale = L.pdfScale(L.pres.W, L.pres.H, L.PDF_DPI / 72);
+      const prepare = async (el) => {
+        // Match pageSVG's font context. A detached slide has no measurable text ranges.
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-100000px;top:0;pointer-events:none;font:11px Arial,Arimo,sans-serif';
+        host.inert = true;
+        host.append(el);
+        document.body.append(host);
+        try {
+          el.getBoundingClientRect(); // Begin font loading for text not present on the current slide.
+          await document.fonts.ready;
+          text.set(el, pdf.collectDOM(el, 1, { transforms: true }));
+          links.set(el, collectLinks(el, 1));
+        } finally {
+          el.remove();
+          host.remove();
+        }
+        return { svg: await pageSVG(el, L.pres.W, L.pres.H, { map, css, fonts: '' }),
+          w: L.pres.W, h: L.pres.H, scale };
+      };
+      for await (const { canvas: c, page: el, index } of pdf.pictures(elements, prepare, fonts)) {
+        ui.busy(true, L.t('Creating PDF... (slide {0} of {1})', index + 1, slides.length));
+        pages.push({ jpeg: pdf.jpeg(c), iw: c.width, ih: c.height, pw: L.pres.W, ph: L.pres.H,
+          lines: text.get(el), links: links.get(el) });
+        text.delete(el);
+        links.delete(el);
       }
     }
-    return L.buildPDF(pages, { title: L.pres.props.title || A.fileName, author: L.pres.props.author || '' });
+    return L.buildPDF(pages, { title: L.pres.props.title || A.fileName, author: L.pres.props.author || '',
+      lang: pdf.language(L.pres.lang), outline });
   };
   A.previewPDF = async function () {
     ui.busy(true, 'Creating PDF...');
@@ -602,6 +686,7 @@ addEventListener('resize',fit);fit();show(0);`;
   };
 
   /* ================= history ================= */
+  A.historyMenu = (r, kind) => ui.historyMenu(r, kind, L.hist[kind].map((e) => e.label).reverse());
   A.undo = () => { if (TE.active()) TE.sync(); if (L.hist.doUndo()) afterHistory(); };
   A.redo = () => { if (TE.active()) TE.sync(); if (L.hist.doRedo()) afterHistory(); };
   function afterHistory() {
@@ -1196,9 +1281,9 @@ addEventListener('resize',fit);fit();show(0);`;
   A.toggleRun = function (key) {
     const st = L.fmt.state();
     if (!st) return;
-    const on = !st[key];
-    const label = { b: L.N('Bold'), i: L.N('Italic'), u: L.N('Underline'), shd: L.N('Shadow') }[key];
-    L.fmt.run((r) => { const n = Object.assign({}, r); if (key === 'u') { if (on) n.u = 'sng'; else n.u = 'none'; } else n[key] = on ? true : false; return n; }, label, (wa) => { if (key === 'b' || key === 'i') wa[key] = on; if (key === 'shd') wa.shadow = on ? { c: '#000000', a: 0.4, dx: 3, dy: 3, blur: 0 } : null; });
+    const on = key === 'strike' ? !(st.r.strike && st.r.strike !== 'noStrike') : !st[key];
+    const label = { b: L.N('Bold'), i: L.N('Italic'), u: L.N('Underline'), shd: L.N('Shadow'), strike: L.N('Strikethrough') }[key];
+    L.fmt.run((r) => { const n = Object.assign({}, r); if (key === 'u') { if (on) n.u = 'sng'; else n.u = 'none'; } else if (key === 'strike') n.strike = on ? 'sngStrike' : 'noStrike'; else n[key] = on ? true : false; return n; }, label, (wa) => { if (key === 'b' || key === 'i') wa[key] = on; if (key === 'shd') wa.shadow = on ? { c: '#000000', a: 0.4, dx: 3, dy: 3, blur: 0 } : null; });
   };
   A.toggleBaseline = function (v) {
     const st = L.fmt.state();
@@ -1276,12 +1361,7 @@ addEventListener('resize',fit);fit();show(0);`;
     hint: 'Click an object or select text to apply the formatting.',
     status: (t) => A.status(t),
   });
-  A.spelling = function () {
-    A.opts.spell = true;
-    A.saveOpts();
-    L.$$('[contenteditable="true"]').forEach((el) => { el.spellcheck = true; });
-    ui.msg('Spelling is checked as you type: misspelled words get a wavy red underline while you edit text.\nHold Shift and right-click a flagged word to see your browser\'s suggestions.', { title: 'Spelling', icon: 'info' });
-  };
+  A.spelling = () => L.dlg.spelling();
 
   /* ================= pictures ================= */
   A.insertPictureDialog = async function (phId) {
@@ -1442,6 +1522,8 @@ addEventListener('resize',fit);fit();show(0);`;
         break;
       }
       case 'anchor': for (let r = c.r0; r <= c.r1; r++) for (let q = c.c0; q <= c.c1; q++) t.rows[r].cells[q].tx.anchor = arg; break;
+      /* horizontal is the default: a cell the file wrote as horz keeps saying so, the others say nothing */
+      case 'vert': for (let r = c.r0; r <= c.r1; r++) for (let q = c.c0; q <= c.c1; q++) { const tx = t.rows[r].cells[q].tx; if (!tx) continue; if (arg !== 'horz') tx.vert = arg; else if (tx.vert !== 'horz') delete tx.vert; } break;
       case 'distRows': { const total = t.rows.slice(c.r0, c.r1 + 1).reduce((a, r) => a + r.h, 0); const n = c.r1 - c.r0 + 1; for (let r = c.r0; r <= c.r1; r++) t.rows[r].h = L.round(total / n, 2); break; }
       case 'distCols': { const total = t.cols.slice(c.c0, c.c1 + 1).reduce((a, b) => a + b, 0); const n = c.c1 - c.c0 + 1; for (let q = c.c0; q <= c.c1; q++) t.cols[q] = L.round(total / n, 2); break; }
       case 'selectAll': L.hist.undo.pop(); E.cellSel = { r0: 0, c0: 0, r1: t.rows.length - 1, c1: t.cols.length - 1 }; if (snap) TE.resume(snap); E.cellSel = { r0: 0, c0: 0, r1: t.rows.length - 1, c1: t.cols.length - 1 }; E.drawOverlay(); return;
@@ -1452,6 +1534,12 @@ addEventListener('resize',fit);fit();show(0);`;
     E.render({ keepEdit: false });
     if (snap && E.shape(sh.id)) { snap.cell = [Math.min(snap.cell ? snap.cell[0] : 0, t.rows.length - 1), Math.min(snap.cell ? snap.cell[1] : 0, t.cols.length - 1)]; snap.sel = null; TE.resume(snap); }
     E.touched();
+  };
+  /** the text direction of the (first) cell the table command acts on: 'horz', 'vert', 'vert270', 'wordArtVert'… */
+  A.cellTextDir = function () {
+    const c = tableCtx();
+    const cell = c && c.sh.tbl.rows[c.r0] && c.sh.tbl.rows[c.r0].cells[c.c0];
+    return cell ? (cell.tx && cell.tx.vert) || 'horz' : null;
   };
   A.tableBorders = function (kind) {
     const c = tableCtx();
@@ -1761,12 +1849,12 @@ addEventListener('resize',fit);fit();show(0);`;
     if (s && s.type === 'wordart') items.push('wordartEdit', 'wordartGallery');
     else if (s && s.type === 'chart') items.push('editChart');
     else if (s && (s.tx || s.type === 'shape')) items.push({ label: '&Edit Text', run: () => TE.begin(s.id, { atEnd: true }) });
-    if (s && s.type === 'table') items.push({ label: '&Table', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', '-', 'tableBordersFill'] });
+    if (s && s.type === 'table') items.push({ label: '&Table', sub: ['colLeft', 'colRight', 'rowAbove', 'rowBelow', '-', 'deleteCols', 'deleteRows', '-', 'mergeCells', 'splitCell', { label: 'Te&xt Direction', sub: ['cellHorz', 'cellVert', 'cellVert270', 'cellStacked'] }, '-', 'tableBordersFill'] });
     items.push('-', { label: '&Grouping', sub: ['group', 'ungroup', 'regroup'] }, { label: '&Order', sub: ['bringFront', 'sendBack', 'bringForward', 'sendBackward'] }, '-', 'setDefaults', 'customAnim', 'actionSettings', 'formatObject', 'hyperlink');
     ui.contextMenu(e, items);
   };
   A.contextSlide = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'ruler', 'gridGuides', '-', 'slideDesign', 'slideLayout', 'background', '-', 'transitionPane', 'newSlide']);
-  A.contextText = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'fontDlg', 'bulletsDlg', 'lineSpacing', '-', 'hyperlink', '-', { label: 'Exit Edit Text', run: () => { const id = TE.target().sh.id; TE.end(); E.select([id]); } }]);
+  A.contextText = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'fontDlg', 'bulletsDlg', 'lineSpacing', '-', ...(L.dlg.linkAtCaret() ? [{ label: '&Edit Hyperlink...', cmd: 'hyperlink' }, 'removeHyperlink'] : ['hyperlink']), '-', { label: 'Exit Edit Text', run: () => { const id = TE.target().sh.id; TE.end(); E.select([id]); } }]);
   A.contextThumb = (e) => ui.contextMenu(e, ['cut', 'copy', 'paste', '-', 'newSlide', 'deleteSlide', 'duplicateSlide', '-', 'slideDesign', 'slideLayout', 'background', 'transitionPane', '-', 'hideSlide']);
 
   /* ================= keyboard ================= */
@@ -1783,7 +1871,7 @@ addEventListener('resize',fit);fit();show(0);`;
     parts.push(k);
     return parts.join('+');
   }
-  const SHORTCUTS = {
+  const SHORTCUTS = A.SHORTCUTS = {
     'Ctrl+N': 'new', 'Ctrl+O': 'open', 'Ctrl+S': 'save', 'Ctrl+P': 'print', 'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo', 'Ctrl+Shift+Z': 'redo',
     'Ctrl+M': 'newSlide', 'Ctrl+D': 'duplicate', 'Ctrl+F': 'find', 'Ctrl+H': 'replace', 'Ctrl+K': 'hyperlink', 'Ctrl+T': 'fontDlg',
     'Ctrl+B': 'bold', 'Ctrl+I': 'italic', 'Ctrl+U': 'underline', 'Ctrl+E': 'alignCenter', 'Ctrl+L': 'alignLeft', 'Ctrl+R': 'alignRight', 'Ctrl+J': 'justify',
@@ -1911,7 +1999,7 @@ addEventListener('resize',fit);fit();show(0);`;
       const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
       if (!files.length) return;
       e.preventDefault();
-      const deck = files.find((f) => /\.(pptx|ppsx|potx|pptm|ppt)$/i.test(f.name));
+      const deck = files.find((f) => /\.(pptx|ppsx|potx|pptm|ppt|pps|pot)$/i.test(f.name));
       if (deck) { A.openFile(deck); return; }
       const imgs = files.filter((f) => /^image\//.test(f.type));
       if (imgs.length) A.insertPictureFiles(imgs);
@@ -2192,8 +2280,12 @@ addEventListener('resize',fit);fit();show(0);`;
     L.panes.left.mount(L.$('#leftpane'));
     L.panes.notes.mount(L.$('#notes'));
     L.panes.task.mount(L.$('#taskpane'));
-    /* the open task pane follows the selected object to its tool set (common/ribbon.js) */
-    L.ribbonUI.follow({ task: L.panes.task, sets: { smartart: 'diagramText', picture: true, drawing: true, table: true, wordart: true }, on: () => A.opts.paneFollows !== false, close: () => A.toggleTask(false) });
+    /* the task pane follows the selected object to its tool set, opening and closing itself (common/ribbon.js); not to
+       Drawing Tools, since nearly every click on a slide selects a shape (a title, a text box) */
+    const taskPref = { get: () => A.opts.taskOpen, set: (v) => { A.opts.taskOpen = v; A.saveOpts(); } };
+    L.ribbonUI.follow({ task: L.panes.task, sets: { smartart: 'diagramText', picture: true, table: true, wordart: true }, on: () => A.opts.paneFollows !== false, open: () => A.toggleTask(true), close: () => A.toggleTask(false), pref: taskPref,
+      room: () => { const s = E.scroller; return s ? s.getBoundingClientRect().left + s.clientLeft + s.clientWidth : 0; },
+      target: () => { const r = E.sel.map(E.elOf).filter(Boolean).map((el) => el.getBoundingClientRect()); return r.length ? { right: Math.max(...r.map((x) => x.right)) } : null; } });
     E.mount(L.$('#editorwrap'));
     A.altView = h('div', { id: 'altview', style: 'flex:1;min-width:0;position:relative', hidden: true });
     L.$('#main').insertBefore(A.altView, L.$('#taskpane'));

@@ -1,12 +1,12 @@
 /* Objects the reader can't show (SmartArt, an add-in shown by its picture) come back as they were. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} };
 require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops;
-const corpus = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
+const corpus = process.env.VO_CORPORA || '/work/corpora';
 const fixtures = { smartart: 'libreoffice__12275492e8fc__tdf83671_SmartArt_import.xlsx', addin: 'openxml-sdk__03f833d57306__Youtube.xlsx',
   strict: 'openxml-sdk__97ec4a7d7ff8__Photo Formats - CGM-O12-XL-Pictures.xlsx', empty: 'libreoffice__541359181211__tdf140968.xlsx',
   commentShape: 'libreoffice__761105c9e678__universal-content-strict.xlsx' };

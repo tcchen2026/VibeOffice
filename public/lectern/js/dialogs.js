@@ -12,40 +12,41 @@
   const design = () => M.design(L.pres, E().slide());
   const fillCSS = (f) => L.render.fillCSS(f, design());
 
-  /* ---------- shared pickers ---------- */
-  /** a dropdown button that edits a Fill; returns element with .get() */
+  /* ---------- shared pickers: common ui.colorButton with the design's colours ---------- */
+  const colorLabel = (c) => {
+    if (typeof c !== 'string') return '';
+    if (c[0] === '#') return ui.colorName(c);
+    const sc = ui.schemeColors ? ui.schemeColors(design()).find((x) => x.ref === c) : null;
+    return sc ? L.t(sc.tip) : c;
+  };
+  const FILL_KIND = { grad: L.N('Gradient'), patt: L.N('Pattern'), img: L.N('Picture') };
+  /** a button that edits a Fill (mode 'fill') or a line's colour (mode 'line'); returns the element with .get(), .set() */
   function fillPicker(fill, mode, onChange) {
-    let cur = L.clone(fill || { t: 'none' });
-    const sw = h('span', { class: 'fp-sw', style: 'display:inline-block;width:70px;height:14px;border:1px solid #555;vertical-align:middle' });
-    const btn = h('button', { type: 'button', class: 'btn small', style: 'min-width:100px;display:inline-flex;align-items:center;gap:6px' }, sw, h('span', { class: 'dd-arrow' }));
-    const paint = () => {
-      if (!cur || cur.t === 'none') { sw.style.background = 'repeating-linear-gradient(45deg,#fff 0 4px,#eee 4px 8px)'; sw.title = mode === 'line' ? L.t('No Line') : L.t('No Fill'); }
-      else sw.style.background = mode === 'line' ? L.model.resolveColor(cur.c, design()) : fillCSS(cur);
-    };
-    paint();
-    btn.addEventListener('click', () => {
-      ui.colorMenu(btn, { mode: mode === 'line' ? 'line' : mode === 'plain' ? 'plain' : 'fill', effects: mode !== 'plain' && mode !== 'line', grid: mode === 'plain' }, async (v) => {
-        if (v && v.none) cur = mode === 'line' ? { t: 'none' } : { t: 'none' };
-        else if (v && v.effects) { const f = await D.fillEffects(cur && cur.t !== 'none' ? cur : { t: 'solid', c: 'accent1', a: 1 }); if (!f) return; cur = f; }
-        else if (typeof v === 'string') cur = mode === 'line' ? Object.assign({}, cur && cur.t !== 'none' ? cur : { w: 0.75, dash: 'solid' }, { c: v, t: undefined }) : { t: 'solid', c: v, a: cur && cur.a != null && cur.t === 'solid' ? cur.a : 1 };
-        if (cur && cur.t === undefined) delete cur.t;
-        paint();
-        onChange && onChange(cur);
-      });
+    const line = mode === 'line';
+    const btn = ui.colorButton(L.clone(fill || { t: 'none' }), {
+      mode: line ? 'line' : mode === 'plain' ? 'plain' : 'fill', grid: mode === 'plain',
+      paint: (f) => (!f || f.t === 'none' ? null : line ? L.model.resolveColor(f.c, design()) : fillCSS(f)),
+      name: (f) => (!f || f.t === 'none' ? L.t(line ? 'No Line' : 'No Fill') : FILL_KIND[f.t] ? L.t(FILL_KIND[f.t]) : colorLabel(f.c)),
+      /* a colour keeps the line's weight and dash, and the fill's transparency */
+      convert: (c, cur) => {
+        if (c === null) return { t: 'none' };
+        if (line) { const n = Object.assign({}, cur && cur.t !== 'none' ? cur : { w: 0.75, dash: 'solid' }, { c }); delete n.t; return n; }
+        return { t: 'solid', c, a: cur && cur.a != null && cur.t === 'solid' ? cur.a : 1 };
+      },
+      effects: line || mode === 'plain' ? null : async (cur) => (await D.fillEffects(cur && cur.t !== 'none' ? cur : { t: 'solid', c: 'accent1', a: 1 })) || undefined,
+      onChange,
     });
-    btn.get = () => cur;
-    btn.set = (f) => { cur = f; paint(); };
     return btn;
   }
   D.fillPicker = fillPicker;
+  /** a colour button for a colour of the design: '#hex' or a theme colour ('accent1'); null is Automatic when
+   *  opts.automatic, else no colour */
   function colorPick(c, onChange, opts) {
-    let cur = c;
-    const sw = h('span', { style: 'display:inline-block;width:60px;height:14px;border:1px solid #555;vertical-align:middle' });
-    const btn = h('button', { type: 'button', class: 'btn small', style: 'min-width:90px;display:inline-flex;align-items:center;gap:6px' }, sw, h('span', { class: 'dd-arrow' }));
-    const paint = () => { sw.style.background = cur ? L.model.resolveColor(cur, design()) : 'repeating-linear-gradient(45deg,#fff 0 4px,#eee 4px 8px)'; };
-    paint();
-    btn.addEventListener('click', () => ui.colorMenu(btn, { mode: 'plain', grid: true, automatic: opts && opts.automatic }, (v) => { if (v && v.auto) cur = null; else if (typeof v === 'string') cur = v; else return; paint(); onChange && onChange(cur); }));
-    btn.get = () => cur;
+    const auto = !!(opts && opts.automatic);
+    const btn = ui.colorButton(c || (auto ? 'auto' : null), { mode: 'plain', grid: true, automatic: auto, paint: (v) => L.model.resolveColor(v, design()), name: colorLabel, onChange: onChange ? (v) => onChange(v === 'auto' ? null : v) : null });
+    const get = btn.get, set = btn.set;
+    btn.get = () => { const v = get(); return v === 'auto' ? null : v; };
+    btn.set = (v) => set(v || (auto ? 'auto' : null));
     return btn;
   }
   D.colorPick = colorPick;
@@ -60,40 +61,31 @@
     const st = L.fmt.state();
     if (!st) { ui.msg('Select some text or a text object first.'); return; }
     const o = { font: st.font, sz: st.sz, b: st.b, i: st.i, u: st.u, shd: st.shd, emb: !!(st.r && st.r.emb), base: (st.r && st.r.base) || 0, color: st.r ? st.r.color : null };
-    const fontList = h('select', { id: 'fd-font', size: 7, style: 'width:180px' });
-    L.FONT_LIST.forEach((f) => { const op = h('option', { value: f, text: f, translate: 'no' }); if (f === o.font) op.selected = true; fontList.appendChild(op); });
-    if (!L.FONT_LIST.includes(o.font)) fontList.insertBefore(h('option', { value: o.font, text: o.font, selected: true, translate: 'no' }), fontList.firstChild);
-    const fontIn = h('input', { type: 'text', id: 'fd-font-in', value: o.font, style: 'width:180px' });
-    const styleSel = h('select', { id: 'fd-style', size: 4, style: 'width:110px' }, ...[L.N('Regular'), L.N('Italic'), L.N('Bold'), 'Bold Italic'].map((s) => h('option', { value: s, text: s })));
-    styleSel.value = o.b && o.i ? 'Bold Italic' : o.b ? 'Bold' : o.i ? 'Italic' : 'Regular';
-    const sizeIn = h('input', { type: 'text', id: 'fd-size', value: o.sz, style: 'width:60px' });
-    const sizeSel = h('select', { size: 4, style: 'width:60px' }, ...L.SIZE_LIST.map((s) => h('option', { value: s, text: s })));
-    sizeSel.value = String(o.sz);
+    /* the lists as Word's and Excel's Font dialogs have them (common ui.listBox): a box above each picks as you type */
+    const fontLB = ui.listBox(L.FONT_LIST.includes(o.font) ? L.FONT_LIST : [o.font].concat(L.FONT_LIST), o.font, { input: true, height: 110, id: 'fd-font-in', translate: 'no', onChange: () => upd() });
+    const styleLB = ui.listBox([L.N('Regular'), L.N('Italic'), L.N('Bold'), L.N('Bold Italic')], o.b && o.i ? 'Bold Italic' : o.b ? 'Bold' : o.i ? 'Italic' : 'Regular', { input: true, height: 110, id: 'fd-style', onChange: () => upd() });
+    const sizeLB = ui.listBox(L.SIZE_LIST.map(String), String(o.sz), { input: true, height: 110, id: 'fd-size', translate: 'no', onChange: () => upd() });
+    const styleOf = () => String(styleLB.get());
     const preview = h('div', { class: 'preview-box font-preview', text: 'AaBbYyZz', translate: 'no' });
     const upd = () => {
       const r = preview.style;
-      r.fontFamily = L.fontStack(fontIn.value);
-      r.fontWeight = /Bold/.test(styleSel.value) ? '700' : '400';
-      r.fontStyle = /Italic/.test(styleSel.value) ? 'italic' : 'normal';
+      r.fontFamily = L.fontStack(fontLB.get());
+      r.fontWeight = /Bold/.test(styleOf()) ? '700' : '400';
+      r.fontStyle = /Italic/.test(styleOf()) ? 'italic' : 'normal';
       r.textDecoration = u.input.checked ? 'underline' : 'none';
       r.textShadow = s.input.checked ? '2px 2px 0 rgba(0,0,0,.35)' : emb.input.checked ? '-1px -1px 0 #fff, 1px 1px 0 #666' : 'none';
       r.color = col.get() ? L.model.resolveColor(col.get(), design()) : '#000';
-      r.fontSize = Math.min(40, Math.max(10, parseFloat(sizeIn.value) || 18)) + 'px';
+      r.fontSize = Math.min(40, Math.max(10, parseFloat(sizeLB.get()) || 18)) + 'px';
     };
-    fontList.addEventListener('change', () => { fontIn.value = fontList.value; upd(); });
-    fontIn.addEventListener('input', upd);
-    styleSel.addEventListener('change', upd);
-    sizeSel.addEventListener('change', () => { sizeIn.value = sizeSel.value; upd(); });
-    sizeIn.addEventListener('input', upd);
     const u = ui.check('&Underline', o.u, upd), s = ui.check('&Shadow', o.shd, upd), emb = ui.check('&Emboss', o.emb, upd);
     const sup = ui.check('Su&perscript', o.base > 0, () => { if (sup.input.checked) sub.input.checked = false; }), sub = ui.check('Su&bscript', o.base < 0, () => { if (sub.input.checked) sup.input.checked = false; });
     const off = ui.spin({ value: o.base ? Math.abs(o.base / 1000) : 30, min: 1, max: 100, step: 1, unit: '%', dec: 0 });
     const col = colorPick(o.color, upd, { automatic: true });
     const body = h('div', { class: 'col' },
       h('div', { class: 'row' },
-        h('div', { class: 'col' }, h('label', { for: 'fd-font-in', html: ui.ampHTML('&Font:') }), fontIn, fontList),
-        h('div', { class: 'col' }, h('label', { for: 'fd-style', html: ui.ampHTML('F&ont style:') }), styleSel),
-        h('div', { class: 'col' }, h('label', { for: 'fd-size', html: ui.ampHTML('&Size:') }), sizeIn, sizeSel)),
+        h('div', { class: 'col', style: 'flex:1;min-width:0' }, h('label', { for: 'fd-font-in', html: ui.ampHTML('&Font:') }), fontLB),
+        h('div', { class: 'col', style: 'width:120px' }, h('label', { for: 'fd-style', html: ui.ampHTML('F&ont style:') }), styleLB),
+        h('div', { class: 'col', style: 'width:64px' }, h('label', { for: 'fd-size', html: ui.ampHTML('&Size:') }), sizeLB)),
       h('div', { class: 'row' },
         ui.group('Effects', h('div', { class: 'row' }, h('div', { class: 'col' }, u, s, emb), h('div', { class: 'col' }, sup, sub, h('div', { class: 'field' }, h('label', { text: 'Offset:' }), off)))),
         h('div', { class: 'col' }, h('label', { html: ui.ampHTML('&Color:') }), col)),
@@ -104,7 +96,7 @@
       title: 'Font', body, width: 470, buttons: [{
         label: 'OK', primary: true, onClick: () => {
           const props = {
-            font: fontIn.value.trim() || o.font, sz: L.clamp(parseFloat(sizeIn.value) || o.sz, 1, 4000), b: /Bold/.test(styleSel.value), i: /Italic/.test(styleSel.value),
+            font: String(fontLB.get()).trim() || o.font, sz: L.clamp(parseFloat(sizeLB.get()) || o.sz, 1, 4000), b: /Bold/.test(styleOf()), i: /Italic/.test(styleOf()),
             u: u.input.checked ? 'sng' : undefined, shd: s.input.checked || undefined, emb: emb.input.checked || undefined,
             base: sup.input.checked ? off.get() * 1000 : sub.input.checked ? -off.get() * 1000 : undefined, color: col.get() || undefined,
           };
@@ -145,8 +137,8 @@
     NUM_SETS.forEach((v) => mkBtn(ng, v, '', true));
     const customize = ui.button('C&ustomize...', () => D.symbol((ch) => { customCh = ch; pick = ch; kind = 'char'; const b = L.$$('button', bg)[7]; L.clear(b); for (let i = 0; i < 3; i++) b.appendChild(h('div', null, h('span', { text: ch, style: 'min-width:16px' }), h('i'))); L.$$('button', bg).forEach((x) => x.classList.remove('on')); b.classList.add('on'); BULLET_SETS[7] = ch; }));
     const tabs = ui.tabs([
-      { label: 'Bulle&ted', body: h('div', { class: 'col' }, bg, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { text: 'Size:' }), sizeSp, h('span', { text: '% of text' }), h('label', { text: 'Color:' }), col, customize)) },
-      { label: '&Numbered', body: h('div', { class: 'col' }, ng, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { text: 'Size:' }), sizeSp2, h('span', { text: '% of text' }), h('label', { text: 'Color:' }), col2, h('label', { text: 'Start at:' }), startSp)) },
+      { label: 'Bulle&ted', body: h('div', { class: 'col' }, bg, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { html: ui.ampHTML('&Size:') }), sizeSp, h('span', { text: '% of text' }), h('label', { html: ui.ampHTML('&Color:') }), col, customize)) },
+      { label: '&Numbered', body: h('div', { class: 'col' }, ng, h('div', { class: 'row', style: 'align-items:center;margin-top:8px' }, h('label', { html: ui.ampHTML('&Size:') }), sizeSp2, h('span', { text: '% of text' }), h('label', { html: ui.ampHTML('&Color:') }), col2, h('label', { html: ui.ampHTML('&Start at:') }), startSp)) },
     ], tabIdx != null ? tabIdx : kind === 'num' ? 1 : 0);
     const d = ui.dialog({
       title: 'Bullets and Numbering', body: tabs, width: 420, buttons: [{
@@ -317,7 +309,7 @@
         L.clear(variants);
         for (let v = 0; v < 4; v++) {
           const gv = buildGrad(v);
-          const b = h('button', { type: 'button', style: `width:46px;height:46px;border:1px solid #888;padding:0;background:${fillCSS(gv)};${v === variant ? 'outline:2px solid #0b3fa8;outline-offset:1px' : ''}` });
+          const b = h('button', { type: 'button', style: `width:46px;height:46px;border:1px solid var(--swatch-line);padding:0;background:${fillCSS(gv)};${v === variant ? 'outline:2px solid var(--sel);outline-offset:1px' : ''}` });
           b.addEventListener('click', () => { variant = v; current = buildGrad(v); paintSample(); refreshVariants(); });
           variants.appendChild(b);
         }
@@ -648,6 +640,95 @@
     }
     return false;
   }
+  /* ---------- Spelling (common ui.spellingDialog, common/spell.js) ---------- */
+  /* a word: letters, with an apostrophe or a hyphen inside (as Quire's) */
+  const WORD = /[\p{L}\p{M}\p{N}]+(?:['’\-][\p{L}\p{M}\p{N}]+)*/gu;
+  /** Tools ▸ Spelling (F7): the slides' text from the current slide on, round to it again; text boxes, shapes and
+   *  table cells (not the notes, a LettersArt's text or fields). Each finding is selected in its text, as Find does */
+  D.spelling = async function () {
+    const SP = L.spell, LEX = L.lex;
+    const list = LEX.listFor(L.pres.lang || 'en-US') || (L.pres.lang ? null : 'en_US');
+    if (!list) { ui.msg('The presentation is not in English, so it was not checked.', { icon: 'info', title: 'Spelling' }); return; }
+    ui.busy(true, 'Loading the dictionary...');
+    try { await LEX.load(list); } catch (e) { ui.busy(false); ui.msg(L.t('The spelling dictionary could not be loaded ({0}).', e.message || e), { icon: 'warn', title: 'Spelling' }); return; }
+    ui.busy(false);
+    if (L.te.active()) L.te.end();
+    /* every finding, in order: slide, shape (or table cell), paragraph, place */
+    const slides = L.pres.slides, start = Math.max(0, E().idx), issues = [];
+    const textOf = (it) => { const sh = M.find(slides[it.si], it.sid); const shape = sh && sh.shape; const tx = !shape ? null : it.cell ? shape.tbl && shape.tbl.rows[it.cell[0]] && shape.tbl.rows[it.cell[0]].cells[it.cell[1]].tx : shape.tx; return tx && tx.ps[it.pi] ? { tx, p: tx.ps[it.pi] } : null; };
+    for (let k = 0; k < slides.length; k++) {
+      const si = (start + k) % slides.length;
+      const targets = [];
+      M.walk(slides[si].shapes, (sh) => {
+        if (sh.tx) targets.push({ sh, tx: sh.tx, cell: null });
+        if (sh.tbl) sh.tbl.rows.forEach((r, ri) => r.cells.forEach((c, ci) => { if (c.tx && !c.hm && !c.vm) targets.push({ sh, tx: c.tx, cell: [ri, ci] }); }));
+      });
+      for (const t of targets) t.tx.ps.forEach((p, pi) => {
+        /* fields (a date, a slide number) are not words to check */
+        const skip = []; let at = 0;
+        for (const r of p.rs) { if (r.fld) skip.push([at, at + (r.t || '').length]); at += (r.t || '').length; }
+        const text = L.txt.paraText(p);
+        WORD.lastIndex = 0;
+        let m;
+        while ((m = WORD.exec(text))) {
+          const a = m.index, b = a + m[0].length;
+          if (/^(https?|www|mailto)$/i.test(m[0]) || /[@\/\\]/.test(text.slice(Math.max(0, a - 1), b + 1)) || skip.some(([x, y]) => a < y && b > x)) continue;
+          if (!SP.okWord(m[0], list)) issues.push({ si, sid: t.sh.id, cell: t.cell, pi, a, b, word: m[0] });
+        }
+      });
+    }
+    if (!issues.length) { ui.msg('The spelling check is complete.', { icon: 'info', title: 'Spelling' }); return; }
+    let idx = -1, cur = null;
+    const changes = new Map();
+    const select = (x) => {
+      if (L.app.view !== 'normal') L.app.setView('normal');
+      if (E().idx !== x.si) E().goto(x.si);
+      L.te.begin(x.sid, { cell: x.cell || undefined, sel: { p0: x.pi, o0: x.a, p1: x.pi, o1: x.b } });
+      L.te.mark({ p0: x.pi, o0: x.a, p1: x.pi, o1: x.b });
+    };
+    /* the word replaced in its own run's formatting, one undo step; the later findings in the paragraph move with it */
+    const apply = (to) => {
+      const t = textOf(cur);
+      if (!t) return;
+      select(cur);
+      L.hist.push(L.N('Spelling'));
+      const props = L.txt.propsAt(t.tx, { p: cur.pi, o: cur.a + 1 });
+      L.txt.deleteRange(t.tx, { p0: cur.pi, o0: cur.a, p1: cur.pi, o1: cur.b });
+      L.txt.insertAt(t.tx, { p: cur.pi, o: cur.a }, to, props);
+      L.te.rerender({ p0: cur.pi, o0: cur.a + to.length, p1: cur.pi, o1: cur.a + to.length });
+      E().touched();
+      const d = to.length - (cur.b - cur.a);
+      for (const x of issues.slice(idx + 1)) if (x.si === cur.si && x.sid === cur.sid && String(x.cell) === String(cur.cell) && x.pi === cur.pi && x.a >= cur.b) { x.a += d; x.b += d; }
+    };
+    const langName = list === 'en_GB' ? 'English (U.K.)' : 'English (U.S.)';
+    ui.spellingDialog({
+      title: (lang) => L.t('Spelling: {0}', L.t(lang)), language: () => langName,
+      end: 'The spelling check is complete.',
+      next: () => {
+        for (;;) {
+          if (++idx >= issues.length) { if (L.te.active()) L.te.end(); return null; }
+          cur = issues[idx];
+          const t = textOf(cur);
+          if (!t) continue;
+          const text = L.txt.paraText(t.p);
+          if (text.slice(cur.a, cur.b) !== cur.word) { const i = text.indexOf(cur.word); if (i < 0) continue; cur.a = i; cur.b = i + cur.word.length; }
+          if (SP.okWord(cur.word, list)) continue;
+          if (changes.has(cur.word)) { apply(changes.get(cur.word)); continue; }
+          select(cur);
+          const s0 = Math.max(0, text.lastIndexOf('.', cur.a - 2) + 1), e0 = Math.min(text.length, (text.indexOf('.', cur.b) + 1) || text.length);
+          return { kind: 'spelling', before: text.slice(s0, cur.a).replace(/^\s+/, ''), word: cur.word, after: text.slice(cur.b, e0), suggestions: SP.suggest(cur.word, list, 8) };
+        }
+      },
+      ignoreOnce: () => {},
+      ignoreAll: () => SP.ignoreAll(cur.word),
+      add: () => SP.addWord(cur.word),
+      change: (to) => { if (!to) return false; apply(to); },
+      changeAll: (to) => { if (!to) return false; changes.set(cur.word, to); apply(to); },
+      options: () => D.options(),
+      rect: () => L.te.rangeRect({ p0: cur.pi, o0: cur.a, p1: cur.pi, o1: cur.b }),
+      onClose: () => L.te.mark(null),
+    });
+  };
   D.find = function (replace) {
     const what = h('input', { type: 'text', id: 'fd-what', value: (L.te.active() && L.te.selectedText()) || findState.what, style: 'width:260px' });
     const repl = h('input', { type: 'text', id: 'fd-with', value: findState.with, style: 'width:260px' });
@@ -692,55 +773,55 @@
   };
 
   /* ---------- Hyperlink ---------- */
+  /** the link of the run at the caret (or the selection's start) in the text being edited */
+  D.linkAtCaret = () => {
+    if (!L.te.active()) return null;
+    const t = L.te.target(), s = L.te.currentSel(), p = t && s && t.tx.ps[s.p0];
+    if (!p) return null;
+    let acc = 0;
+    for (const r of p.rs) { const n = r.t.length; if (s.o0 < acc + n || (s.o0 === acc + n && r.link)) return r.link || null; acc += n; }
+    return null;
+  };
+  /** Remove Hyperlink: from the link's word at the caret or the selected text, else from the selected shapes */
+  D.removeHyperlink = () => {
+    const fn = (r) => { const n = Object.assign({}, r); delete n.link; return n; };
+    if (L.te.active()) L.te.applyRun(fn, L.N('Remove Hyperlink'));
+    else E().commit(L.N('Remove Hyperlink'), () => { for (const x of E().selected()) delete x.link; });
+  };
+  /** Insert ▸ Hyperlink (common ui.hyperlinkDialog): on the text being edited, or on the selected shapes */
   D.hyperlink = function () {
     const ed = E();
     const editing = L.te.active();
     const sh = ed.primary();
     if (!sh && !editing) { ui.msg('Select text or an object to link.'); return; }
-    const runProps = editing ? L.te.runPropsAtSel() : {};
-    const existing = editing ? (L.te.target() && (() => { const t = L.te.target(); const s = L.te.currentSel(); const p = t.tx.ps[s.p0]; let acc = 0; for (const r of p.rs) { acc += r.t.length; if (acc >= s.o0 && r.link) return r.link; } return null; })()) : sh.link;
-    void runProps;
-    let kind = existing && existing.slide ? 'place' : existing && existing.url && /^mailto:/.test(existing.url) ? 'mail' : existing && existing.action ? 'place' : 'web';
-    const disp = h('input', { type: 'text', id: 'hl-disp', value: editing ? L.te.selectedText() : L.t('<<Selection in Document>>'), style: 'width:100%' });
-    if (!editing) disp.disabled = true;
-    const addr = h('input', { type: 'text', id: 'hl-addr', value: existing && existing.url && !/^mailto:/.test(existing.url) ? existing.url : 'https://', style: 'width:100%' });
-    const tip = h('input', { type: 'text', id: 'hl-tip', value: (existing && existing.tip) || '', style: 'width:100%' });
-    const mail = h('input', { type: 'text', id: 'hl-mail', value: existing && existing.url && /^mailto:/.test(existing.url) ? existing.url.replace(/^mailto:/, '').split('?')[0] : '', style: 'width:100%' });
-    const subj = h('input', { type: 'text', id: 'hl-subj', value: '', style: 'width:100%' });
-    const places = [['a:first', 'First Slide'], ['a:last', 'Last Slide'], ['a:next', 'Next Slide'], ['a:prev', 'Previous Slide']].concat(L.pres.slides.map((s, i) => ['s:' + s.id, `${i + 1}. ${M.slideTitle(s) || L.t('Slide {0}', i + 1)}`]));
-    const placeSel = h('select', { id: 'hl-place', size: 10, style: 'width:100%' }, ...places.map(([v, l], i) => h('option', { value: v, text: l, translate: i < 4 ? null : 'no' })));
-    if (existing && existing.slide) placeSel.value = 's:' + existing.slide; else if (existing && existing.action) placeSel.value = 'a:' + existing.action; else placeSel.selectedIndex = 2;
-    const panes = {
-      web: h('div', { class: 'col' }, h('label', { for: 'hl-addr', html: ui.ampHTML('Addr&ess:') }), addr, h('label', { for: 'hl-tip', text: 'ScreenTip:' }), tip),
-      place: h('div', { class: 'col' }, h('label', { for: 'hl-place', html: ui.ampHTML('Select a place in this d&ocument:') }), placeSel),
-      mail: h('div', { class: 'col' }, h('label', { for: 'hl-mail', html: ui.ampHTML('&E-mail address:') }), mail, h('label', { for: 'hl-subj', html: ui.ampHTML('Su&bject:') }), subj),
-    };
-    const host = h('div', { style: 'flex:1;min-width:0' });
-    const side = h('div', { class: 'list-box', style: 'width:130px;min-height:180px' });
-    const show = (k) => { kind = k; L.clear(host).appendChild(panes[k]); L.$$('.li', side).forEach((x) => x.classList.toggle('on', x.dataset.k === k)); };
-    [['web', 'Existing File or Web Page'], ['place', 'Place in This Document'], ['mail', 'E-mail Address']].forEach(([k, l]) => { const it = h('div', { class: 'li', 'data-k': k, text: l, style: 'white-space:normal;padding:8px 6px' }); it.addEventListener('click', () => show(k)); side.appendChild(it); });
-    show(kind);
-    const body = h('div', { class: 'col' }, h('div', { class: 'field' }, h('label', { for: 'hl-disp', html: ui.ampHTML('&Text to display:') }), disp), h('div', { class: 'row', style: 'flex-wrap:nowrap' }, h('div', { class: 'col' }, h('label', { text: 'Link to:' }), side), host));
+    const existing = editing ? D.linkAtCaret() : sh.link;
+    const ACTIONS = [['first', L.N('First Slide')], ['last', L.N('Last Slide')], ['next', L.N('Next Slide')], ['prev', L.N('Previous Slide')]];
+    if (existing && existing.action === 'lastViewed') ACTIONS.push(['lastViewed', L.N('Last Slide Viewed')]);
+    if (existing && existing.action === 'end') ACTIONS.push(['end', L.N('End Show')]);
+    const places = ACTIONS.map(([v, l]) => ({ value: 'a:' + v, label: L.t(l) })).concat({ label: L.t('Slide Titles'), group: true }, L.pres.slides.map((s, i) => ({ value: 's:' + s.id, label: `${i + 1}. ${M.slideTitle(s) || L.t('Slide {0}', i + 1)}` })));
+    const place = existing && existing.slide ? 's:' + existing.slide : existing && existing.action ? 'a:' + existing.action : existing ? undefined : 'a:next';
     const apply = (link) => {
+      const fn = (r) => { const n = Object.assign({}, r); if (link) n.link = link; else delete n.link; return n; };
       if (editing) {
-        const t = L.te.target();
         const s = L.te.currentSel();
-        if (s && L.txt.collapsed(s) && disp.value) { L.hist.push(L.N('Hyperlink')); L.te.insertText(disp.value); const s2 = L.te.currentSel(); L.te.applyRun((r) => { const n = Object.assign({}, r); if (link) n.link = link; else delete n.link; return n; }, 'Hyperlink', { p0: s2.p0, o0: s2.o0 - disp.value.length, p1: s2.p1, o1: s2.o1 }); }
-        else L.te.applyRun((r) => { const n = Object.assign({}, r); if (link) n.link = link; else delete n.link; return n; }, 'Hyperlink');
-        void t;
+        /* a link typed at the caret: its text, linked, in one undo step */
+        if (link && s && L.txt.collapsed(s) && disp) { L.hist.push(L.N('Hyperlink')); L.te.insertText(disp); const s2 = L.te.currentSel(); L.txt.mapRange(L.te.target().tx, { p0: s2.p0, o0: s2.o0 - disp.length, p1: s2.p1, o1: s2.o1 }, fn); L.te.rerender(s2); }
+        else L.te.applyRun(fn, L.N('Hyperlink'));
       } else ed.commit(L.N('Hyperlink'), () => { for (const x of ed.selected()) { if (link) x.link = link; else delete x.link; } });
     };
-    const buttons = [{
-      label: 'OK', primary: true, onClick: () => {
-        let link = null;
-        if (kind === 'web') { const u = addr.value.trim(); if (u && u !== 'https://') link = { url: /^[a-z]+:/i.test(u) ? u : 'https://' + u }; if (link && tip.value) link.tip = tip.value; }
-        if (kind === 'mail' && mail.value.trim()) link = { url: 'mailto:' + mail.value.trim() + (subj.value ? '?subject=' + encodeURIComponent(subj.value) : '') };
-        if (kind === 'place') { const v = placeSel.value || 'a:next'; link = v.startsWith('s:') ? { slide: v.slice(2) } : { action: v.slice(2) }; }
-        if (link) apply(link);
+    let disp = '';
+    ui.hyperlinkDialog({
+      link: existing ? { url: existing.url, place: existing.url ? undefined : place, tip: existing.tip } : null, defaultPlace: 'a:next',
+      text: editing ? L.te.selectedText() : '', textLocked: !editing, places, tipKinds: ['web'],
+      remove: () => apply(null),
+      apply: (r) => {
+        disp = r.text || '';
+        if (r.kind === 'place') { const v = String(r.place || 'a:next'); apply(v.startsWith('s:') ? { slide: v.slice(2) } : { action: v.slice(2) }); return; }
+        const link = { url: r.url };
+        if (r.tip && r.kind === 'web') link.tip = r.tip;
+        apply(link);
       },
-    }, { label: 'Cancel' }];
-    if (existing) buttons.unshift({ label: '&Remove Link', onClick: () => apply(null) });
-    ui.dialog({ title: existing ? 'Edit Hyperlink' : 'Insert Hyperlink', body, width: 560, buttons });
+    });
   };
 
   /* ---------- Action Settings ---------- */
@@ -768,57 +849,21 @@
     });
   };
 
-  /* ---------- Symbol ---------- */
-  const SYM_SETS = [
-    [L.N('Latin-1 Supplement'), 0x00a1, 0x00ff], [L.N('Latin Extended-A'), 0x0100, 0x017f], [L.N('Greek and Coptic'), 0x0391, 0x03c9], [L.N('General Punctuation'), 0x2010, 0x2044],
-    [L.N('Currency Symbols'), 0x20a0, 0x20bf], [L.N('Letterlike Symbols'), 0x2100, 0x214f], [L.N('Number Forms'), 0x2150, 0x218b], [L.N('Arrows'), 0x2190, 0x21ff], [L.N('Mathematical Operators'), 0x2200, 0x22ff],
-    [L.N('Box Drawing'), 0x2500, 0x257f], [L.N('Geometric Shapes'), 0x25a0, 0x25ff], [L.N('Miscellaneous Symbols'), 0x2600, 0x26ff], [L.N('Dingbats'), 0x2700, 0x27bf],
-  ];
-  const recentSyms = ['€', '£', '¥', '©', '®', '™', '±', '≠', '≤', '≥', '÷', '×', '∞', 'µ', 'α', 'β'];
-  D.symbol = function (cb) {
-    let pick = null;
-    const grid = h('div', { class: 'sym-grid', translate: 'no' });
-    const font = ui.select([['normal', '(normal text)'], 'Arial', 'Times New Roman', 'Georgia', 'Verdana', 'Segoe UI Symbol'], 'normal', () => fill(sub.value));
-    const sub = ui.select(SYM_SETS.map((s, i) => [i, s[0]]), 0, (v) => fill(v));
-    const code = h('input', { type: 'text', id: 'sym-code', style: 'width:70px', readonly: true });
-    const recent = h('div', { class: 'row', style: 'gap:2px' });
-    const fill = (si) => {
-      const [, a, b] = SYM_SETS[+si];
-      L.clear(grid);
-      grid.style.fontFamily = font.value === 'normal' ? '' : L.fontStack(font.value);
-      for (let c = a; c <= b; c++) {
-        const ch = String.fromCodePoint(c);
-        const btn = h('button', { type: 'button', text: ch, 'aria-label': 'U+' + c.toString(16).toUpperCase(), translate: 'no' });
-        btn.addEventListener('click', () => { L.$$('button.on', grid).forEach((x) => x.classList.remove('on')); btn.classList.add('on'); pick = ch; code.value = c.toString(16).toUpperCase().padStart(4, '0'); });
-        btn.addEventListener('dblclick', () => { pick = ch; insertBtn.click(); });
-        grid.appendChild(btn);
-      }
-    };
-    fill(0);
-    for (const ch of recentSyms) { const b = h('button', { type: 'button', class: 'btn small', text: ch, style: 'min-width:24px;padding:0' }); b.addEventListener('click', () => { pick = ch; code.value = ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0'); }); recent.appendChild(b); }
-    const body = h('div', { class: 'col' }, h('div', { class: 'row' }, ui.field('&Font:', font), ui.field('Su&bset:', sub)), grid, h('label', { text: 'Recently used symbols:' }), recent, ui.field('&Character code:', code));
-    const d = ui.dialog({
-      title: 'Symbol', body, width: 470, buttons: [{
-        label: '&Insert', primary: true, onClick: () => {
-          if (!pick) return false;
-          const i = recentSyms.indexOf(pick); if (i >= 0) recentSyms.splice(i, 1); recentSyms.unshift(pick); recentSyms.length = 16;
-          if (cb) { cb(pick); return; }
-          if (L.te.active()) { L.hist.push('Insert Symbol'); L.te.insertText(pick); }
-        },
-      }, { label: 'Cancel' }],
-    });
-    const insertBtn = d.buttons[0];
-  };
+  /* ---------- Symbol (common ui.symbolDialog) ---------- */
+  /** cb(ch): a picker (a bullet) instead of inserting into the text being edited */
+  D.symbol = (cb) => ui.symbolDialog({
+    fonts: L.FONT_LIST, pick: cb ? (c) => cb(c.ch) : null,
+    insert: (c) => { if (L.te.active()) { L.hist.push(L.N('Insert Symbol')); L.te.insertText(c.ch); } },
+  });
 
   /* ---------- Date and Time ---------- */
   D.dateTime = function () {
-    const list = h('select', { id: 'dt-list', size: 12, style: 'width:260px', translate: 'no' }, ...L.DATE_FORMATS.map((f) => h('option', { value: f, text: L.fmtDate(new Date(), f), translate: 'no' })));
-    list.selectedIndex = 0;
+    const list = ui.listBox(L.DATE_FORMATS.map((f) => [f, L.fmtDate(new Date(), f)]), L.DATE_FORMATS[0], { id: 'dt-list', height: 220, translate: 'no', onDbl: () => d.buttons[0].click() });
     const upd = ui.check('&Update automatically', false);
-    ui.dialog({
+    const d = ui.dialog({
       title: 'Date and Time', body: h('div', { class: 'col' }, h('label', { for: 'dt-list', html: ui.ampHTML('&Available formats:') }), list, upd), width: 300, buttons: [{
         label: 'OK', primary: true, onClick: () => {
-          const f = list.value || 'datetime1';
+          const f = list.get() || 'datetime1';
           if (!L.te.active()) { L.app.ensureTextTarget(); }
           if (!L.te.active()) return;
           L.hist.push('Insert Date and Time');
@@ -873,35 +918,40 @@
   };
 
   /* ---------- AutoCorrect ---------- */
+  /** Tools ▸ AutoCorrect Options: the options apply on OK, as PowerPoint's; the entries (common ui.autocorrectEntries)
+   *  at once, kept as a setting */
   D.autocorrect = function () {
-    const o = L.app.opts;
-    const AC = L.te.AUTOCORRECT;
-    const list = h('div', { class: 'list-box', style: 'height:150px' });
-    const rep = h('input', { type: 'text', id: 'ac-rep', style: 'width:120px' }), wit = h('input', { type: 'text', id: 'ac-with', style: 'width:200px' });
-    const draw = () => { L.clear(list); Object.keys(AC).sort().forEach((k) => { const li = h('div', { class: 'li', translate: 'no' }, h('span', { text: k, style: 'width:110px;display:inline-block', translate: 'no' }), h('span', { text: AC[k], translate: 'no' })); li.addEventListener('click', () => { L.$$('.li', list).forEach((x) => x.classList.remove('on')); li.classList.add('on'); rep.value = k; wit.value = AC[k]; }); list.appendChild(li); }); };
-    draw();
+    const o = L.app.opts, pend = {};
+    const ck = (label, key) => ui.check(label, o[key] !== false, (v) => { pend[key] = v; });
     const body = ui.tabs([{
       label: 'AutoCorrect', body: h('div', { class: 'col' },
-        ui.check('Correct TWo INitial CApitals', !!o.autocorrect, (v) => { o.autocorrect = v; }),
-        ui.check('Capitalize first letter of &sentences', !!o.capSentence, (v) => { o.capSentence = v; }),
-        ui.check('Replace straight quotes with smart quotes', !!o.smartQuotes, (v) => { o.smartQuotes = v; }),
-        h('div', { class: 'row' }, ui.field('&Replace:', rep), ui.field('&With:', wit)), list,
-        h('div', { class: 'row' }, ui.button('&Add', () => { if (rep.value) { AC[rep.value] = wit.value; draw(); } }), ui.button('&Delete', () => { delete AC[rep.value]; draw(); }))),
+        ck('Correct TWo INitial CApitals', 'twoCaps'),
+        ck('Capitalize first letter of &sentences', 'capSentence'),
+        ck('Replace straight quotes with smart quotes', 'smartQuotes'),
+        ck('Replace &text as you type', 'acReplace'),
+        ui.autocorrectEntries(L.autocorrect)),
     }]);
-    ui.dialog({ title: 'AutoCorrect: English (U.S.)', body, width: 420, buttons: [{ label: 'OK', primary: true, onClick: () => L.app.saveOpts() }, { label: 'Cancel' }] });
+    ui.dialog({ title: 'AutoCorrect: English (U.S.)', body, width: 460, buttons: [{ label: 'OK', primary: true, onClick: () => { Object.assign(o, pend); L.app.saveOpts(); } }, { label: 'Cancel' }] });
   };
 
   /* ---------- Properties ---------- */
+  /** File ▸ Properties (common ui.propertiesDialog): OK applies the changes as one undo step, Cancel leaves them */
   D.properties = function () {
     const p = L.pres.props;
-    const f = (k, label) => { const i = h('input', { type: 'text', id: 'pr-' + k, value: p[k] || '', style: 'width:260px' }); i.addEventListener('input', () => { p[k] = i.value; if (k === 'title') L.pres.title = i.value; }); return ui.field(label, i, { cls: 'wide' }); };
-    const cm = h('textarea', { id: 'pr-cm', rows: 3, style: 'width:260px' }); cm.value = p.comments || ''; cm.addEventListener('input', () => { p.comments = cm.value; });
     const words = L.pres.slides.reduce((a, s) => a + (M.allText(s).match(/\S+/g) || []).length, 0);
-    const tabs = ui.tabs([
-      { label: 'Summary', body: h('div', { class: 'col' }, f('title', '&Title:'), f('subject', '&Subject:'), f('author', '&Author:'), f('company', 'C&ompany:'), f('category', 'Ca&tegory:'), f('keywords', '&Keywords:'), ui.field('&Comments:', cm, { cls: 'wide' })) },
-      { label: 'Statistics', body: h('table', { class: 'kbd-table' }, ...[['Created:', p.created ? new Date(p.created).toLocaleString() : '—'], ['Slides:', L.pres.slides.length], ['Hidden slides:', L.pres.slides.filter((s) => s.hidden).length], ['Notes:', L.pres.slides.filter((s) => s.notes).length], ['Words:', words], ['Pictures:', L.media.all().size]].map(([a, b]) => h('tr', null, h('td', { text: a }), h('td', { text: String(b), translate: 'no' })))) },
-    ]);
-    ui.dialog({ title: L.t('{0} Properties', L.app.fileName || 'Presentation'), body: tabs, width: 430, buttons: [{ label: 'OK', primary: true }] });
+    ui.propertiesDialog({
+      name: L.app.fileName || L.t('Presentation'),
+      fields: { title: p.title, subject: p.subject, author: p.author, company: p.company, category: p.category, keywords: p.keywords, comments: p.comments },
+      statistics: [['Created:', p.created ? new Date(p.created).toLocaleString() : '']],
+      counts: [['Slides:', L.pres.slides.length], ['Hidden slides:', L.pres.slides.filter((s) => s.hidden).length], ['Notes:', L.pres.slides.filter((s) => s.notes).length], ['Words:', words], ['Pictures:', L.media.all().size]],
+      contents: [[L.t('Slide Titles'), L.pres.slides.map((s, i) => M.slideTitle(s) || L.t('Slide {0}', i + 1))]],
+      apply: ({ fields }) => {
+        L.hist.push(L.N('Properties'));
+        Object.assign(p, fields);
+        if ('title' in fields) L.pres.title = fields.title;
+        E().touched();
+      },
+    });
   };
 
   /* ---------- Save As ---------- */
@@ -911,12 +961,12 @@
     const types = L.file.types.map((t) => [t.id, t.label]);
     const cur = types.some(([k]) => k === L.app.fileType) ? L.app.fileType : 'pptx';
     const type = ui.select(types, cur);
-    return ui.dialog({ title: 'Save As', body: h('div', { class: 'col' }, ui.field('File &name:', name, { cls: 'wide' }), ui.field('Save as &type:', type, { cls: 'wide' }), h('div', { class: 'tp-note', text: 'Your browser decides where downloaded files go.' })), width: 470, buttons: [{ label: '&Save', primary: true, onClick: () => cb((name.value.trim() || base).replace(/\.(pptx|pptm|ppsx|ppsm|potx|potm)$/i, ''), type.value) }, { label: 'Cancel' }] });
+    return ui.dialog({ title: 'Save As', body: h('div', { class: 'col' }, ui.field('File &name:', name, { cls: 'wide' }), ui.field('Save as &type:', type, { cls: 'wide' }), h('div', { class: 'tp-note', text: 'Your browser asks where to save the file, or saves it to the Downloads folder.' })), width: 470, buttons: [{ label: '&Save', primary: true, onClick: () => cb((name.value.trim() || base).replace(/\.(pptx|pptm|ppsx|ppsm|potx|potm)$/i, ''), type.value) }, { label: 'Cancel' }] });
   };
 
   /* ---------- Zoom ---------- */
   D.zoom = function () {
-    const presets = [['fit', L.N('Fit')], [4, '400%'], [2, '200%'], [1, '100%'], [0.66, '66%'], [0.5, '50%'], [0.33, '33%']];
+    const presets = [['fit', L.N('&Fit')], [4, '&400%'], [2, '&200%'], [1, '&100%'], [0.66, '&66%'], [0.5, '&50%'], [0.33, '&33%']];
     let pick = E().zoom;
     const pct = ui.spin({ value: E().zoomPct(), min: 10, max: 400, step: 1, unit: '%', dec: 0, onChange: (v) => { pick = v / 100; } });
     const body = h('div', { class: 'row' }, ui.group('Zoom to', h('div', { class: 'col' }, ...presets.map(([v, l]) => ui.radio('zm', l, String(v) === String(E().zoom), () => { pick = v; if (v !== 'fit') pct.set(Math.round(v * 100)); })))), h('div', { class: 'col' }, ui.field('&Percent:', pct)));
@@ -1008,7 +1058,7 @@
     try { src = await L.pptx.read(await L.readAsArrayBuffer(files[0])); } catch (e) { ui.busy(false); ui.msg(L.t('{0} could not be opened: {1}', files[0].name, e.message), { icon: 'error' }); return; }
     ui.busy(false);
     const picked = new Set();
-    const grid = h('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:320px;overflow:auto;padding:4px;background:#fff;border:1px solid #888' });
+    const grid = h('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:320px;overflow:auto;padding:4px;background:var(--surface);border:1px solid var(--field-border)' });
     src.slides.forEach((s, i) => {
       const cell = h('label', { style: 'display:flex;flex-direction:column;gap:3px;align-items:flex-start;cursor:default' });
       const ck = h('input', { type: 'checkbox' });
@@ -1055,30 +1105,23 @@
     const color = ui.select([['color', 'Color'], ['gray', 'Grayscale'], ['bw', 'Pure Black and White']], L.app.printOpts.color);
     const frame = ui.check('Fra&me slides', L.app.printOpts.frame);
     const hid = ui.check('Print &hidden slides', L.app.printOpts.hidden);
-    const all = ui.radio('pr-r', '&All', true), cur = ui.radio('pr-r', 'Curr&ent slide', false), rng = ui.radio('pr-r', '&Slides:', false);
-    const rIn = h('input', { type: 'text', id: 'pr-range', value: `1-${n}`, style: 'width:120px' });
-    const body = h('div', { class: 'col' }, ui.group('Print range', all, cur, h('div', { class: 'row', style: 'align-items:center' }, rng, rIn)), h('div', { class: 'row' }, ui.field('Print &what:', what), ui.field('Slides per page:', per)), ui.field('Color/gra&yscale:', color), frame, hid);
-    ui.dialog({
-      title: 'Print', body, width: 420, buttons: [{
-        label: 'Preview', primary: true, onClick: () => {
-          const range = all.input.checked ? null : cur.input.checked ? [E().idx] : parseRange(rIn.value, n);
-          Object.assign(L.app.printOpts, { what: what.value, per: +per.value, color: color.value, frame: frame.input.checked, hidden: hid.input.checked, range });
-          L.app.setView('preview');
-        },
-      }, { label: 'Cancel' }],
+    /* the choices go to Print Preview, which lays the pages out; OK saves its pages as a PDF */
+    const take = (r) => {
+      const range = r.range === 'all' ? null : r.range === 'current' ? [E().idx] : r.pages.map((i) => i - 1);
+      Object.assign(L.app.printOpts, { what: what.value, per: +per.value, color: color.value, frame: frame.input.checked, hidden: hid.input.checked, range });
+    };
+    ui.printDialog({
+      unit: 'slide', count: n, current: true,
+      what: h('div', { class: 'col' }, h('div', { class: 'row' }, ui.field('Print &what:', what), ui.field('Slides per page:', per)), ui.field('Color/gra&yscale:', color), frame, hid),
+      preview: (r) => { take(r); L.app.setView('preview'); },
+      print: (r) => {
+        take(r);
+        const back = L.app.view;
+        L.app.setView('preview');
+        requestAnimationFrame(async () => { await L.app.previewPDF(); if (back !== 'preview') L.app.setView(back); });
+      },
     });
   };
-  function parseRange(s, n) {
-    const out = [];
-    for (const part of String(s).split(/[,;]/)) {
-      const m = /^\s*(\d+)\s*(?:-\s*(\d+))?\s*$/.exec(part);
-      if (!m) continue;
-      const a = +m[1], b = m[2] ? +m[2] : a;
-      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= n) out.push(i - 1);
-    }
-    return out.length ? Array.from(new Set(out)) : null;
-  }
-
   /* ---------- About ---------- */
   D.about = () => ui.about({ name: 'Lectern', text: [
     L.N('A presentation editor that runs entirely in your browser. Presentations are read and written as Office Open XML (.pptx, .pptm); nothing is uploaded.'),

@@ -2,15 +2,15 @@
 // files whose Application is Microsoft Office Word): run it before and after a layout change and compare.
 //
 //   node tools/quire-pages.mjs [SOURCE] OUT.jsonl [--jobs 4] [--list files.txt] [--limit N]
-//   node tools/quire-pages.mjs --compare BEFORE.jsonl AFTER.jsonl
+//   node tools/quire-pages.mjs --compare BEFORE.jsonl AFTER.jsonl [--printed tests/quire/word2016-pages.json] [--all]
 //
-// SOURCE defaults to ~/corpora/word. Each line of OUT: {file, word, quire, compat, ms} (quire is null and error set
+// SOURCE defaults to /work/corpora/word. Each line of OUT: {file, word, quire, compat, ms} (quire is null and error set
 // when the file didn't open). BASE (default http://127.0.0.1:8760) is the copy of the site to run, so an older one
 // served by tools/serve.py PORT FOLDER gives the "before"; CDP picks the Chromium (tools/ooxml/cdp.mjs). Word's stored
 // count is a coarse reference (errors can cancel out, some producers never update it): --compare lists every file
-// that moved away from it, to be looked at, rather than a score to chase.
+// that moved away from it, to be looked at, rather than a score to chase. --printed takes the pages Word 2016 printed
+// for the files listed there instead (some stored counts are stale).
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { ensureServer, openPage } from './ooxml/cdp.mjs';
@@ -19,7 +19,9 @@ const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf(name); return i < 0 ? def : args.splice(i, 2)[1]; };
 
 if (args[0] === '--compare') {
-  const read = (f) => new Map(fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).map((r) => [r.file, r]));
+  /* --printed FILE: pages Word printed for some files (tests/quire/word2016-pages.json), in place of the stored count */
+  const printedFile = opt('--printed', null), printed = printedFile ? JSON.parse(fs.readFileSync(printedFile, 'utf8')).pages : {};
+  const read = (f) => new Map(fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).map((r) => [r.file, printed[r.file] ? Object.assign(r, { word: printed[r.file] }) : r]));
   const a = read(args[1]), b = read(args[2]);
   const both = [...a.keys()].filter((f) => b.has(f) && a.get(f).quire != null && b.get(f).quire != null);
   const exact = (m) => both.filter((f) => m.get(f).quire === m.get(f).word).length;
@@ -33,7 +35,7 @@ if (args[0] === '--compare') {
 }
 
 const jobs = +opt('--jobs', 4), limit = +opt('--limit', 0), list = opt('--list', null);
-const [source, out] = args.length > 1 ? args : [path.join(os.homedir(), 'corpora/word'), args[0]];
+const [source, out] = args.length > 1 ? args : ['/work/corpora/word', args[0]];
 if (!out) { console.error('usage: node tools/quire-pages.mjs [SOURCE] OUT.jsonl [--jobs 4] [--list files.txt] [--limit N]'); process.exit(2); }
 let names = list ? fs.readFileSync(list, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean) : fs.readdirSync(source).filter((f) => /\.(docx|docm)$/i.test(f)).sort();
 const wordSaved = [];

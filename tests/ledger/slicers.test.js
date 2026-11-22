@@ -1,10 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const fs = require('node:fs'), path = require('node:path');
 const L = require('./load.js');
 L.layout = { invalidate() {}, touchMerges() {} }; require('../../public/ledger/js/ops.js');
 const K = L.opc, O = L.ops, results = [], output = process.env.SLICER_RESULTS;
-const dir = process.env.LEDGER_FEATURES || path.join(os.homedir(), 'corpora', 'ledger-features');
+const dir = process.env.LEDGER_FEATURES || '/work/corpora/ledger-features';
 const files = { slicers: 'SlicersOnPivotAndTable.xlsx', timeline: 'Timelines_Missing_21232.xlsx', shared: 'coffeeSalesProject.xlsx' };
 const all = root => [root, ...root.getElementsByTagName('*')], attr = (e, k) => e.getAttribute(k);
 const parts = pkg => pkg.names.filter(n => /\/(slicerCaches|slicers|timelineCaches|timelines)\/.*\.xml$/.test(n));
@@ -12,7 +12,7 @@ const drawings = pkg => pkg.names.filter(n => /^xl\/drawings\/drawing\d+\.xml$/.
 const cacheNames = pkg => all(pkg.xml(pkg.main)).filter(e => e.localName === 'definedName' && e.textContent === '#N/A' && /^(Slicer|NativeTimeline)_/.test(attr(e, 'name'))).map(e => attr(e, 'name'));
 const views = pkg => drawings(pkg).flatMap(n => all(pkg.xml(n)).filter(e => /\/(slicer|timeslicer)$/.test(e.namespaceURI || '') && ['slicer', 'timeslicer'].includes(e.localName)));
 async function open(t, kind) {
-  const file = path.join(dir, files[kind]); if (!fs.existsSync(file)) { t.skip('Fetch: sh tools/corpora.sh ~/corpora ledger-features'); return; }
+  const file = path.join(dir, files[kind]); if (!fs.existsSync(file)) { t.skip('Fetch: sh tools/corpora.sh /work/corpora ledger-features'); return; }
   const wb = await L.xlsxRead.read(fs.readFileSync(file)); Object.defineProperty(wb, '_input', { value: file }); return wb;
 }
 function refs(pkg) {

@@ -4,11 +4,11 @@ A static web office suite in the style of Office 2003 that opens and saves real 
 
 | App | Folder | Kind | Files |
 |---|---|---|---|
-| Quire | `public/quire/` | Word processor | .docx/.docm/.dotx/.dotm, RTF, HTML, text, Markdown (GitHub flavour; .zip with pictures); PDF out |
-| Ledger | `public/ledger/` | Spreadsheet | .xlsx/.xlsm/.xltx/.xltm, CSV/text, XML Spreadsheet 2003, HTML; PDF out |
-| Lectern | `public/lectern/` | Presentations | .pptx/.pptm/.ppsx/.ppsm/.potx/.potm; PDF, PNG, HTML out |
+| Quire | `public/quire/` | Word processor | .docx/.docm/.dotx/.dotm, .doc/.dot in (converted), RTF, HTML, text, Markdown (GitHub flavour; .zip with pictures); PDF out |
+| Ledger | `public/ledger/` | Spreadsheet | .xlsx/.xlsm/.xltx/.xltm, .xls/.xlt in (converted), CSV/text, XML Spreadsheet 2003, HTML; PDF out |
+| Lectern | `public/lectern/` | Presentations | .pptx/.pptm/.ppsx/.ppsm/.potx/.potm, .ppt/.pps/.pot in (converted); PDF, PNG, HTML out |
 
-Each app is classic `<script>` files (no ES modules) that attach to one global namespace, `window.L` (also `window.Quire` / `window.Ledger` / `window.Lectern`), loaded in the order listed in its `index.html`. `public/common/` holds what the apps share: the libraries and the stylesheets (one copy each: core, ui, icons, zip, sha, crypto, geometry, metafile, charts, numfmt, dml, spell engine, clipart, SmartArt layouts, ribbon, search, `looks.css`, `ui.css`), the assistant (Scout, `common/scout/`), `suite.js` (`window.VO`: launching apps, Recent Files, the service worker) and the proofing dictionaries (`common/dict/`). See docs/suite.md.
+Each app is classic `<script>` files (no ES modules) that attach to one global namespace, `window.L` (also `window.Quire` / `window.Ledger` / `window.Lectern`), loaded in the order listed in its `index.html`. `public/common/` holds what the apps share: the libraries and the stylesheets (one copy each: core, ui, icons, zip, sha, crypto, geometry, metafile, charts, numfmt, dml, pdf, pdftext, spell engine, clipart, SmartArt layouts, ribbon, search, `looks.css`, `ui.css`), the assistant (Scout, `common/scout/`), `suite.js` (`window.VO`: launching apps, Recent Files, the service worker) and the proofing dictionaries (`common/dict/`). See docs/suite.md.
 
 ## Docs
 
@@ -18,7 +18,7 @@ Each app is classic `<script>` files (no ES modules) that attach to one global n
 | [docs/ledger.md](docs/ledger.md) | Ledger: features, formulas and calculation, compatibility results, source layout |
 | [docs/lectern.md](docs/lectern.md) | Lectern: source layout, opening, saving, known limits |
 | [docs/suite.md](docs/suite.md) | Start Center, `common/suite.js` (app launch, Recent Files), PWA manifest, service worker |
-| [docs/desktop.md](docs/desktop.md) | Desktop app (Tauri; Windows with mingw, macOS: the DMG and the Mac App Store, Linux): host interface (`VO.host`), building, installer and file types, signing, CI, size, to do |
+| [docs/desktop.md](docs/desktop.md) | Desktop app (Tauri; Windows with mingw, macOS: the DMG and the Mac App Store, Linux, the lite edition for the CardputerZero): host interface (`VO.host`), building, installer and file types, signing, CI, size, to do |
 | [docs/testing.md](docs/testing.md) | Test workflow and tools |
 | [docs/i18n.md](docs/i18n.md) | The UI in other languages: choosing it, `L.t`, the English catalog, the pseudo-locale, translations, defaults and fonts per language, adding a language |
 | [docs/LOSSLESS_SAVE.md](docs/LOSSLESS_SAVE.md) | Same-format save: design summary, what was done, working rules, to do |

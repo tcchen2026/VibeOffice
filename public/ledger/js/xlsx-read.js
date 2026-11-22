@@ -548,6 +548,16 @@
     return { rest: text.slice(0, m.index) + text.slice(e < 0 ? text.length : e + endTag.length), from: re.lastIndex, to: end };
   }
 
+  /** a worksheet's or chart sheet's headers and footers into its print settings p */
+  function readHeaderFooter(hf, p) {
+    if (!hf) return;
+    const t = (n) => { const e = kid(hf, n); return e ? XML.unx(e.textContent) : ''; };
+    p.header = t('oddHeader'); p.footer = t('oddFooter');
+    if (bool(hf, 'differentFirst', false)) { p.diffFirst = true; p.firstHeader = t('firstHeader'); p.firstFooter = t('firstFooter'); }
+    if (bool(hf, 'differentOddEven', false)) { p.diffOddEven = true; p.evenHeader = t('evenHeader'); p.evenFooter = t('evenFooter'); }
+    if (!bool(hf, 'scaleWithDoc', true)) p.hfScale = false;
+    if (!bool(hf, 'alignWithMargins', true)) p.hfAlign = false;
+  }
   function readPageSetup(ps, p) {
     if (!ps) return;
     if (at(ps, 'orientation')) p.orientation = at(ps, 'orientation') === 'landscape' ? 'landscape' : 'portrait';
@@ -707,16 +717,7 @@
     const ps = kid(el, 'pageSetup');
     readPageSetup(ps, sh.print);
     L.preserve.keepPageSetup(sh, ps);
-    const hf = kid(el, 'headerFooter');
-    if (hf) {
-      const p = sh.print;
-      const t = (n) => { const e = kid(hf, n); return e ? XML.unx(e.textContent) : ''; };
-      p.header = t('oddHeader'); p.footer = t('oddFooter');
-      if (bool(hf, 'differentFirst', false)) { p.diffFirst = true; p.firstHeader = t('firstHeader'); p.firstFooter = t('firstFooter'); }
-      if (bool(hf, 'differentOddEven', false)) { p.diffOddEven = true; p.evenHeader = t('evenHeader'); p.evenFooter = t('evenFooter'); }
-      if (!bool(hf, 'scaleWithDoc', true)) p.hfScale = false;
-      if (!bool(hf, 'alignWithMargins', true)) p.hfAlign = false;
-    }
+    readHeaderFooter(kid(el, 'headerFooter'), sh.print);
     for (const b of kids(kid(el, 'rowBreaks'), 'brk')) sh.print.rowBreaks.push(num(b, 'id', 0));
     for (const b of kids(kid(el, 'colBreaks'), 'brk')) sh.print.colBreaks.push(num(b, 'id', 0));
     /* comments (legacy) */
@@ -1074,6 +1075,7 @@
     const label = /\/diagram$/.test(uri) ? 'IntelliArt' : obj?.localName === 'contentPart' || all.some(e => e.localName === 'contentPart') ? 'Ink' : 'Object';
     return { kind: 'frame', id: num(cnv, 'id', 0), name: at(cnv, 'name') || '', descr: at(cnv, 'descr') || undefined, hidden: bool(cnv, 'hidden', false) || undefined, label, xml };
   }
+  const FRAME_LOCKS = ['noGrp', 'noDrilldown', 'noSelect', 'noChangeAspect', 'noMove', 'noResize'];
   async function readDrawingObject(pkg, obj, rels, ctx, sh) {
     const nv = obj.children.find((c) => /^nv/.test(c.localName));
     const cNv = kid(nv, 'cNvPr');
@@ -1093,6 +1095,15 @@
       if (ln && !kid(ln, 'noFill')) d.lineXml = XML.serialize(ln);
       const src = kid(kid(obj, 'blipFill'), 'srcRect');
       if (src) d.crop = { l: num(src, 'l', 0) / 1000, t: num(src, 't', 0) / 1000, r: num(src, 'r', 0) / 1000, b: num(src, 'b', 0) / 1000 };
+      /* its colour adjustments, shown as Excel draws them (the file keeps them as they were) */
+      const fx = {};
+      for (const e of blip ? blip.children : []) {
+        if (e.localName === 'grayscl') fx.gray = true;
+        else if (e.localName === 'biLevel') fx.bw = true;
+        else if (e.localName === 'lum') { fx.bright = num(e, 'bright', 0) / 100000; fx.contrast = num(e, 'contrast', 0) / 100000; }
+        else if (e.localName === 'alphaModFix') fx.alpha = num(e, 'amt', 100000) / 100000;
+      }
+      if (Object.keys(fx).length) d.fx = fx;
       const hl = kid(cNv, 'hlinkClick'); if (hl) { const hr = rels.get(rid(hl, 'id')); if (hr) d.link = hr.raw; }
       return d;
     }
@@ -1115,13 +1126,27 @@
         }
         if (extras.length) d.chartParts = extras;
         if (L.xchart && L.xchart.read) { try { d.chart = L.xchart.read(XML.parse(xml), ctx.wb, sh); } catch (e) { d.chart = null; } }
+        /* the frame's own settings, which Ledger doesn't edit: its macro, title, locks, creation ID and hyperlink */
+        const locks = obj.getElementsByTagName('*').find((e) => e.localName === 'graphicFrameLocks');
+        const cid = cNv.getElementsByTagName('*').find((e) => e.localName === 'creationId');
+        const lockList = locks ? FRAME_LOCKS.filter((k) => at(locks, k) != null).map((k) => [k, at(locks, k)]) : [];
+        d.frame = { macro: at(obj, 'macro'), published: at(obj, 'fPublished'), title: at(cNv, 'title'), locks: lockList.length ? Object.fromEntries(lockList) : null, creationId: cid ? at(cid, 'id') : null };
+        const hl = kid(cNv, 'hlinkClick'); if (hl) { const hr = rels.get(rid(hl, 'id')); if (hr) d.link = hr.raw; }
         return d;
       }
       return null; /* SmartArt, slicers, timelines: not shown */
     }
     if (obj.localName === 'sp' || obj.localName === 'cxnSp' || obj.localName === 'grpSp') {
-      /* shapes and text boxes: keep their XML; images inside groups are not resolved */
+      /* shapes, text boxes and groups: keep their XML; a group's pictures are loaded to be drawn with it */
       const d = Object.assign(base, { kind: 'shape', xml: XML.serialize(obj), tag: obj.localName });
+      if (obj.localName === 'grpSp') {
+        const media = {};
+        for (const b of obj.getElementsByTagName('*').filter((e) => e.localName === 'blip')) {
+          const id = rid(b, 'embed'), r = id && rels.get(id);
+          if (r && !r.external && !media[id]) { const bytes = await pkg.bytes(r.target); if (bytes) media[id] = ctx.media(r.target, bytes); }
+        }
+        if (Object.keys(media).length) d.groupMedia = media;
+      }
       const txb = obj.getElementsByTagName('*').filter((e) => e.localName === 't');
       if (txb.length) d.text = txb.map((e) => e.textContent).join('');
       if (obj.localName === 'sp') {
@@ -1332,9 +1357,13 @@
     const names = kids(kid(eb, 'sheetNames'), 'sheetName').map((s) => at(s, 'val') || '');
     const book = { target, sheets: {}, sheetList: [], names: {} };
     names.forEach((n) => { const s = new M.Sheet(wb, n); s.external = true; book.sheets[n.toLowerCase()] = s; book.sheetList.push(s); });
+    /* a sheet Excel couldn't read (refreshError) or kept nothing of has no values to calculate with: formulas
+       that use it keep the results saved with the file, as Excel does when it can't update a link */
+    for (const s of book.sheetList) s.noCache = true;
     for (const sd of kids(kid(eb, 'sheetDataSet'), 'sheetData')) {
       const s = book.sheetList[num(sd, 'sheetId', 0)];
       if (!s) continue;
+      s.noCache = at(sd, 'refreshError') === '1' || at(sd, 'refreshError') === 'true';
       for (const row of kids(sd, 'row')) {
         for (const c of kids(row, 'cell')) {
           const p = F.parseCell(at(c, 'r') || '');
@@ -1348,11 +1377,17 @@
         }
       }
     }
-    for (const d of kids(kid(eb, 'definedNames'), 'definedName')) book.names[(at(d, 'name') || '').toLowerCase()] = { ref: (at(d, 'refersTo') || '').replace(/^=/, ''), sheetId: at(d, 'sheetId') };
+    /* its names: the workbook's own, and each sheet's (the same name may be defined on several sheets) */
+    book.scoped = {};
+    for (const d of kids(kid(eb, 'definedNames'), 'definedName')) {
+      const key = (at(d, 'name') || '').toLowerCase(), def = { ref: (at(d, 'refersTo') || '').replace(/^=/, ''), sheetId: at(d, 'sheetId') };
+      if (def.sheetId != null) (book.scoped[def.sheetId] = book.scoped[def.sheetId] || {})[key] = def;
+      if (def.sheetId == null || !book.names[key] || book.names[key].sheetId != null) book.names[key] = def;
+    }
     /* the book is addressed by its index ([1]) and by its file name */
     if (!wb.external) wb.external = {};
     wb.external[String(idx)] = book;
-    const fname = decodeURIComponent(String(target).split(/[\\/]/).pop() || '');
+    const fname = L.calc.bookFile(target);
     if (fname && !wb.external[fname]) wb.external[fname] = book;
     void ctx;
   }
@@ -1362,6 +1397,12 @@
     if (!el) return;
     const rels = await pkg.rels(part);
     const tc = color(path(el, 'sheetPr', 'tabColor')); if (tc) sh.tabColor = tc;
+    const pr = kid(el, 'sheetPr');
+    if (pr && at(pr, 'codeName')) sh.codeName = at(pr, 'codeName');
+    if (pr && at(pr, 'published') != null) sh.extra.published = at(pr, 'published');
+    /* (a chart sheet's protection has its own attributes: kept as they are) */
+    const sp = kid(el, 'sheetProtection');
+    if (sp) sh.extra.chartProtection = Object.assign({}, sp.attrs);
     const sv = path(el, 'sheetViews', 'sheetView');
     if (sv && at(sv, 'zoomScale')) sh.view.zoom = num(sv, 'zoomScale', 100);
     if (sv && at(sv, 'zoomToFit') === '1') sh.view.zoomToFit = true;
@@ -1370,6 +1411,7 @@
     const ps = kid(el, 'pageSetup');
     readPageSetup(ps, sh.print);
     L.preserve.keepPageSetup(sh, ps);
+    readHeaderFooter(kid(el, 'headerFooter'), sh.print);
     const dr = kid(el, 'drawing');
     if (dr) { const r = rels.get(rid(dr, 'id')); if (r) await readDrawing(pkg, r.target, sh, ctx); }
   }

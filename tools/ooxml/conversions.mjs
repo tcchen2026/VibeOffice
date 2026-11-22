@@ -2,12 +2,11 @@
 // verify the warning is recomputed, rather than left on the document forever.
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { ensureServer, openPage } from './cdp.mjs';
 const out = process.argv[2];
 if (!out) throw Error('Usage: conversions.mjs OUTPUT_DIR');
 const filter = new RegExp(process.argv[3] || '');
-const root = process.env.VO_CORPORA || path.join(os.homedir(), 'corpora');
+const root = process.env.VO_CORPORA || '/work/corpora';
 const cases = [
   ['quire', 'word', 'openxml-sdk__8b27091d4e1b__smartTag Nesting.docx', 'wrappers'],
   ['quire', 'word', 'openxml-sdk__31493658a65a__chart.docx', 'chart'],

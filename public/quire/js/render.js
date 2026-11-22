@@ -10,19 +10,28 @@
   R.px = (pt) => Math.round(pt * PX * 100) / 100;
 
   /* ---------- font metrics (line height of "single" spacing as a multiple of font size) ---------- */
+  /* (Times New Roman, Arial, Calibri, Cambria, Courier New, Georgia and Verdana as Word 2016 prints them at 10 to 12 pt,
+     tmp/lead-q/lh: a little taller than the fonts' own metrics, 13.8 pt for 12 pt Times New Roman, not 13.79) */
   const LH = {
-    'calibri': 1.2207, 'calibri light': 1.2207, 'cambria': 1.1724, 'times new roman': 1.149, 'arial': 1.149, 'courier new': 1.1328, 'verdana': 1.2153, 'georgia': 1.1362,
+    'calibri': 1.2209, 'calibri light': 1.2209, 'cambria': 1.1727, 'times new roman': 1.1502, 'arial': 1.1502, 'courier new': 1.1331, 'verdana': 1.2155, 'georgia': 1.1363,
     'tahoma': 1.2069, 'trebuchet ms': 1.1611, 'segoe ui': 1.3301, 'garamond': 1.1235, 'comic sans ms': 1.3936, 'book antiqua': 1.1704, 'bookman old style': 1.1636, 'century gothic': 1.2251,
-    'palatino linotype': 1.1353, 'lucida console': 1.0, 'impact': 1.2197, 'arial black': 1.41, 'arial narrow': 1.149, 'franklin gothic medium': 1.1338, 'symbol': 1.2275, 'wingdings': 1.1, 'aptos': 1.2, 'helvetica': 1.149,
+    'palatino linotype': 1.1353, 'lucida console': 1.0, 'impact': 1.2197, 'arial black': 1.41, 'arial narrow': 1.1502, 'franklin gothic medium': 1.1338, 'symbol': 1.2275, 'wingdings': 1.1, 'aptos': 1.2, 'helvetica': 1.1502,
+    /* the metric-compatible families, as tall as the fonts they stand in for (Word printed Liberation Sans as Arial) */
+    'liberation sans': 1.1502, 'arimo': 1.1502, 'liberation serif': 1.1502, 'tinos': 1.1502, 'liberation mono': 1.1331, 'cousine': 1.1331, 'carlito': 1.2209, 'caladea': 1.1727,
     /* East Asian fonts, by their English names (L.fontKey: ＭＳ 明朝 is ms mincho), from the fonts' Windows metrics;
        unverified against Word (python3 tools/linegrid.py fonts measures them from its PDF) */
     'ms mincho': 1.0, 'ms pmincho': 1.0, 'ms gothic': 1.0, 'ms pgothic': 1.0, 'ms ui gothic': 1.0, 'yu mincho': 1.73, 'yu gothic': 1.73, 'yu gothic light': 1.73,
     'meiryo': 1.5, 'malgun gothic': 1.33,
   };
   R.lineFactor = (font) => LH[L.fontKey(font)] || 1.17;
+  /** a line height v (a multiple of a font size of pt) as CSS's unitless number, nudged so that the browser's line,
+      which it cuts down to a 64th of a pixel, comes to the nearest 64th: lines 13.8 pt apart stay 13.8 pt apart and not
+      13.79, which over a page decides whether its last line fits (Word) */
+  R.lhNum = (v, pt) => { const px = R.px(pt || 12); return String(L.round((Math.round(v * px * 64) + 0.5) / 64 / px, 6)); };
   /* a run's line factor: its East Asian font's where its text has East Asian characters and that font is taller */
   const runFactorFont = (r) => (r.eaText && r.fontEA && LH[L.fontKey(r.fontEA)] > R.lineFactor(r.font) ? r.fontEA : r.font);
-  const SPACE_EM = { 'times new roman': 0.25, arial: 0.2778, calibri: 0.2261, 'calibri light': 0.2261, cambria: 0.2197, georgia: 0.2412, verdana: 0.3516, tahoma: 0.3125, 'courier new': 0.6, garamond: 0.25, 'book antiqua': 0.25, 'palatino linotype': 0.25, 'segoe ui': 0.2744, 'trebuchet ms': 0.3013, 'century gothic': 0.2773, helvetica: 0.2778, aptos: 0.2, 'arial narrow': 0.2278 };
+  const SPACE_EM = { 'times new roman': 0.25, arial: 0.2778, calibri: 0.2261, 'calibri light': 0.2261, cambria: 0.2197, georgia: 0.2412, verdana: 0.3516, tahoma: 0.3125, 'courier new': 0.6, garamond: 0.25, 'book antiqua': 0.25, 'palatino linotype': 0.25, 'segoe ui': 0.2744, 'trebuchet ms': 0.3013, 'century gothic': 0.2773, helvetica: 0.2778, aptos: 0.2, 'arial narrow': 0.2278,
+    'liberation sans': 0.2778, arimo: 0.2778, 'liberation mono': 0.6, cousine: 0.6, carlito: 0.2261, caladea: 0.2197 };
   R.spaceEm = (font) => SPACE_EM[L.fontKey(font)] || 0.25;
   R.mathSolo = (p) => {
     let maths = 0, other = '';
@@ -57,7 +66,7 @@
   R.authors = () => authors.slice();
   /* automatic text colour turns white on dark shading (same luminance threshold LibreOffice uses for Word compatibility) */
   R.isDark = (hex) => { if (!hex || hex === 'auto') return false; const [r, g, b] = L.color.hexToRgb('#' + String(hex).replace('#', '')); return (r * 299 + g * 587 + b * 114) / 1000 <= 156; };
-  /** 'pct25' style shading over a colour */
+  /** 'pct25' style shading over a colour: that share of the pattern colour over the fill (pct12 is 12.5%) */
   R.shadeCSS = function (shd) {
     if (!shd) return '';
     const fill = shd.fill && shd.fill !== 'auto' ? '#' + shd.fill : null;
@@ -66,10 +75,10 @@
     const fg = shd.color && shd.color !== 'auto' ? '#' + shd.color : '#000000';
     if (v === 'solid') return fg;
     const m = /^pct(\d+)$/.exec(v);
-    if (m) return L.color.mix(fg, fill || '#FFFFFF', +m[1] / 100);
+    if (m) return L.color.mix(fill || '#FFFFFF', fg, ({ 12: 12.5, 37: 37.5, 62: 62.5, 87: 87.5 }[m[1]] || +m[1]) / 100);
     /* patterns approximated by their density */
     const dens = { horzStripe: 0.5, vertStripe: 0.5, reverseDiagStripe: 0.5, diagStripe: 0.5, horzCross: 0.6, diagCross: 0.6, thinHorzStripe: 0.25, thinVertStripe: 0.25, thinReverseDiagStripe: 0.25, thinDiagStripe: 0.25, thinHorzCross: 0.4, thinDiagCross: 0.4 }[v];
-    return dens ? L.color.mix(fg, fill || '#FFFFFF', dens) : fill || '';
+    return dens ? L.color.mix(fill || '#FFFFFF', fg, dens) : fill || '';
   };
 
   /* ---------- borders ---------- */
@@ -118,6 +127,37 @@
     return R.snapPx(L.round(drawn, 2)) - exact;
   };
 
+  /** Word 2010's text effects (w14) as CSS: a gradient fill painted through the letters, the outline as a stroke over
+      them, shadow and glow as text shadows; each only while the property it stands in place of is as it was read
+      (setting a colour drops the fill, as in Word) */
+  R.textEffectsCSS = function (r) {
+    const fx = r.fx, own = fx.own || {}, s = [];
+    const rgba = (c, a) => L.color.rgba(c, a);
+    if (fx.fill && (r.color || null) === (own.color || null)) {
+      const f = fx.fill;
+      if (f.t === 'none') s.push('color:transparent');
+      else if (f.t === 'solid') s.push(`color:${rgba(f.c, f.a)}`);
+      else if (f.t === 'grad' && f.stops && f.stops.length) {
+        const stops = L.color.lightStops(f.stops.slice().sort((a, b) => a.p - b.p).map((g) => ({ p: g.p, c: g.c, a: g.a })));
+        s.push(`background-image:linear-gradient(${L.round((f.ang || 0) + 90, 2)}deg,${stops.map((g) => rgba(g.c, g.a) + ' ' + L.round(g.p * 100, 2) + '%').join(',')})`,
+          '-webkit-background-clip:text', 'background-clip:text', 'color:transparent');
+      }
+    }
+    if (fx.line && fx.line.t !== 'none' && !!r.outline === own.outline) {
+      /* (a gradient outline takes its first colour; a double or triple one is that many thin lines, drawn as one) */
+      const ln = fx.line, g = ln.grad && ln.grad.stops && ln.grad.stops.slice().sort((a, b) => a.p - b.p)[0];
+      const w = (ln.w || 0.75) / ({ dbl: 3, thickThin: 3, thinThick: 3, tri: 5 }[ln.cmpd] || 1);
+      s.push(`-webkit-text-stroke:${L.round(Math.max(0.25, w) * PX, 2)}px ${rgba(g ? g.c : ln.c || '#000000', g ? g.a : ln.a)}`, 'paint-order:stroke fill');
+    }
+    const shadows = [];
+    if (fx.shadow && !!r.shadow === own.shadow) {
+      const sh = fx.shadow, a = sh.dir * Math.PI / 180;
+      shadows.push(`${L.round(Math.cos(a) * sh.dist * PX, 2)}px ${L.round(Math.sin(a) * sh.dist * PX, 2)}px ${L.round(sh.blur * PX, 2)}px ${rgba(sh.c, sh.a)}`);
+    }
+    if (fx.glow && fx.glow.r) for (let i = 0; i < 2; i++) shadows.push(`0 0 ${L.round(fx.glow.r * PX, 2)}px ${rgba(fx.glow.c, fx.glow.a)}`);
+    if (shadows.length) s.push(`text-shadow:${shadows.join(',')}`);
+    return s;
+  };
   /* ---------- run CSS ---------- */
   const rcssCache = new Map();
   R.clearCaches = () => rcssCache.clear();
@@ -140,7 +180,7 @@
        stretch the line (a footnote reference would otherwise push its line down a few pixels) */
     if (vert === 'superscript' || vert === 'subscript') s.push('line-height:0');
     else if (lineMult && lineMult.grid) { const g = R.gridLine(lineMult.grid, lineMult.mult, sz, lf); s.push(g > lineMult.line ? `line-height:${g}px` : `line-height:${R.lineFactor(lf)}`); }
-    else if (lineMult != null) s.push(`line-height:${L.round(R.lineFactor(lf) * lineMult * (fsz < sz ? sz / fsz : 1), 4)}`);
+    else if (lineMult != null) s.push(`line-height:${R.lhNum(R.lineFactor(lf) * lineMult * (fsz < sz ? sz / fsz : 1), fsz)}`);
     if (r.b) s.push('font-weight:bold');
     if (r.i) s.push('font-style:italic');
     const deco = [];
@@ -171,6 +211,7 @@
     if (r.shadow) s.push('text-shadow:1px 1px 0 #A0A0A0');
     if (r.emboss) s.push('text-shadow:-1px -1px 0 #FFFFFF,1px 1px 0 #808080', 'color:#D0D0D0');
     if (r.imprint) s.push('text-shadow:1px 1px 0 #FFFFFF,-1px -1px 0 #808080', 'color:#D0D0D0');
+    if (r.fx) s.push(...R.textEffectsCSS(r));
     if (r.border && R.hasBorder(r.border)) s.push(`border:${R.borderCSS(r.border)}`, 'padding:0 1px');
     if (r.kern === 0) s.push('font-kerning:none');
     if (r.w && r.w !== 100) s.push(`font-stretch:${L.clamp(r.w, 50, 200)}%`);
@@ -223,6 +264,13 @@
     const l = ind.l || 0, r = ind.r || 0, fl = ind.fl || 0;
     const sp = pPr.sp || {};
     let before = sp.bAuto ? 14 : sp.b || 0, after = sp.aAuto ? 14 : sp.a || 0;
+    /* auto spacing stays out from between paragraphs of one list, its numbering going on from one to the next at any
+       level, as between the items of an HTML list; next to any other paragraph, another list's or one that restarts the
+       numbering, it is 14 pt (Word 2016's prints, tmp/qp/auto) */
+    const label = (q) => q && ctx.labels && ctx.labels.get(q.id);
+    const oneList = (a, b) => { const la = label(a), lb = label(b); return !!(la && lb && la.abs === lb.abs && !lb.restarts); };
+    if (sp.bAuto && oneList(ctx.prev, p)) before = 0;
+    if (sp.aAuto && oneList(p, ctx.next)) after = 0;
     if (pPr.contextual) {
       const sid = p.pPr.style || 'Normal';
       if (ctx.prev && (ctx.prev.pPr.style || 'Normal') === sid) before = 0;
@@ -236,7 +284,7 @@
     if (before && ctx.prev && !ctx.prevTbl && !ctx.frameEmpty && ctx.prev.t === 'p' && !R.cumulativeSpacing(d)) {
       const pp = D.pProps(d, ctx.prev, tctx);
       const ps = pp.sp || {};
-      let pa = ps.aAuto ? 14 : ps.a || 0;
+      let pa = ps.aAuto ? (oneList(ctx.prev, p) ? 0 : 14) : ps.a || 0;
       if (pp.contextual && (ctx.prev.pPr.style || 'Normal') === (p.pPr.style || 'Normal')) pa = 0;
       before = Math.max(0, before - pa);
     }
@@ -267,13 +315,13 @@
     if (ls.exact) st.push(`line-height:${ls.exact}px`);
     else if (ls.atLeast) st.push(`line-height:${ls.atLeast}px`);
     else if (gridPx) st.push(`line-height:${gridMin}px`);
-    else st.push(`line-height:${L.round(R.lineFactor(strutR.font) * ls.mult, 4)}`);
+    else st.push(`line-height:${R.lhNum(R.lineFactor(strutR.font) * ls.mult, strutR.sz || 12)}`);
     const runLine = gridPx ? { grid: gridPx, mult: ls.mult || 1, line: gridMin } : ls.mult != null && !ls.exact ? ls.mult : null;
     if (gridPx) pc.dataset.grid = runLine.line;   /* the line's box when measured (LY.lines): runs that fit are shorter */
     /* borders & shading, grouped with identical neighbours */
     const bd = pPr.borders;
     const shd = pPr.shd ? R.shadeCSS(pPr.shd) : '';
-    const sameBox = (q) => { if (!q) return false; const qp = D.pProps(d, q, tctx); return JSON.stringify(qp.borders || null) === JSON.stringify(bd || null) && (qp.ind || {}).l === l && (qp.ind || {}).r === r; };
+    const sameBox = (q) => { if (!q) return false; const qp = D.pProps(d, q, tctx); return JSON.stringify(qp.borders || null) === JSON.stringify(bd || null) && ((qp.ind || {}).l || 0) === l && ((qp.ind || {}).r || 0) === r; };
     if (bd && Object.keys(bd).some((k) => R.hasBorder(bd[k]))) {
       const groupPrev = first && sameBox(ctx.prev), groupNext = last && sameBox(ctx.next);
       const side = (k) => (R.hasBorder(bd[k]) ? R.borderCSS(bd[k]) : 'none');
@@ -318,7 +366,7 @@
         if (lv.fmt === 'bullet' && lv.rPr && /symbol|wingdings/i.test(lv.rPr.font || '')) lr.font = 'Arial';
         span.style.cssText = R.runCSS(lr, runLine);
         /* a Symbol or Wingdings bullet is drawn in Arial, but its line is as tall as its own font makes it (Word) */
-        if (lv.rPr && lr.font !== lv.rPr.font && typeof runLine === 'number') span.style.lineHeight = String(L.round(R.lineFactor(lv.rPr.font) * runLine, 4));
+        if (lv.rPr && lr.font !== lv.rPr.font && typeof runLine === 'number') span.style.lineHeight = R.lhNum(R.lineFactor(lv.rPr.font) * runLine, lr.sz || 12);
         if (lv.picture && L.media.has(lv.picture)) { const im = document.createElement('img'); im.src = L.media.url(lv.picture); im.style.cssText = 'height:0.75em;vertical-align:baseline'; span.appendChild(im); }
         pc.appendChild(span);
         if (lv.suff !== 'nothing') {
@@ -344,11 +392,14 @@
       br.className = 'fill';
       pc.appendChild(br);
     }
+    /* an empty line still takes room: Word moves it below an object text can't go beside (Chromium sets an empty
+       line beside a float that leaves no room). Not a paragraph with anchors: its own floats go before the line */
+    if (!pc.querySelector('[data-o]:not(.zw)') && !pc.querySelector('.lbl')) pc.classList.add('blank');
     /* each line as tall as what it holds (portions.js) */
     R.lineBoxes(pc, {
       ls, grid: !!gridPx, dropCap: pc.dataset.dropLines != null, to,
       markCSS: R.runCSS(markR, ls.exact ? null : ls.atLeast ? 1 : runLine), markFont: L.fontStack(markR.font).replace(/"/g, "'"), markSize: R.px(markR.sz || 12) + 'px',
-      markLine: gridPx ? gridLine(markR) + 'px' : String(L.round(R.lineFactor(markR.font) * ls.mult, 4)), strutLine: String(L.round(R.lineFactor(strutR.font) * (ls.mult || 1), 4)),
+      markLine: gridPx ? gridLine(markR) + 'px' : R.lhNum(R.lineFactor(markR.font) * ls.mult, markR.sz || 12), strutLine: R.lhNum(R.lineFactor(strutR.font) * (ls.mult || 1), strutR.sz || 12),
     });
     if (last) {
       outer.classList.add('last');
@@ -360,6 +411,7 @@
     /* paragraph the reader had to add after a trailing table: takes no visible space until used */
     /* (Word also collapses the empty end-of-cell paragraph that follows a nested table) */
     if (!n && (p.synth || (ctx.inCell && ctx.lastInCell && ctx.prevTbl))) { outer.classList.add('synth'); outer.style.padding = '0'; }
+    else if (!n && R.bareSectBreak(d, p, ctx.view)) { outer.classList.add('bare-sect'); outer.style.padding = '0'; }
     if (pPr.keepNext) outer.dataset.kn = '1';
     if (ctx.markup && ctx.markup !== 'final' && ctx.markup !== 'original' && (p.mark || p.runs.some((it) => it.rPr && (it.rPr.ins || it.rPr.del || it.rPr.chg)) || p.pPr.chg)) outer.classList.add('chg');
     if (pPr.outline != null && pPr.outline < 9) outer.dataset.lvl = pPr.outline + 1;
@@ -367,7 +419,8 @@
       const sb = document.createElement('span');
       sb.className = 'sectmark';
       sb.contentEditable = 'false';
-      sb.dataset.label = L.t({ nextPage: 'Section Break (Next Page)', continuous: 'Section Break (Continuous)', evenPage: 'Section Break (Even Page)', oddPage: 'Section Break (Odd Page)', nextColumn: 'Section Break (Next Column)' }[p.sect.type || 'nextPage'] || 'Section Break (Next Page)');
+      /* (named, as in Word, by how the next section starts: its own type) */
+      sb.dataset.label = L.t({ nextPage: 'Section Break (Next Page)', continuous: 'Section Break (Continuous)', evenPage: 'Section Break (Even Page)', oddPage: 'Section Break (Odd Page)', nextColumn: 'Section Break (Next Column)' }[D.sectAfter(d, p).type || 'nextPage'] || 'Section Break (Next Page)');
       pc.appendChild(sb);
     }
     return outer;
@@ -493,7 +546,7 @@
       if (it.t === 'text') {
         // Keep one DOM character per model character for caret/selection offsets.
         // Chromium ignores CR in a Text node; LF produces the intended line break.
-        const text = it.text.slice(a - s, b - s).replace(/\r/g, (_, at) => {
+        let text = it.text.slice(a - s, b - s).replace(/\r/g, (_, at) => {
           let next = it.text[a - s + at + 1];
           if (next == null) for (let j = idx + 1; j < items.length; j++) {
             const other = items[j];
@@ -503,6 +556,9 @@
           }
           return next === '\n' ? '\u200b' : '\n';
         });
+        /* text in the Symbol font shows its Greek letters and signs (q is θ), with the font on the computer or
+           without it; one character for one, so caret offsets hold */
+        if (r.font && /^symbol$/i.test(r.font)) text = text.replace(/[\u0020-\u00ff\uf020-\uf0ff]/g, (c) => L.mapSymbolChar(c, 'Symbol'));
         /* Word does not let a run of spaces in a larger font raise the line: draw it at the line's
            text size and keep its width with letter spacing */
         if (/^ +$/.test(text) && r.sz && !r.u && !r.highlight && !r.shd) {
@@ -562,6 +618,7 @@
       } else if (it.t === 'img') {
         el = R.image(it, r, ctx);
         if (!el) continue;
+        R.effectRoom(el, it);
       } else if (it.t === 'shape' || it.t === 'group' || it.t === 'chart') {
         el = L.drawing && L.drawing.renderInline ? L.drawing.renderInline(it, r, ctx, p) : null;
         if (!el) { el = document.createElement('span'); el.className = 'obj-missing'; el.contentEditable = 'false'; }
@@ -716,6 +773,12 @@
   }
 
   /* ---------- images ---------- */
+  /** an object in line with text: Word sets it in its line with the room for its effects around it (wp:effectExtent:
+      a shadow, a glow, a turned picture's corners) */
+  R.effectRoom = function (el, it) {
+    const e = it.eff;
+    if (e) el.style.margin = `${R.px(e.t)}px ${R.px(e.r)}px ${R.px(e.b)}px ${R.px(e.l)}px`;
+  };
   R.image = function (it, r, ctx) {
     const wrap = document.createElement('span');
     wrap.className = 'img';
@@ -738,11 +801,12 @@
       const f = [];
       if (it.gray) f.push('grayscale(1)');
       if (it.bw) f.push('grayscale(1) contrast(30)');
-      if (it.washout) f.push('brightness(1.7) contrast(0.25)');
-      if (it.bright) f.push(`brightness(${1 + it.bright})`);
-      if (it.contrast) f.push(`contrast(${1 + it.contrast})`);
+      // brightness and contrast as Word draws them; Washout is Word's bright 70%, contrast -70%
+      const lum = it.washout ? L.lumFilter(0.7, -0.7) : L.lumFilter(it.bright, it.contrast);
+      if (lum) f.push(lum.css);
       if (f.length) im.style.filter = f.join(' ');
       wrap.appendChild(im);
+      if (lum) wrap.appendChild(lum.defs);
     } else {
       wrap.classList.add('missing');
       wrap.textContent = it.alt || L.t('Picture');
@@ -750,6 +814,12 @@
     if (it.rot) wrap.style.transform = `rotate(${it.rot}deg)`;
     if (it.flipH || it.flipV) wrap.style.transform = (wrap.style.transform || '') + ` scale(${it.flipH ? -1 : 1},${it.flipV ? -1 : 1})`;
     if (it.border && R.hasBorder(it.border)) wrap.style.outline = R.borderCSS(it.border);
+    if (it.sides) {   // a border per side (Word 97-2003), drawn over the picture's edges as Word draws it
+      const frame = document.createElement('span');
+      frame.className = 'img-sides';
+      for (const side of ['top', 'left', 'bottom', 'right']) if (R.hasBorder(it.sides[side])) frame.style['border' + side[0].toUpperCase() + side.slice(1)] = R.borderCSS(it.sides[side]);
+      wrap.appendChild(frame);
+    }
     if (it.link) wrap.dataset.link = linkStr(it.link);
     return wrap;
   };
@@ -760,7 +830,16 @@
    * colLeft: x (px, client coords) of the column's left edge; scale: current zoom.
    */
   /** documents saved with Word 97 spacing rules add space after and space before together */
-  R.cumulativeSpacing = (d) => { const c = d.settings && d.settings.compatXML; return !!c && /doNotUseHTMLParagraphAutoSpacing(?![^>]*w:val="(0|false)")/.test(c); };
+  /* "Don't use HTML paragraph auto spacing" adds space after and before together, up to Word 2010's compatibility
+     mode (14); in Word 2013's (15) they collapse to the larger even so (Word 2016's prints) */
+  R.cumulativeSpacing = (d) => { const c = d.settings && d.settings.compatXML; return !!c && (d.settings.compat || 12) < 15 && /doNotUseHTMLParagraphAutoSpacing(?![^>]*w:val="(0|false)")/.test(c); };
+  /** an empty paragraph that only ends a section, the next going on continuously on the same paper: on the page Word
+      gives it no room at all, neither a line nor its spacing, in every compatibility mode (Word 2016's prints) */
+  R.bareSectBreak = (d, p, view) => {
+    if (!p || p.t !== 'p' || !p.sect || D.plen(p) || (view && view !== 'print' && view !== 'reading' && view !== 'preview')) return false;
+    const nx = D.sectAfter(d, p);
+    return nx.type === 'continuous' && Math.abs(nx.pgW - p.sect.pgW) < 1 && Math.abs(nx.pgH - p.sect.pgH) < 1;
+  };
   R.layoutTabs = function (outer, p, ctx, colLeftClient, scale, colWidthPx) {
     const tabs = outer.querySelectorAll('.tb');
     if (!tabs.length) return;

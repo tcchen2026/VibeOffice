@@ -61,7 +61,7 @@
     }
     const s = D.sectFor(d, pos.p);
     const cols = s.cols || { n: 1 };
-    const body = s.pgW - s.ml - s.mr - (s.gutter || 0);
+    const body = D.textWidth(d, s);
     if ((cols.n || 1) > 1) return (body - (cols.space || 36) * (cols.n - 1)) / cols.n;
     return body;
   }
@@ -122,6 +122,11 @@
     const cell = order[i];
     const f = D.firstPara(cell.blocks), l = D.lastPara(cell.blocks);
     E.setSel(D.pos(f, 0), D.pos(l, D.plen(l)));
+  };
+  /** the whole of a table is selected (its move handle, Table ▸ Select ▸ Table) */
+  T.wholeSelected = function () {
+    const cs = E.cellSel, t = cs && cs.tbl;
+    return !!(t && cs.r0 === 0 && cs.c0 === 0 && cs.r1 >= t.rows.length - 1 && cs.c1 >= t.grid.length - 1);
   };
   T.select = function (kind) {
     const rg = T.range();
@@ -671,7 +676,7 @@
     const t = ci.tbl;
     const d = doc();
     const avail = availWidth(D.pos(D.firstPara(t.rows[0].cells[0].blocks) || E.sel.f.p, 0)) ;
-    const outer = (() => { const tb = D.tblInfo(d, t); if (!tb || !tb.parents.length) { const s = D.sectFor(d, E.sel.f.p); return s.pgW - s.ml - s.mr - (s.gutter || 0); } return avail; })();
+    const outer = (() => { const tb = D.tblInfo(d, t); if (!tb || !tb.parents.length) { const s = D.sectFor(d, E.sel.f.p); return D.textWidth(d, s); } return avail; })();
     E.edit(L.N('AutoFit'), () => {
       D.touchTbl(t);
       const { tp } = R.tblProps(d, t);
@@ -1061,9 +1066,9 @@
     'Table Professional': { tblPr: { borders: all(BD('single', 0.5)) }, cond: { firstRow: { rPr: { b: true, color: 'FFFFFF' }, tcPr: { shd: SH('000000', 'solid', '000000') } } } },
     'Table Subtle 1': { tblPr: { borders: { top: BD('single', 1.5, '008000'), bottom: BD('single', 1.5, '008000') } }, cond: { firstRow: { tcPr: { borders: { bottom: BD('single', 0.75, '008000') } } }, band1Horz: { tcPr: { shd: SH('E0FFE0', 'clear') } }, firstCol: { tcPr: { shd: SH('C0FFC0', 'clear') } } } },
     'Table Subtle 2': { tblPr: { borders: { left: BD('single', 1.5), right: BD('single', 1.5) } }, cond: { firstRow: { tcPr: { borders: { bottom: BD('single', 0.75) } } }, lastCol: { tcPr: { shd: SH('C0FFC0', 'clear') } }, band1Horz: { tcPr: { shd: SH('E6E6E6', 'clear') } } } },
-    'Table Web 1': { tblPr: { cellSpacing: 1.5, borders: { top: BD('outset', 0.75), left: BD('outset', 0.75), bottom: BD('outset', 0.75), right: BD('outset', 0.75), insideH: BD('inset', 0.75), insideV: BD('inset', 0.75) } }, cond: {} },
-    'Table Web 2': { tblPr: { cellSpacing: 1.5, borders: all(BD('inset', 0.75)) }, cond: {} },
-    'Table Web 3': { tblPr: { cellSpacing: 1.5, borders: all(BD('outset', 2.25)) }, cond: {} },
+    'Table Web 1': { tblPr: { spacing: 1.5, borders: { top: BD('outset', 0.75), left: BD('outset', 0.75), bottom: BD('outset', 0.75), right: BD('outset', 0.75), insideH: BD('inset', 0.75), insideV: BD('inset', 0.75) } }, cond: {} },
+    'Table Web 2': { tblPr: { spacing: 1.5, borders: all(BD('inset', 0.75)) }, cond: {} },
+    'Table Web 3': { tblPr: { spacing: 1.5, borders: all(BD('outset', 2.25)) }, cond: {} },
     'Table Grid': null,
   };
   T.styleId = (name) => (name === 'Table Grid' ? 'TableGrid' : name.replace(/[^A-Za-z0-9]/g, ''));
@@ -1269,10 +1274,237 @@
       if (ci && hh > 14) E.edit('Draw Table', () => { D.touchTbl(ci.tbl); ci.tbl.rows[0].trPr.h = L.round(hh, 2); ci.tbl.rows[0].trPr.hRule = 'atLeast'; return E.sel; });
     }
   }
+  /* ================= the move handle, as Word's ================= */
+  /* A box with a four-headed arrow at the top left of the table under the pointer (Print and Web Layout, the
+     document's own tables). A click selects the table, a right-click opens its menu, a drag moves it: the table
+     becomes floating (w:tblpPr) where it is dropped, anchored to the paragraph there, as Word does it. */
+  const MH = 13, RS = 7;
+  let mh = null, rs = null, mhFor = null, mhDrag = false;
+  const ARROWS = '<svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true"><path d="M4.5 1v7M1 4.5h7" stroke="currentColor" stroke-width="1"/><path d="M4.5 0L2.8 2h3.4zM4.5 9L2.8 7h3.4zM0 4.5L2 2.8v3.4zM9 4.5L7 2.8v3.4z" fill="currentColor"/></svg>';
+  const handleOK = () => !!(LY.root && !E.readOnly && !T.tool && !(L.drawtool && L.drawtool.active) && !LY.hfEdit && !LY.root.classList.contains('readonly') && A() && (A().view === 'print' || A().view === 'web'));
+  /** the document's own table an element is in: the outermost one, in the main text (not a header, a note or a text box) */
+  function topTable(target) {
+    let el = target && target.closest ? target.closest('table.tbl') : null;
+    if (!el || !LY.root.contains(el)) return null;
+    for (let up = el.parentElement && el.parentElement.closest('table.tbl'); up; up = up.parentElement && up.parentElement.closest('table.tbl')) el = up;
+    if (el.closest('.pg-hdr, .pg-ftr, .pg-fn, .tbx, .shp')) return null;
+    const t = findTable(+el.dataset.tid), ti = t && D.tblInfo(doc(), t);
+    return ti && ti.story === doc().main && !ti.parents.length ? el : null;
+  }
+  /* the table's last part on the pages (where its resize square goes) */
+  const lastPiece = (el) => { const all = LY.root.querySelectorAll(`table.tbl[data-tid="${el.dataset.tid}"]`); return all[all.length - 1] || el; };
+  function placeHandle() {
+    if (!mh || !mhFor) return;
+    const sc = LY.scroller, sr = sc.getBoundingClientRect(), r = mhFor.getBoundingClientRect(), e = lastPiece(mhFor).getBoundingClientRect();
+    mh.style.left = L.round(r.left - sr.left + sc.scrollLeft - MH - 1, 1) + 'px';
+    mh.style.top = L.round(r.top - sr.top + sc.scrollTop - MH - 1, 1) + 'px';
+    rs.style.left = L.round(e.right - sr.left + sc.scrollLeft + 1, 1) + 'px';
+    rs.style.top = L.round(e.bottom - sr.top + sc.scrollTop + 1, 1) + 'px';
+  }
+  function showHandle(tblEl) {
+    if (!mh) {
+      mh = L.h('div', { class: 'tbl-move', html: ARROWS });
+      mh.addEventListener('pointerdown', onHandleDown);
+      mh.addEventListener('contextmenu', onHandleMenu);
+      rs = L.h('div', { class: 'tbl-size' });
+      rs.addEventListener('pointerdown', onSizeDown);
+      rs.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+    if (!mh.isConnected) LY.scroller.appendChild(mh);
+    if (!rs.isConnected) LY.scroller.appendChild(rs);
+    mhFor = tblEl;
+    placeHandle();
+  }
+  function hideHandle() { if (mh) { mh.remove(); rs.remove(); } mhFor = null; }
+  /* shown while the pointer is over the table, or between it and the handle */
+  function hoverHandle(e) {
+    if (mhDrag) return;
+    if (!handleOK()) { hideHandle(); return; }
+    if (mh && (mh.contains(e.target) || rs.contains(e.target))) return;
+    const tblEl = topTable(e.target);
+    if (tblEl) { if (tblEl !== mhFor || !mh.isConnected) showHandle(tblEl); return; }
+    if (mhFor && mhFor.isConnected) {
+      const r = mhFor.getBoundingClientRect(), b = lastPiece(mhFor).getBoundingClientRect();
+      if (e.clientX >= r.left - MH - 4 && e.clientX <= r.right && e.clientY >= r.top - MH - 4 && e.clientY <= r.top + 4) return;
+      if (e.clientX >= b.right - 4 && e.clientX <= b.right + RS + 4 && e.clientY >= b.bottom - 4 && e.clientY <= b.bottom + RS + 4) return;
+    }
+    hideHandle();
+  }
+  /* after a relayout the table is drawn anew: the handle follows it, or goes */
+  function rehandle() {
+    if (!mhFor || mhDrag) return;
+    const el = mhFor.isConnected ? mhFor : LY.root && LY.root.querySelector(`table.tbl[data-tid="${mhFor.dataset.tid}"]`);
+    if (el && handleOK()) showHandle(el); else hideHandle();
+  }
+  function selectWhole(t) {
+    const p = D.firstPara(t.rows[0].cells[0].blocks);
+    E.setSel(D.pos(p, 0), null, { noScroll: true });
+    T.select('table');
+  }
+  function onHandleMenu(e) {
+    e.preventDefault();
+    const t = mhFor && findTable(+mhFor.dataset.tid);
+    if (!t) return;
+    selectWhole(t);
+    if (A().contextMenu) A().contextMenu(e);
+  }
+  function onHandleDown(e) {
+    if (e.button !== 0) return;   /* the right button opens the table's menu */
+    e.preventDefault(); e.stopPropagation();
+    const tblEl = mhFor, t = tblEl && findTable(+tblEl.dataset.tid);
+    if (!t) return;
+    const sc = LY.scroller, sr = sc.getBoundingClientRect(), r = tblEl.getBoundingClientRect();
+    let ghost = null;
+    mhDrag = true;
+    L.ui.drag(e, {
+      capture: sc,
+      move: (ev, d) => {
+        if (!d.moved) return;
+        if (!ghost) { ghost = L.h('div', { class: 'tbl-ghost' }); ghost.style.cssText = `left:${r.left - sr.left + sc.scrollLeft}px;top:${r.top - sr.top + sc.scrollTop}px;width:${r.width}px;height:${r.height}px`; sc.appendChild(ghost); }
+        ghost.style.transform = `translate(${ev.clientX - d.x0}px,${ev.clientY - d.y0}px)`;
+      },
+      up: (ev, d) => {
+        if (ghost) ghost.remove();
+        mhDrag = false;
+        if (!d.moved) { selectWhole(t); return; }
+        moveTable(t, r.left + ev.clientX - d.x0, r.top + ev.clientY - d.y0);
+      },
+      cancel: () => { if (ghost) ghost.remove(); mhDrag = false; },
+    });
+  }
+  /* The resize square (Word's): a drag scales the table, its columns by the width it is given and its rows by the
+     height (each row then at least its share, as Word sets them); a click or Esc changes nothing */
+  function onSizeDown(e) {
+    if (e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    const tblEl = mhFor && lastPiece(mhFor), t = tblEl && findTable(+tblEl.dataset.tid);
+    if (!t) return;
+    const sc = LY.scroller, sr = sc.getBoundingClientRect(), r = tblEl.getBoundingClientRect();
+    let ghost = null;
+    mhDrag = true;
+    L.ui.drag(e, {
+      capture: sc,
+      move: (ev, d) => {
+        if (!d.moved) return;
+        if (!ghost) { ghost = L.h('div', { class: 'tbl-ghost' }); sc.appendChild(ghost); }
+        ghost.style.cssText = `left:${r.left - sr.left + sc.scrollLeft}px;top:${r.top - sr.top + sc.scrollTop}px;width:${Math.max(8, r.width + ev.clientX - d.x0)}px;height:${Math.max(8, r.height + ev.clientY - d.y0)}px`;
+      },
+      up: (ev, d) => {
+        if (ghost) ghost.remove();
+        mhDrag = false;
+        if (d.moved) resizeTable(t, ev.clientX - d.x0, ev.clientY - d.y0);
+      },
+      cancel: () => { if (ghost) ghost.remove(); mhDrag = false; },
+    });
+  }
+  /** the table made dx wider and dy taller (client px): one undo step */
+  function resizeTable(t, dx, dy) {
+    const k = ptPerPx();
+    const w0 = t.grid.reduce((a, b) => a + b, 0);
+    /* the rows' heights as drawn (a row split across pages: its parts), in points */
+    const heights = t.rows.map((row, ri) => {
+      let h = 0;
+      for (const el of LY.root.querySelectorAll(`table.tbl[data-tid="${t.id}"] > tbody > tr[data-ri="${ri}"]:not(.rep)`)) h += el.getBoundingClientRect().height * k;
+      return h;
+    });
+    const h0 = heights.reduce((a, b) => a + b, 0);
+    const kx = w0 > 0 ? Math.max(0.05, (w0 + dx * k) / w0) : 1, ky = h0 > 0 ? Math.max(0.05, (h0 + dy * k) / h0) : 1;
+    if (Math.abs(kx - 1) < 0.002 && Math.abs(ky - 1) < 0.002) return;
+    E.edit('Resize Table', () => {
+      D.touchTbl(t);
+      if (Math.abs(kx - 1) >= 0.002) {
+        t.grid = t.grid.map((g) => L.round(Math.max(1, g * kx), 2));
+        if (t.tblPr.w && t.tblPr.w.type === 'pct') t.tblPr.w = { type: 'auto', v: 0 };
+        fixWidths(t);
+      }
+      if (Math.abs(ky - 1) >= 0.002) t.rows.forEach((row, ri) => {
+        if (!heights[ri]) return;
+        const tr = row.trPr;
+        tr.h = L.round(Math.max(1, (tr.hRule === 'exact' ? tr.h || heights[ri] : heights[ri]) * ky), 2);
+        if (tr.hRule !== 'exact') tr.hRule = 'atLeast';
+      });
+      return E.sel;
+    });
+  }
+  /** where a table dropped with its top left at (x, y) (client px) goes: the page (or Web Layout's text) there or the
+   *  nearest, the paragraph of the text there that starts on it, and the margin's left edge */
+  function dropAt(t, x, y) {
+    const d = doc(), ti = D.tblInfo(d, t);
+    let host = null, body = null, mLeft = 0, page = -1;
+    if (A().view === 'print' && LY.pages.length) {
+      let bd = Infinity;
+      LY.pages.forEach((pg, i) => {
+        const r = pg.el.getBoundingClientRect(), dist = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+        if (dist < bd) { bd = dist; host = pg.el; body = pg.body; page = i; mLeft = r.left + pg.bodyLeft * LY.scale(); }
+      });
+    } else { host = body = LY.root.querySelector('.flow'); mLeft = host ? host.getBoundingClientRect().left : 0; }
+    if (!host || !body) return null;
+    const frags = Array.from(body.querySelectorAll('.p[data-pid]')).filter((f) => !(+f.dataset.from > 0) && !f.closest('table.tbl, .tbl-float, .frm-abs, .shp, .tbx, .flt, .pg-fn'));
+    let frag = null;
+    for (const f of frags) {
+      const p = D.byId(d, +f.dataset.pid), inf = p && D.info(d, p);
+      if (!inf || inf.story !== d.main || inf.cont !== ti.cont) continue;
+      frag = f;
+      if (f.getBoundingClientRect().bottom > y) break;
+    }
+    if (!frag) return null;
+    return { host, page, p: D.byId(d, +frag.dataset.pid), top: frag.getBoundingClientRect().top, mLeft };
+  }
+  /** a drag of the move handle ended with the table's top left at (x, y): one undo step */
+  function moveTable(t, x, y) {
+    const d = doc(), ti = D.tblInfo(d, t);
+    if (!ti || ti.story !== d.main || ti.parents.length) return;
+    const at = dropAt(t, x, y);
+    if (!at) return;
+    const k = 1 / (LY.zoom * D.PX);
+    /* in files of Word 2010 and before the offset places the cells' text, not the border (layout.js) */
+    const shift = (d.settings.compat || 11) < 15 ? R.tblProps(d, t).tp.cellMar.l || 0 : 0;
+    const f0 = t.tblPr.float || {};
+    /* what Word writes after a drag: 0.125" from the text either side (or the table's own distances), from the
+       paragraph's top and the margin */
+    const f = { l: f0.l != null ? f0.l : 9, r: f0.r != null ? f0.r : 9 };
+    if (f0.t) f.t = f0.t;
+    if (f0.b) f.b = f0.b;
+    Object.assign(f, { vAnchor: 'text', hAnchor: 'margin', y: L.round((y - at.top) * k, 2) });
+    const fx = L.round((x - at.mLeft) * k + shift, 2);
+    if (Math.abs(fx) >= 0.05) f.x = fx;
+    const hr = at.host.getBoundingClientRect(), want = { page: at.page, x: x - hr.left, y: y - hr.top };
+    E.edit('Move Table', () => {
+      D.touchTbl(t);
+      const cont = D.touchList(ti.cont);
+      const i = cont.blocks.indexOf(t);
+      if (cont.blocks[i + 1] !== at.p && at.p !== t) { cont.blocks.splice(i, 1); cont.blocks.splice(cont.blocks.indexOf(at.p), 0, t); }
+      t.tblPr.float = f;
+      return E.sel;
+    });
+    settle(t, want, k);
+  }
+  /* the text that moved with it (the table out of the text, the anchor paragraph's spacing) shifts where it lands:
+     put it where it was dropped, in the same undo step (its "after" is taken when it is undone) */
+  function settle(t, want, k) {
+    for (let n = 0; n < 2; n++) {
+      /* (the layout draws the pages anew) */
+      const host = want.page >= 0 ? LY.pages[want.page] && LY.pages[want.page].el : LY.root.querySelector('.flow');
+      const el = LY.root.querySelector(`table.tbl[data-tid="${t.id}"]`);
+      const f = t.tblPr.float;
+      if (!el || !f || !host || !host.contains(el)) return;
+      const hr = host.getBoundingClientRect(), r = el.getBoundingClientRect();
+      const dx = r.left - hr.left - want.x, dy = r.top - hr.top - want.y;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+      if (Math.abs(dx) >= 0.5) { const x = L.round((f.x || 0) - dx * k, 2); if (Math.abs(x) >= 0.05) f.x = x; else delete f.x; }
+      if (Math.abs(dy) >= 0.5) f.y = L.round((f.y || 0) - dy * k, 2);
+      t._v = (t._v || 0) + 1;
+      L.bus.emit('doc-changed', { tx: { tbls: new Set([t]) }, paras: new Set(), struct: false });
+    }
+  }
   void tableOf;
   T.mount = function () {
     const sc = L.$('#scroller');
     sc.addEventListener('pointermove', onMove);
+    sc.addEventListener('pointermove', hoverHandle);
+    sc.addEventListener('pointerleave', () => { if (!mhDrag) hideHandle(); });
+    L.bus.on('layout-done', rehandle);
+    L.bus.on('zoom', rehandle);
     sc.addEventListener('pointerdown', onDown, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && T.tool) T.setTool(null); });
   };

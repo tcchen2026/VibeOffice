@@ -9,26 +9,27 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 | File | Responsibility |
 |---|---|
 | `index.html` | Window chrome CSS, slide rendering styles, script order |
-| `../common/core.js` | Utilities, colors, fonts, file I/O, media store, PDF writer (shared, see docs/suite.md) |
+| `../common/core.js` | Utilities, colors, fonts, file I/O, media store, PDF entry point (shared, see docs/suite.md) |
+| `../common/pdf.js`, `../common/pdftext.js` | Loaded on PDF export: writer, word/link geometry with transforms, slide destinations and title bookmarks |
 | `../common/sha.js`, `../common/crypto.js` | Password-protected presentations: ECMA-376 Agile and Standard encryption (AES, SHA-1/SHA-2), read and write |
 | `../common/zip.js` | ZIP reader/writer (CompressionStream with a pure-JS inflate fallback) |
 | `../common/xml.js`, `../common/opc.js`, `../common/opc-order.js` | Shared OOXML preservation graph, identities, namespace capture and schema order |
-| `../common/geometry.js` | 92 AutoShape presets, adjust handles, text rectangles, connectors; the 54 preset pattern fills (shared with Quire) |
+| `../common/presets.js`, `../common/geometry.js` | AutoShapes: the 187 presets drawn from DrawingML's definitions, with their adjust handles and text rectangles; connectors; the 40 text warps (LettersArt); the 54 preset pattern fills (shared with Quire and Ledger) |
 | `js/designs.js` | Imported master/layout library, selective design changes and independent design copies |
 | `js/properties.js` | Shape/text properties, tags, actions and transitions retained until their owning property changes |
 | `js/model.js` | Presentation model, 15 design templates, 21 slide layouts, undo history |
 | `js/render.js` | DOM/SVG renderer for slides, fills, patterns, gradients, WordArt |
 | `../common/metafile.js` | WMF/EMF player, so old clip art, logos and pasted Excel/Visio graphics display |
 | `../common/numfmt.js` | Excel number formats (dates, currency, percentages, sections) for chart axes and data labels, including localized `aaa`/`aaaa` weekday names (docs/ledger.md, Formulas and calculation) |
-| `../common/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types with `js/chart-draw.js`) |
-| `js/chart-draw.js` | Drawing of charts that come from PowerPoint 2007 and later (see *Charts* below) |
+| `../common/charts.js` | Chart model, the PowerPoint 2003 look for charts made here, datasheet and chart options dialog (17 chart types with `chart-draw.js`) |
+| `../common/chart-read.js`, `../common/chart-draw.js` | Reading and drawing of charts that come from PowerPoint 2007 and later (see *Charts* below), shared with Ledger and Quire; `js/pptx-read.js` hands them Lectern's DrawingML readers and its colours, fills, dashes and theme fonts (`L.chart.paint`) |
 | `../common/ui.js`, `../common/search.js`, `../common/icons.js`, `../common/clipart.js`, `../common/looks.css`, `../common/ui.css` | Menus, command bars, combo boxes, dialogs, color pickers, tooltips, Search commands |
 | `js/ribbon.js`, `../common/ribbon.js` | The Paper 2016 look's ribbon: PowerPoint's tabs and groups over Lectern's commands ([suite.md](suite.md#the-ribbon)) |
 | `../common/scout/` | Scout, the assistant: Help ▸ Show the Assistant ([suite.md](suite.md#the-assistant-scout)) |
 | `js/editor.js` | Slide editing surface: select, move, resize, rotate, crop, draw, grid |
 | `js/textedit.js` | Rich text editing, bullets, levels, AutoCorrect, tables |
 | `js/dialogs.js` | Font, Bullets, Format AutoShape, Fill Effects, Header & Footer, Options (with Security), etc. |
-| `js/panes.js` | Slides/Outline tab, notes, sorter, notes page, print preview, task panes (while open, the selected object's Picture, Drawing, Table or LettersArt Tools; docs/suite.md) |
+| `js/panes.js` | Slides/Outline tab, notes, sorter, notes page, print preview, task panes (the selected object's Picture, Table or LettersArt Tools; docs/suite.md) |
 | `js/slideshow.js` | Full-screen show, 58 transitions, 50+ entrance/emphasis/exit/motion-path effects, pen, rehearse timings; a hyperlink clicked in the show shows its address to copy, never opens (docs/suite.md, Hyperlinks) |
 | `js/preserve.js` | Package ownership and settings merges; model-attached media, playback, property invalidation and clipboard dependencies |
 | `js/comments.js` | Legacy/modern comment ownership, author dependencies, copied identities and anchors |
@@ -43,16 +44,70 @@ Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testi
 
 ## Opening
 
-File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible, and legacy binary `.ppt` files get a clear message.
+File ▸ Open, drag a file onto the window, or *Open a presentation* in the Getting Started pane. `.pptx`, `.pptm`, `.ppsx`, `.potx` and their macro variants open; Strict Open XML files open too. Damaged packages are repaired where possible. PowerPoint 97-2003 files (`.ppt`, `.pps`, `.pot`) are converted on opening to the `.pptx` PowerPoint would write (slides, masters and layouts, notes, colour schemes, text, pictures, shapes and connectors, tables, hyperlinks and actions, headers and footers, transitions, animations and paragraph builds, sounds and movies); a message names what wasn't converted, and Save asks for a `.pptx` name (`.pptm`, `.ppsm` or `.potm` when it has macros: its VBA project is kept whole, never run; both readable ones in the corpus). A presentation with a password to open asks for it (RC4 CryptoAPI encryption, as PowerPoint 97-2003 wrote it), again after a wrong one, and is saved encrypted with it, as PowerPoint keeps it on Save As.
 
 Strict inputs save as standard Transitional OOXML (recorded, not shown). Same-format
 saves retain the macro, template or slideshow variant and any opening password.
+
+**Fit to Window** keeps the slide centred as the editing pane resizes, including on displays with fractional scaling. At a fixed zoom, each axis scrolls when the slide needs more room.
+
+A picture's brightness and contrast (and Washout) are drawn as PowerPoint draws them: on a grey ramp
+under 7 settings, Lectern's greys agree with PowerPoint 2016's within 1 of 255 (`L.lumFilter`, shared
+with Quire).
 
 East Asian text is drawn with the run's East Asian font (`a:ea`, or the theme's for the presentation's
 language), and a run's font change keeps its `a:ea`. A new presentation follows the UI's language: its
 text language and, in Japanese, Korean and Chinese, the theme's East Asian font ([i18n.md](i18n.md)).
 
 **Password-protected presentations** ask for the password, as PowerPoint does, and say so when it is wrong. Decryption happens in the browser (Agile encryption from Office 2010 on, Standard encryption from Office 2007). A presentation opened with a password is saved with the same password; Tools ▸ Options ▸ Security sets, changes or removes it (AES-256 with SHA-512, the scheme PowerPoint 2013 and later use).
+
+## Text as PowerPoint draws it
+
+Measured against PowerPoint 2016's PDFs (`tools/lectern-pictures.mjs`, `tools/lectern-vs-powerpoint.py`;
+LibreOffice's TextFittingComparisonWithMSO decks, 2026-11-07, `tests/lectern/text-fitting.test.mjs`):
+the space after a paragraph and the space before the next add up; a bullet doesn't make its line taller.
+Shrink text on overflow (`normAutofit`) rounds the shrunk font sizes to whole points (36 pt at 92.5% is
+drawn at 33 pt), takes the line spacing reduction off the percentage (90% less 20% is 70%), and leaves
+spacing and indents given in points alone. Over the 134 slides of the 8 PowerPoint-made decks with shrunk
+text whose sizes fall between whole points, the difference from PowerPoint's pictures fell by 41% (no slide
+worse by more than 0.6 of a point of score); of 257 slides in 53 other PowerPoint-made decks, 19 came
+closer and none moved away.
+
+## Shapes and fills as PowerPoint draws them
+
+Measured the same way over the 597 PowerPoint-made decks of the corpus that PowerPoint 2016 exports
+(821 slides, 2026-11-07, `tests/lectern/drawn-as-powerpoint.test.mjs`): the summed difference from
+PowerPoint's pictures fell by 11% (41 slides closer, 5 further, all SmartArt saved without its drawing, below).
+
+* **Gradients:** a gradient of two colours (two opaque stops at 0 and 100%, or the first again around one at
+  50%) blends in linear light along an S-curve, as PowerPoint's PDFs sample it (red to green is #BC8038
+  halfway, not the browser's #805828); every other gradient blends straight from stop to stop, as browsers do.
+  A linear gradient runs from corner to corner; a scaled one (`scaled="1"`) is laid in the unit square and
+  stretched with it, so at 45° its colours change across the box's diagonal. Theme gradient fills
+  (`fillRef`) stay gradients, and a theme's effect style (`effectRef`) draws its shadow.
+* **Placeholders:** an empty one shows its fill and outline in thumbnails, the slide show and print, as
+  PowerPoint prints a title bar left empty; one without geometry of its own takes its layout's (or master's),
+  custom shapes and holes included. `numCol="1"` on a slide undoes its layout's columns.
+* **Colour mapping:** a slide's own (`clrMapOvr`, a dark slide in a light deck) holds for all it shows, its
+  master's background and shapes too; a chart keeps its own mapping over the slide's (LibreOffice's
+  chart_pt_color_bg1 was drawn white with a black point: 317 → 0.6).
+* **Outlines:** a gradient outline is drawn in its first colour, as opaque as its stops are on average (all
+  clear: no line).
+* **Freeforms** with several pieces fill even-odd, so holes stay holes.
+* **Text warps** (`prstTxWarp`, WordArt's Transform; LettersArt here) are drawn from the standard's 40
+  definitions as PowerPoint 2016 bends text (its PDF of `tools/shapes/warp-deck.py`'s 228 cells: every warp with
+  one, two and three lines, small and long text, insets, anchoring and alignment). A warp fills the whole shape,
+  whatever its insets and anchoring. Paths in pairs are bands (Inflate, Can Up, Plain…): the ink of their lines
+  is stretched to fill each, across from the start of each path to its end and down from one to the other, the
+  lines aligned within the widest. A path alone (Arch Up, Circle, Button's three) carries its lines at their size,
+  as aligned along it, shrunk only when longer; it runs 0.19 em above the baseline of the line on the inside of its
+  curve, the others stacked outward along parallel curves. Lines are dealt out among bands or paths as evenly as
+  they go. Each glyph is bent in slices about 6 pt wide; right-to-left and joined scripts a run at a time. The
+  text stays an ordinary text body, edited in place (shown straight while editing) and saved as it came; it was
+  turned into one-line LettersArt before, with its sizes and colours lost. Against PowerPoint's cells, the
+  differing share of painted pixels fell from 83% to 15% on average; on the 12 PowerPoint-made decks of the corpus
+  with warped text, the slides' difference from PowerPoint's pictures fell from 126 to 53 (all 12 closer).
+  Not drawn: 3-D text (extrusion, bevels); Arch Down text sits about 2° from where PowerPoint centres it.
 
 ## Charts
 
@@ -88,11 +143,56 @@ IntelliArt is Lectern's name for its diagrams; in the file they are Office Smart
 * **Layout:** resizing lays the diagram out again. All items show their text at one size, the largest at which every item fits (with room to spare for applications that draw text wider). A new diagram (and Reset Graphic) starts with Moderate Effect (a soft gradient and shadow) in the Ocean palette (cyan into indigo). Theme colours follow a new design or colour scheme: accents too close to the slide background are skipped, and their text takes whichever of the theme's two text colours stands out more from the fill.
 * **Saving:** a diagram made or edited here is saved as real SmartArt: the data (its items), our own layout, style and colour definitions (`urn:vibeoffice.work/diagram/…`, written from our layouts, not copied from Office's), and the drawing of its shapes for applications that do not lay SmartArt out themselves. Model ids are stable, so an unedited diagram saves byte for byte. Reopened in Lectern, it is editable again.
 * **In the sample deck and templates:** the sample's "How we choose a city" is a Funnel; the templates use a Basic Chevron Process (Project Status Report), a Vertical Process agenda (Team Meeting), a Basic Radial (Lesson) and a Basic Timeline (Event Announcement). Decks built in code use `L.diagram.make(pres, slide, placeholder or box, layout, lines)`, where a tab before a line makes it a sub-item.
-* **SmartArt PowerPoint made** in a layout we also have (Office's `default`, `orgChart1`, `hierarchy1`/`2`, `vList2`, `hList1`, `process1`/`2`, `chevron1`, `hProcess11`, `cycle2`/`3`, `radial1`, `venn1`/`3`, `target1`, `funnel1`, `matrix1`, `pyramid1`/`2`/`3`; `OFFICE` in `smartart-io.js`) opens as an editable diagram: its items, colours and style are read from the file, and it is shown and saved exactly as PowerPoint made it until its items are edited here (text pane, typing in a shape, Add Shape, a gallery). From then on it is laid out and saved with our layout of the same name (a toast says so when it happens; the save records the change). Changed only as shapes (moved, a shape recoloured, ungrouped), it is kept or converted as other SmartArt is. Diagrams with picture-filled shapes stay as they came. Each item is one paragraph of plain text here, so an item with several paragraphs is joined into one line when the diagram is first edited, and an org chart's assistants become ordinary members.
+* **SmartArt PowerPoint made** in a layout we also have (Office's `default`, `orgChart1`, `hierarchy1`/`2`, `vList2`, `hList1`, `process1`/`2`, `chevron1`, `hProcess11`, `cycle2`/`3`, `radial1`, `venn1`/`3`, `target1`, `funnel1`, `matrix3`, `pyramid1`/`2`/`3`; `OFFICE` in `smartart-io.js`) opens as an editable diagram: its items, colours and style are read from the file, and it is shown and saved exactly as PowerPoint made it until its items are edited here (text pane, typing in a shape, Add Shape, a gallery). From then on it is laid out and saved with our layout of the same name (a toast says so when it happens; the save records the change). Changed only as shapes (moved, a shape recoloured, ungrouped), it is kept or converted as other SmartArt is. Diagrams with picture-filled shapes stay as they came. Each item is one paragraph of plain text here, so an item with several paragraphs is joined into one line when the diagram is first edited, and an org chart's assistants become ordinary members.
 * **Other SmartArt** (layouts we do not have) is shown and kept as before (*Opaque frames*); editing its contents converts it to shapes, with a notice.
+* **SmartArt saved without its drawing** (PowerPoint 2007 wrote none; some files carry an empty one), which PowerPoint lays out from its definition, is laid out by our engine when we have its layout (an organization chart's nine people, where one box was drawn before), otherwise as rough boxes, cycles, trees or bands by its kind; the file's parts are kept as they came.
+* **Text in SmartArt shown as it was saved** sits in the box the drawing gives each shape's text (`dsp:txXfrm`), turned by that box's own rotation on top of the shape's, so text in a shape turned upside down reads upright, as PowerPoint draws it (`smartart-rotation2`, `tdf145528_SmartArt_Matrix`, 2026-11-07).
+* **Equations in imported diagrams** stay as opaque `a14:m` runs, including when a diagram is converted to shapes. They move, copy and survive undo/redo and drafts as a unit; typing before or after one adds ordinary text without changing its formula. Their internals are read-only in Lectern. Diagrams containing equations keep their imported shapes instead of entering the plain-text IntelliArt pane. The browser preview draws text, superscripts and subscripts; other equation structures have a linear preview. When edited contents become ordinary shapes, the existing conversion notice identifies the slide and its audit detail lists the diagram parts actually removed. In the `tdf131553` reduction, PowerPoint 2016 now retains all four equation text tokens after conversion, previously zero; placement still differs by up to 1.19 pt from the original diagram (2026-11-04).
 * **Measured on the corpus** (2026-10-10, `tests/lectern/smartart-office.py`): of the 43 decks with a mapped layout (50 of their 84 diagrams open editable), every unedited save keeps every diagram part byte-identical; editing one diagram in each (42 decks) gives saves with no new `package.py` findings and no Open XML SDK diagnostics, and each reopens with that diagram editable. LibreOffice draws the edited diagrams.
 
 Checked (2026-10-10): a deck with one diagram per layout (26) passes the Open XML SDK validator and `package.py`; LibreOffice 25.2 draws every one from the saved drawing (upside-down layers are drawn as outlines so their text stays upright); reopened in Lectern all 26 are editable, and editing one rewrites only its parts (the other 25 byte-identical). With the first ten, LibreOffice also re-saved them as SmartArt and Lectern reopened that copy with all ten editable. PowerPoint opened our hand-written process diagram with and without the drawing and edited it (text pane, Add Shape, Change Colors); PowerPoint lays SmartArt out from the definition, never from the saved drawing, so each diagram is saved with a definition that places its shapes where Lectern draws them (progress and the PowerPoint rounds: [smartart.md](smartart.md)).
+
+## Tables
+
+Table cells retain PowerPoint's text direction (`a:tcPr/@vert`), including explicit horizontal and
+absent defaults, through text edits, copies, undo/redo and draft recovery. `vert` and `vert270` draw
+as rotated text frames along the cell as tall as its rows grew (a file's stored row heights can be less). East Asian and Mongolian vertical text use the browser's vertical writing;
+stacked WordArt text uses upright glyphs. Those modes approximate Office's glyph shaping and spacing,
+while the original direction value is saved unchanged. Measured on the five affected public corpus
+decks (2026-11-04): all 11 non-horizontal cells survive, previously zero. Text Direction (Table Tools ›
+Layout, the Tables and Borders toolbar, a cell's Table menu) sets it as PowerPoint 2016 does: Horizontal,
+Rotate all text 90° or 270°, Stacked.
+
+Right-to-left tables retain `a:tblPr/@rtl` and show their columns in reading order, independently
+of paragraph direction. Clicking, dragging a cell range and Tab use the same logical cell identities.
+All 10 RTL tables in the affected `stress021` corpus deck now keep the flag, previously zero.
+
+Table style links and embedded definitions remain attached through text edits, copies, history and
+drafts. Header and banding formatting stays inherited, so changing the style later in PowerPoint
+still applies. Copying into a deck with a different definition for the same style gives the imported
+definition its own stable ID. All 183 links in the 54 affected corpus decks now survive (2026-11-04).
+
+Table fills and borders keep their theme colour and colour transforms rather than saving the resolved
+RGB value. A border-width edit preserves its colour; choosing a different explicit colour replaces it.
+Retained table colours follow theme changes in the renderer, and survive copies, history and drafts.
+The eight affected public corpus decks now have zero of the 5,492 scheme-to-RGB conversions measured
+before this fix (2026-11-04).
+
+Unchanged column widths, row heights and cell margins retain their original EMU values; absent
+margins stay absent. Editing one dimension changes only that dimension. In the two measured source
+decks, all 38 widths, 66 heights and 912 margin attributes/defaults survive exactly. PowerPoint 2016
+PDFs of the RTL and vertical reductions now match their originals at 50 and 144 dpi: the previous
+580-pixel RTL difference came from left-margin rounding, and the 130-pixel vertical difference from
+row-height rounding (2026-11-04).
+
+The final preservation audit (2026-11-04) covered 744 PowerPoint input paths and 6,696 save,
+repeat-save, edit and history cases: 5,554 passed, 1,132 had no applicable edit, and 10 repeated
+known failures (nine scenarios on one unreadable input, plus one text-edit timeout). Among 726
+comparable saves, all measured table directions, RTL flags and style links survive, with no new
+package-checker findings. Repeat-save drift remains in the same 540 files with the same causes.
+The edit comparison adds only the restored equation to its existing changes outside the edited
+object; it introduces no new such loss. Formula previews and conversion placement retain the
+limits described under *IntelliArt (SmartArt)*.
 
 ## Slide size
 
@@ -103,7 +203,30 @@ New presentations, templates and the sample are *Widescreen (16:9)* (13.33 × 7.
 * **.pptx** — standard PresentationML. Exports pass the OOXML schema validator and open in LibreOffice and python-pptx; they are meant for PowerPoint 2007 and later, Keynote and Google Slides. With a password to open, the file is encrypted.
 * **.ppsx / .potx** — show and template variants (standalone page only).
 * **PDF** — one slide per page, or exactly what Print Preview shows (handouts, notes pages, outline).
+  Pages are pictures at 300 dpi (lower for pages over 40 megapixels), with invisible text you can find,
+  select and copy. Rotated text follows its box; LettersArt copies once from its ordinary text body,
+  with an approximate highlight for the bent letters. File ▸ Print saves the chosen slides that way
+  (All, Current slide or a list such as 1,3,5–12), with Preview to look first.
+  Text and shape hyperlinks remain clickable; slide titles become sidebar bookmarks,
+  including their positions on handouts and notes pages. First, last, next and previous
+  slide actions become page jumps; last-viewed and end-show actions are omitted, as
+  PowerPoint and LibreOffice do. Links to excluded slides are omitted. Document
+  language is recorded when available.
 * **Single-file web page** (its one script allowed by its hash in the page's own security policy), **PNG** of the current slide, **plain-text outline**.
+
+PDF text checks (2026-11-07): eight public decks, including Japanese, rotated text, tables, charts,
+LettersArt, Mac producers and a template, retain all nine page pictures and sizes. All 264 collected
+text tokens extract in Poppler and PDFium; clipped text stays out. Six handout, notes and outline
+exports retain all eight page pictures. The originals open in PowerPoint 2016 and LibreOffice
+(the template uses a plain presentation copy for the Office test service). Chromium finds and
+copies the 45-degree test phrase with its space; Poppler's raw extraction splits diagonal letters
+onto separate lines. Acrobat Reader and macOS Preview remain unchecked.
+
+PDF navigation checks (2026-11-09): three public decks and six single-action copies
+open in PowerPoint 2016 and LibreOffice. All 16 pages retain identical pictures and
+extracted text after adding links and bookmarks. Native Chromium and Firefox follow
+the internal and external links and show the slide-title bookmarks. Rotated shape
+links use the bounding rectangle of the visible shape.
 
 In PowerPoint 2016 (`16.0.4266.1003`, 2026-11-03), the unedited saves of the corpus's 726 decks **open without repair
 in 719** (3 of them then showing their comments pane); 5 stop at a prompt PowerPoint shows for the original too (a
@@ -130,6 +253,15 @@ run history, rather than presented as measurements of the current writer.
 The UI/password/chart harnesses remain in `tests/lectern/`. Commands, failure accounting and
 Office review batches are documented in [testing.md](testing.md).
 
+**PowerPoint 97-2003 presentations** (the converter's whole corpus, 2026-11-06, `tests/legacy/`): of 218 `.ppt`/`.pps`/`.pot`
+files, 171 convert and 47 are refused with a message saying why (PowerPoint 95 and older files, damaged files, unknown
+passwords); none fails otherwise. All 171 pass the Open XML SDK and the 18 tried in PowerPoint 2016 open without a
+repair prompt. Their slides' number, order and size agree with the original's in all 166 files with a reference, and
+the slides' text with LibreOffice's conversion in 907 of 956 slides compared. Their animations come along: the 26
+presentations with any keep all 102 of their timing parts, and PowerPoint 2016 runs the 171 effects measured in the
+order, on the shapes and with the timings and behaviours of the original; embedded sounds keep their bytes and linked
+media stay linked. A damaged or unsupported animation is left out and named in the message.
+
 ## What a save keeps, converts and drops
 
 The full LibreOffice pass on the versioned `984eaf3` artifacts renders **836/837 unedited saves**,
@@ -137,7 +269,7 @@ with **zero** page-count differences among pairs that render. Across **5,302** a
 **4,939** pass the paired render/count check, **71** fail and **292** are excluded. Failures include
 missing outputs, unrenderable originals and LibreOffice crashes; they remain recorded separately
 from package/SDK results. All 15 batch-4 samples and the batch-7 corrections passed PowerPoint,
-including the corrected fixture described below. Reports: `~/corpora/results/lossless-final-984eaf3/lectern/`.
+including the corrected fixture described below. Reports: `/work/corpora/results/lossless-final-984eaf3/lectern/`.
 
 Lectern regenerates slides and keeps package dependencies and unsupported properties beside the model.
 Save and drafts retain all six OOXML variants and encryption. The Compatibility Checker shows, before
@@ -194,7 +326,7 @@ Form-control or field markup that requires conversion is also reported. The full
 results are above. The **15 PowerPoint batch-4 samples rebuilt from `56de065`** pass package/SDK
 and LibreOffice with expected counts. Their previous-writer differences are reviewed, and the user
 accepted all 15 in PowerPoint. Fresh LibreOffice checks of those exact handed-off files also pass;
-hashes and results are in `~/corpora/results/office-accepted-2026-10-09/`. The accepted checklist is
+hashes and results are in `/work/corpora/results/office-accepted-2026-10-09/`. The accepted checklist is
 `tmp/lossless/office-batch-4/CHECKLIST.md`.
 
 The user accepted the PPTM video, VBA and authors/handout samples in Office batch 1. The slide-6
@@ -204,10 +336,10 @@ counts. Strict conversion passes **85 presentations / 340 emitted states** again
 package/SDK diagnostics; the Strict presentation sample passed Office batch 2. Rewritten parts now
 hoist fragment namespace declarations and `mc:Ignorable` to the root. The fresh namespace sample
 passes PowerPoint, package/SDK and LibreOffice with unchanged slide count. Opaque parts retain their
-bytes. Current full reports and exceptions are in `~/corpora/results/lossless-final-984eaf3/lectern/`.
+bytes. Current full reports and exceptions are in `/work/corpora/results/lossless-final-984eaf3/lectern/`.
 The convention scan has 163 signatures, with no additions; removing rotation/flip attributes from
 graphic-frame transforms removes three signatures from the preceding scan. Focused checks remain in
-`~/corpora/results/lectern-group-2026-10-09/` and `~/corpora/results/review-fixes-2026-10-09/`.
+`/work/corpora/results/lectern-group-2026-10-09/` and `/work/corpora/results/review-fixes-2026-10-09/`.
 
 ### Media: edit behavior
 
@@ -249,10 +381,10 @@ type passed PowerPoint with both decoration edits intact. The fixture now guards
 inside an unsupported compatibility choice with an empty fallback. Its actual writer output passes
 PowerPoint, package/SDK and LibreOffice; two movement scenarios retain save/undo/redo behavior.
 The checker rejects the unguarded test type, and its regression fails on the previous checker.
-No production writer changed for this fixture defect. Evidence: `~/corpora/results/office-batch-7-repair-2026-10-09/`.
+No production writer changed for this fixture defect. Evidence: `/work/corpora/results/office-batch-7-repair-2026-10-09/`.
 All 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/designs-*` and
-`~/corpora/results/review-fixes-2026-10-09/designs*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/designs-*` and
+`/work/corpora/results/review-fixes-2026-10-09/designs*`.
 
 ### Sections and custom shows: edit behavior
 
@@ -270,7 +402,7 @@ Large slide IDs and empty sections are covered by a public one-slide deck with t
 Two edited samples and four history states open in LibreOffice with the expected inserted/deleted
 slide counts. The browser edit driver and app load report no console errors.
 The full group measurement is above; all 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/membership-*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/membership-*`.
 
 ### Comments: edit behavior
 
@@ -293,8 +425,8 @@ only their own thread relationship, and re-anchored comments must match a declar
 Two earlier edited samples, four history states and the corrected text-anchor sample open in
 LibreOffice with expected slide counts.
 All 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/comments-*` and
-`~/corpora/results/review-fixes-2026-10-09/*comments*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/comments-*` and
+`/work/corpora/results/review-fixes-2026-10-09/*comments*`.
 
 ### Opaque frames: edit behavior
 
@@ -326,13 +458,13 @@ open in LibreOffice with unchanged slide counts. A scan finds seven illegal fram
 five preceding full-run saves and none in readable originals; the writer correction prevents them.
 These changes are measured in the `984eaf3` refresh. Office batch 7 files 09–12 and 14 passed;
 file 13's corrected master/layout fixture also passed, as described above. Evidence:
-`~/corpora/results/lossless-evening-review-2026-10-09/`.
+`/work/corpora/results/lossless-evening-review-2026-10-09/`.
 Of 959 diagram, embedding, ink and model dependency parts, 928 are byte-identical, ten are Strict
 conversions, three remove missing optional cache references, and 18 are unreferenced orphan parts
 in one damaged source. Five edited samples open in LibreOffice with expected slide counts.
 All four pages load without console errors.
 All 15 batch-4 samples passed PowerPoint. Reports:
-`~/corpora/results/lectern-preservation-2026-10-09/frames-*`.
+`/work/corpora/results/lectern-preservation-2026-10-09/frames-*`.
 
 An object conversion/removal notice also accounts for its unreachable opaque dependency parts;
 these no longer add generic part-loss notices beside the specific explanation. The focused SmartArt,
@@ -365,13 +497,16 @@ states pass, including text edits, geometry, copies, deletion, detached clipboar
 Four edited samples open in LibreOffice with unchanged counts. UTF-16 package XML is decoded
 correctly, retaining a six-slide template previously read as empty; its save/edit/history states
 also pass SDK and LibreOffice. The corpus driver now compares original, opened and saved slide
-counts. Four pages load without console errors. All 15 batch-4 samples passed PowerPoint. Reports: `~/corpora/results/lectern-preservation-2026-10-09/properties-*`.
+counts. Four pages load without console errors. All 15 batch-4 samples passed PowerPoint. Reports: `/work/corpora/results/lectern-preservation-2026-10-09/properties-*`.
 
 ## Known limits
 
-* Legacy binary `.ppt` files must be re-saved as `.pptx` first. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
+* A picture bullet is drawn as its picture and saved as one; Format ▸ Bullets and Numbering offers only character and number bullets, so choosing one there replaces it.
+* A slide with colours of its own (a theme override: PowerPoint writes one for a slide whose colour scheme differs from its master's) is drawn and saved with them; applying a colour scheme to such a slide leaves its own colours in place.
+* PowerPoint 97-2003 files are opened by conversion and saved as `.pptx`. Macro-enabled OOXML variants keep their VBA; see *What a save keeps, converts and drops* for the remaining preservation gaps.
 * SmartArt in a layout Lectern does not have is displayed as grouped shapes and keeps its original frame until the group's content is edited or ungrouped; PowerPoint SmartArt edited here takes our layout of the same name, so its look in PowerPoint changes to ours (*IntelliArt (SmartArt)*). When a file carries only diagram data, Lectern draws it with a built-in layout family, so unusual layouts can look simpler in the editor.
 * 3-D charts are drawn in a fixed oblique view (no perspective, no lighting); surface charts, trendlines and error bars are not drawn (they are kept in unedited charts).
 * Embedded OLE objects and ActiveX controls import as their preview pictures and are kept on save; a control can be moved, resized or deleted. A copied, rotated, flipped or grouped control, or one whose picture was edited, is saved as its picture, and the save says so.
 * Fonts that aren't installed fall back to metric-compatible ones: Carlito, Caladea and Gelasio (for Calibri, Cambria and Georgia) are served with the site, and Save as Web Page embeds the ones its slides name; Arial, Times New Roman and Courier New use the computer's own copies or the Liberation/Arimo/Tinos/Cousine fonts of the same widths where installed.
-* Spelling uses the browser's spell checker.
+* Tools ▸ Spelling (F7) checks the slides' text with the suite's own English dictionaries (U.S. or U.K., from the presentation's language): text boxes, shapes and table cells, not the notes, a LettersArt's text or fields. As you type, the browser's own checker underlines words (Tools ▸ Options ▸ Spelling and Style).
+* Tools ▸ AutoCorrect Options: Office's replacement list as you type (the suite's one list, as in Quire and Ledger), with your own entries kept for the next time; Correct TWo INitial CApitals, Capitalize first letter of sentences and smart quotes, each of them on or off.
