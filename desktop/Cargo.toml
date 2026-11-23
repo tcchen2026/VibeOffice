@@ -9,6 +9,7 @@ publish = false
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+dlnanything = { path = "../DLNAnything" }
 # Default features minus dynamic-acl: the capabilities are fixed when the app is built (capabilities/, permissions/).
 tauri = { version = "2", default-features = false, features = ["wry", "compression", "common-controls-v6"] }
 serde = { version = "1", features = ["derive"] }

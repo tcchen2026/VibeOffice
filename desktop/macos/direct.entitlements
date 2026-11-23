@@ -2,8 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- The DMG edition (Developer ID, notarized; also the ad-hoc smoke build): sandboxed as the App Store edition is, so
      testing one tests both. Files the user picks in the Open and Save dialogs or opens from Finder, and their bookmarks,
-     which open them again from Recent Files after the app has quit (src/doc.rs); printing; the network only for the
-     update check (updater/current.json). -->
+     which open them again from Recent Files after the app has quit (src/doc.rs); printing; the network for local TV casting and the update check. -->
 <plist version="1.0">
 <dict>
 	<key>com.apple.security.app-sandbox</key>
@@ -15,6 +14,8 @@
 	<key>com.apple.security.print</key>
 	<true/>
 	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
 	<true/>
 </dict>
 </plist>

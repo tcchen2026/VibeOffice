@@ -40,6 +40,12 @@ Pattern fills: the preset bitmaps in `common/geometry.js` are PowerPoint's. `nod
 
 Line grids: Quire's line height on a document line grid (`R.gridLine` in `quire/js/render.js`) follows Word. `python3 tools/linegrid.py make` writes `tmp/linegrid/linegrid.docx`, one labelled paragraph per case (English and Chinese text at sizes either side of the pitch, several line spacings, 15.6pt and 18pt grids); save it as PDF from Word and `python3 tools/linegrid.py read linegrid.pdf` prints the distance between the lines of each case, in points, and the line each page starts with: `tests/from-issues/11/word.json`, from Word for Mac's PDF of `linegrid.docx` there. `grid-spacing.test.mjs` checks `R.gridLine` against it and `render.test.mjs` the document as Quire draws it, line spacing and page breaks (a second). LibreOffice draws these differently from Word (issue #11), so its PDF only checks the tool.
 
+## Native TV casting
+
+Run `cargo test --manifest-path DLNAnything/Cargo.toml` for loopback HTTP timing, renderer control and MPEG-TS framing. If FFmpeg is installed the test decodes the real WebCodecs fixture one segment at a time and as a continuous stream. Run `node --test tests/desktop/cast.test.mjs` for decoded canvas checks in all three apps, including Lectern’s F5, blank screen and return to editing.
+
+For a hardware latency measurement, display a changing clock on the sender, cast to a TV and photograph both displays together. Record the TV model and stream format with the difference between the clocks.
+
 ## Looks
 
 `node --test tests/looks.test.mjs` checks `public/common/looks.css`: every look sets every setting, every setting the chrome uses exists, `ui.css` has no colours of its own, and each page picks the look before its stylesheets load. A change to chrome CSS is also checked in every look: the browser profile keeps `localStorage`, so set the look in a step and set it back at the end (other runs would otherwise start in it):

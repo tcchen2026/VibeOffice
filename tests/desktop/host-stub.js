@@ -44,7 +44,7 @@
   if (/[?&]lite\b/.test(location.search)) sessionStorage.stubLite = '1';
   const lite = !!sessionStorage.stubLite;
   // ?sandboxed: the Mac App Sandbox, where a refused save may ask for the file's folder (host_allow_access)
-  window.__VO_HOST__ = Object.freeze({ platform: lite ? 'linux' : appStore ? 'macos' : 'windows', version: 1, appVersion, edition: lite ? 'lite' : appStore ? 'appstore' : 'direct',
+  window.__VO_HOST__ = Object.freeze({ platform: lite ? 'linux' : appStore ? 'macos' : 'windows', version: /[?&]cast\b/.test(location.search) ? 6 : 1, appVersion, edition: lite ? 'lite' : appStore ? 'appstore' : 'direct',
     sandboxed: /[?&]sandboxed\b/.test(location.search),
     updates: updates || '/updater/current.json', whatsnew: ask ? json(news) : '/updater/whatsnew.json' });
   // the commands each kind of window may call (desktop/permissions/host.toml, desktop/capabilities/); the licences
@@ -57,10 +57,12 @@
     app: ['host_document', 'host_document_bytes', 'host_open', 'host_reopen', 'host_show_recent', 'host_new_document',
       'host_set_preview', 'host_set_draft', 'host_clear_draft', 'host_windows',
       'host_focus', 'host_closing', 'host_save', 'host_allow_access', 'host_choose', 'host_write_chosen', 'host_cancel_choice', 'host_versions',
+      'host_cast_scan', 'host_cast_prepare', 'host_cast_frame', 'host_cast_play', 'host_cast_stop',
       'host_open_version', 'host_new_window', 'host_close_window', 'host_set_setting'],
     lite: ['host_document', 'host_document_bytes', 'host_open', 'host_reopen', 'host_show_recent', 'host_new_document',
       'host_set_preview', 'host_set_draft', 'host_clear_draft', 'host_windows',
       'host_focus', 'host_closing', 'host_save', 'host_allow_access', 'host_choose', 'host_write_chosen', 'host_cancel_choice', 'host_versions',
+      'host_cast_scan', 'host_cast_prepare', 'host_cast_frame', 'host_cast_play', 'host_cast_stop',
       'host_open_version', 'host_new_window', 'host_close_window', 'host_set_setting',
       'host_lite_list', 'host_lite_open', 'host_lite_new', 'host_lite_home', 'host_lite_licenses', 'host_lite_quit',
       'host_lite_show'],
@@ -94,11 +96,26 @@
     windowFor(doc);
   };
   const text = (body) => new TextDecoder().decode(body);
+  const cast = window.stubCast = { frames: [], plays: 0, stops: 0 };
   window.__TAURI_INTERNALS__ = {
     async invoke(cmd, args, options) {
       log('hostCalls');
       sessionStorage.hostCalls += ':' + cmd;
       if (!grants.includes(cmd)) throw `Command ${cmd} not allowed by ACL`;
+      if (cmd === 'host_cast_scan') return [{ id: 'tv-1', name: 'Office TV' }];
+      if (cmd === 'host_cast_prepare') {
+        if (cast.key || args.id !== 'tv-1') throw 'Unknown or busy TV';
+        cast.mode = args.mode;
+        return cast.key = 'session-1';
+      }
+      if (cmd === 'host_cast_frame') {
+        if (!cast.key || options.headers['X-Cast-Session'] !== cast.key || !(args instanceof Uint8Array)) throw 'Invalid cast frame';
+        cast.frames.push(args);
+        if (cast.frames.length > 16) cast.frames.shift();
+        return;
+      }
+      if (cmd === 'host_cast_play') { if (!cast.frames.length || args.key !== cast.key) throw 'No first picture'; cast.plays++; return; }
+      if (cmd === 'host_cast_stop') { if (args.key !== cast.key) throw 'Unknown session'; cast.key = null; cast.stops++; return; }
       if (lite) {   // lite.rs: the one window goes to the page; the documents are FILES, newest first
         const go = (url) => { sessionStorage.liteAt = url; setTimeout(() => { location.href = url; }); return null; };
         if (cmd === 'host_lite_list') {

@@ -244,7 +244,7 @@
  },
  "&Arrow": {
   "where": [
-   "lectern/js/slideshow.js:899",
+   "lectern/js/slideshow.js:909",
    "ledger/js/commands.js:127",
    "quire/js/commands.js:499"
   ]
@@ -397,7 +397,7 @@
  },
  "&Ballpoint Pen": {
   "where": [
-   "lectern/js/slideshow.js:900"
+   "lectern/js/slideshow.js:910"
   ]
  },
  "&Bar": {
@@ -441,7 +441,7 @@
  },
  "&Black Screen": {
   "where": [
-   "lectern/js/slideshow.js:917"
+   "lectern/js/slideshow.js:927"
   ]
  },
  "&Black and white": {
@@ -1075,7 +1075,7 @@
  },
  "&Discard": {
   "where": [
-   "lectern/js/slideshow.js:760"
+   "lectern/js/slideshow.js:770"
   ]
  },
  "&Display grid on screen": {
@@ -1208,7 +1208,7 @@
  },
  "&End Show": {
   "where": [
-   "lectern/js/slideshow.js:921"
+   "lectern/js/slideshow.js:931"
   ]
  },
  "&End date:": {
@@ -1265,7 +1265,7 @@
  },
  "&Eraser": {
   "where": [
-   "lectern/js/slideshow.js:905"
+   "lectern/js/slideshow.js:915"
   ]
  },
  "&Error Checking...": {
@@ -1310,7 +1310,7 @@
  },
  "&Felt Tip Pen": {
   "where": [
-   "lectern/js/slideshow.js:901"
+   "lectern/js/slideshow.js:911"
   ]
  },
  "&Field shading:": {
@@ -1590,7 +1590,7 @@
  },
  "&Go to Slide": {
   "where": [
-   "lectern/js/slideshow.js:915"
+   "lectern/js/slideshow.js:925"
   ]
  },
  "&Go to:": {
@@ -1709,7 +1709,7 @@
  },
  "&Help": {
   "where": [
-   "lectern/js/slideshow.js:919",
+   "lectern/js/slideshow.js:929",
    "ledger/js/print.js:594"
   ]
  },
@@ -1776,7 +1776,7 @@
  },
  "&Highlighter": {
   "where": [
-   "lectern/js/slideshow.js:902"
+   "lectern/js/slideshow.js:912"
   ]
  },
  "&Home": {
@@ -1949,7 +1949,7 @@
  },
  "&Keep": {
   "where": [
-   "lectern/js/slideshow.js:760"
+   "lectern/js/slideshow.js:770"
   ]
  },
  "&Keep lines together": {
@@ -2435,7 +2435,7 @@
  },
  "&Next": {
   "where": [
-   "lectern/js/slideshow.js:912",
+   "lectern/js/slideshow.js:922",
    "ledger/js/dialogs3.js:364",
    "ledger/js/print.js:584"
   ]
@@ -2460,7 +2460,7 @@
   "where": [
    "common/core.js:388",
    "lectern/js/app.js:362",
-   "lectern/js/slideshow.js:765",
+   "lectern/js/slideshow.js:775",
    "ledger/js/app.js:113"
   ]
  },
@@ -2770,7 +2770,7 @@
  },
  "&Pause": {
   "where": [
-   "lectern/js/slideshow.js:917"
+   "lectern/js/slideshow.js:927"
   ]
  },
  "&Percent Style": {
@@ -2850,7 +2850,7 @@
  },
  "&Previous": {
   "where": [
-   "lectern/js/slideshow.js:913",
+   "lectern/js/slideshow.js:923",
    "ledger/js/dialogs3.js:364",
    "ledger/js/print.js:585"
   ]
@@ -3083,7 +3083,7 @@
  },
  "&Resume": {
   "where": [
-   "lectern/js/slideshow.js:917"
+   "lectern/js/slideshow.js:927"
   ]
  },
  "&Retry": {
@@ -3203,7 +3203,7 @@
  },
  "&Screen": {
   "where": [
-   "lectern/js/slideshow.js:917"
+   "lectern/js/slideshow.js:927"
   ]
  },
  "&Search commands": {
@@ -4051,7 +4051,7 @@
  },
  "&White Screen": {
   "where": [
-   "lectern/js/slideshow.js:917"
+   "lectern/js/slideshow.js:927"
   ]
  },
  "&Whole page": {
@@ -4130,7 +4130,7 @@
   "where": [
    "common/core.js:388",
    "lectern/js/app.js:362",
-   "lectern/js/slideshow.js:765",
+   "lectern/js/slideshow.js:775",
    "ledger/js/app.js:113"
   ]
  },
@@ -4280,7 +4280,7 @@
   "where": [
    "common/dialogs.js:432",
    "lectern/js/dialogs.js:1116",
-   "lectern/js/slideshow.js:915",
+   "lectern/js/slideshow.js:925",
    "ledger/js/dialogs2.js:64"
   ]
  },
@@ -5891,7 +5891,7 @@
  },
  "All files VibeOffice opens": {
   "where": [
-   "common/suite.js:140"
+   "common/suite.js:147"
   ]
  },
  "All pages in range": {
@@ -7184,7 +7184,7 @@
  "Black": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:903",
+   "lectern/js/slideshow.js:913",
    "quire/js/app.js:187"
   ]
  },
@@ -7201,18 +7201,18 @@
  },
  "Blank Document": {
   "where": [
-   "common/suite.js:342",
+   "common/suite.js:349",
    "quire/js/dialogs3.js:761"
   ]
  },
  "Blank Presentation": {
   "where": [
-   "common/suite.js:342"
+   "common/suite.js:349"
   ]
  },
  "Blank Workbook": {
   "where": [
-   "common/suite.js:342"
+   "common/suite.js:349"
   ]
  },
  "Blank document": {
@@ -7288,7 +7288,7 @@
  "Blue": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:903",
+   "lectern/js/slideshow.js:913",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
   ]
@@ -8070,10 +8070,10 @@
  },
  "Cancel": {
   "where": [
+   "common/cast.js:175",
    "common/charts.js:440",
    "common/core.js:374",
-   "common/dialogs.js:116",
-   "common/dialogs.js:192"
+   "common/dialogs.js:116"
   ]
  },
  "Cancel an entry": {
@@ -8185,6 +8185,32 @@
  "Case &sensitive": {
   "where": [
    "quire/js/dialogs2.js:748"
+  ]
+ },
+ "Cast": {
+  "where": [
+   "common/cast.js:174"
+  ]
+ },
+ "Cast to TV": {
+  "where": [
+   "common/cast.js:160",
+   "common/cast.js:173"
+  ]
+ },
+ "Cast to TV...": {
+  "where": [
+   "common/cast.js:224"
+  ]
+ },
+ "Casting stopped: {0}": {
+  "where": [
+   "common/cast.js:208"
+  ]
+ },
+ "Casting to {0}": {
+  "where": [
+   "common/cast.js:160"
   ]
  },
  "Cat&egory:": {
@@ -8842,7 +8868,7 @@
  },
  "Choose Blank or a template:": {
   "where": [
-   "common/suite.js:681"
+   "common/suite.js:688"
   ]
  },
  "Choose a Theme:": {
@@ -8920,7 +8946,7 @@
  },
  "Classic": {
   "where": [
-   "common/suite.js:343",
+   "common/suite.js:350",
    "quire/js/dialogs2.js:278"
   ]
  },
@@ -9169,10 +9195,10 @@
  },
  "Close": {
   "where": [
+   "common/cast.js:163",
    "common/core.js:353",
    "common/ui.js:615",
-   "common/ui.js:741",
-   "common/ui.js:1119"
+   "common/ui.js:741"
   ]
  },
  "Close Full Screen": {
@@ -9906,6 +9932,11 @@
    "common/smartart.js:391"
   ]
  },
+ "Continuous MPEG-TS": {
+  "where": [
+   "common/cast.js:168"
+  ]
+ },
  "Contrast": {
   "where": [
    "lectern/js/app.js:1418",
@@ -10214,6 +10245,21 @@
  "Correct accidental use of cAPS &LOCK key": {
   "where": [
    "ledger/js/dialogs.js:824"
+  ]
+ },
+ "Could not cast to this TV: {0}": {
+  "where": [
+   "common/cast.js:217"
+  ]
+ },
+ "Could not search for TVs: {0}": {
+  "where": [
+   "common/cast.js:186"
+  ]
+ },
+ "Could not stop casting: {0}": {
+  "where": [
+   "common/cast.js:162"
   ]
  },
  "Count": {
@@ -11908,7 +11954,7 @@
  },
  "Discard the changes": {
   "where": [
-   "common/suite.js:867"
+   "common/suite.js:876"
   ]
  },
  "Discard the unsaved changes": {
@@ -12117,7 +12163,7 @@
  },
  "Do you want to keep your ink annotations?": {
   "where": [
-   "lectern/js/slideshow.js:760"
+   "lectern/js/slideshow.js:770"
   ]
  },
  "Do you want to replace the contents of the destination cells?": {
@@ -12207,7 +12253,7 @@
  },
  "Documents": {
   "where": [
-   "common/suite.js:140",
+   "common/suite.js:147",
    "start.js:130",
    "lite.html:57"
   ]
@@ -12590,7 +12636,7 @@
  },
  "E&rase All Ink on Slide": {
   "where": [
-   "lectern/js/slideshow.js:906"
+   "lectern/js/slideshow.js:916"
   ]
  },
  "E&xisting File or Web Page": {
@@ -12999,7 +13045,7 @@
  },
  "End of slide show, click to exit.": {
   "where": [
-   "lectern/js/slideshow.js:725"
+   "lectern/js/slideshow.js:735"
   ]
  },
  "End, Arrow": {
@@ -15497,7 +15543,7 @@
  },
  "Go to slide {0}": {
   "where": [
-   "lectern/js/slideshow.js:976"
+   "lectern/js/slideshow.js:986"
   ]
  },
  "Goal Seek": {
@@ -15525,7 +15571,7 @@
   "where": [
    "common/ui.js:1172",
    "lectern/js/dialogs.js:235",
-   "lectern/js/slideshow.js:903",
+   "lectern/js/slideshow.js:913",
    "quire/js/dialogs3.js:147"
   ]
  },
@@ -15632,7 +15678,7 @@
  "Green": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:903",
+   "lectern/js/slideshow.js:913",
    "quire/js/app.js:187",
    "quire/js/dialogs3.js:570"
   ]
@@ -15769,6 +15815,11 @@
  "HG Mincho E": {
   "where": [
    "common/core.js:650"
+  ]
+ },
+ "HLS playlist": {
+  "where": [
+   "common/cast.js:168"
   ]
  },
  "HTML Format": {
@@ -16558,12 +16609,12 @@
  },
  "Ink &Color": {
   "where": [
-   "lectern/js/slideshow.js:903"
+   "lectern/js/slideshow.js:913"
   ]
  },
  "Ink Annotations": {
   "where": [
-   "lectern/js/slideshow.js:780"
+   "lectern/js/slideshow.js:790"
   ]
  },
  "Input Message": {
@@ -17605,7 +17656,7 @@
  },
  "Last &Viewed": {
   "where": [
-   "lectern/js/slideshow.js:914"
+   "lectern/js/slideshow.js:924"
   ]
  },
  "Last Name": {
@@ -18179,7 +18230,7 @@
  },
  "Light and calm: warm paper tones, one teal accent, rounded shapes.": {
   "where": [
-   "common/suite.js:344"
+   "common/suite.js:351"
   ]
  },
  "Light bulb": {
@@ -19681,7 +19732,7 @@
  },
  "New Document": {
   "where": [
-   "common/suite.js:683",
+   "common/suite.js:690",
    "quire/js/panes.js:81"
   ]
  },
@@ -19697,7 +19748,7 @@
  },
  "New Presentation": {
   "where": [
-   "common/suite.js:683",
+   "common/suite.js:690",
    "lectern/js/panes.js:569"
   ]
  },
@@ -19721,7 +19772,7 @@
  },
  "New Spreadsheet": {
   "where": [
-   "common/suite.js:683"
+   "common/suite.js:690"
   ]
  },
  "New Style": {
@@ -19845,8 +19896,8 @@
  },
  "Next": {
   "where": [
-   "lectern/js/slideshow.js:372",
-   "lectern/js/slideshow.js:983",
+   "lectern/js/slideshow.js:382",
+   "lectern/js/slideshow.js:993",
    "quire/js/commands.js:479",
    "quire/js/commands.js:574"
   ]
@@ -19949,7 +20000,7 @@
  },
  "No HDMI screen: connect one to present there.": {
   "where": [
-   "lectern/js/slideshow.js:398"
+   "lectern/js/slideshow.js:408"
   ]
  },
  "No Line": {
@@ -19984,6 +20035,11 @@
  "No Suggestions": {
   "where": [
    "common/dialogs.js:236"
+  ]
+ },
+ "No TVs found on this network.": {
+  "where": [
+   "common/cast.js:185"
   ]
  },
  "No Transition": {
@@ -20111,7 +20167,7 @@
  },
  "No unsaved versions are waiting.": {
   "where": [
-   "common/suite.js:871"
+   "common/suite.js:880"
   ]
  },
  "No-Width Non Break": {
@@ -20684,7 +20740,7 @@
  },
  "Open": {
   "where": [
-   "common/suite.js:140",
+   "common/suite.js:147",
    "lectern/js/commands.js:24",
    "lectern/js/panes.js:562",
    "ledger/js/panes.js:70"
@@ -20730,7 +20786,7 @@
  },
  "Open the unsaved version": {
   "where": [
-   "common/suite.js:864"
+   "common/suite.js:873"
   ]
  },
  "Open the version saved before the changes": {
@@ -21106,7 +21162,7 @@
  },
  "P&ointer Options": {
   "where": [
-   "lectern/js/slideshow.js:918"
+   "lectern/js/slideshow.js:928"
   ]
  },
  "P&ortrait": {
@@ -21398,12 +21454,12 @@
  },
  "Paper": {
   "where": [
-   "common/suite.js:344"
+   "common/suite.js:351"
   ]
  },
  "Paper 2016": {
   "where": [
-   "common/suite.js:345"
+   "common/suite.js:352"
   ]
  },
  "Paper bag": {
@@ -21423,7 +21479,7 @@
  },
  "Paper with tabs of commands, grouped by task, instead of menus and toolbars.": {
   "where": [
-   "common/suite.js:345"
+   "common/suite.js:352"
   ]
  },
  "Paper:": {
@@ -21702,7 +21758,7 @@
  },
  "Pause": {
   "where": [
-   "lectern/js/slideshow.js:984"
+   "lectern/js/slideshow.js:994"
   ]
  },
  "Peacock": {
@@ -22047,7 +22103,7 @@
  },
  "Pointer options": {
   "where": [
-   "lectern/js/slideshow.js:370"
+   "lectern/js/slideshow.js:380"
   ]
  },
  "Points": {
@@ -22231,7 +22287,7 @@
  },
  "Presentations": {
   "where": [
-   "common/suite.js:140",
+   "common/suite.js:147",
    "start.js:130",
    "index.html:251"
   ]
@@ -22305,7 +22361,7 @@
  },
  "Previous": {
   "where": [
-   "lectern/js/slideshow.js:369",
+   "lectern/js/slideshow.js:379",
    "quire/js/commands.js:478",
    "quire/js/commands.js:573"
   ]
@@ -22664,7 +22720,7 @@
  },
  "Purple": {
   "where": [
-   "lectern/js/slideshow.js:903"
+   "lectern/js/slideshow.js:913"
   ]
  },
  "Push Down": {
@@ -23016,7 +23072,7 @@
  },
  "Recent &Files...": {
   "where": [
-   "common/suite.js:818"
+   "common/suite.js:827"
   ]
  },
  "Recent Files": {
@@ -23039,8 +23095,8 @@
  },
  "Recent Files...": {
   "where": [
-   "common/suite.js:826",
-   "common/suite.js:851"
+   "common/suite.js:835",
+   "common/suite.js:860"
   ]
  },
  "Recently Used Fonts": {
@@ -23110,17 +23166,17 @@
  },
  "Recovered the unsaved changes. Save the document to keep them.": {
   "where": [
-   "quire/js/app.js:1537"
+   "quire/js/app.js:1542"
   ]
  },
  "Recovered the unsaved changes. Save the presentation to keep them.": {
   "where": [
-   "lectern/js/app.js:2318"
+   "lectern/js/app.js:2324"
   ]
  },
  "Recovered the unsaved changes. Save the workbook to keep them.": {
   "where": [
-   "ledger/js/app.js:1541"
+   "ledger/js/app.js:1545"
   ]
  },
  "Rectangle": {
@@ -23144,7 +23200,7 @@
  "Red": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:903",
+   "lectern/js/slideshow.js:913",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
   ]
@@ -23264,14 +23320,14 @@
  },
  "Rehearsal": {
   "where": [
-   "lectern/js/slideshow.js:982"
+   "lectern/js/slideshow.js:992"
   ]
  },
  "Rehearse Timings": {
   "where": [
    "lectern/js/commands.js:145",
    "lectern/js/ribbon.js:52",
-   "lectern/js/slideshow.js:767"
+   "lectern/js/slideshow.js:777"
   ]
  },
  "Reject": {
@@ -23439,7 +23495,7 @@
  },
  "Repeat": {
   "where": [
-   "lectern/js/slideshow.js:986",
+   "lectern/js/slideshow.js:996",
    "ledger/js/commands.js:268"
   ]
  },
@@ -26122,6 +26178,11 @@
    "quire/js/panes.js:235"
   ]
  },
+ "Search again": {
+  "where": [
+   "common/cast.js:175"
+  ]
+ },
  "Search commands": {
   "where": [
    "common/search.js:211"
@@ -26176,6 +26237,11 @@
  "Searches the text of the open document, including headers, footers, notes and comments.": {
   "where": [
    "quire/js/panes.js:163"
+  ]
+ },
+ "Searching for TVs...": {
+  "where": [
+   "common/cast.js:182"
   ]
  },
  "Searching...": {
@@ -27456,7 +27522,7 @@
    "lectern/js/panes.js:777",
    "lectern/js/panes.js:846",
    "lectern/js/panes.js:884",
-   "lectern/js/slideshow.js:365"
+   "lectern/js/slideshow.js:375"
   ]
  },
  "Slide Show (from start)": {
@@ -27466,12 +27532,12 @@
  },
  "Slide Show Help": {
   "where": [
-   "lectern/js/slideshow.js:937"
+   "lectern/js/slideshow.js:947"
   ]
  },
  "Slide Show Help\n\nN, Enter, Page Down, Right Arrow, Down Arrow or Spacebar: next animation or slide\nP, Page Up, Left Arrow, Up Arrow or Backspace: previous animation or slide\nNumber + Enter: go to that slide\nB or Period: black / unblack screen\nW or Comma: white / unwhite screen\nS or Plus: stop or restart automatic show\nEsc, Ctrl+Break or Hyphen: end slide show\nE: erase drawing on screen\nCtrl+P: pen  ·  Ctrl+A: arrow  ·  Ctrl+E: eraser  ·  Ctrl+H: hide pointer\nHome: first slide  ·  End: last slide": {
   "where": [
-   "lectern/js/slideshow.js:937"
+   "lectern/js/slideshow.js:947"
   ]
  },
  "Slide Show from current slide": {
@@ -27543,7 +27609,7 @@
  },
  "Slide show menu": {
   "where": [
-   "lectern/js/slideshow.js:371"
+   "lectern/js/slideshow.js:381"
   ]
  },
  "Slide shows play in the browser, and presentations export to PDF, PNG pictures and web pages.": {
@@ -28354,7 +28420,7 @@
  },
  "Spreadsheets": {
   "where": [
-   "common/suite.js:140",
+   "common/suite.js:147",
    "start.js:130"
   ]
  },
@@ -28538,6 +28604,11 @@
    "lectern/js/panes.js:816"
   ]
  },
+ "Starting cast...": {
+  "where": [
+   "common/cast.js:194"
+  ]
+ },
  "Starting document": {
   "where": [
    "quire/js/mailmerge.js:343"
@@ -28666,10 +28737,20 @@
    "quire/js/panes.js:503"
   ]
  },
+ "Stop casting": {
+  "where": [
+   "common/cast.js:161"
+  ]
+ },
  "Straight Connector": {
   "where": [
    "common/geometry.js:110",
    "lectern/js/app.js:108"
+  ]
+ },
+ "Stream format": {
+  "where": [
+   "common/cast.js:171"
   ]
  },
  "Stri&kethrough": {
@@ -29024,6 +29105,11 @@
  "TRK": {
   "where": [
    "quire/js/app.js:444"
+  ]
+ },
+ "TV": {
+  "where": [
+   "common/cast.js:170"
   ]
  },
  "Ta&b leader:": {
@@ -29711,8 +29797,8 @@
  },
  "That file is no longer available here. Open it again from your computer.": {
   "where": [
-   "common/suite.js:537",
-   "common/suite.js:637"
+   "common/suite.js:544",
+   "common/suite.js:644"
   ]
  },
  "The Find What text contains a Pattern Match expression which is not valid.": {
@@ -29865,7 +29951,7 @@
  },
  "The classic blue toolbars and menus.": {
   "where": [
-   "common/suite.js:343"
+   "common/suite.js:350"
   ]
  },
  "The comments from Document Properties": {
@@ -30583,7 +30669,7 @@
  },
  "The total time for the slide show was {0}. Do you want to keep the new slide timings?": {
   "where": [
-   "lectern/js/slideshow.js:765"
+   "lectern/js/slideshow.js:775"
   ]
  },
  "The value doesn't match the type you chose. Type a date.": {
@@ -30747,7 +30833,7 @@
  },
  "There are no slides to show.": {
   "where": [
-   "lectern/js/slideshow.js:357"
+   "lectern/js/slideshow.js:367"
   ]
  },
  "There are no tracked changes at the selection.": {
@@ -32305,17 +32391,17 @@
  },
  "Unsaved changes are kept for each document in Recent Files, in the Start Center: open them from there, or discard them.": {
   "where": [
-   "common/suite.js:851"
+   "common/suite.js:860"
   ]
  },
  "Unsaved changes from {0}": {
   "where": [
-   "common/suite.js:860"
+   "common/suite.js:869"
   ]
  },
  "Unsaved changes from {0} (never saved)": {
   "where": [
-   "common/suite.js:860"
+   "common/suite.js:869"
   ]
  },
  "Unsupported bitmap encoding": {
@@ -32801,7 +32887,7 @@
  },
  "VibeOffice Lite doesn't keep unsaved changes: save your document to keep them.": {
   "where": [
-   "common/suite.js:850"
+   "common/suite.js:859"
   ]
  },
  "VibeOffice.work can't open “{0}”. It opens documents (.docx, .rtf), spreadsheets (.xlsx, .csv) and presentations (.pptx).": {
@@ -33122,7 +33208,7 @@
  "White": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:903"
+   "lectern/js/slideshow.js:913"
   ]
  },
  "White Outline": {
@@ -34158,12 +34244,12 @@
  },
  "{0} (unsaved changes)": {
   "where": [
-   "common/suite.js:819"
+   "common/suite.js:828"
   ]
  },
  "{0} (unsaved)": {
   "where": [
-   "common/suite.js:837"
+   "common/suite.js:846"
   ]
  },
  "{0} ({1} seconds)": {
@@ -34325,7 +34411,7 @@
  },
  "{0} kept the unsaved changes of these documents. Open the ones you want to keep and save them; discard the rest.": {
   "where": [
-   "common/suite.js:875"
+   "common/suite.js:884"
   ]
  },
  "{0} key sentence highlighted. Undo to restore.": {
@@ -34465,17 +34551,17 @@
  },
  "{0} — open in another window": {
   "where": [
-   "common/suite.js:862"
+   "common/suite.js:871"
   ]
  },
  "{0} — open in this window": {
   "where": [
-   "common/suite.js:862"
+   "common/suite.js:871"
   ]
  },
  "{0} — unsaved changes from {1}": {
   "where": [
-   "common/suite.js:833"
+   "common/suite.js:842"
   ]
  },
  "{1} can't save “{0}”: it is read-only, or you don't have permission to change it. Your file hasn't changed.": {
@@ -34531,7 +34617,7 @@
  },
  "“{0}” is over 50 MB, so its changes aren't kept for recovery after a crash. Save it to keep them.": {
   "where": [
-   "common/suite.js:768"
+   "common/suite.js:777"
   ]
  },
  "“{0}” was changed by another program after you opened it. Replace it with this version, or save this version under another name?": {

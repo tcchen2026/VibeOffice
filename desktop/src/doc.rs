@@ -240,7 +240,7 @@ fn describe(path: &Path, e: std::io::Error) -> String {
 }
 
 /// The app of an app window (`quire-3` → quire), none for the Start Center and the licences page.
-fn app_of(window: &WebviewWindow) -> Option<&'static str> {
+pub(crate) fn app_of(window: &WebviewWindow) -> Option<&'static str> {
     // the lite edition's one window has each app's page in turn: the app of the page it was sent to
     #[cfg(feature = "lite")]
     let page = window

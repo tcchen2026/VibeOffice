@@ -56,7 +56,7 @@
   function buildMenus() {
     const recentItems = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', { label: 'Sen&d To', sub: ['sendMail'] }, 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', 'fileSearch', '-', 'webPreview', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', ...(window.VO?.host?.cast ? ['castTV'] : []), '-', { label: 'Sen&d To', sub: ['sendMail'] }, 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentItemsList) => (recentItemsList.length ? ['-', ...recentItemsList] : []))(recentItems()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'Cle&ar', sub: ['clearFormats', 'clearContents'] }, 'selectAll', '-', 'find', 'replace', 'goTo', '-', 'links', 'editObject'],
@@ -1528,6 +1528,11 @@
     if (A.opts.docMap) A.toggleDocMap(true);
     ui.refresh();
     if (window.VO) VO.attach('quire', {
+      castView() {
+        const flow = LY.root.querySelector(':scope > .flow');
+        return { viewport: LY.scroller, layers: Array.from((flow || LY.root).children),
+          background: getComputedStyle(flow || LY.scroller).backgroundColor };
+      },
       async open(f, o) {
         await A.openFile(f);
         /* a document a page made (desktop app): never saved */

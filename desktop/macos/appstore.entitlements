@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- The Mac App Store edition: the DMG's entitlements without the network (the store updates it, so nothing is
-     fetched), with the identifiers the provisioning profile carries; build.sh fills in @TEAM@ (APPLE_TEAM_ID). -->
+<!-- The network entitlements serve user-initiated local TV casting. -->
 <plist version="1.0">
 <dict>
 	<key>com.apple.security.app-sandbox</key>
@@ -11,6 +10,10 @@
 	<key>com.apple.security.files.bookmarks.app-scope</key>
 	<true/>
 	<key>com.apple.security.print</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
 	<true/>
 	<key>com.apple.application-identifier</key>
 	<string>@TEAM@.work.vibeoffice.desktop</string>

@@ -17,7 +17,7 @@ use serde::Deserialize;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindow};
 
 /// Version of the interface; raise it when a command changes shape (VO.host.version in the pages).
-pub const VERSION: u32 = 5;
+pub const VERSION: u32 = 6;
 
 #[derive(Default)]
 pub struct Host {

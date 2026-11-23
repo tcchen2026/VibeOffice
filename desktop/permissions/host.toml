@@ -21,8 +21,13 @@ commands.allow = [
 
 [[permission]]
 identifier = "app-window"
-description = "Quire, Ledger and Lectern: the window's document, its draft and preview, saving it (Save, Save As, exports, previous versions), File > Open into the window, the Start Center for Recent Files, the Window menu, closing, the licences page (About), the settings"
+description = "Quire, Ledger and Lectern: the window's document, its draft and preview, saving it (Save, Save As, exports, previous versions), File > Open into the window, the Start Center for Recent Files, the Window menu, closing, the licences page (About), the settings, casting a document view to a TV"
 commands.allow = [
+  "host_cast_scan",
+  "host_cast_prepare",
+  "host_cast_frame",
+  "host_cast_play",
+  "host_cast_stop",
   "host_document",
   "host_document_bytes",
   "host_open",

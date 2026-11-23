@@ -16,6 +16,7 @@ mod instance;
 #[cfg(feature = "lite")]
 mod lite;
 mod net;
+mod cast;
 mod settings;
 mod store;
 mod types;
@@ -60,6 +61,7 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
     let window = builder
         .title("VibeOffice")
         .initialization_script(host::init_script())
+        .initialization_script(dlnanything::CANVAS_JS)
         .initialization_script_for_all_frames(net::NO_WEBRTC)
         .initialization_script_for_all_frames(host::NO_FILE_PICKERS)
         .initialization_script_for_all_frames(host::NO_STORAGE)
@@ -126,6 +128,7 @@ pub fn open_window(app: &AppHandle, label: &str, url: WebviewUrl) -> tauri::Resu
                 PageLoadEvent::Finished => lite::loaded(&window, payload.url()),
             }
             if payload.event() == PageLoadEvent::Started {
+                cast::leave(window.app_handle(), window.label());
                 let scale = if cfg!(feature = "lite") && payload.url().path() == "/lite.html" {
                     1.0
                 } else {
@@ -238,7 +241,10 @@ fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
             api.prevent_close();
             doc::close_requested(window);
         }
-        tauri::WindowEvent::Destroyed => window.state::<doc::Docs>().forget(window.label()),
+        tauri::WindowEvent::Destroyed => {
+            cast::leave(window.app_handle(), window.label());
+            window.state::<doc::Docs>().forget(window.label());
+        }
         _ => {}
     }
 }
@@ -421,7 +427,13 @@ fn main() {
         .on_menu_event(|app, event| mac_menu_event(app, event.id().as_ref()));
     let app = builder
         .manage(host::Host::default())
+        .manage(cast::Casts::default())
         .invoke_handler(tauri::generate_handler![
+            cast::host_cast_scan,
+            cast::host_cast_prepare,
+            cast::host_cast_frame,
+            cast::host_cast_play,
+            cast::host_cast_stop,
             host::host_open_url,
             settings::host_set_setting,
             host::host_new_window,

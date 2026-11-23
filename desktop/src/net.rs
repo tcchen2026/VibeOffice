@@ -1,5 +1,5 @@
 //! The network the pages may use: https://vibeoffice.work/ alone, for the update check (updater/current.json
-//! and whatsnew.json). The app itself makes no connections. Each window's web view refuses every other
+//! and whatsnew.json). Native TV casting uses separate sockets (cast.rs). Each window's web view refuses every other
 //! http(s) and ws(s) request, whatever makes it (a page, a picture or frame in a document, a worker):
 //! WKWebView through a content rule list (macOS), WebView2 by answering the request itself (Windows).
 //! Links still open in the default browser (host::open_external), which is not the app.

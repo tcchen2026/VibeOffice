@@ -62,7 +62,7 @@
   function buildMenus() {
     const autoShapeSub = (group) => ({ custom: (close) => shapeGrid(L.geom.MENU[group], close) });
     const menus = [
-      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), ...((r) => (r.length ? ['-', ...r] : []))(window.VO ? VO.recentMenuItems(4) : []), '-', 'exitApp'] },
+      { label: '&File', items: () => ['new', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', 'printPreview', 'print', 'exportPDF', ...(window.VO?.host?.cast ? ['castTV'] : []), '-', 'properties', ...(L.file.versions() ? ['versions'] : []), ...((r) => (r.length ? ['-', ...r] : []))(window.VO ? VO.recentMenuItems(4) : []), '-', 'exitApp'] },
       { label: '&Edit', items: ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', '-', 'clear', 'selectAll', 'duplicate', 'deleteSlide', '-', 'find', 'replace'] },
       {
         label: '&View', items: () => ['viewNormal', 'viewSorter', 'showFromStart', 'viewNotes', '-',
@@ -2309,6 +2309,12 @@ addEventListener('resize',fit);fit();show(0);`;
     void prompt;
     ui.refresh();
     if (window.VO) VO.attach('lectern', {
+      castView() {
+        if (L.show.active) return L.show.castView();
+        const slide = E.host.firstElementChild;
+        if (slide?.getBoundingClientRect().width) return { viewport: slide, layers: [slide] };
+        return E.slide() ? A.slideCanvas(E.slide(), 1280) : null;
+      },
       async open(f, o) {
         await A.openFile(f);
         /* a presentation a page made (desktop app): never saved */

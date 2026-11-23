@@ -1,0 +1,19 @@
+* { box-sizing: border-box; }
+:root { color-scheme: light; font: 15px/1.4 system-ui, sans-serif; color: #172d37; background: #f2f5f4; }
+body { margin: 0; }
+main { max-width: 1050px; margin: 0 auto; padding: 22px 28px; }
+h1 { margin: 0; font-size: 26px; letter-spacing: -.04em; }
+p { margin: 3px 0 18px; color: #4c6065; }
+.controls, .actions { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; }
+label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.controls label:first-child { flex: 1; min-width: 145px; }
+button, select, input { font: inherit; min-height: 35px; color: inherit; border: 1px solid #a8b7b8; border-radius: 4px; background: white; padding: 5px 10px; }
+button { cursor: pointer; }
+button:disabled, select:disabled { opacity: .6; cursor: default; }
+.primary { background: #085f59; border-color: #085f59; color: white; min-width: 104px; }
+.stage { background: #132c35; margin: 16px 0 12px; }
+canvas { display: block; width: 100%; max-height: 55vh; object-fit: contain; }
+.actions { align-items: center; }
+output { font-size: 14px; }
+#address { margin-top: 12px; }
+[hidden] { display: none !important; }

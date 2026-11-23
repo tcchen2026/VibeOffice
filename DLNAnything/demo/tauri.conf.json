@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DLNAnything",
+  "version": "0.1.0",
+  "identifier": "work.dlnanything.demo",
+  "build": { "frontendDist": "generated-ui" },
+  "app": {
+    "windows": [{ "label": "main", "title": "DLNAnything", "width": 930, "height": 700, "minWidth": 570, "minHeight": 520 }],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost",
+      "capabilities": [{ "identifier": "demo", "windows": ["main"], "permissions": [] }]
+    }
+  },
+  "bundle": { "active": false, "icon": ["icons/icon.png","icons/icon.ico"] }
+}

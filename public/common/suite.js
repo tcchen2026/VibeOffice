@@ -83,8 +83,15 @@
     kind: native ? 'desktop' : 'web',
     platform: native ? native.platform : 'web',
     version: native ? native.version : 0,
+    cast: appPage && native?.version >= 6 ? {
+      scan: () => call('host_cast_scan'),
+      prepare: (id, mode) => call('host_cast_prepare', { id, mode }),
+      frame: (key, bytes) => call('host_cast_frame', bytes, { headers: { 'X-Cast-Session': key } }),
+      play: key => call('host_cast_play', { key }),
+      stop: key => call('host_cast_stop', { key }),
+    } : null,
     /** whether this edition looks for its updates (updater/current.json): not the Mac App Store's, which the store
-     *  updates and which has no network, nor the lite edition's, which its package updates */
+     *  updates itself, nor the lite edition's, which its package updates */
     updates: !native || (native.edition !== 'appstore' && !lite),
     /** the lite edition's start page and window (desktop/src/lite.rs), else null: list() the documents in
      *  ~/VibeOffice/Documents, [{ name, app, size, modified }] newest first; open(name), create(page, start) a new
@@ -684,6 +691,8 @@
   };
   /** the open app's templates: [{ id, name }] */
   VO.templates = () => (current && current.hooks.templates ? current.hooks.templates() : []);
+  /** The document viewport and its visible layers, or a canvas the app rendered for casting. */
+  VO.castView = () => current?.hooks.castView?.();
   /** a JPEG (at most 320 px) of the open document's first page, or null */
   VO.thumbnail = async () => {
     const make = current && current.hooks.thumb;

@@ -33,6 +33,8 @@
 - **Private.** Everything runs on your machine. There is no server behind it, no upload and no sign-in.
 - **Installable.** In Chrome or Edge, install it from the Start Center. It then opens .docx, .xlsx and .pptx files from your file manager.
 
+In the native desktop apps, **File ▸ Cast to TV** shares the current document, worksheet or slide with a DLNA TV on the local network. Lectern follows the slide show when you press **F5**. [Desktop casting](docs/desktop.md#casting-to-a-tv)
+
 ## Lossless editing
 
 The goal: edit a Word, Excel or PowerPoint file here, save it in the same format, and send it to someone who uses Microsoft Office. It opens for them without an error or repair message, with your changes in place and everything else exactly as it was.

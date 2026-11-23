@@ -37,6 +37,8 @@ No page draws a title bar of its own: the browser tab, or the system title bar o
 
 What runs the pages, a browser or the desktop app (`desktop/`, Tauri): `VO.host.kind` (`web`, `desktop`), `platform`, `version`, `onFiles(fn)` for files the system asks us to open (the PWA's `launchQueue`, or the desktop app's command line; the Start Center hands them to their app), `openUrl(url)` (a new tab, or the default browser), `newWindow(url)` / `closeWindow()` (an app in a window of its own; File ▸ Exit closes it) and `uiScale()` / `setUiScale(n)` (the desktop app's zoom; `null` on the web). Pages use `VO.host` for anything the two differ in. The interface, its rules and what is planned are in docs/desktop.md (Host interface).
 
+Document windows in native host version 6 expose **File ▸ Cast to TV**. Each app supplies a `castView()` hook to `VO.attach` with its document viewport and visible layers, or a canvas. The shared command fits that view into 1280 × 720 and submits two H.264 pictures per second through `VO.host.cast`. [Desktop casting](desktop.md#casting-to-a-tv)
+
 ## App launch: `VO.launch` and `VO.attach`
 
 | URL | The app starts with |
@@ -91,6 +93,7 @@ One copy of everything the three apps share; a change here is a change in every 
 | `pdf.js` | PDF 1.7 writer (asynchronous `L.buildPDF`), generated empty font for text supplied by collectors, links, outlines and document language; the shared URI filter omits `javascript:`, `vbscript:` and `data:` links while retaining web, mail, FTP, file and relative targets; bounded SVG batches and JPEG encoding for page pictures | on first PDF export |
 | `pdftext.js` | Visible words for the PDF layer: `collectDOM(page, scale, options)` for Quire, Lectern and Ledger's SVG pictures; `recordCanvas(ctx)` and `canvasLines(canvas, scale, options)` for Ledger's actual cell/header/footer drawing. Rectangle clips, transforms, squeezed text and child-canvas copies retain their positions; Ledger orders cells by row. Mixed bidi words carry browser-resolved `visual` text. Lectern opts into `transforms: true` for rotated HTML boxes. `collectLinks(page, scale, resolve, options)` shares the DOM geometry; each app resolves destinations against its exported pages. `language(...tags)` validates document metadata without substituting the UI locale | `L.pdfModule(true)`, on each app's first PDF export |
 | `ui.js` | commands, menus, toolbars (with Toolbar Options »), Tools ▸ Customize (`ui.customize`, `ui.toolbarPrefs`), the status bar's right end (`ui.statusGroup`, `ui.zoomSlider`, `ui.paneToggle`), the Undo/Redo list (`ui.historyMenu`), combo boxes, dialogs (with their access keys), colour menus, password and prompt boxes, drags and brushes (`ui.drag`, `ui.brush`, below); the events `vo-command`, `vo-busy`, `vo-message` (what the user does, followed by the assistant) | all |
+| `cast.js` | Native receiver picker, document viewport capture and WebCodecs producer lifecycle | desktop document windows |
 | `search.js` | Search commands, the box at the top right of every app (see Search commands) | all |
 | `ribbon.js` | the ribbon of the Paper 2016 look, drawn from each app's `js/ribbon.js` (see The ribbon) | all |
 | `icons.js` | the 16×16 icon sets (common, document, spreadsheet), `L.icons.add`, `L.icons.kit` | all |

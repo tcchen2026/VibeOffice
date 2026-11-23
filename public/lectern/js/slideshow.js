@@ -338,6 +338,16 @@
   let root, stage, layer, inkCanvas, ink, popbar, raf = 0;
   let st = null; /* runtime state */
 
+  S.castView = function () {
+    if (!st) return null;
+    if (st.blank) return { viewport: stage, layers: [], background: st.blank };
+    if (st.ended) {
+      const end = root.querySelector('.endscreen');
+      return { viewport: end, layers: [end], background: '#000' };
+    }
+    return { viewport: stage, layers: [stage, inkCanvas], background: '#000' };
+  };
+
   function slideOrder() {
     const pres = L.pres;
     const n = pres.slides.length;

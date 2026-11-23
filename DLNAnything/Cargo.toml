@@ -1,0 +1,19 @@
+[package]
+name = "dlnanything"
+version = "0.1.0"
+edition = "2021"
+description = "Cast a canvas to a DLNA MediaRenderer with a paced local H.264 transport stream"
+license = "Apache-2.0"
+include = ["src/**", "web/canvas.js", "README.md", "LICENSE*", "Cargo.toml"]
+
+[dependencies]
+async-stream = "0.3"
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "query"] }
+bytes = "1"
+futures-core = "0.3"
+quick-xml = { version = "0.39", features = ["serialize"] }
+reqwest = { version = "0.12", default-features = false }
+serde = { version = "1", features = ["derive"] }
+socket2 = "0.6"
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
+uuid = { version = "1", features = ["v4"] }

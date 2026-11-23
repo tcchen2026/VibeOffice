@@ -538,7 +538,7 @@
   function buildMenus() {
     const recent = () => (window.VO ? VO.recentMenuItems(4) : []);
     const menus = [
-      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', 'exportPDF', 'exportCSV', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
+      { label: '&File', items: () => ['newBook', 'open', 'close', '-', 'save', 'saveAs', 'saveWeb', '-', 'pageSetup', { label: 'Prin&t Area', sub: ['setPrintArea', 'clearPrintArea'] }, 'printPreview', 'print', 'exportPDF', ...(window.VO?.host?.cast ? ['castTV'] : []), 'exportCSV', '-', 'properties', ...(L.file.versions() ? ['versions'] : []), ...((recentList) => (recentList.length ? ['-', ...recentList] : []))(recent()), '-', 'exitApp'] },
       {
         label: '&Edit', items: () => ['undo', 'redo', '-', 'cut', 'copy', 'officeClipboard', 'paste', 'pasteSpecial', 'pasteHyperlink', '-',
           { label: 'F&ill', sub: ['fillDown', 'fillRight', 'fillUp', 'fillLeft', 'fillAcross', 'fillSeries', 'fillJustify'] },
@@ -1531,6 +1531,10 @@
     G().focus();
     L.bus.emit('app-ready');
     if (window.VO) VO.attach('ledger', {
+      castView() {
+        const grid = L.$('canvas.gcv'), drawings = L.$('#glayer');
+        return { viewport: grid, layers: drawings.childElementCount ? [grid, drawings] : [grid] };
+      },
       async open(f, o) {
         await A.openFiles([f]);
         /* an unsaved version: the changes are not saved yet, and a never-saved workbook still needs Save As */

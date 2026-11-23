@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DLNAnything</title><link rel="stylesheet" href="demo.css">
+<script src="canvas.js" defer></script><script src="demo.js" defer></script></head>
+<body><main>
+<header><h1>DLNAnything</h1><p>Cast this canvas to a TV on your network.</p></header>
+<section class="controls" aria-label="Cast controls">
+<label>Receiver<select id="receiver"><option value="">Local HTTP test</option></select></label>
+<button id="scan">Find TVs</button>
+<label>Stream<select id="mode"><option value="hls">HLS playlist</option><option value="ts">Continuous MPEG-TS</option></select></label>
+<button class="primary" id="cast">Start cast</button>
+</section>
+<section class="stage" aria-label="Live canvas"><canvas width="960" height="540" id="canvas"></canvas></section>
+<div class="actions"><button id="change">Change picture</button><output id="status" role="status">Ready</output></div>
+<label id="address" hidden>Stream URL<input id="url" readonly></label>
+</main></body></html>

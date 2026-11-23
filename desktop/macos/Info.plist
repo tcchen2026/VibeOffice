@@ -5,6 +5,8 @@
      @DISTRIBUTION@ (appstore or direct: host.rs reads it; the signature seals it). -->
 <plist version="1.0">
 <dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Find a TV and stream the document view when you choose Cast to TV.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

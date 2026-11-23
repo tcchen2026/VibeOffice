@@ -16,6 +16,7 @@
 | `desktop/src/store.rs` | `~/.vibeoffice`: `config.json` (the settings), Recent Files, their previews and drafts, each file written whole (`write_atomic`) |
 | `desktop/src/types.rs` | which app opens which file: the table `VO.APPS` is (a test compares them) |
 | `desktop/src/dialog.rs` | the system's Open dialog and a yes-or-no question: rfd on Windows and macOS, GTK's native chooser on Linux |
+| `desktop/src/cast.rs`, `DLNAnything/` | Document-window cast sessions, reusable Rust MediaRenderer discovery and HTTP streaming, and the embedded WebCodecs canvas API |
 | `desktop/src/net.rs` | the network rules: each window's web view reaches `https://vibeoffice.work/` alone, or the window never loads its page; `VO_NET_PROBE` (Network, below) |
 | `desktop/src/installation.rs` | what the installer writes and `-uninstall` removes, in one list: files, shortcuts, HKCU registrations (shared with `setup/`) |
 | `desktop/src/installed.rs` | Windows: `vibeoffice.exe -uninstall`, and the first start after installing (taskbar pin request, Default apps) |
@@ -50,7 +51,8 @@ One interface between the pages and what runs them, so a page never asks which: 
 | `platform` | `'web'` | `'windows'`, `'macos'`, `'linux'` (Rust's `std::env::consts::OS`) |
 | `updates` | `true` (the page never checks) | `true`; `false` in the Mac App Store edition, which the store updates (the Start Center never reads `current.json`; old, it still shows Check for updates, for the App Store), and in the lite edition, which its package updates |
 | `lite` | `null` | `null`; the lite edition's `{ list, open, create, home, licenses, quit, show }` (`host_lite_*`: Lite edition, below) |
-| `version` | `0` | `host::VERSION`, raised when a command changes shape (5 since the settings moved to `~/.vibeoffice`) |
+| `version` | `0` | `host::VERSION`, raised when a command changes shape (6 added document casting) |
+| `cast` | `null` | Document windows receive `scan`, `prepare`, `frame`, `play` and `stop`. The frame command accepts binary Annex B with the window’s session key. |
 | `onFiles(fn)` | `launchQueue` (the PWA's file handlers) | nothing: the native side opens the files the app is started with, or that another start (Windows) or Finder (macOS) hands over, each in a window of its own |
 | `openUrl(url)` | a new tab | `host_open_url`, from the Start Center: the update page and our GitHub only (Links, below), to the system (`ShellExecuteW`, `NSWorkspace openURL:`, `xdg-open`) |
 | `newWindow(url)` | `window.open` (false if blocked) | `host_new_window`: told the page (`quire`, `ledger`, `lectern`, `licenses`) and how it starts (`VO.launch`: `new`, `template`), never an address; Rust makes the address (`host::page_path`) and a full window with the host script and handlers, labelled `<page>-<n>`. An app window opens a blank document or a template of its own app, and the licences page; at most 64 windows. A Recent Files card's address (`recent`, `draft`) goes to `openRecent` |
@@ -200,7 +202,7 @@ workflow (`appstore.yml`).
 
 A version is `v<yyyy>.<mm>.<dd>-<6 hex>`, the date (UTC) and commit of the tree it was built from, e.g. `v2026.10.11-d2134d`: `tools/current-tree-version.sh [commit]` prints it. `build.sh` stamps it into the app and the installer (`VO_VERSION`, shown as `VO.VERSION` on the Start Center and in About); the release is tagged with it, and the zip keeps one name. Windows wants numbers: the exes' file version is `2026.10.11`. A plain `cargo build` says `dev`.
 
-`public/updater/current.json`, edited by hand (nothing updates it): per policy, per platform (`web`, `macos`, `windows`, `linux`), the version an edition must be at least. The Mac App Store edition never reads it (`VO.host.updates`): the store updates it, and it has no network; its Check for updates opens the update page as `macos_store`.
+`public/updater/current.json`, edited by hand (nothing updates it): per policy, per platform (`web`, `macos`, `windows`, `linux`), the version an edition must be at least. The Mac App Store edition never reads it (`VO.host.updates`): the store updates it. Its Check for updates opens the update page as `macos_store`.
 
     { "show-update-button": { "windows": "v2026.10.11-000000", … },
       "show-update-dialog": { "windows": "v2026.10.11-000000", … } }
@@ -214,7 +216,7 @@ When the Start Center opens, the desktop app reads `https://vibeoffice.work/upda
 ## Network
 
 The pages may reach `https://vibeoffice.work/` alone, for the update check (`updater/current.json` and `whatsnew.json`);
-the app itself makes no connections (`desktop/src/net.rs`). Every other http, https, ws and wss request a window makes,
+user-initiated native TV casting uses separate sockets. Every other http, https, ws and wss request a window makes,
 whatever makes it (a page, a picture or frame in a document, a worker), is refused before it leaves the machine:
 
 - macOS: a WebKit content rule list (the format of Safari's content blockers): block `^https?://` and `^wss?://`, then
@@ -240,8 +242,7 @@ WebView2's filter; the pages' own Content-Security-Policy refuses it there (todo
 The app's own pages and IPC (`tauri://`, `ipc://`; `https://tauri.localhost` and `https://ipc.localhost` on Windows, a secure context, where WebView2 doesn't look up links' host names ahead) and
 `data:` and `blob:` are not the network; a dev build also reaches its dev server (127.0.0.1). Our own links still open
 in the default browser, which is not the app. The pages' Content-Security-Policy (docs/suite.md, Security) is the
-same limit from the other side: `connect-src` names the site and the IPC sources (`ipc:`, `https://ipc.localhost`). The sandbox can't name a host: the DMG has the network entitlement
-(`network.client`) for the update check, which is why the rules live in the web view; the App Store edition has none.
+same limit from the other side: `connect-src` names the site and the IPC sources (`ipc:`, `https://ipc.localhost`). Both macOS editions use the client and server network entitlements for local TV casting. The DMG also checks for updates. The webview enforces its own network rules.
 What the system and WebView2 do on their own (Edge's updates, certificate checks) is theirs.
 
 WebRTC isn't a request the web view shows us, so neither the rules nor the policy cover it: `net::NO_WEBRTC`, run in
@@ -251,6 +252,14 @@ natively (`on_permission_request` in `main.rs`), except Local Font Access (Setti
 reading the clipboard (Paste), which go on as the engine handles them; on macOS the sandbox grants no device anyway.
 On Windows, WebView2's own browser keys are off (`net::win::browser_keys_off`, before the page: F5 and Ctrl+R reload,
 Ctrl+P, Ctrl+F, Ctrl+S, the zoom keys); editing keys and the apps' own shortcuts stay.
+
+### Casting to a TV
+
+Choose **File ▸ Cast to TV** in Quire, Ledger or Lectern. Select a TV on the same network and click **Cast**. The default is **HLS playlist**. For a renderer that accepts a direct video URL, select **Continuous MPEG-TS**. Open the same dialog to stop. The desktop webview needs a working WebCodecs H.264 encoder.
+
+Rust discovers MediaRenderers using SSDP, binds an ephemeral HTTP port on the interface that reaches the selected TV and sends its URL through AVTransport. Document pictures go to that local stream. The original file and application chrome stay on the sender. Each window owns its session. Closing or navigating the window releases it. The TV can continue reading the same URL through edits and slide changes.
+
+VibeOffice uses two pictures per second and one independently decodable picture per 500 ms segment. Early playlist and segment requests receive HTTP headers immediately, then wait for a complete segment and its deadline. The TV’s buffer determines the remaining delay. The reusable library also supports 2–30 fps. [DLNAnything](../DLNAnything/README.md)
 
 ## Building
 
@@ -296,12 +305,12 @@ One universal binary (Apple silicon and Intel, macOS 13 or later), bundled twice
   for updates as Windows does (`updater/current.json`, `macos`).
 - **appstore**: `VibeOffice-macOS-AppStore.pkg` for App Store Connect (TestFlight, then review), signed for the store
   with its provisioning profile. `edition: 'appstore'`: the Start Center never reads `current.json`, the store updates it
-  (App Review guideline 2.4.5), so it has no network entitlement either. Two months old, it shows Check for updates,
+  (App Review guideline 2.4.5). Two months old, it shows Check for updates,
   which opens the update page in the browser with `current_platform=macos_store`: update from the App Store.
 
 Both run in the App Sandbox, so trying the DMG tries the store's edition too (`desktop/macos/*.entitlements`): the
 files the user picks in the Open and Save dialogs or opens from Finder, their bookmarks (Recent Files after a restart),
-printing, and in the DMG the network for the update check. Links go to the browser through
+printing, local network access for casting, and the update check in the DMG. Links go to the browser through
 NSWorkspace, which the sandbox allows; no program is started.
 
 The Mac's ways (`main.rs`):
