@@ -57,12 +57,12 @@
     app: ['host_document', 'host_document_bytes', 'host_open', 'host_reopen', 'host_show_recent', 'host_new_document',
       'host_set_preview', 'host_set_draft', 'host_clear_draft', 'host_windows',
       'host_focus', 'host_closing', 'host_save', 'host_allow_access', 'host_choose', 'host_write_chosen', 'host_cancel_choice', 'host_versions',
-      'host_cast_scan', 'host_cast_prepare', 'host_cast_frame', 'host_cast_play', 'host_cast_stop',
+      'host_cast_scan', 'host_cast_prepare', 'host_cast_frame', 'host_cast_play', 'host_cast_wait', 'host_cast_stop',
       'host_open_version', 'host_new_window', 'host_close_window', 'host_set_setting'],
     lite: ['host_document', 'host_document_bytes', 'host_open', 'host_reopen', 'host_show_recent', 'host_new_document',
       'host_set_preview', 'host_set_draft', 'host_clear_draft', 'host_windows',
       'host_focus', 'host_closing', 'host_save', 'host_allow_access', 'host_choose', 'host_write_chosen', 'host_cancel_choice', 'host_versions',
-      'host_cast_scan', 'host_cast_prepare', 'host_cast_frame', 'host_cast_play', 'host_cast_stop',
+      'host_cast_scan', 'host_cast_prepare', 'host_cast_frame', 'host_cast_play', 'host_cast_wait', 'host_cast_stop',
       'host_open_version', 'host_new_window', 'host_close_window', 'host_set_setting',
       'host_lite_list', 'host_lite_open', 'host_lite_new', 'host_lite_home', 'host_lite_licenses', 'host_lite_quit',
       'host_lite_show'],
@@ -114,6 +114,7 @@
         if (cast.frames.length > 16) cast.frames.shift();
         return;
       }
+      if (cmd === 'host_cast_wait') return args.key === cast.key;
       if (cmd === 'host_cast_play') { if (!cast.frames.length || args.key !== cast.key) throw 'No first picture'; cast.plays++; return; }
       if (cmd === 'host_cast_stop') { if (args.key !== cast.key) throw 'Unknown session'; cast.key = null; cast.stops++; return; }
       if (lite) {   // lite.rs: the one window goes to the page; the documents are FILES, newest first

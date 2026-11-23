@@ -13,6 +13,16 @@ const LIMIT: usize = 256 * 1024;
 fn invalid(msg: impl Into<String>) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, msg.into())
 }
+fn network_error(e: reqwest::Error) -> io::Error {
+    let kind = if e.is_timeout() {
+        io::ErrorKind::TimedOut
+    } else if e.is_connect() {
+        io::ErrorKind::NotConnected
+    } else {
+        io::ErrorKind::Other
+    };
+    io::Error::new(kind, e)
+}
 fn client(location: &Url, source: Option<IpAddr>, local: Option<IpAddr>) -> io::Result<Client> {
     let mut builder = Client::builder().local_address(local);
     if let Some(peer) = source {
@@ -39,12 +49,12 @@ fn client(location: &Url, source: Option<IpAddr>, local: Option<IpAddr>) -> io::
         .redirect(reqwest::redirect::Policy::none())
         .timeout(Duration::from_secs(4))
         .build()
-        .map_err(io::Error::other)
+        .map_err(network_error)
 }
 async fn response_text(mut r: reqwest::Response) -> io::Result<(bool, String)> {
     let ok = r.status().is_success();
     let mut out = Vec::new();
-    while let Some(chunk) = r.chunk().await.map_err(io::Error::other)? {
+    while let Some(chunk) = r.chunk().await.map_err(network_error)? {
         if out.len() + chunk.len() > LIMIT {
             return Err(invalid("UPnP XML exceeds 256 KiB"));
         }
@@ -119,15 +129,18 @@ impl Control {
             .body(body)
             .send()
             .await
-            .map_err(io::Error::other)?;
+            .map_err(network_error)?;
         let (ok, xml) = response_text(r).await?;
         if ok {
             Ok(xml)
         } else {
-            Err(io::Error::other(format!(
-                "{action} refused: {}",
-                xml.chars().take(1200).collect::<String>()
-            )))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                format!(
+                    "{action} refused: {}",
+                    xml.chars().take(1200).collect::<String>()
+                ),
+            ))
         }
     }
 }
@@ -167,7 +180,7 @@ impl Renderer {
             .get(location.clone())
             .send()
             .await
-            .map_err(io::Error::other)?;
+            .map_err(network_error)?;
         let peer = r
             .remote_addr()
             .ok_or_else(|| invalid("unknown renderer address"))?

@@ -166,3 +166,52 @@ test('TVs appear during discovery, the remembered TV is selected, and Cast can s
   ` }]);
   assert.deepEqual(result, [['other', false, true], 'tv-1', 3, 1]);
 });
+
+test('waiting for the TV shows firewall help, keeps casting on dismissal and can stop the stream', async () => {
+  const result = await shot('quire', [{ js: until + `
+    let release;
+    VO.host.cast.wait = () => new Promise(r => { release = r; });
+    const status = () => document.querySelector('.dlg [role=status]')?.textContent || '';
+    const button = label => [...document.querySelectorAll('.dlg-foot button')].find(b => b.textContent === label);
+    async function start() {
+      release = null;
+      L.ui.exec('castTV');
+      await until(() => document.querySelector('#cast-tv')?.length);
+      button('Cast').click();
+      await until(() => release && status().includes('Office TV'));
+    }
+    await start();
+    const waiting = status();
+    release(false);
+    await until(() => document.querySelector('.dlg-body').innerText.includes('Windows Defender Firewall'));
+    const help = document.querySelector('.dlg-body').innerText;
+    button('Keep waiting').click();
+    await until(() => !document.querySelector('.dlg'));
+    const before = stubCast.frames.at(-1);
+    await until(() => stubCast.frames.at(-1) !== before);
+    const active = [stubCast.plays, stubCast.stops];
+    release(true);
+    L.ui.exec('castTV'); button('Stop casting').click();
+    await until(() => stubCast.stops === 1);
+    await start(); release(false);
+    await until(() => document.querySelector('.dlg-body').innerText.includes('Windows Defender Firewall'));
+    button('Stop casting').click();
+    await until(() => stubCast.stops === 2);
+    release(true);
+    return [waiting, help.includes('same network'), help.includes('Private'), active, stubCast.plays, stubCast.stops];
+  ` }]);
+  assert.deepEqual(result, ['Waiting for Office TV...', true, true, [1, 0], 2, 2]);
+});
+
+test('the picker gives a plain playback error without displaying the receiver response', async () => {
+  const message = await shot('ledger', [{ js: until + `
+    VO.host.cast.play = async () => { throw {kind:'refused', detail:'<s:Envelope>internal fault</s:Envelope>'}; };
+    L.ui.exec('castTV');
+    await until(() => document.querySelector('#cast-tv')?.length);
+    document.querySelector('.dlg .primary').click();
+    await until(() => stubCast.stops && !document.querySelector('.dlg .primary').disabled);
+    return document.querySelector('.dlg [role=status]').textContent;
+  ` }]);
+  assert.match(message, /TV declined to play/);
+  assert.doesNotMatch(message, /Envelope|fault|object Object/);
+});

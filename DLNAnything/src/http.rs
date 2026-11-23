@@ -17,7 +17,7 @@ use std::{
 };
 use tokio::{
     net::TcpListener,
-    sync::{oneshot, Semaphore},
+    sync::{oneshot, watch, Semaphore},
     time::Instant,
 };
 
@@ -28,6 +28,7 @@ struct Hub {
     timeline: Arc<Timeline>,
     playlists: Mutex<HashMap<IpAddr, u64>>,
     clients: Arc<Semaphore>,
+    requested: watch::Sender<bool>,
     hls_type: String,
 }
 
@@ -66,6 +67,7 @@ impl MediaServer {
             timeline: Arc::new(Timeline::new(config)),
             playlists: Mutex::new(HashMap::new()),
             clients: Arc::new(Semaphore::new(32)),
+            requested: watch::channel(false).0,
             hls_type: hls_type.to_owned(),
         });
         let files = Router::new()
@@ -95,6 +97,20 @@ impl MediaServer {
     }
     pub fn session_id(&self) -> &str {
         self.base.rsplit('/').next().unwrap()
+    }
+    /// Observe a playlist or segment request, including HEAD, even if it arrived before Play returned.
+    /// The waiter does not keep the server or its listener alive.
+    pub fn wait_for_request(
+        &self,
+        wait: Duration,
+    ) -> impl std::future::Future<Output = bool> + Send + 'static {
+        let mut seen = self.hub.requested.subscribe();
+        async move {
+            matches!(
+                tokio::time::timeout(wait, seen.wait_for(|requested| *requested)).await,
+                Ok(Ok(_))
+            )
+        }
     }
     pub fn frames(&self) -> FrameSink {
         FrameSink(self.hub.timeline.clone())
@@ -149,17 +165,24 @@ async fn media(
     State(hub): State<Arc<Hub>>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Path(name): Path<String>,
-    Query(q): Query<PlaylistQuery>,
+    query: Result<Query<PlaylistQuery>, axum::extract::rejection::QueryRejection>,
     headers: HeaderMap,
 ) -> Reply {
-    match name.as_str() {
-        "live.m3u8" => playlist(hub, peer.ip(), q.msn),
-        _ => {
-            let Some(seq) = name.strip_suffix(".ts").and_then(|s| s.parse::<u64>().ok()) else {
-                return empty(StatusCode::NOT_FOUND);
-            };
-            segment(hub, seq, &headers)
-        }
+    let seq = name.strip_suffix(".ts").and_then(|s| s.parse::<u64>().ok());
+    if name != "live.m3u8" && seq.is_none() {
+        return empty(StatusCode::NOT_FOUND);
+    }
+    hub.requested.send_if_modified(|seen| {
+        let first = !*seen;
+        *seen = true;
+        first
+    });
+    if let Some(seq) = seq {
+        return segment(hub, seq, &headers);
+    }
+    match query {
+        Ok(Query(q)) => playlist(hub, peer.ip(), q.msn),
+        Err(_) => empty(StatusCode::BAD_REQUEST),
     }
 }
 

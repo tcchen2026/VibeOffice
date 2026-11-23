@@ -98,6 +98,7 @@
       prepare: id => call('host_cast_prepare', { id }),
       frame: (key, bytes) => call('host_cast_frame', bytes, { headers: { 'X-Cast-Session': key } }),
       play: key => call('host_cast_play', { key }),
+      wait: key => call('host_cast_wait', { key }),
       stop: key => call('host_cast_stop', { key }),
     } : null,
     /** whether this edition looks for its updates (updater/current.json): not the Mac App Store's, which the store

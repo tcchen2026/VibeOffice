@@ -154,13 +154,39 @@
     finally { session.painter?.close(); await host.stop(session.key); }
   }
 
+  function errorMessage(error, fallback) {
+    console.debug('Cast to TV', error?.detail || error);
+    switch (error?.kind) {
+      case 'notAnswering': return L.t('The TV did not answer. Check that it is on and connected to the same network, then try again.');
+      case 'refused': return L.t('The TV declined to play this stream. Check that it supports HLS video, then try again.');
+      case 'gone': return L.t('This TV is no longer available. Choose Search again to find it.');
+      case 'busy': return L.t('This TV is already in use. Stop the other cast or choose another TV.');
+      default: return (!error?.kind && fallback) || L.t('VibeOffice could not reach the local network. Check the connection and try again.');
+    }
+  }
+
+  function firewallHelp() {
+    switch (VO.host.platform) {
+      case 'windows': return L.t('Allow VibeOffice through Windows Defender Firewall on Private networks. Set your trusted office network to Private in Windows Settings.');
+      case 'macos': return L.t('In System Settings → Network → Firewall → Options, allow incoming connections to VibeOffice.');
+      default: return L.t('Check that your firewall (such as ufw or firewalld) allows the TV to connect to VibeOffice.');
+    }
+  }
+
+  function stopFromDialog(session) {
+    stop(session).catch(e => {
+      console.debug('Stop casting', e?.detail || e);
+      ui.msg(L.t('VibeOffice stopped sending pictures. If the TV is still playing, stop playback with its remote.'), { icon: 'warn' });
+    });
+  }
+
   function choose() {
     if (dialog) return;
     if (active) {
       const session = active;
       dialog = ui.dialog({ title: L.t('Cast to TV'), body: h('p', { text: L.t('Casting to {0}', session.name) }),
         buttons: [{ label: L.t('Stop casting'), primary: true, onClick() {
-          stop(session).catch(e => ui.msg(L.t('Could not stop casting: {0}', String(e)), { icon: 'warn' }));
+          stopFromDialog(session);
         } }, { label: L.t('Close') }] });
       dialog.done.then(() => { dialog = null; });
       return;
@@ -173,10 +199,17 @@
     const preferred = VO.settings.get('vibeoffice.castTV');
     let selectionChanged = false;
     tv.addEventListener('change', () => { selectionChanged = true; });
+    let playingSession;
     let connecting = false, searching = false, retryOnFocus = false, regainedFocus = false, timer, supported;
     const d = ui.dialog({ title: L.t('Cast to TV'), body, buttons: [
-      { label: L.t('Cast'), primary: true, onClick() { connect(); return false; } },
-      { label: L.t('Search again'), onClick() { scan(); return false; } }, { label: L.t('Cancel'), cancel: true }
+      { label: L.t('Cast'), primary: true, onClick() {
+        if (!playingSession) { connect(); return false; }
+        // Keep waiting closes the dialog and leaves the stream running.
+      } },
+      { label: L.t('Search again'), onClick() {
+        if (playingSession) stopFromDialog(playingSession);
+        else { scan(); return false; }
+      } }, { label: L.t('Cancel'), cancel: true }
     ] });
     dialog = d;
     function refocus() {
@@ -229,7 +262,7 @@
         if (!d.el.isConnected || connecting) return;
         show(devices);
         status.textContent = tv.length ? '' : L.t('No TVs found on this network.');
-      } catch (e) { if (!connecting) status.textContent = L.t('Could not search for TVs: {0}', String(e)); }
+      } catch (e) { if (!connecting) status.textContent = errorMessage(e); }
       finally {
         searching = false;
         if (d.el.isConnected && !connecting) {
@@ -244,6 +277,32 @@
               timer = setTimeout(() => { if (document.hasFocus()) scan(false); }, regainedFocus ? 0 : 1500);
           }
         }
+      }
+    }
+    async function waitForTV(session) {
+      playingSession = session;
+      body.replaceChildren(status);
+      status.textContent = L.t('Waiting for {0}...', session.name);
+      const [keep, end, cancel] = d.buttons;
+      keep.textContent = L.t('Keep waiting');
+      end.textContent = L.t('Stop casting');
+      keep.disabled = end.disabled = false;
+      cancel.hidden = true;
+      keep.focus();
+      let helpShown = false;
+      try {
+        while (d.el.isConnected && active === session) {
+          const opened = await host.wait(session.key);
+          if (!d.el.isConnected || active !== session) return;
+          if (opened) { d.close(); return; }
+          if (!helpShown) {
+            status.textContent = L.t('The TV has not opened the stream. Check that the TV and this computer are on the same network. Guest Wi-Fi can keep devices apart.');
+            body.append(h('p', { text: firewallHelp() }));
+            helpShown = true;
+          }
+        }
+      } catch (e) {
+        if (d.el.isConnected && active === session) status.textContent = errorMessage(e);
       }
     }
     async function connect() {
@@ -265,17 +324,19 @@
           sendFrame: bytes => host.frame(key, bytes), onError(e) {
             if (active !== session) return;
             stop(session).catch(() => {});
-            ui.msg(L.t('Casting stopped: {0}', String(e)), { icon: 'warn' });
+            if (playingSession === session && d.el.isConnected) d.close();
+            ui.msg(errorMessage(e, L.t('Casting stopped because the next picture could not be sent. Try casting again.')), { icon: 'warn' });
           } });
         if (active !== session) { await session.capture.stop(); return; }
         if (!d.el.isConnected) { await stop(session); return; }
         await host.play(key);
         VO.settings.set('vibeoffice.castTV', id);
         if (!d.el.isConnected) { await stop(session); return; }
-        d.close();
+        await waitForTV(session);
       } catch (e) {
         if (session) await stop(session).catch(() => {});
-        status.textContent = L.t('Could not cast to this TV: {0}', String(e));
+        const pictureError = session && !session.capture && L.t('VibeOffice could not prepare the document picture. Try casting again.');
+        status.textContent = errorMessage(e, pictureError);
         connecting = false;
         d.buttons[0].disabled = d.buttons[1].disabled = tv.disabled = false;
       }

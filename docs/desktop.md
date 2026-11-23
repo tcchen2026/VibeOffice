@@ -261,6 +261,10 @@ On macOS 15 and later, the first search can open the **Local Network** permissio
 
 If the Mac firewall asks whether VibeOffice may accept incoming connections, choose **Allow** so the TV can fetch the stream. The app’s firewall setting is under **System Settings ▸ Network ▸ Firewall ▸ Options**. [Apple’s firewall guide](https://support.apple.com/guide/mac-help/mh34041/mac)
 
+On Windows, Defender Firewall can prompt on the first cast. Allow VibeOffice on **Private** networks and set the trusted office connection’s network profile to **Private**. A Private-only rule blocks the TV on a Public network. The per-user installer installs under the current account (HKCU) and cannot add a system firewall rule. [Windows Firewall settings](https://support.microsoft.com/en-us/windows/security/windows-security/firewall-and-network-protection-in-the-windows-security-app)
+
+After you choose **Cast**, the picker waits for the TV to open the HLS playlist or a segment. It closes on the first request. After ten seconds it shows network and firewall help. **Keep waiting** closes the picker and continues sending pictures. **Stop casting** ends the stream. TVs on a guest or isolated network may be unable to connect to the computer.
+
 Rust discovers MediaRenderers using SSDP, binds an ephemeral HTTP port on the interface that reaches the selected TV and sends its URL through AVTransport. Document pictures go to that local stream. The original file and application chrome stay on the sender. Each window owns its session. Closing or navigating the window releases it. The TV can continue reading the same URL through edits and slide changes.
 
 VibeOffice uses two pictures per second and one independently decodable picture per 500 ms segment. Early playlist and segment requests receive HTTP headers immediately, then wait for a complete segment and its deadline. The TV’s buffer determines the remaining delay. The reusable library also supports 2–30 fps. [DLNAnything](../DLNAnything/README.md)

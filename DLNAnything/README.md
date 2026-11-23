@@ -32,6 +32,7 @@ async fn start(tv: &Renderer, server: &MediaServer) -> io::Result<()> {
 - Bridge each binary `sendFrame` call to `server.frames().push_annex_b(bytes)`. Retain the server for the cast and propagate a failed push back to the producer. Capture order is decode order.
 - Start capture before calling `play`. The producer resolves after its first encoded picture reaches the host. For a multi-picture segment the server can accept a receiver request while the remaining pictures arrive.
 - To attach a local player during development, bind a specific address with `MediaServer::bind_with_config` and read `playlist_url()`.
+- After Play, `server.wait_for_request(timeout).await` tells you whether the receiver has requested the playlist or a segment. It includes HEAD and remembers requests that arrived before Play returned.
 - When the user ends a cast, stop the producer, call `tv.stop().await` and drop the server. Dropping the server also wakes waiting readers and invalidates existing frame handles.
 
 On macOS, set `NSLocalNetworkUsageDescription` in the host app’s Info.plist. A sandboxed host needs the outgoing and incoming network entitlements for discovery, playback control and serving the stream. macOS 15 and later can prompt on the first discovery packet and reject that packet while the user decides. Let the user search again after granting access. [Apple’s local network privacy guide](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)

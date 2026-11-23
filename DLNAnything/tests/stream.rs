@@ -388,3 +388,41 @@ async fn renderer_sets_one_uri_and_plays_once_while_the_canvas_changes() {
     assert!(calls[1].0.ends_with("#Play\"") && calls[2].0.ends_with("#Stop\""));
     tv.abort();
 }
+
+#[tokio::test]
+async fn the_first_request_is_seen_even_before_the_body_or_the_waiter() {
+    let short = Duration::from_millis(30);
+    for (name, head) in [("live.m3u8", true), ("0.ts", false)] {
+        let server = MediaServer::bind("127.0.0.1:0".parse().unwrap())
+            .await
+            .unwrap();
+        let client = client();
+        assert_eq!(
+            client
+                .head(media_url(&server, "missing"))
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            404
+        );
+        assert!(!server.wait_for_request(short).await);
+        let waiting = tokio::spawn(server.wait_for_request(Duration::from_secs(2)));
+        let url = media_url(&server, name);
+        let request = if head {
+            client.head(url)
+        } else {
+            client.get(url)
+        };
+        let response = request.send().await.unwrap();
+        assert!(response.status().is_success());
+        assert!(waiting.await.unwrap());
+        assert!(server.wait_for_request(Duration::ZERO).await);
+    }
+    let server = MediaServer::bind("127.0.0.1:0".parse().unwrap())
+        .await
+        .unwrap();
+    let waiter = server.wait_for_request(Duration::from_secs(10));
+    drop(server);
+    assert!(!timeout(Duration::from_secs(1), waiter).await.unwrap());
+}

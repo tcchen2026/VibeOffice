@@ -27,6 +27,7 @@ commands.allow = [
   "host_cast_prepare",
   "host_cast_frame",
   "host_cast_play",
+  "host_cast_wait",
   "host_cast_stop",
   "host_document",
   "host_document_bytes",

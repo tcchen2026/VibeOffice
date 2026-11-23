@@ -433,6 +433,7 @@ fn main() {
             cast::host_cast_prepare,
             cast::host_cast_frame,
             cast::host_cast_play,
+            cast::host_cast_wait,
             cast::host_cast_stop,
             host::host_open_url,
             settings::host_set_setting,

@@ -5891,7 +5891,7 @@
  },
  "All files VibeOffice opens": {
   "where": [
-   "common/suite.js:157"
+   "common/suite.js:158"
   ]
  },
  "All pages in range": {
@@ -5927,6 +5927,11 @@
  "Allow Users to Edit Ra&nges...": {
   "where": [
    "ledger/js/commands.js:197"
+  ]
+ },
+ "Allow VibeOffice through Windows Defender Firewall on Private networks. Set your trusted office network to Private in Windows Settings.": {
+  "where": [
+   "common/cast.js:170"
   ]
  },
  "Allow all users of this worksheet to:": {
@@ -7201,18 +7206,18 @@
  },
  "Blank Document": {
   "where": [
-   "common/suite.js:359",
+   "common/suite.js:360",
    "quire/js/dialogs3.js:761"
   ]
  },
  "Blank Presentation": {
   "where": [
-   "common/suite.js:359"
+   "common/suite.js:360"
   ]
  },
  "Blank Workbook": {
   "where": [
-   "common/suite.js:359"
+   "common/suite.js:360"
   ]
  },
  "Blank document": {
@@ -8070,7 +8075,7 @@
  },
  "Cancel": {
   "where": [
-   "common/cast.js:179",
+   "common/cast.js:212",
    "common/charts.js:440",
    "common/core.js:374",
    "common/dialogs.js:116"
@@ -8189,28 +8194,29 @@
  },
  "Cast": {
   "where": [
-   "common/cast.js:178"
+   "common/cast.js:205"
   ]
  },
  "Cast to TV": {
   "where": [
-   "common/cast.js:161",
-   "common/cast.js:177"
+   "common/cast.js:158",
+   "common/cast.js:187",
+   "common/cast.js:204"
   ]
  },
  "Cast to TV...": {
   "where": [
-   "common/cast.js:285"
+   "common/cast.js:346"
   ]
  },
- "Casting stopped: {0}": {
+ "Casting stopped because the next picture could not be sent. Try casting again.": {
   "where": [
-   "common/cast.js:268"
+   "common/cast.js:328"
   ]
  },
  "Casting to {0}": {
   "where": [
-   "common/cast.js:161"
+   "common/cast.js:187"
   ]
  },
  "Cat&egory:": {
@@ -8713,6 +8719,11 @@
    "quire/js/dialogs3.js:582"
   ]
  },
+ "Check that your firewall (such as ufw or firewalld) allows the TV to connect to VibeOffice.": {
+  "where": [
+   "common/cast.js:172"
+  ]
+ },
  "Check the slides before you save over the original.": {
   "where": [
    "lectern/js/app.js:433"
@@ -8868,7 +8879,7 @@
  },
  "Choose Blank or a template:": {
   "where": [
-   "common/suite.js:698"
+   "common/suite.js:699"
   ]
  },
  "Choose a Theme:": {
@@ -8946,7 +8957,7 @@
  },
  "Classic": {
   "where": [
-   "common/suite.js:360",
+   "common/suite.js:361",
    "quire/js/dialogs2.js:278"
   ]
  },
@@ -9195,7 +9206,7 @@
  },
  "Close": {
   "where": [
-   "common/cast.js:164",
+   "common/cast.js:190",
    "common/core.js:353",
    "common/ui.js:615",
    "common/ui.js:741"
@@ -10240,21 +10251,6 @@
  "Correct accidental use of cAPS &LOCK key": {
   "where": [
    "ledger/js/dialogs.js:824"
-  ]
- },
- "Could not cast to this TV: {0}": {
-  "where": [
-   "common/cast.js:278"
-  ]
- },
- "Could not search for TVs: {0}": {
-  "where": [
-   "common/cast.js:232"
-  ]
- },
- "Could not stop casting: {0}": {
-  "where": [
-   "common/cast.js:163"
   ]
  },
  "Count": {
@@ -11949,7 +11945,7 @@
  },
  "Discard the changes": {
   "where": [
-   "common/suite.js:886"
+   "common/suite.js:887"
   ]
  },
  "Discard the unsaved changes": {
@@ -12248,7 +12244,7 @@
  },
  "Documents": {
   "where": [
-   "common/suite.js:157",
+   "common/suite.js:158",
    "start.js:130",
    "lite.html:57"
   ]
@@ -16396,6 +16392,11 @@
    "quire/js/drawing.js:684"
   ]
  },
+ "In System Settings → Network → Firewall → Options, allow incoming connections to VibeOffice.": {
+  "where": [
+   "common/cast.js:171"
+  ]
+ },
  "In a document the arrows are {0}+{1} {2} {3} {4}; in a menu {1} {2} {3} {4} alone.": {
   "where": [
    "lite.js:115"
@@ -17484,6 +17485,11 @@
    "quire/js/panes.js:485"
   ]
  },
+ "Keep waiting": {
+  "where": [
+   "common/cast.js:287"
+  ]
+ },
  "Keep with ne&xt": {
   "where": [
    "quire/js/dialogs.js:225"
@@ -18220,7 +18226,7 @@
  },
  "Light and calm: warm paper tones, one teal accent, rounded shapes.": {
   "where": [
-   "common/suite.js:361"
+   "common/suite.js:362"
   ]
  },
  "Light bulb": {
@@ -19722,7 +19728,7 @@
  },
  "New Document": {
   "where": [
-   "common/suite.js:700",
+   "common/suite.js:701",
    "quire/js/panes.js:81"
   ]
  },
@@ -19738,7 +19744,7 @@
  },
  "New Presentation": {
   "where": [
-   "common/suite.js:700",
+   "common/suite.js:701",
    "lectern/js/panes.js:569"
   ]
  },
@@ -19762,7 +19768,7 @@
  },
  "New Spreadsheet": {
   "where": [
-   "common/suite.js:700"
+   "common/suite.js:701"
   ]
  },
  "New Style": {
@@ -20029,7 +20035,7 @@
  },
  "No TVs found on this network.": {
   "where": [
-   "common/cast.js:231"
+   "common/cast.js:264"
   ]
  },
  "No Transition": {
@@ -20157,7 +20163,7 @@
  },
  "No unsaved versions are waiting.": {
   "where": [
-   "common/suite.js:890"
+   "common/suite.js:891"
   ]
  },
  "No-Width Non Break": {
@@ -20665,7 +20671,7 @@
  },
  "On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.": {
   "where": [
-   "common/cast.js:171"
+   "common/cast.js:197"
   ]
  },
  "On mouse click": {
@@ -20735,7 +20741,7 @@
  },
  "Open": {
   "where": [
-   "common/suite.js:157",
+   "common/suite.js:158",
    "lectern/js/commands.js:24",
    "lectern/js/panes.js:562",
    "ledger/js/panes.js:70"
@@ -20781,7 +20787,7 @@
  },
  "Open the unsaved version": {
   "where": [
-   "common/suite.js:883"
+   "common/suite.js:884"
   ]
  },
  "Open the version saved before the changes": {
@@ -21449,12 +21455,12 @@
  },
  "Paper": {
   "where": [
-   "common/suite.js:361"
+   "common/suite.js:362"
   ]
  },
  "Paper 2016": {
   "where": [
-   "common/suite.js:362"
+   "common/suite.js:363"
   ]
  },
  "Paper bag": {
@@ -21474,7 +21480,7 @@
  },
  "Paper with tabs of commands, grouped by task, instead of menus and toolbars.": {
   "where": [
-   "common/suite.js:362"
+   "common/suite.js:363"
   ]
  },
  "Paper:": {
@@ -22282,7 +22288,7 @@
  },
  "Presentations": {
   "where": [
-   "common/suite.js:157",
+   "common/suite.js:158",
    "start.js:130",
    "index.html:251"
   ]
@@ -23067,7 +23073,7 @@
  },
  "Recent &Files...": {
   "where": [
-   "common/suite.js:837"
+   "common/suite.js:838"
   ]
  },
  "Recent Files": {
@@ -23090,8 +23096,8 @@
  },
  "Recent Files...": {
   "where": [
-   "common/suite.js:845",
-   "common/suite.js:870"
+   "common/suite.js:846",
+   "common/suite.js:871"
   ]
  },
  "Recently Used Fonts": {
@@ -26175,7 +26181,7 @@
  },
  "Search again": {
   "where": [
-   "common/cast.js:179"
+   "common/cast.js:209"
   ]
  },
  "Search commands": {
@@ -26236,12 +26242,12 @@
  },
  "Searching for TVs. If macOS asks for Local Network access, choose Allow.": {
   "where": [
-   "common/cast.js:209"
+   "common/cast.js:242"
   ]
  },
  "Searching for TVs...": {
   "where": [
-   "common/cast.js:209"
+   "common/cast.js:242"
   ]
  },
  "Searching...": {
@@ -28420,7 +28426,7 @@
  },
  "Spreadsheets": {
   "where": [
-   "common/suite.js:157",
+   "common/suite.js:158",
    "start.js:130"
   ]
  },
@@ -28606,7 +28612,7 @@
  },
  "Starting cast...": {
   "where": [
-   "common/cast.js:254"
+   "common/cast.js:313"
   ]
  },
  "Starting document": {
@@ -28739,7 +28745,9 @@
  },
  "Stop casting": {
   "where": [
-   "common/cast.js:162"
+   "common/cast.js:178",
+   "common/cast.js:188",
+   "common/cast.js:288"
   ]
  },
  "Straight Connector": {
@@ -29104,7 +29112,7 @@
  },
  "TV": {
   "where": [
-   "common/cast.js:172"
+   "common/cast.js:198"
   ]
  },
  "Ta&b leader:": {
@@ -29792,8 +29800,8 @@
  },
  "That file is no longer available here. Open it again from your computer.": {
   "where": [
-   "common/suite.js:554",
-   "common/suite.js:654"
+   "common/suite.js:555",
+   "common/suite.js:655"
   ]
  },
  "The Find What text contains a Pattern Match expression which is not valid.": {
@@ -29844,6 +29852,21 @@
   "where": [
    "common/legacy/ppt-crypto.js:72",
    "common/legacy/ppt-read.js:99"
+  ]
+ },
+ "The TV declined to play this stream. Check that it supports HLS video, then try again.": {
+  "where": [
+   "common/cast.js:161"
+  ]
+ },
+ "The TV did not answer. Check that it is on and connected to the same network, then try again.": {
+  "where": [
+   "common/cast.js:160"
+  ]
+ },
+ "The TV has not opened the stream. Check that the TV and this computer are on the same network. Guest Wi-Fi can keep devices apart.": {
+  "where": [
+   "common/cast.js:299"
   ]
  },
  "The Text Wizard has determined that your data is Delimited.": {
@@ -29946,7 +29969,7 @@
  },
  "The classic blue toolbars and menus.": {
   "where": [
-   "common/suite.js:360"
+   "common/suite.js:361"
   ]
  },
  "The comments from Document Properties": {
@@ -31053,6 +31076,16 @@
    "lectern/js/frames.js:152"
   ]
  },
+ "This TV is already in use. Stop the other cast or choose another TV.": {
+  "where": [
+   "common/cast.js:163"
+  ]
+ },
+ "This TV is no longer available. Choose Search again to find it.": {
+  "where": [
+   "common/cast.js:162"
+  ]
+ },
  "This browser blocked the image export.": {
   "where": [
    "lectern/js/app.js:547"
@@ -31405,7 +31438,7 @@
  },
  "This webview cannot encode H.264 for casting.": {
   "where": [
-   "common/cast.js:207"
+   "common/cast.js:240"
   ]
  },
  "This workbook contains a sheet type that cannot be converted yet": {
@@ -32391,17 +32424,17 @@
  },
  "Unsaved changes are kept for each document in Recent Files, in the Start Center: open them from there, or discard them.": {
   "where": [
-   "common/suite.js:870"
+   "common/suite.js:871"
   ]
  },
  "Unsaved changes from {0}": {
   "where": [
-   "common/suite.js:879"
+   "common/suite.js:880"
   ]
  },
  "Unsaved changes from {0} (never saved)": {
   "where": [
-   "common/suite.js:879"
+   "common/suite.js:880"
   ]
  },
  "Unsupported bitmap encoding": {
@@ -32887,7 +32920,22 @@
  },
  "VibeOffice Lite doesn't keep unsaved changes: save your document to keep them.": {
   "where": [
-   "common/suite.js:869"
+   "common/suite.js:870"
+  ]
+ },
+ "VibeOffice could not prepare the document picture. Try casting again.": {
+  "where": [
+   "common/cast.js:338"
+  ]
+ },
+ "VibeOffice could not reach the local network. Check the connection and try again.": {
+  "where": [
+   "common/cast.js:164"
+  ]
+ },
+ "VibeOffice stopped sending pictures. If the TV is still playing, stop playback with its remote.": {
+  "where": [
+   "common/cast.js:179"
   ]
  },
  "VibeOffice.work can't open “{0}”. It opens documents (.docx, .rtf), spreadsheets (.xlsx, .csv) and presentations (.pptx).": {
@@ -32974,6 +33022,11 @@
  "W&idth:": {
   "where": [
    "quire/js/dialogs.js:689"
+  ]
+ },
+ "Waiting for {0}...": {
+  "where": [
+   "common/cast.js:285"
   ]
  },
  "Walnut": {
@@ -34244,12 +34297,12 @@
  },
  "{0} (unsaved changes)": {
   "where": [
-   "common/suite.js:838"
+   "common/suite.js:839"
   ]
  },
  "{0} (unsaved)": {
   "where": [
-   "common/suite.js:856"
+   "common/suite.js:857"
   ]
  },
  "{0} ({1} seconds)": {
@@ -34411,7 +34464,7 @@
  },
  "{0} kept the unsaved changes of these documents. Open the ones you want to keep and save them; discard the rest.": {
   "where": [
-   "common/suite.js:894"
+   "common/suite.js:895"
   ]
  },
  "{0} key sentence highlighted. Undo to restore.": {
@@ -34551,17 +34604,17 @@
  },
  "{0} — open in another window": {
   "where": [
-   "common/suite.js:881"
+   "common/suite.js:882"
   ]
  },
  "{0} — open in this window": {
   "where": [
-   "common/suite.js:881"
+   "common/suite.js:882"
   ]
  },
  "{0} — unsaved changes from {1}": {
   "where": [
-   "common/suite.js:852"
+   "common/suite.js:853"
   ]
  },
  "{1} can't save “{0}”: it is read-only, or you don't have permission to change it. Your file hasn't changed.": {
@@ -34617,7 +34670,7 @@
  },
  "“{0}” is over 50 MB, so its changes aren't kept for recovery after a crash. Save it to keep them.": {
   "where": [
-   "common/suite.js:787"
+   "common/suite.js:788"
   ]
  },
  "“{0}” was changed by another program after you opened it. Replace it with this version, or save this version under another name?": {
