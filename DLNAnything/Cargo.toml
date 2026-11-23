@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Cast a canvas to a DLNA MediaRenderer with a paced local H.264 transport stream"
 license = "Apache-2.0"
-include = ["src/**", "tests/**", "web/canvas.js", "README.md", "LICENSE*", "Cargo.toml"]
+include = ["src/**", "web/canvas.js", "README.md", "LICENSE*", "Cargo.toml"]
 
 [dependencies]
 async-stream = "0.3"

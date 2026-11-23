@@ -36,26 +36,26 @@ fn eligible(ip: Ipv4Addr, flags: InterfaceFlags) -> bool {
         && (ip.is_private() || ip.is_link_local())
 }
 
-fn interfaces() -> io::Result<Vec<Ipv4Addr>> {
+fn interfaces(adapters: io::Result<impl Iterator<Item = getifaddrs::Interface>>) -> Vec<Ipv4Addr> {
     let mut ips = Vec::new();
-    for interface in getifaddrs()? {
+    for interface in adapters.into_iter().flatten() {
         if let Some(IpAddr::V4(ip)) = interface.address.ip_addr() {
             if eligible(ip, interface.flags) && !ips.contains(&ip) {
                 ips.push(ip);
             }
         }
     }
-    Ok(ips)
+    ips
 }
 
 /// Report each distinct renderer as soon as its device description is available.
 pub async fn discover_with(wait: Duration, found: impl FnMut(Renderer)) -> io::Result<()> {
-    scan_interfaces(interfaces()?, SSDP, wait, found).await
+    scan_interfaces(interfaces(getifaddrs()), SSDP, wait, found).await
 }
 
 /// Search all eligible local IPv4 interfaces and return TVs sorted by name.
 pub async fn discover(wait: Duration) -> io::Result<Vec<Renderer>> {
-    collect(interfaces()?, wait).await
+    collect(interfaces(getifaddrs()), wait).await
 }
 
 /// Search a particular local IPv4 interface, including one chosen by an embedding app.
@@ -116,11 +116,16 @@ async fn probe(
 }
 
 async fn scan_interfaces(
-    ips: Vec<Ipv4Addr>,
+    mut ips: Vec<Ipv4Addr>,
     target: SocketAddrV4,
     wait: Duration,
     mut found: impl FnMut(Renderer),
 ) -> io::Result<()> {
+    // A publicly addressed campus LAN, or unavailable OS interface metadata, can
+    // still have a usable system multicast route. A failed private probe is a real error.
+    if ips.is_empty() {
+        ips.push(Ipv4Addr::UNSPECIFIED);
+    }
     let (send, mut replies) = mpsc::channel(64);
     let mut probes = JoinSet::new();
     for ip in ips {
@@ -159,18 +164,11 @@ async fn scan_interfaces(
             }
         }
     }
-    if searched {
-        Ok(())
-    } else {
-        Err(first_error.unwrap_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::AddrNotAvailable,
-                "no active private IPv4 multicast interface",
-            )
-        }))
+    match (searched, first_error) {
+        (false, Some(e)) => Err(e),
+        _ => Ok(()),
     }
 }
 
 #[cfg(test)]
-#[path = "../tests/discovery/loopback.rs"]
 mod tests;

@@ -27,7 +27,7 @@ async fn start(tv: &Renderer, server: &MediaServer) -> io::Result<()> {
 }
 ```
 
-- `discover(Duration)` searches each active multicast-capable private or link-local IPv4 interface, sending three requests during the first second. `discover_with(duration, callback)` delivers each distinct TV as its description arrives. `discover_on(ip, duration)` selects the interface. `Renderer::from_location(url)` accepts a known device-description URL.
+- `discover(Duration)` searches each active multicast-capable private or link-local IPv4 interface, sending three requests during the first second. If interface enumeration fails or yields no eligible address, discovery uses the system multicast route. `discover_with(duration, callback)` delivers each distinct TV as its description arrives. `discover_on(ip, duration)` selects the interface. `Renderer::from_location(url)` accepts a known device-description URL.
 - Inject `dlnanything::CANVAS_JS` into your native webview, or load the same classic script from `web/canvas.js`. In a secure context, call `await DLNAnything.isSupported({width, height, fps})` to check the encoder before requesting local network access. The producer accepts both WebCodecs H.264 formats and delivers Annex B to the host.
 - Bridge each binary `sendFrame` call to `server.frames().push_annex_b(bytes)`. Retain the server for the cast and propagate a failed push back to the producer. Capture order is decode order.
 - Start capture before calling `play`. The producer resolves after its first encoded picture reaches the host. For a multi-picture segment the server can accept a receiver request while the remaining pictures arrive.

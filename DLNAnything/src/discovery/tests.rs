@@ -82,11 +82,37 @@ async fn retries_on_each_socket_and_reports_one_tv_before_search_ends() {
 #[tokio::test]
 async fn no_usable_socket_returns_an_error() {
     let target = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 1);
-    for ips in [Vec::new(), vec![Ipv4Addr::new(192, 0, 2, 47)]] {
-        assert!(
-            scan_interfaces(ips, target, Duration::from_millis(30), |_| {})
+    let unavailable = Ipv4Addr::new(192, 0, 2, 47);
+    assert!(
+        scan_interfaces(vec![unavailable], target, Duration::from_millis(30), |_| {})
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn empty_interface_list_still_sends_a_search_on_the_default_route() {
+    for adapters in [
+        Ok(std::iter::empty()),
+        Err(io::Error::other("interface enumeration failed")),
+    ] {
+        let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).await.unwrap();
+        let SocketAddr::V4(target) = receiver.local_addr().unwrap() else {
+            unreachable!()
+        };
+        let scan = tokio::spawn(scan_interfaces(
+            interfaces(adapters),
+            target,
+            Duration::from_millis(100),
+            |_| {},
+        ));
+        let mut bytes = [0; 512];
+        let (count, _) =
+            tokio::time::timeout(Duration::from_secs(1), receiver.recv_from(&mut bytes))
                 .await
-                .is_err()
-        );
+                .expect("the system route should send a search")
+                .unwrap();
+        assert_eq!(&bytes[..count], SEARCH);
+        scan.await.unwrap().unwrap();
     }
 }
