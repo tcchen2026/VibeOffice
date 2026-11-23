@@ -215,3 +215,20 @@ test('the picker gives a plain playback error without displaying the receiver re
   assert.match(message, /TV declined to play/);
   assert.doesNotMatch(message, /Envelope|fault|object Object/);
 });
+
+test('a rejected picture stops the cast and identifies the picture failure', async () => {
+  const result = await shot('ledger', [{ js: until + `
+    const frame = VO.host.cast.frame;
+    VO.host.cast.frame = (key, bytes) => {
+      if (stubCast.plays) throw {kind:'picture', detail:'invalid Annex B'};
+      return frame(key, bytes);
+    };
+    L.ui.exec('castTV');
+    await until(() => document.querySelector('#cast-tv')?.length);
+    document.querySelector('.dlg .primary').click();
+    await until(() => stubCast.stops === 1 && document.querySelector('.dlg-body'));
+    return document.querySelector('.dlg-body').innerText;
+  ` }]);
+  assert.match(result, /Casting stopped because the next picture could not be sent/);
+  assert.doesNotMatch(result, /Annex B|local network/);
+});

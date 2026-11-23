@@ -261,7 +261,7 @@ On macOS 15 and later, the first search can open the **Local Network** permissio
 
 If the Mac firewall asks whether VibeOffice may accept incoming connections, choose **Allow** so the TV can fetch the stream. The app’s firewall setting is under **System Settings ▸ Network ▸ Firewall ▸ Options**. [Apple’s firewall guide](https://support.apple.com/guide/mac-help/mh34041/mac)
 
-On Windows, Defender Firewall can prompt on the first cast. Allow VibeOffice on **Private** networks and set the trusted office connection’s network profile to **Private**. A Private-only rule blocks the TV on a Public network. The per-user installer installs under the current account (HKCU) and cannot add a system firewall rule. [Windows Firewall settings](https://support.microsoft.com/en-us/windows/security/windows-security/firewall-and-network-protection-in-the-windows-security-app)
+On Windows, Defender Firewall can prompt on the first cast. Allow VibeOffice on **Private** networks and set your home or office network to **Private**. A Private-only rule blocks the TV on a Public network. The per-user installer installs under the current account (HKCU) and cannot add a system firewall rule. [Windows Firewall settings](https://support.microsoft.com/en-us/windows/security/windows-security/firewall-and-network-protection-in-the-windows-security-app)
 
 After you choose **Cast**, the picker waits for the TV to open the HLS playlist or a segment. It closes on the first request. After ten seconds it shows network and firewall help. **Keep waiting** closes the picker and continues sending pictures. **Stop casting** ends the stream. TVs on a guest or isolated network may be unable to connect to the computer.
 

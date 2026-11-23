@@ -24,6 +24,7 @@ pub enum CastError {
     Gone,
     Busy,
     Network(String),
+    Picture(String),
 }
 
 impl CastError {
@@ -218,14 +219,14 @@ pub fn host_cast_frame(
         .ok_or(CastError::Gone)?;
     let session = casts.owner(&window)?.session(key)?;
     let InvokeBody::Raw(bytes) = request.body() else {
-        return Err(CastError::network("Expected binary H.264"));
+        return Err(CastError::Picture("Expected binary H.264".into()));
     };
     session
         .server
         .frames()
         .push_annex_b(bytes)
         .map(|_| ())
-        .map_err(CastError::network)
+        .map_err(|e| CastError::Picture(e.to_string()))
 }
 #[tauri::command]
 pub async fn host_cast_play(

@@ -159,6 +159,7 @@
     switch (error?.kind) {
       case 'notAnswering': return L.t('The TV did not answer. Check that it is on and connected to the same network, then try again.');
       case 'refused': return L.t('The TV declined to play this stream. Check that it supports HLS video, then try again.');
+      case 'picture': return L.t('Casting stopped because the next picture could not be sent. Try casting again.');
       case 'gone': return L.t('This TV is no longer available. Choose Search again to find it.');
       case 'busy': return L.t('This TV is already in use. Stop the other cast or choose another TV.');
       default: return (!error?.kind && fallback) || L.t('VibeOffice could not reach the local network. Check the connection and try again.');
@@ -167,7 +168,7 @@
 
   function firewallHelp() {
     switch (VO.host.platform) {
-      case 'windows': return L.t('Allow VibeOffice through Windows Defender Firewall on Private networks. Set your trusted office network to Private in Windows Settings.');
+      case 'windows': return L.t('Allow VibeOffice through Windows Defender Firewall on Private networks. Set your home or office network to Private in Windows Settings.');
       case 'macos': return L.t('In System Settings → Network → Firewall → Options, allow incoming connections to VibeOffice.');
       default: return L.t('Check that your firewall (such as ufw or firewalld) allows the TV to connect to VibeOffice.');
     }
