@@ -4,7 +4,8 @@
   const host = window.VO?.host?.cast;
   if (!host) return;
   const { h, ui } = L;
-  let active, dialog;
+  const video = { width: 1280, height: 720, fps: 2 };
+  let active, dialog, discovery;
 
   // A view supplies its viewport and ordered document layers in screen coordinates.
   // Canvas layers can be copied directly. Snapshot DOM layers while their styles and
@@ -166,26 +167,66 @@
     }
     const tv = h('select', { id: 'cast-tv' }), mode = h('select', { id: 'cast-mode' },
       h('option', { value: 'hls', text: L.t('HLS playlist') }), h('option', { value: 'ts', text: L.t('Continuous MPEG-TS') }));
+    const mac = VO.host.platform === 'macos';
     const status = h('div', { role: 'status' });
+    const accessHelp = mac ? h('div', { hidden: true, text: L.t('On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.') }) : null;
     const body = h('div', { class: 'col' }, h('label', { for: 'cast-tv', text: L.t('TV') }), tv,
-      h('label', { for: 'cast-mode', text: L.t('Stream format') }), mode, status);
-    let connecting = false;
+      h('label', { for: 'cast-mode', text: L.t('Stream format') }), mode, status, accessHelp);
+    let connecting = false, searching = false, retryOnFocus = false, regainedFocus = false, timer, supported;
     const d = ui.dialog({ title: L.t('Cast to TV'), body, buttons: [
       { label: L.t('Cast'), primary: true, onClick() { connect(); return false; } },
       { label: L.t('Search again'), onClick() { scan(); return false; } }, { label: L.t('Cancel'), cancel: true }
     ] });
     dialog = d;
-    d.done.then(() => { if (dialog === d) dialog = null; });
-    async function scan() {
+    function refocus() {
+      if (!retryOnFocus || !d.el.isConnected) return;
+      if (searching) regainedFocus = true;
+      else scan(false);
+    }
+    if (mac) window.addEventListener('focus', refocus);
+    d.done.then(() => {
+      if (dialog === d) dialog = null;
+      clearTimeout(timer);
+      if (mac) window.removeEventListener('focus', refocus);
+    });
+    async function scan(retry = true) {
+      if (searching || connecting || !d.el.isConnected) return;
+      searching = true;
+      regainedFocus = retryOnFocus = false;
+      clearTimeout(timer);
+      if (accessHelp) accessHelp.hidden = true;
       d.buttons[0].disabled = d.buttons[1].disabled = true;
       tv.replaceChildren();
-      status.textContent = L.t('Searching for TVs...');
       try {
-        for (const r of await host.scan()) tv.add(new Option(r.name || r.id, r.id));
+        // Check the actual output configuration before discovery can request LAN access.
+        const sdk = window.DLNAnything;
+        if (!supported) supported = sdk?.isSupported ? await sdk.isSupported(video) : !!(sdk && window.VideoEncoder && window.VideoFrame);
+        if (!d.el.isConnected) return;
+        if (!supported) { status.textContent = L.t('This webview cannot encode H.264 for casting.'); return; }
+        retryOnFocus = mac;
+        status.textContent = mac ? L.t('Searching for TVs. If macOS asks for Local Network access, choose Allow.') : L.t('Searching for TVs...');
+        // Reopening the picker during an outstanding SSDP search shares its result.
+        if (!discovery) discovery = host.scan().finally(() => { discovery = null; });
+        const renderers = await discovery;
+        if (!d.el.isConnected) return;
+        for (const r of renderers) tv.add(new Option(r.name || r.id, r.id));
         status.textContent = tv.length ? '' : L.t('No TVs found on this network.');
       } catch (e) { status.textContent = L.t('Could not search for TVs: {0}', String(e)); }
-      d.buttons[0].disabled = !tv.length;
-      d.buttons[1].disabled = false;
+      finally {
+        searching = false;
+        if (d.el.isConnected) {
+          d.buttons[0].disabled = !tv.length;
+          d.buttons[1].disabled = false;
+          retryOnFocus = retryOnFocus && !tv.length;
+          if (retryOnFocus) {
+            accessHelp.hidden = false;
+            // macOS can reject the first packet while its consent sheet is open.
+            // Some WebKit versions deliver a focus event and some keep the window focused.
+            if (regainedFocus || (retry && document.hasFocus()))
+              timer = setTimeout(() => { if (document.hasFocus()) scan(false); }, regainedFocus ? 0 : 1500);
+          }
+        }
+      }
     }
     async function connect() {
       if (connecting || !tv.value) return;
@@ -197,11 +238,11 @@
         const key = await host.prepare(tv.value, mode.value);
         session = { key, name: tv.selectedOptions[0].text, capture: null };
         const canvas = document.createElement('canvas');
-        canvas.width = 1280; canvas.height = 720;
+        canvas.width = video.width; canvas.height = video.height;
         if (!d.el.isConnected) { await host.stop(key); return; }
         active = session;
         session.painter = framePainter();
-        session.capture = await DLNAnything.startCanvas(canvas, { fps: 2, beforeFrame: session.painter.paint,
+        session.capture = await DLNAnything.startCanvas(canvas, { fps: video.fps, beforeFrame: session.painter.paint,
           sendFrame: bytes => host.frame(key, bytes), onError(e) {
             if (active !== session) return;
             stop(session).catch(() => {});

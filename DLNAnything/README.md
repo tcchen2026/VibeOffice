@@ -28,11 +28,13 @@ async fn start(tv: &Renderer, server: &MediaServer) -> io::Result<()> {
 ```
 
 - `discover(Duration)` searches for MediaRenderers on the system IPv4 multicast route. `discover_on(ip, duration)` selects the interface. `Renderer::from_location(url)` accepts a known device-description URL.
-- Inject `dlnanything::CANVAS_JS` into your native webview, or load the same classic script from `web/canvas.js`. It needs a secure context with a working H.264 WebCodecs encoder.
+- Inject `dlnanything::CANVAS_JS` into your native webview, or load the same classic script from `web/canvas.js`. In a secure context, call `await DLNAnything.isSupported({width, height, fps})` to check the encoder before requesting local network access. The producer accepts both WebCodecs H.264 formats and delivers Annex B to the host.
 - Bridge each binary `sendFrame` call to `server.frames().push_annex_b(bytes)`. Retain the server for the cast and propagate a failed push back to the producer. Capture order is decode order.
 - Start capture before calling `play`. The producer resolves after its first encoded picture reaches the host. For a multi-picture segment the server can accept a receiver request while the remaining pictures arrive.
 - To use a continuous stream, select `Transport::MpegTs` when starting playback. To attach a local player during development, bind a specific address with `MediaServer::bind_with_config` and read `playlist_url()` or `transport_stream_url()`.
 - When the user ends a cast, stop the producer, call `tv.stop().await` and drop the server. Dropping the server also wakes waiting readers and invalidates existing frame handles.
+
+On macOS, set `NSLocalNetworkUsageDescription` in the host app’s Info.plist. A sandboxed host needs the outgoing and incoming network entitlements for discovery, playback control and serving the stream. macOS 15 and later can prompt on the first discovery packet and reject that packet while the user decides. Let the user search again after granting access. [Apple’s local network privacy guide](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)
 
 ```js
 // The native host's frame method accepts a Uint8Array and resolves after the push.

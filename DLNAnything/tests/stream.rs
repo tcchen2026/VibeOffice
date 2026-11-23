@@ -158,7 +158,6 @@ async fn http_flushes_headers_and_releases_both_resources_only_when_ready_and_du
     drop(server);
     assert!(pending.bytes().await.is_err());
     assert!(live.chunk().await.unwrap().is_none());
-    decode_if_available(&first_ts, 1);
     assert_eq!(
         sink.push_annex_b(key).unwrap_err().kind(),
         std::io::ErrorKind::BrokenPipe
@@ -244,6 +243,32 @@ fn decode_if_available(bytes: &[u8], count: usize) {
             .count(),
         count
     );
+}
+
+#[tokio::test]
+async fn webcodecs_keyframe_streams_as_one_half_second_segment() {
+    // The macOS smoke run passes a picture from the system's WKWebView.
+    let key = std::env::var_os("DLNANYTHING_TEST_KEYFRAME")
+        .map(|path| std::fs::read(path).expect("read supplied WebCodecs keyframe"))
+        .unwrap_or_else(|| pictures()[0].to_owned());
+    let server = MediaServer::bind("127.0.0.1:0".parse().unwrap())
+        .await
+        .unwrap();
+    server.frames().push_annex_b(&key).unwrap();
+    let client = client();
+    let list = headers(&client, &server.playlist_url()).await;
+    assert!(list
+        .text()
+        .await
+        .unwrap()
+        .contains("#EXTINF:0.500000,\n0.ts"));
+    let ts = headers(&client, &media_url(&server, "0.ts"))
+        .await
+        .bytes()
+        .await
+        .unwrap();
+    assert_eq!(presentation_times(&ts), [9000]);
+    decode_if_available(&ts, 1);
 }
 
 #[tokio::test]

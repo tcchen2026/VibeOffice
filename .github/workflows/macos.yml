@@ -17,7 +17,7 @@ on:
         type: boolean
         default: false
       smoke:
-        description: Try the app (a few files, the network rules) and the DMG's window, with screenshots
+        description: Try document casting, opening files, network rules and the DMG window
         type: boolean
         default: false
   workflow_call:
@@ -86,6 +86,20 @@ jobs:
         run: |
           desktop/macos/build.sh dmg
           echo "version=$(tools/current-tree-version.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Check native TV casting
+        if: inputs.smoke
+        run: |
+          app=desktop/target/dist/VibeOffice.app
+          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSLocalNetworkUsageDescription' "$app/Contents/Info.plist")"
+          entitlements="$RUNNER_TEMP/cast-entitlements.plist"
+          codesign --display --entitlements - --xml "$app" > "$entitlements"
+          for access in client server; do
+            test "$(/usr/libexec/PlistBuddy -c "Print :com.apple.security.network.$access" "$entitlements")" = true
+          done
+          frame="$RUNNER_TEMP/cast-keyframe.h264"
+          xcrun swift -swift-version 5 tests/desktop/macos-cast.swift "$frame"
+          DLNANYTHING_TEST_KEYFRAME="$frame" cargo test --locked --manifest-path DLNAnything/Cargo.toml
 
       # The app as a user starts it: alone, then with a document, a workbook as CSV and Markdown handed over as Finder
       # does (open -a), each a window of its own; a screenshot after each. Its stderr must say WebKit took the network

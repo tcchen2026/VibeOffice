@@ -8070,7 +8070,7 @@
  },
  "Cancel": {
   "where": [
-   "common/cast.js:175",
+   "common/cast.js:178",
    "common/charts.js:440",
    "common/core.js:374",
    "common/dialogs.js:116"
@@ -8189,28 +8189,28 @@
  },
  "Cast": {
   "where": [
-   "common/cast.js:174"
+   "common/cast.js:177"
   ]
  },
  "Cast to TV": {
   "where": [
-   "common/cast.js:160",
-   "common/cast.js:173"
+   "common/cast.js:161",
+   "common/cast.js:176"
   ]
  },
  "Cast to TV...": {
   "where": [
-   "common/cast.js:224"
+   "common/cast.js:265"
   ]
  },
  "Casting stopped: {0}": {
   "where": [
-   "common/cast.js:208"
+   "common/cast.js:249"
   ]
  },
  "Casting to {0}": {
   "where": [
-   "common/cast.js:160"
+   "common/cast.js:161"
   ]
  },
  "Cat&egory:": {
@@ -9195,7 +9195,7 @@
  },
  "Close": {
   "where": [
-   "common/cast.js:163",
+   "common/cast.js:164",
    "common/core.js:353",
    "common/ui.js:615",
    "common/ui.js:741"
@@ -9934,7 +9934,7 @@
  },
  "Continuous MPEG-TS": {
   "where": [
-   "common/cast.js:168"
+   "common/cast.js:169"
   ]
  },
  "Contrast": {
@@ -10249,17 +10249,17 @@
  },
  "Could not cast to this TV: {0}": {
   "where": [
-   "common/cast.js:217"
+   "common/cast.js:258"
   ]
  },
  "Could not search for TVs: {0}": {
   "where": [
-   "common/cast.js:186"
+   "common/cast.js:214"
   ]
  },
  "Could not stop casting: {0}": {
   "where": [
-   "common/cast.js:162"
+   "common/cast.js:163"
   ]
  },
  "Count": {
@@ -15819,7 +15819,7 @@
  },
  "HLS playlist": {
   "where": [
-   "common/cast.js:168"
+   "common/cast.js:169"
   ]
  },
  "HTML Format": {
@@ -20039,7 +20039,7 @@
  },
  "No TVs found on this network.": {
   "where": [
-   "common/cast.js:185"
+   "common/cast.js:213"
   ]
  },
  "No Transition": {
@@ -20671,6 +20671,11 @@
   "where": [
    "lectern/js/dialogs.js:1113",
    "lectern/js/panes.js:813"
+  ]
+ },
+ "On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.": {
+  "where": [
+   "common/cast.js:172"
   ]
  },
  "On mouse click": {
@@ -26180,7 +26185,7 @@
  },
  "Search again": {
   "where": [
-   "common/cast.js:175"
+   "common/cast.js:178"
   ]
  },
  "Search commands": {
@@ -26239,9 +26244,14 @@
    "quire/js/panes.js:163"
   ]
  },
+ "Searching for TVs. If macOS asks for Local Network access, choose Allow.": {
+  "where": [
+   "common/cast.js:207"
+  ]
+ },
  "Searching for TVs...": {
   "where": [
-   "common/cast.js:182"
+   "common/cast.js:207"
   ]
  },
  "Searching...": {
@@ -28606,7 +28616,7 @@
  },
  "Starting cast...": {
   "where": [
-   "common/cast.js:194"
+   "common/cast.js:235"
   ]
  },
  "Starting document": {
@@ -28739,7 +28749,7 @@
  },
  "Stop casting": {
   "where": [
-   "common/cast.js:161"
+   "common/cast.js:162"
   ]
  },
  "Straight Connector": {
@@ -28750,7 +28760,7 @@
  },
  "Stream format": {
   "where": [
-   "common/cast.js:171"
+   "common/cast.js:174"
   ]
  },
  "Stri&kethrough": {
@@ -29109,7 +29119,7 @@
  },
  "TV": {
   "where": [
-   "common/cast.js:170"
+   "common/cast.js:173"
   ]
  },
  "Ta&b leader:": {
@@ -31406,6 +31416,11 @@
  "This video or sound will be saved as a picture and will no longer play, because its picture was replaced.": {
   "where": [
    "lectern/js/preserve.js:330"
+  ]
+ },
+ "This webview cannot encode H.264 for casting.": {
+  "where": [
+   "common/cast.js:205"
   ]
  },
  "This workbook contains a sheet type that cannot be converted yet": {

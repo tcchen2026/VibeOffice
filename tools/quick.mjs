@@ -67,7 +67,8 @@ const RULES = [
   [/^public\/[^/]+\.html$|^public\/[^/]+\/index\.html$|^tools\/csp\.mjs$|^tools\/ledger\/build\/|^tools\/oss-licenses\.py$/, ['tests/csp.test.mjs']],   // the pages' policy
   [/^public\/oss-licenses\.html$|^tools\/oss-licenses\.py$|^desktop\/(Cargo|patches|licenses)/, ['tests/licenses.test.mjs']],
   [/^desktop\/src\//, ['tests/desktop/host.test.mjs']],
-  [/^public\/common\/cast\.js$|^desktop\/src\/cast\.rs$|^DLNAnything\/web\/canvas\.js$/, ['tests/desktop/cast.test.mjs']],
+  [/^public\/common\/cast\.js$|^desktop\/src\/cast\.rs$|^DLNAnything\/web\/canvas\.js$|^tests\/desktop\/cast-exercise\.js$/, ['tests/desktop/cast.test.mjs']],
+  [/^DLNAnything\/(web\/canvas\.js|tests\/canvas\.test\.mjs)$/, ['DLNAnything/tests/canvas.test.mjs']],
   [/^public\/common\/core\.js$|^public\/quire\/js\/htmlio\.js$|^public\/ledger\/js\/(csv|clipboard)\.js$|^public\/lectern\/js\/app\.js$/, ['tests/hostile/export-html.test.mjs']],   // HTML we write: no markup from the document
   [/^tests\/.*\.test\.(mjs|js)$/, (f) => [f]],   // a test changed: itself
 ];
