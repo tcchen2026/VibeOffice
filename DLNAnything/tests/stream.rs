@@ -1,4 +1,4 @@
-use dlnanything::{MediaServer, Renderer, StreamConfig, Transport};
+use dlnanything::{MediaServer, Renderer, StreamConfig};
 use reqwest::{Client, Response, StatusCode};
 use std::{
     io::Write,
@@ -48,11 +48,7 @@ async fn http_flushes_headers_and_releases_both_resources_only_when_ready_and_du
     let playlist = server.playlist_url();
     let sink = server.frames();
     let key = pictures()[0];
-    for url in [
-        &playlist,
-        &server.transport_stream_url(),
-        &media_url(&server, "0.ts"),
-    ] {
+    for url in [&playlist, &media_url(&server, "0.ts")] {
         let probe = client.head(url).send().await.unwrap();
         assert!(probe.status().is_success());
         assert_ne!(
@@ -60,26 +56,27 @@ async fn http_flushes_headers_and_releases_both_resources_only_when_ready_and_du
             Some(&b"0"[..])
         );
     }
+    let unnumbered = client
+        .head(media_url(&server, "live.ts"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(unnumbered.status(), StatusCode::NOT_FOUND);
     let zero = media_url(&server, "0.ts");
-    let stream = server.transport_stream_url();
-    let (mut initial, mut segment, mut live) = tokio::join!(
-        headers(&client, &playlist),
-        headers(&client, &zero),
-        headers(&client, &stream)
-    );
+    let (mut initial, mut segment) =
+        tokio::join!(headers(&client, &playlist), headers(&client, &zero));
     let quiet = Duration::from_millis(70);
-    let (p, s, l) = tokio::join!(
+    let (p, s) = tokio::join!(
         timeout(quiet, initial.chunk()),
-        timeout(quiet, segment.chunk()),
-        timeout(quiet, live.chunk())
+        timeout(quiet, segment.chunk())
     );
-    assert!(p.is_err() && s.is_err() && l.is_err());
+    assert!(p.is_err() && s.is_err());
     let first = Instant::now();
     assert_eq!(sink.push_annex_b(key).unwrap(), 0);
     let manifest = initial.text().await.unwrap();
     assert!(manifest.contains("#EXTINF:0.500000,\n0.ts"));
     let first_ts = segment.bytes().await.unwrap();
-    assert_eq!(live.chunk().await.unwrap().unwrap(), first_ts);
+    assert_eq!(presentation_times(&first_ts), [9000]);
     let plain_url = media_url(&server, "1.ts");
     let explicit = format!("{playlist}?_HLS_msn=1");
     // Queue a complete segment early. Its length is known, but its body still has a deadline.
@@ -90,21 +87,19 @@ async fn http_flushes_headers_and_releases_both_resources_only_when_ready_and_du
         headers(&client, &plain_url)
     );
     assert!(next.content_length().is_some());
-    let (p, b, s, l) = tokio::join!(
+    let (p, b, s) = tokio::join!(
         timeout(quiet, reload.chunk()),
         timeout(quiet, blocking.chunk()),
-        timeout(quiet, next.chunk()),
-        timeout(quiet, live.chunk())
+        timeout(quiet, next.chunk())
     );
-    assert!(p.is_err() && b.is_err() && s.is_err() && l.is_err());
-    let (a, b, bytes, continuous) =
-        tokio::join!(reload.text(), blocking.text(), next.bytes(), live.chunk());
+    assert!(p.is_err() && b.is_err() && s.is_err());
+    let (a, b, bytes) = tokio::join!(reload.text(), blocking.text(), next.bytes());
     assert!(first.elapsed() >= Duration::from_millis(495));
     let a = a.unwrap();
     assert!(a.contains("1.ts") && !a.contains("2.ts"));
     assert_eq!(b.unwrap(), a);
     let bytes = bytes.unwrap();
-    assert_eq!(continuous.unwrap().unwrap(), bytes);
+    assert_eq!(presentation_times(&bytes), [54000]);
 
     let range = client
         .get(&plain_url)
@@ -136,28 +131,23 @@ async fn http_flushes_headers_and_releases_both_resources_only_when_ready_and_du
         400
     );
 
-    // Let the clock pass with no frame. A late producer wakes all three kinds of reader.
+    // Let the clock pass with no frame. A late producer wakes both HLS readers.
     let next_url = media_url(&server, "2.ts");
     let mut late = headers(&client, &next_url).await;
     let mut late_list = headers(&client, &playlist).await;
     sleep_until(first + Duration::from_millis(1030)).await;
-    let (p, s, l) = tokio::join!(
+    let (p, s) = tokio::join!(
         timeout(quiet, late_list.chunk()),
-        timeout(quiet, late.chunk()),
-        timeout(quiet, live.chunk())
+        timeout(quiet, late.chunk())
     );
-    assert!(p.is_err() && s.is_err() && l.is_err());
+    assert!(p.is_err() && s.is_err());
     sink.push_annex_b(key).unwrap();
     assert!(late_list.text().await.unwrap().contains("2.ts"));
-    assert_eq!(
-        late.bytes().await.unwrap(),
-        live.chunk().await.unwrap().unwrap()
-    );
+    assert_eq!(presentation_times(&late.bytes().await.unwrap()), [99000]);
     let obsolete = media_url(&server, "3.ts");
     let pending = headers(&client, &obsolete).await;
     drop(server);
     assert!(pending.bytes().await.is_err());
-    assert!(live.chunk().await.unwrap().is_none());
     assert_eq!(
         sink.push_annex_b(key).unwrap_err().kind(),
         std::io::ErrorKind::BrokenPipe
@@ -165,7 +155,7 @@ async fn http_flushes_headers_and_releases_both_resources_only_when_ready_and_du
 }
 
 // Check the actual transport headers and 90 kHz PTS of every picture, including a
-// segment decoded on its own and continuity of the joined live transport.
+// segment decoded on its own and continuity across HLS segments.
 fn presentation_times(ts: &[u8]) -> Vec<u64> {
     assert_eq!(ts.len() % 188, 0);
     let mut result = Vec::new();
@@ -358,7 +348,7 @@ async fn renderer_sets_one_uri_and_plays_once_while_the_canvas_changes() {
       <service><serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType><controlURL>/cm</controlURL></service>
       </serviceList></device></root>"#;
     const PROTOCOLS: &str = r#"<s:Envelope xmlns:s="urn:test"><s:Body><u:GetProtocolInfoResponse xmlns:u="urn:cm">
-      <Sink>http-get:*:application/x-mpegURL:*,http-get:*:video/mpeg:*</Sink>
+      <Sink>http-get:*:application/x-mpegURL:*</Sink>
       </u:GetProtocolInfoResponse></s:Body></s:Envelope>"#;
 
     let actions = Actions::default();
@@ -381,9 +371,7 @@ async fn renderer_sets_one_uri_and_plays_once_while_the_canvas_changes() {
         .media_server(&r.sink_protocols().await.unwrap())
         .await
         .unwrap();
-    r.play(&media, Transport::Hls, "Slides & notes")
-        .await
-        .unwrap();
+    r.play(&media, "Slides & notes").await.unwrap();
     for _ in 0..3 {
         media.frames().push_annex_b(pictures()[0]).unwrap();
     }

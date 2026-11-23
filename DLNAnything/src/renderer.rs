@@ -138,12 +138,6 @@ impl Control {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Transport {
-    Hls,
-    MpegTs,
-}
-
 /// A discovered UPnP AV MediaRenderer. Cached control endpoints are specific to this device.
 #[derive(Clone, Debug)]
 pub struct Renderer {
@@ -281,27 +275,18 @@ impl Renderer {
         };
         let socket = UdpSocket::bind(any).await?;
         socket.connect(SocketAddr::new(self.peer, 1900)).await?;
-        let (hls, ts) = mime_types(protocols);
         MediaServer::bind_types(
             SocketAddr::new(socket.local_addr()?.ip(), 0),
-            hls,
-            ts,
+            hls_type(protocols),
             config,
         )
         .await
     }
 
     /// Select the session URL and start it once. Subsequent canvas updates use only HTTP.
-    pub async fn play(
-        &self,
-        server: &MediaServer,
-        transport: Transport,
-        title: &str,
-    ) -> io::Result<()> {
-        let (url, mime) = match transport {
-            Transport::Hls => (server.playlist_url(), server.hls_type()),
-            Transport::MpegTs => (server.transport_stream_url(), server.ts_type()),
-        };
+    pub async fn play(&self, server: &MediaServer, title: &str) -> io::Result<()> {
+        let url = server.playlist_url();
+        let mime = server.hls_type();
         let didl=format!("<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\"><item id=\"1\" parentID=\"0\" restricted=\"1\"><dc:title>{}</dc:title><upnp:class>object.item.videoItem</upnp:class><res protocolInfo=\"http-get:*:{mime}:*\">{}</res></item></DIDL-Lite>",escaped(title),escaped(&url));
         let args=format!("<InstanceID>0</InstanceID><CurrentURI>{}</CurrentURI><CurrentURIMetaData>{}</CurrentURIMetaData>",escaped(&url),escaped(&didl));
         self.av
@@ -325,7 +310,7 @@ impl Renderer {
     }
 }
 
-fn mime_types(protocols: &[String]) -> (&'static str, &'static str) {
+fn hls_type(protocols: &[String]) -> &'static str {
     let has = |mime: &str| {
         protocols.iter().any(|p| {
             let mut fields = p.splitn(4, ':');
@@ -335,17 +320,11 @@ fn mime_types(protocols: &[String]) -> (&'static str, &'static str) {
                 && fields.nth(1).is_some_and(|v| v.eq_ignore_ascii_case(mime))
         })
     };
-    let hls = if !has("application/vnd.apple.mpegurl") && has("application/x-mpegURL") {
+    if !has("application/vnd.apple.mpegurl") && has("application/x-mpegURL") {
         "application/x-mpegURL"
     } else {
         "application/vnd.apple.mpegurl"
-    };
-    let ts = if !has("video/mp2t") && has("video/mpeg") {
-        "video/mpeg"
-    } else {
-        "video/mp2t"
-    };
-    (hls, ts)
+    }
 }
 
 /// Discover IPv4 renderers through the system's multicast route.

@@ -255,7 +255,7 @@ Ctrl+P, Ctrl+F, Ctrl+S, the zoom keys); editing keys and the apps' own shortcuts
 
 ### Casting to a TV
 
-Choose **File ▸ Cast to TV** in Quire, Ledger or Lectern. Select a TV on the same network and click **Cast**. The default is **HLS playlist**. For a renderer that accepts a direct video URL, select **Continuous MPEG-TS**. Open the same dialog to stop. The desktop webview needs a working WebCodecs H.264 encoder.
+Choose **File ▸ Cast to TV** in Quire, Ledger or Lectern. Select a TV on the same network and click **Cast**. The TV receives an HLS playlist. Open the same dialog to stop. The desktop webview needs a working WebCodecs H.264 encoder.
 
 On macOS 15 and later, the first search can open the **Local Network** permission prompt. Choose **Allow** so VibeOffice can discover the TV. If access was denied, turn on **VibeOffice** in **System Settings ▸ Privacy & Security ▸ Local Network**, then return to the picker or choose **Search again**. VibeOffice checks the encoder before starting discovery. It draws its own document view, so casting requires no Screen Recording, Camera or Microphone permission. [Apple’s local network privacy guide](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)
 

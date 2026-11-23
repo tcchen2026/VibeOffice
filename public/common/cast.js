@@ -165,13 +165,11 @@
       dialog.done.then(() => { dialog = null; });
       return;
     }
-    const tv = h('select', { id: 'cast-tv' }), mode = h('select', { id: 'cast-mode' },
-      h('option', { value: 'hls', text: L.t('HLS playlist') }), h('option', { value: 'ts', text: L.t('Continuous MPEG-TS') }));
+    const tv = h('select', { id: 'cast-tv' });
     const mac = VO.host.platform === 'macos';
     const status = h('div', { role: 'status' });
     const accessHelp = mac ? h('div', { hidden: true, text: L.t('On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.') }) : null;
-    const body = h('div', { class: 'col' }, h('label', { for: 'cast-tv', text: L.t('TV') }), tv,
-      h('label', { for: 'cast-mode', text: L.t('Stream format') }), mode, status, accessHelp);
+    const body = h('div', { class: 'col' }, h('label', { for: 'cast-tv', text: L.t('TV') }), tv, status, accessHelp);
     let connecting = false, searching = false, retryOnFocus = false, regainedFocus = false, timer, supported;
     const d = ui.dialog({ title: L.t('Cast to TV'), body, buttons: [
       { label: L.t('Cast'), primary: true, onClick() { connect(); return false; } },
@@ -231,11 +229,11 @@
     async function connect() {
       if (connecting || !tv.value) return;
       connecting = true;
-      d.buttons[0].disabled = d.buttons[1].disabled = tv.disabled = mode.disabled = true;
+      d.buttons[0].disabled = d.buttons[1].disabled = tv.disabled = true;
       status.textContent = L.t('Starting cast...');
       let session;
       try {
-        const key = await host.prepare(tv.value, mode.value);
+        const key = await host.prepare(tv.value);
         session = { key, name: tv.selectedOptions[0].text, capture: null };
         const canvas = document.createElement('canvas');
         canvas.width = video.width; canvas.height = video.height;
@@ -257,7 +255,7 @@
         if (session) await stop(session).catch(() => {});
         status.textContent = L.t('Could not cast to this TV: {0}', String(e));
         connecting = false;
-        d.buttons[0].disabled = d.buttons[1].disabled = tv.disabled = mode.disabled = false;
+        d.buttons[0].disabled = d.buttons[1].disabled = tv.disabled = false;
       }
     }
     scan();

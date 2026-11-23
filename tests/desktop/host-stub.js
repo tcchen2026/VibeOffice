@@ -105,7 +105,7 @@
       if (cmd === 'host_cast_scan') return [{ id: 'tv-1', name: 'Office TV' }];
       if (cmd === 'host_cast_prepare') {
         if (cast.key || args.id !== 'tv-1') throw 'Unknown or busy TV';
-        cast.mode = args.mode;
+        if (Object.keys(args).length !== 1) throw 'Expected only a TV id';
         return cast.key = 'session-1';
       }
       if (cmd === 'host_cast_frame') {

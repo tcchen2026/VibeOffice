@@ -42,7 +42,7 @@ Line grids: Quire's line height on a document line grid (`R.gridLine` in `quire/
 
 ## Native TV casting
 
-Run `cargo test --manifest-path DLNAnything/Cargo.toml` for loopback HTTP timing, renderer control and MPEG-TS framing. If FFmpeg is installed the test decodes the real WebCodecs fixture one segment at a time and as a continuous stream. Run `node --test tests/desktop/cast.test.mjs` for decoded canvas checks in all three apps, including Lectern’s F5, blank screen and return to editing.
+Run `cargo test --manifest-path DLNAnything/Cargo.toml` for loopback HTTP timing, renderer control and MPEG-TS framing. If FFmpeg is installed the test decodes the real WebCodecs fixture one HLS segment at a time. Run `node --test tests/desktop/cast.test.mjs` for decoded canvas checks in all three apps, including Lectern’s F5, blank screen and return to editing.
 
 On a Mac, the following commands run the same document and slideshow checks in the system WKWebView at the desktop app’s origin. They use a simulated receiver and feed a captured H.264 picture to the Rust HTTP server. The **macOS** workflow runs both with the **smoke** option and verifies the built app’s Local Network purpose string and network entitlements.
 
@@ -53,7 +53,7 @@ DLNANYTHING_TEST_KEYFRAME=/tmp/vibeoffice-cast.h264 cargo test --locked --manife
 
 To test the system prompt on macOS 15 or later, open the built `VibeOffice.app` from Finder and choose **File ▸ Cast to TV**. macOS automatically allows local network access for command-line tools launched by Terminal and their children. An Apple-issued signing identity lets the system recognise the app across builds. [Apple’s local network privacy guide](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)
 
-For a hardware latency measurement, display a changing clock on the sender, cast to a TV and photograph both displays together. Record the TV model and stream format with the difference between the clocks.
+For a hardware latency measurement, display a changing clock on the sender, cast to a TV and photograph both displays together. Record the TV model with the difference between the clocks.
 
 ## Looks
 

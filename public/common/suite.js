@@ -85,7 +85,7 @@
     version: native ? native.version : 0,
     cast: appPage && native?.version >= 6 ? {
       scan: () => call('host_cast_scan'),
-      prepare: (id, mode) => call('host_cast_prepare', { id, mode }),
+      prepare: id => call('host_cast_prepare', { id }),
       frame: (key, bytes) => call('host_cast_frame', bytes, { headers: { 'X-Cast-Session': key } }),
       play: key => call('host_cast_play', { key }),
       stop: key => call('host_cast_stop', { key }),

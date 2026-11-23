@@ -8070,7 +8070,7 @@
  },
  "Cancel": {
   "where": [
-   "common/cast.js:178",
+   "common/cast.js:176",
    "common/charts.js:440",
    "common/core.js:374",
    "common/dialogs.js:116"
@@ -8189,23 +8189,23 @@
  },
  "Cast": {
   "where": [
-   "common/cast.js:177"
+   "common/cast.js:175"
   ]
  },
  "Cast to TV": {
   "where": [
    "common/cast.js:161",
-   "common/cast.js:176"
+   "common/cast.js:174"
   ]
  },
  "Cast to TV...": {
   "where": [
-   "common/cast.js:265"
+   "common/cast.js:263"
   ]
  },
  "Casting stopped: {0}": {
   "where": [
-   "common/cast.js:249"
+   "common/cast.js:247"
   ]
  },
  "Casting to {0}": {
@@ -9932,11 +9932,6 @@
    "common/smartart.js:391"
   ]
  },
- "Continuous MPEG-TS": {
-  "where": [
-   "common/cast.js:169"
-  ]
- },
  "Contrast": {
   "where": [
    "lectern/js/app.js:1418",
@@ -10249,12 +10244,12 @@
  },
  "Could not cast to this TV: {0}": {
   "where": [
-   "common/cast.js:258"
+   "common/cast.js:256"
   ]
  },
  "Could not search for TVs: {0}": {
   "where": [
-   "common/cast.js:214"
+   "common/cast.js:212"
   ]
  },
  "Could not stop casting: {0}": {
@@ -15817,11 +15812,6 @@
    "common/core.js:650"
   ]
  },
- "HLS playlist": {
-  "where": [
-   "common/cast.js:169"
-  ]
- },
  "HTML Format": {
   "where": [
    "quire/js/dialogs3.js:742"
@@ -20039,7 +20029,7 @@
  },
  "No TVs found on this network.": {
   "where": [
-   "common/cast.js:213"
+   "common/cast.js:211"
   ]
  },
  "No Transition": {
@@ -20675,7 +20665,7 @@
  },
  "On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.": {
   "where": [
-   "common/cast.js:172"
+   "common/cast.js:171"
   ]
  },
  "On mouse click": {
@@ -26185,7 +26175,7 @@
  },
  "Search again": {
   "where": [
-   "common/cast.js:178"
+   "common/cast.js:176"
   ]
  },
  "Search commands": {
@@ -26246,12 +26236,12 @@
  },
  "Searching for TVs. If macOS asks for Local Network access, choose Allow.": {
   "where": [
-   "common/cast.js:207"
+   "common/cast.js:205"
   ]
  },
  "Searching for TVs...": {
   "where": [
-   "common/cast.js:207"
+   "common/cast.js:205"
   ]
  },
  "Searching...": {
@@ -28616,7 +28606,7 @@
  },
  "Starting cast...": {
   "where": [
-   "common/cast.js:235"
+   "common/cast.js:233"
   ]
  },
  "Starting document": {
@@ -28756,11 +28746,6 @@
   "where": [
    "common/geometry.js:110",
    "lectern/js/app.js:108"
-  ]
- },
- "Stream format": {
-  "where": [
-   "common/cast.js:174"
   ]
  },
  "Stri&kethrough": {
@@ -29119,7 +29104,7 @@
  },
  "TV": {
   "where": [
-   "common/cast.js:173"
+   "common/cast.js:172"
   ]
  },
  "Ta&b leader:": {
@@ -31420,7 +31405,7 @@
  },
  "This webview cannot encode H.264 for casting.": {
   "where": [
-   "common/cast.js:205"
+   "common/cast.js:203"
   ]
  },
  "This workbook contains a sheet type that cannot be converted yet": {

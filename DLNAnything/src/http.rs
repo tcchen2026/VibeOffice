@@ -22,7 +22,6 @@ use tokio::{
 };
 
 const RELOAD_WAIT: Duration = Duration::from_secs(3);
-const LIVE_IDLE: Duration = Duration::from_secs(15);
 type Reply = Response<Body>;
 
 struct Hub {
@@ -30,7 +29,6 @@ struct Hub {
     playlists: Mutex<HashMap<IpAddr, u64>>,
     clients: Arc<Semaphore>,
     hls_type: String,
-    ts_type: String,
 }
 
 /// A single cast session. Dropping this owner closes the listener and wakes outstanding requests.
@@ -47,19 +45,12 @@ impl MediaServer {
     }
 
     pub async fn bind_with_config(address: SocketAddr, config: StreamConfig) -> io::Result<Self> {
-        Self::bind_types(
-            address,
-            "application/vnd.apple.mpegurl",
-            "video/mp2t",
-            config,
-        )
-        .await
+        Self::bind_types(address, "application/vnd.apple.mpegurl", config).await
     }
 
     pub(crate) async fn bind_types(
         address: SocketAddr,
         hls_type: &str,
-        ts_type: &str,
         config: StreamConfig,
     ) -> io::Result<Self> {
         if address.ip().is_unspecified() {
@@ -76,7 +67,6 @@ impl MediaServer {
             playlists: Mutex::new(HashMap::new()),
             clients: Arc::new(Semaphore::new(32)),
             hls_type: hls_type.to_owned(),
-            ts_type: ts_type.to_owned(),
         });
         let files = Router::new()
             .route("/{name}", get(media))
@@ -106,17 +96,11 @@ impl MediaServer {
     pub fn session_id(&self) -> &str {
         self.base.rsplit('/').next().unwrap()
     }
-    pub fn transport_stream_url(&self) -> String {
-        format!("{}/live.ts", self.base)
-    }
     pub fn frames(&self) -> FrameSink {
         FrameSink(self.hub.timeline.clone())
     }
     pub(crate) fn hls_type(&self) -> &str {
         &self.hub.hls_type
-    }
-    pub(crate) fn ts_type(&self) -> &str {
-        &self.hub.ts_type
     }
 }
 
@@ -170,7 +154,6 @@ async fn media(
 ) -> Reply {
     match name.as_str() {
         "live.m3u8" => playlist(hub, peer.ip(), q.msn),
-        "live.ts" => live(hub),
         _ => {
             let Some(seq) = name.strip_suffix(".ts").and_then(|s| s.parse::<u64>().ok()) else {
                 return empty(StatusCode::NOT_FOUND);
@@ -231,28 +214,6 @@ where
     S: futures_core::Stream<Item = Result<Bytes, io::Error>> + Send + 'static,
 {
     Body::from_stream(stream)
-}
-
-fn live(hub: Arc<Hub>) -> Reply {
-    let response = builder(&hub.ts_type, "no-store").header(header::ACCEPT_RANGES, "none");
-    let Ok(permit) = hub.clients.clone().try_acquire_owned() else {
-        return empty(StatusCode::SERVICE_UNAVAILABLE);
-    };
-    let mut seq = hub.timeline.latest().unwrap_or(0);
-    let stream = async_stream::try_stream! {
-        let _permit = permit;
-        loop {
-            match hub.timeline.wait(seq, Instant::now() + LIVE_IDLE).await {
-                Ok(segment) => {
-                    seq += 1;
-                    yield segment.bytes;
-                }
-                Err(Missing::Closed) => break,
-                Err(e) => Err(io_error(e))?,
-            }
-        }
-    };
-    response.body(body(stream)).unwrap()
 }
 
 // Immutable, complete segments support a single HTTP byte range, including suffix and retry reads.

@@ -41,7 +41,7 @@ async function exerciseCast() {
   await wait(async () => window.L?.ui?.cmds.castTV && await window.VO?.castView?.());
   L.ui.exec('castTV');
   await wait(() => document.querySelector('#cast-tv')?.options.length);
-  if (app === 'ledger') document.querySelector('#cast-mode').value = 'ts';
+  if (document.querySelectorAll('.dlg select').length !== 1) throw new Error('Expected only the TV selector');
   document.querySelector('.dlg .primary').click();
   await wait(() => stubCast.plays === 1 && !document.querySelector('#cast-tv'));
   // A private overlay covers the sender. The TV must still see the document underneath it.
@@ -68,9 +68,9 @@ async function exerciseCast() {
   L.ui.exec('castTV');
   document.querySelector('.dlg .primary').click();
   await wait(() => stubCast.stops === 1);
-  const result = { colors, mode: stubCast.mode, plays: stubCast.plays, stops: stubCast.stops, key: stubCast.key };
+  const result = { colors, plays: stubCast.plays, stops: stubCast.stops, key: stubCast.key };
   const expected = app === 'lectern' ? [[0,255,0], [255,0,0], [0,0,0], [0,0,255]] : [[0,255,0]];
-  if (result.mode !== (app === 'ledger' ? 'ts' : 'hls') || result.plays !== 1 || result.stops !== 1 || result.key !== null ||
+  if (result.plays !== 1 || result.stops !== 1 || result.key !== null ||
       colors.length !== expected.length || expected.some((rgb,i) => rgb.some((c,j) => Math.abs(c - colors[i][j]) >= 24)))
     throw new Error(app + ' unexpected cast output ' + JSON.stringify(result));
   return app;

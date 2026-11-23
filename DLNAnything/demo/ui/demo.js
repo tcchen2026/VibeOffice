@@ -21,7 +21,6 @@
     $('status').textContent = status;
     $('scan').disabled = !!ticket || busy || finding;
     $('receiver').disabled = !!ticket || busy || finding;
-    $('mode').disabled = !!ticket || busy;
     $('cast').disabled = busy || finding;
     $('cast').textContent = ticket ? 'Stop cast' : 'Start cast';
     $('address').hidden = !ticket;
@@ -58,7 +57,7 @@
     }
     ui('Starting…');
     try {
-      const current = await invoke('prepare', { receiver: $('receiver').value || null, mode: $('mode').value });
+      const current = await invoke('prepare', { receiver: $('receiver').value || null });
       ticket = current;
       capture = await DLNAnything.startCanvas(canvas, {
         sendFrame: bytes => invoke('push_frame', bytes, { headers: { 'X-Cast-Session': current.key } }),

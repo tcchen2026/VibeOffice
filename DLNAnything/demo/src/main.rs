@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use dlnanything::{discover, MediaServer, Renderer, Transport};
+use dlnanything::{discover, MediaServer, Renderer};
 use serde::Serialize;
 use std::{
     sync::{Arc, Mutex},
@@ -22,7 +22,6 @@ struct Active {
     key: String,
     server: Arc<MediaServer>,
     receiver: Option<Renderer>,
-    transport: Transport,
 }
 #[derive(Serialize)]
 struct DeviceInfo {
@@ -61,20 +60,11 @@ fn session(state: &Demo, key: &str) -> Result<Active, String> {
         .ok_or_else(|| "Cast session has ended".into())
 }
 #[tauri::command]
-async fn prepare(
-    state: State<'_, Demo>,
-    receiver: Option<String>,
-    mode: String,
-) -> Result<Prepared, String> {
+async fn prepare(state: State<'_, Demo>, receiver: Option<String>) -> Result<Prepared, String> {
     let _guard = state.operation.lock().await;
     if state.active.lock().unwrap().is_some() {
         return Err("A cast is already open".into());
     }
-    let transport = match mode.as_str() {
-        "hls" => Transport::Hls,
-        "ts" => Transport::MpegTs,
-        _ => return Err("Unknown transport".into()),
-    };
     let receiver = receiver
         .map(|id| {
             state
@@ -94,16 +84,12 @@ async fn prepare(
         MediaServer::bind(([127, 0, 0, 1], 0).into()).await
     }
     .map_err(|e| e.to_string())?;
-    let url = match transport {
-        Transport::Hls => server.playlist_url(),
-        Transport::MpegTs => server.transport_stream_url(),
-    };
-    let key = url.rsplit('/').nth(1).unwrap().to_owned();
+    let url = server.playlist_url();
+    let key = server.session_id().to_owned();
     *state.active.lock().unwrap() = Some(Active {
         key: key.clone(),
         server: Arc::new(server),
         receiver,
-        transport,
     });
     Ok(Prepared { key, url })
 }
@@ -130,7 +116,7 @@ async fn play(state: State<'_, Demo>, key: String) -> Result<(), String> {
     let _guard = state.operation.lock().await;
     let a = session(&state, &key)?;
     if let Some(r) = a.receiver {
-        r.play(&a.server, a.transport, "DLNAnything canvas")
+        r.play(&a.server, "DLNAnything canvas")
             .await
             .map_err(|e| e.to_string())?;
     }

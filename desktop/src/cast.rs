@@ -1,6 +1,6 @@
 //! Document windows own their selected renderer and local stream.
 use crate::doc;
-use dlnanything::{discover, MediaServer, Renderer, Transport};
+use dlnanything::{discover, MediaServer, Renderer};
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -29,7 +29,6 @@ struct Session {
     key: String,
     renderer: Renderer,
     server: MediaServer,
-    transport: Transport,
     playing: AtomicBool,
 }
 
@@ -99,14 +98,8 @@ pub async fn host_cast_prepare(
     window: WebviewWindow,
     casts: State<'_, Casts>,
     id: String,
-    mode: String,
 ) -> Result<String, String> {
     let owner = casts.owner(&window)?;
-    let transport = match mode.as_str() {
-        "hls" => Transport::Hls,
-        "ts" => Transport::MpegTs,
-        _ => return Err("Unknown cast mode".into()),
-    };
     let _control = casts.control.lock().await;
     if owner.session.lock().unwrap().is_some() {
         return Err("This window already has a cast".into());
@@ -132,7 +125,6 @@ pub async fn host_cast_prepare(
         key: key.clone(),
         renderer,
         server,
-        transport,
         playing: AtomicBool::new(false),
     }));
     Ok(key)
@@ -170,7 +162,7 @@ pub async fn host_cast_play(
     if !session.playing.load(Ordering::Acquire) {
         session
             .renderer
-            .play(&session.server, session.transport, "VibeOffice")
+            .play(&session.server, "VibeOffice")
             .await
             .map_err(|e| e.to_string())?;
         session.playing.store(true, Ordering::Release);
