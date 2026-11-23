@@ -135,3 +135,34 @@ test('the web edition has no receiver command or native capture API', async () =
     'new&web', 'tests/desktop/host-stub.js');
   assert.deepEqual(result, [null, false, 'undefined']);
 });
+
+test('TVs appear during discovery, the remembered TV is selected, and Cast can start early', async () => {
+  const result = await shot('ledger', [{ js: until + `
+    VO.settings.set('vibeoffice.castTV', 'tv-1');
+    let next, calls = 0;
+    const invoke = __TAURI_INTERNALS__.invoke;
+    __TAURI_INTERNALS__.invoke = async (cmd, args, opts) => {
+      if (cmd !== 'host_cast_scan') return invoke(cmd, args, opts);
+      calls++;
+      if (calls === 1) return { devices: [{id:'other', name:'Other TV'}], done:false };
+      return new Promise(r => { next = r; });
+    };
+    L.ui.exec('castTV');
+    const selector = () => document.querySelector('#cast-tv');
+    await until(() => selector()?.length === 1 && next);
+    const early = [selector().value, document.querySelector('.dlg .primary').disabled,
+      document.querySelector('.dlg [role=status]').textContent.includes('Searching')];
+    cancel(); await delay(0);
+    L.ui.exec('castTV');
+    await until(() => selector()?.length === 1);
+    next({ devices: [{id:'tv-1', name:'Office TV'}], done:false });
+    await until(() => calls === 3 && selector().length === 2);
+    const preferred = selector().value;
+    document.querySelector('.dlg .primary').click();
+    await until(() => stubCast.plays === 1);
+    next({devices:[], done:true});
+    await until(() => !selector());
+    return [early, preferred, calls, stubCast.plays];
+  ` }]);
+  assert.deepEqual(result, [['other', false, true], 'tv-1', 3, 1]);
+});

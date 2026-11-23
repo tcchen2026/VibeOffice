@@ -102,7 +102,7 @@
       log('hostCalls');
       sessionStorage.hostCalls += ':' + cmd;
       if (!grants.includes(cmd)) throw `Command ${cmd} not allowed by ACL`;
-      if (cmd === 'host_cast_scan') return [{ id: 'tv-1', name: 'Office TV' }];
+      if (cmd === 'host_cast_scan') return { devices: [{ id: 'tv-1', name: 'Office TV' }], done: true };
       if (cmd === 'host_cast_prepare') {
         if (cast.key || args.id !== 'tv-1') throw 'Unknown or busy TV';
         if (Object.keys(args).length !== 1) throw 'Expected only a TV id';

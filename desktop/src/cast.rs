@@ -1,6 +1,6 @@
 //! Document windows own their selected renderer and local stream.
 use crate::doc;
-use dlnanything::{discover, MediaServer, Renderer};
+use dlnanything::{discover_with, MediaServer, Renderer};
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -22,7 +22,7 @@ pub struct Casts {
 }
 #[derive(Default)]
 struct Owner {
-    devices: Mutex<Vec<Renderer>>,
+    search: Mutex<Option<tokio::sync::watch::Receiver<Search>>>,
     session: Mutex<Option<Arc<Session>>>,
 }
 struct Session {
@@ -73,24 +73,68 @@ pub struct Device {
     name: String,
 }
 
+#[derive(Default)]
+struct Search {
+    devices: Vec<Renderer>,
+    done: bool,
+    error: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct SearchPage {
+    devices: Vec<Device>,
+    done: bool,
+}
+
+fn start_search() -> tokio::sync::watch::Receiver<Search> {
+    let (updates, receive) = tokio::sync::watch::channel(Search::default());
+    tauri::async_runtime::spawn(async move {
+        let result = discover_with(Duration::from_secs(2), |tv| {
+            updates.send_modify(|s| s.devices.push(tv));
+        })
+        .await;
+        updates.send_modify(|s| {
+            s.done = true;
+            s.error = result.err().map(|e| e.to_string());
+        });
+    });
+    receive
+}
+
 #[tauri::command]
 pub async fn host_cast_scan(
     window: WebviewWindow,
     casts: State<'_, Casts>,
-) -> Result<Vec<Device>, String> {
+    since: Option<usize>,
+) -> Result<SearchPage, String> {
     let owner = casts.owner(&window)?;
-    let devices = discover(Duration::from_secs(2))
+    let mut receive = {
+        let mut slot = owner.search.lock().unwrap();
+        if since.is_none() && slot.as_ref().is_none_or(|current| current.borrow().done) {
+            *slot = Some(start_search());
+        }
+        slot.as_ref().ok_or("Scan for TVs again")?.clone()
+    };
+    let cursor = since.unwrap_or(0);
+    let page = receive
+        .wait_for(|s| s.done || s.devices.len() > cursor)
         .await
-        .map_err(|e| e.to_string())?;
-    let list = devices
-        .iter()
-        .map(|r| Device {
-            id: r.id.clone(),
-            name: r.name.clone(),
-        })
-        .collect();
-    *owner.devices.lock().unwrap() = devices;
-    Ok(list)
+        .map_err(|_| "Discovery ended")?;
+    if let Some(e) = &page.error {
+        return Err(e.clone());
+    }
+    Ok(SearchPage {
+        devices: page
+            .devices
+            .iter()
+            .skip(cursor)
+            .map(|tv| Device {
+                id: tv.id.clone(),
+                name: tv.name.clone(),
+            })
+            .collect(),
+        done: page.done,
+    })
 }
 
 #[tauri::command]
@@ -108,12 +152,18 @@ pub async fn host_cast_prepare(
         return Err("Another document is casting to this TV".into());
     }
     let renderer = owner
-        .devices
+        .search
         .lock()
         .unwrap()
-        .iter()
-        .find(|r| r.id == id)
-        .cloned()
+        .as_ref()
+        .and_then(|search| {
+            search
+                .borrow()
+                .devices
+                .iter()
+                .find(|tv| tv.id == id)
+                .cloned()
+        })
         .ok_or("Scan for TVs again")?;
     let protocols = renderer.sink_protocols().await.unwrap_or_default();
     let server = renderer

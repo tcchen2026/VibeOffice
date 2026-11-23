@@ -841,6 +841,7 @@ dependencies = [
  "axum",
  "bytes",
  "futures-core",
+ "getifaddrs",
  "quick-xml 0.39.4",
  "reqwest 0.12.28",
  "serde",
@@ -1277,6 +1278,17 @@ checksum = "85649ca51fd72272d7821adaf274ad91c288277713d9c18820d8499a7ff69e9a"
 dependencies = [
  "typenum",
  "version_check",
+]
+
+[[package]]
+name = "getifaddrs"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a542e1b7ac1f3d62c5777d430d66eca9cb59e813c46b86e29fa9ce94ff9a4810"
+dependencies = [
+ "bitflags 2.13.2",
+ "libc",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4169,6 +4181,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-single-instance",
+ "tokio",
  "wayland-client",
  "wayland-protocols-misc",
  "wayland-protocols-wlr",

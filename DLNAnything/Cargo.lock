@@ -134,6 +134,7 @@ dependencies = [
  "axum",
  "bytes",
  "futures-core",
+ "getifaddrs",
  "quick-xml",
  "reqwest",
  "serde",
@@ -182,6 +183,17 @@ dependencies = [
  "futures-task",
  "pin-project-lite",
  "slab",
+]
+
+[[package]]
+name = "getifaddrs"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a542e1b7ac1f3d62c5777d430d66eca9cb59e813c46b86e29fa9ce94ff9a4810"
+dependencies = [
+ "bitflags",
+ "libc",
+ "windows-sys",
 ]
 
 [[package]]

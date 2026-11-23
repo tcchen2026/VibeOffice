@@ -73,5 +73,7 @@ async function exerciseCast() {
   if (result.plays !== 1 || result.stops !== 1 || result.key !== null ||
       colors.length !== expected.length || expected.some((rgb,i) => rgb.some((c,j) => Math.abs(c - colors[i][j]) >= 24)))
     throw new Error(app + ' unexpected cast output ' + JSON.stringify(result));
+  await VO.settings.kept();
+  if (VO.settings.get('vibeoffice.castTV') !== 'tv-1') throw new Error('Last TV was not saved');
   return app;
 }

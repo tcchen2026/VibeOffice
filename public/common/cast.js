@@ -170,6 +170,9 @@
     const status = h('div', { role: 'status' });
     const accessHelp = mac ? h('div', { hidden: true, text: L.t('On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.') }) : null;
     const body = h('div', { class: 'col' }, h('label', { for: 'cast-tv', text: L.t('TV') }), tv, status, accessHelp);
+    const preferred = VO.settings.get('vibeoffice.castTV');
+    let selectionChanged = false;
+    tv.addEventListener('change', () => { selectionChanged = true; });
     let connecting = false, searching = false, retryOnFocus = false, regainedFocus = false, timer, supported;
     const d = ui.dialog({ title: L.t('Cast to TV'), body, buttons: [
       { label: L.t('Cast'), primary: true, onClick() { connect(); return false; } },
@@ -195,6 +198,7 @@
       if (accessHelp) accessHelp.hidden = true;
       d.buttons[0].disabled = d.buttons[1].disabled = true;
       tv.replaceChildren();
+      selectionChanged = false;
       try {
         // Check the actual output configuration before discovery can request LAN access.
         const sdk = window.DLNAnything;
@@ -203,16 +207,32 @@
         if (!supported) { status.textContent = L.t('This webview cannot encode H.264 for casting.'); return; }
         retryOnFocus = mac;
         status.textContent = mac ? L.t('Searching for TVs. If macOS asks for Local Network access, choose Allow.') : L.t('Searching for TVs...');
-        // Reopening the picker during an outstanding SSDP search shares its result.
-        if (!discovery) discovery = host.scan().finally(() => { discovery = null; });
-        const renderers = await discovery;
-        if (!d.el.isConnected) return;
-        for (const r of renderers) tv.add(new Option(r.name || r.id, r.id));
+        function show(devices) {
+          if (!d.el.isConnected || connecting) return;
+          for (const r of devices.slice(tv.length)) {
+            tv.add(new Option(r.name || r.id, r.id));
+            if (!selectionChanged && r.id === preferred) tv.value = r.id;
+          }
+          d.buttons[0].disabled = !tv.length;
+        }
+        // Reopening the picker can immediately show everything found so far.
+        if (!discovery) {
+          const current = discovery = { devices: [], show };
+          current.done = host.scan(devices => {
+            current.devices = devices;
+            current.show(devices);
+          }).finally(() => { discovery = null; });
+        }
+        discovery.show = show;
+        show(discovery.devices);
+        const devices = await discovery.done;
+        if (!d.el.isConnected || connecting) return;
+        show(devices);
         status.textContent = tv.length ? '' : L.t('No TVs found on this network.');
-      } catch (e) { status.textContent = L.t('Could not search for TVs: {0}', String(e)); }
+      } catch (e) { if (!connecting) status.textContent = L.t('Could not search for TVs: {0}', String(e)); }
       finally {
         searching = false;
-        if (d.el.isConnected) {
+        if (d.el.isConnected && !connecting) {
           d.buttons[0].disabled = !tv.length;
           d.buttons[1].disabled = false;
           retryOnFocus = retryOnFocus && !tv.length;
@@ -228,12 +248,13 @@
     }
     async function connect() {
       if (connecting || !tv.value) return;
+      const id = tv.value;
       connecting = true;
       d.buttons[0].disabled = d.buttons[1].disabled = tv.disabled = true;
       status.textContent = L.t('Starting cast...');
       let session;
       try {
-        const key = await host.prepare(tv.value);
+        const key = await host.prepare(id);
         session = { key, name: tv.selectedOptions[0].text, capture: null };
         const canvas = document.createElement('canvas');
         canvas.width = video.width; canvas.height = video.height;
@@ -249,6 +270,7 @@
         if (active !== session) { await session.capture.stop(); return; }
         if (!d.el.isConnected) { await stop(session); return; }
         await host.play(key);
+        VO.settings.set('vibeoffice.castTV', id);
         if (!d.el.isConnected) { await stop(session); return; }
         d.close();
       } catch (e) {

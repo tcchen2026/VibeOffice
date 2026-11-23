@@ -84,7 +84,17 @@
     platform: native ? native.platform : 'web',
     version: native ? native.version : 0,
     cast: appPage && native?.version >= 6 ? {
-      scan: () => call('host_cast_scan'),
+      async scan(onUpdate) {
+        const devices = [];
+        let since = null;
+        for (;;) {
+          const page = await call('host_cast_scan', { since });
+          devices.push(...page.devices);
+          if (page.devices.length) onUpdate?.(devices);
+          if (page.done) return devices;
+          since = devices.length;
+        }
+      },
       prepare: id => call('host_cast_prepare', { id }),
       frame: (key, bytes) => call('host_cast_frame', bytes, { headers: { 'X-Cast-Session': key } }),
       play: key => call('host_cast_play', { key }),

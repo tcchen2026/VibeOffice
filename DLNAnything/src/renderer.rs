@@ -2,25 +2,19 @@ use crate::{MediaServer, StreamConfig};
 use reqwest::{Client, Url};
 use serde::Deserialize;
 use std::{
-    collections::HashSet,
     io,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net::{IpAddr, SocketAddr},
     time::Duration,
 };
-use tokio::{
-    net::UdpSocket,
-    task::JoinSet,
-    time::{timeout_at, Instant},
-};
+use tokio::net::UdpSocket;
 
 const DEVICE: &str = "urn:schemas-upnp-org:device:MediaRenderer:";
-const SEARCH: &[u8]=b"M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n\r\n";
 const LIMIT: usize = 256 * 1024;
 fn invalid(msg: impl Into<String>) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, msg.into())
 }
-fn client(location: &Url, source: Option<IpAddr>) -> io::Result<Client> {
-    let mut builder = Client::builder();
+fn client(location: &Url, source: Option<IpAddr>, local: Option<IpAddr>) -> io::Result<Client> {
+    let mut builder = Client::builder().local_address(local);
     if let Some(peer) = source {
         let host = location
             .host_str()
@@ -145,6 +139,7 @@ pub struct Renderer {
     pub name: String,
     pub location: Url,
     peer: IpAddr,
+    local: Option<IpAddr>,
     av: Control,
     connection: Option<Control>,
     client: Client,
@@ -153,17 +148,21 @@ pub struct Renderer {
 impl Renderer {
     /// Read an explicit device description. Also useful on networks that filter SSDP multicast.
     pub async fn from_location(location: Url) -> io::Result<Self> {
-        Self::read_description(location, None).await
+        Self::read_description(location, None, None).await
     }
 
-    async fn read_description(location: Url, source: Option<IpAddr>) -> io::Result<Self> {
+    pub(crate) async fn read_description(
+        location: Url,
+        source: Option<IpAddr>,
+        local: Option<IpAddr>,
+    ) -> io::Result<Self> {
         if location.scheme() != "http"
             || !location.username().is_empty()
             || location.password().is_some()
         {
             return Err(invalid("expected an HTTP device description"));
         }
-        let client = client(&location, source)?;
+        let client = client(&location, source, local)?;
         let r = client
             .get(location.clone())
             .send()
@@ -220,6 +219,7 @@ impl Renderer {
             name: dev.friendly_name,
             location,
             peer,
+            local,
             av,
             connection,
             client,
@@ -268,19 +268,19 @@ impl Renderer {
         protocols: &[String],
         config: StreamConfig,
     ) -> io::Result<MediaServer> {
-        let any = if self.peer.is_ipv4() {
-            "0.0.0.0:0"
+        let local = if let Some(ip) = self.local {
+            ip
         } else {
-            "[::]:0"
+            let any = if self.peer.is_ipv4() {
+                "0.0.0.0:0"
+            } else {
+                "[::]:0"
+            };
+            let socket = UdpSocket::bind(any).await?;
+            socket.connect(SocketAddr::new(self.peer, 1900)).await?;
+            socket.local_addr()?.ip()
         };
-        let socket = UdpSocket::bind(any).await?;
-        socket.connect(SocketAddr::new(self.peer, 1900)).await?;
-        MediaServer::bind_types(
-            SocketAddr::new(socket.local_addr()?.ip(), 0),
-            hls_type(protocols),
-            config,
-        )
-        .await
+        MediaServer::bind_types(SocketAddr::new(local, 0), hls_type(protocols), config).await
     }
 
     /// Select the session URL and start it once. Subsequent canvas updates use only HTTP.
@@ -325,64 +325,4 @@ fn hls_type(protocols: &[String]) -> &'static str {
     } else {
         "application/vnd.apple.mpegurl"
     }
-}
-
-/// Discover IPv4 renderers through the system's multicast route.
-pub async fn discover(wait: Duration) -> io::Result<Vec<Renderer>> {
-    discover_on(Ipv4Addr::UNSPECIFIED, wait).await
-}
-
-pub async fn discover_on(interface: Ipv4Addr, wait: Duration) -> io::Result<Vec<Renderer>> {
-    let socket = socket2::Socket::new(
-        socket2::Domain::IPV4,
-        socket2::Type::DGRAM,
-        Some(socket2::Protocol::UDP),
-    )?;
-    socket.bind(&SocketAddr::from((interface, 0)).into())?;
-    socket.set_multicast_if_v4(&interface)?;
-    socket.set_multicast_ttl_v4(2)?;
-    socket.set_nonblocking(true)?;
-    let socket = UdpSocket::from_std(socket.into())?;
-    socket.send_to(SEARCH, "239.255.255.250:1900").await?;
-    let until = Instant::now() + wait;
-    let mut buf = [0u8; 8192];
-    let mut locations = HashSet::new();
-    let mut jobs = JoinSet::new();
-    while let Ok(result) = timeout_at(until, socket.recv_from(&mut buf)).await {
-        let (n, source) = result?;
-        let Some(url) = location_header(&buf[..n]) else {
-            continue;
-        };
-        if locations.len() >= 64 || !locations.insert(url.clone()) {
-            continue;
-        }
-        jobs.spawn(async move {
-            Renderer::read_description(url, Some(source.ip()))
-                .await
-                .ok()
-        });
-    }
-    let mut seen = HashSet::new();
-    let mut found = Vec::new();
-    while let Some(result) = jobs.join_next().await {
-        if let Ok(Some(r)) = result {
-            if seen.insert(r.id.clone()) {
-                found.push(r);
-            }
-        }
-    }
-    found.sort_by(|a, b| a.name.cmp(&b.name).then(a.id.cmp(&b.id)));
-    Ok(found)
-}
-
-fn location_header(data: &[u8]) -> Option<Url> {
-    let mut lines = std::str::from_utf8(data).ok()?.lines();
-    if lines.next()?.split_whitespace().nth(1)? != "200" {
-        return None;
-    }
-    lines
-        .filter_map(|line| line.split_once(':'))
-        .find(|(name, _)| name.eq_ignore_ascii_case("location"))
-        .and_then(|(_, value)| Url::parse(value.trim()).ok())
-        .filter(|url| url.scheme() == "http")
 }
