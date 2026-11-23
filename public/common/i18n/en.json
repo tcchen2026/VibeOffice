@@ -1208,7 +1208,7 @@
  },
  "&End Show": {
   "where": [
-   "lectern/js/slideshow.js:931"
+   "lectern/js/slideshow.js:932"
   ]
  },
  "&End date:": {
@@ -1709,7 +1709,7 @@
  },
  "&Help": {
   "where": [
-   "lectern/js/slideshow.js:929",
+   "lectern/js/slideshow.js:930",
    "ledger/js/print.js:594"
   ]
  },
@@ -5931,7 +5931,7 @@
  },
  "Allow VibeOffice through Windows Defender Firewall on Private networks. Set your home or office network to Private in Windows Settings.": {
   "where": [
-   "common/cast.js:171"
+   "common/cast.js:197"
   ]
  },
  "Allow all users of this worksheet to:": {
@@ -8075,7 +8075,7 @@
  },
  "Cancel": {
   "where": [
-   "common/cast.js:213",
+   "common/cast.js:243",
    "common/charts.js:440",
    "common/core.js:374",
    "common/dialogs.js:116"
@@ -8194,30 +8194,30 @@
  },
  "Cast": {
   "where": [
-   "common/cast.js:206"
+   "common/cast.js:236"
   ]
  },
  "Cast to TV": {
   "where": [
-   "common/cast.js:158",
-   "common/cast.js:188",
-   "common/cast.js:205"
+   "common/cast.js:184",
+   "common/cast.js:216",
+   "common/cast.js:235"
   ]
  },
  "Cast to TV...": {
   "where": [
-   "common/cast.js:347"
+   "common/cast.js:377"
   ]
  },
  "Casting stopped because the next picture could not be sent. Try casting again.": {
   "where": [
-   "common/cast.js:162",
-   "common/cast.js:329"
+   "common/cast.js:188",
+   "common/cast.js:359"
   ]
  },
  "Casting to {0}": {
   "where": [
-   "common/cast.js:188"
+   "common/cast.js:217"
   ]
  },
  "Cat&egory:": {
@@ -8722,7 +8722,7 @@
  },
  "Check that your firewall (such as ufw or firewalld) allows the TV to connect to VibeOffice.": {
   "where": [
-   "common/cast.js:173"
+   "common/cast.js:199"
   ]
  },
  "Check the slides before you save over the original.": {
@@ -9207,7 +9207,7 @@
  },
  "Close": {
   "where": [
-   "common/cast.js:191",
+   "common/cast.js:221",
    "common/core.js:353",
    "common/ui.js:615",
    "common/ui.js:741"
@@ -15200,6 +15200,11 @@
    "ledger/js/ribbon.js:79"
   ]
  },
+ "Freeze picture": {
+  "where": [
+   "common/cast.js:218"
+  ]
+ },
  "French (Canada)": {
   "where": [
    "quire/js/app.js:513"
@@ -15535,7 +15540,7 @@
  },
  "Go to slide {0}": {
   "where": [
-   "lectern/js/slideshow.js:986"
+   "lectern/js/slideshow.js:987"
   ]
  },
  "Goal Seek": {
@@ -16395,7 +16400,7 @@
  },
  "In System Settings → Network → Firewall → Options, allow incoming connections to VibeOffice.": {
   "where": [
-   "common/cast.js:172"
+   "common/cast.js:198"
   ]
  },
  "In a document the arrows are {0}+{1} {2} {3} {4}; in a menu {1} {2} {3} {4} alone.": {
@@ -17488,7 +17493,7 @@
  },
  "Keep waiting": {
   "where": [
-   "common/cast.js:288"
+   "common/cast.js:318"
   ]
  },
  "Keep with ne&xt": {
@@ -19894,7 +19899,7 @@
  "Next": {
   "where": [
    "lectern/js/slideshow.js:382",
-   "lectern/js/slideshow.js:993",
+   "lectern/js/slideshow.js:994",
    "quire/js/commands.js:479",
    "quire/js/commands.js:574"
   ]
@@ -20036,7 +20041,7 @@
  },
  "No TVs found on this network.": {
   "where": [
-   "common/cast.js:265"
+   "common/cast.js:295"
   ]
  },
  "No Transition": {
@@ -20672,7 +20677,7 @@
  },
  "On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.": {
   "where": [
-   "common/cast.js:198"
+   "common/cast.js:228"
   ]
  },
  "On mouse click": {
@@ -21760,7 +21765,7 @@
  },
  "Pause": {
   "where": [
-   "lectern/js/slideshow.js:994"
+   "lectern/js/slideshow.js:995"
   ]
  },
  "Peacock": {
@@ -23322,7 +23327,7 @@
  },
  "Rehearsal": {
   "where": [
-   "lectern/js/slideshow.js:992"
+   "lectern/js/slideshow.js:993"
   ]
  },
  "Rehearse Timings": {
@@ -23497,7 +23502,7 @@
  },
  "Repeat": {
   "where": [
-   "lectern/js/slideshow.js:996",
+   "lectern/js/slideshow.js:997",
    "ledger/js/commands.js:268"
   ]
  },
@@ -26182,7 +26187,7 @@
  },
  "Search again": {
   "where": [
-   "common/cast.js:210"
+   "common/cast.js:240"
   ]
  },
  "Search commands": {
@@ -26243,12 +26248,12 @@
  },
  "Searching for TVs. If macOS asks for Local Network access, choose Allow.": {
   "where": [
-   "common/cast.js:243"
+   "common/cast.js:273"
   ]
  },
  "Searching for TVs...": {
   "where": [
-   "common/cast.js:243"
+   "common/cast.js:273"
   ]
  },
  "Searching...": {
@@ -27539,12 +27544,12 @@
  },
  "Slide Show Help": {
   "where": [
-   "lectern/js/slideshow.js:947"
+   "lectern/js/slideshow.js:948"
   ]
  },
  "Slide Show Help\n\nN, Enter, Page Down, Right Arrow, Down Arrow or Spacebar: next animation or slide\nP, Page Up, Left Arrow, Up Arrow or Backspace: previous animation or slide\nNumber + Enter: go to that slide\nB or Period: black / unblack screen\nW or Comma: white / unwhite screen\nS or Plus: stop or restart automatic show\nEsc, Ctrl+Break or Hyphen: end slide show\nE: erase drawing on screen\nCtrl+P: pen  ·  Ctrl+A: arrow  ·  Ctrl+E: eraser  ·  Ctrl+H: hide pointer\nHome: first slide  ·  End: last slide": {
   "where": [
-   "lectern/js/slideshow.js:947"
+   "lectern/js/slideshow.js:948"
   ]
  },
  "Slide Show from current slide": {
@@ -28613,7 +28618,7 @@
  },
  "Starting cast...": {
   "where": [
-   "common/cast.js:314"
+   "common/cast.js:344"
   ]
  },
  "Starting document": {
@@ -28746,9 +28751,9 @@
  },
  "Stop casting": {
   "where": [
-   "common/cast.js:179",
-   "common/cast.js:189",
-   "common/cast.js:289"
+   "common/cast.js:205",
+   "common/cast.js:219",
+   "common/cast.js:319"
   ]
  },
  "Straight Connector": {
@@ -29113,7 +29118,7 @@
  },
  "TV": {
   "where": [
-   "common/cast.js:199"
+   "common/cast.js:229"
   ]
  },
  "Ta&b leader:": {
@@ -29857,17 +29862,17 @@
  },
  "The TV declined to play this stream. Check that it supports HLS video, then try again.": {
   "where": [
-   "common/cast.js:161"
+   "common/cast.js:187"
   ]
  },
  "The TV did not answer. Check that it is on and connected to the same network, then try again.": {
   "where": [
-   "common/cast.js:160"
+   "common/cast.js:186"
   ]
  },
  "The TV has not opened the stream. Check that the TV and this computer are on the same network. Guest Wi-Fi can keep devices apart.": {
   "where": [
-   "common/cast.js:300"
+   "common/cast.js:330"
   ]
  },
  "The Text Wizard has determined that your data is Delimited.": {
@@ -31079,12 +31084,12 @@
  },
  "This TV is already in use. Stop the other cast or choose another TV.": {
   "where": [
-   "common/cast.js:164"
+   "common/cast.js:190"
   ]
  },
  "This TV is no longer available. Choose Search again to find it.": {
   "where": [
-   "common/cast.js:163"
+   "common/cast.js:189"
   ]
  },
  "This browser blocked the image export.": {
@@ -31439,7 +31444,7 @@
  },
  "This webview cannot encode H.264 for casting.": {
   "where": [
-   "common/cast.js:241"
+   "common/cast.js:271"
   ]
  },
  "This workbook contains a sheet type that cannot be converted yet": {
@@ -32926,17 +32931,17 @@
  },
  "VibeOffice could not prepare the document picture. Try casting again.": {
   "where": [
-   "common/cast.js:339"
+   "common/cast.js:369"
   ]
  },
  "VibeOffice could not reach the local network. Check the connection and try again.": {
   "where": [
-   "common/cast.js:165"
+   "common/cast.js:191"
   ]
  },
  "VibeOffice stopped sending pictures. If the TV is still playing, stop playback with its remote.": {
   "where": [
-   "common/cast.js:180"
+   "common/cast.js:206"
   ]
  },
  "VibeOffice.work can't open “{0}”. It opens documents (.docx, .rtf), spreadsheets (.xlsx, .csv) and presentations (.pptx).": {
@@ -33027,7 +33032,7 @@
  },
  "Waiting for {0}...": {
   "where": [
-   "common/cast.js:286"
+   "common/cast.js:316"
   ]
  },
  "Walnut": {

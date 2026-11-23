@@ -232,3 +232,25 @@ test('a rejected picture stops the cast and identifies the picture failure', asy
   assert.match(result, /Casting stopped because the next picture could not be sent/);
   assert.doesNotMatch(result, /Annex B|local network/);
 });
+
+test('a new cast starts live after a frozen cast ends', async () => {
+  const result = await shot('ledger', [{ js: until + `
+    async function start() {
+      L.ui.exec('castTV');
+      await until(() => document.querySelector('#cast-tv')?.length);
+      document.querySelector('.dlg .primary').click();
+      await until(() => !document.querySelector('.dlg'));
+      L.ui.exec('castTV');
+      return document.querySelector('#cast-freeze');
+    }
+    const first = await start();
+    first.click();
+    document.querySelector('.dlg .primary').click();
+    await until(() => stubCast.stops === 1);
+    const next = await start();
+    const live = !next.checked;
+    document.querySelector('.dlg .primary').click();
+    return live;
+  ` }]);
+  assert.equal(result, true);
+});

@@ -38,6 +38,18 @@ async function exerciseCast() {
     }
     return color();
   }
+  function freeze(value) {
+    if (app === 'lectern' && L.show.active) {
+      document.querySelector('.show [aria-label="Slide show menu"]').click();
+      const item = [...document.querySelectorAll('.menu .m-item')].find(el => el._it.cmd === 'castTV');
+      if (!item) throw new Error('Cast is missing from the slide show menu');
+      item.click();
+    } else L.ui.exec('castTV');
+    const toggle = document.querySelector('#cast-freeze');
+    if (!toggle || toggle.checked === value) throw new Error('Unexpected Freeze picture state');
+    toggle.click();
+    [...document.querySelectorAll('.dlg-foot button')].find(b => b.textContent === 'Close').click();
+  }
   await wait(async () => window.L?.ui?.cmds.castTV && await window.VO?.castView?.());
   L.ui.exec('castTV');
   await wait(() => document.querySelector('#cast-tv')?.options.length);
@@ -50,11 +62,29 @@ async function exerciseCast() {
     app === 'ledger' ? document.querySelector('#glayer') : L.ed.host.firstElementChild;
   cover(documentLayer(), '#00ff00');
   const colors = [await sample()];
+  // Suspend a render before it reads the document. An edit made after Freeze
+  // must stay private even when that in-flight render eventually finishes.
+  const view = VO.castView;
+  let resume;
+  VO.castView = async () => {
+    VO.castView = view;
+    await new Promise(resolve => { resume = resolve; });
+    return view();
+  };
+  await wait(() => resume);
+  freeze(true);
+  cover(documentLayer(), '#ffff00');
+  const beforeFreeze = stubCast.frames.at(-1);
+  await wait(() => stubCast.frames.at(-1) !== beforeFreeze);
+  resume();
+  colors.push(await sample());
   if (app === 'lectern') {
     privateUI.remove();
     key('F5');
     await wait(() => L.show.active);
     cover(document.querySelector('.show .sl'), '#ff0000');
+    colors.push(await sample());
+    freeze(false);
     colors.push(await sample());
     key('b');
     await wait(() => document.querySelector('.show .blank'));
@@ -63,13 +93,16 @@ async function exerciseCast() {
     await wait(() => !L.show.active);
     cover(documentLayer(), '#0000ff');
     colors.push(await sample());
+  } else {
+    freeze(false);
+    colors.push(await sample());
   }
   privateUI.remove();
   L.ui.exec('castTV');
   document.querySelector('.dlg .primary').click();
   await wait(() => stubCast.stops === 1);
   const result = { colors, plays: stubCast.plays, stops: stubCast.stops, key: stubCast.key };
-  const expected = app === 'lectern' ? [[0,255,0], [255,0,0], [0,0,0], [0,0,255]] : [[0,255,0]];
+  const expected = app === 'lectern' ? [[0,255,0], [0,255,0], [0,255,0], [255,0,0], [0,0,0], [0,0,255]] : [[0,255,0], [0,255,0], [255,255,0]];
   if (result.plays !== 1 || result.stops !== 1 || result.key !== null ||
       colors.length !== expected.length || expected.some((rgb,i) => rgb.some((c,j) => Math.abs(c - colors[i][j]) >= 24)))
     throw new Error(app + ' unexpected cast output ' + JSON.stringify(result));

@@ -8,7 +8,7 @@ the tool tabs) takes the place of the menus and toolbars.
 
 ## Using it
 
-In the desktop app, **File ▸ Cast to TV** shows the visible document pages or text on a local DLNA MediaRenderer. Scrolling, zooming and editing update the picture twice a second. Reopen the command and choose **Stop casting** to end the session.
+In the desktop app, **File ▸ Cast to TV** shows the visible document pages or text on a local DLNA MediaRenderer. Scrolling, zooming and editing update the picture twice a second. Reopen the command and check **Freeze picture** to keep the current page view on the TV while editing. Clear it to resume or choose **Stop casting** to end the session.
 
 Open https://vibeoffice.work/quire/. The app is `public/quire/`; every path below is relative to it.
 Everything runs in the browser: there is no back end, no account and no network service behind any

@@ -13,7 +13,7 @@ Setup, Sort, Chart Wizard, Insert Function, Text Import Wizard and some forty mo
 
 ## Using it
 
-In the desktop app, **File ▸ Cast to TV** shows the current worksheet viewport, including visible charts and drawing objects, on a local DLNA MediaRenderer. Scrolling or switching worksheets updates the same stream. Reopen the command and choose **Stop casting** when finished.
+In the desktop app, **File ▸ Cast to TV** shows the current worksheet viewport, including visible charts and drawing objects, on a local DLNA MediaRenderer. Scrolling or switching worksheets updates the same stream. Reopen the command and check **Freeze picture** to keep the TV on the current view while working elsewhere in the workbook. Clear it to resume or choose **Stop casting** when finished.
 
 Open https://vibeoffice.work/ledger/. The app is `public/ledger/`; paths below are relative to it unless
 they start with `tools/`. To run it locally, see [testing.md](testing.md). Everything runs in the browser; there is no back end and no network

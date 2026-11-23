@@ -101,7 +101,7 @@
       return L.loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
     }
 
-    async function paint(canvas) {
+    async function render(canvas) {
       const previous = cached, version = revision;
       cached = new Map();
       const view = await VO.castView(), ctx = canvas.getContext('2d');
@@ -140,11 +140,37 @@
         }
       } finally { ctx.restore(); }
     }
-    return { paint, close() {
-      changes.disconnect();
-      document.fonts?.removeEventListener('loadingdone', invalidate);
-      cached.clear();
-    } };
+    let frozen = false, generation = 0, buffer, rendering = false, releasePaint;
+    return {
+      get frozen() { return frozen; },
+      set frozen(value) {
+        frozen = value;
+        generation++;
+        if (frozen) releasePaint?.();
+      },
+      async paint(canvas) {
+        if (frozen || rendering) return;
+        const before = generation;
+        if (!buffer) {
+          buffer = document.createElement('canvas');
+          buffer.width = canvas.width;
+          buffer.height = canvas.height;
+        }
+        // A slow snapshot may finish after Freeze. Keep sending the published canvas
+        // while that work drains, and only reuse its buffer once it has finished.
+        rendering = true;
+        const picture = render(buffer).then(() => {
+          if (generation === before) canvas.getContext('2d').drawImage(buffer, 0, 0);
+        }).finally(() => { rendering = false; });
+        try { await Promise.race([picture, new Promise(resolve => { releasePaint = resolve; })]); }
+        finally { releasePaint = null; }
+      },
+      close() {
+        changes.disconnect();
+        document.fonts?.removeEventListener('loadingdone', invalidate);
+        cached.clear();
+      }
+    };
   }
 
   async function stop(session) {
@@ -185,7 +211,11 @@
     if (dialog) return;
     if (active) {
       const session = active;
-      dialog = ui.dialog({ title: L.t('Cast to TV'), body: h('p', { text: L.t('Casting to {0}', session.name) }),
+      const freeze = h('input', { type: 'checkbox', id: 'cast-freeze', checked: session.painter.frozen });
+      freeze.addEventListener('change', () => { session.painter.frozen = freeze.checked; });
+      dialog = ui.dialog({ title: L.t('Cast to TV'), body: h('div', { class: 'col' },
+        h('p', { text: L.t('Casting to {0}', session.name) }),
+        h('label', { for: 'cast-freeze' }, freeze, L.t('Freeze picture'))),
         buttons: [{ label: L.t('Stop casting'), primary: true, onClick() {
           stopFromDialog(session);
         } }, { label: L.t('Close') }] });
@@ -344,5 +374,5 @@
     }
     scan();
   }
-  ui.cmd('castTV', { label: L.N('Cast to TV...'), icon: 'fullScreen', checked: () => !!active, run: choose });
+  ui.cmd('castTV', { label: L.N('Cast to TV...'), icon: 'cast', checked: () => !!active, run: choose });
 })();

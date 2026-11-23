@@ -240,6 +240,7 @@
     outlineView: `${lines(2, 3, 12, 1, 0, K)}<rect x="1.5" y="2" width="1.5" height="1.5" fill="${B}"/>${lines(5, 6.5, 9, 1, 0, GR)}${lines(5, 9.5, 9, 1, 0, GR)}${lines(2, 13, 12, 1, 0, K)}<rect x="1.5" y="12" width="1.5" height="1.5" fill="${B}"/>`,
     read: `<path d="M1.5 3.5c2-1 4.5-1 6.5.5v10c-2-1.5-4.5-1.5-6.5-.5zM14.5 3.5c-2-1-4.5-1-6.5.5v10c2-1.5 4.5-1.5 6.5-.5z" fill="#fff" stroke="${B}"/>${lines(3, 6, 3.5, 3, 2, GR)}${lines(9.5, 6, 3.5, 3, 2, GR)}`,
     thumbnails: `<rect x="1.5" y="1.5" width="5" height="6" fill="#fff" stroke="#556"/><rect x="1.5" y="8.5" width="5" height="6" fill="#fff" stroke="#556"/>${tl(9, 3, 6, 6, 2)}`,
+    cast: `<path d="M2 6V2.5h12.5v10H10" fill="${LB}" stroke="${B}" stroke-width="1.3" stroke-linejoin="round"/><path d="M1.5 7.5a7 7 0 0 1 7 7m-7-4a4 4 0 0 1 4 4" fill="none" stroke="${B2}" stroke-width="1.5"/><circle cx="2" cy="14" r="1.2" fill="${B}"/>`,
     fullScreen: `<rect x="1.5" y="2.5" width="13" height="11" fill="#fff" stroke="#556"/><path d="M3.5 7V4.5H6M10 4.5h2.5V7M12.5 9v2.5H10M6 11.5H3.5V9" fill="none" stroke="${B}" stroke-width="1.3"/>`,
     stylesPane: `<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#556"/>${txt(2.5, 9, 'A', 8, B)}${txt(8, 9, 'a', 8, R, 'normal')}${lines(3, 12, 10, 1, 0, GR)}`,
     reveal: `${txt(1, 11, 'A', 11, K)}<circle cx="11" cy="9" r="3" fill="${LB}" stroke="${K}"/><path d="M13 11.2l2 2.3" stroke="${K}" stroke-width="1.8"/>`,

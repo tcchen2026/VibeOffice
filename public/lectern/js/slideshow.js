@@ -926,6 +926,7 @@
       '-',
       { label: '&Screen', sub: [{ label: '&Black Screen', run: () => setBlank('#000') }, { label: '&White Screen', run: () => setBlank('#fff') }, { label: st.paused ? '&Resume' : '&Pause', run: () => togglePause() }] },
       { label: 'P&ointer Options', sub: pointerMenu() },
+      ...(L.ui.cmds.castTV ? ['castTV'] : []),
       { label: '&Help', run: showHelp },
       '-',
       { label: '&End Show', run: () => S.end() },
