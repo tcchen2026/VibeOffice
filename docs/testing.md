@@ -42,7 +42,7 @@ Line grids: Quire's line height on a document line grid (`R.gridLine` in `quire/
 
 ## Native TV casting
 
-Run `cargo test --manifest-path DLNAnything/Cargo.toml` for loopback HTTP timing, renderer control and MPEG-TS framing. If FFmpeg is installed the test decodes the real WebCodecs fixture one HLS segment at a time. Run `node --test tests/desktop/cast.test.mjs` for decoded canvas checks in all three apps, including Lectern’s F5, blank screen and return to editing. The checks freeze during an unfinished render, edit the document and decode the frames sent before and after unfreezing.
+Run `cargo test --manifest-path DLNAnything/Cargo.toml` for loopback HTTP timing, renderer control and MPEG-TS framing. If FFmpeg is installed the test decodes the real WebCodecs fixture one HLS segment at a time. Run `node --test tests/desktop/cast.test.mjs` for decoded canvas checks in all three apps, including Lectern’s F5, blank screen and return to editing. The checks freeze during an unfinished render, edit the document and decode the frames sent before and after unfreezing. They check the red casting bar on the sender and scan the decoded TV pictures for any trace of the strip.
 
 On a Mac, the following commands run the same document and slideshow checks in the system WKWebView at the desktop app’s origin. They use a simulated receiver and feed a captured H.264 picture to the Rust HTTP server. The **macOS** workflow runs both with the **smoke** option and verifies the built app’s Local Network purpose string and network entitlements.
 

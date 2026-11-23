@@ -7,6 +7,32 @@
   const video = { width: 1280, height: 720, fps: 2 };
   let active, dialog, discovery;
 
+  // Mount the empty live region before playback so its first message is announced.
+  const editor = document.getElementById('app');
+  const castStatus = h('div', { class: 'cast-status', role: 'status', 'aria-atomic': 'true' });
+  editor.prepend(castStatus);
+  window.addEventListener('vo-presentation', e => (e.detail || editor).prepend(castStatus));
+
+  function updateBar(session) {
+    session.bar.textContent = session.painter.frozen ? L.t('Casting to TV Now · Picture frozen') : L.t('Casting to TV Now');
+  }
+
+  function showBar(session, picker) {
+    session.bar = h('button', { class: 'cast-bar', type: 'button', 'aria-haspopup': 'dialog',
+      onclick() {
+        if (picker.el.isConnected) picker.close(); // Leave the stream running while opening its controls.
+        choose();
+      },
+      onkeydown(e) {
+        if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); // The button owns activation in the editor.
+      }
+    });
+    updateBar(session);
+    castStatus.appendChild(session.bar);
+    castStatus.classList.add('waiting');
+    picker.done.then(() => { if (active === session) castStatus.classList.remove('waiting'); });
+  }
+
   // A view supplies its viewport and ordered document layers in screen coordinates.
   // Canvas layers can be copied directly. Snapshot DOM layers while their styles and
   // animations are live, then draw a self-contained SVG at the output resolution.
@@ -176,6 +202,8 @@
   async function stop(session) {
     if (active !== session) return;
     active = null;
+    castStatus.replaceChildren();
+    castStatus.classList.remove('waiting');
     try { await session.capture?.stop(); }
     finally { session.painter?.close(); await host.stop(session.key); }
   }
@@ -208,18 +236,19 @@
   }
 
   function choose() {
-    if (dialog) return;
+    if (dialog?.el.isConnected) return;
     if (active) {
       const session = active;
+      if (!session.bar) return;
       const freeze = h('input', { type: 'checkbox', id: 'cast-freeze', checked: session.painter.frozen });
-      freeze.addEventListener('change', () => { session.painter.frozen = freeze.checked; });
-      dialog = ui.dialog({ title: L.t('Cast to TV'), body: h('div', { class: 'col' },
+      freeze.addEventListener('change', () => { session.painter.frozen = freeze.checked; updateBar(session); });
+      const controls = dialog = ui.dialog({ title: L.t('Cast to TV'), body: h('div', { class: 'col' },
         h('p', { text: L.t('Casting to {0}', session.name) }),
         h('label', { for: 'cast-freeze' }, freeze, L.t('Freeze picture'))),
         buttons: [{ label: L.t('Stop casting'), primary: true, onClick() {
           stopFromDialog(session);
         } }, { label: L.t('Close') }] });
-      dialog.done.then(() => { dialog = null; });
+      controls.done.then(() => { if (dialog === controls) dialog = null; });
       return;
     }
     const tv = h('select', { id: 'cast-tv' });
@@ -355,14 +384,16 @@
           sendFrame: bytes => host.frame(key, bytes), onError(e) {
             if (active !== session) return;
             stop(session).catch(() => {});
-            if (playingSession === session && d.el.isConnected) d.close();
+            if (playingSession === session && dialog?.el.isConnected) dialog.close();
             ui.msg(errorMessage(e, L.t('Casting stopped because the next picture could not be sent. Try casting again.')), { icon: 'warn' });
           } });
         if (active !== session) { await session.capture.stop(); return; }
         if (!d.el.isConnected) { await stop(session); return; }
         await host.play(key);
-        VO.settings.set('vibeoffice.castTV', id);
+        if (active !== session) return;
         if (!d.el.isConnected) { await stop(session); return; }
+        VO.settings.set('vibeoffice.castTV', id);
+        showBar(session, d);
         await waitForTV(session);
       } catch (e) {
         if (session) await stop(session).catch(() => {});

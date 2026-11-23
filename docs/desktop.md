@@ -255,7 +255,9 @@ Ctrl+P, Ctrl+F, Ctrl+S, the zoom keys); editing keys and the apps' own shortcuts
 
 ### Casting to a TV
 
-Choose **File ▸ Cast to TV** in Quire, Ledger or Lectern. TVs appear as they answer searches on the computer’s private network interfaces. Select a TV and click **Cast** as soon as it appears. The picker remembers the last TV used across the three apps. The TV receives an HLS playlist. Reopen the command and check **Freeze picture** to hold the last picture on the TV while editing privately. Clear it to resume the live view. **Stop casting** ends the session. Each new cast starts live. The desktop webview needs a working WebCodecs H.264 encoder.
+Choose **File ▸ Cast to TV** in Quire, Ledger or Lectern. TVs appear as they answer searches on the computer’s private network interfaces. Select a TV and click **Cast** as soon as it appears. The picker remembers the last TV used across the three apps. The TV receives an HLS playlist. The desktop webview needs a working WebCodecs H.264 encoder.
+
+Once the TV accepts Play, a red **Casting to TV Now** button appears at the top of the sending window. It stays on the presenter’s screen during a slide show. Click it, or focus it and press Enter or Space, to reopen the cast controls. Check **Freeze picture** to hold the last picture on the TV while editing privately. The button then reads **Casting to TV Now · Picture frozen**. Clear the checkbox to resume the live view. **Stop casting** ends the session and removes the button. Each new cast starts live.
 
 On macOS 15 and later, the first search can open the **Local Network** permission prompt. Choose **Allow** so VibeOffice can discover the TV. If access was denied, turn on **VibeOffice** in **System Settings ▸ Privacy & Security ▸ Local Network**, then return to the picker or choose **Search again**. VibeOffice checks the encoder before starting discovery. It draws its own document view, so casting requires no Screen Recording, Camera or Microphone permission. [Apple’s local network privacy guide](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)
 

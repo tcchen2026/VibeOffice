@@ -195,21 +195,29 @@ test('waiting for the TV shows firewall help, keeps casting on dismissal and can
     await until(() => stubCast.stops === 1);
     await start(); release(false);
     await until(() => document.querySelector('.dlg-body').innerText.includes('Windows Defender Firewall'));
+    const bar = document.querySelector('.cast-bar'), rect = bar.getBoundingClientRect();
+    if (document.elementFromPoint(10, rect.height / 2) !== bar) throw new Error('The waiting dialog covers the cast bar');
     button('Stop casting').click();
     await until(() => stubCast.stops === 2);
+    if (document.querySelector('.cast-bar')) throw new Error('Stopping while waiting left the bar behind');
     release(true);
     return [waiting, help.includes('same network'), help.includes('Private'), active, stubCast.plays, stubCast.stops];
   ` }]);
   assert.deepEqual(result, ['Waiting for Office TV...', true, true, [1, 0], 2, 2]);
 });
 
-test('the picker gives a plain playback error without displaying the receiver response', async () => {
+test('the picker gives a plain playback error and waits for Play to succeed before showing the bar', async () => {
   const message = await shot('ledger', [{ js: until + `
-    VO.host.cast.play = async () => { throw {kind:'refused', detail:'<s:Envelope>internal fault</s:Envelope>'}; };
+    let refuse;
+    VO.host.cast.play = () => new Promise((resolve, reject) => { refuse = reject; });
     L.ui.exec('castTV');
     await until(() => document.querySelector('#cast-tv')?.length);
     document.querySelector('.dlg .primary').click();
+    await until(() => refuse);
+    if (document.querySelector('.cast-bar')) throw new Error('Cast bar appeared before Play succeeded');
+    refuse({kind:'refused', detail:'<s:Envelope>internal fault</s:Envelope>'});
     await until(() => stubCast.stops && !document.querySelector('.dlg .primary').disabled);
+    if (document.querySelector('.cast-bar')) throw new Error('Cast bar remains after failed Play');
     return document.querySelector('.dlg [role=status]').textContent;
   ` }]);
   assert.match(message, /TV declined to play/);
@@ -219,14 +227,19 @@ test('the picker gives a plain playback error without displaying the receiver re
 test('a rejected picture stops the cast and identifies the picture failure', async () => {
   const result = await shot('ledger', [{ js: until + `
     const frame = VO.host.cast.frame;
+    let fail = false;
     VO.host.cast.frame = (key, bytes) => {
-      if (stubCast.plays) throw {kind:'picture', detail:'invalid Annex B'};
+      if (fail) throw {kind:'picture', detail:'invalid Annex B'};
       return frame(key, bytes);
     };
     L.ui.exec('castTV');
     await until(() => document.querySelector('#cast-tv')?.length);
     document.querySelector('.dlg .primary').click();
+    await until(() => !document.querySelector('.dlg') && stubCast.plays === 1);
+    document.querySelector('.cast-bar').click();
+    fail = true;
     await until(() => stubCast.stops === 1 && document.querySelector('.dlg-body'));
+    if (document.querySelector('.cast-bar, #cast-freeze')) throw new Error('Cast controls remain after a picture error');
     return document.querySelector('.dlg-body').innerText;
   ` }]);
   assert.match(result, /Casting stopped because the next picture could not be sent/);

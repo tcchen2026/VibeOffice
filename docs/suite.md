@@ -37,7 +37,7 @@ No page draws a title bar of its own: the browser tab, or the system title bar o
 
 What runs the pages, a browser or the desktop app (`desktop/`, Tauri): `VO.host.kind` (`web`, `desktop`), `platform`, `version`, `onFiles(fn)` for files the system asks us to open (the PWA's `launchQueue`, or the desktop app's command line; the Start Center hands them to their app), `openUrl(url)` (a new tab, or the default browser), `newWindow(url)` / `closeWindow()` (an app in a window of its own; File ▸ Exit closes it) and `uiScale()` / `setUiScale(n)` (the desktop app's zoom; `null` on the web). Pages use `VO.host` for anything the two differ in. The interface, its rules and what is planned are in docs/desktop.md (Host interface).
 
-Document windows in native host version 6 expose **File ▸ Cast to TV**. Each app supplies a `castView()` hook to `VO.attach` with its document viewport and visible layers, or a canvas. The shared command fits that view into 1280 × 720 and submits two H.264 pictures per second through `VO.host.cast`. [Desktop casting](desktop.md#casting-to-a-tv)
+Document windows in native host version 6 expose **File ▸ Cast to TV**. Each app supplies a `castView()` hook to `VO.attach` with its document viewport and visible layers, or a canvas. The shared command fits that view into 1280 × 720 and submits two H.264 pictures per second through `VO.host.cast`. A presentation calls `ui.setPresentationRoot(element)` on entry and `ui.setPresentationRoot(null)` on exit so the sender’s cast bar, dialogs and menus follow the show. [Desktop casting](desktop.md#casting-to-a-tv)
 
 ## App launch: `VO.launch` and `VO.attach`
 

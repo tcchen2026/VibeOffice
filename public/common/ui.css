@@ -12,6 +12,12 @@ input, select, textarea { font: inherit; color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
 .app { display: flex; flex-direction: column; height: 100%; min-width: 0; }
+.cast-status { position: relative; flex: none; }
+:not(.app) > .cast-status { position: absolute; inset: 0 0 auto; z-index: 9; }
+.cast-status.waiting { z-index: 2001; } /* open the cast controls even from the waiting dialog */
+.cast-bar { display: block; width: 100%; min-height: 20px; padding: 2px 4px; border: 0; border-radius: 0; background: var(--cast-bar-bg); color: var(--cast-bar-fg); font-weight: bold; line-height: 1.2; white-space: nowrap; cursor: pointer; }
+.cast-bar:hover { text-decoration: underline; }
+.cast-bar:focus-visible { outline: 2px solid var(--cast-bar-fg); outline-offset: -3px; }
 /* ---------- title bar ---------- */
 /* ---------- command bars ---------- */
 .cmdbars { flex: none; background: linear-gradient(90deg, var(--dock-a), var(--dock-b)); border-bottom: 1px solid var(--chrome-line); }

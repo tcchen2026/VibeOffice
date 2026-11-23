@@ -4,7 +4,7 @@ A presentation editor modeled on PowerPoint 2003, written in plain HTML and vani
 
 Open https://vibeoffice.work/lectern/ (to run it locally, see [testing.md](testing.md)). The app is `public/lectern/`; every path below is relative to it, except `tools/`. It runs in any modern browser (Chrome, Edge, Firefox, Safari). Everything runs locally; nothing is uploaded, including the passwords of protected presentations.
 
-In the desktop app, **File ▸ Cast to TV** mirrors the current slide to a local DLNA MediaRenderer. During **F5** it follows the audience view, including slide changes, ink and the black or white screen. **Esc** returns the TV to the slide being edited. Choose **Cast to TV** from File or the slide show menu and check **Freeze picture** to hold the last TV picture through edits and slide changes. Clear it to resume. Speaker notes, toolbars and dialogs stay on the presenter’s screen. Reopen the command and choose **Stop casting** when finished.
+In the desktop app, **File ▸ Cast to TV** mirrors the current slide to a local DLNA MediaRenderer. During **F5** it follows the audience view, including slide changes, ink and the black or white screen. **Esc** returns the TV to the slide being edited. The red **Casting to TV Now** bar stays at the top of the presenter’s window in both views. Click the bar or choose **Cast to TV** from the slide show menu to reopen the controls. Check **Freeze picture** to hold the last TV picture through edits and slide changes. The bar adds **· Picture frozen** until you clear the checkbox. Speaker notes, toolbars and dialogs stay on the presenter’s screen. Choose **Stop casting** when finished.
 
 ## What's in the box
 

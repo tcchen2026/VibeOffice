@@ -382,6 +382,7 @@
       h('button', { type: 'button', 'aria-label': 'Next', html: L.icons.get('showNext'), onclick: (e) => { e.stopPropagation(); S.next(); } }));
     root.append(stage, inkCanvas, popbar);
     document.body.appendChild(root);
+    L.ui.setPresentationRoot(root);
     const sh = pres.show || {};
     st = {
       order, firstVisible,
@@ -759,6 +760,7 @@
     const inkData = st.ink;
     const rehearse = st.rehearse ? st.times : null;
     const lastIdx = st.order[st.pos];
+    L.ui.setPresentationRoot(null);
     root.remove();
     root = null; layer = null;
     S.active = false;
@@ -830,8 +832,8 @@
     return [(e.clientX - r.left) / st.k, (e.clientY - r.top) / st.k];
   }
   let drawing = null;
-  /** a dialog or menu over the show (inside it in full screen, L.ui): its clicks, wheel and right-clicks are its own */
-  const overShow = (e) => !!(e.target.closest && e.target.closest('.dlg-overlay, .menu'));
+  /** Controls over the show own their clicks, wheel and right-clicks. */
+  const overShow = (e) => !!e.target.closest?.('.dlg-overlay, .menu, .cast-bar');
   function onPointerDown(e) {
     if (!st) return;
     if (e.target.closest('.popbar') || e.target.closest('.rehearse') || overShow(e)) return;
@@ -956,6 +958,7 @@
     if (L.ui.dialogOpen()) { L.ui.dialogKey(e); return; }   // the app's own handler stands aside during the show
     if (L.ui.menuOpen()) { if (L.ui.menuKey(e)) { e.preventDefault(); e.stopPropagation(); } return; }
     const k = e.key;
+    if ((k === 'Enter' || k === ' ') && e.target.closest?.('button')) return;
     e.stopPropagation();
     if (/^[0-9]$/.test(k)) { st.gotoBuf += k; showGoto(); e.preventDefault(); return; }
     if (k === 'Enter' && st.gotoBuf) { const n = parseInt(st.gotoBuf, 10) - 1; st.gotoBuf = ''; hideGoto(); if (n >= 0) { const pos = st.order.indexOf(n); if (pos >= 0) showSlide(pos, { transition: true }); } e.preventDefault(); return; }

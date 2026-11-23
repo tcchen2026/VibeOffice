@@ -201,7 +201,7 @@
       void idx;
       return false;
     };
-    (document.fullscreenElement || document.body).appendChild(el);   // over a slide show, as dialogs
+    overlayRoot().appendChild(el);
     /* position */
     const r = el.getBoundingClientRect();
     let x, y;
@@ -629,7 +629,7 @@
     });
     dlg.append(titleBar, body, foot);
     overlay.appendChild(dlg);
-    (document.fullscreenElement || document.body).appendChild(overlay);   // over a slide show, which is full screen
+    overlayRoot().appendChild(overlay);
     fitTabs(dlg);
     /* center */
     const r = dlg.getBoundingClientRect();
@@ -1385,4 +1385,12 @@
     if (on) { if (!b) { b = h('div', { class: 'busy' }, h('div', { class: 'busy-box' }, h('span', { class: 'busy-spin' }), h('span', { class: 'busy-t' }))); document.body.appendChild(b); } b.querySelector('.busy-t').textContent = t(text || 'Working...'); b.hidden = false; }
     else if (b) b.hidden = true;
   };
+
+  // A presentation can fill the window even when the webview declines native fullscreen.
+  let presentationRoot;
+  ui.setPresentationRoot = (el) => {
+    presentationRoot = el;
+    tell('vo-presentation', el);
+  };
+  const overlayRoot = () => document.fullscreenElement || presentationRoot || document.body;
 })(typeof window !== 'undefined' ? window : globalThis);

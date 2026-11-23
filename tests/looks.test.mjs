@@ -18,7 +18,7 @@ const SHEETS = {
   'lite.html': styleOf(read('lite.html')),
 };
 /* set per element by the apps for document content (and by scout.js for his size and balloon tip), not by a look */
-const DOCUMENT_VARS = new Set(['--tabc', '--olvl', '--bu-c', '--bu-f', '--bu-s', '--bu-w', '--icon-swatch', '--scout-w', '--scout-tip']);
+const DOCUMENT_VARS = new Set(['--tabc', '--olvl', '--bu-c', '--bu-f', '--bu-img', '--bu-s', '--bu-w', '--icon-swatch', '--scout-w', '--scout-tip']);
 
 const names = (css) => new Set([...css.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]));
 /** look id → the settings its blocks set (a block's selector may list several looks) */
@@ -48,8 +48,13 @@ test('every setting the chrome uses is defined', () => {
   const defined = names(looks);
   for (const [file, css] of Object.entries(SHEETS)) {
     const used = new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]));
+    // Both Start Centers declare the three app badge colours on the page itself.
+    const badges = new Set();
+    if (file === 'index.html' || file === 'lite.html') {
+      for (const name of names(css)) if (['--quire', '--ledger', '--lectern'].includes(name)) badges.add(name);
+    }
     /* --t-…: text an app sets in the UI's language for its CSS to draw (common/i18n.js), not a look setting */
-    const missing = [...used].filter((n) => !defined.has(n) && !DOCUMENT_VARS.has(n) && !n.startsWith('--t-'));
+    const missing = [...used].filter((n) => !defined.has(n) && !DOCUMENT_VARS.has(n) && !badges.has(n) && !n.startsWith('--t-'));
     assert.deepEqual(missing, [], `${file} uses undefined settings`);
   }
 });

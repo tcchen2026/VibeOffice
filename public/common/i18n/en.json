@@ -244,7 +244,7 @@
  },
  "&Arrow": {
   "where": [
-   "lectern/js/slideshow.js:909",
+   "lectern/js/slideshow.js:911",
    "ledger/js/commands.js:127",
    "quire/js/commands.js:499"
   ]
@@ -397,7 +397,7 @@
  },
  "&Ballpoint Pen": {
   "where": [
-   "lectern/js/slideshow.js:910"
+   "lectern/js/slideshow.js:912"
   ]
  },
  "&Bar": {
@@ -441,7 +441,7 @@
  },
  "&Black Screen": {
   "where": [
-   "lectern/js/slideshow.js:927"
+   "lectern/js/slideshow.js:929"
   ]
  },
  "&Black and white": {
@@ -1075,7 +1075,7 @@
  },
  "&Discard": {
   "where": [
-   "lectern/js/slideshow.js:770"
+   "lectern/js/slideshow.js:772"
   ]
  },
  "&Display grid on screen": {
@@ -1208,7 +1208,7 @@
  },
  "&End Show": {
   "where": [
-   "lectern/js/slideshow.js:932"
+   "lectern/js/slideshow.js:934"
   ]
  },
  "&End date:": {
@@ -1265,7 +1265,7 @@
  },
  "&Eraser": {
   "where": [
-   "lectern/js/slideshow.js:915"
+   "lectern/js/slideshow.js:917"
   ]
  },
  "&Error Checking...": {
@@ -1310,7 +1310,7 @@
  },
  "&Felt Tip Pen": {
   "where": [
-   "lectern/js/slideshow.js:911"
+   "lectern/js/slideshow.js:913"
   ]
  },
  "&Field shading:": {
@@ -1590,7 +1590,7 @@
  },
  "&Go to Slide": {
   "where": [
-   "lectern/js/slideshow.js:925"
+   "lectern/js/slideshow.js:927"
   ]
  },
  "&Go to:": {
@@ -1709,7 +1709,7 @@
  },
  "&Help": {
   "where": [
-   "lectern/js/slideshow.js:930",
+   "lectern/js/slideshow.js:932",
    "ledger/js/print.js:594"
   ]
  },
@@ -1776,7 +1776,7 @@
  },
  "&Highlighter": {
   "where": [
-   "lectern/js/slideshow.js:912"
+   "lectern/js/slideshow.js:914"
   ]
  },
  "&Home": {
@@ -1949,7 +1949,7 @@
  },
  "&Keep": {
   "where": [
-   "lectern/js/slideshow.js:770"
+   "lectern/js/slideshow.js:772"
   ]
  },
  "&Keep lines together": {
@@ -2435,7 +2435,7 @@
  },
  "&Next": {
   "where": [
-   "lectern/js/slideshow.js:922",
+   "lectern/js/slideshow.js:924",
    "ledger/js/dialogs3.js:364",
    "ledger/js/print.js:584"
   ]
@@ -2460,7 +2460,7 @@
   "where": [
    "common/core.js:388",
    "lectern/js/app.js:362",
-   "lectern/js/slideshow.js:775",
+   "lectern/js/slideshow.js:777",
    "ledger/js/app.js:113"
   ]
  },
@@ -2770,7 +2770,7 @@
  },
  "&Pause": {
   "where": [
-   "lectern/js/slideshow.js:927"
+   "lectern/js/slideshow.js:929"
   ]
  },
  "&Percent Style": {
@@ -2850,7 +2850,7 @@
  },
  "&Previous": {
   "where": [
-   "lectern/js/slideshow.js:923",
+   "lectern/js/slideshow.js:925",
    "ledger/js/dialogs3.js:364",
    "ledger/js/print.js:585"
   ]
@@ -3083,7 +3083,7 @@
  },
  "&Resume": {
   "where": [
-   "lectern/js/slideshow.js:927"
+   "lectern/js/slideshow.js:929"
   ]
  },
  "&Retry": {
@@ -3203,7 +3203,7 @@
  },
  "&Screen": {
   "where": [
-   "lectern/js/slideshow.js:927"
+   "lectern/js/slideshow.js:929"
   ]
  },
  "&Search commands": {
@@ -4051,7 +4051,7 @@
  },
  "&White Screen": {
   "where": [
-   "lectern/js/slideshow.js:927"
+   "lectern/js/slideshow.js:929"
   ]
  },
  "&Whole page": {
@@ -4130,7 +4130,7 @@
   "where": [
    "common/core.js:388",
    "lectern/js/app.js:362",
-   "lectern/js/slideshow.js:775",
+   "lectern/js/slideshow.js:777",
    "ledger/js/app.js:113"
   ]
  },
@@ -4280,7 +4280,7 @@
   "where": [
    "common/dialogs.js:432",
    "lectern/js/dialogs.js:1116",
-   "lectern/js/slideshow.js:925",
+   "lectern/js/slideshow.js:927",
    "ledger/js/dialogs2.js:64"
   ]
  },
@@ -5931,7 +5931,7 @@
  },
  "Allow VibeOffice through Windows Defender Firewall on Private networks. Set your home or office network to Private in Windows Settings.": {
   "where": [
-   "common/cast.js:197"
+   "common/cast.js:225"
   ]
  },
  "Allow all users of this worksheet to:": {
@@ -7189,7 +7189,7 @@
  "Black": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:913",
+   "lectern/js/slideshow.js:915",
    "quire/js/app.js:187"
   ]
  },
@@ -7293,7 +7293,7 @@
  "Blue": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:913",
+   "lectern/js/slideshow.js:915",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
   ]
@@ -8075,7 +8075,7 @@
  },
  "Cancel": {
   "where": [
-   "common/cast.js:243",
+   "common/cast.js:272",
    "common/charts.js:440",
    "common/core.js:374",
    "common/dialogs.js:116"
@@ -8194,30 +8194,40 @@
  },
  "Cast": {
   "where": [
-   "common/cast.js:236"
+   "common/cast.js:265"
   ]
  },
  "Cast to TV": {
   "where": [
-   "common/cast.js:184",
-   "common/cast.js:216",
-   "common/cast.js:235"
+   "common/cast.js:212",
+   "common/cast.js:245",
+   "common/cast.js:264"
   ]
  },
  "Cast to TV...": {
   "where": [
-   "common/cast.js:377"
+   "common/cast.js:408"
   ]
  },
  "Casting stopped because the next picture could not be sent. Try casting again.": {
   "where": [
-   "common/cast.js:188",
-   "common/cast.js:359"
+   "common/cast.js:216",
+   "common/cast.js:388"
+  ]
+ },
+ "Casting to TV Now": {
+  "where": [
+   "common/cast.js:17"
+  ]
+ },
+ "Casting to TV Now · Picture frozen": {
+  "where": [
+   "common/cast.js:17"
   ]
  },
  "Casting to {0}": {
   "where": [
-   "common/cast.js:217"
+   "common/cast.js:246"
   ]
  },
  "Cat&egory:": {
@@ -8722,7 +8732,7 @@
  },
  "Check that your firewall (such as ufw or firewalld) allows the TV to connect to VibeOffice.": {
   "where": [
-   "common/cast.js:199"
+   "common/cast.js:227"
   ]
  },
  "Check the slides before you save over the original.": {
@@ -9207,7 +9217,7 @@
  },
  "Close": {
   "where": [
-   "common/cast.js:221",
+   "common/cast.js:250",
    "common/core.js:353",
    "common/ui.js:615",
    "common/ui.js:741"
@@ -12155,7 +12165,7 @@
  },
  "Do you want to keep your ink annotations?": {
   "where": [
-   "lectern/js/slideshow.js:770"
+   "lectern/js/slideshow.js:772"
   ]
  },
  "Do you want to replace the contents of the destination cells?": {
@@ -12628,7 +12638,7 @@
  },
  "E&rase All Ink on Slide": {
   "where": [
-   "lectern/js/slideshow.js:916"
+   "lectern/js/slideshow.js:918"
   ]
  },
  "E&xisting File or Web Page": {
@@ -13037,7 +13047,7 @@
  },
  "End of slide show, click to exit.": {
   "where": [
-   "lectern/js/slideshow.js:735"
+   "lectern/js/slideshow.js:736"
   ]
  },
  "End, Arrow": {
@@ -15202,7 +15212,7 @@
  },
  "Freeze picture": {
   "where": [
-   "common/cast.js:218"
+   "common/cast.js:247"
   ]
  },
  "French (Canada)": {
@@ -15540,7 +15550,7 @@
  },
  "Go to slide {0}": {
   "where": [
-   "lectern/js/slideshow.js:987"
+   "lectern/js/slideshow.js:990"
   ]
  },
  "Goal Seek": {
@@ -15568,7 +15578,7 @@
   "where": [
    "common/ui.js:1172",
    "lectern/js/dialogs.js:235",
-   "lectern/js/slideshow.js:913",
+   "lectern/js/slideshow.js:915",
    "quire/js/dialogs3.js:147"
   ]
  },
@@ -15675,7 +15685,7 @@
  "Green": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:913",
+   "lectern/js/slideshow.js:915",
    "quire/js/app.js:187",
    "quire/js/dialogs3.js:570"
   ]
@@ -16400,7 +16410,7 @@
  },
  "In System Settings → Network → Firewall → Options, allow incoming connections to VibeOffice.": {
   "where": [
-   "common/cast.js:198"
+   "common/cast.js:226"
   ]
  },
  "In a document the arrows are {0}+{1} {2} {3} {4}; in a menu {1} {2} {3} {4} alone.": {
@@ -16606,12 +16616,12 @@
  },
  "Ink &Color": {
   "where": [
-   "lectern/js/slideshow.js:913"
+   "lectern/js/slideshow.js:915"
   ]
  },
  "Ink Annotations": {
   "where": [
-   "lectern/js/slideshow.js:790"
+   "lectern/js/slideshow.js:792"
   ]
  },
  "Input Message": {
@@ -17493,7 +17503,7 @@
  },
  "Keep waiting": {
   "where": [
-   "common/cast.js:318"
+   "common/cast.js:347"
   ]
  },
  "Keep with ne&xt": {
@@ -17658,7 +17668,7 @@
  },
  "Last &Viewed": {
   "where": [
-   "lectern/js/slideshow.js:924"
+   "lectern/js/slideshow.js:926"
   ]
  },
  "Last Name": {
@@ -19899,7 +19909,7 @@
  "Next": {
   "where": [
    "lectern/js/slideshow.js:382",
-   "lectern/js/slideshow.js:994",
+   "lectern/js/slideshow.js:997",
    "quire/js/commands.js:479",
    "quire/js/commands.js:574"
   ]
@@ -20002,7 +20012,7 @@
  },
  "No HDMI screen: connect one to present there.": {
   "where": [
-   "lectern/js/slideshow.js:408"
+   "lectern/js/slideshow.js:409"
   ]
  },
  "No Line": {
@@ -20041,7 +20051,7 @@
  },
  "No TVs found on this network.": {
   "where": [
-   "common/cast.js:295"
+   "common/cast.js:324"
   ]
  },
  "No Transition": {
@@ -20677,7 +20687,7 @@
  },
  "On macOS 15 or later, check VibeOffice in System Settings → Privacy & Security → Local Network, then choose Search again.": {
   "where": [
-   "common/cast.js:228"
+   "common/cast.js:257"
   ]
  },
  "On mouse click": {
@@ -21169,7 +21179,7 @@
  },
  "P&ointer Options": {
   "where": [
-   "lectern/js/slideshow.js:928"
+   "lectern/js/slideshow.js:930"
   ]
  },
  "P&ortrait": {
@@ -21765,7 +21775,7 @@
  },
  "Pause": {
   "where": [
-   "lectern/js/slideshow.js:995"
+   "lectern/js/slideshow.js:998"
   ]
  },
  "Peacock": {
@@ -22727,7 +22737,7 @@
  },
  "Purple": {
   "where": [
-   "lectern/js/slideshow.js:913"
+   "lectern/js/slideshow.js:915"
   ]
  },
  "Push Down": {
@@ -23207,7 +23217,7 @@
  "Red": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:913",
+   "lectern/js/slideshow.js:915",
    "quire/js/app.js:186",
    "quire/js/dialogs3.js:570"
   ]
@@ -23327,14 +23337,14 @@
  },
  "Rehearsal": {
   "where": [
-   "lectern/js/slideshow.js:993"
+   "lectern/js/slideshow.js:996"
   ]
  },
  "Rehearse Timings": {
   "where": [
    "lectern/js/commands.js:145",
    "lectern/js/ribbon.js:52",
-   "lectern/js/slideshow.js:777"
+   "lectern/js/slideshow.js:779"
   ]
  },
  "Reject": {
@@ -23502,7 +23512,7 @@
  },
  "Repeat": {
   "where": [
-   "lectern/js/slideshow.js:997",
+   "lectern/js/slideshow.js:1000",
    "ledger/js/commands.js:268"
   ]
  },
@@ -26187,7 +26197,7 @@
  },
  "Search again": {
   "where": [
-   "common/cast.js:240"
+   "common/cast.js:269"
   ]
  },
  "Search commands": {
@@ -26248,12 +26258,12 @@
  },
  "Searching for TVs. If macOS asks for Local Network access, choose Allow.": {
   "where": [
-   "common/cast.js:273"
+   "common/cast.js:302"
   ]
  },
  "Searching for TVs...": {
   "where": [
-   "common/cast.js:273"
+   "common/cast.js:302"
   ]
  },
  "Searching...": {
@@ -27544,12 +27554,12 @@
  },
  "Slide Show Help": {
   "where": [
-   "lectern/js/slideshow.js:948"
+   "lectern/js/slideshow.js:950"
   ]
  },
  "Slide Show Help\n\nN, Enter, Page Down, Right Arrow, Down Arrow or Spacebar: next animation or slide\nP, Page Up, Left Arrow, Up Arrow or Backspace: previous animation or slide\nNumber + Enter: go to that slide\nB or Period: black / unblack screen\nW or Comma: white / unwhite screen\nS or Plus: stop or restart automatic show\nEsc, Ctrl+Break or Hyphen: end slide show\nE: erase drawing on screen\nCtrl+P: pen  ·  Ctrl+A: arrow  ·  Ctrl+E: eraser  ·  Ctrl+H: hide pointer\nHome: first slide  ·  End: last slide": {
   "where": [
-   "lectern/js/slideshow.js:948"
+   "lectern/js/slideshow.js:950"
   ]
  },
  "Slide Show from current slide": {
@@ -28618,7 +28628,7 @@
  },
  "Starting cast...": {
   "where": [
-   "common/cast.js:344"
+   "common/cast.js:373"
   ]
  },
  "Starting document": {
@@ -28751,9 +28761,9 @@
  },
  "Stop casting": {
   "where": [
-   "common/cast.js:205",
-   "common/cast.js:219",
-   "common/cast.js:319"
+   "common/cast.js:233",
+   "common/cast.js:248",
+   "common/cast.js:348"
   ]
  },
  "Straight Connector": {
@@ -29118,7 +29128,7 @@
  },
  "TV": {
   "where": [
-   "common/cast.js:229"
+   "common/cast.js:258"
   ]
  },
  "Ta&b leader:": {
@@ -29862,17 +29872,17 @@
  },
  "The TV declined to play this stream. Check that it supports HLS video, then try again.": {
   "where": [
-   "common/cast.js:187"
+   "common/cast.js:215"
   ]
  },
  "The TV did not answer. Check that it is on and connected to the same network, then try again.": {
   "where": [
-   "common/cast.js:186"
+   "common/cast.js:214"
   ]
  },
  "The TV has not opened the stream. Check that the TV and this computer are on the same network. Guest Wi-Fi can keep devices apart.": {
   "where": [
-   "common/cast.js:330"
+   "common/cast.js:359"
   ]
  },
  "The Text Wizard has determined that your data is Delimited.": {
@@ -30693,7 +30703,7 @@
  },
  "The total time for the slide show was {0}. Do you want to keep the new slide timings?": {
   "where": [
-   "lectern/js/slideshow.js:775"
+   "lectern/js/slideshow.js:777"
   ]
  },
  "The value doesn't match the type you chose. Type a date.": {
@@ -31084,12 +31094,12 @@
  },
  "This TV is already in use. Stop the other cast or choose another TV.": {
   "where": [
-   "common/cast.js:190"
+   "common/cast.js:218"
   ]
  },
  "This TV is no longer available. Choose Search again to find it.": {
   "where": [
-   "common/cast.js:189"
+   "common/cast.js:217"
   ]
  },
  "This browser blocked the image export.": {
@@ -31444,7 +31454,7 @@
  },
  "This webview cannot encode H.264 for casting.": {
   "where": [
-   "common/cast.js:271"
+   "common/cast.js:300"
   ]
  },
  "This workbook contains a sheet type that cannot be converted yet": {
@@ -32931,17 +32941,17 @@
  },
  "VibeOffice could not prepare the document picture. Try casting again.": {
   "where": [
-   "common/cast.js:369"
+   "common/cast.js:400"
   ]
  },
  "VibeOffice could not reach the local network. Check the connection and try again.": {
   "where": [
-   "common/cast.js:191"
+   "common/cast.js:219"
   ]
  },
  "VibeOffice stopped sending pictures. If the TV is still playing, stop playback with its remote.": {
   "where": [
-   "common/cast.js:206"
+   "common/cast.js:234"
   ]
  },
  "VibeOffice.work can't open “{0}”. It opens documents (.docx, .rtf), spreadsheets (.xlsx, .csv) and presentations (.pptx).": {
@@ -33032,7 +33042,7 @@
  },
  "Waiting for {0}...": {
   "where": [
-   "common/cast.js:316"
+   "common/cast.js:345"
   ]
  },
  "Walnut": {
@@ -33267,7 +33277,7 @@
  "White": {
   "where": [
    "common/ui.js:1172",
-   "lectern/js/slideshow.js:913"
+   "lectern/js/slideshow.js:915"
   ]
  },
  "White Outline": {
